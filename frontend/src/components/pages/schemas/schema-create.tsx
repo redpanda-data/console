@@ -580,7 +580,7 @@ const SchemaEditor = (p: {
             <FieldLabel>Context</FieldLabel>
             <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
             <Combobox
-              // Our chakra UI has a global override for SVGs that make icons look off-center in UI registry components.
+              // index.scss's base `svg` rule offsets the icons; pl-8 clears the search icon.
               className="[&_svg]:block! [&_input]:pl-8!"
               creatable
               createLabel="context"

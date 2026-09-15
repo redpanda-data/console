@@ -67,6 +67,8 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
   const table = useDataTable({
     data: consumers,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,

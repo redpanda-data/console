@@ -95,6 +95,8 @@ const AclList = ({ acl }: { acl: Acls }) => {
   const table = useDataTable({
     data: resources,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination },
     onSortingChange,
     onPaginationChange,

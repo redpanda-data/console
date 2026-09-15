@@ -331,6 +331,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
   const table = useDataTable({
     data: messages,
     columns: messageTableColumns,
+    enableRowSelection: false,
     state: {
       pagination: paginationParams,
       sorting,
@@ -539,12 +540,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
           </TableBody>
         </Table>
       </div>
-      {/* Hide DataTablePagination's "X of N row(s) selected." (no row selection) while keeping its layout slot. */}
-      {filteredRowCount > 0 && (
-        <div className="[&>div>div:first-child]:invisible">
-          <DataTablePagination table={table} />
-        </div>
-      )}
+      {filteredRowCount > 0 && <DataTablePagination table={table} />}
       <LogDetailSheet message={selectedMessage} onClose={() => setSelectedMessage(null)} />
     </div>
   );

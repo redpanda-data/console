@@ -9,23 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { Flex, Text } from '@redpanda-data/ui';
 import { BanIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import type { FC } from 'react';
 
 export const EmptyBadge: FC<{ mode: 'empty' | 'null' }> = ({ mode }) => (
   <Badge tone="default" variant="subtle">
-    <Flex gap={2} verticalAlign="center">
+    <span className="flex items-center gap-2">
       <BanIcon size={16} />
-      <Text>
+      <span>
         {
           {
             empty: 'Empty',
             null: 'Null',
           }[mode]
         }
-      </Text>
-    </Flex>
+      </span>
+    </span>
   </Badge>
 );

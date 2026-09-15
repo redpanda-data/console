@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from '@redpanda-data/ui';
+import { Button } from 'components/redpanda-ui/components/button';
 import React from 'react';
 
 import styles from './Wizard.module.scss';
@@ -17,17 +17,18 @@ import styles from './Wizard.module.scss';
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    <div className={styles.wizard}>
+    // One element: PageContent is `flex flex-col gap-3`, so separate children would gain a gap.
+    <div>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
-          <Button disabled={!state.canContinue()} onClick={state.next} px="8" variant="solid">
+          <Button className="px-8" disabled={!state.canContinue()} onClick={state.next} variant="primary">
             {currentStep.nextButtonLabel ?? 'Next'}
           </Button>
         )}
 
         {state.isFirst() ? null : (
-          <Button className={styles.prevButton} onClick={state.previous} px="8" variant="link">
+          <Button className="px-8" onClick={state.previous} variant="link">
             {currentStep.prevButtonLabel ?? 'Back'}
           </Button>
         )}
@@ -39,15 +40,11 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
 type WizardState = {
   getCurrentStep(): [number, WizardStep];
 
-  getSteps(): WizardStep[];
-
   canContinue(): boolean;
 
   next(): Promise<void>;
 
   previous(): void;
-
-  isLast(): boolean;
 
   isFirst(): boolean;
 };

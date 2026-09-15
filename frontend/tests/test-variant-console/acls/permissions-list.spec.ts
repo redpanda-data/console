@@ -10,18 +10,7 @@
  */
 
 import type { Page } from '@playwright/test';
-
-import { expect, test } from '../fixtures';
-
-test.use({ featureFlags: { enableNewSecurityPage: false } });
-
-import {
-  ModeAllowAll,
-  OperationTypeAllow,
-  ResourcePatternTypeAny,
-  ResourceTypeCluster,
-} from '../../../src/components/pages/security/shared/acl-model';
-import { AclPage } from '../utils/acl-page';
+import { expect, test } from '@playwright/test';
 
 function generateUsername(): string {
   const rand = Math.random().toString(36).substring(2, 7);
@@ -33,46 +22,40 @@ async function createScramUser(page: Page, username: string) {
   await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
   await page.getByTestId('create-user-button').click();
   await page.getByTestId('create-user-name').fill(username);
-  await page.getByRole('button', { name: 'Create' }).click();
-  await expect(page.getByRole('heading', { name: 'User created' })).toBeVisible();
-  await page.getByRole('button', { name: 'Done' }).click();
+  await page.getByTestId('create-user-submit').click();
+  await expect(page.getByTestId('user-created-successfully')).toBeVisible();
+  await page.getByTestId('done-button').click();
   await expect(page).toHaveURL('/security/users');
 }
 
+/** Grants a single cluster-level ALLOW ALL ACL to `username` via the Permissions List "Create ACL" dialog. */
 async function createAclForUser(page: Page, username: string) {
-  const aclPage = new AclPage(page);
-  await aclPage.goto();
-  await aclPage.setPrincipal(username);
-  await aclPage.configureRules([
-    {
-      id: 1,
-      resourceType: ResourceTypeCluster,
-      mode: ModeAllowAll,
-      selectorType: ResourcePatternTypeAny,
-      selectorValue: '',
-      operations: {
-        ALTER: OperationTypeAllow,
-        ALTER_CONFIGS: OperationTypeAllow,
-        CLUSTER_ACTION: OperationTypeAllow,
-        CREATE: OperationTypeAllow,
-        DESCRIBE: OperationTypeAllow,
-        DESCRIBE_CONFIGS: OperationTypeAllow,
-        IDEMPOTENT_WRITE: OperationTypeAllow,
-      },
-    },
-  ]);
-  await aclPage.submitForm();
-  await aclPage.waitForDetailPage();
+  await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Create ACL' }).first().click();
+
+  await expect(page.getByRole('dialog', { name: 'Add ACL' })).toBeVisible();
+  await page.getByPlaceholder('Select or type a user...').fill(username);
+  await page.getByRole('option', { name: username, exact: true }).click();
+
+  await page.getByLabel('Resource Type').click();
+  await page.getByRole('option', { name: 'Cluster' }).click();
+
+  await page.getByRole('button', { name: 'Add ACL' }).click();
+  await expect(page.getByRole('dialog', { name: 'Add ACL' })).not.toBeVisible();
+}
+
+async function openPrincipalRow(page: Page, principalName: string) {
+  await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
+  await page.getByPlaceholder('Search principals, resources, roles...').fill(principalName);
+  const row = page.getByTestId(`row-${principalName}`);
+  await expect(row).toBeVisible({ timeout: 5000 });
+  return row;
 }
 
 async function openDeleteDropdown(page: Page, principalName: string) {
-  await page.goto('/security/permissions-list', { waitUntil: 'domcontentloaded' });
-  const searchInput = page.getByPlaceholder('Filter by name');
-  await searchInput.fill(principalName);
-  await expect(page.getByRole('link', { name: principalName, exact: true })).toBeVisible({ timeout: 5000 });
-
-  const row = page.getByRole('row').filter({ hasText: principalName });
-  await row.getByRole('button').click();
+  const row = await openPrincipalRow(page, principalName);
+  const actions = row.getByTestId(`actions-${principalName}`);
+  await actions.getByRole('button').click();
 }
 
 test.describe('Permissions List - delete dropdown', () => {
@@ -104,24 +87,24 @@ test.describe('Permissions List - delete dropdown', () => {
 
     await test.step('Delete via dropdown', async () => {
       await openDeleteDropdown(page, username);
-      await page.getByRole('menuitem', { name: 'Delete (User and ACLs)' }).dispatchEvent('click');
+      await page.getByRole('menuitem', { name: 'Delete (User and ACLs)' }).click();
 
       await expect(page.getByTestId('txt-confirmation-delete')).toBeVisible({ timeout: 5000 });
       await page.getByTestId('txt-confirmation-delete').fill(username);
       await page.getByTestId('test-delete-item').click();
+      // Wait for the confirm dialog to close — it only does so once the delete mutation resolves.
+      await expect(page.getByTestId('txt-confirmation-delete')).not.toBeVisible({ timeout: 10_000 });
     });
 
     await test.step('Verify removed from permissions list', async () => {
-      await page.waitForTimeout(1000);
-      const searchInput = page.getByPlaceholder('Filter by name');
-      await searchInput.fill(username);
-      await expect(page.getByRole('link', { name: username, exact: true })).not.toBeVisible({ timeout: 5000 });
+      await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
+      await page.getByPlaceholder('Search principals, resources, roles...').fill(username);
+      await expect(page.getByTestId(`row-${username}`)).not.toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify ACLs also removed', async () => {
-      await page.goto('/security/acls', { waitUntil: 'domcontentloaded' });
-      const searchInput = page.getByPlaceholder('Filter by name');
-      await searchInput.fill(username);
+    await test.step('Verify user also removed', async () => {
+      await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
+      await page.getByPlaceholder('Filter by name (regexp)...').fill(username);
       await expect(page.getByRole('link', { name: username, exact: true })).not.toBeVisible({ timeout: 5000 });
     });
   });
@@ -137,21 +120,21 @@ test.describe('Permissions List - delete dropdown', () => {
 
     await test.step('Delete ACLs only via dropdown', async () => {
       await openDeleteDropdown(page, username);
-      await page.getByRole('menuitem', { name: 'Delete (ACLs only)' }).dispatchEvent('click');
+      await page.getByRole('menuitem', { name: 'Delete (ACLs only)' }).click();
+      await page.getByRole('button', { name: 'Delete ACLs' }).click();
     });
 
     await test.step('Verify SCRAM user still exists', async () => {
       await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
-      const searchInput = page.getByPlaceholder('Filter by name');
-      await searchInput.fill(username);
+      await page.getByPlaceholder('Filter by name (regexp)...').fill(username);
       await expect(page.getByRole('link', { name: username, exact: true })).toBeVisible({ timeout: 5000 });
     });
 
     await test.step('Verify ACLs removed', async () => {
-      await page.goto('/security/acls', { waitUntil: 'domcontentloaded' });
-      const searchInput = page.getByPlaceholder('Filter by name');
-      await searchInput.fill(username);
-      await expect(page.getByRole('link', { name: username, exact: true })).not.toBeVisible({ timeout: 5000 });
+      // The principal row persists (the user still exists) but its ACL count drops to zero.
+      const row = await openPrincipalRow(page, username);
+      await row.click();
+      await expect(row.getByText('No ACLs assigned')).toBeVisible({ timeout: 5000 });
     });
   });
 });

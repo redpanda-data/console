@@ -26,10 +26,7 @@
   content: " ";
 }
 
-// linear interpolation (color)
-// returns a value between $a and $b, depending on $t
-// $t=0 returns $a
-// $t=1 returns $b
+// Linear interpolation between colours $a ($t=0) and $b ($t=1).
 @function lerp($a, $b, $t) {
   @return color.mix($b, $a, $t * 100);
 }
@@ -43,13 +40,10 @@
   overflow-y: auto;
   overflow-y: overlay;
 
-  // scrollbar-width: 8px;
   &::-webkit-scrollbar {
     display: block;
     width: 6px;
-    // height: 8px;
 
-    // background-color: transparent;
     background-color: hsl(0, 0%, 85%);
   }
 
@@ -79,7 +73,6 @@
 
 .cellDiv {
   display: block;
-  /* padding-right: 2em; */
   width: 0;
   min-width: 100%;
   overflow: hidden;
@@ -95,47 +88,6 @@
     width: 30px;
 
     background: linear-gradient(to right, transparent, white);
-  }
-}
-
-/*
-    Fixes for react-json-view
-*/
-.react-json-view {
-  padding-left: 1em;
-  font-size: 22px;
-
-  .icon-container {
-    position: absolute;
-    width: auto;
-    transform: translateX(-80%) translateY(-1px);
-
-    .expanded-icon {
-      display: inline-block;
-      transform: translateX(-1px);
-    }
-
-    .collapsed-icon {
-      display: inline-block;
-      transform: translateX(1px);
-    }
-  }
-
-  span > .icon-container ~ span {
-    display: inline !important;
-  }
-
-  .node-ellipsis {
-    line-height: 0px !important;
-  }
-
-  .object-meta-data {
-    user-select: none;
-  }
-
-  .variable-value,
-  .string-value {
-    cursor: pointer !important;
   }
 }
 
@@ -242,41 +194,15 @@
   }
 }
 
-.menu-divider-group-title {
-  color: transparent;
-  height: 1px;
-  background: #fff2;
-  /* margin    : 1em; */
-  text-overflow: clip;
-  /* font-size : 0; */
-  transition: all 0.3s ease-out 0s;
-}
-
-.menu-divider {
-  color: transparent;
-  height: 1px;
-  background: #fff2;
-  text-overflow: clip;
-  transition: all 0.3s ease-out 0s;
-  margin: 1em 1em;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
 .hoverLink:hover {
   cursor: pointer;
-  color: var(--ant-primary-color);
+  color: var(--color-action-primary);
 }
 
 .pureDisplayRow {
   color: inherit;
 }
 
-/* */
-/* Table size={'middle} */
-/* */
 
 .fadeIn3d {
   opacity: 1;
@@ -288,21 +214,6 @@
   opacity: 0;
   transform: translateY(0.1em) perspective(6em) rotateX(30deg) scale(0.85, 0.85);
   transition: all 0.1s ease-out;
-}
-
-.query-form {
-  margin-bottom: 1em;
-}
-
-.error-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7em;
-
-  padding: 2em;
-  margin: 1em 0;
-  background: hsla(205, 15%, 90%, 1);
-  border-radius: 6px;
 }
 
 .codeBox {
@@ -322,67 +233,6 @@
 
 .w100 {
   width: 100%;
-}
-
-.sider {
-  box-shadow: 0px 0px 6px 0px #00000024;
-  transition-timing-function: ease-out;
-}
-
-.sideBar {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  height: 100vh;
-  background: white;
-
-  img[alt="logo"] {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: 80px;
-    margin: auto;
-    // padding: 25px;
-    padding: 27px 50px 27px 0px;
-    transition: all 200ms;
-  }
-
-  .titleText {
-    position: absolute;
-    transition: all 200ms;
-    width: 100%;
-    font-family: "Kumbh Sans", sans-serif;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 6px;
-    transform: translateX(4px);
-    font-size: 1.8rem;
-    text-align: center;
-    color: hsl(14deg 1% 55% / 55%);
-  }
-}
-
-.sideBarToggle {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0;
-  height: 40px;
-  background: hsla(0, 0%, 50%, 0.07);
-  cursor: pointer;
-
-  .icon {
-    font-size: 20px;
-    color: hsl(0deg 0% 60%);
-    transition: color 100ms;
-  }
-
-  &:hover .icon {
-    color: hsl(0deg 0% 30%);
-  }
-}
-
-.versionTitle {
 }
 
 .hoverBorder {
@@ -434,23 +284,15 @@
   border-radius: 6px;
 }
 
-tr.tombstone {
-  /* background: rgba(200, 200, 200, 0.09); */
-  color: rgba(0, 0, 0, 0.25);
-}
-
 .noSelect {
   user-select: none;
 }
 
 .iconButton {
-  // svg[width] {
-  //     transform: scale(1);
-  // }
   transition-duration: 100ms;
   transition-timing-function: ease-out;
   transition-delay: 0ms;
-  color: hsl(0, 0%, 45%);
+  color: var(--color-muted-foreground);
 
   &:hover {
     z-index: 1;
@@ -461,7 +303,7 @@ tr.tombstone {
   animation-duration: 0s !important;
 }
 
-// todo: fix table layout (ellipsis, never greater than min-content, only expand one row to let the table fill its parent, expand in predefined ratios, ...)
+// todo: fix table layout (ellipsis, min-content sizing, predefined expand ratios).
 tr td.ellipsis {
   position: relative;
 }
@@ -495,21 +337,27 @@ tr > td.msgTableActionColumn {
   height: 100%;
 }
 
-tr.consumerGroupNoMemberAssigned {
-  color: rgba(0, 0, 0, 0.3);
-}
-
 .labelText {
+  width: 100%;
+  position: relative;
   margin-bottom: 3px;
   margin-left: 1px;
   line-height: 1.5;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--color-muted-foreground);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
-    background-size: 100% 1px; */
   user-select: none;
+
+  &.required label::before {
+    @include beforeAfter();
+    content: "*";
+    width: 5px;
+    font-size: 16px;
+    color: var(--color-destructive);
+    top: -2px;
+    left: -9px;
+  }
 }
 
 .messagesSpecialIconButton {
@@ -535,9 +383,8 @@ tr.consumerGroupNoMemberAssigned {
 }
 
 // react-flow keys its dark palette on `.react-flow.dark`, which we never set — we theme off
-// `[data-theme='dark']` — so its Controls stayed on the light defaults and painted a white slab.
-// These are the un-suffixed override hooks, which win over both `-default` blocks, so one mapping
-// covers light and dark. Buttons stay transparent: the `<Controls>` className is what paints the
+// `[data-theme='dark']`. These un-suffixed hooks win over both `-default` blocks, so one mapping
+// covers light and dark. Buttons stay transparent: the `<Controls>` className paints the
 // translucent panel, and an opaque button defeats its blur.
 .react-flow {
   --xy-controls-button-background-color: transparent;
@@ -562,13 +409,6 @@ tr.consumerGroupNoMemberAssigned {
 
 .marginTop05em {
   margin-top: 0.5em;
-}
-
-.h3 {
-  font-weight: 500;
-  padding-right: 0.5em;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: 1.17em;
 }
 
 .inlineFlex {
@@ -658,7 +498,7 @@ tr.consumerGroupNoMemberAssigned {
 }
 
 .messageHeaders {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .noPadding {
@@ -698,8 +538,8 @@ tr.consumerGroupNoMemberAssigned {
     font-family: monospace;
     font-size: 14px;
     line-height: 1.45;
-    color: #333;
-    background-color: #f5f8fb;
+    color: var(--color-foreground);
+    background-color: var(--color-surface-recess);
     border-radius: 3px;
     overflow: auto;
   }
@@ -710,7 +550,7 @@ tr.consumerGroupNoMemberAssigned {
     td,
     th {
       padding: 6px 13px;
-      border: 1px solid hsl(210deg, 7%, 86%);
+      border: 1px solid var(--color-border);
     }
 
     th {
@@ -719,7 +559,7 @@ tr.consumerGroupNoMemberAssigned {
 
     th,
     tr:nth-child(2n) {
-      background-color: #f5f8fb;
+      background-color: var(--color-surface-recess);
     }
   }
 }
@@ -774,64 +614,19 @@ tr.consumerGroupNoMemberAssigned {
   }
 }
 
-.reassignPartitions {
-  .ant-steps-item-custom {
-    user-select: none;
+// Heading row above the active-reassignments table.
+.reassignPartitions .currentReassignments {
+  display: flex;
+  place-items: center;
+  margin-bottom: 0.5em;
+  gap: 0.5em;
 
-    .ant-steps-item-icon > .ant-steps-icon {
-      font-size: 20px;
-    }
-  }
-
-  .ant-table-expanded-row th {
-    cursor: default;
-  }
-
-  .ant-table-expanded-row > td {
-    &::before {
-      content: " ";
-      display: block;
-      position: absolute;
-      box-shadow: 0px 0px 3px 0px #000000;
-      top: 1px;
-      left: 2px;
-      right: 2px;
-      bottom: 0px;
-      z-index: -1;
-      border-radius: 2px;
-    }
-    & {
-      border-radius: 1px;
-    }
-  }
-
-    // section
-    .currentReassignments {
-    display: flex;
-    place-items: center;
-    margin-bottom: 0.5em;
-    gap: 0.5em;
-
-    .title {
-      font-size: 1.17em;
-      font-weight: 500;
-      color: hsla(0deg, 0%, 0%, 85%);
-      margin-left: 0.2em;
-      padding-bottom: 2px;
-    }
-
-    button {
-      background: hsla(210deg, 100%, 56%, 0.05);
-
-      &:hover {
-        background: hsl(210deg, 80%, 95%);
-      }
-    }
-  }
-
-  .errorPartition td {
-    background: #ff8d002e !important;
-    color: #0005;
+  .title {
+    font-size: 1.17em;
+    font-weight: 500;
+    color: var(--color-strong);
+    margin-left: 0.2em;
+    padding-bottom: 2px;
   }
 }
 
@@ -839,22 +634,20 @@ tr.consumerGroupNoMemberAssigned {
   display: inline-flex;
   gap: 1px;
   border-radius: 4px;
-  background: hsl(0deg, 0%, 85%);
+  background: var(--color-surface-subtle);
 
   .broker-tag {
     display: inline-flex;
 
     position: relative;
     border: none;
-    // font-size: 13px;
     font-weight: 500;
     user-select: none;
-    // padding: 1px 9px;
     margin: 0;
     padding: 1px 12px;
     border-radius: 0;
-    background: hsl(207deg, 10%, 95%);
-    color: hsl(0deg, 0%, 45%);
+    background: var(--color-surface-recess);
+    color: var(--color-muted-foreground);
 
     &.leader {
       &::after {
@@ -877,7 +670,6 @@ tr.consumerGroupNoMemberAssigned {
     }
 
     &.added {
-      // background: hsl(111deg, 82%, 69%);
       color: hsl(111deg, 100%, 34%);
 
       &::after {
@@ -889,33 +681,10 @@ tr.consumerGroupNoMemberAssigned {
         border-bottom-width: 2px;
       }
 
-      // &::before {
-      //     content: '+';
-      //     position: absolute;
-      //     top: -3px;
-      //     left: 1px;
-
-      //     width: 14px;
-      //     height: 14px;
-      //     background: hsl(9deg, 0%, 66%);
-      //     border-radius: 100%;
-
-      //     display: flex;
-      //     place-content: center;
-      //     place-items: center;
-
-      //     color: white;
-      //     font-family: 'Open Sans';
-      //     font-size: 15px;
-      //     font-weight: bold;
-
-      //     padding-bottom: 2px;
-      // }
     }
 
     &.removed {
       color: hsl(15deg, 75%, 60%);
-      // box-shadow: inset #ff7054 0px 0px 2px 1px;
 
       &::after {
         @include beforeAfter;
@@ -949,47 +718,9 @@ mark {
   background-color: hsl(54deg, 100%, 50%);
 }
 
-.partitionReassignmentSpinner {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  border-radius: 100%;
-
-  vertical-align: text-bottom;
-  margin-bottom: 1px;
-
-  border: 2px solid hsl(0, 0%, 85%);
-  border-bottom-color: var(--ant-primary-color);
-  border-top-color: var(--ant-primary-color);
-  animation: rotate 1.5s linear 0s infinite;
-
-  @keyframes rotate {
-    from {
-      transform: rotate(0deg);
-    }
-
-    to {
-      transform: rotate(360deg);
-    }
-  }
-}
-
 .devOnly {
   padding: 1em;
   background: hsl(53deg, 100%, 80%);
-}
-
-// table
-.activeReassignments {
-  // make rows appear clickable
-  tr {
-    cursor: pointer;
-
-    &:hover {
-      color: var(--ant-primary-color);
-      background: hsl(205, 100%, 98%);
-    }
-  }
 }
 
 // Container for text that has the tooltip
@@ -1061,7 +792,7 @@ mark {
   .iconButton {
     position: relative;
     display: inline-block;
-    color: #9ea6b2;
+    color: var(--color-muted-foreground);
     width: 20px;
     height: 20px;
 
@@ -1076,17 +807,17 @@ mark {
     &:not(.disabled) {
       // darker color on hover
       &:hover {
-        color: #6d727a;
+        color: var(--color-foreground);
 
         &::after {
-          background-color: #0001;
+          background-color: var(--color-surface-recess);
         }
       }
 
       // slight background when pressed
       &:active {
         &::after {
-          background-color: #0002;
+          background-color: var(--color-surface-subtle);
         }
       }
     }
@@ -1168,9 +899,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-// when a some container containing a radio button is animated,
-// it sometimes causes the inner part (the "dot") of a radio button to become misaligned
-// adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
+// Animating a container misaligns the radio's inner dot in Chrome; a perspective transform fixes it.
 .footer {
   display: flex;
   flex-direction: column;
@@ -1183,7 +912,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   padding-bottom: 16px;
   margin-top: auto;
 
-  color: hsl(216deg, 11%, 66%);
+  color: var(--color-muted-foreground);
 
   .links {
     display: flex;
@@ -1239,7 +968,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   border-top: 1px solid;
   border-bottom: 1px solid;
   border-color: hsl(220, 2%, 29%);
-  // background: hsl(0deg 0% 97% / 50%);
   font-family: "Inter", sans-serif;
   cursor: pointer;
   user-select: none;
@@ -1370,8 +1098,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       margin-top: 2px;
 
       border-radius: 10px;
-      background: hsl(0deg, 0%, 90%);
-      color: hsl(0deg, 0%, 30%);
+      background: var(--color-surface-subtle);
+      color: var(--color-foreground);
     }
   }
 
@@ -1493,21 +1221,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.linkBtn {
-  cursor: pointer;
-  color: var(--ant-primary-color);
-
-  &:hover {
-    text-decoration: solid underline;
-  }
-
-  &.disabled {
-    opacity: 0.5;
-    color: black;
-    pointer-events: none;
-  }
-}
-
 .inlineSeparator {
   display: inline-block;
 
@@ -1523,7 +1236,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 .tasksTable {
   tr:hover {
     .hoverLink {
-      // text-decoration: solid underline;
       text-decoration-color: #444;
 
       &:hover {
@@ -1549,19 +1261,13 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.capitalize {
-  text-transform: capitalize;
-}
-
 .dynamicInputs {
   display: grid;
   row-gap: 1.5em;
   column-gap: 1.2em;
 
   grid-template-columns: 1fr 1fr 1fr;
-  // grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
 
-  // max-width: 950px;
   align-items: end;
 
   .none {
@@ -1689,28 +1395,21 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
     text-transform: capitalize;
 
     // default hidden
-    // opacity: 0.66;
     opacity: 1;
     transition: opacity 300ms ease-out;
 
     &.high {
-      // background: #f20;
-      // color: #fff;
-      // background: #fff;
       color: rgba(0, 123, 255, 0.726);
       background: rgba(0, 123, 255, 0.1);
     }
 
     &.medium {
-      // background: #f20;
-      // color: #fff;
     }
 
     &.low {
       background: rgba(119, 119, 119, 0.035);
       color: #777;
 
-      // font-style: italic;
     }
   }
 
@@ -1725,7 +1424,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 .stringList {
   display: flex;
   flex-direction: column;
-  // gap: .5em;
 
   .createEntryRow {
     display: flex;
@@ -1747,10 +1445,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       align-items: center;
       gap: 4px;
 
-      background: hsl(0deg, 0%, 97%);
+      background: var(--color-surface-recess);
 
       height: 32px;
-      // padding: 0px 4px;
       border-radius: 3px;
       overflow: hidden;
 
@@ -1764,19 +1461,18 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         width: 28px;
         margin-left: 2px;
         padding-top: 1px;
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
 
         transform: scale(0.8);
       }
 
       input {
         height: 28px;
-        // margin-right: 4px;
       }
 
       // Normal
       .ghostInput:not(:focus-within) {
-        border-color: transparent;
+        // The border colour is a Tailwind class on the element; unlayered !important would lose to it.
         background-color: transparent;
 
         transition: border-color 350ms ease-out, background-color 100ms ease-out;
@@ -1798,10 +1494,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         align-self: stretch;
         place-items: center;
         width: 32px;
-        // margin-right: 4px;
         padding-right: 2px;
 
-        color: hsl(0deg, 0%, 70%);
+        color: var(--color-subtle);
         cursor: pointer;
 
         opacity: 0; // only visible on hover
@@ -1812,8 +1507,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         }
 
         &:hover {
-          color: hsl(0, 0%, 45%);
-          background: hsl(0, 0%, 95%);
+          color: var(--color-foreground);
+          background: var(--color-surface-subtle);
         }
       }
 
@@ -1840,10 +1535,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
     border-right: solid 1px #0001;
   }
 
-  // .cursors-layer>.cursor { }
   .view-overlays {
     .bracket-match {
-      // box-shadow: #384e608c 0 0 2px 0px;
     }
   }
 }
@@ -1872,7 +1565,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   font-weight: 600;
   font-size: 1.4em;
   color: transparent;
-  background: #00000008;
+  background: var(--color-surface-recess);
   animation: 0.5s ease-out 0.1s fadein;
 }
 
@@ -1903,24 +1596,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   }
 }
 
-.labelText {
-  width: 100%;
-  // display: inline-block;
-  // padding-bottom: 3px;
-  // padding-left: 1px;
-  position: relative;
-
-  &.required label::before {
-    @include beforeAfter();
-    content: "*";
-    width: 5px;
-    font-size: 16px;
-    color: red;
-    top: -2px;
-    left: -9px;
-  }
-}
-
 .iconSelectOption {
   display: flex;
   align-items: center;
@@ -1936,27 +1611,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
   transform: rotateX(180deg);
 }
 
-body {
-  font-family: "Inter" !important;
-}
-
-// Console adjustments to be removed later - Dan added the below
-nav.chakra-stack {
-  a:hover {
-    color: white;
-  }
-}
-
-nav.chakra-breadcrumb {
-  a:hover {
-    color: rgba(0, 0, 0, 0.85);
-  }
-
-  svg {
-    display: block;
-  }
-}
-
 .inputWrapper.hasError {
   border-radius: 8px;
 
@@ -1965,17 +1619,20 @@ nav.chakra-breadcrumb {
   }
 }
 
-p,
-dl,
-dd,
-ol,
-ul,
-h1,
-h2,
-h3,
-h4,
-h5 {
-  margin-bottom: 0;
+// In @layer base so spacing utilities on these elements still apply.
+@layer base {
+  p,
+  dl,
+  dd,
+  ol,
+  ul,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    margin-bottom: 0;
+  }
 }
 
 .BreadcrumbHeading,
@@ -2003,10 +1660,9 @@ $borderRadius: 8px;
   user-select: none;
 }
 
-// Console's Registry toasts sit top-right, where Chakra's and sonner's did, and above Chakra's
-// modals (z-index 1400). The registry viewport is bottom-anchored, so the stack math below mirrors
-// toast.tsx with the vertical signs flipped; it goes once the registry has a position prop. Keyed
-// on the console test id so it cannot reach a host app's viewport.
+// Console's toasts sit top-right, above the host's Chakra modals (z-index 1400). The registry
+// viewport is bottom-anchored, so this mirrors toast.tsx with the vertical signs flipped; it goes
+// when the registry grows a position prop. Keyed on the console test id to spare a host viewport.
 [data-slot='toast-viewport'][data-testid='console-toasts'] {
   top: 1rem;
   bottom: auto;

@@ -39,7 +39,6 @@ import './globals.css';
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { ChakraProvider } from '@redpanda-data/ui';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -52,11 +51,11 @@ import { protobufRegistry } from 'protobuf-registry';
 import queryClient from 'query-client';
 import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
-import { patchedRedpandaTheme as redpandaTheme } from 'utils/redpanda-theme';
 
 import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/debug-helper/feature-flag-overrides';
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
+import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
 import { routerDefaults } from './router-defaults';
@@ -132,7 +131,9 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      <ChakraProvider resetCSS={false} theme={redpandaTheme}>
+      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host.
+          defaultTheme="light" until the dark-theme pass lands. */}
+      <ThemeProvider defaultTheme="light">
         {/* showToast viewport, above the router so the error boundary and login can toast */}
         <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
@@ -141,7 +142,7 @@ const App = () => {
             <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
           </QueryClientProvider>
         </TransportProvider>
-      </ChakraProvider>
+      </ThemeProvider>
     </CustomFeatureFlagProvider>
   );
 };

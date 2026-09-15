@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Box, Icon, Text } from '@redpanda-data/ui';
 import { ChevronDownIcon, ChevronUpIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import { useState } from 'react';
 
 export function ExpandableText(p: { children: string; maxChars: number }) {
@@ -21,33 +21,31 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
   const isTruncated = showExpander && !expanded;
   const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
+  // A span: valid in inline and <p> slots alike.
   return (
-    <Text>
+    <span>
       {text}
 
       {Boolean(isTruncated) && '...'}
 
       {Boolean(showExpander) && (
-        <Box
-          cursor="pointer"
-          display="inline"
-          fontWeight="semibold"
-          mt="1px"
+        <Button
+          aria-expanded={expanded}
+          className="h-auto px-2 align-baseline"
           onClick={() => setExpanded(!expanded)}
-          px="2"
-          userSelect="none"
+          variant="link"
         >
           {expanded ? (
-            <span style={{ whiteSpace: 'nowrap' }}>
-              less <Icon as={ChevronUpIcon} />
+            <span className="whitespace-nowrap">
+              less <ChevronUpIcon className="inline size-4" />
             </span>
           ) : (
-            <span style={{ whiteSpace: 'nowrap' }}>
-              more <Icon as={ChevronDownIcon} />
+            <span className="whitespace-nowrap">
+              more <ChevronDownIcon className="inline size-4" />
             </span>
           )}
-        </Box>
+        </Button>
       )}
-    </Text>
+    </span>
   );
 }

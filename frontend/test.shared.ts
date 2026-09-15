@@ -9,11 +9,8 @@ const fromHere = (relativePath: string) => fileURLToPath(new URL(relativePath, i
 
 /** Shared resolution aliases for the unit and integration test projects. */
 export const sharedAliases: Alias = {
-  '@redpanda-data/ui$': '@redpanda-data/ui/dist/index.js',
   '@bufbuild/buf$': '@bufbuild/protobuf/dist/esm/index.js',
   'monaco-editor$': 'monaco-editor/esm/vs/editor/editor.api.js',
-  'date-fns-tz/zonedTimeToUtc$': fromHere('./src/utils/vendor/zonedTimeToUtc.ts'),
-  'date-fns-tz$': fromHere('./src/utils/vendor/date-fns-tz-shim.ts'),
 };
 
 export const sharedCoverage = {

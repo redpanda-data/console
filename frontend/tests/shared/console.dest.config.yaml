@@ -29,8 +29,6 @@ server:
   listenPort: 3000
   allowedOrigins: ["http://localhost:3001"]
 
-licenseFilepath: /etc/console/redpanda.license
-
 authorization:
   roleBindings:
     - roleName: admin

@@ -53,34 +53,3 @@ export const COLUMN_ORDER: DataColumnKey[] = [
 
 // Regex for checking printable ASCII characters
 export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
-
-// Chakra UI select styles
-export const defaultSelectChakraStyles = {
-  control: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: 'max-content',
-  }),
-  option: (provided: Record<string, unknown>) => ({
-    ...provided,
-    wordBreak: 'keep-all',
-    whiteSpace: 'nowrap',
-  }),
-  menuList: (provided: Record<string, unknown>) => ({
-    ...provided,
-    minWidth: 'min-content',
-  }),
-} as const;
-
-export const inlineSelectChakraStyles = {
-  ...defaultSelectChakraStyles,
-  control: (provided: Record<string, unknown>) => ({
-    ...provided,
-    _hover: {
-      borderColor: 'transparent',
-    },
-  }),
-  container: (provided: Record<string, unknown>) => ({
-    ...provided,
-    borderColor: 'transparent',
-  }),
-} as const;

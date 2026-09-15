@@ -241,7 +241,7 @@ describe('ConsoleApp', () => {
 
   describe('Feature Flags', () => {
     test('passes feature flags to setup()', async () => {
-      const flags = { enableNewSecurityPage: false, enablePipelineDiagrams: true };
+      const flags = { enableRpcnTemplateGallery: false, enablePipelineDiagrams: true };
       render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
 
       await waitFor(() => {

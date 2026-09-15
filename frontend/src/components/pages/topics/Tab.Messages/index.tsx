@@ -101,33 +101,7 @@ import {
 import { encodeBase64, prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
-
-const payloadEncodingPairs = [
-  { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
-  { value: PayloadEncoding.NULL, label: 'None (Null)' },
-  { value: PayloadEncoding.AVRO, label: 'AVRO' },
-  { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
-  { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
-  { value: PayloadEncoding.JSON, label: 'JSON' },
-  { value: PayloadEncoding.JSON_SCHEMA, label: 'JSON Schema' },
-  { value: PayloadEncoding.XML, label: 'XML' },
-  { value: PayloadEncoding.TEXT, label: 'Plain Text' },
-  { value: PayloadEncoding.UTF8, label: 'UTF-8' },
-  { value: PayloadEncoding.MESSAGE_PACK, label: 'Message Pack' },
-  { value: PayloadEncoding.SMILE, label: 'Smile' },
-  { value: PayloadEncoding.BINARY, label: 'Binary' },
-  { value: PayloadEncoding.UINT, label: 'Unsigned Int' },
-  { value: PayloadEncoding.CONSUMER_OFFSETS, label: 'Consumer Offsets' },
-  { value: PayloadEncoding.CBOR, label: 'CBOR' },
-];
-
-const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
-);
+import { PAYLOAD_ENCODING_LABELS } from '../messages/constants';
 
 type TopicMessageViewProps = {
   topic: Topic;
@@ -192,6 +166,22 @@ function onCopyValue(original: TopicMessage) {
       toast.success('Value copied to clipboard');
     })
     .catch(navigatorClipboardErrorHandler);
+}
+
+// A rejection during a search that's being torn down by navigation isn't guaranteed to be a
+// proper Error, so never assume `.message` exists on it.
+function getSearchErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error) {
+    return error;
+  }
+  return 'Unknown error';
+}
+
+function toDisplayError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(getSearchErrorMessage(error));
 }
 
 function onCopyKey(original: TopicMessage) {
@@ -714,14 +704,19 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchState((prev) => ({ ...prev, messageSearch: search }));
         const startTime = Date.now();
 
-        const result = await search.startSearch(request, abortSignal).catch((err: Error) => {
-          const msg = err.message ?? String(err);
+        const result = await search.startSearch(request, abortSignal).catch((err: unknown) => {
           // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(`error in searchTopicMessages: ${msg}`);
-          setFetchError(err);
-          setSearchPhase(null);
+          console.error(`error in searchTopicMessages: ${getSearchErrorMessage(err)}`);
+          if (isMountedRef.current) {
+            setFetchError(toDisplayError(err));
+            setSearchPhase(null);
+          }
           return [];
         });
+
+        if (!isMountedRef.current) {
+          return result;
+        }
 
         const endTime = Date.now();
         setSearchState((prev) => ({ ...prev, messages: result, windowStartPage: 0 }));
@@ -737,9 +732,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         return result;
       } catch (error: unknown) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(`error in searchTopicMessages: ${(error as Error).message ?? String(error)}`);
-        setFetchError(error as Error);
-        setSearchPhase(null);
+        console.error(`error in searchTopicMessages: ${getSearchErrorMessage(error)}`);
+        if (isMountedRef.current) {
+          setFetchError(toDisplayError(error));
+          setSearchPhase(null);
+        }
         return [];
       }
     },
@@ -904,7 +901,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           (err: unknown) => {
             const shouldReport = isMountedRef.current && !abortController.signal.aborted;
             if (shouldReport) {
-              toast.error('Failed to load more messages', { description: (err as Error).message });
+              toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
             }
             return { type: 'error' as const, shouldReport };
           }
@@ -1243,6 +1240,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const table = useDataTable({
     data: filteredMessages,
     columns: [expanderColumn, ...columns],
+    enableRowSelection: false,
     state: {
       pagination: paginationParams,
       sorting,
@@ -1708,7 +1706,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <AlertDescription>
             <div>Check and modify the request before resubmitting.</div>
             <div className="mt-4">
-              <div className="codeBox">{(fetchError as Error).message ?? String(fetchError)}</div>
+              <div className="codeBox">{fetchError.message}</div>
             </div>
             <Button className="mt-4" onClick={() => executeMessageSearch()}>
               Retry Search

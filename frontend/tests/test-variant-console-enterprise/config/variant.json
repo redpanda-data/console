@@ -4,7 +4,6 @@
   "isEnterprise": true,
   "needsShadowlink": true,
   "needsAuth": true,
-  "requiresLicense": true,
   "ports": {
     "backend": 3100,
     "backendDest": 3101,

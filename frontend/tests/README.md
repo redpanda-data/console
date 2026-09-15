@@ -373,7 +373,7 @@ The E2E test setup uses Playwright's lifecycle hooks:
   - Starts the backend container
   - Returns a teardown that reuses the live Testcontainers handles
   - Stops and removes Docker containers
-  - Removes Docker networks, temporary licenses, and state files
+  - Removes Docker networks and state files
 
 - **`shared/global-teardown.mjs`**: Manual crash-recovery fallback
   - Cleans serialized resources left by a process that could not run normal teardown

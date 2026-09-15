@@ -4,7 +4,7 @@
 // No DOM mocking, no React-specific mocks
 // These tests run in Node environment and don't need browser APIs
 
-// Note: monaco-editor and @redpanda-data/ui are stubbed via resolve.alias in rstest.config.unit.ts.
+// Note: monaco-editor is stubbed via resolve.alias in rstest.config.unit.ts.
 
 // Load Array/String prototype extensions (e.g. Array.prototype.removeAll)
 // used by legacy state modules. Integration tests get this via

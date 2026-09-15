@@ -19,7 +19,7 @@ import { uiState } from '../state/ui-state';
 
 const quotasSearchSchema = z.object({
   page: z.number().int().min(0).optional().catch(0),
-  pageSize: z.number().int().min(10).max(100).optional().catch(50),
+  pageSize: z.number().int().min(10).max(100).optional().catch(10),
   sortField: z
     .enum(['entityType', 'entityName', 'producerRate', 'consumerRate', 'controllerMutationRate'])
     .optional()

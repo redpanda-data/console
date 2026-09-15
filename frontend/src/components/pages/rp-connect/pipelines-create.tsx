@@ -12,11 +12,12 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
-import { Flex, FormField, Input, NumberInput, useDisclosure } from '@redpanda-data/ui';
 import { Link } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
@@ -30,7 +31,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
-import { cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
+import { clampTasks, cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
 import { appGlobal } from '../../../state/app-global';
@@ -74,6 +75,8 @@ const RpConnectPipelinesCreateContent = () => {
   const [fileName, setFileName] = useState('');
   const [description, setDescription] = useState('');
   const [tasks, setTasks] = useState(MIN_TASKS);
+  // The field holds what was typed; `tasks` stays clamped.
+  const [tasksDraft, setTasksDraft] = useState(String(MIN_TASKS));
   const [editorContent, setEditorContent] = useState(exampleContent);
   const [isCreating, setIsCreating] = useState(false);
   const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
@@ -141,48 +144,62 @@ const RpConnectPipelinesCreateContent = () => {
         </div>
       </div>
 
-      <Flex flexDirection="column" gap={3}>
-        <FormField errorText="Pipeline name is already in use" isInvalid={alreadyExists} label="Pipeline name">
-          <Flex alignItems="center" gap="2">
-            <Input
-              data-testid="pipelineName"
-              isRequired
-              onChange={(x) => {
-                setFileName(x.target.value);
-              }}
-              pattern="[a-zA-Z0-9_\-]+"
-              placeholder="Enter a config name..."
-              value={fileName}
-              width={500}
-            />
-          </Flex>
-        </FormField>
-        <FormField label="Description">
+      <div className="flex flex-col gap-3">
+        <Field data-invalid={alreadyExists}>
+          <FieldLabel htmlFor="pipelineName" required>
+            Pipeline name
+          </FieldLabel>
           <Input
-            data-testid="pipelineDescription"
+            className="w-[500px]"
+            id="pipelineName"
+            onChange={(x) => {
+              setFileName(x.target.value);
+            }}
+            pattern="[a-zA-Z0-9_\-]+"
+            placeholder="Enter a config name..."
+            required
+            testId="pipelineName"
+            value={fileName}
+          />
+          {alreadyExists ? <FieldError errors={[{ message: 'Pipeline name is already in use' }]} /> : null}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="pipelineDescription">Description</FieldLabel>
+          <Input
+            className="w-[500px]"
+            id="pipelineDescription"
             onChange={(x) => {
               setDescription(x.target.value);
             }}
+            testId="pipelineDescription"
             value={description}
-            width={500}
           />
-        </FormField>
-        <FormField
-          description="One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume pipelines."
-          label="Compute units"
-          w={500}
-        >
-          <NumberInput
+        </Field>
+        <Field className="w-[500px]">
+          <FieldLabel htmlFor="pipelineTasks">Compute units</FieldLabel>
+          <Input
+            className="max-w-[150px]"
+            id="pipelineTasks"
             max={MAX_TASKS}
-            maxWidth={150}
             min={MIN_TASKS}
-            onChange={(e) => {
-              setTasks(Number(e ?? MIN_TASKS));
+            onBlur={() => {
+              setTasksDraft(String(clampTasks(tasksDraft)));
             }}
-            value={tasks}
+            onChange={(e) => {
+              // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
+              setTasksDraft(e.target.value);
+              setTasks(clampTasks(e.target.value));
+            }}
+            showStepControls
+            type="number"
+            value={tasksDraft}
           />
-        </FormField>
-      </Flex>
+          <FieldDescription>
+            One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume
+            pipelines.
+          </FieldDescription>
+        </Field>
+      </div>
 
       <AnimatePresence>
         {isTemplateGalleryEnabled && isEditorPristine ? (
@@ -224,7 +241,7 @@ const RpConnectPipelinesCreateContent = () => {
         />
       </div>
 
-      <Flex alignItems="center" gap="4">
+      <div className="flex items-center gap-4">
         <Button disabled={alreadyExists || isNameEmpty || isCreating} onClick={createPipeline} variant="primary">
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
@@ -232,7 +249,7 @@ const RpConnectPipelinesCreateContent = () => {
         <Link search={{} as never} to="/connect-clusters">
           <Button variant="link">Cancel</Button>
         </Link>
-      </Flex>
+      </div>
 
       {isTemplateGalleryEnabled ? (
         <TemplateGalleryDialog
@@ -263,7 +280,9 @@ type QuickActionsProps = {
 };
 
 const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActionsProps) => {
-  const { isOpen: isAddSecretOpen, onOpen: openAddSecret, onClose: closeAddSecret } = useDisclosure();
+  const [isAddSecretOpen, setIsAddSecretOpen] = useState(false);
+  const openAddSecret = () => setIsAddSecretOpen(true);
+  const closeAddSecret = () => setIsAddSecretOpen(false);
 
   if (editorInstance === null) {
     return <div className="min-w-[300px]" />;
@@ -290,7 +309,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
         </CardHeader>
         <CardContent>
           <Button onClick={openAddSecret} variant="outline">
-            <PlusIcon className="size-4" color="white" />
+            <PlusIcon className="size-4" />
             Add secrets
           </Button>
         </CardContent>
@@ -440,9 +459,9 @@ export const PipelineEditor = (p: {
                 )}
               </div>
 
+              {/* The Registry Alert renders its own icon; an icon child would paint two. */}
               {isKafkaConnectPipeline(p.yaml) && (
-                <Alert variant="destructive">
-                  <AlertCircle size={16} />
+                <Alert icon={<AlertCircle size={16} />} variant="destructive">
                   <AlertDescription>
                     <div className="text-body">
                       This looks like a Kafka Connect configuration. For help with Redpanda Connect configurations,{' '}

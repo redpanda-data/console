@@ -1,31 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import * as React from 'react';
-
-rs.mock('@redpanda-data/ui', () => {
-  const Div = React.forwardRef<HTMLDivElement, Record<string, unknown>>(({ children, ...props }, ref) => (
-    <div ref={ref} {...props}>
-      {children}
-    </div>
-  ));
-
-  return {
-    __esModule: true,
-    Box: Div,
-    Flex: Div,
-    Text: Div,
-    Button: React.forwardRef<HTMLButtonElement, Record<string, unknown>>(({ children, isDisabled, ...props }, ref) => (
-      <button disabled={Boolean(isDisabled)} ref={ref} {...props}>
-        {children}
-      </button>
-    )),
-    Tabs: ({ defaultIndex = 0, items }: { defaultIndex?: number; items: Array<{ component: React.ReactNode }> }) => (
-      <div>{items[defaultIndex]?.component}</div>
-    ),
-    useColorModeValue: (light: unknown) => light,
-    useToast: () => rs.fn(),
-  };
-});
 
 import { ExpandedMessage } from './expanded-message';
 import { MessageKeyPreview } from './message-key-preview';

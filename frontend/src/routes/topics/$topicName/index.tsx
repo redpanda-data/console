@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { createFileRoute, useParams } from '@tanstack/react-router';
+import { createFileRoute, redirect, useParams } from '@tanstack/react-router';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { z } from 'zod';
 
@@ -25,6 +25,17 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/topics/$topicName/')({
   staticData: {
     title: 'Topic Details',
+  },
+  // Guards a nuqs/router race: navigating away from this route (e.g. clicking the
+  // "Topics" breadcrumb) while a query-param update is still queued can cause that
+  // update to flush after the route already changed, re-navigating here with a
+  // stale relative `from` and no resolvable topicName — TanStack Router then
+  // interpolates the literal string "undefined" into the path. Bounce back to the
+  // topic list instead of rendering a confusing "topic undefined does not exist" 404.
+  beforeLoad: ({ params }) => {
+    if (params.topicName === 'undefined') {
+      throw redirect({ to: '/topics', replace: true });
+    }
   },
   validateSearch: searchSchema,
   component: TopicDetailsWrapper,

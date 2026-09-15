@@ -11,7 +11,7 @@
 
 import { CloseIcon, CopyAllIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import React, { type CSSProperties, type FC } from 'react';
+import React, { type FC } from 'react';
 import StackTrace from 'stacktrace-js';
 
 import { NoClipboardPopover } from './no-clipboard-popover';
@@ -28,16 +28,6 @@ import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsx-utils';
 //    - main        rgb(252, 207, 207)
 //    - highligh    rgb(204, 102, 102)
 //    - secondary   rgb(135, 142, 145)
-
-const valueStyle: CSSProperties = {
-  whiteSpace: 'pre-wrap',
-  lineBreak: 'anywhere',
-
-  fontSize: '12px',
-  background: 'var(--color-surface-recess)',
-  borderRadius: '2px',
-  padding: '1rem',
-};
 
 type InfoItem = {
   name: string;
@@ -209,20 +199,17 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
     }
 
     return (
-      <div style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
+      <div className="min-h-screen px-16 py-8">
         <div>
           <h1>Rendering Error!</h1>
           <p>
             Please report this at{' '}
-            <a
-              href="https://github.com/redpanda-data/console/issues"
-              style={{ textDecoration: 'underline', fontWeight: 'bold' }}
-            >
+            <a className="font-bold underline" href="https://github.com/redpanda-data/console/issues">
               our GitHub Repo
             </a>
           </p>
           <div className="mb-2">
-            <Button onClick={this.dismiss} size="lg" style={{ width: '16rem' }} variant="primary">
+            <Button className="w-64" onClick={this.dismiss} size="lg" variant="primary">
               <CloseIcon />
               Dismiss
             </Button>
@@ -283,7 +270,7 @@ function InfoItemDisplay({ data }: { data: InfoItem }) {
   return (
     <div>
       <h2>{title}</h2>
-      <pre style={valueStyle}>{content}</pre>
+      <pre className="wrap-anywhere whitespace-pre-wrap rounded-xs bg-surface-recess p-4 text-body-sm">{content}</pre>
     </div>
   );
 }

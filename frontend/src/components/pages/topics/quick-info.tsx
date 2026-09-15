@@ -12,8 +12,9 @@
 import { useApiStoreHook } from '../../../state/backend-api';
 import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
-import { Box, Divider, Flex, Text, Tooltip } from '@redpanda-data/ui';
-import { InfoIcon } from 'components/icons';
+import { Stat } from 'components/redpanda-ui/components/stat';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { InfoIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
@@ -21,8 +22,16 @@ import { formatConfigValue } from '../../../utils/formatters/config-value-format
 import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 
+const CLEANUP_POLICY_LABELS: Record<CleanupPolicyType, string> = {
+  compact: 'Compact',
+  'compact,delete': 'Compact & Delete',
+  delete: 'Delete',
+};
+
+const ESTIMATE_HINT =
+  'The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages.';
+
 // todo: rename QuickInfo
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
@@ -56,97 +65,59 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   }
 
   return (
-    <Flex as="dl" gap={4} my={4}>
-      <Flex gap={2}>
-        <Text as="dt" fontWeight="bold">
-          Size:
-        </Text>
-        <Text as="dd">{topic ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'}</Text>
-      </Flex>
-      <Box>
-        <Divider orientation="vertical" />
-      </Box>
-      <Flex gap={2}>
-        <Tooltip
-          hasArrow
-          label="The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages."
-          placement="bottom"
-        >
-          <Flex alignItems="flex-end">
-            <InfoIcon size={16} />
-          </Flex>
-        </Tooltip>
-        <Text as="dt" fontWeight="bold">
-          Estimated messages:
-        </Text>
-        <Text as="dd">{messageSum}</Text>
-      </Flex>
-      <Box>
-        <Divider orientation="vertical" />
-      </Box>
-      {Boolean(cleanupPolicy) && (
-        <Flex gap={2}>
-          <Text as="dt" fontWeight="bold">
-            Cleanup Policy:
-          </Text>
-          <Text as="dd">
-            {(
-              {
-                compact: 'Compact',
-                'compact,delete': 'Compact & Delete',
-                delete: 'Delete',
-              } as Record<CleanupPolicyType, string>
-            )[cleanupPolicy as CleanupPolicyType] ?? ''}
-          </Text>
-        </Flex>
+    <div className="my-4 flex flex-wrap items-start gap-x-10 gap-y-3" data-testid="topic-quick-info">
+      <Stat label="Size" value={topic ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'} />
+      <Stat
+        label="Estimated messages"
+        value={
+          <span className="inline-flex items-center gap-1.5">
+            {messageSum}
+            <Tooltip>
+              <TooltipTrigger
+                render={<InfoIcon className="size-3.5 text-muted-foreground" data-testid="estimate-hint" />}
+              />
+              <TooltipContent className="max-w-sm">{ESTIMATE_HINT}</TooltipContent>
+            </Tooltip>
+          </span>
+        }
+      />
+      <Stat label="Cleanup Policy" value={CLEANUP_POLICY_LABELS[cleanupPolicy as CleanupPolicyType] ?? ''} />
+      {cleanupPolicy === 'compact' && segmentMs && segmentBytes && (
+        <Stat
+          label="Segment"
+          value={
+            <>
+              ~{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
+              {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
+              {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
+            </>
+          }
+        />
       )}
-      <Box>
-        <Divider orientation="vertical" />
-      </Box>
-      <Flex gap={2}>
-        {cleanupPolicy === 'compact' && (
-          <>
-            <Text as="dt" fontWeight="bold">
-              Segment:
-            </Text>
-            {segmentMs && segmentBytes ? (
-              <Text as="dd">
-                ~{formatConfigValue(segmentMs.name, segmentMs.value, 'friendly')} or{' '}
-                {formatConfigValue(segmentBytes.name, segmentBytes.value, 'friendly')}
-                {Number.isFinite(Number(segmentBytes.value)) && Number(segmentBytes.value) !== -1 && ' / partition'}
-              </Text>
-            ) : null}
-          </>
-        )}
-
-        {cleanupPolicy === 'delete' && retentionMs && retentionBytes && (
-          <>
-            <Flex gap={2}>
-              <Text as="dt" fontWeight="bold">
-                Retention Time:
-              </Text>
-              <Text as="dd">
+      {cleanupPolicy === 'delete' && retentionMs && retentionBytes && (
+        <>
+          <Stat
+            label="Retention Time"
+            value={
+              <>
                 {retentionMs.value !== '-1' && '~'}
                 {formatConfigValue(retentionMs.name, retentionMs.value, 'friendly')}
-              </Text>
-            </Flex>
-            <Box>
-              <Divider orientation="vertical" />
-            </Box>
-            <Flex gap={2}>
-              <Text as="dt" fontWeight="bold">
-                Retention Size:
-              </Text>
-              <Text as="dd">
+              </>
+            }
+          />
+          <Stat
+            label="Retention Size"
+            value={
+              <>
                 {retentionBytes.value !== '-1' && '~'}
                 {formatConfigValue(retentionBytes.name, retentionBytes.value, 'friendly')}
                 {Number.isFinite(Number(retentionBytes.value)) && Number(retentionBytes.value) !== -1 && ' / partition'}
-              </Text>
-            </Flex>
-          </>
-        )}
-      </Flex>
-    </Flex>
+              </>
+            }
+          />
+        </>
+      )}
+    </div>
   );
 };
 

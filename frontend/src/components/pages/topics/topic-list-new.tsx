@@ -290,6 +290,8 @@ const TopicList: FC = () => {
   const table = useDataTable({
     data: allTopics,
     columns,
+    enableHiding: false,
+    enableRowSelection: false,
     state: { sorting, pagination, columnFilters },
     onSortingChange: handleSortingChange,
     onPaginationChange: handlePaginationChange,
