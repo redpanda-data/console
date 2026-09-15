@@ -103,7 +103,7 @@ const FIXTURES: Fixture[] = [
   },
 ];
 
-// A draft carries an author and an edit time; the id is not shown on its row.
+// A draft carries an edit time; neither the id nor the author is shown on its row.
 const DRAFT_FIXTURE: Fixture = {
   id: 'draft777',
   displayName: 'half-built-pipeline',
@@ -378,18 +378,20 @@ describe('PipelineListPage', () => {
       expect(within(row).getByText('Draft')).toBeInTheDocument();
       // Its connectors are parsed from its YAML like any other row.
       expect(within(row).getByText('generate')).toBeInTheDocument();
-      // Drafts sort ahead of deployed pipelines — they're the rows with work still owed.
-      expect(visibleLinkNames()[0]).toBe('half-built-pipeline');
+      // Drafts sort ahead of healthy pipelines, but a draft is nobody's incident: the error row still leads.
+      expect(visibleLinkNames().slice(0, 2)).toEqual(['clickstream-sink', 'half-built-pipeline']);
     });
 
-    // Age and author rather than the id: what decides whether to pick a draft up or bin it.
-    it('says when a draft was last edited and who by', async () => {
+    // Age rather than the id: what decides whether to pick a draft up or bin it. Not the author —
+    // `created_by` is attribution for the create, and beside an edit time it reads as who edited it.
+    it('says when a draft was last edited, and nothing about who', async () => {
       renderList({ withDraft: true });
 
       await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
 
       const row = rowFor('half-built-pipeline');
-      expect(within(row).getByText(/Edited .* · by author@example\.com/)).toBeInTheDocument();
+      expect(within(row).getByText(/^Edited .* ago$/)).toBeInTheDocument();
+      expect(within(row).queryByText(/author@example\.com/)).not.toBeInTheDocument();
       expect(within(row).queryByText('draft777')).not.toBeInTheDocument();
     });
 
@@ -422,7 +424,8 @@ describe('PipelineListPage', () => {
 
       await waitFor(() => expect(screen.getByText('older-draft')).toBeInTheDocument());
 
-      expect(visibleLinkNames().slice(0, 2)).toEqual(['half-built-pipeline', 'older-draft']);
+      const names = visibleLinkNames();
+      expect(names.indexOf('half-built-pipeline')).toBeLessThan(names.indexOf('older-draft'));
     });
 
     it('counts drafts in their own tab and narrows to them', async () => {
@@ -450,6 +453,9 @@ describe('PipelineListPage', () => {
 
       await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
       await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+      // Same confirmation as the detail view: the row menu is where the config has not been seen at all.
+      expect(await screen.findByText(/can't go back to being a draft/)).toBeInTheDocument();
+      await user.click(screen.getByTestId('confirm-start-draft'));
 
       await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
       expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');

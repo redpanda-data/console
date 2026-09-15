@@ -233,7 +233,7 @@ describe('unsavedChangesCopy', () => {
   });
 
   it('says why a running pipeline cannot simply be saved', () => {
-    expect(unsavedChangesCopy(running).body).toMatch(/restarts this pipeline/i);
+    expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/i);
   });
 
   // The promise belongs to the button that keeps them: Discard clears the buffer.

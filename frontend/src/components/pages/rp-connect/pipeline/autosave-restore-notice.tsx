@@ -33,12 +33,12 @@ export function AutosaveRestoreNotice({
       <AlertDescription className="flex flex-wrap items-center gap-3">
         <span>
           {isStale
-            ? 'This pipeline has been saved by someone since you were editing. Restoring replaces what is on screen with your unsaved version.'
+            ? 'Someone else saved this pipeline while you were away. Restoring replaces what is on screen with your unsaved version.'
             : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}
         </span>
         <span className="flex items-center gap-2">
           <Button onClick={onRestore} size="sm" testId="restore-autosave" variant="outline">
-            Restore my edits
+            Restore edits
           </Button>
           <Button onClick={onDiscard} size="sm" testId="discard-autosave" variant="ghost">
             Discard

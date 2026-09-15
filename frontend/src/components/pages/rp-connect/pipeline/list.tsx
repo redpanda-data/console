@@ -98,9 +98,11 @@ import {
   pipelineListEmptyText,
   stateFilterValues,
 } from './list-utils';
+import { StartDraftDialog } from './start-draft-dialog';
 import { useStartDraft } from './use-start-draft';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { cpuToTasks } from '../tasks';
 
 type TagPair = { key: string; value: string };
 
@@ -115,7 +117,9 @@ type Pipeline = {
   isDraft: boolean;
   /** Epoch ms of the last edit. */
   editedAt: number | null;
-  createdBy: string;
+  /** For the draft start confirmation, which names the topics it will touch. */
+  configYaml: string;
+  computeUnits: number;
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
@@ -131,7 +135,8 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     tags,
     isDraft: isDraft(apiPipeline),
     editedAt: timestampToMillis(apiPipeline.updateTime),
-    createdBy: apiPipeline.createdBy,
+    configYaml: apiPipeline.configYaml,
+    computeUnits: cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0,
   };
 };
 
@@ -175,12 +180,12 @@ const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, f
   filterValue.includes(row.getValue<string>(columnId));
 stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-// Drafts, then problems and transitions, idle last.
+// Problems first — a draft is nobody's incident — then transitions, drafts, idle last.
 const pipelineStateSortPriority: Record<Pipeline_State, number> = {
-  [Pipeline_State.DRAFT]: 0,
-  [Pipeline_State.ERROR]: 1,
-  [Pipeline_State.STARTING]: 2,
-  [Pipeline_State.STOPPING]: 3,
+  [Pipeline_State.ERROR]: 0,
+  [Pipeline_State.STARTING]: 1,
+  [Pipeline_State.STOPPING]: 2,
+  [Pipeline_State.DRAFT]: 3,
   [Pipeline_State.RUNNING]: 4,
   [Pipeline_State.COMPLETED]: 5,
   [Pipeline_State.STOPPED]: 6,
@@ -308,6 +313,7 @@ const ActionsCell = memo(
     const isStarting = pipeline.state === Pipeline_State.STARTING;
     const isStopping = pipeline.state === Pipeline_State.STOPPING;
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isStartConfirmOpen, setIsStartConfirmOpen] = useState(false);
     const { startDraft, isStartingDraft } = useStartDraft();
     // The dialog says so when this browser also holds unsaved edits for the draft.
     const hasUnsavedChanges = useRpcnEditorAutosaveStore(
@@ -399,7 +405,7 @@ const ActionsCell = memo(
               {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
             {isDraftRow ? (
-              <DropdownMenuItem disabled={isStartingDraft} onClick={() => startDraft(pipeline.id)}>
+              <DropdownMenuItem disabled={isStartingDraft} onClick={() => setIsStartConfirmOpen(true)}>
                 Start
               </DropdownMenuItem>
             ) : null}
@@ -415,6 +421,19 @@ const ActionsCell = memo(
             />
           </DropdownMenuContent>
         </DropdownMenu>
+        {isDraftRow ? (
+          <StartDraftDialog
+            computeUnits={pipeline.computeUnits}
+            configYaml={pipeline.configYaml}
+            isStarting={isStartingDraft}
+            onConfirm={async () => {
+              await startDraft(pipeline.id);
+              setIsStartConfirmOpen(false);
+            }}
+            onOpenChange={setIsStartConfirmOpen}
+            open={isStartConfirmOpen}
+          />
+        ) : null}
         {isDraftRow ? (
           <DeleteDraftDialog
             draftName={pipeline.name}
@@ -484,7 +503,7 @@ const createColumns = ({
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
     cell: ({ row }) => {
-      const { id, isDraft: isDraftRow, editedAt, createdBy } = row.original;
+      const { id, isDraft: isDraftRow, editedAt } = row.original;
       const name = row.getValue('name') as string;
       return (
         <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
@@ -498,12 +517,8 @@ const createColumns = ({
           >
             {name}
           </Link>
-          {isDraftRow ? (
-            <span className="truncate text-body-sm text-muted-foreground">
-              {[editedAt ? `Edited ${relativeAgeLabel(editedAt)}` : null, createdBy ? `by ${createdBy}` : null]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
+          {isDraftRow && editedAt ? (
+            <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
           ) : null}
           {!isDraftRow && id !== name ? (
             // select-all: one click selects the whole id, and the row's guard keeps it from navigating.

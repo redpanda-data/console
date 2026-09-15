@@ -98,6 +98,8 @@ import {
   DRAFT_UNSUPPORTED_MESSAGE,
   DRAFT_UNSUPPORTED_STOPPED_MESSAGE,
   DRAFT_UPDATE_UNSUPPORTED_MESSAGE,
+  DRAFT_VIEW_NOTICE_BODY,
+  DRAFT_VIEW_NOTICE_TITLE,
   isDraft,
   NOTHING_TO_SAVE_MESSAGE,
   startBlockedMessage,
@@ -1609,12 +1611,8 @@ function PipelinePageContent() {
       {mode === 'view' && editingDraft ? (
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <Alert icon={<FileClock />} testId="draft-view-notice" variant="informative">
-            <AlertTitle>This pipeline is a draft</AlertTitle>
-            <AlertDescription>
-              It has never run, so there is nothing to monitor yet and it costs nothing. Starting it checks the
-              configuration first — anything it finds is shown in the editor. Once it starts it becomes a regular
-              pipeline, and drafts only exist for pipelines that have never been deployed.
-            </AlertDescription>
+            <AlertTitle>{DRAFT_VIEW_NOTICE_TITLE}</AlertTitle>
+            <AlertDescription>{DRAFT_VIEW_NOTICE_BODY}</AlertDescription>
           </Alert>
         </div>
       ) : null}

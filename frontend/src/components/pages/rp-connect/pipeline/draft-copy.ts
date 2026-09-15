@@ -19,11 +19,11 @@ export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boole
   pipeline?.state === Pipeline_State.DRAFT;
 
 export const DRAFT_BADGE_TOOLTIP =
-  'Saved but never deployed — it uses no compute and processes no data. Starting it makes it a regular pipeline.';
+  "Saved but never deployed — it uses no compute and processes no data. It still counts against the cluster's pipeline limit. Starting it makes it a regular pipeline.";
 
 /** The editor stopped what it could not park. The stop does not undo what already ran. */
 export const DRAFT_UNSUPPORTED_STOPPED_MESSAGE =
-  'Drafts are not available on this cluster yet, so the pipeline was deployed and then stopped again. It may have processed messages while it ran — check it before starting it.';
+  'Drafts are not available on this cluster yet, so the pipeline was deployed and then stopped again. It may have processed messages while it ran — check its output topics before starting it again.';
 
 /** The same, when the follow-up stop never landed: the pipeline is live and only a human can park it. */
 export const DRAFT_UNSUPPORTED_MESSAGE =
@@ -32,10 +32,15 @@ export const DRAFT_UNSUPPORTED_MESSAGE =
 export const DRAFT_UPDATE_UNSUPPORTED_MESSAGE =
   'Drafts are not available on this cluster yet, so this pipeline is no longer a draft. Check its state on its page before starting it.';
 
+export const DRAFT_VIEW_NOTICE_TITLE = 'This pipeline is a draft';
+
+/** The one-way-door warning lives on the start confirmation, where it is actionable. */
+export const DRAFT_VIEW_NOTICE_BODY =
+  "It has never run, so it costs nothing and there's nothing to monitor yet. Starting it checks the configuration, then deploys it for real.";
+
 export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
 
-export const NOTHING_TO_SAVE_MESSAGE =
-  "There's nothing to save yet. Add some configuration, or a name if you want somewhere to come back to.";
+export const NOTHING_TO_SAVE_MESSAGE = 'Nothing to save yet — add a name or some configuration first.';
 
 /** `display_name` is required (min 3 chars); numbered past the names already taken. */
 export function untitledPipelineName(existingNames: Iterable<string>): string {
@@ -67,13 +72,11 @@ export const timestampToMillis = (timestamp: Pipeline['updateTime']): number | n
   timestamp ? Number(timestamp.seconds) * 1000 + Math.floor(timestamp.nanos / 1_000_000) : null;
 
 export function startBlockedMessage(issueCount: number): string {
-  if (issueCount === 1) {
-    return "This draft has 1 issue to fix before it can start. We've opened the editor on it.";
+  if (issueCount > 0) {
+    const issues = issueCount === 1 ? '1 issue' : `${issueCount} issues`;
+    return `${issues} to fix before this draft can start — opening the editor.`;
   }
-  if (issueCount > 1) {
-    return `This draft has ${issueCount} issues to fix before it can start. We've opened the editor on them.`;
-  }
-  return "This draft isn't valid yet, so it can't start. We've opened the editor so you can fix it.";
+  return "This draft isn't valid yet, so it can't start — opening the editor.";
 }
 
 export function draftIssueSummary(issueCount: number): string | null {
@@ -81,4 +84,28 @@ export function draftIssueSummary(issueCount: number): string | null {
     return null;
   }
   return issueCount === 1 ? '1 issue to fix' : `${issueCount} issues to fix`;
+}
+
+export const START_DRAFT_CONFIRM_TITLE = 'Start pipeline?';
+
+/** Starting is the one-way door: it deploys for real, and the pipeline is never a draft again. */
+export const START_DRAFT_CONFIRM_IRREVERSIBLE =
+  "It becomes a regular pipeline — you can stop it, but it can't go back to being a draft.";
+
+const MAX_LISTED_TOPICS = 3;
+
+/** "a", "a and b", "a, b and c", "a, b, c and 2 more". */
+export function formatTopicList(topics: string[]): string {
+  if (topics.length <= MAX_LISTED_TOPICS) {
+    const head = topics.slice(0, -1).join(', ');
+    return head ? `${head} and ${topics.at(-1)}` : (topics[0] ?? '');
+  }
+  return `${topics.slice(0, MAX_LISTED_TOPICS).join(', ')} and ${topics.length - MAX_LISTED_TOPICS} more`;
+}
+
+/** A draft has never run, so the confirmation names the topics and the compute it is about to use. */
+export function startDraftConfirmBody({ topics, computeUnits }: { topics: string[]; computeUnits: number }): string {
+  const units = `${computeUnits} compute ${computeUnits === 1 ? 'unit' : 'units'}`;
+  const through = topics.length > 0 ? ` through ${formatTopicList(topics)}` : '';
+  return `Starting checks the configuration, then deploys the pipeline for real. It begins processing data${through} and uses ${units}.`;
 }

@@ -1171,7 +1171,7 @@ describe('PipelinePage', () => {
 
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/nothing to save yet/i)));
       // Names the way out, rather than only refusing.
-      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/or a name/i));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/add a name or some configuration/i));
       expect(createPipelineMock).not.toHaveBeenCalled();
     });
 
@@ -1919,7 +1919,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      expect(await screen.findByText(/restarts this pipeline/i)).toBeInTheDocument();
+      expect(await screen.findByText(/restarts the pipeline/i)).toBeInTheDocument();
       expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /keep editing/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /discard changes/i })).toBeInTheDocument();
@@ -2022,7 +2022,7 @@ describe('PipelinePage', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).toHaveTextContent(/has been saved by someone since you were editing/);
+        expect(notice).toHaveTextContent(/Someone else saved this pipeline while you were away/);
       });
 
       it('does not warn when the pipeline has not moved since', async () => {
@@ -2043,7 +2043,7 @@ describe('PipelinePage', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).not.toHaveTextContent(/has been saved by someone since you were editing/);
+        expect(notice).not.toHaveTextContent(/Someone else saved this pipeline/);
       });
 
       // The baseline is the version that was hydrated. A refetch landing mid-edit (focus, an invalidation)
@@ -2302,7 +2302,13 @@ describe('PipelinePage', () => {
       takeStartLintHints('test-pipeline');
     });
 
-    const draftTransport = (overrides?: { startPipelineMock?: ReturnType<typeof rs.fn> }) =>
+    const draftTransport = ({
+      configYaml = 'input:\n  stdin: {}',
+      ...overrides
+    }: {
+      startPipelineMock?: ReturnType<typeof rs.fn>;
+      configYaml?: string;
+    } = {}) =>
       createTransport({
         getPipelineMock: rs.fn().mockReturnValue(
           create(ConsoleGetPipelineResponseSchema, {
@@ -2310,7 +2316,7 @@ describe('PipelinePage', () => {
               pipeline: create(PipelineSchema, {
                 id: 'test-pipeline',
                 displayName: 'Test Pipeline',
-                configYaml: 'input:\n  stdin: {}',
+                configYaml,
                 state: Pipeline_State.DRAFT,
                 resources: { cpuShares: '100m', memoryShares: '0' },
               }),
@@ -2319,6 +2325,12 @@ describe('PipelinePage', () => {
         ),
         ...overrides,
       });
+
+    /** Starting a draft deploys it for real, so every start goes through the confirmation. */
+    const confirmStart = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(await screen.findByTestId('start-draft'));
+      await user.click(await screen.findByTestId('confirm-start-draft'));
+    };
 
     it('explains itself instead of offering monitoring it cannot have', async () => {
       logsTabRenders.count = 0;
@@ -2339,7 +2351,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
 
-      await user.click(await screen.findByTestId('start-draft'));
+      await confirmStart(user);
 
       await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
       expect(startPipelineMock.mock.calls[0][0].request.id).toBe('test-pipeline');
@@ -2358,7 +2370,7 @@ describe('PipelinePage', () => {
 
       render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
 
-      await user.click(await screen.findByTestId('start-draft'));
+      await confirmStart(user);
 
       await waitFor(() =>
         expect(mockNavigate).toHaveBeenCalledWith(
@@ -2380,7 +2392,7 @@ describe('PipelinePage', () => {
         ]);
       });
       const { unmount } = render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
-      await user.click(await screen.findByTestId('start-draft'));
+      await confirmStart(user);
       await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
       unmount();
 
@@ -2389,6 +2401,39 @@ describe('PipelinePage', () => {
       render(<PipelinePage />, { transport: draftTransport() });
 
       expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/)).toBeInTheDocument();
+    });
+
+    // The click that ends the draft: it deploys for real, and the pipeline is never a draft again.
+    it('names the topics and the compute before it commits to starting', async () => {
+      const user = userEvent.setup();
+      const startPipelineMock = rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
+
+      render(<PipelinePage />, {
+        transport: draftTransport({
+          startPipelineMock,
+          configYaml: 'input:\n  redpanda:\n    topics: [orders]\noutput:\n  redpanda:\n    topic: orders-dlq',
+        }),
+      });
+
+      await user.click(await screen.findByTestId('start-draft'));
+
+      expect(await screen.findByText(/orders and orders-dlq/)).toBeInTheDocument();
+      expect(screen.getByText(/1 compute unit/)).toBeInTheDocument();
+      expect(screen.getByText(/can't go back to being a draft/)).toBeInTheDocument();
+      expect(startPipelineMock).not.toHaveBeenCalled();
+    });
+
+    it('starts nothing when the confirmation is dismissed', async () => {
+      const user = userEvent.setup();
+      const startPipelineMock = rs.fn().mockReturnValue(create(ConsoleStartPipelineResponseSchema, {}));
+
+      render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
+
+      await user.click(await screen.findByTestId('start-draft'));
+      await user.click(await screen.findByRole('button', { name: /cancel/i }));
+
+      await waitFor(() => expect(screen.queryByTestId('confirm-start-draft')).not.toBeInTheDocument());
+      expect(startPipelineMock).not.toHaveBeenCalled();
     });
 
     it('starts through the draft path, which can report a rejected config', async () => {

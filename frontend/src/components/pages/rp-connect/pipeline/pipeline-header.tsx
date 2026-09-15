@@ -40,7 +40,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { Fragment, type ReactNode, useMemo } from 'react';
+import { Fragment, type ReactNode, useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
@@ -56,6 +56,7 @@ import {
   type SaveIntent,
   saveRunHint,
 } from './save-actions';
+import { StartDraftDialog } from './start-draft-dialog';
 import { useStartDraft } from './use-start-draft';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
@@ -244,18 +245,32 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
 
 const RunControl = ({ pipeline }: { pipeline: Pipeline }) => {
   const { startDraft, isStartingDraft } = useStartDraft();
+  const [isStartConfirmOpen, setIsStartConfirmOpen] = useState(false);
   if (!isDraft(pipeline)) {
     return <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />;
   }
   return (
-    <Button
-      disabled={isStartingDraft}
-      icon={isStartingDraft ? <Spinner /> : <Play />}
-      onClick={() => startDraft(pipeline.id)}
-      testId="start-draft"
-    >
-      Start pipeline
-    </Button>
+    <>
+      <Button
+        disabled={isStartingDraft}
+        icon={isStartingDraft ? <Spinner /> : <Play />}
+        onClick={() => setIsStartConfirmOpen(true)}
+        testId="start-draft"
+      >
+        Start pipeline
+      </Button>
+      <StartDraftDialog
+        computeUnits={cpuToTasks(pipeline.resources?.cpuShares) ?? 0}
+        configYaml={pipeline.configYaml}
+        isStarting={isStartingDraft}
+        onConfirm={async () => {
+          await startDraft(pipeline.id);
+          setIsStartConfirmOpen(false);
+        }}
+        onOpenChange={setIsStartConfirmOpen}
+        open={isStartConfirmOpen}
+      />
+    </>
   );
 };
 
@@ -300,10 +315,6 @@ export function PipelineViewHeader({
     {
       key: 'edited',
       node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
-    },
-    {
-      key: 'author',
-      node: viewingDraft && pipeline.createdBy ? <span>by {pipeline.createdBy}</span> : null,
     },
   ];
 

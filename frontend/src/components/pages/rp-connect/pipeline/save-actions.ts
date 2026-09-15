@@ -159,7 +159,7 @@ export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting 
 export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): string {
   const isCreate = context.mode === 'create';
   if (run === 'draft') {
-    return isCreate ? "Draft saved. It isn't running yet." : 'Draft saved';
+    return isCreate ? "Draft saved — it isn't running yet." : 'Draft saved';
   }
   if (run === 'start') {
     return isCreate ? 'Pipeline created and starting' : 'Pipeline starting with the new configuration';
@@ -193,7 +193,7 @@ export function unsavedChangesCopy(context: SaveContext): { body: string; escape
   }
   if (isStoppableState(context.state)) {
     return {
-      body: 'The only way to save them is to apply them, which restarts this pipeline and drops in-flight messages. Leave for now instead and this browser keeps your edits, ready when you come back to this editor.',
+      body: 'Saving applies them, which restarts the pipeline and drops in-flight messages. Or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
     };
   }
