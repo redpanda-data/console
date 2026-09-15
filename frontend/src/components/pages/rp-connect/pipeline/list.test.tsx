@@ -378,8 +378,13 @@ describe('PipelineListPage', () => {
       expect(within(row).getByText('Draft')).toBeInTheDocument();
       // Its connectors are parsed from its YAML like any other row.
       expect(within(row).getByText('generate')).toBeInTheDocument();
-      // Drafts sort ahead of healthy pipelines; the error row still leads.
-      expect(visibleLinkNames().slice(0, 2)).toEqual(['clickstream-sink', 'half-built-pipeline']);
+      // Drafts sort behind running pipelines but ahead of stopped ones; the error row still leads.
+      expect(visibleLinkNames()).toEqual([
+        'clickstream-sink',
+        'orders-enrichment',
+        'half-built-pipeline',
+        'nightly-export',
+      ]);
     });
 
     // Age, not the author: what decides whether to pick a draft up or bin it.
