@@ -28,6 +28,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	v1alpha "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1"
 	dataplane "github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha2"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Service that implements the ConsoleServiceHandler interface.
@@ -227,6 +228,11 @@ func (api *Service) GenerateSchemaSample(
 	indexPath := make([]int, 0, len(req.Msg.GetIndexPath()))
 	for _, v := range req.Msg.GetIndexPath() {
 		indexPath = append(indexPath, int(v))
+	}
+
+	// Resolve the schema ID in the context the client named.
+	if schemaCtx := req.Msg.GetSchemaContext(); schemaCtx != "" {
+		ctx = schemacache.InContext(ctx, schemaCtx)
 	}
 
 	sample, err := api.consoleSvc.GenerateSchemaSampleJSON(ctx, int(req.Msg.GetSchemaId()), indexPath)

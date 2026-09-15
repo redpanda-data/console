@@ -62,8 +62,9 @@ func rpcPublishMessagePayloadOptionsToSerializeInput(po *v1alpha.PublishMessageP
 	}
 
 	input := &serde.RecordPayloadInput{
-		Payload:  po.GetData(),
-		Encoding: encoding,
+		Payload:       po.GetData(),
+		Encoding:      encoding,
+		SchemaContext: po.GetSchemaContext(),
 	}
 
 	if po.GetSchemaId() > 0 {

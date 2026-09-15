@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -175,6 +176,122 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
 	require.NoError(err)
 
+	t.Run("schema registry protobuf in a named context", func(t *testing.T) {
+		// A topic bound to a context is decoded with that context's schemas.
+		const schemaContext = ".serde-ctx"
+		contextCfg := schemaContext
+
+		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_context")
+		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, map[string]*string{
+			schemacache.TopicConfigSchemaRegistryContext: &contextCfg,
+		}, testTopicName)
+		if err != nil {
+			t.Skipf("this Redpanda image does not support the %s topic config: %v", schemacache.TopicConfigSchemaRegistryContext, err)
+		}
+
+		defer func() {
+			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
+			assert.NoError(err)
+		}()
+
+		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
+		require.NoError(err)
+
+		protoFile, err := os.ReadFile("testdata/proto/shop/v1/order.proto")
+		require.NoError(err)
+
+		ss, err := rcl.CreateSchema(sr.InContext(t.Context(), schemaContext), testTopicName+"-value", sr.Schema{
+			Schema: string(protoFile),
+			Type:   sr.TypeProtobuf,
+		})
+		require.NoError(err)
+		require.NotNil(ss)
+
+		contexts, err := rcl.Contexts(t.Context())
+		if err != nil || !slices.Contains(contexts, schemaContext) {
+			t.Skipf("schema registry contexts are not enabled on this Redpanda image (contexts: %v, error: %v)", contexts, err)
+		}
+
+		var serde sr.Serde
+		serde.Register(
+			ss.ID,
+			&shopv1.Order{},
+			sr.EncodeFn(func(v any) ([]byte, error) {
+				return proto.Marshal(v.(*shopv1.Order))
+			}),
+			sr.Index(0),
+		)
+
+		orderCreatedAt := time.Date(2026, time.September, 14, 13, 0, 0, 0, time.UTC)
+		msg := shopv1.Order{
+			Id:        "333",
+			CreatedAt: timestamppb.New(orderCreatedAt),
+		}
+
+		msgData, err := serde.Encode(&msg)
+		require.NoError(err)
+
+		r := &kgo.Record{
+			Key:       []byte(msg.Id),
+			Value:     msgData,
+			Topic:     testTopicName,
+			Timestamp: orderCreatedAt,
+		}
+
+		produceCtx, produceCancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer produceCancel()
+
+		results := s.kafkaClient.ProduceSync(produceCtx, r)
+		require.NoError(results.FirstErr())
+
+		consumeCtx, consumeCancel := context.WithTimeout(t.Context(), 1*time.Second)
+		defer consumeCancel()
+
+		cl := s.consumerClientForTopic(testTopicName)
+
+		var record *kgo.Record
+
+		for {
+			fetches := cl.PollFetches(consumeCtx)
+			errs := fetches.Errors()
+			if fetches.IsClientClosed() ||
+				(len(errs) == 1 && (errors.Is(errs[0].Err, context.DeadlineExceeded) || errors.Is(errs[0].Err, context.Canceled))) {
+				break
+			}
+
+			require.Empty(errs)
+
+			iter := fetches.RecordIter()
+
+			for !iter.Done() && record == nil {
+				record = iter.Next()
+				break
+			}
+		}
+
+		require.NotEmpty(record)
+
+		dr := serdeSvc.DeserializeRecord(t.Context(), record, DeserializationOptions{
+			Troubleshoot:  true,
+			SchemaContext: schemaContext,
+		})
+		require.NotNil(dr)
+
+		assert.Equal(PayloadEncodingProtobuf, dr.Value.Encoding)
+		require.NotNil(dr.Value.SchemaID)
+		assert.Equal(uint32(ss.ID), *dr.Value.SchemaID)
+
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
+		require.Truef(ok, "parsed payload is not of type map[string]any")
+		assert.Equal("333", obj["id"])
+
+		rOrder := shopv1.Order{}
+		err = protojson.Unmarshal(dr.Value.NormalizedPayload, &rOrder)
+		require.NoError(err)
+		assert.Equal("333", rOrder.Id)
+		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
+	})
+
 	t.Run("plain JSON", func(t *testing.T) {
 		testTopicName := testutil.TopicNameForTest("serde_plain_json")
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, testTopicName)
@@ -236,7 +353,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// check value
 		assert.IsType(map[string]any{}, dr.Value.DeserializedPayload)
 
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("123", obj["ID"])
 
@@ -256,7 +373,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("payload is not null as expected for none encoding", dr.Value.Troubleshooting[0].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -359,7 +476,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// check value
 		assert.IsType(map[string]any{}, dr.Value.DeserializedPayload)
 
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("123", obj["ID"])
 
@@ -377,7 +494,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.Len(dr.Value.Troubleshooting, 0)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -493,7 +610,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		// assert.Equal("incorrect magic byte for protobuf schema", dr.Value.Troubleshooting[1].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("123", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -626,7 +743,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		expectedJSON := `{"id":"111","createdAt":"2023-06-10T13:00:00Z"}`
 		assert.Equal(expectedJSON, actualJSON)
 
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 
 		assert.Equal(`111`, obj["id"])
@@ -653,7 +770,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte for avro", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("111", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -841,7 +958,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 
 		assert.Equal(`444`, obj["id"])
@@ -933,7 +1050,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("incorrect magic byte for avro", dr.Value.Troubleshooting[4].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("444", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -1070,7 +1187,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("222", obj["id"])
 
@@ -1105,7 +1222,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("222", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -1257,7 +1374,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("345", obj["id"])
 		assert.Len(obj["decVal"], 1)
@@ -1406,7 +1523,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("gadget_0", obj["identity"])
 		assert.NotEmpty(obj["gizmo"])
@@ -1463,7 +1580,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_multi'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("gadget_0", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -1606,7 +1723,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal(11.0, obj["size"])
 		assert.NotEmpty(obj["item"])
@@ -1853,7 +1970,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("123456789", obj["id"])
 		assert.Equal(1.0, obj["version"])
@@ -1947,7 +2064,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("failed to get message descriptor for payload: no prototype found for the given topic 'test.redpanda.console.serde_schema_protobuf_ref'. Check your configured protobuf mappings", dr.Value.Troubleshooting[5].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("123456789", keyObj)
 		assert.Empty(dr.Key.SchemaID)
@@ -2084,7 +2201,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("222", rOrder.Id)
 		assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("222", obj["id"])
 
@@ -2195,14 +2312,14 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 				assert.Equal("222", rOrder.Id)
 				assert.Equal(timestamppb.New(orderCreatedAt).GetSeconds(), rOrder.GetCreatedAt().GetSeconds())
 
-				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+				obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("222", obj["id"])
 			} else if string(cr.Key) == msg2ID {
 				dr := serdeSvc2.DeserializeRecord(t.Context(), cr, DeserializationOptions{Troubleshoot: true})
 				require.NotNil(dr)
 
-				obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+				obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 				require.Truef(ok, "parsed payload is not of type map[string]any")
 				assert.Equal("333", obj["id"])
 				assert.Equal(float64(3456), obj["orderValue"])
@@ -2294,7 +2411,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check key
-		obj, ok := (dr.Key.DeserializedPayload).(uint32)
+		obj, ok := dr.Key.DeserializedPayload.(uint32)
 		require.Truef(ok, "parsed payload is not of type uint32")
 		assert.Equal(uint32(160), obj)
 
@@ -2309,7 +2426,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// check value
-		valObj, ok := (dr.Value.DeserializedPayload).(string)
+		valObj, ok := dr.Value.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("my text value", valObj)
 		assert.Empty(dr.Value.SchemaID)
@@ -2378,7 +2495,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check key
-		obj, ok := (dr.Key.DeserializedPayload).(string)
+		obj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("text", obj)
 
@@ -2393,7 +2510,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Empty(dr.Key.SchemaID)
 
 		// check value
-		valObj, ok := (dr.Value.DeserializedPayload).(string)
+		valObj, ok := dr.Value.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("my text value", valObj)
 		assert.Empty(dr.Value.SchemaID)
@@ -2673,7 +2790,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NotNil(dr)
 
 		// check value
-		obj, ok := (dr.Value.DeserializedPayload).(map[string]any)
+		obj, ok := dr.Value.DeserializedPayload.(map[string]any)
 		require.Truef(ok, "parsed payload is not of type map[string]any")
 		assert.Equal("order_0", obj["id"])
 		assert.Equal(10.25, obj["price"])
@@ -2700,7 +2817,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		assert.Equal("first byte indicates this it not valid XML", dr.Value.Troubleshooting[3].Message)
 
 		// check key
-		keyObj, ok := (dr.Key.DeserializedPayload).(string)
+		keyObj, ok := dr.Key.DeserializedPayload.(string)
 		require.Truef(ok, "parsed payload is not of type string")
 		assert.Equal("order_0", keyObj)
 		assert.Empty(dr.Key.SchemaID)
