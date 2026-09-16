@@ -2,6 +2,18 @@
 
 ## Master / Unreleased
 
+## v3.12.0 / 2026-09-16
+- [IMPROVEMENT] Add a new topic messages page behind the `enableNewTopicMessagesPage` flag, with a free-text filter bar that highlights recognised filters as pills, an inline timestamp picker in the read-scope popover, keyboard navigation, and support for `>=` and `<=` operators in filter tokens.
+- [IMPROVEMENT] Migrate the remaining frontend surfaces — topics, security ACLs, Redpanda Connect, Kafka Connect, reassign partitions, transforms, overview, brokers, login, admin, debug bundle, and license — to the shared UI registry components for consistent styling.
+- [IMPROVEMENT] Render Redpanda Connect field descriptions as prose and link each field to its documentation.
+- [IMPROVEMENT] Polish the SQL studio toolbar and panel layout.
+- [CHANGE] Remove the `enableNewSecurityPage` feature flag; the rewritten security UI (users, roles, ACLs) is now the only one.
+- [CHANGE] Remove the `@redpanda-data/ui` dependency and delete the unused Chakra and antd stylesheets, reducing the frontend bundle size.
+- [BUGFIX] Allow `DROP`, `CREATE`, and `GRANT` statements in the SQL editor instead of blocking them client-side.
+- [BUGFIX] Surface the broker error instead of failing silently when starting a partition reassignment with a bandwidth throttle set.
+- [BUGFIX] Fix breadcrumb navigation while topic messages are still loading, and show the requested partition count and replication factor in the topic-created dialog when the broker reports `-1`.
+- [SECURITY] Update `golang.org/x/crypto` and gRPC to resolve Snyk findings.
+
 ## v3.11.0 / 2026-08-24
 - [IMPROVEMENT] Migrate the Consumer Groups pages to the UI registry, with human-readable state and protocol labels, corrected list pagination layout, and a more compact group detail stats bar.
 - [IMPROVEMENT] Add Shadow Link role replication: configure role sync when creating or editing a link and review replicated roles in the details view (requires Redpanda 26.2.0 or later).
