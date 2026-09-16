@@ -10,6 +10,7 @@
  */
 /** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
+import { ConnectError } from '@connectrpc/connect';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -604,7 +605,7 @@ class ReassignPartitions extends PageComponent {
       showToast({
         status: 'error',
         title: 'Could not start the reassignment',
-        description: err instanceof Error ? err.message : String(err),
+        description: ConnectError.from(err).rawMessage,
         duration: 6000,
       });
       return false;
@@ -692,7 +693,7 @@ class ReassignPartitions extends PageComponent {
       showToast({
         status: 'error',
         title: 'Could not set the bandwidth throttle',
-        description: err instanceof Error ? err.message : String(err),
+        description: ConnectError.from(err).rawMessage,
         duration: 6000,
       });
       return false;
