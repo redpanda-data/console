@@ -16,7 +16,6 @@ All icons are imported from `src/components/icons/index.tsx`. This ensures consi
 // WRONG: Direct imports from icon packages
 import { Check } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
-import { CheckIcon } from '@chakra-ui/icons';
 import { PlusIcon } from '@heroicons/react/24/outline';
 ```
 
@@ -45,7 +44,6 @@ const MyComponent = () => (
 ## Forbidden Packages
 
 - `react-icons`
-- `@chakra-ui/icons`
 - `@heroicons/react`
 - `@primer/octicons-react`
 

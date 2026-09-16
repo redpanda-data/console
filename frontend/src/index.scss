@@ -1660,7 +1660,7 @@ $borderRadius: 8px;
   user-select: none;
 }
 
-// Console's toasts sit top-right, above the host's Chakra modals (z-index 1400). The registry
+// Console's toasts sit top-right, above the host's modals (z-index 1400). The registry
 // viewport is bottom-anchored, so this mirrors toast.tsx with the vertical signs flipped; it goes
 // when the registry grows a position prop. Keyed on the console test id to spare a host viewport.
 [data-slot='toast-viewport'][data-testid='console-toasts'] {

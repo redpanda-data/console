@@ -457,7 +457,7 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
             </button>
           }
         />
-        {/* PopoverContent is a fixed `w-72`; Chakra's `size="stretch"` sized to content. */}
+        {/* PopoverContent is a fixed `w-72`, so the width is set here to fit the content. */}
         <PopoverContent className="w-auto max-w-[500px]" side="right">
           <div className="whitespace-pre-wrap">{c}</div>
         </PopoverContent>

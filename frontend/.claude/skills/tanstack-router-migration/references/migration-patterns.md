@@ -538,7 +538,7 @@ const { page, pageSize, setPage, setPageSize } = usePaginationParams('/topics/')
 **Before (React Router):**
 ```typescript
 import { Link } from 'react-router-dom';
-import { Button } from '@chakra-ui/react';
+import { Button } from 'components/redpanda-ui/components/button';
 
 <Button as={Link} to="/topics/create">
   Create Topic

@@ -41,9 +41,9 @@ export const PreviewFieldsModal: FC<{
       }}
       open={getShowDialog()}
     >
-      {/* `xl` is `sm:max-w-4xl`, matching the Chakra modal's `minW="4xl"`. */}
+      {/* `xl` is `sm:max-w-4xl`. */}
       <DialogContent size="xl">
-        {/* The PreviewSettings popover portals in here, inside the dialog's focus lock, as Chakra's did. */}
+        {/* The PreviewSettings popover portals in here, inside the dialog's focus lock. */}
         {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
         <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>

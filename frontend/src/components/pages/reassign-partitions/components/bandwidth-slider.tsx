@@ -94,7 +94,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
       {/*
         The Registry Slider renders its own track and thumb and has no mark or thumb-tooltip slot,
         so the marks and the value bubble are positioned against the same value scale here. The
-        bubble follows the thumb and appears on hover, as Chakra's `isOpen={isDragging}` tooltip did.
+        bubble follows the thumb and is shown only while dragging.
       */}
       {isDragging && tipText(sliderValue) ? (
         <div
