@@ -5,8 +5,11 @@ import { lazy } from 'react';
 import { LoadingBoundary } from './loading-boundary';
 
 test('shows the fallback immediately, reveals loaded content, and preserves its DOM structure', async () => {
-  const loaded = Promise.withResolvers<{ default: () => React.JSX.Element }>();
-  const Content = lazy(() => loaded.promise);
+  let resolveContent: (module: { default: () => React.JSX.Element }) => void;
+  const loaded = new Promise<{ default: () => React.JSX.Element }>((resolve) => {
+    resolveContent = resolve;
+  });
+  const Content = lazy(() => loaded);
   const { container } = render(
     <LoadingBoundary fallback={<p role="status">Loading editor</p>}>
       <Content />
@@ -15,8 +18,8 @@ test('shows the fallback immediately, reveals loaded content, and preserves its 
   expect(screen.getByRole('status')).toHaveTextContent('Loading editor');
 
   await act(async () => {
-    loaded.resolve({ default: () => <textarea aria-label="Message value" defaultValue="Ready" /> });
-    await loaded.promise;
+    resolveContent({ default: () => <textarea aria-label="Message value" defaultValue="Ready" /> });
+    await loaded;
   });
   const editor = screen.getByRole('textbox', { name: 'Message value' });
   expect(editor).toHaveValue('Ready');
