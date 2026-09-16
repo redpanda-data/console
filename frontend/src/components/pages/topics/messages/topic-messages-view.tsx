@@ -59,6 +59,8 @@ export type TopicMessagesViewProps = {
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: page container wires url state, streaming and table state together
 export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
+  const detailExpandButtonRef = useRef<HTMLButtonElement>(null);
+  const messageTableFocusRef = useRef<HTMLDivElement>(null);
   const topicName = topic.topicName;
   const urlState = useMessagesUrlState(topicName);
   const search = useMessageSearch(topicName);
@@ -475,7 +477,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
 
       <ResizablePanelGroup className="items-stretch">
         <ResizablePanel minSize="40%">
-          <div className="relative">
+          <div className="relative" ref={messageTableFocusRef} tabIndex={-1}>
             <div className="absolute top-1 right-2 z-10 flex items-center gap-0.5 rounded-lg bg-card p-0.5">
               <Button
                 onClick={() => setSaveDialogOpen(true)}
@@ -536,7 +538,9 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
               onResize={handleDetailPanelResize}
             >
               <MessageDetailPanel
+                expandButtonRef={detailExpandButtonRef}
                 expanded={false}
+                fallbackFocusRef={messageTableFocusRef}
                 loadLargeMessage={handleLoadLargeMessage}
                 msg={selectedMessage}
                 onClose={handleDetailClose}
@@ -550,7 +554,9 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
       {/* Expanded presentation replaces the docked slot entirely (fixed full-viewport overlay) */}
       {selectedMessage && detailExpanded && (
         <MessageDetailPanel
+          expandButtonRef={detailExpandButtonRef}
           expanded
+          fallbackFocusRef={messageTableFocusRef}
           loadLargeMessage={handleLoadLargeMessage}
           msg={selectedMessage}
           onClose={handleDetailClose}

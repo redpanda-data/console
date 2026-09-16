@@ -1,0 +1,16 @@
+/* Editor reveals must not cross-fade or intercept input across the whole page. */
+:root {
+  view-transition-name: none;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*.console-content-reveal),
+  ::view-transition-old(*.console-content-reveal),
+  ::view-transition-new(*.console-content-reveal) {
+    animation: none;
+  }
+}

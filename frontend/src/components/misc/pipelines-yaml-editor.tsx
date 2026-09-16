@@ -10,9 +10,10 @@
  */
 
 import type { EditorProps, Monaco } from '@monaco-editor/react';
+import { LoadingBoundary } from 'components/ui/loading-boundary';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { type ComponentType, lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { type ComponentType, lazy, useCallback, useEffect, useState } from 'react';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 import { annotateAnyOfTitles } from '../ui/yaml/yaml-editor';
@@ -105,7 +106,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   }, []);
 
   return (
-    <Suspense fallback={<LoadingPlaceholder />}>
+    <LoadingBoundary fallback={<LoadingPlaceholder />}>
       <LazyEditor
         beforeMount={(monaco) => setMonacoOptions(monaco)}
         defaultLanguage="yaml"
@@ -119,7 +120,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         }}
         {...rest}
       />
-    </Suspense>
+    </LoadingBoundary>
   );
 }
 
