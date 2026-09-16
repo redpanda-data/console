@@ -29,6 +29,7 @@ import {
 import type { FC } from 'react';
 
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { TopicSchemaContextSelect, useSchemaContextsSupported } from '../../schema-context-select';
 
 const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
@@ -56,6 +57,8 @@ export const DeserializersModal: FC<{
   valueDeserializer: PayloadEncoding;
   setKeyDeserializer: (val: PayloadEncoding) => void;
   setValueDeserializer: (val: PayloadEncoding) => void;
+  schemaContext: string;
+  setSchemaContext: (val: string) => void;
 }> = ({
   getShowDialog,
   setShowDialog,
@@ -63,68 +66,83 @@ export const DeserializersModal: FC<{
   valueDeserializer,
   setKeyDeserializer,
   setValueDeserializer,
-}) => (
-  <Dialog onOpenChange={setShowDialog} open={getShowDialog()}>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Deserialize</DialogTitle>
-      </DialogHeader>
-      <DialogBody>
-        <p>Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.</p>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="key-deserializer">Key Deserializer</Label>
-          <Select
-            onValueChange={(val) => setKeyDeserializer(Number(val) as PayloadEncoding)}
-            value={
-              payloadEncodingPairs.some((p) => p.value === keyDeserializer)
-                ? String(keyDeserializer)
-                : String(payloadEncodingPairs[0].value)
-            }
-          >
-            <SelectTrigger id="key-deserializer">
-              <SelectValue>
-                {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {payloadEncodingPairs.map((pair) => (
-                <SelectItem key={pair.value} value={String(pair.value)}>
-                  {pair.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="value-deserializer">Value Deserializer</Label>
-          <Select
-            onValueChange={(val) => setValueDeserializer(Number(val) as PayloadEncoding)}
-            value={
-              payloadEncodingPairs.some((p) => p.value === valueDeserializer)
-                ? String(valueDeserializer)
-                : String(payloadEncodingPairs[0].value)
-            }
-          >
-            <SelectTrigger id="value-deserializer">
-              <SelectValue>
-                {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {payloadEncodingPairs.map((pair) => (
-                <SelectItem key={pair.value} value={String(pair.value)}>
-                  {pair.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </DialogBody>
-      <DialogFooter>
-        <Button onClick={() => setShowDialog(false)} variant="primary">
-          Close
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
+  schemaContext,
+  setSchemaContext,
+}) => {
+  const schemaContextsSupported = useSchemaContextsSupported();
+  return (
+    <Dialog onOpenChange={setShowDialog} open={getShowDialog()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Deserialize</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p>Redpanda attempts to automatically detect a deserialization strategy. You can choose one manually here.</p>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="key-deserializer">Key Deserializer</Label>
+            <Select
+              onValueChange={(val) => setKeyDeserializer(Number(val) as PayloadEncoding)}
+              value={
+                payloadEncodingPairs.some((p) => p.value === keyDeserializer)
+                  ? String(keyDeserializer)
+                  : String(payloadEncodingPairs[0].value)
+              }
+            >
+              <SelectTrigger id="key-deserializer">
+                <SelectValue>
+                  {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {payloadEncodingPairs.map((pair) => (
+                  <SelectItem key={pair.value} value={String(pair.value)}>
+                    {pair.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="value-deserializer">Value Deserializer</Label>
+            <Select
+              onValueChange={(val) => setValueDeserializer(Number(val) as PayloadEncoding)}
+              value={
+                payloadEncodingPairs.some((p) => p.value === valueDeserializer)
+                  ? String(valueDeserializer)
+                  : String(payloadEncodingPairs[0].value)
+              }
+            >
+              <SelectTrigger id="value-deserializer">
+                <SelectValue>
+                  {(value: unknown) => payloadEncodingPairs.find((p) => String(p.value) === String(value))?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {payloadEncodingPairs.map((pair) => (
+                  <SelectItem key={pair.value} value={String(pair.value)}>
+                    {pair.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {schemaContextsSupported && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="schema-context">Schema context</Label>
+              <TopicSchemaContextSelect id="schema-context" onChange={setSchemaContext} value={schemaContext} />
+              <p className="text-body-sm text-muted-foreground">
+                Schema Registry context to resolve schema IDs in. Automatic follows the topic's
+                redpanda.schema.registry.context config.
+              </p>
+            </div>
+          )}
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => setShowDialog(false)} variant="primary">
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

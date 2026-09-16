@@ -211,6 +211,7 @@ type LoadLargeMessageParams = {
   >;
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
+  schemaContext: string;
 };
 
 async function loadLargeMessage({
@@ -220,6 +221,7 @@ async function loadLargeMessage({
   setSearchState,
   keyDeserializer,
   valueDeserializer,
+  schemaContext,
 }: LoadLargeMessageParams) {
   // Create a new search that looks for only this message specifically
   const search = createMessageSearch();
@@ -234,6 +236,7 @@ async function loadLargeMessage({
     ignoreSizeLimit: true,
     keyDeserializer,
     valueDeserializer,
+    schemaContext,
   };
   const result = await search.startSearch(searchReq);
 
@@ -424,6 +427,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     },
     'vd',
     parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+  );
+
+  const [schemaContext, setSchemaContext] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: (val) => {
+        setSearchParams(props.topic.topicName, { schemaContext: val });
+      },
+      getDefaultValue: () => getSearchParams(props.topic.topicName)?.schemaContext ?? '',
+    },
+    'sc',
+    parseAsString.withDefault('')
   );
 
   // Pagination state managed by nuqs
@@ -694,6 +708,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         includeRawPayload: true,
         keyDeserializer,
         valueDeserializer,
+        schemaContext,
       } as MessageSearchRequest;
 
       try {
@@ -750,6 +765,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       pageSize,
       keyDeserializer,
       valueDeserializer,
+      schemaContext,
       filters,
     ]
   );
@@ -807,6 +823,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       executeMessageSearch,
       keyDeserializer,
       valueDeserializer,
+      schemaContext,
       filters,
     ]
   );
@@ -1009,8 +1026,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         setSearchState,
         keyDeserializer,
         valueDeserializer,
+        schemaContext,
       }),
-    [keyDeserializer, setSearchState, valueDeserializer]
+    [keyDeserializer, schemaContext, setSearchState, valueDeserializer]
   );
   const onSetDownloadMessages = useCallback((nextMessages: TopicMessage[]) => {
     setDownloadMessages(nextMessages);
@@ -1941,7 +1959,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <DeserializersModal
             getShowDialog={() => showDeserializersModal}
             keyDeserializer={keyDeserializer}
+            schemaContext={schemaContext}
             setKeyDeserializer={setKeyDeserializer}
+            setSchemaContext={setSchemaContext}
             setShowDialog={setShowDeserializersModal}
             setValueDeserializer={setValueDeserializer}
             valueDeserializer={valueDeserializer}

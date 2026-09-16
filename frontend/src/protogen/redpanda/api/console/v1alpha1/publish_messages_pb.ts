@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/console/v1alpha1/publish_messages.proto.
  */
 export const file_redpanda_api_console_v1alpha1_publish_messages: GenFile = /*@__PURE__*/
-  fileDesc("CjRyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9wdWJsaXNoX21lc3NhZ2VzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSKmAwoVUHVibGlzaE1lc3NhZ2VSZXF1ZXN0Ei0KBXRvcGljGAEgASgJQh66SBtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSJgoMcGFydGl0aW9uX2lkGAIgASgFQhC6SA0aCyj///////////8BEkMKC2NvbXByZXNzaW9uGAMgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ29tcHJlc3Npb25UeXBlEhgKEHVzZV90cmFuc2FjdGlvbnMYBCABKAgSQQoHaGVhZGVycxgFIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkthZmthUmVjb3JkSGVhZGVyEkgKA2tleRgGIAEoCzI7LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUGF5bG9hZE9wdGlvbnMSSgoFdmFsdWUYByABKAsyOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5QdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zIsYBChxQdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zEkAKCGVuY29kaW5nGAEgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUGF5bG9hZEVuY29kaW5nEgwKBGRhdGEYAiABKAwSFgoJc2NoZW1hX2lkGAkgASgFSACIAQESEgoFaW5kZXgYCiABKAVIAYgBARISCgppbmRleF9wYXRoGAsgAygFQgwKCl9zY2hlbWFfaWRCCAoGX2luZGV4Ik0KFlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2USDQoFdG9waWMYASABKAkSFAoMcGFydGl0aW9uX2lkGAIgASgFEg4KBm9mZnNldBgDIAEoAyJNChtHZW5lcmF0ZVNjaGVtYVNhbXBsZVJlcXVlc3QSGgoJc2NoZW1hX2lkGAEgASgFQge6SAQaAiAAEhIKCmluZGV4X3BhdGgYAiADKAUiMwocR2VuZXJhdGVTY2hlbWFTYW1wbGVSZXNwb25zZRITCgtzYW1wbGVfanNvbhgBIAEoCWIGcHJvdG8z", [file_buf_validate_validate, file_redpanda_api_console_v1alpha1_common]);
+  fileDesc("CjRyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9wdWJsaXNoX21lc3NhZ2VzLnByb3RvEh1yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMSKmAwoVUHVibGlzaE1lc3NhZ2VSZXF1ZXN0Ei0KBXRvcGljGAEgASgJQh66SBtyGRABGPkBMhJeW2EtekEtWjAtOS5fXC1dKiQSJgoMcGFydGl0aW9uX2lkGAIgASgFQhC6SA0aCyj///////////8BEkMKC2NvbXByZXNzaW9uGAMgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuQ29tcHJlc3Npb25UeXBlEhgKEHVzZV90cmFuc2FjdGlvbnMYBCABKAgSQQoHaGVhZGVycxgFIAMoCzIwLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkthZmthUmVjb3JkSGVhZGVyEkgKA2tleRgGIAEoCzI7LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlB1Ymxpc2hNZXNzYWdlUGF5bG9hZE9wdGlvbnMSSgoFdmFsdWUYByABKAsyOy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5QdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zIt4BChxQdWJsaXNoTWVzc2FnZVBheWxvYWRPcHRpb25zEkAKCGVuY29kaW5nGAEgASgOMi4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUGF5bG9hZEVuY29kaW5nEgwKBGRhdGEYAiABKAwSFgoJc2NoZW1hX2lkGAkgASgFSACIAQESEgoFaW5kZXgYCiABKAVIAYgBARISCgppbmRleF9wYXRoGAsgAygFEhYKDnNjaGVtYV9jb250ZXh0GAwgASgJQgwKCl9zY2hlbWFfaWRCCAoGX2luZGV4Ik0KFlB1Ymxpc2hNZXNzYWdlUmVzcG9uc2USDQoFdG9waWMYASABKAkSFAoMcGFydGl0aW9uX2lkGAIgASgFEg4KBm9mZnNldBgDIAEoAyJlChtHZW5lcmF0ZVNjaGVtYVNhbXBsZVJlcXVlc3QSGgoJc2NoZW1hX2lkGAEgASgFQge6SAQaAiAAEhIKCmluZGV4X3BhdGgYAiADKAUSFgoOc2NoZW1hX2NvbnRleHQYAyABKAkiMwocR2VuZXJhdGVTY2hlbWFTYW1wbGVSZXNwb25zZRITCgtzYW1wbGVfanNvbhgBIAEoCWIGcHJvdG8z", [file_buf_validate_validate, file_redpanda_api_console_v1alpha1_common]);
 
 /**
  * PublishMessageRequest is the request for PublishMessage call.
@@ -112,6 +112,13 @@ export type PublishMessagePayloadOptions = Message<"redpanda.api.console.v1alpha
    * @generated from field: repeated int32 index_path = 11;
    */
   indexPath: number[];
+
+  /**
+   * Optional Schema Registry context of schema_id. Empty uses the topic's context, then the default context.
+   *
+   * @generated from field: string schema_context = 12;
+   */
+  schemaContext: string;
 };
 
 /**
@@ -167,6 +174,13 @@ export type GenerateSchemaSampleRequest = Message<"redpanda.api.console.v1alpha1
    * @generated from field: repeated int32 index_path = 2;
    */
   indexPath: number[];
+
+  /**
+   * Optional Schema Registry context of schema_id. Empty means the default context.
+   *
+   * @generated from field: string schema_context = 3;
+   */
+  schemaContext: string;
 };
 
 /**

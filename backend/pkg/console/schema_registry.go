@@ -27,6 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/redpanda-data/console/backend/pkg/proto"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // SchemaRegistryMode returns the schema registry mode.
@@ -441,7 +442,8 @@ func (s *Service) GetSchemaRegistrySubjectDetails(ctx context.Context, subjectNa
 		return nil, err
 	}
 
-	s.populateProtoMessageTypes(ctx, subjectName, schemas)
+	// Resolve the message types in the context of the qualified subject.
+	s.populateProtoMessageTypes(schemacache.InContext(ctx, schemacache.ContextFromSubject(subjectName)), subjectName, schemas)
 
 	var schemaType sr.SchemaType
 	if len(schemas) > 0 {
@@ -473,8 +475,9 @@ func (s *Service) populateProtoMessageTypes(ctx context.Context, subjectName str
 			if err != nil {
 				s.logger.WarnContext(grpCtx, "failed to resolve protobuf message types",
 					slog.String("subject", subjectName),
-					slog.Int("schemaId", schemas[i].ID),
-					slog.Any("err", err))
+					slog.Int("schema_id", schemas[i].ID),
+					slog.String("schema_context", schemacache.ContextName(grpCtx)),
+					slog.Any("error", err))
 				return nil
 			}
 			schemas[i].MessageTypes = types
@@ -960,15 +963,72 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int, subject
 		return nil, err
 	}
 
-	callCtx := ctx
 	if subject != "" {
-		callCtx = sr.WithParams(ctx, sr.Subject(subject))
-	}
-	res, err := srClient.SchemaUsagesByID(callCtx, schemaID)
-	if err != nil {
-		return nil, err
+		// With a subject the registry searches across contexts itself.
+		res, err := srClient.SchemaUsagesByID(sr.WithParams(ctx, sr.Subject(subject)), schemaID)
+		if err != nil {
+			return nil, err
+		}
+		return mapSchemaVersions(res), nil
 	}
 
+	return schemaUsagesAcrossContexts(ctx, srClient, schemaID)
+}
+
+// schemaUsagesAcrossContexts looks up the subjects using schemaID in every
+// context, since schema IDs are context-local.
+func schemaUsagesAcrossContexts(ctx context.Context, srClient *rpsr.Client, schemaID int) ([]SchemaVersion, error) {
+	// Always search the default context; registries without contexts fail /contexts.
+	contextNames := []string{""}
+	if contexts, err := srClient.Contexts(ctx); err == nil {
+		for _, name := range contexts {
+			if normalized := schemacache.NormalizeContextName(name); normalized != "" {
+				contextNames = append(contextNames, normalized)
+			}
+		}
+	}
+
+	results := make([][]sr.SubjectSchema, len(contextNames))
+	errs := make([]error, len(contextNames))
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(10)
+	for i, name := range contextNames {
+		grp.Go(func() error {
+			callCtx := grpCtx
+			if name != "" {
+				callCtx = sr.InContext(grpCtx, name)
+			}
+			results[i], errs[i] = srClient.SchemaUsagesByID(callCtx, schemaID)
+			return nil
+		})
+	}
+	_ = grp.Wait()
+
+	// De-duplicate: a subject may be reported by more than one lookup.
+	seen := make(map[SchemaVersion]struct{})
+	schemaVersions := make([]SchemaVersion, 0)
+	for _, res := range results {
+		for _, sv := range mapSchemaVersions(res) {
+			if _, ok := seen[sv]; ok {
+				continue
+			}
+			seen[sv] = struct{}{}
+			schemaVersions = append(schemaVersions, sv)
+		}
+	}
+	if len(schemaVersions) == 0 {
+		// Unknown everywhere: return the default context's error.
+		for _, err := range errs {
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return schemaVersions, nil
+}
+
+func mapSchemaVersions(res []sr.SubjectSchema) []SchemaVersion {
 	schemaVersions := make([]SchemaVersion, len(res))
 	for i, r := range res {
 		schemaVersions[i] = SchemaVersion{
@@ -976,8 +1036,7 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int, subject
 			Version: r.Version,
 		}
 	}
-
-	return schemaVersions, nil
+	return schemaVersions
 }
 
 // CheckSchemaRegistryACLSupport checks if the Schema Registry supports ACL

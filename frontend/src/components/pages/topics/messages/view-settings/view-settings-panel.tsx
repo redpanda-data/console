@@ -26,6 +26,7 @@ import { PreviewFieldsEditor } from './preview-fields-editor';
 import type { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { TimestampDisplayFormat } from '../../../../../state/ui';
 import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
+import { TopicSchemaContextSelect, useSchemaContextsSupported } from '../../schema-context-select';
 import { PAYLOAD_ENCODING_LABELS, PAYLOAD_ENCODING_PAIRS } from '../constants';
 import type { MessageColumnConfig } from '../types';
 
@@ -73,6 +74,9 @@ export type ViewSettingsPanelProps = {
   valueDeserializer: PayloadEncoding;
   onValueDeserializerChange: (encoding: PayloadEncoding) => void;
   onResetDeserializers: () => void;
+  /** '' resolves the topic's context, '.' forces the default. */
+  schemaContext: string;
+  onSchemaContextChange: (schemaContext: string) => void;
   /** Dotted paths seen in loaded values — autocomplete hints for preview patterns. */
   valuePathHints: string[];
   /** Deserializer changes only take effect on the next (re)start — disable them while streaming. */
@@ -91,9 +95,12 @@ export const ViewSettingsPanel = ({
   valueDeserializer,
   onValueDeserializerChange,
   onResetDeserializers,
+  schemaContext,
+  onSchemaContextChange,
   valuePathHints,
   liveTail,
 }: ViewSettingsPanelProps) => {
+  const schemaContextsSupported = useSchemaContextsSupported();
   const {
     getRowDensity,
     setRowDensity,
@@ -171,6 +178,22 @@ export const ViewSettingsPanel = ({
                 value={valueDeserializer}
               />
             </div>
+            {schemaContextsSupported && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-caption uppercase tracking-wide">Schema context</Label>
+                <TopicSchemaContextSelect
+                  disabled={liveTail}
+                  id="view-settings-schema-context"
+                  onChange={onSchemaContextChange}
+                  title={liveTail ? 'Stop live tail to change this' : undefined}
+                  value={schemaContext}
+                />
+                <p className="text-body-sm text-muted-foreground leading-relaxed">
+                  Schema Registry context to resolve schema IDs in. <span className="font-mono">Automatic</span> follows
+                  the topic's redpanda.schema.registry.context config.
+                </p>
+              </div>
+            )}
             <PreviewFieldsEditor topicName={topicName} valuePathHints={valuePathHints} />
           </div>
         );

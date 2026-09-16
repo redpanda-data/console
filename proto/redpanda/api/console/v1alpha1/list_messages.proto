@@ -38,6 +38,7 @@ message ListMessagesRequest {
   // Used to force returning deserialized payloads.
 
   string page_token = 13; // Resume from cursor (only used when page_size is present).
+  string schema_context = 15; // Optional Schema Registry context to resolve schema IDs in. Empty uses the topic's redpanda.schema.registry.context, then the default context; "." forces the default context.
   int32 page_size = 14 [(buf.validate.field).int32 = {
     gte: 1
     lte: 500

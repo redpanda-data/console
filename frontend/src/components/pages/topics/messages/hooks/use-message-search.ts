@@ -56,6 +56,8 @@ export type MessageSearchParams = {
   filterInterpreterCode: string;
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
+  /** '' resolves the topic's context, '.' forces the default. */
+  schemaContext?: string;
   includeRawPayload?: boolean;
   ignoreSizeLimit?: boolean;
 };
@@ -95,6 +97,7 @@ const buildListMessagesRequest = (topicName: string, params: MessageSearchParams
   req.ignoreMaxSizeLimit = params.ignoreSizeLimit ?? false;
   req.keyDeserializer = params.keyDeserializer;
   req.valueDeserializer = params.valueDeserializer;
+  req.schemaContext = params.schemaContext ?? '';
   return req;
 };
 
@@ -357,6 +360,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
         ignoreSizeLimit: true,
         keyDeserializer: params?.keyDeserializer,
         valueDeserializer: params?.valueDeserializer,
+        schemaContext: params?.schemaContext,
       });
       let loaded: TopicMessage | null = null;
       for await (const res of client.listMessages(req, { timeoutMs: DEFAULT_TIMEOUT_MS })) {
