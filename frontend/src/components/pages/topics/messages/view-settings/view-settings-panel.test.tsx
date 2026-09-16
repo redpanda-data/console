@@ -28,6 +28,8 @@ const renderPanel = (overrides: Partial<ViewSettingsPanelProps> = {}) => {
     valueDeserializer: PayloadEncoding.UNSPECIFIED,
     onValueDeserializerChange: rs.fn(),
     onResetDeserializers: rs.fn(),
+    schemaContext: '',
+    onSchemaContextChange: rs.fn(),
     valuePathHints: ['address', 'address.city'],
     liveTail: false,
     ...overrides,
@@ -86,6 +88,12 @@ describe('ViewSettingsPanel', () => {
     renderPanel({ liveTail: false });
     await userEvent.click(screen.getByTestId('column-config-key'));
     expect(screen.getByTestId('view-settings-key-deser')).toBeEnabled();
+  });
+
+  test('schema context select is hidden when the registry has no contexts', async () => {
+    renderPanel();
+    await userEvent.click(screen.getByTestId('column-config-value'));
+    expect(screen.queryByTestId('view-settings-schema-context')).toBeNull();
   });
 
   test('reset restores defaults and resets deserializers', async () => {

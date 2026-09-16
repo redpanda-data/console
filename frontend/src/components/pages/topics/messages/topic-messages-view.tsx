@@ -163,6 +163,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
       filterInterpreterCode,
       keyDeserializer: urlState.keyDeserializer,
       valueDeserializer: urlState.valueDeserializer,
+      schemaContext: urlState.schemaContext,
       includeRawPayload: true,
     }),
     [
@@ -174,6 +175,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
       continuousActive,
       urlState.keyDeserializer,
       urlState.valueDeserializer,
+      urlState.schemaContext,
       filterInterpreterCode,
     ]
   );
@@ -594,8 +596,11 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             onResetDeserializers={() => {
               urlState.setKeyDeserializer(PayloadEncoding.UNSPECIFIED);
               urlState.setValueDeserializer(PayloadEncoding.UNSPECIFIED);
+              urlState.setSchemaContext('');
             }}
+            onSchemaContextChange={urlState.setSchemaContext}
             onValueDeserializerChange={urlState.setValueDeserializer}
+            schemaContext={urlState.schemaContext}
             topicName={topicName}
             valueDeserializer={urlState.valueDeserializer}
             valuePathHints={valuePathHints}

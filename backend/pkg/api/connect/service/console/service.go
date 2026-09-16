@@ -98,6 +98,7 @@ func (api *Service) ListMessages(
 		IgnoreMaxSizeLimit:    req.Msg.GetIgnoreMaxSizeLimit(),
 		KeyDeserializer:       fromProtoEncoding(req.Msg.GetKeyDeserializer()),
 		ValueDeserializer:     fromProtoEncoding(req.Msg.GetValueDeserializer()),
+		SchemaContext:         req.Msg.GetSchemaContext(),
 		PageToken:             lmq.PageToken,
 		PageSize:              int(req.Msg.GetPageSize()),
 	}

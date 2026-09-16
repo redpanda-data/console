@@ -60,6 +60,7 @@ type ListMessageRequest struct {
 	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
+	SchemaContext         string // Empty resolves the topic's context, "." forces the default.
 
 	// Pagination fields (used when PageSize > 0)
 	PageToken string
@@ -168,8 +169,11 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
 	}
 
-	// Schema IDs are context-local; find the topic's context before decoding.
-	schemaCtx := s.resolveTopicSchemaContext(ctx, adminCl, listReq.TopicName)
+	// Schema IDs are context-local; an explicit context wins over the topic's.
+	schemaCtx := listReq.SchemaContext
+	if schemaCtx == "" {
+		schemaCtx = s.resolveTopicSchemaContext(ctx, adminCl, listReq.TopicName)
+	}
 
 	partitionByID := make(map[int32]kadm.PartitionDetail)
 	onlinePartitionIDs := make([]int32, 0)

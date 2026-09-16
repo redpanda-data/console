@@ -66,6 +66,7 @@ export type TopicSearchParams = {
   filters: FilterEntry[];
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
+  schemaContext: string; // '' resolves the topic's context, '.' forces the default.
 };
 
 /**
@@ -170,6 +171,7 @@ const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   filters: [],
   keyDeserializer: PayloadEncoding.UNSPECIFIED,
   valueDeserializer: PayloadEncoding.UNSPECIFIED,
+  schemaContext: '',
 };
 
 // Helper function to create default topic settings

@@ -129,6 +129,7 @@ export const DEFAULT_SEARCH_PARAMS = {
 
   keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
   valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
+  schemaContext: '' as string,
 };
 
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
