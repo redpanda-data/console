@@ -1,6 +1,6 @@
 # Redpanda Console Frontend
 
-React 18.3 · Bun · Rsbuild
+React 19 · Bun · Rsbuild
 
 ## Critical Rules
 

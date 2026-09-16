@@ -121,7 +121,7 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
           />
         </Field>
 
-        {/* The Registry ButtonGroup attaches its children, where Chakra's spaced them. */}
+        {/* ButtonGroup attaches its children, so a submit/cancel pair needs its own gap. */}
         <div className="flex gap-2">
           <Button
             // `isLoading` hides the label, so the button needs its own name.

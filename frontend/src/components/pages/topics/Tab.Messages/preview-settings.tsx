@@ -212,7 +212,7 @@ const PreviewTagSettings = ({
             </span>
           }
         />
-        {/* PopoverContent is a fixed w-72; the Chakra popover sized to its content. */}
+        {/* PopoverContent is a fixed w-72, so the width is set here to fit the content. */}
         <PopoverContent align="start" className="flex w-auto flex-col gap-1" side="bottom">
           <Label style={{ marginBottom: '.5em' }} text="Display Name">
             <Input

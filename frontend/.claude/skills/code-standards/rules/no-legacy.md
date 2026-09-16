@@ -2,7 +2,7 @@
 title: No Legacy Patterns
 impact: CRITICAL
 impactDescription: Never use legacy patterns - they block migration efforts
-tags: legacy, migration, chakra, mobx, yup
+tags: legacy, migration, mobx, yup
 ---
 
 ## No Legacy Patterns
@@ -15,8 +15,6 @@ The codebase is actively migrating away from legacy libraries. Using them in new
 
 | Legacy | Modern Alternative |
 |--------|-------------------|
-| `@redpanda-data/ui` | Redpanda UI Registry (`components/redpanda-ui/`) |
-| `@chakra-ui/react` | Registry components + Tailwind classes |
 | MobX, decorators | Zustand for global state |
 | Class components | Functional components + hooks |
 | Yup validation | Zod |
@@ -24,22 +22,6 @@ The codebase is actively migrating away from legacy libraries. Using them in new
 | Jest | Rstest |
 
 ## Common Violations
-
-**Chakra UI:**
-```tsx
-// WRONG
-import { Button, Box, Flex } from "@chakra-ui/react";
-import { Button, Modal } from "@redpanda-data/ui";
-import { useDisclosure, useToast } from "@chakra-ui/react";
-```
-
-```tsx
-// CORRECT
-import { Button } from "components/redpanda-ui/components/button";
-import { Dialog } from "components/redpanda-ui/components/dialog";
-// Use useState instead of useDisclosure
-// Use showToast from utils/toast.utils instead of useToast
-```
 
 **MobX:**
 ```typescript
@@ -100,8 +82,6 @@ When converting observables to React state, automatic behaviors must become expl
 ## Legacy Locations
 
 - MobX stores: `src/state/` (do not add new files)
-- Chakra: none left. `@redpanda-data/ui` and `@chakra-ui/*` are uninstalled, so an import fails
-  `type:check` with TS2307 rather than lint.
 
 ## See Also
 

@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 export function renderEmptyIcon(tooltipText?: string) {
   const text = tooltipText || 'Empty';
   return (
-    // Chakra's `openDelay={1}` was effectively instant; Base UI's default is 600ms.
+    // Base UI's default open delay is 600ms; this tooltip should be instant.
     <Tooltip delayDuration={0}>
       <TooltipTrigger
         render={

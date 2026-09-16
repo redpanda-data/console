@@ -41,11 +41,6 @@ rs.mock('../../../../utils/env', () => {
   };
 });
 
-// Mock hookform devtools
-rs.mock('@hookform/devtools', () => ({
-  DevTool: () => null,
-}));
-
 // Mock ui-state
 rs.mock('state/ui-state', () => ({
   uiState: {

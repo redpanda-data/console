@@ -164,14 +164,6 @@ const originalWarn = console.warn;
 const originalError = console.error;
 
 const SUPPRESSED_PATTERNS = [
-  // Radix UI ref-forwarding — fixed in React 19, not actionable in React 18
-  /Function components cannot be given refs/,
-  // React 18.3 installs a warning getter on `props.ref`; the CLI-installed registry Slot
-  // (components/redpanda-ui/lib/base-ui-compat.tsx) reads it during asChild composition. Not
-  // fixable here (vendored, CLI-managed) — fix upstream in the registry; resolves in React 19.
-  /`ref` is not a prop/,
-  // Radix DialogContent missing Description/aria-describedby — tracked separately for a11y
-  /Missing `Description` or `aria-describedby=\{undefined\}` for \{DialogContent\}/,
   // happy-dom DOMException noise from unmocked fetch/script loads
   /DOMException.*AbortError/,
   /Failed to load script/,
