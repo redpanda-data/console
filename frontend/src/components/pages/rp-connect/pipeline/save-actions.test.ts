@@ -23,7 +23,6 @@ import {
   primaryRunIntent,
   runIntentLabel,
   type SaveContext,
-  saveRunHint,
   saveSuccessMessage,
   unsavedChangesCopy,
 } from './save-actions';
@@ -161,31 +160,6 @@ describe('runIntentLabel', () => {
   it('does not promise a stop that creating never performs', () => {
     expect(runIntentLabel('stopped', creatingWithoutDrafts)).toBe('Save');
     expect(runIntentLabel('stopped', running)).toBe('Save and stop');
-  });
-});
-
-describe('saveRunHint', () => {
-  it('describes what saving will do rather than claiming it already happened', () => {
-    const hint = saveRunHint(creating);
-    expect(hint).toMatch(/won't start/i);
-    // The hint sits under the button whether or not the save succeeded, so it must not assert it did.
-    expect(hint).not.toMatch(/^saved\b/i);
-  });
-
-  it('says a draft save keeps it a draft', () => {
-    expect(saveRunHint(draft)).toMatch(/keeps it a draft/i);
-  });
-
-  it('warns that saving a running pipeline restarts it', () => {
-    expect(saveRunHint(running)).toMatch(/restarts/i);
-  });
-
-  it("says a stopped pipeline won't be started by a save", () => {
-    expect(saveRunHint(stopped)).toMatch(/won't start it/i);
-  });
-
-  it('stays quiet while the state is unknown', () => {
-    expect(saveRunHint(unknownState)).toBeNull();
   });
 });
 

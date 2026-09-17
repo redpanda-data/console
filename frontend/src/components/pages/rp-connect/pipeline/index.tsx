@@ -191,6 +191,9 @@ const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 // How many effect re-runs (editor mount, ranges catch-up) a reveal request survives unresolved.
 const MAX_REVEAL_ATTEMPTS = 5;
 
+// Sonner's default is 4s.
+const SAVE_SUCCESS_TOAST_MS = 6000;
+
 const pipelineFormSchema = z.object({
   name: z
     .string()
@@ -425,7 +428,7 @@ function usePipelineSave({
             // Both messages name the deployment; only one of them still needs a human.
             toast.error(stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
           } else if (!stopFailed) {
-            toast.success(saveSuccessMessage(saveContext, run));
+            toast.success(saveSuccessMessage(saveContext, run), { duration: SAVE_SUCCESS_TOAST_MS });
           }
           warnIfResized(form, createdPipeline?.resources?.cpuShares);
           onBeforeGuardedNavigate?.();
@@ -506,7 +509,7 @@ function usePipelineSave({
           // No longer a draft, so the editor's next save would deploy too: hand over to the pipeline's page.
           toast.error(DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
         } else {
-          toast.success(saveSuccessMessage(saveContext, run));
+          toast.success(saveSuccessMessage(saveContext, run), { duration: SAVE_SUCCESS_TOAST_MS });
         }
         if ((isDraftSave && !draftWasIgnored) || intent?.skipNavigation) {
           return true;
@@ -1061,6 +1064,7 @@ type LaneTab = {
   count?: number;
   /** Plain marker when there is something to say but nothing to count. */
   showDot?: boolean;
+  disabled?: boolean;
 };
 
 // The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
@@ -1533,6 +1537,7 @@ function PipelinePageContent() {
         label: UNSAVED_CHANGES_LANE_LABEL,
         count: componentChanges.length + settingsChanges.length,
         showDot: hasUnsavedChanges,
+        disabled: !hasUnsavedChanges,
         onSelect: () => setActiveEditLane('changes'),
       });
     }
@@ -1555,6 +1560,13 @@ function PipelinePageContent() {
       setActiveViewLane('configuration');
     }
   }, [mode, editingDraft, activeViewLane, setActiveViewLane]);
+
+  // The tab is disabled once everything is saved, so leave the lane too.
+  useEffect(() => {
+    if (isEditChangesLane && !hasUnsavedChanges) {
+      setActiveEditLane('yaml');
+    }
+  }, [isEditChangesLane, hasUnsavedChanges, setActiveEditLane]);
 
   return (
     // The viewport measure is a floor here, not a fixed height: notices above the editor push the page
@@ -1634,7 +1646,13 @@ function PipelinePageContent() {
               <Tabs value={mode === 'view' ? activeViewLane : activeEditLane}>
                 <TabsList className="pr-12 [&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
                   {lanes.map((lane) => (
-                    <TabsTrigger key={lane.value} onClick={lane.onSelect} value={lane.value} variant="underline">
+                    <TabsTrigger
+                      disabled={lane.disabled}
+                      key={lane.value}
+                      onClick={lane.onSelect}
+                      value={lane.value}
+                      variant="underline"
+                    >
                       <span className="flex items-center gap-2">
                         {lane.label}
                         {lane.count ? <CountDot count={lane.count} size="sm" variant="informative" /> : null}

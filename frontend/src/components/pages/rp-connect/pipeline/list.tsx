@@ -71,11 +71,13 @@ import {
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
+  useInvalidatePipelineQueries,
   useListPipelinesQuery,
   useStartPipelineMutation,
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import { appGlobal } from 'state/app-global';
 import {
   autosaveTargetKey,
   rpcnEditorAutosave,
@@ -619,6 +621,12 @@ const PipelineListPageContent = () => {
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
   const { mutate: startMutation } = useStartPipelineMutation();
   const { mutate: stopMutation } = useStopPipelineMutation();
+  const invalidatePipelineQueries = useInvalidatePipelineQueries();
+  useEffect(() => {
+    appGlobal.onRefresh = () => {
+      invalidatePipelineQueries();
+    };
+  }, [invalidatePipelineQueries]);
 
   const pipelines = useMemo(
     () =>

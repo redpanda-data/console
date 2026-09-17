@@ -232,6 +232,11 @@ function CommandMenuContent({
   setIsUserDialogOpen,
 }: CommandMenuContentProps) {
   const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
+  // An empty category keeps its create button below but gets no heading.
+  const showVariables = show('variables');
+  const showSecrets = show('secrets') && secrets.length > 0;
+  const showTopics = show('topics') && allTopics.length > 0;
+  const showUsers = show('users') && users.length > 0;
 
   return (
     <>
@@ -256,7 +261,7 @@ function CommandMenuContent({
       ) : null}
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        {show('variables') && (
+        {showVariables ? (
           <CommandGroup>
             <CommandGroupHeading>Contextual variables</CommandGroupHeading>
             {contextualVariables.map((v) => (
@@ -265,42 +270,40 @@ function CommandMenuContent({
               </CommandItem>
             ))}
           </CommandGroup>
-        )}
-        {show('secrets') && (
+        ) : null}
+        {showSecrets ? (
           <CommandGroup>
-            <CommandGroupHeading separator={show('variables')}>Secrets</CommandGroupHeading>
+            <CommandGroupHeading separator={showVariables}>Secrets</CommandGroupHeading>
             {secrets.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(getSecretSyntax(name))}>
                 <InlineCode>secrets.{name}</InlineCode>
               </CommandItem>
             ))}
           </CommandGroup>
-        )}
-        {show('topics') && (
+        ) : null}
+        {showTopics ? (
           <CommandGroup>
-            <CommandGroupHeading separator={show('variables') || show('secrets')}>Topics</CommandGroupHeading>
+            <CommandGroupHeading separator={showVariables || showSecrets}>Topics</CommandGroupHeading>
             {allTopics.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(name)}>
                 {name}
               </CommandItem>
             ))}
           </CommandGroup>
-        )}
-        {show('users') && (
+        ) : null}
+        {showUsers ? (
           <CommandGroup>
-            <CommandGroupHeading separator={show('variables') || show('secrets') || show('topics')}>
-              Users
-            </CommandGroupHeading>
+            <CommandGroupHeading separator={showVariables || showSecrets || showTopics}>Users</CommandGroupHeading>
             {users.map((name) => (
               <CommandItem key={name} onSelect={() => onSelect(name)}>
                 {name}
               </CommandItem>
             ))}
           </CommandGroup>
-        )}
+        ) : null}
       </CommandList>
       {(show('secrets') || show('topics') || show('users')) && (
-        <div className="!border-input flex gap-1 border-t bg-surface-recess px-2 py-1">
+        <div className="!border-input flex flex-wrap gap-1 border-t bg-surface-recess px-2 py-1">
           {show('secrets') && (
             <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)} variant="ghost">
               Create secret

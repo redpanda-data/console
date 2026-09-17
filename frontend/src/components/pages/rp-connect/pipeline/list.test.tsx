@@ -29,6 +29,7 @@ import {
   Pipeline_State,
   PipelineSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
@@ -184,6 +185,21 @@ describe('PipelineListPage', () => {
     // Default sort puts problems first: error, then running, then stopped.
     expect(visibleLinkNames()).toEqual(['clickstream-sink', 'orders-enrichment', 'nightly-export']);
     expect(screen.queryByText('agent-helper')).not.toBeInTheDocument();
+  });
+
+  // The page header's refresh button routes through `appGlobal.onRefresh`.
+  it('refetches the list from the header refresh button', async () => {
+    const requests: ListRequest[] = [];
+    renderWithFileRoutes(<PipelineListPage />, {
+      transport: buildTransport({ onRequest: (req) => requests.push(req) }),
+    });
+
+    expect(await screen.findByText('nightly-export')).toBeInTheDocument();
+    const drained = requests.length;
+
+    appGlobal.onRefresh();
+
+    await waitFor(() => expect(requests.length).toBeGreaterThan(drained));
   });
 
   it('counts each status tab over the drained rows', async () => {

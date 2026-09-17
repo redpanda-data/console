@@ -1394,7 +1394,6 @@ describe('PipelinePage', () => {
         }),
       });
 
-      expect(await screen.findByText(/won't start/i)).toBeInTheDocument();
       const saveButton = await screen.findByTestId('save-pipeline');
       await waitFor(() => expect(saveButton).toHaveTextContent('Save draft'));
 
@@ -1536,12 +1535,11 @@ describe('PipelinePage', () => {
       expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
     });
 
-    it('warns that saving a running pipeline restarts it, and says so on the button', async () => {
+    it('says on the button that saving a running pipeline restarts it', async () => {
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      expect(await screen.findByText(/saving restarts the running pipeline/i)).toBeInTheDocument();
       await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Apply and restart'));
     });
 
@@ -1557,7 +1555,8 @@ describe('PipelinePage', () => {
         }),
       });
 
-      expect(await screen.findByText(/won't start it/i)).toBeInTheDocument();
+      // The dropdown only appears once the pipeline's state has loaded.
+      await screen.findByTestId('save-pipeline-options');
 
       await openSaveOptions(user);
       await user.click(await screen.findByRole('menuitem', { name: 'Save and start' }));
@@ -1602,17 +1601,57 @@ describe('PipelinePage', () => {
       expect(screen.queryByRole('tab', { name: /unsaved changes/i })).not.toBeInTheDocument();
     });
 
-    it('says there is nothing to apply when the editor matches what is saved', async () => {
-      const user = userEvent.setup();
+    // Nothing to compare until something is edited.
+    it('is disabled while the editor matches what is saved', async () => {
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
       render(<PipelinePage />, { transport: createTransport() });
 
       await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
-      await openChanges(user);
+      expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveAttribute('aria-disabled', 'true');
 
-      expect(await screen.findByTestId('changes-panel-empty')).toBeInTheDocument();
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
+
+      await waitFor(() =>
+        expect(screen.getByRole('tab', { name: /unsaved changes/i })).not.toHaveAttribute('aria-disabled', 'true')
+      );
+    });
+
+    // A draft save stays in the editor, and the lane is disabled again once nothing is unsaved.
+    it('returns to the YAML lane once the edits are saved', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: rs.fn().mockReturnValue(
+            create(ConsoleGetPipelineResponseSchema, {
+              response: create(GetPipelineResponseSchema, {
+                pipeline: create(PipelineSchema, {
+                  id: 'test-pipeline',
+                  displayName: 'Test Pipeline',
+                  configYaml: DEPLOYED_YAML,
+                  state: Pipeline_State.DRAFT,
+                }),
+              }),
+            })
+          ),
+          updatePipelineMock,
+        }),
+      });
+
+      await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML));
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
+      await openChanges(user);
+      expect(await screen.findByTestId('diff-editor')).toBeInTheDocument();
+
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
       expect(screen.queryByTestId('diff-editor')).not.toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('diffs the deployed configuration against the edits, and counts the components touched', async () => {

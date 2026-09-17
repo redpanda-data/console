@@ -135,23 +135,6 @@ export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): str
   }
 }
 
-export function saveRunHint(context: SaveContext): string | null {
-  const intent = primaryRunIntent(context);
-  if (intent === 'draft') {
-    return context.mode === 'create' ? "Saving won't start the pipeline" : "Saving keeps it a draft — it won't start";
-  }
-  if (intent === 'stopped') {
-    return "Saving won't start the pipeline";
-  }
-  if (isStoppableState(context.state)) {
-    return 'Saving restarts the running pipeline';
-  }
-  if (isStartableState(context.state)) {
-    return "Pipeline is stopped — saving won't start it";
-  }
-  return null;
-}
-
 export const isBlankConfig = (configYaml: string): boolean => configYaml.trim().length === 0;
 
 export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting this pipeline.';

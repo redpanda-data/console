@@ -15,7 +15,6 @@ import { ArrowLeftIcon, EditIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
-import { ButtonGroup } from 'components/redpanda-ui/components/button-group';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
@@ -23,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { Group } from 'components/redpanda-ui/components/group';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -54,7 +54,6 @@ import {
   runIntentLabel,
   type SaveContext,
   type SaveIntent,
-  saveRunHint,
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
@@ -369,7 +368,8 @@ const SaveActions = ({
   const primary = primaryRunIntent(context);
   const alternates = alternateRunIntents(context).filter((intent) => intent !== primary);
   return (
-    <ButtonGroup>
+    // Positions come from JSX order, not DOM siblings: the open menu's focus guards land inside this div.
+    <Group attached className="w-auto">
       <Button disabled={isSaving} onClick={() => onSave({ run: primary })} testId="save-pipeline">
         {runIntentLabel(primary, context)}
         {isSaving ? <Spinner /> : null}
@@ -392,7 +392,7 @@ const SaveActions = ({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-    </ButtonGroup>
+    </Group>
   );
 };
 
@@ -428,7 +428,6 @@ export function PipelineEditHeader({
   const units = useWatch({ control: form.control, name: 'computeUnits' });
   const tags = (useWatch({ control: form.control, name: 'tags' }) ?? []).filter((t) => t.key);
   const { mode, state: pipelineState } = saveContext;
-  const runHint = saveRunHint(saveContext);
   const editingDraft = isDraft({ state: pipelineState });
   const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
 
@@ -445,11 +444,6 @@ export function PipelineEditHeader({
             <BackButton onClick={onBack} />
             <EditableTitle form={form} placeholder={mode === 'create' ? 'New pipeline' : 'Untitled pipeline'} />
             {editingDraft ? <PipelineStateBadge state={pipelineState} tooltip={DRAFT_BADGE_TOOLTIP} /> : null}
-            {mode === 'create' ? (
-              <Badge tone="default" variant="outline">
-                New
-              </Badge>
-            ) : null}
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings
             </Button>
@@ -468,16 +462,16 @@ export function PipelineEditHeader({
               Docs
             </Button>
             <SaveActions context={saveContext} isSaving={isSaving} onSave={onSave} />
-            <span className="absolute top-full right-0 mt-1.5 flex items-center gap-2 whitespace-nowrap text-body-sm text-muted-foreground">
-              {hasUnsavedChanges ? (
-                <span className="flex items-center gap-1.5" role="status" title={UNSAVED_CHANGES_PILL_TOOLTIP}>
-                  <span aria-hidden className="size-2 rounded-full bg-informative" />
-                  Unsaved changes
-                </span>
-              ) : null}
-              {hasUnsavedChanges && runHint ? <span aria-hidden>·</span> : null}
-              {runHint ? <span>{runHint}</span> : null}
-            </span>
+            {hasUnsavedChanges ? (
+              <span
+                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-body-sm text-muted-foreground"
+                role="status"
+                title={UNSAVED_CHANGES_PILL_TOOLTIP}
+              >
+                <span aria-hidden className="size-2 rounded-full bg-informative" />
+                Unsaved changes
+              </span>
+            ) : null}
           </div>
         </div>
       </div>

@@ -151,6 +151,24 @@ export const useListPipelinesQuery = (
   };
 };
 
+/** The page header's refresh button. */
+export const useInvalidatePipelineQueries = () => {
+  const queryClient = useQueryClient();
+  return useCallback(
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({ schema: PipelineService.method.listPipelines, cardinality: 'infinite' }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: createConnectQueryKey({ schema: PipelineService.method.getPipeline, cardinality: 'finite' }),
+          exact: false,
+        }),
+      ]),
+    [queryClient]
+  );
+};
+
 const NAME_LOOKUP_PAGE_SIZE = 100;
 
 // `name_contains` is validated server-side against `^[A-Za-z0-9-_ /]+$`, max 128; strip rather than 400.
