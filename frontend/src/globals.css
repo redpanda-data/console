@@ -29,9 +29,20 @@
 
 @layer utilities {
   /* Work surface filling the viewport below whatever chrome sits above it (--console-page-top, measured
-     in components/layout/page-column.tsx). The 1rem keeps its bottom border off the viewport edge. */
+     in components/layout/page-column.tsx). The 1rem keeps its bottom border off the viewport edge.
+     Scoped to the classes rather than :root — the host app declares its own custom properties there. */
+  .page-fill-viewport,
+  .page-fill-viewport-min {
+    --page-fill-height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
+  }
+
   .page-fill-viewport {
-    height: calc(100dvh - var(--console-page-top, 7rem) - 1rem);
+    height: var(--page-fill-height);
+  }
+
+  /* The same measure as a floor, for a page whose content may demand more. */
+  .page-fill-viewport-min {
+    min-height: var(--page-fill-height);
   }
 }
 

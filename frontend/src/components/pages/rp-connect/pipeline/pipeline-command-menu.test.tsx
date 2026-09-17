@@ -99,7 +99,7 @@ function queryHeading(name: string) {
 
 describe('PipelineCommandMenu', () => {
   it('dialog variant renders all category group headings', async () => {
-    const transport = createTestTransport();
+    const transport = createTestTransport({ secretNames: ['API_KEY'], topicNames: ['orders'], userNames: ['svc'] });
 
     render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
       transport,
@@ -111,6 +111,18 @@ describe('PipelineCommandMenu', () => {
       expect(getHeading('Topics')).toBeInTheDocument();
       expect(getHeading('Users')).toBeInTheDocument();
     });
+  });
+
+  it('drops the heading of an empty category but still offers to create into it', async () => {
+    const transport = createTestTransport({ topicNames: ['orders'], userNames: ['svc'] });
+
+    render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
+      transport,
+    });
+
+    await waitFor(() => expect(getHeading('Topics')).toBeInTheDocument());
+    expect(queryHeading('Secrets')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
   });
 
   it('secret items appear in the list with correct syntax', async () => {

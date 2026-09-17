@@ -30,7 +30,7 @@ export function aggregateConnectors(names: string[]): ConnectorCount[] {
   return [...byName.values()];
 }
 
-export type PipelineStateTabId = 'all' | 'running' | 'stopped' | 'error';
+export type PipelineStateTabId = 'all' | 'draft' | 'running' | 'stopped' | 'error';
 
 export type PipelineStateTab = {
   id: PipelineStateTabId;
@@ -43,6 +43,12 @@ export type PipelineStateTab = {
 // Transitional states ride with their destination: starting counts as running, stopping as stopped.
 export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   { id: 'all', label: 'All', emptyText: 'You have no Redpanda Connect pipelines' },
+  {
+    id: 'draft',
+    label: 'Drafts',
+    states: [Pipeline_State.DRAFT],
+    emptyText: 'No drafts match the current filters',
+  },
   {
     id: 'running',
     label: 'Running',
@@ -63,13 +69,24 @@ export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   },
 ];
 
+export function stateFilterValues(tab: PipelineStateTab): string[] | undefined {
+  const values = (tab.states ?? []).map(String);
+  return values.length > 0 ? values : undefined;
+}
+
 // Inverted once, so counting is one pass over the rows rather than one scan per tab.
 const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
   PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
 );
 
 export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineStateTabId, number> {
-  const counts: Record<PipelineStateTabId, number> = { all: states.length, running: 0, stopped: 0, error: 0 };
+  const counts: Record<PipelineStateTabId, number> = {
+    all: states.length,
+    draft: 0,
+    running: 0,
+    stopped: 0,
+    error: 0,
+  };
   for (const state of states) {
     const tabId = TAB_BY_STATE.get(state);
     if (tabId) {
