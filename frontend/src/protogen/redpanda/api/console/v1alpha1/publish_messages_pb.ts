@@ -114,7 +114,7 @@ export type PublishMessagePayloadOptions = Message<"redpanda.api.console.v1alpha
   indexPath: number[];
 
   /**
-   * Optional Schema Registry context of schema_id. Empty uses the topic's context, then the default context.
+   * Optional Schema Registry context of schema_id. Empty uses the topic's context, fallbacks to the default context.
    *
    * @generated from field: string schema_context = 12;
    */
