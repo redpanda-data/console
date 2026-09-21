@@ -122,7 +122,7 @@ type PublishMessagePayloadOptions struct {
 	SchemaId      *int32                 `protobuf:"varint,9,opt,name=schema_id,json=schemaId,proto3,oneof" json:"schema_id,omitempty"`                              // Optional schema ID.
 	Index         *int32                 `protobuf:"varint,10,opt,name=index,proto3,oneof" json:"index,omitempty"`                                                   // Deprecated single-index. Prefer index_path for Protobuf messages so nested types are addressable.
 	IndexPath     []int32                `protobuf:"varint,11,rep,packed,name=index_path,json=indexPath,proto3" json:"index_path,omitempty"`                         // Optional message-index path for Protobuf. Each element selects the Nth nested MessageDescriptor; e.g. [0] = first top-level, [1, 0] = first nested message of the second top-level. Empty = first top-level.
-	SchemaContext string                 `protobuf:"bytes,12,opt,name=schema_context,json=schemaContext,proto3" json:"schema_context,omitempty"`                     // Optional Schema Registry context of schema_id. Empty uses the topic's context, then the default context.
+	SchemaContext string                 `protobuf:"bytes,12,opt,name=schema_context,json=schemaContext,proto3" json:"schema_context,omitempty"`                     // Optional Schema Registry context of schema_id. Empty uses the topic's context, fallbacks to the default context.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

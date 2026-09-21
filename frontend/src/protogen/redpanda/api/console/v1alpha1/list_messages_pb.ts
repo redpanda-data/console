@@ -113,7 +113,7 @@ export type ListMessagesRequest = Message<"redpanda.api.console.v1alpha1.ListMes
   pageToken: string;
 
   /**
-   * Optional Schema Registry context to resolve schema IDs in. Empty uses the topic's redpanda.schema.registry.context, then the default context; "." forces the default context.
+   * Optional Schema Registry context to resolve schema IDs in. Empty uses the topic's redpanda.schema.registry.context, fallbacks to the default context; "." forces the default context.
    *
    * @generated from field: string schema_context = 15;
    */
