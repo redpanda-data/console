@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Redpanda Data, Inc.
+ * Copyright 2022 Redpanda Data, Inc.
  *
  * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
@@ -12,15 +12,18 @@
 import { Link } from '@tanstack/react-router';
 
 import { api, useApiStoreHook } from '../../../../../state/backend-api';
+import { pickSubjectForContext, topicSchemaContext } from '../../../schemas/schema-context-utils';
 
-export const MessageSchema = (p: { schemaId: number }) => {
-  const subjects = useApiStoreHook((s) => s.schemaUsagesById.get(p.schemaId));
+export const MessageSchema = (p: { schemaId: number; topicName?: string }) => {
+  const subjects = useApiStoreHook((state) => state.schemaUsagesById.get(p.schemaId));
+  const topicConfig = useApiStoreHook((state) => (p.topicName ? state.topicConfig.get(p.topicName) : undefined));
   if (!subjects || subjects.length === 0) {
     api.refreshSchemaUsagesById(p.schemaId);
     return <>ID {p.schemaId} (unknown subject)</>;
   }
 
-  const s = subjects[0];
+  // The same schema ID can name different schemas in different contexts.
+  const s = pickSubjectForContext(subjects, topicSchemaContext(topicConfig?.configEntries)) ?? subjects[0];
   return (
     <Link
       params={{ subjectName: encodeURIComponent(s.subject) }}

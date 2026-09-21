@@ -109,9 +109,10 @@ type TroubleshootingReport struct {
 
 // SerializeInput represents the input to serialize methods.
 type SerializeInput struct {
-	Topic string
-	Key   RecordPayloadInput
-	Value RecordPayloadInput
+	Topic         string
+	SchemaContext string // Empty means default.
+	Key           RecordPayloadInput
+	Value         RecordPayloadInput
 }
 
 // RecordPayloadInput represents the actual input of payloads for serialization.
@@ -119,6 +120,8 @@ type RecordPayloadInput struct {
 	Payload  any
 	Encoding PayloadEncoding
 	Options  []SerdeOpt
+	// SchemaContext overrides SerializeInput.SchemaContext for this payload.
+	SchemaContext string
 }
 
 // SerializeOutput represents the result of serialization.

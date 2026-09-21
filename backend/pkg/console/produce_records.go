@@ -32,10 +32,16 @@ func (s *Service) ProduceRecord(
 	useTransactions bool,
 	compressionOpts []kgo.CompressionCodec,
 ) (*ProduceRecordResponse, error) {
+	_, adminCl, err := s.kafkaClientFactory.GetKafkaClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	data, err := s.serdeSvc.SerializeRecord(ctx, serde.SerializeInput{
-		Topic: topic,
-		Key:   *key,
-		Value: *value,
+		Topic:         topic,
+		SchemaContext: s.resolveTopicSchemaContext(ctx, adminCl, topic),
+		Key:           *key,
+		Value:         *value,
 	})
 	if err != nil {
 		return &ProduceRecordResponse{

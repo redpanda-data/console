@@ -60,6 +60,7 @@ type ListMessageRequest struct {
 	IgnoreMaxSizeLimit    bool
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
+	SchemaContext         string // Empty resolves the topic's context, "." forces the default.
 
 	// Pagination fields (used when PageSize > 0)
 	PageToken string
@@ -133,6 +134,7 @@ type TopicConsumeRequest struct {
 	KeyDeserializer       serde.PayloadEncoding
 	ValueDeserializer     serde.PayloadEncoding
 	Direction             string // "desc" or "asc" - used for message ordering
+	SchemaContext         string // Empty means default.
 }
 
 // ListMessages processes a list message request as sent from the Frontend. This function is responsible (mostly
@@ -165,6 +167,12 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 	if topicMetadata.Err != nil {
 		return fmt.Errorf("failed to get metadata for topic %s: %w", listReq.TopicName, topicMetadata.Err)
+	}
+
+	// Schema IDs are context-local; an explicit context wins over the topic's.
+	schemaCtx := listReq.SchemaContext
+	if schemaCtx == "" {
+		schemaCtx = s.resolveTopicSchemaContext(ctx, adminCl, listReq.TopicName)
 	}
 
 	partitionByID := make(map[int32]kadm.PartitionDetail)
@@ -263,6 +271,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		KeyDeserializer:       listReq.KeyDeserializer,
 		ValueDeserializer:     listReq.ValueDeserializer,
 		Direction:             direction,
+		SchemaContext:         schemaCtx,
 	}
 
 	progress.OnPhase("Consuming messages")
@@ -1015,6 +1024,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 				IgnoreMaxSizeLimit: consumeReq.IgnoreMaxSizeLimit,
 				KeyEncoding:        consumeReq.KeyDeserializer,
 				ValueEncoding:      consumeReq.ValueDeserializer,
+				SchemaContext:      consumeReq.SchemaContext,
 			})
 
 		headersByKey := make(map[string][]byte, len(deserializedRec.Headers))

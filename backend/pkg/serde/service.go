@@ -88,6 +88,11 @@ func (s *Service) DeserializeRecord(ctx context.Context, record *kgo.Record, opt
 		opts.MaxPayloadSize = config.DefaultMaxDeserializationPayloadSize
 	}
 
+	// Resolve schema IDs in the topic's schema registry context.
+	if opts.SchemaContext != "" {
+		ctx = schema.InContext(ctx, opts.SchemaContext)
+	}
+
 	// 1. Test if it's a known binary Format
 	if record.Topic == "__consumer_offsets" {
 		rec, err := s.deserializeConsumerOffset(record)
@@ -201,6 +206,10 @@ type DeserializationOptions struct {
 
 	// IgnoreMaxSizeLimit can be used to force returning deserialized payloads even if too large.
 	IgnoreMaxSizeLimit bool
+
+	// SchemaContext is the Schema Registry context to resolve schema IDs in.
+	// Empty means the default context.
+	SchemaContext string
 }
 
 // SerializeRecord will serialize the input.
@@ -221,13 +230,14 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	found := false
 	var err error
 	var bytes []byte
+	keyCtx := schemaContextFor(ctx, input.SchemaContext, input.Key.SchemaContext)
 	for _, serde := range s.SerDes {
 		if input.Key.Encoding != serde.Name() {
 			continue
 		}
 
 		found = true
-		bytes, err = serde.SerializeObject(ctx, input.Key.Payload, PayloadTypeKey, input.Key.Options...)
+		bytes, err = serde.SerializeObject(keyCtx, input.Key.Payload, PayloadTypeKey, input.Key.Options...)
 		if err != nil {
 			keyTS = append(keyTS, TroubleshootingReport{
 				SerdeName: string(serde.Name()),
@@ -259,13 +269,14 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	valueTS := make([]TroubleshootingReport, 0)
 	found = false
 	err = nil
+	valueCtx := schemaContextFor(ctx, input.SchemaContext, input.Value.SchemaContext)
 	for _, serde := range s.SerDes {
 		if input.Value.Encoding != serde.Name() {
 			continue
 		}
 
 		found = true
-		bytes, err = serde.SerializeObject(ctx, input.Value.Payload, PayloadTypeValue, input.Value.Options...)
+		bytes, err = serde.SerializeObject(valueCtx, input.Value.Payload, PayloadTypeValue, input.Value.Options...)
 		if err != nil {
 			valueTS = append(valueTS, TroubleshootingReport{
 				SerdeName: string(serde.Name()),
@@ -286,6 +297,19 @@ func (s *Service) SerializeRecord(ctx context.Context, input SerializeInput) (*S
 	}
 
 	return &sr, err
+}
+
+// schemaContextFor scopes ctx to the payload's schema context, falling back to
+// the topic's.
+func schemaContextFor(ctx context.Context, topicContext, payloadContext string) context.Context {
+	name := topicContext
+	if payloadContext != "" {
+		name = payloadContext
+	}
+	if name == "" {
+		return ctx
+	}
+	return schema.InContext(ctx, name)
 }
 
 func payloadFromRecord(record *kgo.Record, payloadType PayloadType) []byte {

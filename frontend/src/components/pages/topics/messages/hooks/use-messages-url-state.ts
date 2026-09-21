@@ -144,6 +144,15 @@ export function useMessagesUrlState(topicName: string) {
     parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
   );
 
+  const [schemaContext, setSchemaContext] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: (val) => setSearchParams(topicName, { schemaContext: val }),
+      getDefaultValue: () => getSearchParams(topicName)?.schemaContext ?? '',
+    },
+    'sc',
+    parseAsString.withDefault('')
+  );
+
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
 
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
@@ -234,6 +243,8 @@ export function useMessagesUrlState(topicName: string) {
     setKeyDeserializer,
     valueDeserializer,
     setValueDeserializer,
+    schemaContext,
+    setSchemaContext,
     pageIndex,
     setPageIndex,
     pageSize,

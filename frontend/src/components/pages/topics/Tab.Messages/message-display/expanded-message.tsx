@@ -79,7 +79,7 @@ export const ExpandedMessage: FC<ExpandedMessageProps> = React.memo(
 
     return (
       <div className="bg-muted/30 px-10 py-6">
-        <MessageMetaData msg={msg} />
+        <MessageMetaData msg={msg} topicName={topicName} />
         <Tabs defaultValue="value">
           <TabsList className="w-full" columns={3} layout="equal">
             <TabsTrigger disabled={msg.key === null || msg.key.size === 0} value="key">

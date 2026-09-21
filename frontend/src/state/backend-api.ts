@@ -2591,6 +2591,7 @@ export function createMessageSearch() {
       req.ignoreMaxSizeLimit = searchRequest.ignoreSizeLimit ?? false;
       req.keyDeserializer = searchRequest.keyDeserializer;
       req.valueDeserializer = searchRequest.valueDeserializer;
+      req.schemaContext = searchRequest.schemaContext ?? '';
 
       // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
       // from 30s to 30 minutes before ending the request gracefully.
@@ -2867,6 +2868,7 @@ export type MessageSearchRequest = {
 
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
+  schemaContext?: string; // '' resolves the topic's context, '.' forces the default.
 };
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
