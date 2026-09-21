@@ -10,6 +10,7 @@
  */
 
 import { config } from 'config';
+import { z } from 'zod';
 import { create } from 'zustand';
 
 // Crash recovery for the pipeline editor: one localStorage buffer per editor target, cleared on save.
@@ -38,58 +39,30 @@ export const CREATE_AUTOSAVE_TARGET = 'create';
 
 export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
 
-type EditorAutosaveTag = { key: string; value: string };
-
-export type EditorAutosaveEntry = {
-  version: number;
+// Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
+const editorAutosaveEntrySchema = z.object({
+  version: z.literal(AUTOSAVE_ENTRY_VERSION),
   /** `create`, or a pipeline id. */
-  targetKey: string;
-  clusterId: string;
-  name: string;
-  description: string;
-  computeUnits: number;
-  tags: EditorAutosaveTag[];
-  configYaml: string;
+  targetKey: z.string(),
+  clusterId: z.string(),
+  name: z.string(),
+  description: z.string(),
+  computeUnits: z.number(),
+  tags: z.array(z.object({ key: z.string(), value: z.string() })),
+  configYaml: z.string(),
   /** Epoch ms, this browser's clock. */
-  updatedAt: number;
+  updatedAt: z.number(),
   /** The pipeline's `update_time` (epoch ms) these edits were based on; staleness compares server clocks only. */
-  basedOnUpdateTime?: number | null;
-};
+  basedOnUpdateTime: z.number().nullish(),
+});
+
+export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;
 
 export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;
 
 const currentClusterId = (): string => config.clusterId || 'default';
 
 const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
-
-const isAutosaveTag = (value: unknown): value is EditorAutosaveTag =>
-  value !== null &&
-  typeof value === 'object' &&
-  typeof (value as EditorAutosaveTag).key === 'string' &&
-  typeof (value as EditorAutosaveTag).value === 'string';
-
-// Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
-function isAutosaveEntry(value: unknown): value is EditorAutosaveEntry {
-  if (value === null || typeof value !== 'object') {
-    return false;
-  }
-  const entry = value as Partial<EditorAutosaveEntry>;
-  return (
-    entry.version === AUTOSAVE_ENTRY_VERSION &&
-    typeof entry.targetKey === 'string' &&
-    typeof entry.clusterId === 'string' &&
-    typeof entry.name === 'string' &&
-    typeof entry.description === 'string' &&
-    typeof entry.computeUnits === 'number' &&
-    Array.isArray(entry.tags) &&
-    entry.tags.every(isAutosaveTag) &&
-    typeof entry.configYaml === 'string' &&
-    typeof entry.updatedAt === 'number' &&
-    (entry.basedOnUpdateTime === undefined ||
-      entry.basedOnUpdateTime === null ||
-      typeof entry.basedOnUpdateTime === 'number')
-  );
-}
 
 const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
@@ -102,8 +75,13 @@ function readAll(): EditorAutosaveEntry[] {
   try {
     window.localStorage.removeItem(LEGACY_DRAFTS_STORAGE_KEY);
     const raw = window.localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    const entries = Array.isArray(parsed) ? parsed.filter(isAutosaveEntry) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    const entries = Array.isArray(parsed)
+      ? parsed.flatMap((entry) => {
+          const result = editorAutosaveEntrySchema.safeParse(entry);
+          return result.success ? [result.data] : [];
+        })
+      : [];
     const live = entries.filter((entry) => !isAutosaveExpired(entry));
     if (live.length !== entries.length) {
       writeAll(live);
