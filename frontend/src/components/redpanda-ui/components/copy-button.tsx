@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, CopyIcon, XIcon } from 'lucide-react';
 import { AnimatePresence, type HTMLMotionProps, motion } from 'motion/react';
@@ -30,6 +32,8 @@ const buttonVariants = cva(
         md: 'h-9 px-4 py-2 has-[>svg]:px-3',
         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
         icon: 'size-9',
+        // Mirrors Button's icon-xs, for a copy affordance inside a table row.
+        'icon-xs': 'size-6 [&_svg]:size-3.5',
       },
     },
     defaultVariants: {
@@ -66,59 +70,47 @@ function CopyButton({
   children,
   ...props
 }: CopyButtonProps) {
-  const [localIsCopied, setLocalIsCopied] = React.useState(isCopied ?? false);
+  const [localIsCopied, setLocalIsCopied] = React.useState(false);
   const [isErrored, setIsErrored] = React.useState(false);
-  const state = (localIsCopied && 'copied') || (isErrored && 'error') || 'idle';
+  const copied = isCopied ?? localIsCopied;
+  const state = (copied && 'copied') || (isErrored && 'error') || 'idle';
   const Icon = ICONS[state];
   const resetTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  React.useEffect(() => {
-    setLocalIsCopied(isCopied ?? false);
-  }, [isCopied]);
+  React.useEffect(function clearCopyResetOnUnmount() {
+    return () => clearTimeout(resetTimeout.current);
+  }, []);
 
-  React.useEffect(() => () => clearTimeout(resetTimeout.current), []);
+  const scheduleReset = (reset: () => void) => {
+    clearTimeout(resetTimeout.current);
+    resetTimeout.current = setTimeout(reset, delay);
+  };
 
-  const scheduleReset = React.useCallback(
-    (reset: () => void) => {
-      clearTimeout(resetTimeout.current);
-      resetTimeout.current = setTimeout(reset, delay);
-    },
-    [delay]
-  );
-
-  const handleIsCopied = React.useCallback(
-    (isCopiedState: boolean) => {
+  const handleIsCopied = (isCopiedState: boolean) => {
+    if (isCopied === undefined) {
       setLocalIsCopied(isCopiedState);
-      onCopyChange?.(isCopiedState);
-    },
-    [onCopyChange]
-  );
+    }
+    onCopyChange?.(isCopiedState);
+  };
 
-  const handleCopy = React.useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (isCopied) {
-        return;
-      }
-      onClick?.(e);
-      if (!content) {
-        return;
-      }
-      try {
-        await navigator.clipboard.writeText(content);
-        setIsErrored(false);
-        handleIsCopied(true);
-        scheduleReset(() => handleIsCopied(false));
-        onCopy?.(content);
-      } catch (error) {
-        // biome-ignore lint/suspicious/noConsole: needed for copy button implementation
-        console.error('Error copying command', error);
-        handleIsCopied(false);
-        setIsErrored(true);
-        scheduleReset(() => setIsErrored(false));
-      }
-    },
-    [isCopied, content, onClick, onCopy, handleIsCopied, scheduleReset]
-  );
+  const handleCopy = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event);
+    if (!content) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch {
+      handleIsCopied(false);
+      setIsErrored(true);
+      scheduleReset(() => setIsErrored(false));
+      return;
+    }
+    setIsErrored(false);
+    handleIsCopied(true);
+    scheduleReset(() => handleIsCopied(false));
+    onCopy?.(content);
+  };
 
   return (
     <>
@@ -155,4 +147,4 @@ function CopyButton({
   );
 }
 
-export { CopyButton, buttonVariants, type CopyButtonProps };
+export { buttonVariants, CopyButton, type CopyButtonProps };

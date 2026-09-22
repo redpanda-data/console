@@ -8,8 +8,8 @@
  * Run by `cli.mts`, which ships with the theme.
  */
 
-import { describeHole, findOverrideHoles } from './rule.mts';
 import { readFileSync } from 'node:fs';
+import { describeHole, findOverrideHoles } from './rule.mts';
 
 const DECL = /^\s*(--color-[a-z0-9-]+)\s*:\s*([^;]+);/i;
 /** Either spelling opening a block: consumers still ship `.dark` sheets. */
@@ -22,31 +22,31 @@ const STATIC_GROUND = /^--color-static-(?:dark|light)$/;
 
 type Block = 'light' | 'dark';
 
-type Declaration = {
+interface Declaration {
+  block: Block;
+  line: number;
   name: string;
   value: string;
-  line: number;
-  block: Block;
-};
+}
 
-export type AuditOptions = {
-  themePath: string;
+export interface AuditOptions {
+  /** How the sheet's path is printed in messages. Defaults to `overridesPath`. */
+  label?: string;
   overridesPath: string;
   /** Scale prefixes the sheet owns outright (`ink`, `ember`): its palette, not overrides of ours. */
   palettePrefixes?: string[];
-  /** How the sheet's path is printed in messages. Defaults to `overridesPath`. */
-  label?: string;
-};
+  themePath: string;
+}
 
-export type AuditResult = {
+export interface AuditResult {
   failures: string[];
-  /** Overrides naming a registry role — everything but the sheet's own scales. */
-  semanticCount: number;
-  roleCount: number;
-  registryCount: number;
   /** Roles the sheet deliberately leaves to the registry. */
   inheritedCount: number;
-};
+  registryCount: number;
+  roleCount: number;
+  /** Overrides naming a registry role — everything but the sheet's own scales. */
+  semanticCount: number;
+}
 
 const count = (text: string, char: string): number => text.split(char).length - 1;
 
@@ -85,13 +85,13 @@ const parse = (file: string): Declaration[] => {
 
 const bareName = (name: string): string => name.replace(COLOR_PREFIX, '');
 
-type Sheet = {
+interface Sheet {
+  isPalette: (name: string) => boolean;
+  overrides: Declaration[];
+  registryNames: ReadonlySet<string>;
   /** How the sheet's path is printed in messages. */
   rel: string;
-  registryNames: ReadonlySet<string>;
-  overrides: Declaration[];
-  isPalette: (name: string) => boolean;
-};
+}
 
 /** dead — a name theme.css does not declare, so the declaration paints nothing. */
 const findDead = ({ rel, registryNames, overrides, isPalette }: Sheet): string[] =>

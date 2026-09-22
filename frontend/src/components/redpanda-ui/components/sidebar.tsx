@@ -24,15 +24,15 @@ const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
-type SidebarContextProps = {
-  state: 'expanded' | 'collapsed';
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  openMobile: boolean;
-  setOpenMobile: (open: boolean) => void;
+interface SidebarContextProps {
   isMobile: boolean;
+  open: boolean;
+  openMobile: boolean;
+  setOpen: (open: boolean) => void;
+  setOpenMobile: (open: boolean) => void;
+  state: 'expanded' | 'collapsed';
   toggleSidebar: () => void;
-};
+}
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
@@ -77,16 +77,14 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // biome-ignore lint/suspicious/noDocumentCookie: part of sidebar implementation
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open]
   );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: part of sidebar implementation
   const toggleSidebar = React.useCallback(
     () => (isMobile ? setOpenMobile((isOpen) => !isOpen) : setOpen((isOpen) => !isOpen)),
-    [isMobile, setOpen, setOpenMobile]
+    [isMobile, setOpen]
   );
 
   React.useEffect(() => {
@@ -104,7 +102,6 @@ function SidebarProvider({
   // Exposed as data-state="expanded"/"collapsed" for Tailwind styling.
   const state = open ? 'expanded' : 'collapsed';
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: part of sidebar implementation
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       state,
@@ -115,7 +112,7 @@ function SidebarProvider({
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, toggleSidebar]
   );
 
   return (
@@ -311,7 +308,7 @@ function SidebarRail({ className, ...props }: SidebarRailProps) {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <button
+    <Button
       aria-label="Toggle Sidebar"
       className={cn(
         'absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 motion-reduce:transition-none sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2',
@@ -327,6 +324,7 @@ function SidebarRail({ className, ...props }: SidebarRailProps) {
       onClick={toggleSidebar}
       tabIndex={-1}
       title="Toggle Sidebar"
+      variant="unstyled"
       {...props}
     />
   );
@@ -826,49 +824,49 @@ function SidebarMenuSubButton({
 export {
   Sidebar,
   SidebarContent,
+  type SidebarContentProps,
   SidebarFooter,
+  type SidebarFooterProps,
   SidebarGroup,
   SidebarGroupAction,
+  type SidebarGroupActionProps,
   SidebarGroupContent,
+  type SidebarGroupContentProps,
   SidebarGroupLabel,
+  type SidebarGroupLabelProps,
+  type SidebarGroupProps,
   SidebarHeader,
+  type SidebarHeaderProps,
   SidebarInput,
+  type SidebarInputProps,
   SidebarInset,
+  type SidebarInsetProps,
   SidebarMenu,
   SidebarMenuAction,
+  type SidebarMenuActionProps,
   SidebarMenuBadge,
+  type SidebarMenuBadgeProps,
   SidebarMenuButton,
+  type SidebarMenuButtonProps,
   SidebarMenuItem,
+  type SidebarMenuItemProps,
+  type SidebarMenuProps,
   SidebarMenuSkeleton,
+  type SidebarMenuSkeletonProps,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger,
-  useSidebar,
-  type SidebarProps,
-  type SidebarContentProps,
-  type SidebarFooterProps,
-  type SidebarGroupProps,
-  type SidebarGroupActionProps,
-  type SidebarGroupContentProps,
-  type SidebarGroupLabelProps,
-  type SidebarHeaderProps,
-  type SidebarInputProps,
-  type SidebarInsetProps,
-  type SidebarMenuProps,
-  type SidebarMenuActionProps,
-  type SidebarMenuBadgeProps,
-  type SidebarMenuButtonProps,
-  type SidebarMenuItemProps,
-  type SidebarMenuSkeletonProps,
-  type SidebarMenuSubProps,
-  type SidebarMenuSubItemProps,
   type SidebarMenuSubButtonProps,
+  SidebarMenuSubItem,
+  type SidebarMenuSubItemProps,
+  type SidebarMenuSubProps,
+  type SidebarProps,
+  SidebarProvider,
   type SidebarProviderProps,
+  SidebarRail,
   type SidebarRailProps,
+  SidebarSeparator,
   type SidebarSeparatorProps,
+  SidebarTrigger,
   type SidebarTriggerProps,
+  useSidebar,
 };

@@ -1,11 +1,10 @@
 'use client';
 
 import { Link2Icon } from 'lucide-react';
-
-import { StringLikeInput, useFieldTestIds } from './shared';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig, URL_FIELD_PATTERN } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { StringLikeInput, useFieldTestIds } from './shared';
 
 function UrlFieldComponent(props: AutoFormFieldProps) {
   const testIds = useFieldTestIds(props.id);

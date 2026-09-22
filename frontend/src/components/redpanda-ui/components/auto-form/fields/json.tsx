@@ -1,10 +1,10 @@
 'use client';
 
-import { useFieldTestIds } from './shared';
 import { JSONField } from '../../json-field';
 import type { AutoFormFieldProps } from '../core-types';
 import { getProtoFieldCustomData, getProtoJsonSchema } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
+import { useFieldTestIds } from './shared';
 
 function JsonFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

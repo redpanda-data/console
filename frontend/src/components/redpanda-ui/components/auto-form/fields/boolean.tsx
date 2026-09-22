@@ -1,6 +1,5 @@
 'use client';
 
-import { getControlLabel, useFieldTestIds } from './shared';
 import { Checkbox } from '../../checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
 import { Switch } from '../../switch';
@@ -9,6 +8,7 @@ import type { AutoFormFieldProps } from '../core-types';
 import { CONSENT_FIELD_PATTERN, UNSET_SELECT_VALUE } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
+import { getControlLabel, useFieldTestIds } from './shared';
 
 // Tri-state select (true / false / unset).
 function renderBooleanSelectedValue(value: unknown) {

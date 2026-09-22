@@ -99,8 +99,8 @@ function DotGroup({
   ...props
 }: DotGroupProps) {
   const childArray = React.Children.toArray(children).filter(React.isValidElement);
-  const visibleChildren = maxVisible !== undefined ? childArray.slice(0, maxVisible) : childArray;
-  const overflowCount = maxVisible !== undefined ? childArray.length - visibleChildren.length : 0;
+  const visibleChildren = maxVisible === undefined ? childArray : childArray.slice(0, maxVisible);
+  const overflowCount = maxVisible === undefined ? 0 : childArray.length - visibleChildren.length;
 
   const dots = (
     <div
@@ -146,4 +146,4 @@ function DotGroup({
   return dots;
 }
 
-export { DotGroup, dotGroupSpacingVariants, dotGroupPositionVariants, type DotGroupProps, type DotGroupPosition };
+export { DotGroup, type DotGroupPosition, type DotGroupProps, dotGroupPositionVariants, dotGroupSpacingVariants };

@@ -8,7 +8,6 @@ import { cn, type SharedProps } from '../lib/utils';
 
 function ItemGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: part of item group implementation
     <div
       className={cn('group/item-group flex w-full flex-col', className)}
       data-slot="item-group"
@@ -165,13 +164,13 @@ function ItemFooter({ className, ...props }: React.ComponentProps<'div'>) {
 
 export {
   Item,
-  ItemMedia,
-  ItemContent,
   ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
   ItemGroup,
+  ItemHeader,
+  ItemMedia,
   ItemSeparator,
   ItemTitle,
-  ItemDescription,
-  ItemHeader,
-  ItemFooter,
 };

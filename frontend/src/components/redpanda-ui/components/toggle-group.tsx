@@ -182,4 +182,4 @@ function ToggleGroupItem({ className, disabled, variant, size, testId, value, ..
   );
 }
 
-export { ToggleGroup, ToggleGroupItem, type ToggleGroupProps, type ToggleGroupItemProps };
+export { ToggleGroup, ToggleGroupItem, type ToggleGroupItemProps, type ToggleGroupProps };

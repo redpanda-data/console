@@ -86,12 +86,12 @@ const formSectionVariants = cva('', {
   },
 });
 
-type FormFieldContextValue<
+interface FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> = {
+> {
   name: TName;
-};
+}
 
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
@@ -129,9 +129,9 @@ const useFormField = () => {
   };
 };
 
-type FormItemContextValue = {
+interface FormItemContextValue {
   id: string;
-};
+}
 
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
@@ -242,8 +242,8 @@ function FormContainer({ className, layout, width, testId, ...props }: FormConta
 }
 
 interface FormSectionProps extends React.ComponentProps<'div'>, VariantProps<typeof formSectionVariants>, SharedProps {
-  title?: string;
   description?: string;
+  title?: string;
 }
 
 function FormSection({
@@ -278,12 +278,12 @@ interface SimpleFormFieldProps<
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > extends Omit<ControllerProps<TFieldValues, TName>, 'render'> {
-  label?: string;
-  description?: string;
-  required?: boolean;
-  layout?: FormItemProps['layout'];
-  descriptionPosition?: 'top' | 'bottom';
   children: (field: ControllerRenderProps<TFieldValues, TName>) => React.ReactElement;
+  description?: string;
+  descriptionPosition?: 'top' | 'bottom';
+  label?: string;
+  layout?: FormItemProps['layout'];
+  required?: boolean;
 }
 
 function SimpleFormField<
@@ -320,15 +320,15 @@ function SimpleFormField<
 }
 
 export {
-  useFormField,
   Form,
-  FormItem,
-  FormLabel,
+  FormContainer,
   FormControl,
   FormDescription,
-  FormMessage,
   FormField,
-  FormContainer,
+  FormItem,
+  FormLabel,
+  FormMessage,
   FormSection,
   SimpleFormField,
+  useFormField,
 };

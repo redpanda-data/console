@@ -3,7 +3,10 @@
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 
 type Orientation = 'vertical' | 'horizontal';
-type ScrollEdges = { start: boolean; end: boolean };
+interface ScrollEdges {
+  end: boolean;
+  start: boolean;
+}
 
 /**
  * Tracks whether a scroll container has hidden content past its start/end

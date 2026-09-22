@@ -13,12 +13,10 @@
  * Runs under `bun`, or `node` 24+.
  */
 
-/** biome-ignore-all lint/suspicious/noConsole: CLI */
-
-import { auditThemeOverrides } from './audit.mts';
 import { existsSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { auditThemeOverrides } from './audit.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

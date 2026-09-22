@@ -1,6 +1,8 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 import { cva, type VariantProps } from 'class-variance-authority';
 import { InfoIcon } from 'lucide-react';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -16,6 +18,8 @@ const alertVariants = cva(
         success: '!border-success-line bg-success-wash [&>svg]:text-success',
         warning: '!border-warning-line bg-warning-wash [&>svg]:text-warning',
         destructive: '!border-destructive-line bg-destructive-wash [&>svg]:text-destructive',
+        // A toneless notice: for banners that inform without carrying a status.
+        neutral: '!border-border bg-secondary-wash [&>svg]:text-subtle',
       },
     },
     defaultVariants: {
@@ -28,7 +32,7 @@ function Alert({
   className,
   variant,
   testId,
-  icon = <InfoIcon />,
+  icon,
   children,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof alertVariants> & SharedProps & { icon?: React.ReactNode }) {
@@ -40,7 +44,7 @@ function Alert({
       role="alert"
       {...props}
     >
-      {icon}
+      {icon === undefined ? <InfoIcon /> : icon}
       {children}
     </div>
   );
@@ -93,4 +97,4 @@ function AlertAction({ className, testId, ...props }: React.ComponentProps<'div'
   );
 }
 
-export { Alert, AlertTitle, AlertDescription, AlertAction };
+export { Alert, AlertAction, AlertDescription, AlertTitle };

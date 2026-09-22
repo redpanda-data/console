@@ -1,26 +1,27 @@
 'use client';
 
 import { TrashIcon } from 'lucide-react';
-import React from 'react';
+import type React from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-
-import { AutoFormFieldRenderer } from './index';
-import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
 import { Button } from '../../button';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { ParsedField } from '../core-types';
 import { formSpacing } from '../form-spacing';
 import { createEmptyFieldValue, getFieldErrorMessage } from '../helpers';
 import { getAutoFormCollectionRemoveTestId, getAutoFormCollectionRowTestId, getAutoFormFieldTestId } from '../test-ids';
+import type { NestedFieldRenderer } from './renderer-types';
+import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
 
 const COMPACT_PAIR_GRID = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3';
 const KEY_REMOVE_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3';
 
 export function MapFieldRenderer({
+  NestedField,
   field,
   path,
   inheritedDisabled = false,
 }: {
+  NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
   inheritedDisabled?: boolean;
@@ -55,7 +56,7 @@ export function MapFieldRenderer({
       <ArrayWrapperComponent
         addButtonTestId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'add')}
         field={renderField}
-        label={String(label)}
+        label={label}
         onAddItem={() => {
           if (isDisabled) {
             return;
@@ -81,12 +82,12 @@ export function MapFieldRenderer({
                 data-testid={rowTestId}
                 key={rhfField.id}
               >
-                <AutoFormFieldRenderer
+                <NestedField
                   field={compactKeyField}
                   inheritedDisabled={isDisabled}
                   path={[...path, String(index), 'key']}
                 />
-                <AutoFormFieldRenderer
+                <NestedField
                   field={compactValueField}
                   inheritedDisabled={isDisabled}
                   path={[...path, String(index), 'value']}
@@ -116,7 +117,7 @@ export function MapFieldRenderer({
             >
               <div className={KEY_REMOVE_GRID}>
                 {compactKeyField ? (
-                  <AutoFormFieldRenderer
+                  <NestedField
                     field={compactKeyField}
                     inheritedDisabled={isDisabled}
                     path={[...path, String(index), 'key']}
@@ -135,7 +136,7 @@ export function MapFieldRenderer({
                 </Button>
               </div>
               {valueField ? (
-                <AutoFormFieldRenderer
+                <NestedField
                   field={compactValueField ?? valueField}
                   inheritedDisabled={isDisabled}
                   path={[...path, String(index), 'value']}

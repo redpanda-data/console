@@ -3,21 +3,21 @@ import type { ComboboxOption } from './index';
 /** Prefix for the creatable item's cmdk value to distinguish from real options. */
 export const CREATE_ITEM_PREFIX = '__create__';
 
-export type GroupedOptions = {
+export interface GroupedOptions {
   readonly heading: string;
+  readonly options: readonly ComboboxOption[];
   readonly testId?: string;
-  readonly options: ReadonlyArray<ComboboxOption>;
-};
+}
 
 /** Resolve a controlled value to its display label. */
-export const resolveLabel = (options: ReadonlyArray<ComboboxOption>, value: string): string => {
+export const resolveLabel = (options: readonly ComboboxOption[], value: string): string => {
   const opt = options.find((o) => o.value === value);
   return opt?.label ?? value;
 };
 
 /** Filter options by a case-insensitive query against label and value. */
 export const filterOptions = (
-  options: ReadonlyArray<ComboboxOption>,
+  options: readonly ComboboxOption[],
   query: string,
   selectedLabel: string
 ): ComboboxOption[] => {
@@ -35,7 +35,7 @@ export const filterOptions = (
 };
 
 /** Group options by their `group` field, preserving insertion order. Returns undefined if no groups exist. */
-export const groupOptions = (options: ReadonlyArray<ComboboxOption>): GroupedOptions[] | undefined => {
+export const groupOptions = (options: readonly ComboboxOption[]): GroupedOptions[] | undefined => {
   if (!options.some((option) => option.group)) {
     return;
   }
@@ -59,7 +59,7 @@ export const groupOptions = (options: ReadonlyArray<ComboboxOption>): GroupedOpt
 
 /** Build the flat list of navigable cmdk values for keyboard navigation. */
 export const getNavigableValues = (
-  filteredOptions: ReadonlyArray<ComboboxOption>,
+  filteredOptions: readonly ComboboxOption[],
   canCreate: boolean,
   inputValue: string
 ): string[] => {
@@ -69,7 +69,7 @@ export const getNavigableValues = (
 
 /** Compute the next highlight value with circular wrapping. */
 export const computeNextHighlight = (
-  navigableValues: ReadonlyArray<string>,
+  navigableValues: readonly string[],
   currentHighlight: string,
   direction: 1 | -1
 ): string => {
@@ -93,7 +93,7 @@ export const computeNextHighlight = (
 };
 
 /** Find the first matching option for a query string (used for auto-highlight on type). */
-export const findFirstMatch = (options: ReadonlyArray<ComboboxOption>, query: string): string => {
+export const findFirstMatch = (options: readonly ComboboxOption[], query: string): string => {
   if (!query) {
     return '';
   }

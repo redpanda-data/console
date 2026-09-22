@@ -81,7 +81,9 @@ export const dataTableFeatures = tableFeatures({
   expandedRowModel: createExpandedRowModel(),
 });
 
-export type DataTableColumnMeta = { label?: string };
+export interface DataTableColumnMeta {
+  label?: string;
+}
 export type DataTableFeatures = typeof dataTableFeatures;
 export type DataTableRenderState = Omit<TableState<DataTableFeatures>, 'rowSelection'>;
 export type DataTableColumnDef<TData extends RowData, TValue = unknown> = ColumnDef<DataTableFeatures, TData, TValue>;

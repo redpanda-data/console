@@ -1,17 +1,16 @@
 'use client';
 
-import React from 'react';
-
-import { formSpacing } from './form-spacing';
-import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
+import type React from 'react';
 import { cn } from '../../lib/utils';
 import { Button } from '../button';
 import { FieldLabel } from '../field';
+import { formSpacing } from './form-spacing';
+import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
 
 export interface FormLayoutProps extends Omit<React.ComponentProps<'form'>, 'children'> {
   children?: React.ReactNode;
-  testId?: string;
   ref?: React.Ref<HTMLFormElement>;
+  testId?: string;
 }
 
 export function FormLayout({ children, className, testId, ref, ...formProps }: FormLayoutProps) {
@@ -23,14 +22,14 @@ export function FormLayout({ children, className, testId, ref, ...formProps }: F
 }
 
 export interface FormSectionProps {
-  title?: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
   description?: React.ReactNode;
   /** Override divider visibility. Defaults to true when a title is present. */
   divider?: boolean;
   required?: boolean;
   testId?: string;
-  className?: string;
-  children?: React.ReactNode;
+  title?: React.ReactNode;
 }
 
 export function FormSection({ title, description, divider, required, testId, className, children }: FormSectionProps) {
@@ -62,17 +61,24 @@ export function FormSection({ title, description, divider, required, testId, cla
 }
 
 export interface FormFieldProps {
-  label?: React.ReactNode;
-  helpText?: React.ReactNode;
-  error?: React.ReactNode;
-  required?: boolean;
-  htmlFor?: string;
-  testId?: string;
-  className?: string;
   children: React.ReactNode;
+  className?: string;
+  error?: React.ReactNode;
+  helpText?: React.ReactNode;
+  htmlFor?: string;
+  label?: React.ReactNode;
+  required?: boolean;
+  testId?: string;
 }
 
 export function FormField({ label, helpText, error, required, htmlFor, testId, className, children }: FormFieldProps) {
+  let supportingContent: React.ReactNode = null;
+  if (error) {
+    supportingContent = <span className="text-body-sm text-destructive">{error}</span>;
+  } else if (helpText) {
+    supportingContent = <span className="text-body-sm text-subtle">{helpText}</span>;
+  }
+
   return (
     <div className={cn(formSpacing.labelStack, className)} data-testid={testId}>
       {label ? (
@@ -82,11 +88,7 @@ export function FormField({ label, helpText, error, required, htmlFor, testId, c
         </FieldLabel>
       ) : null}
       {children}
-      {error ? (
-        <span className="text-body-sm text-destructive">{error}</span>
-      ) : helpText ? (
-        <span className="text-body-sm text-subtle">{helpText}</span>
-      ) : null}
+      {supportingContent}
     </div>
   );
 }

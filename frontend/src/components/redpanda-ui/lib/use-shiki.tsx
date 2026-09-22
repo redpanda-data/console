@@ -1,8 +1,19 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import type { Root } from 'hast';
 import { type Components, toJsxRuntime } from 'hast-util-to-jsx-runtime';
-import { type DependencyList, Fragment, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  type DependencyList,
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 import type {
   Awaitable,
@@ -17,6 +28,10 @@ import type {
   ThemeRegistrationAny,
 } from 'shiki';
 import type { BundledTheme } from 'shiki/themes';
+
+const SPECIAL_LANGUAGES = new Set(['ansi', 'plain', 'plaintext', 'text', 'txt']);
+type LoadableLanguage = Parameters<Highlighter['loadLanguage']>[number];
+type LoadableTheme = Parameters<Highlighter['loadTheme']>[number];
 
 export const defaultThemes = {
   light: 'github-light',
@@ -65,13 +80,6 @@ export async function _highlight(code: string, options: HighlightOptions) {
       langs: [],
       themes: themesToLoad,
     });
-
-    if (process.env.NODE_ENV === 'development') {
-      // biome-ignore lint/suspicious/noConsole: needed for shiki implementation
-      console.warn(
-        '[Fumadocs `highlight()`] Avoid passing `engine` directly. For custom engines, use `shiki` directly instead.'
-      );
-    }
   }
 
   try {
@@ -109,7 +117,7 @@ export async function getHighlighter(
   engineType: 'js' | 'oniguruma' | 'custom',
   options: BundledHighlighterOptions<BundledLanguage, BundledTheme>
 ) {
-  const { createHighlighter } = await import('shiki');
+  const { bundledLanguages, bundledThemes, createHighlighter } = await import('shiki');
   let highlighter = highlighters.get(engineType);
 
   if (!highlighter) {
@@ -133,12 +141,19 @@ export async function getHighlighter(
   }
 
   return highlighter.then(async (instance) => {
-    await Promise.all([
-      // @ts-expect-error unknown
-      instance.loadLanguage(...options.langs),
-      // @ts-expect-error unknown
-      instance.loadTheme(...options.themes),
-    ]);
+    const languages = options.langs.filter(
+      (language): language is LoadableLanguage =>
+        typeof language !== 'string' || language in bundledLanguages || SPECIAL_LANGUAGES.has(language)
+    );
+    const themes = options.themes.filter(
+      (theme): theme is LoadableTheme => typeof theme !== 'string' || theme === 'none' || theme in bundledThemes
+    );
+
+    if (languages.length !== options.langs.length || themes.length !== options.themes.length) {
+      throw new Error('Shiki received an unregistered language or theme');
+    }
+
+    await Promise.all([instance.loadLanguage(...languages), instance.loadTheme(...themes)]);
 
     return instance;
   });
@@ -148,10 +163,10 @@ export async function highlight(code: string, options: HighlightOptions): Promis
   return _renderHighlight(await _highlight(code, options), options);
 }
 
-type Task = {
-  key: string;
+interface Task {
   aborted: boolean;
-};
+  key: string;
+}
 
 export function useShiki(
   code: string,
@@ -170,16 +185,13 @@ export function useShiki(
   deps?: DependencyList
 ): ReactNode {
   const markupId = useId();
-  const key = useMemo(() => (deps ? JSON.stringify(deps) : `${options.lang}:${code}`), [code, deps, options.lang]);
+  const key = deps ? JSON.stringify(deps) : `${options.lang}:${code}`;
   const shikiOptions: HighlightOptions = {
     ...options,
     engine: options.engine ?? 'js',
   };
 
-  const currentTask = useRef<Task | undefined>({
-    key,
-    aborted: false,
-  });
+  const currentTask = useRef<Task | undefined>(undefined);
 
   const [rendered, setRendered] = useState<ReactNode>(() => {
     const element =
@@ -193,33 +205,44 @@ export function useShiki(
       return renderHighlightWithMarkup(markupId, hast, shikiOptions, attr);
     }
 
-    currentTask.current = undefined;
     return loading;
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: listen for defined deps only
-  useEffect(() => {
-    if (currentTask.current?.key === key) {
-      return;
-    }
+  const startHighlight = useEffectEvent((task: Task) => {
+    highlight(code, shikiOptions)
+      .then((result) => {
+        if (!task.aborted) {
+          setRendered(result);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!task.aborted) {
+          const message = error instanceof Error ? error.message : 'Could not highlight code.';
+          setRendered(<span role="alert">{message}</span>);
+        }
+      });
+  });
 
-    if (currentTask.current) {
-      currentTask.current.aborted = true;
-    }
-
-    const task: Task = {
-      key,
-      aborted: false,
-    };
-    currentTask.current = task;
-
-    // biome-ignore lint/complexity/noVoid: part of shiki implementation
-    void highlight(code, shikiOptions).then((result) => {
-      if (!task.aborted) {
-        setRendered(result);
+  useEffect(
+    function synchronizeHighlight() {
+      if (currentTask.current?.key === key) {
+        return;
       }
-    });
-  }, [key]);
+
+      if (currentTask.current) {
+        currentTask.current.aborted = true;
+      }
+
+      const task: Task = {
+        key,
+        aborted: false,
+      };
+      currentTask.current = task;
+
+      startHighlight(task);
+    },
+    [key]
+  );
 
   if (typeof window === 'undefined') {
     // For server-side rendering, we need to handle this differently without use()

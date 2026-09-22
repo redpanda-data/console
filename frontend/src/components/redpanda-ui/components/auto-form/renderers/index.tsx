@@ -1,12 +1,6 @@
 'use client';
 
 import React from 'react';
-
-import { ArrayFieldRenderer } from './array';
-import { ControlledFieldRenderer } from './controlled';
-import { MapFieldRenderer } from './map';
-import { ObjectFieldRenderer } from './object';
-import { OneofFieldRenderer } from './oneof';
 import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
 import { defaultRegistry } from '../fields';
@@ -14,6 +8,12 @@ import { getFieldUiConfig, resolveRenderFieldType } from '../helpers';
 import { buildFieldMatchContext, type FieldTypeRegistry } from '../registry';
 import type { AutoFormSlotProps } from '../slot';
 import type { FieldTypes } from '../types';
+import { ArrayFieldRenderer } from './array';
+import { ControlledFieldRenderer } from './controlled';
+import { MapFieldRenderer } from './map';
+import { ObjectFieldRenderer } from './object';
+import { OneofFieldRenderer } from './oneof';
+import type { AutoFormFieldRendererProps } from './renderer-types';
 
 function resolveFieldType(field: ParsedField, registry: FieldTypeRegistry): FieldTypes {
   const explicitControl = getFieldUiConfig(field).control;
@@ -31,12 +31,7 @@ export function AutoFormFieldRenderer({
   path,
   inheritedDisabled = false,
   registry,
-}: {
-  field: ParsedField;
-  path: string[];
-  inheritedDisabled?: boolean;
-  registry?: FieldTypeRegistry;
-}) {
+}: AutoFormFieldRendererProps) {
   const activeRegistry = registry ?? defaultRegistry;
   const renderType = resolveFieldType(field, activeRegistry);
 
@@ -53,13 +48,41 @@ export function AutoFormFieldRenderer({
 
   switch (field.type) {
     case 'object':
-      return <ObjectFieldRenderer field={field} inheritedDisabled={inheritedDisabled} path={path} />;
+      return (
+        <ObjectFieldRenderer
+          field={field}
+          inheritedDisabled={inheritedDisabled}
+          NestedField={AutoFormFieldRenderer}
+          path={path}
+        />
+      );
     case 'array':
-      return <ArrayFieldRenderer field={field} inheritedDisabled={inheritedDisabled} path={path} />;
+      return (
+        <ArrayFieldRenderer
+          field={field}
+          inheritedDisabled={inheritedDisabled}
+          NestedField={AutoFormFieldRenderer}
+          path={path}
+        />
+      );
     case 'map':
-      return <MapFieldRenderer field={field} inheritedDisabled={inheritedDisabled} path={path} />;
+      return (
+        <MapFieldRenderer
+          field={field}
+          inheritedDisabled={inheritedDisabled}
+          NestedField={AutoFormFieldRenderer}
+          path={path}
+        />
+      );
     case 'oneof':
-      return <OneofFieldRenderer field={field} inheritedDisabled={inheritedDisabled} path={path} />;
+      return (
+        <OneofFieldRenderer
+          field={field}
+          inheritedDisabled={inheritedDisabled}
+          NestedField={AutoFormFieldRenderer}
+          path={path}
+        />
+      );
     default:
       return (
         <ControlledFieldRenderer
@@ -72,11 +95,11 @@ export function AutoFormFieldRenderer({
   }
 }
 
-type SlotEntry = {
-  before?: string;
+interface SlotEntry {
   after?: string;
+  before?: string;
   content: React.ReactNode;
-};
+}
 
 function extractSlots(children: React.ReactNode): { slots: SlotEntry[]; other: React.ReactNode[] } {
   const slots: SlotEntry[] = [];
@@ -130,21 +153,13 @@ export function AutoFormFields({ fields, children }: { fields: ParsedField[]; ch
 
   return (
     <>
-      {topSlots.map((content, i) => (
-        <React.Fragment key={`slot-top-${i}`}>{content}</React.Fragment>
-      ))}
-      {other.length > 0
-        ? other.map((content, i) => <React.Fragment key={`other-${i}`}>{content}</React.Fragment>)
-        : null}
+      {React.Children.toArray(topSlots)}
+      {React.Children.toArray(other)}
       {fields.map((field) => (
         <React.Fragment key={field.key}>
-          {beforeSlots.get(field.key)?.map((content, i) => (
-            <React.Fragment key={`before-${field.key}-${i}`}>{content}</React.Fragment>
-          ))}
+          {React.Children.toArray(beforeSlots.get(field.key))}
           <AutoFormFieldRenderer field={field} path={[field.key]} registry={fieldRegistry} />
-          {afterSlots.get(field.key)?.map((content, i) => (
-            <React.Fragment key={`after-${field.key}-${i}`}>{content}</React.Fragment>
-          ))}
+          {React.Children.toArray(afterSlots.get(field.key))}
         </React.Fragment>
       ))}
     </>

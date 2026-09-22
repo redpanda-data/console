@@ -73,7 +73,9 @@ export const comboboxReducer = (state: ComboboxState, action: ComboboxAction): C
     case 'BLUR_REVERT':
       return { ...state, inputValue: action.controlledLabel, userHasTyped: false };
     case 'SYNC_CONTROLLED':
-      if (state.inputValue === action.controlledLabel) return state;
+      if (state.inputValue === action.controlledLabel) {
+        return state;
+      }
       return { ...state, inputValue: action.controlledLabel };
     case 'SET_ACTIVE_DESCENDANT':
       return { ...state, activeDescendantId: action.id };
@@ -83,7 +85,7 @@ export const comboboxReducer = (state: ComboboxState, action: ComboboxAction): C
 };
 
 export const createInitialState = (
-  options: ReadonlyArray<ComboboxOption>,
+  options: readonly ComboboxOption[],
   controlledValue: string,
   defaultOpen: boolean
 ): ComboboxState => ({

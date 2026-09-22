@@ -132,6 +132,7 @@ function SheetContent({
     <SheetPrimitive.Portal container={container ?? portalContainer} data-slot="sheet-portal">
       {showOverlay ? <SheetOverlay /> : null}
       <SheetPrimitive.Popup
+        aria-modal="true"
         className={cn(sheetVariants({ side, size }), className)}
         data-side={side}
         data-slot="sheet-content"
@@ -203,23 +204,23 @@ function SheetDescription({ className, ...props }: SheetDescriptionProps) {
 
 export {
   Sheet,
-  SheetPortal,
-  SheetOverlay,
-  SheetTrigger,
   SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
-  type SheetProps,
-  type SheetPortalProps,
-  type SheetOverlayProps,
-  type SheetTriggerProps,
   type SheetCloseProps,
+  SheetContent,
   type SheetContentProps,
-  type SheetHeaderProps,
-  type SheetFooterProps,
-  type SheetTitleProps,
+  SheetDescription,
   type SheetDescriptionProps,
+  SheetFooter,
+  type SheetFooterProps,
+  SheetHeader,
+  type SheetHeaderProps,
+  SheetOverlay,
+  type SheetOverlayProps,
+  SheetPortal,
+  type SheetPortalProps,
+  type SheetProps,
+  SheetTitle,
+  type SheetTitleProps,
+  SheetTrigger,
+  type SheetTriggerProps,
 };

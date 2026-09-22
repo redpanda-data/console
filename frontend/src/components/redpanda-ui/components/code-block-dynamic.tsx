@@ -1,5 +1,6 @@
 'use client';
-'use no memo'; // useShiki + useMemo loading skeleton must stay stable across renders.
+
+// Copyright 2026 Redpanda Data, Inc.
 
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript';
 import bash from '@shikijs/langs/bash';
@@ -20,13 +21,13 @@ import {
   type ComponentProps,
   type ElementType,
   Fragment,
-  forwardRef,
   type HTMLAttributes,
   type MouseEventHandler,
   type ReactNode,
+  type Ref,
   useCallback,
   useEffect,
-  useMemo,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -41,35 +42,56 @@ import type {
   RegexEngine,
 } from 'shiki';
 import { createHighlighterCoreSync, type HighlighterCore } from 'shiki/core';
-
-import { type ButtonVariants, buttonVariants } from './button';
+import { Button, type ButtonVariants, buttonVariants } from './button';
+import { SanitizedHtml } from './sanitized-html';
 import { useShiki } from '../lib/use-shiki';
 import { cn, type SharedProps } from '../lib/utils';
 
-export function useStableCallback<F extends (...params: never[]) => unknown>(callback: F): F {
-  const ref = useRef(callback);
-  ref.current = callback;
-
-  return useCallback(((...params) => ref.current(...params)) as F, []);
+function splitCodeLines(code: string): Array<{ key: string; line: string }> {
+  let offset = 0;
+  return code.split('\n').map((line) => {
+    const keyedLine = { key: `${offset}:${line}`, line };
+    offset += line.length + 1;
+    return keyedLine;
+  });
 }
 
-export function useCopyButton(onCopy: () => void | Promise<void>): [checked: boolean, onClick: MouseEventHandler] {
+/**
+ * Returns a stable callback for post-commit event and effect work. The latest
+ * implementation becomes visible in the layout-effect phase; render-time calls
+ * and earlier commit work intentionally observe the previous committed callback.
+ */
+export function useStableCallback<F extends (...params: never[]) => unknown>(callback: F): F {
+  const ref = useRef(callback);
+  useLayoutEffect(() => {
+    ref.current = callback;
+  }, [callback]);
+
+  const stableCallback = useCallback((...params: Parameters<F>) => ref.current(...params), []);
+  return stableCallback as F;
+}
+
+export function useCopyButton(
+  onCopy: () => void | Promise<void>
+): [checked: boolean, onClick: MouseEventHandler, error: string | null] {
   const [checked, setChecked] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
-  const onClick: MouseEventHandler = useStableCallback(() => {
+  const onClick: MouseEventHandler = useStableCallback(async () => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
     }
-    const res = Promise.resolve(onCopy());
-
-    // biome-ignore lint/complexity/noVoid: part of clipboard implementation
-    void res.then(() => {
+    try {
+      await onCopy();
+      setError(null);
       setChecked(true);
       timeoutRef.current = window.setTimeout(() => {
         setChecked(false);
       }, 1500);
-    });
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Could not copy code.');
+    }
   });
 
   // Avoid updates after being unmounted
@@ -82,7 +104,7 @@ export function useCopyButton(onCopy: () => void | Promise<void>): [checked: boo
     []
   );
 
-  return [checked, onClick];
+  return [checked, onClick, error];
 }
 
 type HighlightOptionsThemes = CodeOptionsThemes<BundledTheme>;
@@ -117,110 +139,90 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> & {
   onCopied?: () => void;
 };
 
-export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => (
+export const Pre = ({ className, ref, ...props }: HTMLAttributes<HTMLPreElement> & { ref?: Ref<HTMLPreElement> }) => (
   <pre className={cn('w-max min-w-full *:flex *:flex-col', className)} ref={ref} {...props}>
     {props.children}
   </pre>
-));
+);
 
 Pre.displayName = 'Pre';
 
-export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
-  (
-    {
-      title,
-      allowCopy = true,
-      keepBackground = false,
-      copyButtonVariant,
-      icon,
-      viewportProps,
-      children,
-      testId,
-      onCopied,
-      ...props
-    },
-    ref
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: component requires multiple conditional rendering paths for title/copy/background
-  ) => {
-    const areaRef = useRef<HTMLDivElement>(null);
-    const onCopy = () => {
-      const preElement = areaRef.current?.getElementsByTagName('pre').item(0);
-      if (!preElement) {
-        return;
-      }
+export const CodeBlock = ({
+  title,
+  allowCopy = true,
+  keepBackground = false,
+  copyButtonVariant,
+  icon,
+  viewportProps,
+  children,
+  testId,
+  onCopied,
+  ref,
+  ...props
+}: CodeBlockProps & { ref?: Ref<HTMLElement> }) => {
+  const areaRef = useRef<HTMLDivElement>(null);
+  const onCopy = async () => {
+    const preElement = areaRef.current?.getElementsByTagName('pre').item(0);
+    if (!preElement) {
+      return;
+    }
 
-      const clone = preElement.cloneNode(true) as HTMLElement;
-      for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
-        node.replaceWith('\n');
-      }
+    const clone = preElement.cloneNode(true) as HTMLElement;
+    for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
+      node.replaceWith('\n');
+    }
 
-      // biome-ignore lint/complexity/noVoid: part of clipboard implementation
-      void navigator.clipboard.writeText(clone.textContent ?? '').then(() => onCopied?.());
-    };
+    await navigator.clipboard.writeText(clone.textContent ?? '');
+    onCopied?.();
+  };
 
-    return (
-      <figure
-        dir="ltr"
-        ref={ref}
-        {...props}
-        className={cn(
-          'group relative my-4 overflow-hidden rounded-lg border bg-card text-body outline-none',
-          props.className
-        )}
-        data-shiki-background={keepBackground || undefined}
-        data-testid={testId}
-      >
-        {title ? (
-          <div className="flex items-center gap-2 bg-surface-subtle px-4 py-1.5">
-            {icon ? (
-              <div
-                className="text-subtle [&_svg]:size-3.5"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: part of DynamicCodeBlock implementation
-                // biome-ignore lint/security/noDangerouslySetInnerHtmlWithChildren: part of DynamicCodeBlock implementation
-                dangerouslySetInnerHTML={
-                  typeof icon === 'string'
-                    ? {
-                        __html: icon,
-                      }
-                    : undefined
-                }
-              >
-                {typeof icon !== 'string' ? icon : null}
-              </div>
-            ) : null}
-            <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
-            {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} /> : null}
-          </div>
-        ) : (
-          allowCopy && (
-            <CopyButton
-              className="absolute top-2 right-2 z-[2] backdrop-blur-md"
-              onCopy={onCopy}
-              variant={copyButtonVariant ?? (keepBackground ? 'current-ghost' : 'ghost')}
-            />
-          )
-        )}
-        <div
-          ref={areaRef}
-          {...viewportProps}
-          className={cn(
-            'max-h-[600px] overflow-auto py-3.5 text-body [&_.line]:px-4',
-            props['data-line-numbers'] && '[&_.line]:pl-3',
-            viewportProps?.className
-          )}
-          style={{
-            counterSet: props['data-line-numbers']
-              ? `line ${Number(props['data-line-numbers-start'] ?? 1) - 1}`
-              : undefined,
-            ...viewportProps?.style,
-          }}
-        >
-          {children}
+  return (
+    <figure
+      dir="ltr"
+      ref={ref}
+      {...props}
+      className={cn(
+        'group relative my-4 overflow-hidden rounded-lg border bg-card text-body outline-none',
+        props.className
+      )}
+      data-shiki-background={keepBackground || undefined}
+      data-testid={testId}
+    >
+      {title ? (
+        <div className="flex items-center gap-2 bg-surface-subtle px-4 py-1.5">
+          {typeof icon === 'string' ? <SanitizedHtml className="text-subtle [&_svg]:size-3.5" html={icon} /> : icon}
+          <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
+          {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} /> : null}
         </div>
-      </figure>
-    );
-  }
-);
+      ) : (
+        allowCopy && (
+          <CopyButton
+            className="absolute top-2 right-2 z-[2] backdrop-blur-md"
+            onCopy={onCopy}
+            variant={copyButtonVariant ?? (keepBackground ? 'current-ghost' : 'ghost')}
+          />
+        )
+      )}
+      <div
+        ref={areaRef}
+        {...viewportProps}
+        className={cn(
+          'max-h-[600px] overflow-auto py-3.5 text-body [&_.line]:px-4',
+          props['data-line-numbers'] && '[&_.line]:pl-3',
+          viewportProps?.className
+        )}
+        style={{
+          counterSet: props['data-line-numbers']
+            ? `line ${Number(props['data-line-numbers-start'] ?? 1) - 1}`
+            : undefined,
+          ...viewportProps?.style,
+        }}
+      >
+        {children}
+      </div>
+    </figure>
+  );
+};
 
 CodeBlock.displayName = 'CodeBlock';
 
@@ -233,10 +235,10 @@ function CopyButton({
   onCopy: () => void;
   variant?: ButtonVariants['variant'];
 }) {
-  const [checked, onClick] = useCopyButton(onCopy);
+  const [checked, onClick, copyError] = useCopyButton(onCopy);
 
   return (
-    <button
+    <Button
       aria-label={checked ? 'Copied Text' : 'Copy Text'}
       className={cn(
         buttonVariants({
@@ -248,11 +250,17 @@ function CopyButton({
       )}
       onClick={onClick}
       type="button"
+      variant="unstyled"
       {...props}
     >
       <Check className={cn('transition-transform motion-reduce:transition-none', !checked && 'scale-0')} />
       <Copy className={cn('absolute transition-transform motion-reduce:transition-none', checked && 'scale-0')} />
-    </button>
+      {copyError ? (
+        <span className="sr-only" role="alert">
+          {copyError}
+        </span>
+      ) : null}
+    </Button>
   );
 }
 
@@ -306,24 +314,19 @@ export function DynamicCodeBlock({
     ...options?.components,
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: initial value only
-  const loading = useMemo(() => {
-    const PreComponent = (components.pre ?? 'pre') as 'pre';
-    const CodeComponent = (components.code ?? 'code') as 'code';
-
-    return (
-      <PreComponent>
-        <CodeComponent>
-          {code.split('\n').map((line, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: part of DynamicCodeBlock implementation
-            <span className="line" key={i}>
-              {line}
-            </span>
-          ))}
-        </CodeComponent>
-      </PreComponent>
-    );
-  }, []);
+  const PreComponent = (components.pre ?? 'pre') as 'pre';
+  const CodeComponent = (components.code ?? 'code') as 'code';
+  const loading = (
+    <PreComponent>
+      <CodeComponent>
+        {splitCodeLines(code).map(({ key, line }) => (
+          <span className="line" key={key}>
+            {line}
+          </span>
+        ))}
+      </CodeComponent>
+    </PreComponent>
+  );
 
   const highlighted = useShiki(code, {
     lang,

@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 'use client';
 
 import React from 'react';
@@ -31,9 +33,9 @@ export type ChartConfig = {
   } & ({ color?: string; theme?: never } | { color?: never; theme: Record<keyof typeof THEMES, string> });
 };
 
-type ChartContextProps = {
+interface ChartContextProps {
   config: ChartConfig;
-};
+}
 
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
@@ -93,13 +95,9 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
-  return (
-    <style
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: part of chart implementation
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefixes]) => `
+  const chartCss = Object.entries(THEMES)
+    .map(
+      ([theme, prefixes]) => `
 ${prefixes.map((prefix) => `${prefix} [data-chart=${id}]`).join(',\n')} {
 ${colorConfig
   .map(([key, itemConfig]) => {
@@ -109,12 +107,17 @@ ${colorConfig
   .join('\n')}
 }
 `
-          )
-          .join('\n'),
-      }}
-    />
-  );
+    )
+    .join('\n');
+
+  return <style>{chartCss}</style>;
 };
+
+function getUniquePayloadKey(configKey: string, occurrences: Map<string, number>): string {
+  const occurrence = occurrences.get(configKey) ?? 0;
+  occurrences.set(configKey, occurrence + 1);
+  return `${configKey}-${occurrence}`;
+}
 
 const ChartTooltip = Tooltip;
 
@@ -169,6 +172,7 @@ function ChartTooltipContent({
   }
 
   const nestLabel = payload.length === 1 && indicator !== 'dot';
+  const keyOccurrences = new Map<string, number>();
 
   return (
     <div
@@ -181,10 +185,9 @@ function ChartTooltipContent({
       <div className="grid gap-1.5">
         {payload
           .filter((item) => item.type !== 'none')
-          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: part of chart implementation
           .map((item, index) => {
-            const key = `${nameKey || item.name || item.dataKey || 'value'}`;
-            const itemConfig = getPayloadConfigFromPayload(config, item, key);
+            const configKey = `${nameKey || item.name || item.dataKey || 'value'}`;
+            const itemConfig = getPayloadConfigFromPayload(config, item, configKey);
             const indicatorColor = color || item.payload?.fill || item.color;
 
             return (
@@ -193,7 +196,7 @@ function ChartTooltipContent({
                   'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-subtle',
                   indicator === 'dot' && 'items-center'
                 )}
-                key={`${item.dataKey ?? item.name ?? ''}-${index}`}
+                key={getUniquePayloadKey(configKey, keyOccurrences)}
               >
                 {formatter && item?.value !== undefined && item.name ? (
                   formatter(item.value, item.name, item, index, item.payload)
@@ -263,18 +266,20 @@ function ChartLegendContent({
     return null;
   }
 
+  const keyOccurrences = new Map<string, number>();
+
   return (
     <div className={cn('flex items-center justify-center gap-4', verticalAlign === 'top' ? 'pb-3' : 'pt-3', className)}>
       {payload
         .filter((item) => item.type !== 'none')
-        .map((item, index) => {
+        .map((item) => {
           const key = `${nameKey || item.dataKey || 'value'}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
           return (
             <div
               className={cn('flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-subtle')}
-              key={`${item.dataKey ?? item.value ?? ''}-${index}`}
+              key={getUniquePayloadKey(key, keyOccurrences)}
             >
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
@@ -319,4 +324,4 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
   return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
 }
 
-export { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, ChartStyle };
+export { ChartContainer, ChartLegend, ChartLegendContent, ChartStyle, ChartTooltip, ChartTooltipContent };

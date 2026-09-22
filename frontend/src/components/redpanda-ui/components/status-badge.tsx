@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { Badge } from './badge';
 import { Spinner } from './spinner';

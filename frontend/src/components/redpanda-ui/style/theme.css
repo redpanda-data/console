@@ -111,17 +111,17 @@
   --shadow-xs: 0 1px 2px 0 color-mix(in srgb, var(--color-shadow) 5%, transparent);
   --shadow-sm: 0 1px 4px 0 color-mix(in srgb, var(--color-shadow) 8%, transparent);
   --shadow-md:
-    0 1px 3px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent), 0 1px 2px -1px
-    color-mix(in srgb, var(--color-shadow) 10%, transparent);
+    0 1px 3px 0 color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    0 1px 2px -1px color-mix(in srgb, var(--color-shadow) 10%, transparent);
   --shadow-lg:
-    0 4px 6px -1px color-mix(in srgb, var(--color-shadow) 10%, transparent), 0 2px 4px -2px
-    color-mix(in srgb, var(--color-shadow) 5%, transparent);
+    0 4px 6px -1px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, var(--color-shadow) 5%, transparent);
   --shadow-xl:
-    0 10px 15px -3px color-mix(in srgb, var(--color-shadow) 10%, transparent), 0 4px 6px 0
-    color-mix(in srgb, var(--color-shadow) 5%, transparent);
+    0 10px 15px -3px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    0 4px 6px 0 color-mix(in srgb, var(--color-shadow) 5%, transparent);
   --shadow-2xl:
-    0 20px 25px -5px color-mix(in srgb, var(--color-shadow) 10%, transparent), 0 10px 10px 0
-    color-mix(in srgb, var(--color-shadow) 4%, transparent);
+    0 20px 25px -5px color-mix(in srgb, var(--color-shadow) 10%, transparent),
+    0 10px 10px 0 color-mix(in srgb, var(--color-shadow) 4%, transparent);
   --shadow-3xl: 0 25px 50px -12px color-mix(in srgb, var(--color-shadow) 25%, transparent);
   --shadow-elevated: 4px 4px 0px 0px color-mix(in srgb, var(--color-shadow) 8%, transparent);
 
@@ -406,53 +406,53 @@
 @utility text-heading-xl {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
-  line-height: var(--tw-leading, var(--leading-tight));
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
+  line-height: var(--tw-leading, var(--leading-tight));
 }
 
 @utility text-heading-lg {
   font-family: var(--font-display);
   font-size: var(--text-xl);
-  line-height: var(--tw-leading, var(--leading-tight));
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
+  line-height: var(--tw-leading, var(--leading-tight));
 }
 
 @utility text-heading-md {
   font-family: var(--font-display);
   font-size: var(--text-lg);
-  line-height: var(--tw-leading, var(--leading-tight));
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
+  line-height: var(--tw-leading, var(--leading-tight));
 }
 
 @utility text-heading-sm {
   font-family: var(--font-display);
   font-size: var(--text-base);
-  line-height: var(--tw-leading, var(--leading-tight));
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
+  line-height: var(--tw-leading, var(--leading-tight));
 }
 
 @utility text-heading-xs {
   font-family: var(--font-display);
   font-size: var(--text-sm);
-  line-height: var(--tw-leading, var(--leading-tight));
   font-weight: var(--tw-font-weight, var(--font-weight-medium));
+  line-height: var(--tw-leading, var(--leading-tight));
 }
 
 /* Eyebrow above a title or value. A utility, not a `--text-*` role: `text-transform` is not a channel. */
 @utility text-overline {
   font-size: var(--text-sm);
-  line-height: var(--tw-leading, var(--leading-snug));
   font-weight: var(--tw-font-weight, var(--font-weight-semibold));
-  letter-spacing: var(--tw-tracking, var(--tracking-caption-wide));
+  line-height: var(--tw-leading, var(--leading-snug));
   text-transform: uppercase;
+  letter-spacing: var(--tw-tracking, var(--tracking-caption-wide));
 }
 
 @utility text-overline-sm {
   font-size: var(--text-xs);
-  line-height: var(--tw-leading, var(--leading-snug));
   font-weight: var(--tw-font-weight, var(--font-weight-semibold));
-  letter-spacing: var(--tw-tracking, var(--tracking-caption-wide));
+  line-height: var(--tw-leading, var(--leading-snug));
   text-transform: uppercase;
+  letter-spacing: var(--tw-tracking, var(--tracking-caption-wide));
 }
 
 /* Colour is all a hover can shift on text, so these put the underline back as the affordance.
@@ -463,8 +463,8 @@
 
 @utility link-standalone {
   text-decoration-line: underline;
-  text-decoration-color: transparent;
   text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
   text-underline-offset: 0.1875em;
 
   /* Gated so a tap does not leave the underline stuck on; focus is not, a keyboard needs it. */
@@ -481,8 +481,8 @@
 
 @utility link-inline {
   text-decoration-line: underline;
-  text-decoration-color: color-mix(in oklab, currentcolor 45%, transparent);
   text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in oklab, currentcolor 45%, transparent);
   text-underline-offset: 0.1875em;
 
   @media (hover: hover) {
@@ -721,21 +721,21 @@
   }
 
   body {
-    @apply bg-page text-foreground;
     overscroll-behavior: none;
+    @apply bg-page text-foreground;
   }
 
   ::selection {
-    background-color: var(--color-selection);
     color: var(--color-selection-foreground);
+    background-color: var(--color-selection);
   }
 
   /* The sidebar is dark in both themes, so it cannot take `selection`. Exact slot match, never
      `*='sidebar'`: that also matched `sidebar-wrapper`, which wraps the whole app. */
   [data-sidebar] *::selection,
   [data-slot='sidebar'] *::selection {
-    background-color: var(--color-sidebar-primary);
     color: var(--color-sidebar-primary-foreground);
+    background-color: var(--color-sidebar-primary);
   }
 
   @keyframes blink {

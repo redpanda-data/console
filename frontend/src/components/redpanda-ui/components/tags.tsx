@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/a11y/useSemanticElements: part of tags component */
 'use client';
 
 import { XIcon } from 'lucide-react';
@@ -13,21 +12,20 @@ import {
   useRef,
   useState,
 } from 'react';
-
-import { buttonVariants } from './button';
+import { Button, buttonVariants } from './button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { cn, type SharedProps } from '../lib/utils';
 
-type TagsContextType = {
-  value?: string;
-  setValue?: (value: string) => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  width?: number;
-  setWidth?: (width: number) => void;
+interface TagsContextType {
   listboxId: string;
-};
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  setValue?: (value: string) => void;
+  setWidth?: (width: number) => void;
+  value?: string;
+  width?: number;
+}
 const TagsContext = createContext<TagsContextType>({
   value: undefined,
   setValue: undefined,
@@ -147,14 +145,15 @@ export const TagsValue = ({
     >
       <span className="leading-tight">{children}</span>
       {onRemove ? (
-        <button
+        <Button
           aria-label="Remove tag"
           className="size-auto cursor-pointer border-0 bg-transparent p-0 transition-colors hover:text-destructive motion-reduce:transition-none"
           onClick={handleRemove}
           type="button"
+          variant="unstyled"
         >
           <XIcon className="text-subtle" size={12} />
-        </button>
+        </Button>
       ) : null}
     </span>
   );

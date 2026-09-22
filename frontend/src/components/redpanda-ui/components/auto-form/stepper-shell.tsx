@@ -1,8 +1,11 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
-
+import { Button } from '../button';
+import { type DefineStepperProps, defineStepper } from '../stepper';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from './context';
 import type { ParsedField } from './core-types';
 import { formSpacing } from './form-spacing';
@@ -10,13 +13,53 @@ import { filterFieldsByPaths, projectValuesToFields } from './helpers';
 import { AutoFormFields } from './renderers';
 import { buildAutoFormTestId } from './test-ids';
 import type { AutoFormStepConfig } from './types';
-import { Button } from '../button';
-import { defineStepper } from '../stepper';
 
 type ResolvedStep = AutoFormStepConfig & {
   fieldsForRender: ParsedField[];
   stepPayload: Record<string, unknown>;
 };
+
+interface StepperDefinition {
+  description?: string;
+  id: string;
+  title: string;
+}
+type StepperDefinitions = [StepperDefinition, ...StepperDefinition[]];
+type StepperConfig = DefineStepperProps<StepperDefinitions>;
+const STEPPER_CACHE_LIMIT = 50;
+const stepperConfigCache = new Map<string, StepperConfig>();
+
+function isNonEmpty<T>(items: T[]): items is [T, ...T[]] {
+  return items.length > 0;
+}
+
+function getStepperConfig(visibleSteps: ResolvedStep[]): StepperConfig | null {
+  if (visibleSteps.length === 0) {
+    return null;
+  }
+  const definitions: StepperDefinition[] = visibleSteps.map(({ id, title, description }) => ({
+    id,
+    title,
+    description,
+  }));
+  if (!isNonEmpty(definitions)) {
+    return null;
+  }
+  const cacheKey = JSON.stringify(definitions);
+  const cached = stepperConfigCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  const config = defineStepper(...definitions);
+  if (stepperConfigCache.size >= STEPPER_CACHE_LIMIT) {
+    const oldestKey = stepperConfigCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      stepperConfigCache.delete(oldestKey);
+    }
+  }
+  stepperConfigCache.set(cacheKey, config);
+  return config;
+}
 
 export function AutoFormStepperShell({
   children,
@@ -37,43 +80,26 @@ export function AutoFormStepperShell({
     testId?: string;
   }>;
 
-  const visibleSteps = React.useMemo<ResolvedStep[]>(() => {
-    return steps
-      .map((step) => {
-        const fieldsForRender = filterFieldsByPaths(fields, step.fields);
-        const stepPayload = projectValuesToFields(formValues, fieldsForRender);
+  const visibleSteps = React.useMemo<ResolvedStep[]>(
+    () =>
+      steps
+        .map((step) => {
+          const fieldsForRender = filterFieldsByPaths(fields, step.fields);
+          const stepPayload = projectValuesToFields(formValues, fieldsForRender);
 
-        return {
-          ...step,
-          fieldsForRender,
-          stepPayload,
-        } satisfies ResolvedStep;
-      })
-      .filter((step) => step.fieldsForRender.length > 0)
-      .filter((step) => evaluateRules(step.visibleWhen, step.stepPayload));
-  }, [evaluateRules, fields, formValues, steps]);
+          return {
+            ...step,
+            fieldsForRender,
+            stepPayload,
+          } satisfies ResolvedStep;
+        })
+        .filter((step) => step.fieldsForRender.length > 0)
+        .filter((step) => evaluateRules(step.visibleWhen, step.stepPayload)),
+    [evaluateRules, fields, formValues, steps]
+  );
 
   const stepperKey = visibleSteps.map((step) => step.id).join('|');
-  const stepperDefinitionKey = visibleSteps
-    .map((step) => `${step.id}:${step.title}:${step.description ?? ''}`)
-    .join('|');
-  // biome-ignore lint/correctness/useExhaustiveDependencies: we intentionally key off step metadata only so the stepper instance stays stable while form state changes.
-  const stepperConfig = React.useMemo(() => {
-    if (!visibleSteps.length) {
-      return null;
-    }
-
-    return defineStepper(
-      ...(visibleSteps.map((step) => ({
-        id: step.id,
-        title: step.title,
-        description: step.description,
-      })) as [
-        { id: string; title: string; description?: string },
-        ...Array<{ id: string; title: string; description?: string }>,
-      ])
-    );
-  }, [stepperDefinitionKey]);
+  const stepperConfig = getStepperConfig(visibleSteps);
 
   if (!(stepperConfig && visibleSteps.length > 0)) {
     return (

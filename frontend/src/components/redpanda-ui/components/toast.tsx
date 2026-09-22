@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
 import { AlertTriangle, CheckCircle, Info, Loader, X, XCircle } from 'lucide-react';
 import type React from 'react';
@@ -115,30 +117,19 @@ function ToastDescription({ className, testId, ...props }: ToastDescriptionProps
   );
 }
 
-function ToastAction({
-  className,
-  render = <Button size="sm" type="button" variant="outline" />,
-  testId,
-  ...props
-}: ToastActionProps) {
+function ToastAction({ className, render, testId, ...props }: ToastActionProps) {
   return (
     <ToastPrimitive.Action
       className={cn('shrink-0', className)}
       data-slot="toast-action"
       data-testid={testId}
-      render={render}
+      render={render ?? <Button size="sm" type="button" variant="outline" />}
       {...props}
     />
   );
 }
 
-function ToastClose({
-  children,
-  className,
-  render = <Button size="icon-sm" type="button" variant="ghost" />,
-  testId,
-  ...props
-}: ToastCloseProps) {
+function ToastClose({ children, className, render, testId, ...props }: ToastCloseProps) {
   return (
     <ToastPrimitive.Close
       aria-label="Close toast"
@@ -148,7 +139,7 @@ function ToastClose({
       )}
       data-slot="toast-close"
       data-testid={testId}
-      render={render}
+      render={render ?? <Button size="icon-sm" type="button" variant="ghost" />}
       {...props}
     >
       {children ?? <X aria-hidden="true" />}
@@ -219,7 +210,6 @@ const useToastManager = ToastPrimitive.useToastManager;
 
 export {
   createToastManager,
-  toast,
   Toast,
   ToastAction,
   ToastClose,
@@ -230,5 +220,6 @@ export {
   ToastProvider,
   ToastTitle,
   ToastViewport,
+  toast,
   useToastManager,
 };

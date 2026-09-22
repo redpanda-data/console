@@ -5,10 +5,10 @@ import { cn, type SharedProps } from '../lib/utils';
 
 type GroupPosition = 'first' | 'middle' | 'last';
 
-type GroupContextValue = {
-  position?: GroupPosition;
+interface GroupContextValue {
   attached: boolean;
-};
+  position?: GroupPosition;
+}
 
 const GroupContext = createContext<GroupContextValue>({
   position: undefined,
@@ -89,4 +89,4 @@ const groupItemClasses = (attached: boolean, position: GroupPosition | undefined
   return `-ml-px rounded-none ${lift}`;
 };
 
-export { Group, groupItemClasses, useGroup, type GroupPosition, type GroupContextValue };
+export { Group, type GroupContextValue, type GroupPosition, groupItemClasses, useGroup };

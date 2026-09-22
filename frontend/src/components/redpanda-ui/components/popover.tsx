@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { mergeProps } from '@base-ui/react/merge-props';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { useRender } from '@base-ui/react/use-render';
@@ -8,11 +10,10 @@ import React from 'react';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
-type PopoverAnchorContextType = {
-  anchorRef: React.RefObject<Element | null>;
-  setHasAnchor: (hasAnchor: boolean) => void;
-  hasAnchor: boolean;
-};
+interface PopoverAnchorContextType {
+  anchor: Element | null;
+  setAnchor: (anchor: Element | null) => void;
+}
 
 const PopoverAnchorContext = React.createContext<PopoverAnchorContextType | undefined>(undefined);
 
@@ -22,13 +23,9 @@ type Align = 'start' | 'center' | 'end';
 type PopoverProps = PopoverPrimitive.Root.Props & SharedProps;
 
 function Popover({ children, testId, ...props }: PopoverProps) {
-  const anchorRef = React.useRef<Element | null>(null);
-  const [hasAnchor, setHasAnchor] = React.useState(false);
+  const [anchor, setAnchor] = React.useState<Element | null>(null);
 
-  const anchorCtx = React.useMemo<PopoverAnchorContextType>(
-    () => ({ anchorRef, setHasAnchor, hasAnchor }),
-    [hasAnchor]
-  );
+  const anchorCtx = React.useMemo<PopoverAnchorContextType>(() => ({ anchor, setAnchor }), [anchor]);
 
   return (
     <PopoverAnchorContext.Provider value={anchorCtx}>
@@ -95,7 +92,7 @@ function PopoverContent({
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
-        {...(anchorCtx?.hasAnchor && anchorCtx.anchorRef.current ? { anchor: anchorCtx.anchorRef } : {})}
+        {...(anchorCtx?.anchor ? { anchor: anchorCtx.anchor } : {})}
         className="z-50"
         collisionAvoidance={collisionAvoidance}
         collisionBoundary={collisionBoundary}
@@ -163,16 +160,13 @@ function PopoverDescription({ className, testId, ...props }: PopoverDescriptionP
 type PopoverAnchorProps = useRender.ComponentProps<'div'> & SharedProps;
 
 function PopoverAnchor({ render, testId, ...props }: PopoverAnchorProps) {
-  const ctx = React.useContext(PopoverAnchorContext);
+  const setAnchor = React.useContext(PopoverAnchorContext)?.setAnchor;
 
   const setRef = React.useCallback(
     (node: Element | null) => {
-      if (ctx) {
-        ctx.anchorRef.current = node;
-        ctx.setHasAnchor(Boolean(node));
-      }
+      setAnchor?.(node);
     },
-    [ctx]
+    [setAnchor]
   );
 
   const dataProps = { 'data-slot': 'popover-anchor', 'data-testid': testId } as React.HTMLAttributes<HTMLDivElement>;
@@ -186,17 +180,17 @@ function PopoverAnchor({ render, testId, ...props }: PopoverAnchorProps) {
 
 export {
   Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverDescription,
   PopoverAnchor,
-  type PopoverProps,
-  type PopoverTriggerProps,
-  type PopoverContentProps,
-  type PopoverHeaderProps,
-  type PopoverTitleProps,
-  type PopoverDescriptionProps,
   type PopoverAnchorProps,
+  PopoverContent,
+  type PopoverContentProps,
+  PopoverDescription,
+  type PopoverDescriptionProps,
+  PopoverHeader,
+  type PopoverHeaderProps,
+  type PopoverProps,
+  PopoverTitle,
+  type PopoverTitleProps,
+  PopoverTrigger,
+  type PopoverTriggerProps,
 };

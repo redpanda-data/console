@@ -2,16 +2,25 @@
 
 import { MotionConfig } from 'motion/react';
 import React from 'react';
-
-import { formSpacing } from './form-spacing';
-import { buildAutoFormTestId } from './test-ids';
-import type { AutoFormMode, AutoFormSummaryContext } from './types';
-import { safeStringify } from './utils/serialization';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { Button } from '../button';
 import { CopyButton } from '../copy-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs';
 import { Textarea } from '../textarea';
+import { formSpacing } from './form-spacing';
+import { buildAutoFormTestId } from './test-ids';
+import type { AutoFormMode, AutoFormSummaryContext } from './types';
+import { safeStringify } from './utils/serialization';
+
+function getModeLabel(mode: AutoFormMode): string {
+  if (mode === 'json') {
+    return 'JSON';
+  }
+  if (mode === 'simple') {
+    return 'Simple';
+  }
+  return 'Advanced';
+}
 
 function JsonBlock({ description, jsonText, title }: { title: string; description: string; jsonText: string }) {
   return (
@@ -216,6 +225,7 @@ export function AutoFormModeShell<T extends Record<string, unknown>>({
       renderSummary,
       showSummary,
       summaryContext,
+      testIdPrefix,
     ]
   );
 
@@ -238,7 +248,7 @@ export function AutoFormModeShell<T extends Record<string, unknown>>({
               value={tabMode}
               variant="underline"
             >
-              {tabMode === 'json' ? 'JSON' : tabMode === 'simple' ? 'Simple' : 'Advanced'}
+              {getModeLabel(tabMode)}
             </TabsTrigger>
           ))}
         </TabsList>

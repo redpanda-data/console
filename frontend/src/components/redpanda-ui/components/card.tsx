@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -44,7 +44,7 @@ export type CardProps = SharedProps &
     variant?: CardVariant;
   };
 
-const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, variant, testId, ...props }, ref) => (
+const Card = ({ className, size, variant, testId, ref, ...props }: CardProps & { ref?: React.Ref<HTMLDivElement> }) => (
   <div
     className={cn(cardVariants({ size, variant }), className)}
     data-size={size}
@@ -54,7 +54,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, size, var
     ref={ref}
     {...props}
   />
-));
+);
 
 Card.displayName = 'Card';
 
@@ -83,24 +83,33 @@ const cardHeaderVariants = cva(
 
 interface CardHeaderProps extends React.ComponentProps<'div'>, VariantProps<typeof cardHeaderVariants>, SharedProps {}
 
-const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ className, spacing, padding, testId, ...props }, ref) => (
-    <div
-      className={cn(cardHeaderVariants({ spacing, padding }), className)}
-      data-slot="card-header"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    />
-  )
+const CardHeader = ({
+  className,
+  spacing,
+  padding,
+  testId,
+  ref,
+  ...props
+}: CardHeaderProps & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    className={cn(cardHeaderVariants({ spacing, padding }), className)}
+    data-slot="card-header"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  />
 );
 
 CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef<
-  HTMLHeadingElement,
-  React.ComponentProps<'div'> & SharedProps & { level?: 1 | 2 | 3 | 4 }
->(({ className, level = 4, testId, children, ...props }, ref) => {
+const CardTitle = ({
+  className,
+  level = 4,
+  testId,
+  children,
+  ref,
+  ...props
+}: React.ComponentProps<'div'> & SharedProps & { level?: 1 | 2 | 3 | 4 } & { ref?: React.Ref<HTMLHeadingElement> }) => {
   // A string child is the heading itself, so `className` lands on the element the type style is on:
   // `text-heading-*` declares size, weight, leading and family, and nothing outside can reach past those.
   if (children && typeof children === 'string') {
@@ -124,37 +133,44 @@ const CardTitle = React.forwardRef<
       {children || null}
     </div>
   );
-});
+};
 
 CardTitle.displayName = 'CardTitle';
 
-const CardDescription = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & SharedProps>(
-  ({ className, testId, children, ...props }, ref) => (
-    // No inner element: a copy of `text-body` one level down would outrank the call site's own size.
-    <div
-      className={cn('text-body text-subtle', className)}
-      data-slot="card-description"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    >
-      {children || null}
-    </div>
-  )
+const CardDescription = ({
+  className,
+  testId,
+  children,
+  ref,
+  ...props
+}: React.ComponentProps<'div'> & SharedProps & { ref?: React.Ref<HTMLDivElement> }) => (
+  // No inner element: a copy of `text-body` one level down would outrank the call site's own size.
+  <div
+    className={cn('text-body text-subtle', className)}
+    data-slot="card-description"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  >
+    {children || null}
+  </div>
 );
 
 CardDescription.displayName = 'CardDescription';
 
-const CardAction = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & SharedProps>(
-  ({ className, testId, ...props }, ref) => (
-    <div
-      className={cn('col-start-2 row-span-2 row-start-1 self-start justify-self-end', className)}
-      data-slot="card-action"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    />
-  )
+const CardAction = ({
+  className,
+  testId,
+  ref,
+  ...props
+}: React.ComponentProps<'div'> & SharedProps & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    className={cn('col-start-2 row-span-2 row-start-1 self-start justify-self-end', className)}
+    data-slot="card-action"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  />
 );
 
 CardAction.displayName = 'CardAction';
@@ -182,16 +198,21 @@ const cardContentVariants = cva('', {
 
 interface CardContentProps extends React.ComponentProps<'div'>, VariantProps<typeof cardContentVariants>, SharedProps {}
 
-const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
-  ({ className, padding, space, testId, ...props }, ref) => (
-    <div
-      className={cn(cardContentVariants({ padding, space }), className)}
-      data-slot="card-content"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    />
-  )
+const CardContent = ({
+  className,
+  padding,
+  space,
+  testId,
+  ref,
+  ...props
+}: CardContentProps & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    className={cn(cardContentVariants({ padding, space }), className)}
+    data-slot="card-content"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  />
 );
 
 CardContent.displayName = 'CardContent';
@@ -232,16 +253,23 @@ const cardFooterVariants = cva('flex items-center [.border-t]:pt-6', {
 
 interface CardFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof cardFooterVariants>, SharedProps {}
 
-const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
-  ({ className, direction, justify, gap, padding, testId, ...props }, ref) => (
-    <div
-      className={cn(cardFooterVariants({ direction, justify, gap, padding }), className)}
-      data-slot="card-footer"
-      data-testid={testId}
-      ref={ref}
-      {...props}
-    />
-  )
+const CardFooter = ({
+  className,
+  direction,
+  justify,
+  gap,
+  padding,
+  testId,
+  ref,
+  ...props
+}: CardFooterProps & { ref?: React.Ref<HTMLDivElement> }) => (
+  <div
+    className={cn(cardFooterVariants({ direction, justify, gap, padding }), className)}
+    data-slot="card-footer"
+    data-testid={testId}
+    ref={ref}
+    {...props}
+  />
 );
 
 CardFooter.displayName = 'CardFooter';
@@ -261,9 +289,9 @@ const cardFormVariants = cva('grid w-full items-center', {
 
 interface CardFormProps extends React.ComponentProps<'div'>, VariantProps<typeof cardFormVariants>, SharedProps {}
 
-const CardForm = React.forwardRef<HTMLDivElement, CardFormProps>(({ className, gap, testId, ...props }, ref) => (
+const CardForm = ({ className, gap, testId, ref, ...props }: CardFormProps & { ref?: React.Ref<HTMLDivElement> }) => (
   <div className={cn(cardFormVariants({ gap }), className)} data-testid={testId} ref={ref} {...props} />
-));
+);
 
 CardForm.displayName = 'CardForm';
 
@@ -282,10 +310,16 @@ const cardFieldVariants = cva('flex flex-col', {
 
 interface CardFieldProps extends React.ComponentProps<'div'>, VariantProps<typeof cardFieldVariants>, SharedProps {}
 
-const CardField = React.forwardRef<HTMLDivElement, CardFieldProps>(({ className, spacing, testId, ...props }, ref) => (
+const CardField = ({
+  className,
+  spacing,
+  testId,
+  ref,
+  ...props
+}: CardFieldProps & { ref?: React.Ref<HTMLDivElement> }) => (
   <div className={cn(cardFieldVariants({ spacing }), className)} data-testid={testId} ref={ref} {...props} />
-));
+);
 
 CardField.displayName = 'CardField';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent, CardForm, CardField };
+export { Card, CardAction, CardContent, CardDescription, CardField, CardFooter, CardForm, CardHeader, CardTitle };

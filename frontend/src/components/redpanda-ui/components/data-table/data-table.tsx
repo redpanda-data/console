@@ -23,60 +23,60 @@ import { type DataTableResponsiveColumnRule, useDataTableResponsiveColumns } fro
 
 const NO_RESPONSIVE_COLUMNS: readonly DataTableResponsiveColumnRule[] = [];
 
-export type DataTableClassNames = {
-  root?: string;
-  table?: string;
-  header?: string;
-  headerRow?: string;
-  headerCell?: string;
+export interface DataTableClassNames {
   body?: string;
-  row?: string;
   cell?: string;
-  footer?: string;
   empty?: string;
+  footer?: string;
+  header?: string;
+  headerCell?: string;
+  headerRow?: string;
   loading?: string;
+  root?: string;
+  row?: string;
+  table?: string;
   toolbar?: string;
-};
+}
 
-export type DataTableProps<TData extends RowData> = {
-  data: readonly TData[];
-  columns: readonly DataTableColumnDef<TData>[];
-
-  isLoading?: boolean;
-  loadingText?: string;
-  emptyText?: string;
-  emptyAction?: React.ReactNode;
-
-  subComponent?: (props: { row: DataTableRow<TData> }) => React.ReactNode;
-  getRowCanExpand?: (row: DataTableRow<TData>) => boolean;
-  expandRowByClick?: boolean;
-
-  pagination?: boolean;
-  pageSizeOptions?: number[];
-  sorting?: boolean;
-  selectable?: boolean;
-  /** Whether filtering, sorting, and pagination run locally or on an external data source. */
-  dataMode?: 'client' | 'server';
-  /** Container-width rules that own visibility for the columns they list. Keep this array stable across renders. */
-  responsiveColumns?: readonly DataTableResponsiveColumnRule[];
-
-  size?: 'sm' | 'md' | 'lg';
-  variant?: 'standard' | 'simple' | 'bordered' | 'card';
-
-  toolbar?: React.ReactNode | ((table: DataTableRenderInstance<TData>) => React.ReactNode);
-
-  onRow?: (row: DataTableRow<TData>) => void;
-  /** Restrict `onRow` activation to eligible rows. */
-  isRowClickable?: (row: DataTableRow<TData>) => boolean;
-  /** Accessible action name for rows activated through `onRow` or expansion. */
-  getRowAriaLabel?: (row: DataTableRow<TData>) => string | undefined;
-  rowClassName?: (row: DataTableRow<TData>) => string;
+export interface DataTableProps<TData extends RowData> {
+  className?: string;
 
   classNames?: DataTableClassNames;
+  columns: readonly DataTableColumnDef<TData>[];
+  data: readonly TData[];
+  /** Whether filtering, sorting, and pagination run locally or on an external data source. */
+  dataMode?: 'client' | 'server';
+  emptyAction?: React.ReactNode;
+  emptyText?: string;
+  expandRowByClick?: boolean;
+  /** Accessible action name for rows activated through `onRow` or expansion. */
+  getRowAriaLabel?: (row: DataTableRow<TData>) => string | undefined;
+  getRowCanExpand?: (row: DataTableRow<TData>) => boolean;
+
+  isLoading?: boolean;
+  /** Restrict `onRow` activation to eligible rows. */
+  isRowClickable?: (row: DataTableRow<TData>) => boolean;
+  loadingText?: string;
+
+  onRow?: (row: DataTableRow<TData>) => void;
+  pageSizeOptions?: number[];
+
+  pagination?: boolean;
+  /** Container-width rules that own visibility for the columns they list. Keep this array stable across renders. */
+  responsiveColumns?: readonly DataTableResponsiveColumnRule[];
+  rowClassName?: (row: DataTableRow<TData>) => string;
+  selectable?: boolean;
+
+  size?: 'sm' | 'md' | 'lg';
+  sorting?: boolean;
+
+  subComponent?: (props: { row: DataTableRow<TData> }) => React.ReactNode;
   tableOptions?: DataTableOptions<TData>;
-  className?: string;
   testId?: string;
-};
+
+  toolbar?: React.ReactNode | ((table: DataTableRenderInstance<TData>) => React.ReactNode);
+  variant?: 'standard' | 'simple' | 'bordered' | 'card';
+}
 
 const createSelectColumn = <TData extends RowData>(): DataTableColumnDef<TData> => ({
   id: 'select',
@@ -122,17 +122,17 @@ const selectDataTableRenderState = <TData extends RowData>(
   return renderState;
 };
 
-type DataTableBodyRowProps<TData extends RowData> = {
-  row: DataTableRow<TData>;
-  table: DataTableRenderInstance<TData>;
-  expandRowByClick: boolean;
-  subComponent?: (props: { row: DataTableRow<TData> }) => React.ReactNode;
-  onRow?: (row: DataTableRow<TData>) => void;
-  isRowClickable?: (row: DataTableRow<TData>) => boolean;
-  getRowAriaLabel?: (row: DataTableRow<TData>) => string | undefined;
-  rowClassName?: (row: DataTableRow<TData>) => string;
+interface DataTableBodyRowProps<TData extends RowData> {
   classNames?: DataTableClassNames;
-};
+  expandRowByClick: boolean;
+  getRowAriaLabel?: (row: DataTableRow<TData>) => string | undefined;
+  isRowClickable?: (row: DataTableRow<TData>) => boolean;
+  onRow?: (row: DataTableRow<TData>) => void;
+  row: DataTableRow<TData>;
+  rowClassName?: (row: DataTableRow<TData>) => string;
+  subComponent?: (props: { row: DataTableRow<TData> }) => React.ReactNode;
+  table: DataTableRenderInstance<TData>;
+}
 
 function DataTableBodyRow<TData extends RowData>({
   row,

@@ -8,9 +8,6 @@
 import type React from 'react';
 
 export interface DataProviderOption {
-  /** Wire value stored in form state. */
-  value: string;
-  label: string;
   description?: string;
   group?: string;
   /**
@@ -19,14 +16,17 @@ export interface DataProviderOption {
    * where a uniform icon is noise, not signal.
    */
   icon?: React.ReactNode;
+  label: string;
+  /** Wire value stored in form state. */
+  value: string;
 }
 
 export interface DataProviderResult {
-  options: DataProviderOption[];
-  /** True while an async source is loading. Static providers may omit this. */
-  isLoading?: boolean;
   /** Non-null when the provider failed to load. */
   error?: unknown;
+  /** True while an async source is loading. Static providers may omit this. */
+  isLoading?: boolean;
+  options: DataProviderOption[];
 }
 
 /** A data provider is a React hook; AutoForm never inspects its internals. */

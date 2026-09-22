@@ -1,3 +1,5 @@
+import type { AutoFormFieldComponents } from '../core-types';
+import { FieldTypeRegistry } from '../registry';
 import {
   booleanFieldDefinition,
   checkboxFieldDefinition,
@@ -27,8 +29,6 @@ import { stringFieldDefinition } from './string';
 import { textareaFieldDefinition } from './textarea';
 import { toggleGroupFieldDefinition } from './toggle-group';
 import { urlFieldDefinition } from './url';
-import type { AutoFormFieldComponents } from '../core-types';
-import { FieldTypeRegistry } from '../registry';
 
 export const defaultRegistry = new FieldTypeRegistry()
   // Data-provider-annotated fields win over every default matcher — the

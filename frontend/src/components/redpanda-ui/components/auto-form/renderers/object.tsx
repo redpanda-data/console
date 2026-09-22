@@ -1,20 +1,21 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
-
-import { AutoFormFieldRenderer } from './index';
-import { getRenderedLabel, useFieldPresentation } from './shared';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { ParsedField } from '../core-types';
 import { getPathInObject } from '../field-utils';
 import { getFieldErrorMessage } from '../helpers';
 import { getAutoFormFieldTestId } from '../test-ids';
+import type { NestedFieldRenderer } from './renderer-types';
+import { getRenderedLabel, useFieldPresentation } from './shared';
 
 export function ObjectFieldRenderer({
+  NestedField,
   field,
   path,
   inheritedDisabled = false,
 }: {
+  NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
   inheritedDisabled?: boolean;
@@ -46,7 +47,7 @@ export function ObjectFieldRenderer({
     <>
       <ObjectWrapperComponent field={renderField} hasError={hasError} label={label}>
         {(renderField.schema ?? []).map((subField) => (
-          <AutoFormFieldRenderer
+          <NestedField
             field={subField}
             inheritedDisabled={Boolean(renderField.fieldConfig?.inputProps?.disabled)}
             key={`${path.join('.')}.${subField.key}`}

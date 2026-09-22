@@ -1,5 +1,10 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
+import { RadioGroup, RadioGroupItem } from '../../radio-group';
+import type { AutoFormFieldProps } from '../core-types';
+import type { FieldTypeDefinition } from '../registry';
 import {
   getControlLabel,
   getFlatOptions,
@@ -8,9 +13,6 @@ import {
   renderOptionLabel,
   useFieldTestIds,
 } from './shared';
-import { RadioGroup, RadioGroupItem } from '../../radio-group';
-import type { AutoFormFieldProps } from '../core-types';
-import type { FieldTypeDefinition } from '../registry';
 
 function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -27,11 +29,11 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
       testId={testIds.control}
       value={value}
     >
-      {(optionGroups?.length ? optionGroups : [{ label: undefined, options: flatOptions }]).map((group, groupIndex) => (
+      {(optionGroups?.length ? optionGroups : [{ label: undefined, options: flatOptions }]).map((group) => (
         <div
           className="space-y-2"
-          data-testid={testIds.group(String(group.label ?? groupIndex))}
-          key={`${field.key}-group-${groupIndex}`}
+          data-testid={testIds.group(String(group.label ?? 'options'))}
+          key={JSON.stringify(group.options.map((option) => option.value))}
         >
           {group.label ? <div className="text-body-sm text-subtle">{group.label}</div> : null}
           <div className="grid gap-2">

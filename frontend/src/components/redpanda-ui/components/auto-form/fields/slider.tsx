@@ -1,13 +1,12 @@
 'use client';
 
 import React from 'react';
-
-import { normalizeNumberValue, parseNumericProp, resolveNumericStep, useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import { Slider } from '../../slider';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { normalizeNumberValue, parseNumericProp, resolveNumericStep, useFieldTestIds } from './shared';
 
 // Track + companion numeric input bound to the same value: the track for
 // coarse drags, the input for precise entry below a drag's resolution.
@@ -61,7 +60,9 @@ function SliderFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
         step={step}
         testId={testIds.controlPart('input')}
         type="number"
-        value={inputProps.value ?? clamped}
+        value={
+          typeof inputProps.value === 'number' || typeof inputProps.value === 'string' ? inputProps.value : clamped
+        }
       />
     </div>
   );

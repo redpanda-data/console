@@ -16,5 +16,5 @@ export function resolveSecretScopes(scopeString: string | undefined): readonly u
     return [];
   }
   const scope = SCOPE_MAP[scopeString];
-  return scope !== undefined ? [scope] : [];
+  return scope === undefined ? [] : [scope];
 }

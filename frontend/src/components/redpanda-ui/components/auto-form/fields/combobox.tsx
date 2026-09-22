@@ -1,10 +1,10 @@
 'use client';
 
-import { getFlatOptions, getGroupedOptions, hasNumericOptions, useFieldTestIds } from './shared';
 import { Combobox } from '../../combobox';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { getFlatOptions, getGroupedOptions, hasNumericOptions, useFieldTestIds } from './shared';
 
 function ComboboxFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

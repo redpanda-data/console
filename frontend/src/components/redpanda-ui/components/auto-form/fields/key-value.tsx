@@ -1,6 +1,5 @@
 'use client';
 
-import { useFieldTestIds } from './shared';
 import { KeyValueField } from '../../key-value-field';
 import type { AutoFormFieldProps } from '../core-types';
 import {
@@ -11,6 +10,7 @@ import {
 } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
+import { useFieldTestIds } from './shared';
 
 function KeyValueFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

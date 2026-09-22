@@ -185,10 +185,15 @@
   resolved "https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.4.tgz"
   integrity sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==
 
-"@babel/runtime@^7.12.5", "@babel/runtime@^7.18.6", "@babel/runtime@^7.26.7", "@babel/runtime@^7.29.2":
+"@babel/runtime@^7.12.5", "@babel/runtime@^7.18.6", "@babel/runtime@^7.26.7":
   version "7.29.2"
   resolved "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.2.tgz"
   integrity sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==
+
+"@babel/runtime@^7.29.7":
+  version "7.29.7"
+  resolved "https://registry.npmjs.org/@babel/runtime/-/runtime-7.29.7.tgz"
+  integrity sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==
 
 "@babel/template@^7.27.2":
   version "7.27.2"
@@ -263,23 +268,23 @@
   resolved "https://registry.npmjs.org/@balena/dockerignore/-/dockerignore-1.0.2.tgz"
   integrity sha512-wMue2Sy4GAVTk6Ic4tJVcnfdau+gx2EnG7S+uAEe+TWJFqE4YoWN4/H8MSLj4eYJKxGg26lZwboEniNiNwZQ6Q==
 
-"@base-ui/react@^1.7.0":
-  version "1.7.0"
-  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.7.0.tgz"
-  integrity sha512-j+8QjX44C32jrXD/qyEAGpFr70FRpGL2CY61mQd9nBPWN737CK0xxD1ceJ055rW4RtdvFDT1e7otzdlfxvsYug==
+"@base-ui/react@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.npmjs.org/@base-ui/react/-/react-1.8.0.tgz"
+  integrity sha512-P0/1sxo6SBVZOklKMIedvTWqw2s2IQzi9x5bIVsXu980cuSOD4NeuRSs+/L7LZQfDkZP/uRZyGPyfFl/B1oH+Q==
   dependencies:
-    "@babel/runtime" "^7.29.2"
-    "@base-ui/utils" "0.3.2"
+    "@babel/runtime" "^7.29.7"
+    "@base-ui/utils" "0.4.0"
     "@floating-ui/react-dom" "^2.1.9"
     "@floating-ui/utils" "^0.2.12"
     use-sync-external-store "^1.6.0"
 
-"@base-ui/utils@0.3.2":
-  version "0.3.2"
-  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.3.2.tgz"
-  integrity sha512-oWy1aq/I2GmYjpl4PhEAhzflF8VPGKgZeq0xAWTbfD5KBWyxcN0ZP2+WHSUm/5Z6lVMBDLReLcoXwSYoRc/zNQ==
+"@base-ui/utils@0.4.0":
+  version "0.4.0"
+  resolved "https://registry.npmjs.org/@base-ui/utils/-/utils-0.4.0.tgz"
+  integrity sha512-bO9fz25kKtPf+aZVyfQrC0PDmJdmVni31W2hCS5/Owb+inwdIL3XU26pCPRPlt4LSxZrBgLwubXQXQlKaFEZzw==
   dependencies:
-    "@babel/runtime" "^7.29.2"
+    "@babel/runtime" "^7.29.7"
     "@floating-ui/utils" "^0.2.12"
     reselect "^5.2.0"
     use-sync-external-store "^1.6.0"
@@ -2557,7 +2562,7 @@
     "@tanstack/store" "0.9.3"
     use-sync-external-store "^1.6.0"
 
-"@tanstack/react-store@^0.11.0":
+"@tanstack/react-store@^0.11.1":
   version "0.11.1"
   resolved "https://registry.npmjs.org/@tanstack/react-store/-/react-store-0.11.1.tgz"
   integrity sha512-HaIGKI3YLmjBYIvy5DFDY23oNaYZIsTZfngey07Uh5iLVJgM3bIGCnZeOFOqzjFld9JHWcaHJnasD/bKoGKwJQ==
@@ -2565,13 +2570,13 @@
     "@tanstack/store" "0.11.1"
     use-sync-external-store "^1.6.0"
 
-"@tanstack/react-table@^9.1.2":
-  version "9.1.2"
-  resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-9.1.2.tgz"
-  integrity sha512-YQPZFJ1nIi/bjjwsPZVouABgahDcl7Gdm33CdTStUJBn0DjEVJ2uhSTVmIoWt9MVKdQziXGAsXipSzy949Hygg==
+"@tanstack/react-table@^9.2.3":
+  version "9.2.4"
+  resolved "https://registry.npmjs.org/@tanstack/react-table/-/react-table-9.2.4.tgz"
+  integrity sha512-Rzp1Q4e0/nIgEjmISYR5HeEgLTNtrG+C7NFZf/AbCxPO5hg+zC3yNGwcoECigUk8SFzzvhXbd2rFdtP2ZiGrfA==
   dependencies:
-    "@tanstack/react-store" "^0.11.0"
-    "@tanstack/table-core" "9.1.2"
+    "@tanstack/react-store" "^0.11.1"
+    "@tanstack/table-core" "9.2.4"
 
 "@tanstack/react-virtual@^3.13.12":
   version "3.13.12"
@@ -2646,17 +2651,17 @@
   resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.9.3.tgz"
   integrity sha512-8reSzl/qGWGGVKhBoxXPMWzATSbZLZFWhwBAFO9NAyp0TxzfBP0mIrGb8CP8KrQTmvzXlR/vFPPUrHTLBGyFyw==
 
-"@tanstack/store@0.11.1", "@tanstack/store@^0.11.0":
+"@tanstack/store@0.11.1", "@tanstack/store@^0.11.1":
   version "0.11.1"
   resolved "https://registry.npmjs.org/@tanstack/store/-/store-0.11.1.tgz"
   integrity sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==
 
-"@tanstack/table-core@9.1.2":
-  version "9.1.2"
-  resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-9.1.2.tgz"
-  integrity sha512-ONpWQeass1sfg80CWF1NSwQ8r3GiqxA2lT/EdqIcrDEPZ0Z+0mM94eQoFYLPN0Kztzj8TQVb2+PrSZSItqA61g==
+"@tanstack/table-core@9.2.4":
+  version "9.2.4"
+  resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-9.2.4.tgz"
+  integrity sha512-GwdDyGGr6UXAtubF14yAwcXvdaogqfsQgIk89Suebjxob/Rjq2xvfmXsjDF1rQmKmhHsJm9TOY7myxv3i6geJw==
   dependencies:
-    "@tanstack/store" "^0.11.0"
+    "@tanstack/store" "^0.11.1"
 
 "@tanstack/virtual-core@3.13.12":
   version "3.13.12"
@@ -6294,7 +6299,7 @@ lottie-react@^2.4.1:
   dependencies:
     lottie-web "^5.10.2"
 
-lottie-web@^5.10.2:
+lottie-web@^5.10.2, lottie-web@^5.13.0:
   version "5.13.0"
   resolved "https://registry.npmjs.org/lottie-web/-/lottie-web-5.13.0.tgz"
   integrity sha512-+gfBXl6sxXMPe8tKQm7qzLnUy5DUPJPKIyRHwtpCpyUEYjHYRJC/5gjUvdkuO2c3JllrPtHXH5UJJK8LRYl5yQ==
@@ -9631,10 +9636,10 @@ zip-stream@^6.0.1:
   resolved "https://registry.npmjs.org/zod/-/zod-4.3.5.tgz"
   integrity sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==
 
-"zod@^3.24.0 || ^4.0.0", "zod@^3.25.0 || ^4.0.0", zod@^4.4.3:
-  version "4.4.3"
-  resolved "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz"
-  integrity sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==
+"zod@^3.24.0 || ^4.0.0", "zod@^3.25.0 || ^4.0.0", zod@^4.4.3, zod@^4.6.1:
+  version "4.6.5"
+  resolved "https://registry.npmjs.org/zod/-/zod-4.6.5.tgz"
+  integrity sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==
 
 "zod-validation-error@^3.5.0 || ^4.0.0":
   version "4.0.2"

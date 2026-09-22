@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -188,14 +188,14 @@ function TableCaption({ className, testId, ...props }: React.ComponentProps<'cap
 
 export {
   Table,
-  TableHeader,
   TableBody,
+  TableCaption,
+  TableCell,
   TableFooter,
   TableHead,
+  TableHeader,
   TableRow,
-  TableCell,
-  TableCaption,
-  tableVariants,
-  tableHeadVariants,
   tableCellVariants,
+  tableHeadVariants,
+  tableVariants,
 };

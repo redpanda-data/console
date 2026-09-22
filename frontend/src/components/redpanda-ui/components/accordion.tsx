@@ -9,11 +9,11 @@ import { cn, type SharedProps } from '../lib/utils';
 
 type AccordionVariant = 'simple' | 'contained';
 
-type AccordionItemContextType = {
+interface AccordionItemContextType {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   variant: AccordionVariant;
-};
+}
 
 const AccordionItemContext = React.createContext<AccordionItemContextType | undefined>(undefined);
 
@@ -232,15 +232,15 @@ function AccordionContent({ className, children, testId, ...props }: AccordionCo
 
 export {
   Accordion,
-  AccordionItem,
-  AccordionTrigger,
   AccordionContent,
-  useAccordionItem,
-  useAccordion,
-  type AccordionVariant,
-  type AccordionItemContextType,
-  type AccordionProps,
-  type AccordionItemProps,
-  type AccordionTriggerProps,
   type AccordionContentProps,
+  AccordionItem,
+  type AccordionItemContextType,
+  type AccordionItemProps,
+  type AccordionProps,
+  AccordionTrigger,
+  type AccordionTriggerProps,
+  type AccordionVariant,
+  useAccordion,
+  useAccordionItem,
 };

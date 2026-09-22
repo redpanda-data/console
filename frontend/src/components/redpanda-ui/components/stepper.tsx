@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import {
@@ -16,9 +18,53 @@ import React from 'react';
 import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
-const StepperContext = React.createContext<Stepper.ConfigProps | null>(null);
+export type StepperVariant = 'horizontal' | 'vertical' | 'circle';
+export type StepperLabelOrientation = 'horizontal' | 'vertical';
 
-const useStepperProvider = (): Stepper.ConfigProps => {
+export interface StepperConfigProps {
+  labelOrientation?: StepperLabelOrientation;
+  tracking?: boolean;
+  variant?: StepperVariant;
+}
+
+export interface CircleStepIndicatorProps {
+  currentStep: number;
+  size?: number;
+  strokeWidth?: number;
+  totalSteps: number;
+}
+
+export type DefineStepperProps<Steps extends Step[]> = Omit<StepperReturn<Steps>, 'Scoped'> & {
+  Steps: StepperType<Steps>;
+  Stepper: {
+    Provider: (
+      props: Omit<ScopedProps<Steps>, 'children'> &
+        Omit<React.ComponentProps<'div'>, 'children'> &
+        StepperConfigProps & {
+          children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
+          testId?: string;
+        }
+    ) => React.ReactElement;
+    Navigation: (props: React.ComponentProps<'nav'> & SharedProps) => React.ReactElement;
+    Step: (
+      props: React.ComponentProps<'button'> & {
+        of: Get.Id<Steps>;
+        icon?: React.ReactNode;
+        testId?: string;
+        /** Render the trigger Button in a non-default variant. */
+        variant?: ButtonVariants['variant'];
+      }
+    ) => React.ReactElement;
+    Title: (props: useRender.ComponentProps<'h4'>) => React.ReactElement;
+    Description: (props: useRender.ComponentProps<'p'>) => React.ReactElement;
+    Panel: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
+    Controls: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
+  };
+};
+
+const StepperContext = React.createContext<StepperConfigProps | null>(null);
+
+const useStepperProvider = (): StepperConfigProps => {
   const context = React.useContext(StepperContext);
   if (!context) {
     throw new Error('useStepper must be used within a StepperProvider.');
@@ -26,7 +72,7 @@ const useStepperProvider = (): Stepper.ConfigProps => {
   return context;
 };
 
-const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.DefineProps<Steps> => {
+const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepperProps<Steps> => {
   const { Scoped, useStepper, ...rest } = defineStepperPrimitive(...steps);
 
   const StepperContainer = ({
@@ -58,16 +104,14 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
         variant = 'horizontal',
         labelOrientation = 'horizontal',
         tracking = false,
+        initialStep,
+        initialMetadata,
         children,
-        className,
-        testId,
         ...props
       }) => (
         <StepperContext.Provider value={{ variant, labelOrientation, tracking }}>
-          <Scoped initialMetadata={props.initialMetadata} initialStep={props.initialStep}>
-            <StepperContainer className={className} testId={testId} {...props}>
-              {children}
-            </StepperContainer>
+          <Scoped initialMetadata={initialMetadata} initialStep={initialStep}>
+            <StepperContainer {...props}>{children}</StepperContainer>
           </Scoped>
         </StepperContext.Provider>
       ),
@@ -151,9 +195,9 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): Stepper.Def
                 onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
                 role="tab"
                 size="icon"
-                tabIndex={dataState !== 'inactive' ? 0 : -1}
+                tabIndex={dataState === 'inactive' ? -1 : 0}
                 type="button"
-                variant={dataState !== 'inactive' ? 'primary' : 'outline'}
+                variant={dataState === 'inactive' ? 'outline' : 'primary'}
                 {...props}
               >
                 {stepIcon ?? stepIndex + 1}
@@ -301,12 +345,7 @@ const StepperSeparator = ({
   );
 };
 
-const CircleStepIndicator = ({
-  currentStep,
-  totalSteps,
-  size = 80,
-  strokeWidth = 6,
-}: Stepper.CircleStepIndicatorProps) => {
+const CircleStepIndicator = ({ currentStep, totalSteps, size = 80, strokeWidth = 6 }: CircleStepIndicatorProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const fillPercentage = (currentStep / totalSteps) * 100;
@@ -423,7 +462,7 @@ const onStepKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, nextStep: Step
       return;
     }
 
-    const stepElement = document.getElementById(`step-${step.id}`);
+    const stepElement = document.querySelector<HTMLElement>(`#${CSS.escape(`step-${step.id}`)}`);
     if (!stepElement) {
       return;
     }
@@ -444,52 +483,5 @@ const getStepState = (currentIndex: number, stepIndex: number) => {
   }
   return 'inactive';
 };
-
-// biome-ignore lint/style/noNamespace: using namespace for component type exports
-namespace Stepper {
-  export type StepperVariant = 'horizontal' | 'vertical' | 'circle';
-  export type StepperLabelOrientation = 'horizontal' | 'vertical';
-
-  export type ConfigProps = {
-    variant?: StepperVariant;
-    labelOrientation?: StepperLabelOrientation;
-    tracking?: boolean;
-  };
-
-  export type DefineProps<Steps extends Step[]> = Omit<StepperReturn<Steps>, 'Scoped'> & {
-    Steps: StepperType<Steps>;
-    Stepper: {
-      Provider: (
-        props: Omit<ScopedProps<Steps>, 'children'> &
-          Omit<React.ComponentProps<'div'>, 'children'> &
-          Stepper.ConfigProps & {
-            children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
-            testId?: string;
-          }
-      ) => React.ReactElement;
-      Navigation: (props: React.ComponentProps<'nav'> & SharedProps) => React.ReactElement;
-      Step: (
-        props: React.ComponentProps<'button'> & {
-          of: Get.Id<Steps>;
-          icon?: React.ReactNode;
-          testId?: string;
-          /** Render the trigger Button in a non-default variant. */
-          variant?: ButtonVariants['variant'];
-        }
-      ) => React.ReactElement;
-      Title: (props: useRender.ComponentProps<'h4'>) => React.ReactElement;
-      Description: (props: useRender.ComponentProps<'p'>) => React.ReactElement;
-      Panel: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
-      Controls: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
-    };
-  };
-
-  export type CircleStepIndicatorProps = {
-    currentStep: number;
-    totalSteps: number;
-    size?: number;
-    strokeWidth?: number;
-  };
-}
 
 export { defineStepper };

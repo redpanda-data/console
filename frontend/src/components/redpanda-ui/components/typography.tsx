@@ -2,7 +2,7 @@
 
 import { Link as TanStackLink } from '@tanstack/react-router';
 import { cva, type VariantProps } from 'class-variance-authority';
-import React, { forwardRef } from 'react';
+import React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -119,8 +119,8 @@ interface HeadingProps
   extends React.HTMLAttributes<HTMLHeadingElement>,
     VariantProps<typeof headingVariants>,
     SharedProps {
-  children: React.ReactNode;
   as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
+  children: React.ReactNode;
 }
 
 /**
@@ -129,7 +129,7 @@ interface HeadingProps
  * runtime-variable level, map it to a class
  * (e.g. `{ 1: 'text-heading-xl', 2: 'text-heading-lg', … }[level]`) on a dynamic `h{level}` tag.
  */
-export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((componentProps, ref) => {
+export const Heading = ({ ref, ...componentProps }: HeadingProps & { ref?: React.Ref<HTMLHeadingElement> }) => {
   const { align, className, children, testId, as, level: levelProp, ...props } = componentProps;
   const headingLevel = levelProp ?? 1;
   const HeadingTag = as ?? (`h${headingLevel}` as keyof React.JSX.IntrinsicElements);
@@ -144,11 +144,11 @@ export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((componentPr
     },
     children
   );
-});
+};
 
 interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<typeof textVariants>, SharedProps {
-  children: React.ReactNode;
   as?: 'p' | 'div' | 'span' | 'small';
+  children: React.ReactNode;
 }
 
 /**
@@ -158,7 +158,7 @@ interface TextProps extends React.HTMLAttributes<HTMLElement>, VariantProps<type
  *
  * Defaults to <div> so block-level children don't trip `validateDOMNesting` (use `as="p"` for a paragraph). forwardRef enables render-prop use.
  */
-export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => {
+export const Text = ({ ref, ...componentProps }: TextProps & { ref?: React.Ref<HTMLElement> }) => {
   const { variant, align, as = 'div', className, children, testId, ...props } = componentProps;
 
   return React.createElement(
@@ -171,18 +171,22 @@ export const Text = forwardRef<HTMLElement, TextProps>((componentProps, ref) => 
     },
     children
   );
-});
+};
 
 interface BlockquoteProps extends React.HTMLAttributes<HTMLQuoteElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Blockquote = forwardRef<HTMLQuoteElement, BlockquoteProps>(
-  ({ className, children, testId, ...props }, ref) => (
-    <blockquote className={cn('border-l-2 pl-6 italic', className)} data-testid={testId} ref={ref} {...props}>
-      {children}
-    </blockquote>
-  )
+export const Blockquote = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: BlockquoteProps & { ref?: React.Ref<HTMLQuoteElement> }) => (
+  <blockquote className={cn('border-l-2 pl-6 italic', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </blockquote>
 );
 
 interface ListProps extends React.HTMLAttributes<HTMLUListElement | HTMLOListElement>, SharedProps {
@@ -190,7 +194,10 @@ interface ListProps extends React.HTMLAttributes<HTMLUListElement | HTMLOListEle
   ordered?: boolean;
 }
 
-export const List = forwardRef<HTMLUListElement | HTMLOListElement, ListProps>((componentProps, ref) => {
+export const List = ({
+  ref,
+  ...componentProps
+}: ListProps & { ref?: React.Ref<HTMLUListElement | HTMLOListElement> }) => {
   const { ordered = false, className, children, testId, ...props } = componentProps;
   const ListTag = ordered ? 'ol' : 'ul';
   const listClass = ordered ? 'mt-1 mb-3 ml-6 list-decimal [&>li]:mt-1' : 'mt-1 mb-3 ml-6 list-disc [&>li]:mt-0.5';
@@ -205,36 +212,52 @@ export const List = forwardRef<HTMLUListElement | HTMLOListElement, ListProps>((
     },
     children
   );
-});
+};
 
 interface ListItemProps extends React.HTMLAttributes<HTMLLIElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const ListItem = forwardRef<HTMLLIElement, ListItemProps>(({ className, children, testId, ...props }, ref) => (
+export const ListItem = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: ListItemProps & { ref?: React.Ref<HTMLLIElement> }) => (
   <li className={className} data-testid={testId} ref={ref} {...props}>
     {children}
   </li>
-));
+);
 
 // Emulates prose p-in-li behavior.
 interface ListItemTextProps extends React.HTMLAttributes<HTMLParagraphElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const ListItemText = forwardRef<HTMLParagraphElement, ListItemTextProps>(
-  ({ className, children, testId, ...props }, ref) => (
-    <p className={cn('my-0 inline', className)} data-testid={testId} ref={ref} {...props}>
-      {children}
-    </p>
-  )
+export const ListItemText = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: ListItemTextProps & { ref?: React.Ref<HTMLParagraphElement> }) => (
+  <p className={cn('my-0 inline', className)} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </p>
 );
 
 interface InlineCodeProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className, children, testId, ...props }, ref) => (
+export const InlineCode = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: InlineCodeProps & { ref?: React.Ref<HTMLElement> }) => (
   <code
     className={cn(
       'relative rounded bg-surface-subtle px-[0.3rem] py-[0.2rem] font-mono font-semibold text-sm leading-8',
@@ -246,7 +269,7 @@ export const InlineCode = forwardRef<HTMLElement, InlineCodeProps>(({ className,
   >
     {children}
   </code>
-));
+);
 
 type BaseLinkProps = SharedProps & {
   children: React.ReactNode;
@@ -291,7 +314,7 @@ const linkVariants = cva(
   }
 );
 
-export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, ref) => {
+export const Link = ({ ref, ...componentProps }: LinkProps & { ref?: React.Ref<HTMLAnchorElement> }) => {
   // Re-assert the union: forwardRef's PropsWithoutRef collapses the index-signature branch, widening className/children to `unknown`.
   const { className, children, testId, tone, ...props } = componentProps as LinkProps;
 
@@ -309,13 +332,13 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>((componentProps, re
       {children}
     </a>
   );
-});
+};
 
 interface PreProps extends React.HTMLAttributes<HTMLPreElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Pre = forwardRef<HTMLPreElement, PreProps>(({ className, children, testId, ...props }, ref) => (
+export const Pre = ({ className, children, testId, ref, ...props }: PreProps & { ref?: React.Ref<HTMLPreElement> }) => (
   <pre
     className={cn('my-6 overflow-y-auto rounded-md bg-surface-subtle p-4 text-sm', className)}
     data-testid={testId}
@@ -324,61 +347,71 @@ export const Pre = forwardRef<HTMLPreElement, PreProps>(({ className, children, 
   >
     {children}
   </pre>
-));
+);
 
 interface HrProps extends React.HTMLAttributes<HTMLHRElement>, SharedProps {}
 
-export const Hr = forwardRef<HTMLHRElement, HrProps>(({ className, testId, ...props }, ref) => (
+export const Hr = ({ className, testId, ref, ...props }: HrProps & { ref?: React.Ref<HTMLHRElement> }) => (
   <hr className={cn('my-10', className)} data-testid={testId} ref={ref} {...props} />
-));
+);
 
 interface DlProps extends React.HTMLAttributes<HTMLDListElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Dl = forwardRef<HTMLDListElement, DlProps>(({ className, children, testId, ...props }, ref) => (
+export const Dl = ({ className, children, testId, ref, ...props }: DlProps & { ref?: React.Ref<HTMLDListElement> }) => (
   <dl className={cn('my-6', className)} data-testid={testId} ref={ref} {...props}>
     {children}
   </dl>
-));
+);
 
 interface DtProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Dt = forwardRef<HTMLElement, DtProps>(({ className, children, testId, ...props }, ref) => (
+export const Dt = ({ className, children, testId, ref, ...props }: DtProps & { ref?: React.Ref<HTMLElement> }) => (
   <dt className={cn('font-semibold tracking-tight', className)} data-testid={testId} ref={ref} {...props}>
     {children}
   </dt>
-));
+);
 
 interface DdProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Dd = forwardRef<HTMLElement, DdProps>(({ className, children, testId, ...props }, ref) => (
+export const Dd = ({ className, children, testId, ref, ...props }: DdProps & { ref?: React.Ref<HTMLElement> }) => (
   <dd className={className} data-testid={testId} ref={ref} {...props}>
     {children}
   </dd>
-));
+);
 
 interface DetailsProps extends React.DetailsHTMLAttributes<HTMLDetailsElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Details = forwardRef<HTMLDetailsElement, DetailsProps>(
-  ({ className, children, testId, ...props }, ref) => (
-    <details className={className} data-testid={testId} ref={ref} {...props}>
-      {children}
-    </details>
-  )
+export const Details = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: DetailsProps & { ref?: React.Ref<HTMLDetailsElement> }) => (
+  <details className={className} data-testid={testId} ref={ref} {...props}>
+    {children}
+  </details>
 );
 
 interface SummaryProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Summary = forwardRef<HTMLElement, SummaryProps>(({ className, children, testId, ...props }, ref) => (
+export const Summary = ({
+  className,
+  children,
+  testId,
+  ref,
+  ...props
+}: SummaryProps & { ref?: React.Ref<HTMLElement> }) => (
   <summary
     // Prose disclosure, so the ink steps rather than a fill appearing (Accordion's trigger has
     // a fill and steps that instead). Opening the panel is the pressed feedback.
@@ -392,17 +425,17 @@ export const Summary = forwardRef<HTMLElement, SummaryProps>(({ className, child
   >
     {children}
   </summary>
-));
+);
 
 interface MarkProps extends React.HTMLAttributes<HTMLElement>, SharedProps {
   children: React.ReactNode;
 }
 
-export const Mark = forwardRef<HTMLElement, MarkProps>(({ className, children, testId, ...props }, ref) => (
+export const Mark = ({ className, children, testId, ref, ...props }: MarkProps & { ref?: React.Ref<HTMLElement> }) => (
   <mark className={cn('bg-mark text-mark-foreground', className)} data-testid={testId} ref={ref} {...props}>
     {children}
   </mark>
-));
+);
 
 // displayName on each forwardRef so DevTools/stacks show the real name instead of "ForwardRef".
 Heading.displayName = 'Heading';

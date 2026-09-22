@@ -1,6 +1,9 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 import type { RowData } from '@tanstack/react-table';
 import { Ellipsis, FilterIcon, X } from 'lucide-react';
-import React, { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { type BadgeVariantKey, badgeVariants } from './badge';
 import { Button } from './button';
@@ -29,11 +32,11 @@ import { cn } from '../lib/utils';
 /** A `badgeVariants` key, used to style the filter chip. */
 export type DataTableFilterVariant = BadgeVariantKey;
 
-export type FilterOption = {
-  value: string;
-  label: string;
+export interface FilterOption {
   icon?: React.ComponentType<{ className?: string }>;
-};
+  label: string;
+  value: string;
+}
 
 export type FilterColumnConfig = {
   id: string;
@@ -46,13 +49,13 @@ export type FilterColumnConfig = {
   | { type: 'multiOption'; options?: FilterOption[] }
 );
 
-type MatchingOption = {
-  columnId: string;
+interface MatchingOption {
   columnDisplayName: string;
   columnIcon?: React.ComponentType<{ className?: string }>;
-  option: FilterOption;
+  columnId: string;
   count?: number;
-};
+  option: FilterOption;
+}
 
 function collectMatchingOptions<TData extends RowData>(
   columns: FilterColumnConfig[],
@@ -101,14 +104,14 @@ function RadioIndicator({ checked }: { checked: boolean }) {
   );
 }
 
-type DataTableFilterProps<TData extends RowData> = {
+interface DataTableFilterProps<TData extends RowData> {
+  actions: DataTableFilterActions;
+  className?: string;
   columns: FilterColumnConfig[];
   filters: FiltersState;
-  actions: DataTableFilterActions;
   table?: Table<TData>;
-  className?: string;
   variant?: DataTableFilterVariant;
-};
+}
 
 export function DataTableFilter<TData extends RowData>({
   columns,
@@ -179,7 +182,7 @@ function MatchingOptionItem({
       {MatchIcon ? renderIcon(MatchIcon, 'size-4 text-primary') : null}
       <span>
         {match.option.label}
-        {match.count !== undefined ? (
+        {match.count === undefined ? null : (
           <sup
             className={cn(
               'ml-0.5 text-subtle tabular-nums tracking-tight',
@@ -188,19 +191,19 @@ function MatchingOptionItem({
           >
             {match.count < 100 ? match.count : '100+'}
           </sup>
-        ) : null}
+        )}
       </span>
     </CommandItem>
   );
 }
 
-type FilterSelectorProps<TData extends RowData> = {
+interface FilterSelectorProps<TData extends RowData> {
+  actions: DataTableFilterActions;
   columns: FilterColumnConfig[];
   filters: FiltersState;
-  actions: DataTableFilterActions;
   table?: Table<TData>;
   variant?: DataTableFilterVariant;
-};
+}
 
 const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
   columns,
@@ -223,6 +226,7 @@ const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
       }, 150);
       return () => clearTimeout(timer);
     }
+    return;
   }, [open]);
 
   const matchingOptions = useMemo(() => {
@@ -359,13 +363,13 @@ function FilterKeySubmenu<TData extends RowData>({
   }
 }
 
-type ActiveFilterProps<TData extends RowData> = {
-  filter: FilterModel;
-  column: FilterColumnConfig;
+interface ActiveFilterProps<TData extends RowData> {
   actions: DataTableFilterActions;
+  column: FilterColumnConfig;
+  filter: FilterModel;
   table?: Table<TData>;
   variant?: DataTableFilterVariant;
-};
+}
 
 function ActiveFilter<TData extends RowData>({
   filter,
@@ -409,10 +413,10 @@ function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
 }
 FilterSubject.displayName = 'FilterSubject';
 
-type FilterOperatorProps = {
-  filter: FilterModel;
+interface FilterOperatorProps {
   actions: DataTableFilterActions;
-};
+  filter: FilterModel;
+}
 
 function FilterOperator({ filter, actions }: FilterOperatorProps) {
   const [open, setOpen] = useState(false);
@@ -459,12 +463,12 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
 }
 FilterOperator.displayName = 'FilterOperator';
 
-type FilterValueProps<TData extends RowData> = {
+interface FilterValueProps<TData extends RowData> {
+  actions: DataTableFilterActions;
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
-  actions: DataTableFilterActions;
   table?: Table<TData>;
-};
+}
 
 const FilterValue = memo(function FilterValueImpl<TData extends RowData>({
   filter,
@@ -628,11 +632,11 @@ function TextValueController({
   );
 }
 
-type OptionItemProps = {
-  option: FilterOption & { selected: boolean; count?: number };
+interface OptionItemProps {
   onToggle: (value: string, checked: boolean) => void;
+  option: FilterOption & { selected: boolean; count?: number };
   singleMode?: boolean;
-};
+}
 
 const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }: OptionItemProps) {
   const { value, label, icon: ItemIcon, selected, count } = option;
@@ -657,13 +661,13 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
       {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}
       <span>
         {label}
-        {count !== undefined ? (
+        {count === undefined ? null : (
           <sup
             className={cn('ml-0.5 text-subtle tabular-nums tracking-tight', count === 0 ? 'slashed-zero' : undefined)}
           >
             {count < 100 ? count : '100+'}
           </sup>
-        ) : null}
+        )}
       </span>
     </CommandItem>
   );

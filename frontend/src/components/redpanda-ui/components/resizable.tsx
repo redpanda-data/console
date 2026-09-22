@@ -1,13 +1,20 @@
 'use client';
 
 import { GripVerticalIcon } from 'lucide-react';
-import * as ResizablePrimitive from 'react-resizable-panels';
+import {
+  Group,
+  type GroupProps,
+  Panel,
+  type PanelProps,
+  Separator as PanelSeparator,
+  type SeparatorProps,
+} from 'react-resizable-panels';
 
 import { cn } from '../lib/utils';
 
-function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupProps) {
+function ResizablePanelGroup({ className, ...props }: GroupProps) {
   return (
-    <ResizablePrimitive.Group
+    <Group
       className={cn('flex h-full w-full aria-[orientation=vertical]:flex-col', className)}
       data-slot="resizable-panel-group"
       {...props}
@@ -15,19 +22,19 @@ function ResizablePanelGroup({ className, ...props }: ResizablePrimitive.GroupPr
   );
 }
 
-function ResizablePanel({ ...props }: ResizablePrimitive.PanelProps) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />;
+function ResizablePanel({ ...props }: PanelProps) {
+  return <Panel data-slot="resizable-panel" {...props} />;
 }
 
 function ResizableHandle({
   withHandle,
   className,
   ...props
-}: ResizablePrimitive.SeparatorProps & {
+}: SeparatorProps & {
   withHandle?: boolean;
 }) {
   return (
-    <ResizablePrimitive.Separator
+    <PanelSeparator
       className={cn(
         'group/resizable-handle relative flex w-px items-center justify-center bg-border transition-colors after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 hover:bg-border-hover focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-ring/50 active:bg-border-pressed aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-1 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 motion-reduce:transition-none [&[aria-orientation=horizontal]>div]:rotate-90',
         className
@@ -40,7 +47,7 @@ function ResizableHandle({
           <GripVerticalIcon className="size-2.5" />
         </div>
       ) : null}
-    </ResizablePrimitive.Separator>
+    </PanelSeparator>
   );
 }
 

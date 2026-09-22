@@ -6,16 +6,16 @@ import { getPathInObject } from './field-utils';
 import type { FieldTypeRegistry } from './registry';
 import type { AutoFormUiRule } from './types';
 
-export type AutoFormContextValue = {
-  uiComponents: AutoFormUIComponents;
+export interface AutoFormContextValue {
+  dataProviders?: DataProviderRegistry;
+  evaluateRules: (rules: AutoFormUiRule[] | undefined, fieldValue?: unknown) => boolean;
+  fieldRegistry?: FieldTypeRegistry;
   formComponents: AutoFormFieldComponents;
   formValues: Record<string, unknown>;
-  evaluateRules: (rules: AutoFormUiRule[] | undefined, fieldValue?: unknown) => boolean;
   getFieldUiConfig: (field: ParsedField) => Record<string, unknown>;
   testIdPrefix: string;
-  fieldRegistry?: FieldTypeRegistry;
-  dataProviders?: DataProviderRegistry;
-};
+  uiComponents: AutoFormUIComponents;
+}
 
 export const AutoFormContext = React.createContext<AutoFormContextValue | null>(null);
 

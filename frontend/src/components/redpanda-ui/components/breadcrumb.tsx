@@ -51,15 +51,11 @@ function BreadcrumbLink({ className, render, testId, ...props }: useRender.Compo
 
 function BreadcrumbPage({ className, testId, ...props }: React.ComponentProps<'span'> & SharedProps) {
   return (
-    // biome-ignore lint/a11y/useFocusableInteractive: it is a link
-    // biome-ignore lint/a11y/useSemanticElements: part of breadcrumb implementation
     <span
       aria-current="page"
-      aria-disabled="true"
       className={cn('font-normal text-foreground', className)}
       data-slot="breadcrumb-page"
       data-testid={testId}
-      role="link"
       {...props}
     />
   );
@@ -112,11 +108,11 @@ function BreadcrumbHeader({ className, testId, ...props }: React.ComponentProps<
 
 export {
   Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
   BreadcrumbEllipsis,
   BreadcrumbHeader,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 };

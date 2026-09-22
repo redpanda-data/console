@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { UploadIcon } from 'lucide-react';
 import React, { useContext } from 'react';
 import type { DropEvent, DropzoneOptions, FileRejection } from 'react-dropzone';
@@ -8,13 +10,13 @@ import { useDropzone } from 'react-dropzone';
 import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
-type DropzoneContextType = {
-  src?: File[];
+interface DropzoneContextType {
   accept?: DropzoneOptions['accept'];
+  maxFiles?: DropzoneOptions['maxFiles'];
   maxSize?: DropzoneOptions['maxSize'];
   minSize?: DropzoneOptions['minSize'];
-  maxFiles?: DropzoneOptions['maxFiles'];
-};
+  src?: File[];
+}
 
 const renderBytes = (bytes: number) => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
@@ -40,66 +42,63 @@ export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> &
     variant?: ButtonVariants['variant'];
   };
 
-export const Dropzone = React.forwardRef<HTMLButtonElement, DropzoneProps>(
-  (
-    {
-      accept,
-      maxFiles = 1,
-      maxSize,
-      minSize,
-      onDrop,
-      onError,
-      disabled,
-      src,
-      className,
-      children,
-      testId,
-      variant = 'outline',
-      ...props
+export const Dropzone = ({
+  accept,
+  maxFiles = 1,
+  maxSize,
+  minSize,
+  onDrop,
+  onError,
+  disabled,
+  src,
+  className,
+  children,
+  testId,
+  variant = 'outline',
+  ref,
+  ...props
+}: DropzoneProps & { ref?: React.Ref<HTMLButtonElement> }) => {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept,
+    maxFiles,
+    maxSize,
+    minSize,
+    onError,
+    disabled,
+    onDrop: (acceptedFiles, fileRejections, event) => {
+      if (fileRejections.length > 0) {
+        const message = fileRejections.at(0)?.errors.at(0)?.message;
+        onError?.(new Error(message));
+        return;
+      }
+
+      onDrop?.(acceptedFiles, fileRejections, event);
     },
-    ref
-  ) => {
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-      accept,
-      maxFiles,
-      maxSize,
-      minSize,
-      onError,
-      disabled,
-      onDrop: (acceptedFiles, fileRejections, event) => {
-        if (fileRejections.length > 0) {
-          const message = fileRejections.at(0)?.errors.at(0)?.message;
-          onError?.(new Error(message));
-          return;
-        }
+    ...props,
+  });
+  const inputProps = getInputProps();
 
-        onDrop?.(acceptedFiles, fileRejections, event);
-      },
-      ...props,
-    });
-
-    return (
-      <DropzoneContext.Provider key={JSON.stringify(src)} value={{ src, accept, maxSize, minSize, maxFiles }}>
-        <Button
-          className={cn(
-            'group relative h-auto w-full flex-col overflow-hidden p-8',
-            isDragActive && 'outline-none ring-2 ring-ring',
-            className
-          )}
-          data-testid={testId}
-          disabled={disabled}
-          ref={ref}
-          type="button"
-          variant={variant}
-          {...getRootProps()}
-        >
-          <input {...getInputProps()} disabled={disabled} />
-          {children}
-        </Button>
-      </DropzoneContext.Provider>
-    );
-  }
-);
+  return (
+    <DropzoneContext.Provider key={JSON.stringify(src)} value={{ src, accept, maxSize, minSize, maxFiles }}>
+      <Button
+        className={cn(
+          'group relative h-auto w-full flex-col overflow-hidden p-8',
+          isDragActive && 'outline-none ring-2 ring-ring',
+          className
+        )}
+        data-testid={testId}
+        disabled={disabled}
+        ref={ref}
+        type="button"
+        variant={variant}
+        {...getRootProps()}
+      >
+        <input {...inputProps} disabled={disabled} />
+        {children}
+      </Button>
+    </DropzoneContext.Provider>
+  );
+};
 
 Dropzone.displayName = 'Dropzone';
 
@@ -113,10 +112,10 @@ const useDropzoneContext = () => {
   return context;
 };
 
-export type DropzoneContentProps = {
+export interface DropzoneContentProps {
   children?: React.ReactNode;
   className?: string;
-};
+}
 
 const maxLabelItems = 3;
 
@@ -149,10 +148,10 @@ export const DropzoneContent = ({ children, className }: DropzoneContentProps) =
   );
 };
 
-export type DropzoneEmptyStateProps = {
+export interface DropzoneEmptyStateProps {
   children?: React.ReactNode;
   className?: string;
-};
+}
 
 export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStateProps) => {
   const { src, accept, maxSize, minSize, maxFiles } = useDropzoneContext();

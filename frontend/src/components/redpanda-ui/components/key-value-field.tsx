@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { Plus, X } from 'lucide-react';
 import { type ReactNode, useMemo, useRef } from 'react';
 
@@ -10,31 +12,31 @@ import { Label } from './label';
 import { findDuplicateIndices, useInputListFocus } from '../lib/input-utils';
 import type { SharedProps } from '../lib/utils';
 
-export type KeyValuePair = {
+export interface KeyValuePair {
   key: string;
   value: string;
-};
+}
 
 type InputFieldConfig = { mode?: 'input' } & Omit<InputProps, 'value' | 'onChange' | 'disabled' | 'aria-invalid'>;
 type ComboboxFieldConfig = { mode: 'combobox' } & Omit<ComboboxProps, 'value' | 'onChange' | 'disabled'>;
 export type KeyValueFieldConfig = InputFieldConfig | ComboboxFieldConfig;
 
-export type KeyValueFieldError = {
+export interface KeyValueFieldError {
   key?: string;
   value?: string;
-};
+}
 
 export interface KeyValueFieldProps extends SharedProps {
-  value?: KeyValuePair[];
-  onChange?: (value: KeyValuePair[]) => void;
-  errors?: Array<KeyValueFieldError | undefined>;
-  label?: ReactNode;
-  description?: ReactNode;
   addButtonLabel?: string;
-  showAddButton?: boolean;
+  description?: ReactNode;
   disabled?: boolean;
-  maxItems?: number;
+  errors?: Array<KeyValueFieldError | undefined>;
   keyFieldProps?: KeyValueFieldConfig;
+  label?: ReactNode;
+  maxItems?: number;
+  onChange?: (value: KeyValuePair[]) => void;
+  showAddButton?: boolean;
+  value?: KeyValuePair[];
   valueFieldProps?: KeyValueFieldConfig;
 }
 
@@ -226,7 +228,7 @@ export function KeyValueField({
           index={index}
           isDuplicate={duplicateIndices.has(index)}
           isLast={index === value.length - 1}
-          key={/* biome-ignore lint/suspicious/noArrayIndexKey: pairs may be duplicated */ index}
+          key={index}
           keyFieldProps={keyFieldProps}
           onAdd={showAddButton && !isAtLimit ? handleAdd : undefined}
           onDelete={handleDelete}

@@ -60,11 +60,15 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body text-foreground leading-relaxed">{children}</div>,
-  a: ({ href, children }) => (
-    <Link href={href} rel="noopener noreferrer" target="_blank">
-      {children}
-    </Link>
-  ),
+  // Markdown can produce an anchor with no destination, which is text rather than a link.
+  a: ({ href, children }) =>
+    href ? (
+      <Link href={href} rel="noopener noreferrer" target="_blank">
+        {children}
+      </Link>
+    ) : (
+      <>{children}</>
+    ),
   code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm">{children}</code>,
   ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-body text-foreground">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal space-y-0.5 pl-4 text-body text-foreground">{children}</ol>,

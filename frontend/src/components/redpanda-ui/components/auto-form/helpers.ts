@@ -239,8 +239,14 @@ export function getRootErrorMessage(rootError: unknown): string | undefined {
 }
 
 export function getFieldErrorMessage(errors: unknown, path: string[]): string | undefined {
-  const nestedError = getPathInObject(errors as Record<string, unknown>, path);
-  const message = nestedError?.message;
+  if (typeof errors !== 'object' || errors === null) {
+    return;
+  }
+  const nestedError = getPathInObject(errors, path);
+  if (typeof nestedError !== 'object' || nestedError === null) {
+    return;
+  }
+  const message = Reflect.get(nestedError, 'message');
   return typeof message === 'string' ? message : undefined;
 }
 
@@ -538,7 +544,7 @@ export function getFieldDescriptionText(field: ParsedField): string | undefined 
 
 function hasSimpleRequiredCount(field: ParsedField): boolean {
   const protoData = getProtoFieldCustomData(field);
-  return Boolean((protoData?.minItems ?? 0) > 0 || (protoData?.minPairs ?? 0) > 0);
+  return (protoData?.minItems ?? 0) > 0 || (protoData?.minPairs ?? 0) > 0;
 }
 
 /**

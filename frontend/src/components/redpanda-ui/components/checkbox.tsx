@@ -85,8 +85,7 @@ function Checkbox({
   const baseDefaultChecked = defaultChecked === 'indeterminate' ? false : defaultChecked;
 
   const renderRoot = React.useCallback(
-    // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Root attrs for the consumer element
-    (rootProps: Record<string, any>, state: CheckboxPrimitive.Root.State) => {
+    (rootProps: React.ComponentProps<'button'>, state: CheckboxPrimitive.Root.State) => {
       const dataState = dataStateFor(state.checked, state.indeterminate);
       const showCheckmark = state.checked && !state.indeterminate;
 
@@ -100,8 +99,7 @@ function Checkbox({
         >
           <CheckboxPrimitive.Indicator
             keepMounted
-            // biome-ignore lint/suspicious/noExplicitAny: Base UI render merges Indicator attrs for the consumer element
-            render={(indicatorProps: Record<string, any>) => (
+            render={({ ref: _indicatorRef, ...indicatorProps }) => (
               <svg
                 {...indicatorProps}
                 className="size-3"
@@ -174,8 +172,6 @@ function CheckboxView({ checked, className, variant, ref, ...divProps }: Checkbo
   const showCheckmark = checked === true;
 
   return (
-    // biome-ignore lint/a11y/useFocusableInteractive: the enclosing row takes focus; see above
-    // biome-ignore lint/a11y/useSemanticElements: an <input> cannot hold the drawn SVG; see above
     <div
       aria-checked={isIndeterminate ? 'mixed' : checked}
       className={cn(checkboxVariants({ variant, className }), 'cursor-default')}
@@ -216,4 +212,4 @@ function CheckboxView({ checked, className, variant, ref, ...divProps }: Checkbo
   );
 }
 
-export { Checkbox, CheckboxView, checkboxVariants, type CheckboxProps };
+export { Checkbox, type CheckboxProps, CheckboxView, checkboxVariants };

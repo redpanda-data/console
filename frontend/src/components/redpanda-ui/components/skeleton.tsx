@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -53,9 +53,9 @@ function Skeleton({ className, variant, size, width, testId, ...props }: Skeleto
 
 interface SkeletonGroupProps extends SharedProps {
   children: React.ReactNode;
+  className?: string;
   direction?: 'horizontal' | 'vertical';
   spacing?: 'none' | 'sm' | 'md' | 'lg';
-  className?: string;
 }
 
 function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', className, testId }: SkeletonGroupProps) {
@@ -82,8 +82,8 @@ function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', class
 }
 
 interface SkeletonAvatarProps extends SharedProps {
-  size?: 'sm' | 'md' | 'lg';
   className?: string;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const skeletonAvatarSizeMap: Record<
@@ -102,9 +102,9 @@ function SkeletonAvatar({ size = 'md', className, testId }: SkeletonAvatarProps)
 }
 
 interface SkeletonTextProps extends SharedProps {
+  className?: string;
   lines?: number;
   width?: 'sm' | 'md' | 'lg' | 'full';
-  className?: string;
 }
 
 function SkeletonText({ lines = 1, width = 'md', className, testId }: SkeletonTextProps) {
@@ -122,4 +122,4 @@ function SkeletonText({ lines = 1, width = 'md', className, testId }: SkeletonTe
   );
 }
 
-export { Skeleton, SkeletonGroup, SkeletonAvatar, SkeletonText, skeletonVariants };
+export { Skeleton, SkeletonAvatar, SkeletonGroup, SkeletonText, skeletonVariants };

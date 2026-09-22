@@ -108,11 +108,11 @@ function TooltipContent({
 
 export {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
-  TooltipProvider,
-  type TooltipProps,
-  type TooltipTriggerProps,
   type TooltipContentProps,
+  type TooltipProps,
+  TooltipProvider,
   type TooltipProviderProps,
+  TooltipTrigger,
+  type TooltipTriggerProps,
 };

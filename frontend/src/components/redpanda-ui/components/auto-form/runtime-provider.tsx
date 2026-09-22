@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import type { DescMessage } from '@bufbuild/protobuf';
 import React from 'react';
 import { type UseFormReturn, useFormContext, useWatch } from 'react-hook-form';
@@ -20,34 +22,29 @@ import type { AutoFormMode, AutoFormPayloadBuilderContext, AutoFormStepConfig, A
 import { evaluateUiRules } from './ui-rules';
 import { isPromiseLike, safeStringify } from './utils/serialization';
 
-type PayloadBag<T extends Record<string, unknown>> = {
-  payloadState: { bestEffort: boolean; payload: unknown };
-  jsonEditorText: string;
-  jsonEditorError: string | undefined;
-  payloadText: string;
-  summaryContext: AutoFormSummaryContext<T>;
+interface PayloadBag<T extends Record<string, unknown>> {
+  handleFormatJson: () => void;
   handleJsonTextChange: (value: string) => void;
   handleResetJson: () => void;
-  handleFormatJson: () => void;
-};
+  jsonEditorError: string | undefined;
+  jsonEditorText: string;
+  payloadState: { bestEffort: boolean; payload: unknown };
+  payloadText: string;
+  summaryContext: AutoFormSummaryContext<T>;
+}
 
-type AutoFormRuntimeProviderProps<T extends Record<string, unknown>> = {
-  children: React.ReactNode;
-  uiComponents: AutoFormUIComponents;
-  formComponents: AutoFormFieldComponents;
-  testIdPrefix: string;
-  fieldRegistry?: FieldTypeRegistry;
-  dataProviders?: DataProviderRegistry;
-  resolvedSchema: {
-    provider: SchemaProvider<Record<string, unknown>>;
-    parsedSchema: ParsedSchema;
-    isProto: boolean;
-    protoDesc?: DescMessage;
-    resolver?: unknown;
-  };
-  mode: AutoFormMode;
-  simpleFields: ParsedField[];
+interface AutoFormRuntimeProviderProps<T extends Record<string, unknown>> {
   advancedFields: ParsedField[];
+  children: React.ReactNode;
+  dataProviders?: DataProviderRegistry;
+  fieldRegistry?: FieldTypeRegistry;
+  formComponents: AutoFormFieldComponents;
+  mode: AutoFormMode;
+  onFieldChange?: (
+    fieldPath: string,
+    value: unknown,
+    form: UseFormReturn<Record<string, unknown>, unknown, T>
+  ) => void | Promise<void>;
   payloadBuilder?: (values: Record<string, unknown>, context: AutoFormPayloadBuilderContext<T>) => unknown;
   payloadParser?: (
     payload: unknown,
@@ -57,12 +54,94 @@ type AutoFormRuntimeProviderProps<T extends Record<string, unknown>> = {
     safeParse: (data: unknown) => { success: boolean; error?: { issues: Array<{ path: unknown[]; message: string }> } };
   };
   renderContent: (bag: PayloadBag<T>) => React.ReactNode;
-  onFieldChange?: (
-    fieldPath: string,
-    value: unknown,
-    form: UseFormReturn<Record<string, unknown>, unknown, T>
-  ) => void | Promise<void>;
-};
+  resolvedSchema: {
+    provider: SchemaProvider<Record<string, unknown>>;
+    parsedSchema: ParsedSchema;
+    isProto: boolean;
+    protoDesc?: DescMessage;
+    resolver?: unknown;
+  };
+  simpleFields: ParsedField[];
+  testIdPrefix: string;
+  uiComponents: AutoFormUIComponents;
+}
+
+interface RuntimeFormValues {
+  [field: string]: unknown;
+}
+
+interface PayloadValidationResult {
+  bestEffort: boolean;
+  data: unknown;
+  success: boolean;
+}
+
+function validatePayloadValues(
+  provider: SchemaProvider<RuntimeFormValues>,
+  values: RuntimeFormValues
+): PayloadValidationResult {
+  try {
+    const validation = provider.validateSchema(values);
+    if (isPromiseLike(validation) || !isValidationSuccess(validation)) {
+      return { bestEffort: true, data: undefined, success: false };
+    }
+    return { bestEffort: false, data: validation.data, success: true };
+  } catch {
+    return { bestEffort: true, data: undefined, success: false };
+  }
+}
+
+function buildCustomPayload<T extends RuntimeFormValues>(
+  builder: AutoFormRuntimeProviderProps<T>['payloadBuilder'],
+  values: RuntimeFormValues,
+  context: AutoFormPayloadBuilderContext<T>
+): { failed: boolean; payload: unknown } {
+  if (!builder) {
+    return { failed: false, payload: undefined };
+  }
+  try {
+    return { failed: false, payload: builder(values, context) };
+  } catch {
+    return { failed: true, payload: undefined };
+  }
+}
+
+function createPayloadState<T extends RuntimeFormValues>({
+  context,
+  payloadBuilder,
+  payloadSchema,
+  provider,
+  values,
+}: {
+  context: AutoFormPayloadBuilderContext<T>;
+  payloadBuilder: AutoFormRuntimeProviderProps<T>['payloadBuilder'];
+  payloadSchema: AutoFormRuntimeProviderProps<T>['payloadSchema'];
+  provider: SchemaProvider<RuntimeFormValues>;
+  values: RuntimeFormValues;
+}): { bestEffort: boolean; payload: unknown } {
+  const validation = validatePayloadValues(provider, values);
+  const customPayload = buildCustomPayload(payloadBuilder, values, context);
+  let bestEffort = validation.bestEffort || customPayload.failed;
+  let { payload } = customPayload;
+
+  if (payload === undefined) {
+    if (context.isProto && context.protoDesc) {
+      payload = protoFormValuesToPayload(context.protoDesc, values);
+      bestEffort = bestEffort || !validation.success;
+    } else if (validation.success) {
+      payload = validation.data;
+    } else {
+      payload = values;
+      bestEffort = true;
+    }
+  }
+
+  if (payloadSchema && payload !== undefined && !payloadSchema.safeParse(payload).success) {
+    bestEffort = true;
+  }
+
+  return { bestEffort, payload };
+}
 
 // useDeferredValue so expensive payload computation (validation, proto conversion,
 // payloadBuilder) doesn't block typing on large forms.
@@ -89,17 +168,22 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
   payloadSchema: AutoFormRuntimeProviderProps<T>['payloadSchema'];
   renderContent: AutoFormRuntimeProviderProps<T>['renderContent'];
 }) {
+  // The renderContent contract is an opaque render prop that receives callbacks
+  // backed by a latest-request ref. Compiling across that boundary would let the
+  // compiler treat those event callbacks as render-time ref reads.
+  'use no memo';
+
   const deferredValues = React.useDeferredValue(watchedValues);
 
-  const payloadContextBase = React.useMemo(
+  const payloadContextBase = React.useMemo<AutoFormPayloadBuilderContext<T>>(
     () => ({
       form: methods,
       schema: resolvedSchema.parsedSchema,
       isProto: resolvedSchema.isProto,
-      protoDesc: resolvedSchema.protoDesc,
       mode,
       simpleFields,
       advancedFields,
+      ...(resolvedSchema.protoDesc ? { protoDesc: resolvedSchema.protoDesc } : {}),
     }),
     [
       advancedFields,
@@ -112,68 +196,17 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
     ]
   );
 
-  const payloadState = React.useMemo(() => {
-    let validationSuccess = false;
-    let validatedData: unknown;
-    let bestEffort = false;
-
-    try {
-      const validationResult = resolvedSchema.provider.validateSchema(deferredValues as never);
-      if (isPromiseLike(validationResult)) {
-        bestEffort = true;
-      } else if (isValidationSuccess(validationResult)) {
-        validationSuccess = true;
-        validatedData = validationResult.data;
-      } else {
-        bestEffort = true;
-      }
-    } catch {
-      bestEffort = true;
-    }
-
-    let payload: unknown;
-
-    if (payloadBuilder) {
-      try {
-        payload = payloadBuilder(deferredValues, payloadContextBase as AutoFormPayloadBuilderContext<T>);
-      } catch (error) {
-        console.warn('[AutoForm] payloadBuilder threw:', error);
-        bestEffort = true;
-      }
-    }
-
-    if (payload === undefined) {
-      if (resolvedSchema.isProto && resolvedSchema.protoDesc) {
-        payload = protoFormValuesToPayload(resolvedSchema.protoDesc, deferredValues);
-        bestEffort ||= !validationSuccess;
-      } else if (validationSuccess) {
-        payload = validatedData;
-      } else {
-        payload = deferredValues;
-        bestEffort = true;
-      }
-    }
-
-    if (payloadSchema && payload !== undefined) {
-      const validation = payloadSchema.safeParse(payload);
-      if (!validation.success && validation.error) {
-        console.warn(
-          '[AutoForm] payloadSchema validation failed:',
-          validation.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
-        );
-      }
-    }
-
-    return { bestEffort, payload };
-  }, [
-    deferredValues,
-    payloadBuilder,
-    payloadContextBase,
-    payloadSchema,
-    resolvedSchema.isProto,
-    resolvedSchema.protoDesc,
-    resolvedSchema.provider,
-  ]);
+  const payloadState = React.useMemo(
+    () =>
+      createPayloadState({
+        context: payloadContextBase,
+        payloadBuilder,
+        payloadSchema,
+        provider: resolvedSchema.provider,
+        values: deferredValues,
+      }),
+    [deferredValues, payloadBuilder, payloadContextBase, payloadSchema, resolvedSchema.provider]
+  );
 
   const payloadText = React.useMemo(() => safeStringify(payloadState.payload), [payloadState.payload]);
   const [jsonEditorText, setJsonEditorText] = React.useState(payloadText);
@@ -194,7 +227,7 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
         let nextValues: Record<string, unknown> | undefined;
 
         if (payloadParser) {
-          const parsed = payloadParser(incoming, payloadContextBase as AutoFormPayloadBuilderContext<T>);
+          const parsed = payloadParser(incoming, payloadContextBase);
           nextValues = isPromiseLike(parsed) ? await parsed : parsed;
         } else if (resolvedSchema.isProto && resolvedSchema.protoDesc) {
           nextValues = protoPayloadToFormValues(resolvedSchema.protoDesc, incoming);
@@ -224,12 +257,12 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
   );
 
   const handleJsonTextChange = React.useCallback(
-    (value: string) => {
+    async (value: string) => {
       setJsonEditorText(value);
       try {
         const parsed = JSON.parse(value);
         setJsonEditorError(undefined);
-        void applyPayloadToForm(parsed);
+        await applyPayloadToForm(parsed);
       } catch (error) {
         setJsonEditorError(error instanceof Error ? error.message : 'Invalid JSON');
       }
@@ -242,13 +275,13 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
     setJsonEditorText(payloadText);
   }, [payloadText]);
 
-  const handleFormatJson = React.useCallback(() => {
+  const handleFormatJson = React.useCallback(async () => {
     try {
       const parsed = JSON.parse(jsonEditorText);
       const formatted = JSON.stringify(parsed, null, 2);
       setJsonEditorText(formatted);
       setJsonEditorError(undefined);
-      void applyPayloadToForm(parsed);
+      await applyPayloadToForm(parsed);
     } catch (error) {
       setJsonEditorError(error instanceof Error ? error.message : 'Invalid JSON');
     }
@@ -256,7 +289,7 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
 
   const summaryContext = React.useMemo<AutoFormSummaryContext<T>>(
     () => ({
-      ...(payloadContextBase as AutoFormPayloadBuilderContext<T>),
+      ...payloadContextBase,
       payload: payloadState.payload,
       bestEffort: payloadState.bestEffort,
     }),
@@ -303,11 +336,15 @@ export function AutoFormRuntimeProvider<T extends Record<string, unknown>>({
 
   React.useEffect(() => {
     // Only fires for root-level keys; nested changes surface as onFieldChange("address", ...) when the parent ref changes.
-    if (!onFieldChange) return;
+    if (!onFieldChange) {
+      return;
+    }
     const prev = prevValuesRef.current;
     for (const key of Object.keys(watchedValues)) {
       if (watchedValues[key] !== prev[key]) {
-        void onFieldChange(key, watchedValues[key], methods);
+        Promise.resolve(onFieldChange(key, watchedValues[key], methods)).catch((error: unknown) => {
+          globalThis.reportError(error);
+        });
       }
     }
     prevValuesRef.current = { ...watchedValues };

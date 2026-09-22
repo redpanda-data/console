@@ -3,23 +3,24 @@
 import { TrashIcon } from 'lucide-react';
 import React from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-
-import { AutoFormFieldRenderer } from './index';
-import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
 import { Button } from '../../button';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { ParsedField } from '../core-types';
 import { formSpacing } from '../form-spacing';
 import { createEmptyFieldValue, getFieldErrorMessage } from '../helpers';
 import { getAutoFormCollectionRemoveTestId, getAutoFormCollectionRowTestId, getAutoFormFieldTestId } from '../test-ids';
+import type { NestedFieldRenderer } from './renderer-types';
+import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
 
 const COMPACT_ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3';
 
 export function ArrayFieldRenderer({
+  NestedField,
   field,
   path,
   inheritedDisabled = false,
 }: {
+  NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
   inheritedDisabled?: boolean;
@@ -69,7 +70,7 @@ export function ArrayFieldRenderer({
       <ArrayWrapperComponent
         addButtonTestId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'add')}
         field={renderField}
-        label={String(label)}
+        label={label}
         onAddItem={() => {
           if (isDisabled) {
             return;
@@ -95,11 +96,7 @@ export function ArrayFieldRenderer({
                 data-testid={rowTestId}
                 key={rhfField.id}
               >
-                <AutoFormFieldRenderer
-                  field={compactItemField}
-                  inheritedDisabled={isDisabled}
-                  path={[...path, String(index)]}
-                />
+                <NestedField field={compactItemField} inheritedDisabled={isDisabled} path={[...path, String(index)]} />
                 <Button
                   aria-label="Remove item"
                   disabled={isDisabled}
@@ -124,11 +121,7 @@ export function ArrayFieldRenderer({
               testId={rowTestId}
             >
               {itemField ? (
-                <AutoFormFieldRenderer
-                  field={itemField}
-                  inheritedDisabled={isDisabled}
-                  path={[...path, String(index)]}
-                />
+                <NestedField field={itemField} inheritedDisabled={isDisabled} path={[...path, String(index)]} />
               ) : null}
             </ArrayElementWrapperComponent>
           );

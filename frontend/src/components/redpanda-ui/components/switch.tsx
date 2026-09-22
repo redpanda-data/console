@@ -49,5 +49,5 @@ function Switch(allProps: SwitchProps) {
   );
 }
 
-export { Switch, switchVariants };
 export type { SwitchProps };
+export { Switch, switchVariants };

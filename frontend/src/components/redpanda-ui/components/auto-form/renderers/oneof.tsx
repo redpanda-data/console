@@ -2,9 +2,6 @@
 
 import React from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
-
-import { AutoFormFieldRenderer } from './index';
-import { getRenderedLabel, useFieldPresentation } from './shared';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { ParsedField } from '../core-types';
@@ -13,6 +10,8 @@ import { formSpacing } from '../form-spacing';
 import { createEmptyFieldValue, getFieldErrorMessage, getFieldUiConfig, UNSET_SELECT_VALUE } from '../helpers';
 import { FormDepthProvider, useFormDepth } from '../layout-context';
 import { getAutoFormFieldTestId } from '../test-ids';
+import type { NestedFieldRenderer } from './renderer-types';
+import { getRenderedLabel, useFieldPresentation } from './shared';
 
 function renderOneofSelectedValue(value: unknown, fields: ParsedField[], required: boolean) {
   if (value === UNSET_SELECT_VALUE || value === undefined || value === null || value === '') {
@@ -23,11 +22,43 @@ function renderOneofSelectedValue(value: unknown, fields: ParsedField[], require
   return selectedField ? getLabel(selectedField) : null;
 }
 
+function SelectedOneofField({
+  NestedField,
+  depth,
+  field,
+  isDisabled,
+  path,
+}: {
+  NestedField: NestedFieldRenderer;
+  depth: number;
+  field: ParsedField | undefined;
+  isDisabled: boolean;
+  path: string[];
+}) {
+  if (!field) {
+    return null;
+  }
+  if (field.type === 'object' && (!field.schema || field.schema.length === 0)) {
+    return (
+      <div className="rounded-lg border border-dashed bg-surface-recess px-4 py-3">
+        <p className="text-body text-subtle">{getLabel(field)} selected. No additional configuration needed.</p>
+      </div>
+    );
+  }
+  return (
+    <FormDepthProvider depth={depth + 1}>
+      <NestedField field={field} inheritedDisabled={isDisabled} path={[...path, 'value']} />
+    </FormDepthProvider>
+  );
+}
+
 export function OneofFieldRenderer({
+  NestedField,
   field,
   path,
   inheritedDisabled = false,
 }: {
+  NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
   inheritedDisabled?: boolean;
@@ -104,7 +135,7 @@ export function OneofFieldRenderer({
           }}
           value={oneofValue.case ?? UNSET_SELECT_VALUE}
         >
-          <SelectTrigger aria-label={String(label)} disabled={isDisabled} id={fullPath} testId={controlTestId}>
+          <SelectTrigger aria-label={label} disabled={isDisabled} id={fullPath} testId={controlTestId}>
             <SelectValue placeholder="Choose a field">
               {(value) => renderOneofSelectedValue(value, availableFields, field.required)}
             </SelectValue>
@@ -129,21 +160,13 @@ export function OneofFieldRenderer({
             ))}
           </SelectContent>
         </Select>
-        {selectedField ? (
-          selectedField.type === 'object' && (!selectedField.schema || selectedField.schema.length === 0) ? (
-            <div className="rounded-lg border border-dashed bg-surface-recess px-4 py-3">
-              <p className="text-body text-subtle">
-                {getLabel(selectedField)} selected. No additional configuration needed.
-              </p>
-            </div>
-          ) : (
-            // Oneof values render one level deeper than the selector, so bump depth to keep
-            // ObjectWrapper headings consistent with plain nested-object paths.
-            <FormDepthProvider depth={depth + 1}>
-              <AutoFormFieldRenderer field={selectedField} inheritedDisabled={isDisabled} path={[...path, 'value']} />
-            </FormDepthProvider>
-          )
-        ) : null}
+        <SelectedOneofField
+          depth={depth}
+          field={selectedField}
+          isDisabled={isDisabled}
+          NestedField={NestedField}
+          path={path}
+        />
       </div>
     </FieldWrapperComponent>
   );

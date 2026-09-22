@@ -12,23 +12,23 @@ import {
   getDefaultOperator,
 } from './filter-utils';
 
-export type DataTableFilterActions = {
+export interface DataTableFilterActions {
   addFilter: (columnId: string) => void;
-  removeFilter: (columnId: string) => void;
-  removeAllFilters: () => void;
-  setFilterValues: (columnId: string, values: string[]) => void;
   addFilterValue: (columnId: string, value: string) => void;
+  removeAllFilters: () => void;
+  removeFilter: (columnId: string) => void;
   removeFilterValue: (columnId: string, value: string) => void;
   setFilterOperator: (columnId: string, operator: string) => void;
-};
+  setFilterValues: (columnId: string, values: string[]) => void;
+}
 
-export type UseDataTableFilterOptions<TData extends RowData> = {
+export interface UseDataTableFilterOptions<TData extends RowData> {
   columns: FilterColumnConfig[];
+  defaultValue?: FiltersState;
+  onValueChange?: (filters: FiltersState) => void;
   table?: Table<TData>;
   value?: FiltersState;
-  onValueChange?: (filters: FiltersState) => void;
-  defaultValue?: FiltersState;
-};
+}
 
 function computeSetFilterValues(
   prev: FiltersState,

@@ -2,6 +2,9 @@
 
 import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 
+import { Button } from './button';
+import { Input } from './input';
+
 import { cn } from '../lib/utils';
 
 const headingClasses: Record<number, string> = {
@@ -12,19 +15,19 @@ const headingClasses: Record<number, string> = {
   5: 'text-heading-xs',
 };
 
-type EditableTextProps = {
-  value: string;
-  onChange?: (value: string) => void;
-  onBlur?: () => void;
-  placeholder?: string;
-  readOnly?: boolean;
-  className?: string;
+interface EditableTextProps {
   as?: 'heading' | 'text';
-  headingLevel?: 1 | 2 | 3 | 4 | 5;
+  autoFocus?: boolean;
+  className?: string;
   error?: boolean;
   errorMessage?: string;
-  autoFocus?: boolean;
-};
+  headingLevel?: 1 | 2 | 3 | 4 | 5;
+  onBlur?: () => void;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  value: string;
+}
 
 function EditableText({
   value,
@@ -103,7 +106,7 @@ function EditableText({
         >
           {value || placeholder}
         </span>
-        <input
+        <Input
           className={cn(
             typographyClasses,
             'border-transparent bg-transparent px-0 shadow-none outline-none focus-visible:border-ring focus-visible:ring-0',
@@ -129,7 +132,7 @@ function EditableText({
 
   return (
     <div className="relative">
-      <button
+      <Button
         className={cn(
           typographyClasses,
           'cursor-text border-transparent border-b text-left transition-colors motion-reduce:transition-none',
@@ -145,9 +148,10 @@ function EditableText({
         onClick={handleClick}
         ref={spanRef}
         type="button"
+        variant="unstyled"
       >
         {value || placeholder}
-      </button>
+      </Button>
       {error && !!errorMessage && (
         <p className="absolute top-full mt-1 text-body-sm text-destructive">{errorMessage}</p>
       )}
