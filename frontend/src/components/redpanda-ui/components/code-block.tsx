@@ -1,10 +1,13 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { ScrollArea as ScrollAreaPrimitive, type ScrollAreaViewportProps } from '@base-ui/react/scroll-area';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { forwardRef, type HTMLAttributes, type ReactNode, type RefObject, useCallback, useRef, useState } from 'react';
+import { type HTMLAttributes, type ReactNode, type Ref, useCallback, useRef, useState } from 'react';
 
 import { CopyButton } from './copy-button';
+import { SanitizedHtml } from './sanitized-html';
 import { cn, type SharedProps } from '../lib/utils';
 
 const codeBlockVariants = cva(
@@ -47,7 +50,7 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> &
     onCopy?: () => void;
   };
 
-export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({ className, ...props }, ref) => (
+export const Pre = ({ className, ref, ...props }: HTMLAttributes<HTMLPreElement> & { ref?: Ref<HTMLPreElement> }) => (
   <pre
     className={cn(
       'no-scrollbar min-w-0 overflow-x-auto px-4 py-3.5 outline-none has-[[data-slot=tabs]]:p-0 has-[[data-highlighted-line]]:px-0 has-[[data-line-numbers]]:px-0',
@@ -58,146 +61,138 @@ export const Pre = forwardRef<HTMLPreElement, HTMLAttributes<HTMLPreElement>>(({
   >
     {props.children}
   </pre>
-));
+);
 
 Pre.displayName = 'Pre';
 
-export const CodeBlock = forwardRef<HTMLElement, CodeBlockProps>(
-  (
-    {
-      title,
-      allowCopy = true,
-      icon,
-      viewportProps,
-      onCopy: onCopyEvent,
-      size,
-      width,
-      maxHeight,
-      className,
-      testId,
-      ...props
-    },
-    ref
-  ) => {
-    const [isCopied, setIsCopied] = useState(false);
-    const areaRef = useRef<HTMLDivElement>(null);
+export const CodeBlock = ({
+  title,
+  allowCopy = true,
+  icon,
+  viewportProps,
+  onCopy: onCopyEvent,
+  size,
+  width,
+  maxHeight,
+  className,
+  testId,
+  ref,
+  ...props
+}: CodeBlockProps & { ref?: Ref<HTMLElement> }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string>();
+  const areaRef = useRef<HTMLDivElement>(null);
 
-    const onCopy = useCallback(() => {
-      const pre = areaRef.current?.getElementsByTagName('pre').item(0);
+  const onCopy = useCallback(async () => {
+    const pre = areaRef.current?.getElementsByTagName('pre').item(0);
 
-      if (!pre) {
-        return;
-      }
+    if (!pre) {
+      return;
+    }
 
-      const clone = pre.cloneNode(true) as HTMLElement;
+    const clone = pre.cloneNode(true) as HTMLElement;
 
-      for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
-        node.remove();
-      }
+    for (const node of Array.from(clone.querySelectorAll('.nd-copy-ignore'))) {
+      node.remove();
+    }
 
-      // biome-ignore lint/complexity/noVoid: part of clipboard implementation
-      void navigator.clipboard.writeText(clone.textContent ?? '').then(() => {
-        setIsCopied(true);
-        onCopyEvent?.();
-        setTimeout(() => setIsCopied(false), 3000);
-      });
-    }, [onCopyEvent]);
+    const text = clone.textContent ?? '';
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      setCopyError(error instanceof Error ? error.message : 'Could not copy code.');
+      return;
+    }
+    setCopyError(undefined);
+    setIsCopied(true);
+    onCopyEvent?.();
+    setTimeout(() => setIsCopied(false), 3000);
+  }, [onCopyEvent]);
 
-    return (
-      <figure
-        data-testid={testId}
-        ref={ref}
-        {...props}
-        className={cn(codeBlockVariants({ size, width, maxHeight }), className)}
-      >
-        {title ? (
-          <div className="!border-border flex h-10 flex-row items-center gap-2 border-b bg-surface-subtle px-4">
-            {icon ? (
-              <div
-                className="text-subtle [&_svg]:size-3.5"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: no XSS attacks
-                // biome-ignore lint/security/noDangerouslySetInnerHtmlWithChildren: no XSS attacks
-                dangerouslySetInnerHTML={typeof icon === 'string' ? { __html: icon } : undefined}
-              >
-                {typeof icon !== 'string' ? icon : null}
-              </div>
-            ) : null}
-            <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
-            {allowCopy ? (
-              <CopyButton
-                className="-me-2 bg-transparent selection:bg-selection selection:text-selection-foreground"
-                isCopied={isCopied}
-                onClick={onCopy}
-                size="sm"
-                variant="ghost"
-              />
-            ) : null}
-          </div>
-        ) : (
-          allowCopy && (
+  return (
+    <figure
+      data-testid={testId}
+      ref={ref}
+      {...props}
+      className={cn(codeBlockVariants({ size, width, maxHeight }), className)}
+    >
+      {title ? (
+        <div className="!border-border flex h-10 flex-row items-center gap-2 border-b bg-surface-subtle px-4">
+          {typeof icon === 'string' ? <SanitizedHtml className="text-subtle [&_svg]:size-3.5" html={icon} /> : icon}
+          <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
+          {allowCopy ? (
             <CopyButton
-              className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selection selection:text-selection-foreground"
+              className="-me-2 bg-transparent selection:bg-selection selection:text-selection-foreground hover:bg-primary-wash active:bg-primary-wash-pressed"
               isCopied={isCopied}
               onClick={onCopy}
               size="sm"
               variant="ghost"
             />
-          )
-        )}
-        <ScrollAreaPrimitive.Root className="relative" data-slot="scroll-area" dir="ltr">
-          <ScrollAreaPrimitive.Viewport
-            ref={areaRef as RefObject<HTMLDivElement | null>}
-            {...viewportProps}
-            className={cn(
-              'size-full rounded-[inherit] outline-none selection:bg-selection selection:text-selection-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
-              viewportProps?.className
-            )}
-            data-slot="scroll-area-viewport"
-          >
-            {props.children}
-          </ScrollAreaPrimitive.Viewport>
-          <ScrollAreaPrimitive.Scrollbar
-            className="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors motion-reduce:transition-none"
-            data-slot="scroll-area-scrollbar"
-            orientation="horizontal"
-          >
-            <ScrollAreaPrimitive.Thumb
-              className="relative flex-1 rounded-full bg-border"
-              data-slot="scroll-area-thumb"
-            />
-          </ScrollAreaPrimitive.Scrollbar>
-          <ScrollAreaPrimitive.Scrollbar
-            className="flex h-full w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors motion-reduce:transition-none"
-            data-slot="scroll-area-scrollbar"
-            orientation="vertical"
-          >
-            <ScrollAreaPrimitive.Thumb
-              className="relative flex-1 rounded-full bg-border"
-              data-slot="scroll-area-thumb"
-            />
-          </ScrollAreaPrimitive.Scrollbar>
-          <ScrollAreaPrimitive.Corner />
-        </ScrollAreaPrimitive.Root>
-      </figure>
-    );
-  }
-);
+          ) : null}
+        </div>
+      ) : (
+        allowCopy && (
+          <CopyButton
+            className="absolute top-2 right-2 z-[2] bg-transparent backdrop-blur-md selection:bg-selection selection:text-selection-foreground hover:bg-primary-wash active:bg-primary-wash-pressed"
+            isCopied={isCopied}
+            onClick={onCopy}
+            size="sm"
+            variant="ghost"
+          />
+        )
+      )}
+      <ScrollAreaPrimitive.Root className="relative" data-slot="scroll-area" dir="ltr">
+        <ScrollAreaPrimitive.Viewport
+          ref={areaRef}
+          {...viewportProps}
+          className={cn(
+            'size-full rounded-[inherit] outline-none selection:bg-selection selection:text-selection-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            viewportProps?.className
+          )}
+          data-slot="scroll-area-viewport"
+        >
+          {props.children}
+        </ScrollAreaPrimitive.Viewport>
+        <ScrollAreaPrimitive.Scrollbar
+          className="flex h-2.5 touch-none select-none flex-col border-t border-t-transparent p-px transition-colors motion-reduce:transition-none"
+          data-slot="scroll-area-scrollbar"
+          orientation="horizontal"
+        >
+          <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-border" data-slot="scroll-area-thumb" />
+        </ScrollAreaPrimitive.Scrollbar>
+        <ScrollAreaPrimitive.Scrollbar
+          className="flex h-full w-2.5 touch-none select-none border-l border-l-transparent p-px transition-colors motion-reduce:transition-none"
+          data-slot="scroll-area-scrollbar"
+          orientation="vertical"
+        >
+          <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-border" data-slot="scroll-area-thumb" />
+        </ScrollAreaPrimitive.Scrollbar>
+        <ScrollAreaPrimitive.Corner />
+      </ScrollAreaPrimitive.Root>
+      {copyError ? (
+        <p className="sr-only" role="alert">
+          {copyError}
+        </p>
+      ) : null}
+    </figure>
+  );
+};
 
 CodeBlock.displayName = 'CodeBlock';
 
-type SimpleCodeBlockProps = {
-  code: string;
-  language?: string;
-  title?: string;
-  icon?: ReactNode;
+interface SimpleCodeBlockProps {
   allowCopy?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-  width?: 'auto' | 'sm' | 'md' | 'lg' | 'full';
+  className?: string;
+  code: string;
+  icon?: ReactNode;
+  language?: string;
   maxHeight?: 'sm' | 'md' | 'lg' | 'none';
   onCopy?: () => void;
-  className?: string;
+  size?: 'sm' | 'md' | 'lg';
   testId?: string;
-};
+  title?: string;
+  width?: 'auto' | 'sm' | 'md' | 'lg' | 'full';
+}
 
 export const SimpleCodeBlock = ({
   code,

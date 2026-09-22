@@ -62,13 +62,13 @@ export function sortFieldsByOrder(fields: ParsedField[] | undefined): ParsedFiel
     .sort((a, b) => (a.fieldConfig?.order ?? 0) - (b.fieldConfig?.order ?? 0));
 }
 
-export function getPathInObject(obj: Record<string, unknown>, path: string[]): any {
+export function getPathInObject(obj: object, path: string[]): unknown {
   let current: unknown = obj;
   for (const key of path) {
-    if (current === undefined || current === null) {
+    if (typeof current !== 'object' || current === null) {
       return;
     }
-    current = (current as Record<string, unknown>)[key];
+    current = Reflect.get(current, key);
   }
   return current;
 }

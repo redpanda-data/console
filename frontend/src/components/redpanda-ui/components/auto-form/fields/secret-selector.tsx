@@ -1,23 +1,27 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
+// Copyright 2026 Redpanda Data, Inc.
 
-import { resolveSecretScopes } from './secret-selector-scopes';
-import { useFieldTestIds } from './shared';
+import type React from 'react';
+import { createContext, useContext } from 'react';
+import { Input } from '../../input';
+
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
+import { resolveSecretScopes } from './secret-selector-scopes';
+import { useFieldTestIds } from './shared';
 
 export interface SecretSelectorAdapterProps {
-  value: string;
-  onChange: (value: string) => void;
-  scopes: readonly unknown[];
-  placeholder?: string;
   description?: string;
   disabled?: boolean;
   error?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  scopes: readonly unknown[];
   testId?: string;
+  value: string;
 }
 
 export type SecretSelectorAdapter = React.ComponentType<SecretSelectorAdapterProps>;
@@ -44,19 +48,12 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
   const value = typeof props.value === 'string' ? props.value : '';
 
   if (!Adapter) {
-    if (process.env.NODE_ENV !== 'production') {
-      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-      console.warn(
-        `[AutoForm] Field "${props.field.key}" matched the secretSelector renderer but no adapter is registered. ` +
-          'Wrap AutoForm with <SecretSelectorAdapterProvider adapter={...}> to inject your SecretSelector implementation.'
-      );
-    }
     return (
-      <input
+      <Input
         aria-invalid={Boolean(props.error)}
         data-testid={testIds.control}
         disabled={props.inputProps.disabled}
-        onChange={(event) => props.inputProps.onValueChange?.(event.target.value)}
+        onChange={(event) => props.inputProps.onValueChange(event.target.value)}
         placeholder={uiConfig.placeholder}
         value={value}
       />
@@ -68,7 +65,7 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
       description={uiConfig.help}
       disabled={props.inputProps.disabled}
       error={props.error}
-      onChange={(nextValue) => props.inputProps.onValueChange?.(nextValue)}
+      onChange={(nextValue) => props.inputProps.onValueChange(nextValue)}
       placeholder={uiConfig.placeholder}
       scopes={scopes}
       testId={testIds.control}

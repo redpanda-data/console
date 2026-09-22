@@ -1,6 +1,6 @@
 import { cva } from 'class-variance-authority';
 import { type ClassValue, clsx } from 'clsx';
-import React from 'react';
+import type React from 'react';
 import { extendTailwindMerge } from 'tailwind-merge';
 
 /**
@@ -54,21 +54,21 @@ export function wrapStringChild(
   return child;
 }
 
-export type SharedProps = {
+export interface SharedProps {
   testId?: string;
-};
+}
 
 /* Portal props, in one place so a visual-regression test can open any of them the same way. */
 
 /** Controlled open state, for Dialog, Popover, Sheet, Drawer and friends. */
-export type PortalRootProps = {
-  /** Controlled open state */
-  open?: boolean;
+export interface PortalRootProps {
   /** Uncontrolled default open state */
   defaultOpen?: boolean;
   /** Callback when open state changes */
   onOpenChange?: (open: boolean) => void;
-};
+  /** Controlled open state */
+  open?: boolean;
+}
 
 /** Adds non-modal mode: Dialog, Sheet, Drawer, DropdownMenu. */
 export type ModalRootProps = PortalRootProps & {
@@ -80,18 +80,18 @@ export type ModalRootProps = PortalRootProps & {
  * Radix-compat auto-focus hooks. Base UI exposes neither, so everywhere but Drawer these type-check
  * and then do nothing, silently. Drawer is vaul rather than Base UI and honours `onOpenAutoFocus`.
  */
-export type FocusScopeContentProps = {
-  /**
-   * @deprecated Honoured by Drawer only. On Base UI components use `initialFocus` on the
-   * underlying `Popup`. Scheduled for removal in a future major.
-   */
-  onOpenAutoFocus?: (event: Event) => void;
+export interface FocusScopeContentProps {
   /**
    * @deprecated Honoured by nothing. Handle close-focus in a `ref` callback or an `onOpenChange`
    * handler. Scheduled for removal in a future major.
    */
   onCloseAutoFocus?: (event: Event) => void;
-};
+  /**
+   * @deprecated Honoured by Drawer only. On Base UI components use `initialFocus` on the
+   * underlying `Popup`. Scheduled for removal in a future major.
+   */
+  onOpenAutoFocus?: (event: Event) => void;
+}
 
 /** Content props: the focus hooks plus where to render. */
 export type PortalContentProps = FocusScopeContentProps & {
@@ -109,7 +109,9 @@ export type FixedPositionContentProps = PortalContentProps & {
 
 export type SemanticVariant = 'success' | 'informative' | 'warning' | 'destructive' | 'disabled';
 export type DotSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
-export type StackableProps = { stacked?: boolean };
+export interface StackableProps {
+  stacked?: boolean;
+}
 
 export const dotColorVariants = cva('', {
   variants: {

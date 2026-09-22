@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import React from 'react';
 import { FormProvider, type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
 
@@ -195,23 +197,13 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
     () => resolveInitialMode(availableModes, defaultMode),
     [availableModes, defaultMode]
   );
-  const [mode, setMode] = React.useState<AutoFormMode>(preferredMode);
-  const previousDefaultMode = React.useRef(defaultMode);
+  const [modeState, setModeState] = React.useState(() => ({ defaultMode, value: preferredMode }));
+  const mode =
+    modeState.defaultMode === defaultMode && availableModes.includes(modeState.value) ? modeState.value : preferredMode;
 
-  React.useEffect(() => {
-    if (!availableModes.includes(mode)) {
-      setMode(preferredMode);
-      previousDefaultMode.current = defaultMode;
-      return;
-    }
-
-    if (previousDefaultMode.current !== defaultMode) {
-      previousDefaultMode.current = defaultMode;
-      if (defaultMode && availableModes.includes(defaultMode)) {
-        setMode(defaultMode);
-      }
-    }
-  }, [availableModes, defaultMode, mode, preferredMode]);
+  const handleModeChange = (nextMode: AutoFormMode) => {
+    setModeState({ defaultMode, value: nextMode });
+  };
 
   const validateWithProvider = React.useCallback(
     async (
@@ -336,7 +328,7 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
                 modes={availableModes}
                 onFormatJson={bag.handleFormatJson}
                 onJsonTextChange={bag.handleJsonTextChange}
-                onModeChange={setMode}
+                onModeChange={handleModeChange}
                 onResetJson={bag.handleResetJson}
                 payload={bag.payloadState.payload}
                 renderFormMode={renderFormForMode}
@@ -359,16 +351,34 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
   );
 }
 
-type AutoFormErrorBoundaryState = { error: Error | null };
+interface AutoFormErrorBoundaryProps {
+  children: React.ReactNode;
+  resetKey: unknown;
+}
 
-class AutoFormErrorBoundary extends React.Component<{ children: React.ReactNode }, AutoFormErrorBoundaryState> {
-  constructor(props: { children: React.ReactNode }) {
+interface AutoFormErrorBoundaryState {
+  error: Error | null;
+  resetKey: unknown;
+  schemaGeneration: number;
+}
+
+class AutoFormErrorBoundary extends React.Component<AutoFormErrorBoundaryProps, AutoFormErrorBoundaryState> {
+  constructor(props: AutoFormErrorBoundaryProps) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, resetKey: props.resetKey, schemaGeneration: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): AutoFormErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<AutoFormErrorBoundaryState> {
     return { error };
+  }
+
+  static getDerivedStateFromProps(
+    props: AutoFormErrorBoundaryProps,
+    state: AutoFormErrorBoundaryState
+  ): AutoFormErrorBoundaryState | null {
+    return props.resetKey === state.resetKey
+      ? null
+      : { error: null, resetKey: props.resetKey, schemaGeneration: state.schemaGeneration + 1 };
   }
 
   override render() {
@@ -380,21 +390,15 @@ class AutoFormErrorBoundary extends React.Component<{ children: React.ReactNode 
         </Alert>
       );
     }
-    return this.props.children;
+    return <React.Fragment key={this.state.schemaGeneration}>{this.props.children}</React.Fragment>;
   }
 }
 
 // Note: `schema` must be a stable reference (module-level constant or useMemo).
 // Passing an inline `z.object({...})` will remount the form on every parent render.
 export function AutoForm<T extends Record<string, unknown> = Record<string, unknown>>(props: AutoFormProps<T>) {
-  const schemaRef = React.useRef(props.schema);
-  const [schemaKey, setSchemaKey] = React.useState(0);
-  if (schemaRef.current !== props.schema) {
-    schemaRef.current = props.schema;
-    setSchemaKey((k) => k + 1);
-  }
   return (
-    <AutoFormErrorBoundary key={schemaKey}>
+    <AutoFormErrorBoundary resetKey={props.schema}>
       <AutoFormInner {...props} />
     </AutoFormErrorBoundary>
   );

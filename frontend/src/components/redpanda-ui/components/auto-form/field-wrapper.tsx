@@ -1,29 +1,33 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { AlertCircle, ChevronDown, CircleHelp, ExternalLink, PlusIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
-
-import { useAutoFormRuntimeContext } from './context';
-import type { ArrayElementWrapperProps, ArrayWrapperProps, FieldWrapperProps, ObjectWrapperProps } from './core-types';
-import { formSpacing } from './form-spacing';
-import { getFieldDescriptionText, getFieldDocsUrl, getFieldHelpText, getFieldUiConfig } from './helpers';
-import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
-import { getAutoFormFieldTestId } from './test-ids';
 import type { SharedProps } from '../../lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { Button } from '../button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../field';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
+import { useAutoFormRuntimeContext } from './context';
+import type { ArrayElementWrapperProps, ArrayWrapperProps, FieldWrapperProps, ObjectWrapperProps } from './core-types';
+import { formSpacing } from './form-spacing';
+import { getFieldDescriptionText, getFieldDocsUrl, getFieldHelpText, getFieldUiConfig } from './helpers';
+import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
+import { getAutoFormFieldTestId } from './test-ids';
 
 const REGEX_ERROR_PATTERN = /regex pattern\s*`([^`]+)`/;
 
-export const Form = React.forwardRef<HTMLFormElement, React.ComponentProps<'form'> & SharedProps>(
-  ({ children, testId, ...props }, ref) => (
-    <form className={formSpacing.form} data-testid={testId} ref={ref} {...props}>
-      <FormDepthProvider depth={0}>{children}</FormDepthProvider>
-    </form>
-  )
+export const Form = ({
+  children,
+  testId,
+  ref,
+  ...props
+}: React.ComponentProps<'form'> & SharedProps & { ref?: React.Ref<HTMLFormElement> }) => (
+  <form className={formSpacing.form} data-testid={testId} ref={ref} {...props}>
+    <FormDepthProvider depth={0}>{children}</FormDepthProvider>
+  </form>
 );
 Form.displayName = 'Form';
 
@@ -100,6 +104,31 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
       ? field.fieldConfig.label
       : field.key;
   const fieldTestId = getAutoFormFieldTestId(testIdPrefix, id);
+  let supportingContent: React.ReactNode = null;
+  if (error) {
+    supportingContent = <FieldError testId={getAutoFormFieldTestId(testIdPrefix, id, 'error')}>{error}</FieldError>;
+  } else if ((helpText || docsUrl) && !isCompact) {
+    supportingContent = (
+      <FieldDescription testId={getAutoFormFieldTestId(testIdPrefix, id, 'description')}>
+        {helpText ? <span>{helpText}</span> : null}
+        {docsUrl ? (
+          <>
+            {helpText ? ' ' : null}
+            <a
+              className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
+              data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
+              href={docsUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Open documentation for {fallbackLabel}
+              <ExternalLink aria-hidden className="h-3 w-3" />
+            </a>
+          </>
+        ) : null}
+      </FieldDescription>
+    );
+  }
 
   // Keep label/control/description/error as direct Field children so the Field's
   // native gap-3 drives the rhythm, matching manually-composed forms.
@@ -115,14 +144,15 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <button
+                  <Button
                     aria-label="Field help"
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full text-subtle transition hover:text-foreground"
                     data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'help')}
                     type="button"
+                    variant="unstyled"
                   >
                     <CircleHelp className="h-4 w-4" />
-                  </button>
+                  </Button>
                 }
               />
               <TooltipContent
@@ -136,28 +166,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
         </div>
       )}
       {children}
-      {error ? (
-        <FieldError testId={getAutoFormFieldTestId(testIdPrefix, id, 'error')}>{error}</FieldError>
-      ) : (helpText || docsUrl) && !isCompact ? (
-        <FieldDescription testId={getAutoFormFieldTestId(testIdPrefix, id, 'description')}>
-          {helpText ? <span>{helpText}</span> : null}
-          {docsUrl ? (
-            <>
-              {helpText ? ' ' : null}
-              <a
-                className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
-                data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
-                href={docsUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Learn more
-                <ExternalLink aria-hidden className="h-3 w-3" />
-              </a>
-            </>
-          ) : null}
-        </FieldDescription>
-      ) : null}
+      {supportingContent}
     </Field>
   );
 };
@@ -178,26 +187,26 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
   // Defaults true; consumers opt out via customData.showDivider, mirroring FormSection's divider prop.
   const showDivider = customData.showDivider !== false && hasVisibleLabel;
   const [isOpen, setIsOpen] = React.useState(false);
+  const open = Boolean(hasError) || isOpen;
 
-  React.useEffect(() => {
-    if (hasError && !isOpen) {
-      setIsOpen(true);
-    }
-  }, [hasError, isOpen]);
+  const handleOpenChange = (nextOpen: boolean) => {
+    setIsOpen(Boolean(hasError) || nextOpen);
+  };
 
   if (isCollapsible && hasVisibleLabel) {
     return (
-      <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+      <Collapsible onOpenChange={handleOpenChange} open={open}>
         <section className={formSpacing.field} data-testid={testId}>
           <CollapsibleTrigger
             render={
-              <button
+              <Button
                 className={
                   showDivider
                     ? `flex w-full items-center justify-between text-left ${formSpacing.sectionDivider}`
                     : 'flex w-full items-center justify-between text-left'
                 }
                 type="button"
+                variant="unstyled"
               >
                 <div className={formSpacing.sectionHeader}>
                   <div className="flex items-center gap-2">
@@ -209,7 +218,7 @@ export const ObjectWrapper: React.FC<ObjectWrapperProps & { testId?: string; has
                   {helpText ? <div className="text-body-sm text-subtle">{helpText}</div> : null}
                 </div>
                 <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform duration-200 motion-reduce:transition-none [[data-panel-open]_&]:rotate-180" />
-              </button>
+              </Button>
             }
           />
           <CollapsibleContent>

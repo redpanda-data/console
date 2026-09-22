@@ -1,10 +1,10 @@
 'use client';
 
-import { useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { useFieldTestIds } from './shared';
 
 function DurationFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

@@ -44,7 +44,7 @@ export function useFieldPresentation(field: ParsedField, path: string[], inherit
 }
 
 export function cloneFieldForCompactRow(field: ParsedField): ParsedField {
-  const label = String(getLabel(field));
+  const label = getLabel(field);
 
   const existingCustomData = (field.fieldConfig?.customData ?? {}) as Record<string, unknown>;
   const existingUi = (existingCustomData.ui ?? {}) as Record<string, unknown>;
@@ -79,7 +79,7 @@ export function getRenderedLabel(field: ParsedField): string {
     return field.fieldConfig.label;
   }
 
-  return String(getLabel(field));
+  return getLabel(field);
 }
 
 export function isComplexCollectionField(field: ParsedField | undefined): boolean {

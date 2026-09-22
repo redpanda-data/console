@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 'use client';
 
 import { Slider as SliderPrimitive } from '@base-ui/react/slider';
@@ -32,6 +34,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
       onValueChange(asArray, eventDetails);
     };
   }, [onValueChange]);
+  const thumbKeys = values.map((_thumbValue, position) => `thumb-${position}`);
 
   return (
     <SliderPrimitive.Root
@@ -62,7 +65,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
             data-slot="slider-range"
           />
         </SliderPrimitive.Track>
-        {Array.from({ length: values.length }, (_, index) => (
+        {thumbKeys.map((thumbKey, index) => (
           <SliderPrimitive.Thumb
             /* A 4px ring rather than the registry's usual 3px, for both hover and
                focus: the thumb is a 16px drag target, so the halo is the whole
@@ -70,8 +73,7 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
             className="block size-4 shrink-0 rounded-full border border-selected bg-background shadow-sm ring-selected/50 transition-[color,box-shadow] hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 active:ring-4 active:ring-selected/70 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
             data-slot="slider-thumb"
             index={index}
-            // biome-ignore lint/suspicious/noArrayIndexKey: part of slider implementation
-            key={index}
+            key={thumbKey}
           />
         ))}
       </SliderPrimitive.Control>

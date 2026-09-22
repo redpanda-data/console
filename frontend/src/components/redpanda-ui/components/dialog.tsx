@@ -85,9 +85,9 @@ interface DialogContentProps
     SharedProps {
   /** Container element for inline rendering (no portal to body). */
   container?: HTMLElement;
+  showCloseButton?: boolean;
   /** When false, hides the overlay/backdrop. Defaults to `true`. */
   showOverlay?: boolean;
-  showCloseButton?: boolean;
 }
 
 function DialogContent({
@@ -111,6 +111,7 @@ function DialogContent({
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
       <DialogPrimitive.Popup
+        aria-modal="true"
         className={cn(dialogContentVariants({ size, variant, height }), className)}
         data-slot="dialog-content"
         data-testid={testId}
@@ -318,15 +319,15 @@ function DialogField({ className, spacing, ...props }: DialogFieldProps) {
 
 export {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
   DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
   DialogField,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
 };

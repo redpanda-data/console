@@ -13,8 +13,8 @@ import type { SharedProps } from '../../lib/utils';
 import type { DataTableRenderInstance } from './data-table-features';
 
 interface DataTablePaginationProps<TData extends RowData> extends SharedProps {
-  table: DataTableRenderInstance<TData>;
   pageSizeOptions?: number[];
+  table: DataTableRenderInstance<TData>;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 25, 30, 40, 50];

@@ -11,6 +11,8 @@ import { getFieldUiConfig, NUMERIC_OPTION_PATTERN } from '../helpers';
 import { getAutoFormChoiceTestId, getAutoFormFieldTestId } from '../test-ids';
 import type { AutoFormOptionGroup, AutoFormOptionItem } from '../types';
 
+const TOP_LEVEL_REGEX_1 = /([+-]\d{2}:\d{2}|Z)$/;
+
 export function getControlLabel(label: AutoFormFieldProps['label'], field: AutoFormFieldProps['field']): string {
   return typeof label === 'string' || typeof label === 'number'
     ? String(label)
@@ -41,7 +43,7 @@ export function resolveControlTestId(inputProps: AutoFormFieldProps['inputProps'
 
 export function normalizeDateValue(value: unknown): string {
   if (typeof value === 'string') {
-    if (/([+-]\d{2}:\d{2}|Z)$/.test(value)) {
+    if (TOP_LEVEL_REGEX_1.test(value)) {
       const parsed = new Date(value);
       return Number.isNaN(parsed.getTime()) ? '' : format(parsed, 'yyyy-MM-dd');
     }
@@ -58,7 +60,7 @@ export function normalizeDateValue(value: unknown): string {
 
 export function normalizeTimeValue(value: unknown): string {
   if (typeof value === 'string') {
-    if (/([+-]\d{2}:\d{2}|Z)$/.test(value)) {
+    if (TOP_LEVEL_REGEX_1.test(value)) {
       const parsed = new Date(value);
       return Number.isNaN(parsed.getTime()) ? '' : format(parsed, 'HH:mm');
     }

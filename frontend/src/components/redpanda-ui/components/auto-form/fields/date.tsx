@@ -2,7 +2,12 @@
 
 import { format } from 'date-fns';
 import { CalendarIcon, Clock3Icon } from 'lucide-react';
-
+import { Calendar } from '../../calendar';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '../../input-group';
+import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
+import type { AutoFormFieldProps } from '../core-types';
+import { getFieldUiConfig } from '../helpers';
+import type { FieldTypeDefinition } from '../registry';
 import {
   buildTimestampValue,
   getControlLabel,
@@ -12,12 +17,6 @@ import {
   resolveControlTestId,
   useFieldTestIds,
 } from './shared';
-import { Calendar } from '../../calendar';
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '../../input-group';
-import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
-import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
 
 function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

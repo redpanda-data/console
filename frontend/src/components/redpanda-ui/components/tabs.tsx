@@ -2,7 +2,7 @@
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { DragScrollArea } from './drag-scroll-area';
 import { cn, type SharedProps } from '../lib/utils';
@@ -246,16 +246,16 @@ function TabsContents({ children, className, ...props }: TabsContentsProps) {
 }
 
 export {
-  Tabs,
-  TabsList,
   ScrollableTabsList,
-  TabsTrigger,
-  TabsContent,
-  TabsContents,
-  type TabsProps,
-  type TabsListProps,
   type ScrollableTabsListProps,
-  type TabsTriggerProps,
+  Tabs,
+  TabsContent,
   type TabsContentProps,
+  TabsContents,
   type TabsContentsProps,
+  TabsList,
+  type TabsListProps,
+  type TabsProps,
+  TabsTrigger,
+  type TabsTriggerProps,
 };

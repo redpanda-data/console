@@ -1,7 +1,9 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { Button } from './button';
 import { Input } from './input';
@@ -10,7 +12,6 @@ import { cn, type SharedProps } from '../lib/utils';
 
 function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: part of input group implementation
     <div
       className={cn(
         'group/input-group !border-input relative flex w-full items-center rounded-md border bg-input-fill shadow-xs outline-none transition-[color,box-shadow] motion-reduce:transition-none',
@@ -62,9 +63,6 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: part of input group implementation
-    // biome-ignore lint/a11y/useKeyWithClickEvents: click-to-focus convenience matches shadcn (no keyboard handler); interactive controls live inside the addon
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: click-to-focus convenience matches shadcn; interactive controls live inside the addon
     <div
       className={cn(inputGroupAddonVariants({ align }), className)}
       data-align={align}
@@ -151,4 +149,4 @@ function InputGroupTextarea({ className, testId, ...props }: React.ComponentProp
   );
 }
 
-export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupInput, InputGroupTextarea };
+export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText, InputGroupTextarea };

@@ -32,11 +32,15 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body-sm text-muted-foreground">{children}</div>,
-  a: ({ href, children }) => (
-    <Link className="text-body-sm" href={href} rel="noopener noreferrer" target="_blank">
-      {children}
-    </Link>
-  ),
+  // Markdown can produce an anchor with no destination, which is text rather than a link.
+  a: ({ href, children }) =>
+    href ? (
+      <Link className="text-body-sm" href={href} rel="noopener noreferrer" target="_blank">
+        {children}
+      </Link>
+    ) : (
+      <>{children}</>
+    ),
   code: ({ children }) => (
     // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
     <code className="break-words rounded bg-muted px-1 py-0.5 font-mono text-body-sm text-foreground">{children}</code>

@@ -23,13 +23,13 @@ import type { DataTableFeatures } from './data-table-features';
 
 interface DataTableFacetedFilterProps<TData extends RowData, TValue> extends SharedProps {
   column?: Column<DataTableFeatures, TData, TValue>;
-  title?: string;
+  labelClassName?: string;
   options: {
     label: string;
     value: string;
     icon?: React.ComponentType<{ className?: string }>;
   }[];
-  labelClassName?: string;
+  title?: string;
 }
 
 export function DataTableFacetedFilter<TData extends RowData, TValue>({

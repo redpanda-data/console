@@ -1,13 +1,12 @@
 'use client';
 
-import React from 'react';
+import type React from 'react';
 import { useController, useFormContext } from 'react-hook-form';
-
-import { getRenderedLabel, useFieldPresentation } from './shared';
 import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
 import type { AutoFormFieldProps, ParsedField } from '../core-types';
 import { getFieldErrorMessage } from '../helpers';
 import { getAutoFormFieldTestId } from '../test-ids';
+import { getRenderedLabel, useFieldPresentation } from './shared';
 
 export function ControlledFieldRenderer({
   field,

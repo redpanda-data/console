@@ -2,7 +2,7 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import React, { type HTMLAttributes, useContext, useEffect, useState } from 'react';
+import React, { type HTMLAttributes, useContext, useState } from 'react';
 
 import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
@@ -25,10 +25,10 @@ const bannerVariants = cva(
 );
 
 /** No `open`: the provider only renders while the banner is open, so a consumer could only read `true`. */
-type BannerContextValue = {
-  setOpen: (open: boolean) => void;
+interface BannerContextValue {
   globalKey: string | null;
-};
+  setOpen: (open: boolean) => void;
+}
 
 const BannerContext = React.createContext<BannerContextValue | null>(null);
 
@@ -65,15 +65,12 @@ interface BannerProps extends HTMLAttributes<HTMLDivElement>, VariantProps<typeo
   height?: string;
 }
 
-function Banner({ id, height = '3rem', variant, testId, ...props }: BannerProps) {
-  const [open, setOpen] = useState(true);
-  const globalKey = id ? `redpanda-cloud-banner-${id}` : null;
+interface BannerContentRootProps extends BannerProps {
+  globalKey: string | null;
+}
 
-  useEffect(() => {
-    if (globalKey) {
-      setOpen(!isDismissed(globalKey));
-    }
-  }, [globalKey]);
+function BannerContentRoot({ globalKey, id, height = '3rem', variant, testId, ...props }: BannerContentRootProps) {
+  const [open, setOpen] = useState(() => (globalKey ? !isDismissed(globalKey) : true));
 
   // Unmounted rather than hidden, so a dismissed banner takes no layout and holds no focusable child.
   // Nothing below needs a `hidden` class for the closed state — there is no closed state down here.
@@ -96,6 +93,11 @@ function Banner({ id, height = '3rem', variant, testId, ...props }: BannerProps)
       </div>
     </BannerContext.Provider>
   );
+}
+
+function Banner(props: BannerProps) {
+  const globalKey = props.id ? `redpanda-cloud-banner-${props.id}` : null;
+  return <BannerContentRoot {...props} globalKey={globalKey} key={globalKey ?? 'banner-without-id'} />;
 }
 
 interface BannerContentProps extends HTMLAttributes<HTMLDivElement> {}
@@ -137,4 +139,4 @@ function BannerClose({ variant = 'current-ghost', className, ...props }: BannerC
   );
 }
 
-export { Banner, BannerContent, BannerClose, bannerVariants };
+export { Banner, BannerClose, BannerContent, bannerVariants };

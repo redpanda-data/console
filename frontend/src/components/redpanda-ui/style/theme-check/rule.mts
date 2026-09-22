@@ -8,13 +8,13 @@
  */
 
 /** A rung the sheet has to set because of one it already set. */
-export type OverrideHole = {
-  /** The token the sheet is missing. */
-  token: string;
+export interface OverrideHole {
   /** The token that obliges it. */
   because: string;
   kind: 'state' | 'sibling';
-};
+  /** The token the sheet is missing. */
+  token: string;
+}
 
 const STATES = ['-hover', '-pressed'] as const;
 const WASH = '-wash';

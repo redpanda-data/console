@@ -8,8 +8,8 @@ import { Separator } from './separator';
 import { cn, type SharedProps } from '../lib/utils';
 
 interface FieldContextValue {
-  invalid: boolean;
   errorId: string | undefined;
+  invalid: boolean;
 }
 
 const FieldContext = createContext<FieldContextValue>({ invalid: false, errorId: undefined });
@@ -102,13 +102,11 @@ function Field({
 
   return (
     <FieldContext.Provider value={ctx}>
-      {/* biome-ignore lint/a11y/useSemanticElements: part of field implementation */}
       <div
         className={cn(fieldVariants({ orientation }), className)}
         data-orientation={orientation}
         data-slot="field"
         data-testid={testId}
-        role="group"
         {...props}
       />
     </FieldContext.Provider>
@@ -235,8 +233,7 @@ function FieldError({
 
     return (
       <ul className="ml-4 flex list-disc flex-col gap-1">
-        {/* biome-ignore lint/suspicious/noArrayIndexKey: error messages are stable and order is maintained */}
-        {uniqueErrors.map((error, index) => error?.message && <li key={index}>{error.message}</li>)}
+        {uniqueErrors.map((error) => error?.message && <li key={error.message}>{error.message}</li>)}
       </ul>
     );
   }, [children, errors]);
@@ -261,13 +258,13 @@ function FieldError({
 
 export {
   Field,
-  FieldLabel,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
+  FieldLabel,
   FieldLegend,
   FieldSeparator,
   FieldSet,
-  FieldContent,
   FieldTitle,
 };

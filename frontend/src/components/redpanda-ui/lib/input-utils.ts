@@ -3,18 +3,18 @@ import { z } from 'zod';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-export type KeyValuePairsSchemaOptions = {
+export interface KeyValuePairsSchemaOptions {
   allowedPattern?: RegExp;
+  maxItems?: number;
   maxKeyLength?: number;
   maxValueLength?: number;
-  maxItems?: number;
-};
+}
 
-export type KeyValueDiffResult = {
+export interface KeyValueDiffResult {
   created: Record<string, string>;
-  updated: Record<string, string>;
   removed: string[];
-};
+  updated: Record<string, string>;
+}
 
 // ── Pure Utilities ─────────────────────────────────────────────────────
 
@@ -214,6 +214,8 @@ export function useInputListFocus(containerRef: RefObject<HTMLElement | null>) {
  * between renders, reducing unnecessary child re-renders.
  */
 export function useMemoizedArray<T>(items: T[], isEqual: (a: T, b: T) => boolean = Object.is): T[] {
+  'use no memo';
+
   const prevRef = useRef(items);
   const prev = prevRef.current;
 

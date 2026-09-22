@@ -195,18 +195,18 @@ function CommandShortcut({ className, children, ...props }: React.ComponentProps
   );
 }
 
-type CommandSubContextType = {
-  open: boolean;
+interface CommandSubContextType {
   onOpenChange: (open: boolean) => void;
-};
+  open: boolean;
+}
 
 const CommandSubContext = React.createContext<CommandSubContextType | undefined>(undefined);
 
-type CommandSubProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface CommandSubProps {
   children: React.ReactNode;
-};
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
 
 function CommandSub({ open, onOpenChange, children }: CommandSubProps) {
   return (
@@ -246,10 +246,10 @@ function CommandSubTrigger({ className, children, inset, ...props }: CommandSubT
   );
 }
 
-type CommandSubContentProps = {
-  className?: string;
+interface CommandSubContentProps {
   children: React.ReactNode;
-};
+  className?: string;
+}
 
 function CommandSubContent({ className, children }: CommandSubContentProps) {
   return (
@@ -260,7 +260,7 @@ function CommandSubContent({ className, children }: CommandSubContentProps) {
 }
 
 interface SimpleCommandProps extends SharedProps {
-  placeholder?: string;
+  className?: string;
   emptyMessage?: string;
   groups: Array<{
     heading?: string;
@@ -272,8 +272,8 @@ interface SimpleCommandProps extends SharedProps {
       onSelect?: () => void;
     }>;
   }>;
+  placeholder?: string;
   size?: 'sm' | 'md' | 'lg' | 'full';
-  className?: string;
 }
 
 function SimpleCommand({
@@ -311,16 +311,16 @@ function SimpleCommand({
 export {
   Command,
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
-  CommandShortcut,
+  CommandList,
   CommandSeparator,
+  CommandShortcut,
   CommandSub,
-  CommandSubTrigger,
   CommandSubContent,
-  SimpleCommand,
+  CommandSubTrigger,
   commandVariants,
+  SimpleCommand,
 };

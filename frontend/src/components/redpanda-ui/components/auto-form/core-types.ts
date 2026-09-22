@@ -1,3 +1,5 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 import type React from 'react';
 import type { ReactNode } from 'react';
 
@@ -14,54 +16,77 @@ export type {
 
 import type { ParsedField, Renderable } from '../../lib/form-types';
 
-export type FieldWrapperProps = {
-  label: Renderable;
-  error?: Renderable;
+export interface FieldWrapperProps {
   children: ReactNode;
-  id: string;
+  error?: Renderable;
   field: ParsedField;
-};
-
-export type ObjectWrapperProps = {
+  id: string;
   label: Renderable;
+}
+
+export interface ObjectWrapperProps {
   children: ReactNode;
   field: ParsedField;
   hasError?: boolean;
-};
-
-export type ArrayWrapperProps = {
   label: Renderable;
+}
+
+export interface ArrayWrapperProps {
   children: ReactNode;
   field: ParsedField;
+  label: Renderable;
   onAddItem: () => void;
-};
+}
 
-export type ArrayElementWrapperProps = {
+export interface ArrayElementWrapperProps {
   children: ReactNode;
-  onRemove: () => void;
   index: number;
-};
+  onRemove: () => void;
+}
 
-export type AutoFormUIComponents = {
-  Form: React.ComponentType<React.ComponentProps<'form'>>;
-  FieldWrapper: React.ComponentType<FieldWrapperProps>;
-  ErrorMessage: React.ComponentType<{ error: string }>;
-  SubmitButton: React.ComponentType<{ children: ReactNode }>;
-  ObjectWrapper: React.ComponentType<ObjectWrapperProps>;
-  ArrayWrapper: React.ComponentType<ArrayWrapperProps>;
+export interface AutoFormUIComponents {
   ArrayElementWrapper: React.ComponentType<ArrayElementWrapperProps>;
-};
+  ArrayWrapper: React.ComponentType<ArrayWrapperProps>;
+  ErrorMessage: React.ComponentType<{ error: string }>;
+  FieldWrapper: React.ComponentType<FieldWrapperProps>;
+  Form: React.ComponentType<React.ComponentProps<'form'>>;
+  ObjectWrapper: React.ComponentType<ObjectWrapperProps>;
+  SubmitButton: React.ComponentType<{ children: ReactNode }>;
+}
 
-export type AutoFormFieldProps = {
-  label: Renderable;
-  field: ParsedField;
-  value: any;
+export type AutoFormValue = boolean | number | object | string | null | undefined;
+type AutoFormValueChangeHandler = {
+  bivarianceHack(value: AutoFormValue): void;
+}['bivarianceHack'];
+
+export interface AutoFormInputProps {
+  disabled?: boolean;
+  max?: number | string;
+  maxLength?: number;
+  min?: number | string;
+  name?: string;
+  onBlur: () => void;
+  onValueChange: AutoFormValueChangeHandler;
+  pattern?: string;
+  placeholder?: string;
+  required?: boolean;
+  step?: number | string;
+  testId?: string;
+  type?: string;
+  value?: AutoFormValue;
+  [key: string]: unknown;
+}
+
+export interface AutoFormFieldProps {
   error?: string;
+  field: ParsedField;
   id: string;
+  inputProps: AutoFormInputProps;
+  label: Renderable;
   path: string[];
-  inputProps: Record<string, any>;
-};
+  value: AutoFormValue;
+}
 
-export type AutoFormFieldComponents = {
+export interface AutoFormFieldComponents {
   [key: string]: React.ComponentType<AutoFormFieldProps>;
-};
+}

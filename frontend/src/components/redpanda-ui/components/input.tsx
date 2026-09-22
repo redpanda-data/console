@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: this is a complex component */
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
@@ -61,9 +60,9 @@ export interface InputProps
   extends Omit<React.ComponentProps<'input'>, 'size'>,
     VariantProps<typeof inputVariants>,
     SharedProps {
-  showStepControls?: boolean;
   children?: React.ReactNode;
   containerClassName?: string;
+  showStepControls?: boolean;
 }
 
 function useNumberInputHandlers(inputRef: React.RefObject<HTMLInputElement | null>, step: number) {
@@ -311,4 +310,4 @@ const InputEnd = ({ children, className, ...props }: { children: React.ReactNode
   );
 };
 
-export { Input, InputStart, InputEnd };
+export { Input, InputEnd, InputStart };

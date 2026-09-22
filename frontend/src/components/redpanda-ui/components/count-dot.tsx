@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import React from 'react';
+import type React from 'react';
 
 import { cn, type DotSize, dotStackedVariants, type SharedProps, type StackableProps } from '../lib/utils';
 

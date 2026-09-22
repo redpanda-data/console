@@ -6,32 +6,32 @@ export type TextFilterOperator = 'contains' | 'does not contain';
 export type OptionFilterOperator = 'is' | 'is not' | 'is any of' | 'is none of';
 export type MultiOptionFilterOperator = 'include' | 'exclude' | 'include any of' | 'include all of';
 
-export type FilterOperators = {
-  text: TextFilterOperator;
-  option: OptionFilterOperator;
+export interface FilterOperators {
   multiOption: MultiOptionFilterOperator;
-};
+  option: OptionFilterOperator;
+  text: TextFilterOperator;
+}
 
 export type FilterOperatorTarget = 'single' | 'multiple';
 
-export type FilterOperatorDetails<T extends FilterType = FilterType> = {
-  value: FilterOperators[T];
-  target: FilterOperatorTarget;
-  singularOf?: FilterOperators[T];
-  pluralOf?: FilterOperators[T];
+export interface FilterOperatorDetails<T extends FilterType = FilterType> {
   isNegated: boolean;
   negation?: FilterOperators[T];
   negationOf?: FilterOperators[T];
-};
+  pluralOf?: FilterOperators[T];
+  singularOf?: FilterOperators[T];
+  target: FilterOperatorTarget;
+  value: FilterOperators[T];
+}
 
 export type FilterOperatorMap<T extends FilterType> = Record<string, FilterOperatorDetails<T>>;
 
-export type FilterModel<T extends FilterType = FilterType> = {
+export interface FilterModel<T extends FilterType = FilterType> {
   columnId: string;
-  type: T;
   operator: string;
+  type: T;
   values: string[];
-};
+}
 
 export type FiltersState = FilterModel[];
 
@@ -176,7 +176,7 @@ export function optionFilterFn(rowValue: string, filterModel: FilterModel<'optio
     return true;
   }
 
-  const value = rowValue.toString().toLowerCase();
+  const value = rowValue.toLowerCase();
   const found = filterModel.values.some((v) => v.toLowerCase() === value);
 
   switch (filterModel.operator) {

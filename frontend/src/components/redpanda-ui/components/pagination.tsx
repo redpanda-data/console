@@ -1,5 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
-import React from 'react';
+import type React from 'react';
 
 import { type Button, buttonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
@@ -107,15 +107,15 @@ function PaginationEllipsis({ className, testId, ...props }: React.ComponentProp
   );
 }
 
-type SimplePaginationProps = {
+interface SimplePaginationProps {
+  className?: string;
   currentPage: number;
-  totalPages: number;
+  maxVisiblePages?: number;
   onPageChange?: (page: number) => void;
   showEllipsis?: boolean;
-  maxVisiblePages?: number;
-  className?: string;
   testId?: string;
-};
+  totalPages: number;
+}
 
 function SimplePagination({
   currentPage,
@@ -228,10 +228,10 @@ function SimplePagination({
 export {
   Pagination,
   PaginationContent,
-  PaginationLink,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
   PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
   SimplePagination,
 };

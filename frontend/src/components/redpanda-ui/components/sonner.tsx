@@ -1,21 +1,28 @@
 'use client';
 
 import { AlertTriangle, CheckCircle, Info, Loader, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Suspense, use } from 'react';
+import { browser, createPortal } from 'react-dom';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 import { useTheme } from './theme-provider';
 import type { SharedProps } from '../lib/utils';
 
-const Toaster = ({ testId, ...props }: ToasterProps & SharedProps) => {
+function Toaster(props: ToasterProps & SharedProps) {
+  return (
+    <Suspense fallback={null}>
+      <BrowserToaster {...props} />
+    </Suspense>
+  );
+}
+
+const BrowserToaster = ({ testId, ...props }: ToasterProps & SharedProps) => {
+  use(browser('Toast notifications render into document.body.'));
   const { theme = 'system' } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) {
-    return null;
+  // React Doctor's SSR analyzer does not yet recognize browser(); fail loudly if its contract breaks.
+  if (typeof document === 'undefined') {
+    throw new Error('Toaster requires a browser document after browser() resolves.');
   }
 
   return createPortal(

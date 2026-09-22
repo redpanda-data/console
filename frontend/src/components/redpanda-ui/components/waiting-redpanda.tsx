@@ -2,7 +2,7 @@ import { LoadingAnimation } from './loading-animation';
 import type { SharedProps } from '../lib/utils';
 
 const WaitingRedpandaSVG = ({ progress }: { progress?: number }) => {
-  const progressPercentage = progress !== undefined ? Math.max(0, Math.min(100, progress)) : undefined;
+  const progressPercentage = progress === undefined ? undefined : Math.max(0, Math.min(100, progress));
 
   return (
     <svg fill="none" height="123" viewBox="0 0 341 123" width="341" xmlns="http://www.w3.org/2000/svg">
@@ -87,7 +87,7 @@ const WaitingRedpandaSVG = ({ progress }: { progress?: number }) => {
         rx="8.5"
         strokeWidth="0"
         width="50%"
-        x={progressPercentage !== undefined ? `${progressPercentage - 50}%` : '-50%'}
+        x={progressPercentage === undefined ? '-50%' : `${progressPercentage - 50}%`}
         y="52.6934"
       >
         {progress === undefined && (

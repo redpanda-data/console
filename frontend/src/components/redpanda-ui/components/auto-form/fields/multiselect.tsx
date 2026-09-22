@@ -1,6 +1,7 @@
 'use client';
 
-import { getGroupedOptions, readDataProviderId, renderOptionLabel, useFieldTestIds } from './shared';
+// Copyright 2026 Redpanda Data, Inc.
+
 import { useFieldContext } from '../../field';
 import { SimpleMultiSelect } from '../../multi-select';
 import { useAutoForm } from '../context';
@@ -8,6 +9,7 @@ import type { AutoFormFieldProps } from '../core-types';
 import { resolveDataProvider } from '../data-providers';
 import { getFieldUiConfig, NUMERIC_OPTION_PATTERN } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { getGroupedOptions, readDataProviderId, renderOptionLabel, useFieldTestIds } from './shared';
 
 function MultiSelectFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -80,7 +82,7 @@ function DataProviderMultiSelectComponent({ error, field, id, inputProps }: Auto
 
   const options = providerOptions.map((option) => {
     const labelNode = (
-      <span className="flex items-center gap-2">
+      <span className="flex items-center gap-2" key={option.value}>
         {option.icon ? (
           <span className="flex h-4 w-4 shrink-0 items-center justify-center [&>svg]:h-full [&>svg]:w-full">
             {option.icon}

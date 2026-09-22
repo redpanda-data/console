@@ -61,23 +61,23 @@ export function resolveEditorTokens(container: HTMLElement = document.body): Rec
   return resolved;
 }
 
-export type EditorThemeOptions = {
+export interface EditorThemeOptions {
+  /** Where to read the tokens from, when the editor is not inside `document.body`. */
+  container?: HTMLElement;
   /**
    * Leave the background unpainted so the editor sits on whatever ground it is placed on. The
    * gutter follows, since a painted gutter on a transparent editor reads as a seam.
    */
   transparentBackground?: boolean;
-  /** Where to read the tokens from, when the editor is not inside `document.body`. */
-  container?: HTMLElement;
-};
+}
 
 /** Monaco's `defineTheme` shape, described structurally so this carries no Monaco import. */
-export type EditorTheme = {
+export interface EditorTheme {
   base: 'vs' | 'vs-dark';
-  inherit: boolean;
   colors: Record<string, string>;
+  inherit: boolean;
   rules: { token: string; foreground?: string; fontStyle?: string }[];
-};
+}
 
 /**
  * `base` follows the resolved background rather than a prop, so a caller cannot pair a light base

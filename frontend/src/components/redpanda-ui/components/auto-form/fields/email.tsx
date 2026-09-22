@@ -1,11 +1,10 @@
 'use client';
 
 import { MailIcon } from 'lucide-react';
-
-import { StringLikeInput, useFieldTestIds } from './shared';
 import type { AutoFormFieldProps } from '../core-types';
 import { EMAIL_FIELD_PATTERN, getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { StringLikeInput, useFieldTestIds } from './shared';
 
 function EmailFieldComponent(props: AutoFormFieldProps) {
   const testIds = useFieldTestIds(props.id);

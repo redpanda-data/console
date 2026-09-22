@@ -14,9 +14,9 @@ const INDETERMINATE_TRANSITION: Transition = {
   repeat: Number.POSITIVE_INFINITY,
 };
 
-type ProgressContextValue = {
+interface ProgressContextValue {
   value: number | null;
-};
+}
 
 const ProgressContext = React.createContext<ProgressContextValue>({
   value: 0,
@@ -128,13 +128,13 @@ function ProgressValue({ className, testId, ...props }: ProgressValueProps) {
 
 export {
   Progress,
-  ProgressTrack,
   ProgressIndicator,
-  ProgressLabel,
-  ProgressValue,
-  type ProgressProps,
-  type ProgressTrackProps,
   type ProgressIndicatorProps,
+  ProgressLabel,
   type ProgressLabelProps,
+  type ProgressProps,
+  ProgressTrack,
+  type ProgressTrackProps,
+  ProgressValue,
   type ProgressValueProps,
 };

@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -8,24 +10,24 @@ type ResolvedTheme = 'dark' | 'light';
 const DEFAULT_STORAGE_KEY = 'redpanda-ui-theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
-type ThemeProviderProps = {
+interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
-};
+}
 
-type ThemeProviderState = {
-  theme: Theme;
+interface ThemeProviderState {
   /** The theme the page is in. Equal to `theme`, unless that is `system`. */
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
-};
+  theme: Theme;
+}
 
 /** Shared by the pre-paint entry points, so they cannot resolve differently from the provider. */
-type ThemeInit = {
-  storageKey?: string;
+interface ThemeInit {
   defaultTheme?: Theme;
-};
+  storageKey?: string;
+}
 
 const initialState: ThemeProviderState = {
   theme: 'system',
@@ -141,6 +143,10 @@ const initTheme = ({ storageKey = DEFAULT_STORAGE_KEY, defaultTheme = 'system' }
   return resolved;
 };
 
+/** JSON for an inline script, with HTML and JavaScript line separators escaped. */
+const inlineScriptString = (value: string): string =>
+  JSON.stringify(value).replaceAll('<', '\\u003c').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
+
 /**
  * `initTheme`'s resolve as inline source. Blocking, because `async`, `defer` and an external file all run
  * after the paint this exists to beat; hand-minified, being a string no bundler sees. Pass the provider's
@@ -149,9 +155,9 @@ const initTheme = ({ storageKey = DEFAULT_STORAGE_KEY, defaultTheme = 'system' }
 const themeScript = ({ storageKey = DEFAULT_STORAGE_KEY, defaultTheme = 'system' }: ThemeInit = {}): string =>
   '(function(){try{' +
   // `s` then `t`, not `getItem() || default`: a corrupt value has to fall back as the provider does.
-  `var s=localStorage.getItem(${JSON.stringify(storageKey)}),` +
-  `t=s==="dark"||s==="light"||s==="system"?s:${JSON.stringify(defaultTheme)},` +
-  `r=t==="system"?(matchMedia(${JSON.stringify(DARK_QUERY)}).matches?"dark":"light"):t,` +
+  `var s=localStorage.getItem(${inlineScriptString(storageKey)}),` +
+  `t=s==="dark"||s==="light"||s==="system"?s:${inlineScriptString(defaultTheme)},` +
+  `r=t==="system"?(matchMedia(${inlineScriptString(DARK_QUERY)}).matches?"dark":"light"):t,` +
   'e=document.documentElement;' +
   'e.dataset.theme=r;e.classList.toggle("dark",r==="dark");e.style.colorScheme=r' +
   '}catch{}})()';
@@ -163,13 +169,9 @@ const themeScript = ({ storageKey = DEFAULT_STORAGE_KEY, defaultTheme = 'system'
  */
 function ThemeScript({ storageKey, defaultTheme }: ThemeInit = {}) {
   return (
-    <script
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: this file's own source, and only an inline script beats the first paint
-      dangerouslySetInnerHTML={{ __html: themeScript({ defaultTheme, storageKey }) }}
-      suppressHydrationWarning
-    />
+    <script dangerouslySetInnerHTML={{ __html: themeScript({ defaultTheme, storageKey }) }} suppressHydrationWarning />
   );
 }
 
-export { initTheme, ThemeProvider, ThemeScript, themeScript, useTheme };
 export type { ResolvedTheme, Theme, ThemeInit, ThemeProviderProps, ThemeProviderState };
+export { initTheme, ThemeProvider, ThemeScript, themeScript, useTheme };

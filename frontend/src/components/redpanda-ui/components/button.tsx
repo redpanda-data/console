@@ -1,5 +1,7 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
@@ -188,6 +190,7 @@ const buttonVariants = cva(
           'active:text-action-primary-pressed',
           'disabled:text-disabled disabled:no-underline',
         ],
+        unstyled: '',
       },
       size: {
         xs: 'h-6 gap-1 px-2 py-0 text-body-sm has-[>svg]:px-1.5 [&_svg]:size-3',
@@ -301,18 +304,15 @@ function Button({
   const resolvedRender = render ?? (AsElement ? <AsElement {...asElementProps} /> : undefined);
 
   const resolvedNativeButton = resolveNativeButton(nativeButton, render, as);
+  const resolvedClassName =
+    variant === 'unstyled'
+      ? className
+      : cn(buttonVariants({ variant, size }), positionClasses, icon && 'gap-2', isLoading && 'relative', className);
 
   return (
     <ButtonPrimitive
       aria-busy={isLoading || undefined}
-      // `className` last: `positionClasses` sets a radius a caller's own `rounded-*` has to win.
-      className={cn(
-        buttonVariants({ variant, size }),
-        positionClasses,
-        icon && 'gap-2',
-        isLoading && 'relative',
-        className
-      )}
+      className={resolvedClassName}
       data-loading={isLoading || undefined}
       data-slot="button"
       data-testid={testId}

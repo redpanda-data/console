@@ -71,9 +71,9 @@ function RadioGroupItem({ className, testId, ...props }: RadioGroupItemProps) {
 
 export {
   RadioGroup,
-  RadioGroupItem,
   RadioGroupIndicator,
-  type RadioGroupProps,
-  type RadioGroupItemProps,
   type RadioGroupIndicatorProps,
+  RadioGroupItem,
+  type RadioGroupItemProps,
+  type RadioGroupProps,
 };

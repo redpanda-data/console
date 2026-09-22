@@ -1,12 +1,11 @@
 'use client';
 
 import { DollarSignIcon } from 'lucide-react';
-
-import { useFieldTestIds } from './shared';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '../../input-group';
 import type { AutoFormFieldProps } from '../core-types';
 import { CURRENCY_FIELD_PATTERN, getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { useFieldTestIds } from './shared';
 
 function CurrencyFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

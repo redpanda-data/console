@@ -47,7 +47,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@base-ui/react": "^1.7.0",
+    "@base-ui/react": "^1.8.0",
     "@buf/redpandadata_cloud.connectrpc_query-es": "^2.3.1-20260817162420-6033b8c28212.1",
     "@buf/redpandadata_common.bufbuild_es": "^2.11.0-20260323171043-6e06f84ad823.1",
     "@bufbuild/cel": "^0.4.0",
@@ -78,7 +78,7 @@
     "@stepperize/react": "^5.1.9",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-router": "^1.170.22",
-    "@tanstack/react-table": "^9.1.2",
+    "@tanstack/react-table": "^9.2.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@uiw/react-codemirror": "^4.25.10",
     "@xyflow/react": "^12.9.2",
@@ -96,6 +96,7 @@
     "js-base64": "^3.7.8",
     "json-bigint": "^1.0.0",
     "lottie-react": "^2.4.1",
+    "lottie-web": "^5.13.0",
     "lucide-react": "^1.16.0",
     "memoize-one": "^6.0.0",
     "monaco-editor": "^0.54.0",
@@ -125,7 +126,7 @@
     "tailwindcss": "^4.2.4",
     "vaul": "^1.1.2",
     "yaml": "^2.8.3",
-    "zod": "^4.4.3",
+    "zod": "^4.6.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

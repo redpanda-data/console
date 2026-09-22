@@ -4,21 +4,21 @@ import type { AutoFormFieldProps, ParsedField } from './core-types';
 import { getLabel } from './field-utils';
 import { getProtoFieldCustomData } from './proto';
 
-export type FieldTypeDefinition = {
-  name: string;
-  match: (field: ParsedField, context: FieldMatchContext) => boolean;
-  priority: number;
+export interface FieldTypeDefinition {
   component: React.ComponentType<AutoFormFieldProps>;
-};
+  match: (field: ParsedField, context: FieldMatchContext) => boolean;
+  name: string;
+  priority: number;
+}
 
-export type FieldMatchContext = {
+export interface FieldMatchContext {
   identity: string; // `${field.key} ${label}`.toLowerCase()
   inputType: string;
   maxLength: number;
-};
+}
 
 export class FieldTypeRegistry {
-  private definitions: FieldTypeDefinition[] = [];
+  private readonly definitions: FieldTypeDefinition[] = [];
 
   register(definition: FieldTypeDefinition): this {
     this.definitions.push(definition);

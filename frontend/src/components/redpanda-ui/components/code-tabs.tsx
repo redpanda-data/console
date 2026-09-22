@@ -1,9 +1,12 @@
 'use client';
 
+// Copyright 2026 Redpanda Data, Inc.
+
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
 import { CopyButton } from './copy-button';
+import { escapeHtmlText, SanitizedHtml } from './sanitized-html';
 import { Tabs, TabsContent, TabsContents, TabsList, type TabsProps, TabsTrigger } from './tabs';
 import { cn } from '../lib/utils';
 
@@ -70,11 +73,45 @@ const codeTabsContentVariants = cva('flex w-full items-center overflow-auto p-4 
   },
 });
 
-type CodeTabItem = {
+interface CodeTabItem {
+  code: string;
   id: string;
   label: React.ReactNode;
-  code: string;
-};
+}
+
+interface HighlightCodeTabsInput {
+  darkTheme: string;
+  items: CodeTabItem[];
+  lang: string;
+  lightTheme: string;
+  theme?: 'light' | 'dark' | 'system';
+}
+
+async function highlightCodeTabs({
+  darkTheme,
+  items,
+  lang,
+  lightTheme,
+  theme,
+}: HighlightCodeTabsInput): Promise<CodeTabItem[]> {
+  const { codeToHtml } = await import('shiki');
+  return Promise.all(
+    items.map(async (item) => ({
+      id: item.id,
+      label: item.label,
+      code: await codeToHtml(item.code, {
+        lang,
+        themes: { dark: darkTheme, light: lightTheme },
+        // `false` keeps both themes in the markup for the CSS below to choose between.
+        defaultColor: theme === 'light' || theme === 'dark' ? theme : false,
+      }),
+    }))
+  );
+}
+
+function createFallbackItems(items: CodeTabItem[]): CodeTabItem[] {
+  return items.map((item) => ({ ...item, code: `<pre><code>${escapeHtmlText(item.code)}</code></pre>` }));
+}
 
 type CodeTabsProps = {
   codes?: Record<string, string>;
@@ -127,41 +164,26 @@ function CodeTabs({
 
   const [highlightedItems, setHighlightedItems] = React.useState<CodeTabItem[] | null>(null);
   const [selectedCode, setSelectedCode] = React.useState<string>(value ?? defaultValue ?? normalizedItems[0]?.id ?? '');
+  const { dark: darkTheme, light: lightTheme } = themes;
 
   React.useEffect(() => {
-    async function loadHighlightedCode() {
-      try {
-        const { codeToHtml } = await import('shiki');
-        const newHighlightedItems: CodeTabItem[] = [];
-
-        for (const item of normalizedItems) {
-          const highlighted = await codeToHtml(item.code, {
-            lang,
-            themes: {
-              light: themes.light,
-              dark: themes.dark,
-            },
-            // `false` keeps both themes in the markup for the CSS below to choose between.
-            defaultColor: theme === 'light' || theme === 'dark' ? theme : false,
-          });
-
-          newHighlightedItems.push({
-            id: item.id,
-            label: item.label,
-            code: highlighted,
-          });
+    let cancelled = false;
+    highlightCodeTabs({ darkTheme, items: normalizedItems, lang, lightTheme, theme })
+      .then((newHighlightedItems) => {
+        if (!cancelled) {
+          setHighlightedItems(newHighlightedItems);
         }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHighlightedItems(createFallbackItems(normalizedItems));
+        }
+      });
 
-        setHighlightedItems(newHighlightedItems);
-      } catch (error) {
-        // biome-ignore lint/suspicious/noConsole: needed for code tabs implementation
-        console.error('Error highlighting codes', error);
-        setHighlightedItems(normalizedItems);
-      }
-    }
-    // biome-ignore lint/nursery/noFloatingPromises: intentionally fire-and-forget in useEffect
-    loadHighlightedCode();
-  }, [theme, lang, themes.light, themes.dark, normalizedItems]);
+    return () => {
+      cancelled = true;
+    };
+  }, [darkTheme, lang, lightTheme, normalizedItems, theme]);
 
   const selectedItem = normalizedItems.find((item) => item.id === selectedCode);
 
@@ -213,10 +235,9 @@ function CodeTabs({
             key={item.id}
             value={item.id}
           >
-            <div
+            <SanitizedHtml
               className="[&>pre,_&_code]:!bg-transparent [&_code]:!text-body [&>pre,_&_code]:border-none [&>pre,_&_code]:[background:transparent_!important]"
-              // biome-ignore lint/security/noDangerouslySetInnerHtml: part of code tabs implementation
-              dangerouslySetInnerHTML={{ __html: item.code }}
+              html={item.code}
             />
           </TabsContent>
         ))}
@@ -226,11 +247,11 @@ function CodeTabs({
 }
 
 export {
+  type CodeTabItem,
   CodeTabs,
-  codeTabsVariants,
-  codeTabsListVariants,
+  type CodeTabsProps,
   codeTabsActiveVariants,
   codeTabsContentVariants,
-  type CodeTabsProps,
-  type CodeTabItem,
+  codeTabsListVariants,
+  codeTabsVariants,
 };

@@ -1,10 +1,12 @@
 'use client';
 
-import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
+// Copyright 2026 Redpanda Data, Inc.
+
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
+import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
 
 function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -28,7 +30,7 @@ function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
       step={stepValue}
       testId={testIds.control}
       type="number"
-      value={inputProps.value ?? ''}
+      value={typeof inputProps.value === 'number' || typeof inputProps.value === 'string' ? inputProps.value : ''}
     />
   );
 }

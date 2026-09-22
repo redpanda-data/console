@@ -1,34 +1,36 @@
+// Copyright 2026 Redpanda Data, Inc.
+
 import { AnimatePresence, motion, type Transition } from 'motion/react';
 import React from 'react';
 
+import { useControllableState } from '../lib/use-controllable-state';
 import { cn, type SharedProps } from '../lib/utils';
 
 type MotionHighlightMode = 'children' | 'parent';
 
-type Bounds = {
-  top: number;
-  left: number;
-  width: number;
+interface Bounds {
   height: number;
-};
+  left: number;
+  top: number;
+  width: number;
+}
 
-type MotionHighlightContextType<T extends string> = {
-  mode: MotionHighlightMode;
-  activeValue: T | null;
-  setActiveValue: (value: T | null) => void;
-  setBounds: (bounds: DOMRect) => void;
-  clearBounds: () => void;
-  id: string;
-  hover: boolean;
-  className?: string;
+interface MotionHighlightContextType<T extends string> {
   activeClassName?: string;
-  setActiveClassName: (className: string) => void;
-  transition?: Transition;
+  activeValue: T | null;
+  className?: string;
+  clearBounds: () => void;
   disabled?: boolean;
   enabled?: boolean;
   exitDelay?: number;
   forceUpdateBounds?: boolean;
-};
+  hover: boolean;
+  id: string;
+  mode: MotionHighlightMode;
+  setActiveValue: (value: T | null) => void;
+  setBounds: (bounds: DOMRect, activeClassName?: string) => void;
+  transition?: Transition;
+}
 
 const MotionHighlightContext = React.createContext<MotionHighlightContextType<string> | undefined>(undefined);
 
@@ -53,11 +55,11 @@ type BaseMotionHighlightProps<T extends string> = SharedProps & {
   exitDelay?: number;
 };
 
-type ParentModeMotionHighlightProps = {
+interface ParentModeMotionHighlightProps {
   boundsOffset?: Partial<Bounds>;
   containerClassName?: string;
   forceUpdateBounds?: boolean;
-};
+}
 
 type ControlledParentModeMotionHighlightProps<T extends string> = BaseMotionHighlightProps<T> &
   ParentModeMotionHighlightProps & {
@@ -114,22 +116,23 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
 
   const localRef = React.useRef<HTMLDivElement>(null);
 
-  const [activeValue, setActiveValue] = React.useState<string | null>(value ?? defaultValue ?? null);
+  const [activeValue, setActiveValue] = useControllableState<T | null>({
+    defaultProp: defaultValue ?? null,
+    onChange: onValueChange,
+    prop: value,
+  });
   const [boundsState, setBoundsState] = React.useState<Bounds | null>(null);
   const [activeClassNameState, setActiveClassNameState] = React.useState<string>('');
 
   const safeSetActiveValue = React.useCallback(
     (newId: string | null) => {
-      setActiveValue((prev) => (prev === newId ? prev : newId));
-      if (newId !== activeValue) {
-        onValueChange?.(newId as T);
-      }
+      setActiveValue(newId as T | null);
     },
-    [activeValue, onValueChange]
+    [setActiveValue]
   );
 
   const safeSetBounds = React.useCallback(
-    (bounds: DOMRect) => {
+    (bounds: DOMRect, nextActiveClassName?: string) => {
       if (!localRef.current) {
         return;
       }
@@ -161,6 +164,9 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
         }
         return newBounds;
       });
+      if (nextActiveClassName !== undefined) {
+        setActiveClassNameState(nextActiveClassName);
+      }
     },
     [props]
   );
@@ -168,14 +174,6 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
   const clearBounds = React.useCallback(() => {
     setBoundsState((prev) => (prev === null ? prev : null));
   }, []);
-
-  React.useEffect(() => {
-    if (value !== undefined) {
-      setActiveValue(value);
-    } else if (defaultValue !== undefined) {
-      setActiveValue(defaultValue);
-    }
-  }, [value, defaultValue]);
 
   const id = React.useId();
 
@@ -268,7 +266,6 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
         setBounds: safeSetBounds,
         clearBounds,
         activeClassName: activeClassNameState,
-        setActiveClassName: setActiveClassNameState,
         forceUpdateBounds: (props as ParentModeMotionHighlightProps)?.forceUpdateBounds,
       }}
     >
@@ -276,13 +273,10 @@ function MotionHighlight<T extends string>(props: MotionHighlightProps<T>) {
       {enabled && !controlledItems
         ? render(
             React.Children.map(children, (child) => (
-              <MotionHighlightItem className={props?.itemsClassName} key={child.key || Math.random()}>
-                {child}
-              </MotionHighlightItem>
+              <MotionHighlightItem className={props?.itemsClassName}>{child}</MotionHighlightItem>
             ))
           )
         : null}
-      {/* biome-ignore lint/nursery/noLeakedRender: enabled is always boolean, safe to use in ternary */}
       {enabled ? null : children}
     </MotionHighlightContext.Provider>
   );
@@ -387,200 +381,152 @@ function buildItemDataAttributes(isActive: boolean, isDisabled: boolean | undefi
   };
 }
 
-const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItemProps>(
-  (
-    {
-      children,
-      id,
-      value,
-      className,
-      transition,
-      disabled = false,
-      activeClassName,
-      exitDelay,
-      asChild = false,
-      forceUpdateBounds,
-      testId,
-      ...props
-    },
-    forwardedRef
-  ) => {
-    const {
-      activeValue,
-      setActiveValue,
-      mode,
-      setBounds,
-      clearBounds,
-      hover,
-      enabled,
-      className: contextClassName,
-      id: contextId,
-      exitDelay: contextExitDelay,
-      forceUpdateBounds: contextForceUpdateBounds,
-      setActiveClassName,
-      element,
-      childValue,
-      isActive,
-      isDisabled,
-      itemTransition,
-    } = useMotionHighlightItemLogic({ id, value, disabled, transition, children });
+function haveSameBounds(previous: Bounds | null, next: DOMRect): boolean {
+  return Boolean(
+    previous &&
+      previous.top === next.top &&
+      previous.left === next.left &&
+      previous.width === next.width &&
+      previous.height === next.height
+  );
+}
 
-    const localRef = React.useRef<HTMLDivElement>(null);
+function observeElementBounds(element: HTMLElement, onBoundsChange: (bounds: DOMRect) => void): () => void {
+  let animationFrame = 0;
+  let previousBounds: Bounds | null = null;
 
-    React.useImperativeHandle(forwardedRef, () => localRef.current as HTMLDivElement, []);
+  const updateBounds = () => {
+    const bounds = element.getBoundingClientRect();
+    if (!haveSameBounds(previousBounds, bounds)) {
+      previousBounds = bounds;
+      onBoundsChange(bounds);
+    }
+    animationFrame = requestAnimationFrame(updateBounds);
+  };
 
-    React.useEffect(() => {
-      if (mode !== 'parent') {
+  updateBounds();
+  return () => cancelAnimationFrame(animationFrame);
+}
+
+const MotionHighlightItem = ({
+  children,
+  id,
+  value,
+  className,
+  transition,
+  disabled = false,
+  activeClassName,
+  exitDelay,
+  asChild = false,
+  forceUpdateBounds,
+  testId,
+  ref: forwardedRef,
+  ...props
+}: MotionHighlightItemProps & { ref?: React.Ref<HTMLDivElement> }) => {
+  // The asChild contract clones an arbitrary element and composes its ref.
+  // React Compiler cannot prove that cloneElement will not read that ref.
+  'use no memo';
+
+  const {
+    activeValue,
+    setActiveValue,
+    mode,
+    setBounds,
+    clearBounds,
+    hover,
+    enabled,
+    className: contextClassName,
+    id: contextId,
+    exitDelay: contextExitDelay,
+    forceUpdateBounds: contextForceUpdateBounds,
+    element,
+    childValue,
+    isActive,
+    isDisabled,
+    itemTransition,
+  } = useMotionHighlightItemLogic({ id, value, disabled, transition, children });
+
+  const localRef = React.useRef<HTMLDivElement>(null);
+
+  React.useImperativeHandle(forwardedRef, () => localRef.current as HTMLDivElement, []);
+
+  React.useEffect(() => {
+    if (mode !== 'parent') {
+      return;
+    }
+    const shouldUpdateBounds = forceUpdateBounds === true || (contextForceUpdateBounds && forceUpdateBounds !== false);
+
+    if (isActive) {
+      const element = localRef.current;
+      if (!element) {
         return;
       }
-      let rafId: number;
-      let previousBounds: Bounds | null = null;
-      const shouldUpdateBounds =
-        forceUpdateBounds === true || (contextForceUpdateBounds && forceUpdateBounds !== false);
+      const updateBounds = (bounds: DOMRect) => setBounds(bounds, activeClassName ?? '');
+      if (shouldUpdateBounds) {
+        return observeElementBounds(element, updateBounds);
+      }
+      updateBounds(element.getBoundingClientRect());
+    } else if (!activeValue) {
+      clearBounds();
+    }
+    return;
+  }, [
+    mode,
+    isActive,
+    activeValue,
+    setBounds,
+    clearBounds,
+    activeClassName,
+    forceUpdateBounds,
+    contextForceUpdateBounds,
+  ]);
 
-      const updateBounds = () => {
-        if (!localRef.current) {
-          return;
-        }
+  if (!React.isValidElement(children)) {
+    return children;
+  }
 
-        const bounds = localRef.current.getBoundingClientRect();
+  const dataAttributes = buildItemDataAttributes(isActive, isDisabled, childValue);
 
-        if (shouldUpdateBounds) {
-          if (
-            previousBounds &&
-            previousBounds.top === bounds.top &&
-            previousBounds.left === bounds.left &&
-            previousBounds.width === bounds.width &&
-            previousBounds.height === bounds.height
-          ) {
-            rafId = requestAnimationFrame(updateBounds);
-            return;
-          }
-          previousBounds = bounds;
-          rafId = requestAnimationFrame(updateBounds);
-        }
+  const elementDataAttributes = resolveElementDataAttributes(element, dataAttributes, isActive);
 
-        setBounds(bounds);
+  const commonHandlers = hover
+    ? {
+        onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
+          setActiveValue(childValue);
+          element.props.onMouseEnter?.(e);
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
+          setActiveValue(null);
+          element.props.onMouseLeave?.(e);
+        },
+      }
+    : {
+        onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+          setActiveValue(childValue);
+          element.props.onClick?.(e);
+        },
       };
 
-      if (isActive) {
-        updateBounds();
-        setActiveClassName(activeClassName ?? '');
-      } else if (!activeValue) {
-        clearBounds();
-      }
-
-      if (shouldUpdateBounds) {
-        return () => cancelAnimationFrame(rafId);
-      }
-    }, [
-      mode,
-      isActive,
-      activeValue,
-      setBounds,
-      clearBounds,
-      activeClassName,
-      setActiveClassName,
-      forceUpdateBounds,
-      contextForceUpdateBounds,
-    ]);
-
-    if (!React.isValidElement(children)) {
-      return children;
-    }
-
-    const dataAttributes = buildItemDataAttributes(isActive, isDisabled, childValue);
-
-    const elementDataAttributes = resolveElementDataAttributes(element, dataAttributes, isActive);
-
-    const commonHandlers = hover
-      ? {
-          onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
-            setActiveValue(childValue);
-            element.props.onMouseEnter?.(e);
-          },
-          onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
-            setActiveValue(null);
-            element.props.onMouseLeave?.(e);
-          },
-        }
-      : {
-          onClick: (e: React.MouseEvent<HTMLDivElement>) => {
-            setActiveValue(childValue);
-            element.props.onClick?.(e);
-          },
-        };
-
-    if (asChild) {
-      if (mode === 'children') {
-        return React.cloneElement(
-          element,
-          {
-            key: childValue,
-            ref: localRef,
-            className: cn('relative', element.props.className),
-            ...getNonOverridingDataAttributes(element, {
-              ...elementDataAttributes,
-              'data-slot': 'motion-highlight-item-container',
-            }),
-            ...commonHandlers,
-            ...props,
-          },
-          <>
-            <AnimatePresence initial={false}>
-              {isActive && !isDisabled && (
-                <motion.div
-                  animate={{ opacity: 1 }}
-                  className={cn('absolute inset-0 z-0 bg-surface-subtle', contextClassName, activeClassName)}
-                  data-slot="motion-highlight"
-                  exit={{
-                    opacity: 0,
-                    transition: {
-                      ...itemTransition,
-                      delay: (itemTransition?.delay ?? 0) + (exitDelay ?? contextExitDelay ?? 0),
-                    },
-                  }}
-                  initial={{ opacity: 0 }}
-                  layoutId={`transition-background-${contextId}`}
-                  transition={itemTransition}
-                  {...dataAttributes}
-                />
-              )}
-            </AnimatePresence>
-
-            <div className={cn('relative z-[1]', className)} data-slot="motion-highlight-item" {...dataAttributes}>
-              {children}
-            </div>
-          </>
-        );
-      }
-
-      return React.cloneElement(element, {
-        ref: localRef,
-        ...getNonOverridingDataAttributes(element, {
-          ...elementDataAttributes,
-          'data-slot': 'motion-highlight-item',
-        }),
-        ...commonHandlers,
-      });
-    }
-
-    return enabled ? (
-      <div
-        className={cn(mode === 'children' && 'relative', className)}
-        data-slot="motion-highlight-item-container"
-        key={childValue}
-        ref={localRef}
-        {...dataAttributes}
-        {...props}
-        {...commonHandlers}
-        data-testid={testId}
-      >
-        {mode === 'children' && (
+  if (asChild) {
+    if (mode === 'children') {
+      return React.cloneElement(
+        element,
+        {
+          key: childValue,
+          ref: localRef,
+          className: cn('relative', element.props.className),
+          ...getNonOverridingDataAttributes(element, {
+            ...elementDataAttributes,
+            'data-slot': 'motion-highlight-item-container',
+          }),
+          ...commonHandlers,
+          ...props,
+        },
+        <>
           <AnimatePresence initial={false}>
             {isActive && !isDisabled && (
               <motion.div
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1 }}
                 className={cn('absolute inset-0 z-0 bg-surface-subtle', contextClassName, activeClassName)}
                 data-slot="motion-highlight"
                 exit={{
@@ -597,28 +543,77 @@ const MotionHighlightItem = React.forwardRef<HTMLDivElement, MotionHighlightItem
               />
             )}
           </AnimatePresence>
-        )}
 
-        {React.cloneElement(element, {
-          className: cn('relative z-[1]', element.props.className),
-          ...getNonOverridingDataAttributes(element, {
-            ...elementDataAttributes,
-            'data-slot': 'motion-highlight-item',
-          }),
-        })}
-      </div>
-    ) : (
-      children
-    );
+          <div className={cn('relative z-[1]', className)} data-slot="motion-highlight-item" {...dataAttributes}>
+            {children}
+          </div>
+        </>
+      );
+    }
+
+    return React.cloneElement(element, {
+      ref: localRef,
+      ...getNonOverridingDataAttributes(element, {
+        ...elementDataAttributes,
+        'data-slot': 'motion-highlight-item',
+      }),
+      ...commonHandlers,
+    });
   }
-);
+
+  return enabled ? (
+    <div
+      className={cn(mode === 'children' && 'relative', className)}
+      data-slot="motion-highlight-item-container"
+      key={childValue}
+      ref={localRef}
+      {...dataAttributes}
+      {...props}
+      {...commonHandlers}
+      data-testid={testId}
+    >
+      {mode === 'children' && (
+        <AnimatePresence initial={false}>
+          {isActive && !isDisabled && (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className={cn('absolute inset-0 z-0 bg-surface-subtle', contextClassName, activeClassName)}
+              data-slot="motion-highlight"
+              exit={{
+                opacity: 0,
+                transition: {
+                  ...itemTransition,
+                  delay: (itemTransition?.delay ?? 0) + (exitDelay ?? contextExitDelay ?? 0),
+                },
+              }}
+              initial={{ opacity: 0 }}
+              layoutId={`transition-background-${contextId}`}
+              transition={itemTransition}
+              {...dataAttributes}
+            />
+          )}
+        </AnimatePresence>
+      )}
+
+      {React.cloneElement(element, {
+        className: cn('relative z-[1]', element.props.className),
+        ...getNonOverridingDataAttributes(element, {
+          ...elementDataAttributes,
+          'data-slot': 'motion-highlight-item',
+        }),
+      })}
+    </div>
+  ) : (
+    children
+  );
+};
 
 MotionHighlightItem.displayName = 'MotionHighlightItem';
 
 export {
   MotionHighlight,
   MotionHighlightItem,
-  useMotionHighlight,
-  type MotionHighlightProps,
   type MotionHighlightItemProps,
+  type MotionHighlightProps,
+  useMotionHighlight,
 };

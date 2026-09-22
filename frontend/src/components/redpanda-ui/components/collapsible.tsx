@@ -30,9 +30,9 @@ function CollapsibleContent({ testId, ...props }: CollapsibleContentProps) {
 
 export {
   Collapsible,
-  CollapsibleTrigger,
   CollapsibleContent,
-  type CollapsibleProps,
-  type CollapsibleTriggerProps,
   type CollapsibleContentProps,
+  type CollapsibleProps,
+  CollapsibleTrigger,
+  type CollapsibleTriggerProps,
 };
