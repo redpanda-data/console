@@ -1136,6 +1136,74 @@ describe('PipelinePage', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
+    // The settings stay editable while the request is in flight, so what is on screen when it
+    // resolves can hold an edit the request never carried.
+    it('keeps a setting typed while the save was in flight unsaved', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      let releaseUpdate: (() => void) | undefined;
+      const updatePipelineMock = rs.fn().mockReturnValue(
+        new Promise((resolve) => {
+          releaseUpdate = () => resolve(create(ConsoleUpdatePipelineResponseSchema, {}));
+        })
+      );
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.DRAFT })),
+          updatePipelineMock,
+        }),
+      });
+
+      const title = await screen.findByRole('textbox', { name: 'Pipeline name' });
+      fireEvent.change(title, { target: { value: 'submitted-name' } });
+      await user.click(await screen.findByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      expect(updatePipelineMock.mock.calls[0][0].request.pipeline.displayName).toBe('submitted-name');
+
+      fireEvent.change(title, { target: { value: 'newer-unsaved-name' } });
+      releaseUpdate?.();
+
+      await waitFor(() => expect(toast.success).toHaveBeenCalled());
+      expect(title).toHaveValue('newer-unsaved-name');
+      await waitFor(() => expect(lastShouldBlockFn()()).toBe(true));
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
+      expect(buffer?.name).toBe('newer-unsaved-name');
+    });
+
+    // A save that navigates unmounts the editor, so the debounced write never runs and the edit has
+    // to be stored as part of the save itself.
+    it('keeps an in-flight settings edit recoverable when the save navigates away', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      let releaseUpdate: (() => void) | undefined;
+      const updatePipelineMock = rs.fn().mockReturnValue(
+        new Promise((resolve) => {
+          releaseUpdate = () => resolve(create(ConsoleUpdatePipelineResponseSchema, {}));
+        })
+      );
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: rs.fn().mockReturnValue(pipelineResponse({ state: Pipeline_State.STOPPED })),
+          updatePipelineMock,
+        }),
+      });
+
+      const title = await screen.findByRole('textbox', { name: 'Pipeline name' });
+      fireEvent.change(title, { target: { value: 'submitted-name' } });
+      await user.click(await screen.findByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      fireEvent.change(title, { target: { value: 'newer-unsaved-name' } });
+      releaseUpdate?.();
+
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
+      expect(buffer?.name).toBe('newer-unsaved-name');
+    });
+
     // The crux: an invalid config is the normal state of unfinished work, and it must still save.
     it.each([
       ['a half-written config', 'input:\n  kafka_'],
@@ -1360,6 +1428,24 @@ describe('PipelinePage', () => {
       expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(false);
     });
 
+    // Nothing to aim a stop at, so the deployment stands and the copy must say so.
+    it('does not claim a create it could never stop is parked', async () => {
+      const user = userEvent.setup();
+      mockIsFeatureFlagEnabled.mockImplementation(() => false);
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('', Pipeline_State.STARTING));
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/may be running/i)));
+      expect(stopPipelineMock).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
     // Create first, stop second, so the stop can fail on its own.
     it('does not claim success when the pipeline it created could not be stopped', async () => {
       const user = userEvent.setup();
@@ -1567,6 +1653,11 @@ describe('PipelinePage', () => {
   });
 
   describe('the Unsaved changes lane', () => {
+    beforeEach(() => {
+      localStorage.clear();
+      useRpcnEditorAutosaveStore.getState().refresh();
+    });
+
     const DEPLOYED_YAML = 'input:\n  stdin: {}\noutput:\n  stdout: {}';
 
     const openChanges = async (user: ReturnType<typeof userEvent.setup>) => {
