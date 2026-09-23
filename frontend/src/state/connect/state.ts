@@ -18,6 +18,7 @@ import {
   type ConnectorGroup,
   type ConnectorPossibleStatesLiteral,
   type ConnectorProperty,
+  type ConnectorPropertyWithValue,
   type ConnectorStep,
   DataType,
   PropertyImportance,
@@ -762,9 +763,9 @@ export class ConnectorPropertiesStore {
         }
 
         // Update: recommended values
-        const suggestedSrc = source.entry.value.recommended_values;
+        const suggestedSrc = source.entry.value.recommended_values ?? [];
         const suggestedTar = target.entry.value.recommended_values;
-        if (!suggestedSrc.isEqual(suggestedTar)) {
+        if (suggestedTar != null && !suggestedSrc.isEqual(suggestedTar)) {
           suggestedTar.updateWith(suggestedSrc);
         }
 
@@ -772,28 +773,31 @@ export class ConnectorPropertiesStore {
         target.entry.value.visible = source.entry.value.visible;
 
         // Update: errors
-        if (!target.errors.isEqual(source.errors)) {
-          if (source.errors.length > 0) {
-            target.lastErrors = [...source.errors]; // create copy
+        const targetErrors = target.errors ?? [];
+        const sourceErrors = source.errors ?? [];
+        if (!targetErrors.isEqual(sourceErrors)) {
+          if (sourceErrors.length > 0) {
+            target.lastErrors = [...sourceErrors]; // create copy
           }
 
           // Update
-          target.errors.updateWith(source.errors);
+          targetErrors.updateWith(sourceErrors);
+          target.errors = targetErrors;
 
-          target.showErrors = target.errors.length > 0;
+          target.showErrors = targetErrors.length > 0;
 
           // Show first error
           target.currentErrorIndex = 0;
-          if (target.errors.length > 1) {
+          if (targetErrors.length > 1) {
             // Skip over simple / unhelpful messages
-            const betterStartValue = target.errors.findIndex((x) => !x.includes('which has no default value'));
+            const betterStartValue = targetErrors.findIndex((x) => !x.includes('which has no default value'));
             if (betterStartValue > -1) {
               target.currentErrorIndex = betterStartValue;
             }
           }
 
           // Add or remove from parent group
-          const hasErrors = target.errors.length > 0;
+          const hasErrors = targetErrors.length > 0;
           if (hasErrors) {
             target.propertyGroup.propertiesWithErrors.pushDistinct(target);
           } else {
@@ -849,6 +853,7 @@ export class ConnectorPropertiesStore {
 
     // Create our own properties
     const allProps = properties
+      .filter((p): p is ConnectorPropertyWithValue => p.value != null) // skip properties the API returned with a null value section
       .map((p) => {
         const name = p.definition.name;
         const definitionType = p.definition.type;
@@ -865,7 +870,7 @@ export class ConnectorPropertiesStore {
           isHidden: hiddenProperties.includes(name),
           errors: p.value.errors ?? [],
           lastErrors: [],
-          showErrors: p.value.errors.length > 0,
+          showErrors: (p.value.errors ?? []).length > 0,
           currentErrorIndex: 0,
           lastErrorValue: undefined as unknown,
           propertyGroup: undefined as unknown as PropertyGroup,
@@ -938,7 +943,7 @@ export type PropertyGroup = {
 
 export type Property = {
   name: string;
-  entry: ConnectorProperty;
+  entry: ConnectorPropertyWithValue;
   value: null | string | number | boolean | string[];
   isHidden: boolean; // currently only used for "connector.class"
   errors: string[]; // current errors
