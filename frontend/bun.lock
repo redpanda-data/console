@@ -32,7 +32,7 @@
         "lucide-react": "^0.484.0",
         "mobx": "^6.10",
         "mobx-react": "^7.6",
-        "moment": "^2.29.4",
+        "moment": "^2.31.0",
         "monaco-editor": "^0.52.0",
         "monaco-editor-webpack-plugin": "^7.1.0",
         "monaco-yaml": "^5.2.2",
@@ -102,6 +102,7 @@
     "@babel/runtime": "^7.28.6",
     "@remix-run/node": "^2.17.4",
     "@remix-run/router": "^1.23.2",
+    "devalue": "^5.9.2",
     "diff": "^5.2.0",
     "elliptic": "^6.6.0",
     "lodash": "^4.18.1",
@@ -1290,7 +1291,7 @@
 
     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
 
-    "devalue": ["devalue@5.9.1", "", {}, "sha512-+17vil3EVQRzvtDJSFuTWEb8XJRvXqAiV3qZyQWD398QeXUa6CxsUyMdD1fxzEhUrd4FojitFz7lhIHBTlV4fw=="],
+    "devalue": ["devalue@5.9.4", "", {}, "sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg=="],
 
     "devlop": ["devlop@1.1.0", "", { "dependencies": { "dequal": "^2.0.0" } }, "sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA=="],
 
@@ -1926,7 +1927,7 @@
 
     "mobx-react-lite": ["mobx-react-lite@3.4.3", "", { "peerDependencies": { "mobx": "^6.1.0", "react": "^16.8.0 || ^17 || ^18" } }, "sha512-NkJREyFTSUXR772Qaai51BnE1voWx56LOL80xG7qkZr6vo8vEaLF3sz1JNUVh+rxmUzxYaqOhfuxTfqUh0FXUg=="],
 
-    "moment": ["moment@2.29.4", "", {}, "sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w=="],
+    "moment": ["moment@2.31.0", "", {}, "sha512-0acOTfMiWOheYS4eoWb80yYMb/JLvVv9SHbs2PehaDzfUG0Bw855SKyk0IKTnPGa5+U2bmi3W68l1+sGLX/pvw=="],
 
     "monaco-editor": ["monaco-editor@0.52.0", "", {}, "sha512-OeWhNpABLCeTqubfqLMXGsqf6OmPU6pHM85kF3dhy6kq5hnhuVS1p3VrEW/XhWHc71P2tHyS5JFySD8mgs1crw=="],
 
