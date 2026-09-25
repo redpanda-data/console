@@ -102,7 +102,7 @@ export function primaryRunIntent(context: SaveContext): SaveRunIntent {
   if (isUndeployed(context) && context.draftsEnabled) {
     return 'draft';
   }
-  // Without draft support a new pipeline is deployed stopped.
+  // CreatePipeline always deploys, so without draft support a new pipeline is stopped right after.
   if (context.mode === 'create') {
     return 'stopped';
   }
@@ -148,7 +148,7 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
     return isCreate ? 'Pipeline created and starting' : 'Pipeline starting with the new configuration';
   }
   if (run === 'stopped') {
-    return isCreate ? 'Pipeline created — it is not running yet' : 'Pipeline updated and stopping';
+    return isCreate ? 'Pipeline created — it is not running' : 'Pipeline updated and stopping';
   }
   if (isCreate) {
     return 'Pipeline created';
@@ -170,7 +170,7 @@ export function unsavedChangesCopy(context: SaveContext): { body: string; escape
   }
   if (context.mode === 'create') {
     return {
-      body: 'Saving them creates the pipeline without starting it. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
+      body: 'Saving them creates the pipeline and then stops it, so it may run briefly. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
     };
   }

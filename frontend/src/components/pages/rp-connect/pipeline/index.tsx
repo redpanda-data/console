@@ -338,12 +338,34 @@ function usePipelineSave({
   }, [isPipelineDiagramsEnabled]);
 
   const markSaved = useCallback(
-    (yamlContent: string, savedPipelineId: string | undefined, savedUpdateTime: number | null) => {
+    (
+      yamlContent: string,
+      submittedSettings: PipelineFormValues,
+      savedPipelineId: string | undefined,
+      savedUpdateTime: number | null
+    ) => {
       editorStore.getState().markSavedBaseline(yamlContent, savedUpdateTime);
-      form.reset(form.getValues());
+      // The settings stay editable while the request is in flight, so the baseline is what it carried.
+      const onScreen = form.getValues();
+      form.reset(submittedSettings);
+      form.reset(onScreen, { keepDefaultValues: true });
       rpcnEditorAutosave.clear(autosaveTargetKey(mode === 'create' ? undefined : pipelineId));
       if (savedPipelineId && savedPipelineId !== pipelineId) {
         rpcnEditorAutosave.clear(autosaveTargetKey(savedPipelineId));
+      }
+      // A save that navigates unmounts the editor before the debounced write can run, so edits made
+      // while the request was in flight are stored here, against the target the editor continues on.
+      const currentYaml = editorStore.getState().yamlContent;
+      if (currentYaml !== yamlContent || JSON.stringify(onScreen) !== JSON.stringify(submittedSettings)) {
+        rpcnEditorAutosave.save({
+          targetKey: autosaveTargetKey(savedPipelineId ?? pipelineId),
+          name: onScreen.name,
+          description: onScreen.description ?? '',
+          computeUnits: onScreen.computeUnits,
+          tags: onScreen.tags,
+          configYaml: currentYaml,
+          basedOnUpdateTime: savedUpdateTime,
+        });
       }
     },
     [editorStore, form, mode, pipelineId]
@@ -390,7 +412,8 @@ function usePipelineSave({
         return false;
       }
 
-      const { name, description, computeUnits, tags: formTags } = form.getValues();
+      const submittedSettings = form.getValues();
+      const { name, description, computeUnits, tags: formTags } = submittedSettings;
       const userTags = buildUserTags(formTags);
 
       try {
@@ -406,24 +429,28 @@ function usePipelineSave({
 
           // CreatePipeline always starts, so "stopped" is a follow-up stop; a dropped `draft` lands
           // in the same place, and leaving that to the user is the weak link on something
-          // irreversible. Tracked as success rather than absence of failure: a response with no id
-          // skips the stop entirely, and the copy below must not then claim it was parked.
+          // irreversible. `stopFailed` covers a stop that was needed and did not happen, including
+          // a response with no id to aim one at, so the copy below cannot claim it was parked.
           let stopFailed = false;
           let stopped = false;
-          if ((run === 'stopped' || draftWasIgnored) && newPipelineId) {
-            try {
-              await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
-              stopped = true;
-            } catch {
-              stopFailed = true;
-              if (!draftWasIgnored) {
-                toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
+          if (run === 'stopped' || draftWasIgnored) {
+            if (newPipelineId) {
+              try {
+                await stopMutation(create(StopPipelineRequestSchema, { request: { id: newPipelineId } }));
+                stopped = true;
+              } catch {
+                stopFailed = true;
               }
+            } else {
+              stopFailed = true;
+            }
+            if (stopFailed && !draftWasIgnored) {
+              toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
             }
           }
 
           clearWizardStore();
-          markSaved(yamlContent, newPipelineId, timestampToMillis(createdPipeline?.updateTime));
+          markSaved(yamlContent, submittedSettings, newPipelineId, timestampToMillis(createdPipeline?.updateTime));
           if (draftWasIgnored) {
             // Both messages name the deployment; only one of them still needs a human.
             toast.error(stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
@@ -500,7 +527,7 @@ function usePipelineSave({
           }
         }
 
-        markSaved(yamlContent, pipelineId, timestampToMillis(updatedPipeline?.updateTime));
+        markSaved(yamlContent, submittedSettings, pipelineId, timestampToMillis(updatedPipeline?.updateTime));
         warnIfResized(form, updatedPipeline?.resources?.cpuShares);
         if (runFailed) {
           return true;
