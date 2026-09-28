@@ -157,7 +157,7 @@ describe('runIntentLabel', () => {
     expect(runIntentLabel('keep', stopped)).toBe('Save');
   });
 
-  it('does not promise a stop that creating never performs', () => {
+  it('names the stop only where something is already running', () => {
     expect(runIntentLabel('stopped', creatingWithoutDrafts)).toBe('Save');
     expect(runIntentLabel('stopped', running)).toBe('Save and stop');
   });
@@ -184,6 +184,11 @@ describe('saveSuccessMessage', () => {
   it('spells out that a created-and-stopped pipeline is not running', () => {
     expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/i);
     expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/i);
+  });
+
+  // It was deployed and then stopped, so "yet" would claim it had never run.
+  it('does not claim a created-and-stopped pipeline has never run', () => {
+    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/i);
   });
 
   it('mentions the restart only when the pipeline was actually running', () => {
@@ -216,6 +221,14 @@ describe('unsavedChangesCopy', () => {
       expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/i);
     }
     expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/i);
+  });
+
+  // CreatePipeline always deploys, so a create without drafts is a deploy followed by a stop. Only a
+  // real draft can promise the configuration never runs.
+  it('does not promise that creating without drafts never starts the pipeline', () => {
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/i);
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/i);
+    expect(unsavedChangesCopy(creating).body).toMatch(/does not run/i);
   });
 
   // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
