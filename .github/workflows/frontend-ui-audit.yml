@@ -72,11 +72,6 @@ jobs:
           # Pinned: bun generates yarn.lock (bunfig print = "yarn") and the output
           # changes between bun versions, which trips the lint job's dirty-tree check.
           bun-version-file: frontend/.bun-version
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          # Matches package.json engines; native deps (isolated-vm) ship no Node 20 prebuilds.
-          node-version-file: frontend/.nvmrc
       - name: Build registry manifest
         # audit-changes reads packages/registry/registry.json, a gitignored
         # build artifact — generate it before running the audit.

@@ -2354,10 +2354,10 @@
   resolved "https://registry.npmjs.org/@shikijs/core/-/core-3.23.0.tgz"
   integrity sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==
   dependencies:
-    "@types/hast" "^3.0.4"
     "@shikijs/types" "3.23.0"
-    hast-util-to-html "^9.0.5"
     "@shikijs/vscode-textmate" "^10.0.2"
+    "@types/hast" "^3.0.4"
+    hast-util-to-html "^9.0.5"
 
 "@shikijs/engine-javascript@3.23.0", "@shikijs/engine-javascript@^3.23.0":
   version "3.23.0"
@@ -2365,8 +2365,8 @@
   integrity sha512-aHt9eiGFobmWR5uqJUViySI1bHMqrAgamWE1TYSUoftkAeCCAiGawPMwM+VCadylQtF4V3VNOZ5LmfItH5f3yA==
   dependencies:
     "@shikijs/types" "3.23.0"
-    oniguruma-to-es "^4.3.4"
     "@shikijs/vscode-textmate" "^10.0.2"
+    oniguruma-to-es "^4.3.4"
 
 "@shikijs/engine-oniguruma@3.23.0":
   version "3.23.0"
@@ -2395,8 +2395,8 @@
   resolved "https://registry.npmjs.org/@shikijs/types/-/types-3.23.0.tgz"
   integrity sha512-3JZ5HXOZfYjsYSk0yPwBrkupyYSLpAE26Qc0HLghhZNGTZg/SKxXIIgoxOpmmeQP0RRSDJTk1/vPfw9tbw+jSQ==
   dependencies:
-    "@types/hast" "^3.0.4"
     "@shikijs/vscode-textmate" "^10.0.2"
+    "@types/hast" "^3.0.4"
 
 "@shikijs/vscode-textmate@^10.0.2":
   version "10.0.2"
@@ -5639,9 +5639,9 @@ framer-motion@^12.43.0:
   resolved "https://registry.npmjs.org/framer-motion/-/framer-motion-12.43.0.tgz"
   integrity sha512-1eaL3RvR/kAlbG7UYcpMptEyzPoENO0c6w7ZnB3/hh2vSAz/6uGAFn6fdoqTBguNstf3MsFhJHsD/0DHiclG+g==
   dependencies:
-    tslib "^2.4.0"
     motion-dom "^12.43.0"
     motion-utils "^12.39.0"
+    tslib "^2.4.0"
 
 fs-constants@^1.0.0:
   version "1.0.0"
@@ -7426,8 +7426,8 @@ motion@^12.43.0:
   resolved "https://registry.npmjs.org/motion/-/motion-12.43.0.tgz"
   integrity sha512-BQgQbSa9Hn3/mtbib0MK53y6JSANa+YKUKlaYnWzAVDH424RYQ5LVpV3pNiWH00BA2z4ojsSdMzqT7g2FQwjuQ==
   dependencies:
-    tslib "^2.4.0"
     framer-motion "^12.43.0"
+    tslib "^2.4.0"
 
 motion-dom@^12.43.0:
   version "12.43.0"
@@ -8122,10 +8122,10 @@ react-day-picker@^9.14.0:
   resolved "https://registry.npmjs.org/react-day-picker/-/react-day-picker-9.14.0.tgz"
   integrity sha512-tBaoDWjPwe0M5pGrum4H0SR6Lyk+BO9oHnp9JbKpGKW2mlraNPgP9BMfsg5pWpwrssARmeqk7YBl2oXutZTaHA==
   dependencies:
-    date-fns "^4.1.0"
     "@date-fns/tz" "^1.4.1"
-    date-fns-jalali "4.1.0-0"
     "@tabby_ai/hijri-converter" "1.0.5"
+    date-fns "^4.1.0"
+    date-fns-jalali "4.1.0-0"
 
 react-doctor@^0.9.14:
   version "0.9.14"
@@ -8164,9 +8164,9 @@ react-dropzone@^15.0.0:
   resolved "https://registry.npmjs.org/react-dropzone/-/react-dropzone-15.0.0.tgz"
   integrity sha512-lGjYV/EoqEjEWPnmiSvH4v5IoIAwQM2W4Z1C0Q/Pw2xD0eVzKPS359BQTUMum+1fa0kH2nrKjuavmTPOGhpLPg==
   dependencies:
-    prop-types "^15.8.1"
     attr-accept "^2.2.4"
     file-selector "^2.1.0"
+    prop-types "^15.8.1"
 
 react-hook-form@^7.55.0, react-hook-form@^7.89.0:
   version "7.89.0"
@@ -8791,14 +8791,14 @@ shiki@^3.23.0:
   resolved "https://registry.npmjs.org/shiki/-/shiki-3.23.0.tgz"
   integrity sha512-55Dj73uq9ZXL5zyeRPzHQsK7Nbyt6Y10k5s7OjuFZGMhpp4r/rsLBH0o/0fstIzX1Lep9VxefWljK/SKCzygIA==
   dependencies:
-    "@types/hast" "^3.0.4"
     "@shikijs/core" "3.23.0"
-    "@shikijs/langs" "3.23.0"
-    "@shikijs/types" "3.23.0"
-    "@shikijs/themes" "3.23.0"
-    "@shikijs/vscode-textmate" "^10.0.2"
-    "@shikijs/engine-oniguruma" "3.23.0"
     "@shikijs/engine-javascript" "3.23.0"
+    "@shikijs/engine-oniguruma" "3.23.0"
+    "@shikijs/langs" "3.23.0"
+    "@shikijs/themes" "3.23.0"
+    "@shikijs/types" "3.23.0"
+    "@shikijs/vscode-textmate" "^10.0.2"
+    "@types/hast" "^3.0.4"
 
 side-channel@^1.1.0:
   version "1.1.0"
