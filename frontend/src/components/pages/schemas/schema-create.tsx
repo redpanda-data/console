@@ -121,13 +121,21 @@ function computeRecordName(state: SchemaEditorStateData): string {
       // no op - schema may be incomplete during editing
     }
     const ar = JSON_NAME_REGEX.exec(state.schemaText);
-    if (!ar) return '';
-    if (ar.length < 2) return '';
+    if (!ar) {
+      return '';
+    }
+    if (ar.length < 2) {
+      return '';
+    }
     return ar[1];
   }
   const ar = PROTOBUF_MESSAGE_NAME_REGEX.exec(state.schemaText);
-  if (!ar) return '';
-  if (ar.length < 2) return '';
+  if (!ar) {
+    return '';
+  }
+  if (ar.length < 2) {
+    return '';
+  }
   return ar[1];
 }
 
@@ -253,7 +261,9 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
 
   useEffect(() => {
-    if (!subject || stateData !== null) return;
+    if (!subject || stateData !== null) {
+      return;
+    }
 
     const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
     if (!schema) {
@@ -308,7 +318,9 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
     );
   }, [subject, stateData, srContextsEnabled]);
 
-  if (!subject || stateData === null) return DefaultSkeleton;
+  if (!subject || stateData === null) {
+    return DefaultSkeleton;
+  }
 
   const state = deriveSchemaEditorState(stateData);
   const setNonNullStateData = setStateData as SetSchemaState;
@@ -472,7 +484,9 @@ const SchemaPageButtons = (p: {
           }
         }}
         onOpenChange={(open) => {
-          if (!open) setValidationDialogResult(null);
+          if (!open) {
+            setValidationDialogResult(null);
+          }
         }}
         open={validationDialogResult !== null}
         result={validationDialogResult}
@@ -537,7 +551,9 @@ const SchemaEditor = (p: {
   const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
 
   const availableContexts = useMemo(() => {
-    if (!(srContextsEnabled && apiContexts && subjects)) return [];
+    if (!(srContextsEnabled && apiContexts && subjects)) {
+      return [];
+    }
     return deriveContexts(apiContexts, subjects).filter((c) => c.id !== ALL_CONTEXT_ID);
   }, [srContextsEnabled, apiContexts, subjects]);
 
@@ -853,7 +869,9 @@ const ReferencesEditor = (p: {
 
   const subjectsByContext = useMemo(() => {
     const allSubjects = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
-    if (!p.srContextsEnabled) return new Map([['__all__', allSubjects.map((x) => ({ value: x.name }))]]);
+    if (!p.srContextsEnabled) {
+      return new Map([['__all__', allSubjects.map((x) => ({ value: x.name }))]]);
+    }
 
     const map = new Map<string, { value: string }[]>();
     for (const s of allSubjects) {
@@ -867,7 +885,9 @@ const ReferencesEditor = (p: {
   }, [p.srContextsEnabled, api.schemaSubjects]);
 
   const getSubjectsForContext = (contextId: string) => {
-    if (!p.srContextsEnabled) return subjectsByContext.get('__all__') ?? [];
+    if (!p.srContextsEnabled) {
+      return subjectsByContext.get('__all__') ?? [];
+    }
     return subjectsByContext.get(contextId) ?? [];
   };
 
@@ -945,7 +965,9 @@ const ReferencesEditor = (p: {
                 p.onStateChange((prev) => {
                   const r = prev.references[index];
                   // Need to make sure that, after refreshing, the subject is still the same
-                  if (r?.subject !== e) return prev;
+                  if (r?.subject !== e) {
+                    return prev;
+                  }
                   return {
                     ...prev,
                     references: prev.references.map((r, i) =>

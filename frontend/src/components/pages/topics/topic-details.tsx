@@ -451,7 +451,9 @@ function isTopicTabEnabled(
 ): boolean {
   if (disableHooks) {
     for (const h of disableHooks) {
-      if (h(topic)) return false;
+      if (h(topic)) {
+        return false;
+      }
     }
   }
   return (

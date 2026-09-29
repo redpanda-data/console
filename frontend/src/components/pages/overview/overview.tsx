@@ -359,8 +359,9 @@ function ClusterDetails() {
         />
         <Details
           content={
-            overview.schemaRegistry !== null
-              ? [
+            overview.schemaRegistry === null
+              ? [['Not configured']]
+              : [
                   [
                     formatStatus(overview.schemaRegistry.status),
                     overview.schemaRegistry?.status?.status === StatusType.HEALTHY
@@ -368,7 +369,6 @@ function ClusterDetails() {
                       : undefined,
                   ],
                 ]
-              : [['Not configured']]
           }
           title="Schema Registry"
         />

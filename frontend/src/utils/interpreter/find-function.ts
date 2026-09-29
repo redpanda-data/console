@@ -22,27 +22,22 @@ declare let value: unknown; // set/injected by backend
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
 // declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
 function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
-  const self =
-    this !== null
-      ? this // called on object
-      : value; // called in root
+  // `this` is null when called in root, otherwise the object it was called on
+  const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, true);
 
   if (results.length > 0) {
     return results[0];
   }
-  return;
 }
 
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
 // declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
 // declare function findAll(pattern: object, ignoreCase?:boolean): object[];
 function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
-  const self =
-    this !== null
-      ? this // called on object
-      : value; // called in root
+  // `this` is null when called in root, otherwise the object it was called on
+  const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, false);
 

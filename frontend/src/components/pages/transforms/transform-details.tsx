@@ -267,7 +267,9 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
     if (loadedMessages && loadedMessages.length === 1) {
       setLogState((prev) => {
         const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-        if (idx === -1) return prev;
+        if (idx === -1) {
+          return prev;
+        }
         const updated = [...prev.messages];
         updated[idx] = loadedMessages[0];
         return { ...prev, messages: updated };

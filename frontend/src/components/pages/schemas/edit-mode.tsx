@@ -198,8 +198,12 @@ function EditSchemaMode({
   );
 
   const getInitialMode = (): SchemaRegistryModeWithDefault => {
-    if (contextName) return contextMode ?? SchemaRegistryModes.DEFAULT;
-    if (subjectName) return schemaDetails?.mode ?? SchemaRegistryModes.READWRITE;
+    if (contextName) {
+      return contextMode ?? SchemaRegistryModes.DEFAULT;
+    }
+    if (subjectName) {
+      return schemaDetails?.mode ?? SchemaRegistryModes.READWRITE;
+    }
     return (schemaMode as SchemaRegistryModeWithDefault) ?? SchemaRegistryModes.READWRITE;
   };
   const [selectedMode, setSelectedMode] = useState<SchemaRegistryModeWithDefault>(getInitialMode);

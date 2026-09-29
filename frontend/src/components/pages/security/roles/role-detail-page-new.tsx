@@ -74,7 +74,9 @@ export const RoleDetailPageNew = () => {
     .map((u) => ({ value: u.name, label: u.name }));
 
   const addMember = async (userName: string) => {
-    if (!userName) return;
+    if (!userName) {
+      return;
+    }
     try {
       await updateMembership(
         create(UpdateRoleMembershipRequestSchema, {

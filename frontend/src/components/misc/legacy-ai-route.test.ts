@@ -24,14 +24,10 @@ describe('getLegacyAiDestination', () => {
     expect(getLegacyAiDestination('/agents', clusterId)).toBe('https://ai.redpanda.com/agents');
   });
 
-  test.each([
-    '/agentship',
-    '/knowledgebases-old',
-    '/mcp-servers2',
-    '/transcripts.archive',
-    '/topics',
-    '/toString',
-  ])('does not match a similar or unrelated path: %s', (pathname) => {
-    expect(getLegacyAiDestination(pathname)).toBeUndefined();
-  });
+  test.each(['/agentship', '/knowledgebases-old', '/mcp-servers2', '/transcripts.archive', '/topics', '/toString'])(
+    'does not match a similar or unrelated path: %s',
+    (pathname) => {
+      expect(getLegacyAiDestination(pathname)).toBeUndefined();
+    }
+  );
 });
