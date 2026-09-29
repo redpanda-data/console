@@ -31,6 +31,8 @@ function findVitestUsages(files: URL[]): string[] {
     .map((file) => fileURLToPath(file));
 }
 
+const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
+
 describe('test runner policy', () => {
   test('runs unit, integration, and federation tests with Rstest', () => {
     const frontendWorkflow = readFileSync(
@@ -43,9 +45,10 @@ describe('test runner policy', () => {
     expect(packageJson.scripts?.['test:federation']).toContain('rstest');
     expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
     expect(packageJson.scripts?.['test:coverage']).toContain('rstest');
-    expect(packageJson.devDependencies?.['@module-federation/rstest']).toBe('2.9.0');
-    expect(packageJson.devDependencies?.['@rstest/core']).toBe('0.11.11');
-    expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe('0.11.11');
+    // Exact pins: the Rstest packages move in lockstep and pre-1.0 minors break.
+    expect(packageJson.devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
+    expect(packageJson.devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
+    expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe(packageJson.devDependencies?.['@rstest/core']);
     expect(frontendWorkflow).toContain('bun run test:federation');
     expect(import.meta.env.RSTEST).toBe('true');
   });

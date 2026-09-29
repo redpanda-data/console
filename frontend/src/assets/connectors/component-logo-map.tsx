@@ -8,10 +8,9 @@ import SiJaeger from '@icons-pack/react-simple-icons/icons/SiJaeger.mjs';
 import SiMqtt from '@icons-pack/react-simple-icons/icons/SiMqtt.mjs';
 import SiNeo4j from '@icons-pack/react-simple-icons/icons/SiNeo4j.mjs';
 import SiOllama from '@icons-pack/react-simple-icons/icons/SiOllama.mjs';
-import SiOpenai from '@icons-pack/react-simple-icons/icons/SiOpenai.mjs';
-import SiSalesforce from '@icons-pack/react-simple-icons/icons/SiSalesforce.mjs';
 import SiSplunk from '@icons-pack/react-simple-icons/icons/SiSplunk.mjs';
 import SiTrino from '@icons-pack/react-simple-icons/icons/SiTrino.mjs';
+import { OpenAIIcon, SalesforceIcon } from 'components/icons';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import {
   Activity,
@@ -256,12 +255,12 @@ export const componentLogoMap = {
   ollama_embeddings: SiOllama,
   ollama_moderation: SiOllama,
   open_telemetry_collector: OpenTelemetryLogo,
-  openai_chat_completion: SiOpenai,
-  openai_embeddings: SiOpenai,
-  openai_image_generation: SiOpenai,
-  openai_speech: SiOpenai,
-  openai_transcription: SiOpenai,
-  openai_translation: SiOpenai,
+  openai_chat_completion: OpenAIIcon,
+  openai_embeddings: OpenAIIcon,
+  openai_image_generation: OpenAIIcon,
+  openai_speech: OpenAIIcon,
+  openai_transcription: OpenAIIcon,
+  openai_translation: OpenAIIcon,
   opensearch: OpenSearchLogo,
   oracledb_cdc: OracleLogo,
   otlp_grpc: OpenTelemetryLogo,
@@ -303,10 +302,10 @@ export const componentLogoMap = {
   resource: Package,
   retry: RefreshCw,
   ristretto: SiDgraph,
-  salesforce: SiSalesforce,
-  salesforce_cdc: SiSalesforce,
-  salesforce_graphql: SiSalesforce,
-  salesforce_sink: SiSalesforce,
+  salesforce: SalesforceIcon,
+  salesforce_cdc: SalesforceIcon,
+  salesforce_graphql: SalesforceIcon,
+  salesforce_sink: SalesforceIcon,
   schema_registry: FileJson,
   schema_registry_decode: FileJson,
   schema_registry_encode: FileJson,
