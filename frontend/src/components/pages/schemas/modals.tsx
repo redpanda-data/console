@@ -66,7 +66,9 @@ export function PermanentDeleteDialog(p: {
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open) setConfirmText('');
+        if (!open) {
+          setConfirmText('');
+        }
         p.onOpenChange(open);
       }}
       open={p.open}
@@ -152,7 +154,9 @@ export function ValidationErrorsDialog(p: {
   } | null;
   onClose?: () => void;
 }) {
-  if (!(p.result && p.open)) return null;
+  if (!(p.result && p.open)) {
+    return null;
+  }
 
   const { isValid, errorDetails, isCompatible, compatibilityError } = p.result;
 
@@ -200,7 +204,9 @@ export function ValidationErrorsDialog(p: {
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open) p.onClose?.();
+        if (!open) {
+          p.onClose?.();
+        }
         p.onOpenChange(open);
       }}
       open={p.open}

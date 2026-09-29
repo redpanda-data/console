@@ -185,7 +185,9 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
   };
 
   const confirmGrantAllPermissions = async () => {
-    if (!principal) return;
+    if (!principal) {
+      return;
+    }
     const results = await Promise.allSettled(
       grantAllResources.map((r) =>
         createACL(

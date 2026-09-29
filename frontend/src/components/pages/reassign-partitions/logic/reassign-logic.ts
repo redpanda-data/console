@@ -545,12 +545,12 @@ class ExBroker implements Broker {
           // This broker hosts a replica of this partition
           // find size of the logdir for the partition on this broker
           const logDirEntry = p.partitionLogDirs.first((x) => !x.error && x.brokerId === this.brokerId);
-          if (logDirEntry !== undefined) {
-            this.actualSize += logDirEntry.size;
-          } else {
+          if (logDirEntry === undefined) {
             // todo:
             // - fallback to another entry? (using maximum size we find)
             // - throw error?
+          } else {
+            this.actualSize += logDirEntry.size;
           }
         }
       }

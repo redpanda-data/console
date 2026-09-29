@@ -304,7 +304,6 @@ function invalidOutlineNotice(showingStale: boolean, error?: string): string | u
   if (error) {
     return 'The current YAML is invalid — fix it in the editor to see the outline.';
   }
-  return;
 }
 
 type PipelineStructureTreeProps = {

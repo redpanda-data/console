@@ -16,46 +16,53 @@ export {};
 declare global {
   // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Array<T> {
-    remove(obj: T): boolean;
-    removeAll(selector: (x: T) => boolean): number;
-
-    first<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
-    last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
-
-    count<T>(this: T[], selector: (x: T) => boolean): number;
-    sum<T>(this: T[], selector: (x: T) => number): number;
-    min<T>(this: T[], selector: (x: T) => number): number;
-    max<T>(this: T[], selector: (x: T) => number): number;
-    minBy<T>(this: T[], selector: (x: T) => number): T | undefined;
-    maxBy<T>(this: T[], selector: (x: T) => number): T | undefined;
+    all<T>(this: T[], selector: (x: T) => boolean): boolean;
 
     any<T>(this: T[], selector: (x: T) => boolean): boolean;
-    all<T>(this: T[], selector: (x: T) => boolean): boolean;
+
+    count<T>(this: T[], selector: (x: T) => boolean): number;
+
+    /** returns a new array containing only distinct elements */
+    distinct<T>(this: T[], keySelector?: (x: T) => unknown): T[];
+
+    /**
+     * returns a copy containing all elements except for those that are also in 'other'
+     */
+    except<T>(this: T[], other: T[]): T[];
+    filterFalsy<T>(this: (T | null | undefined)[]): T[];
+
+    filterNull<T>(this: (T | null | undefined)[]): T[];
+
+    first<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
+
+    genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
 
     /** group elements into a Map<> using the given key selector */
     groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
     /** groups elements (into an array of groups) using the given key selector */
     groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K; items: T[] }[];
 
-    /** returns a new array containing only distinct elements */
-    distinct<T>(this: T[], keySelector?: (x: T) => unknown): T[];
-    pushDistinct<T>(this: T[], ...elements: T[]): void;
-
     /**
      * returns an array containing all elements that are present in both this and the other array
      */
     intersection<T>(this: T[], other: T[]): T[];
 
-    /**
-     * returns a copy containing all elements except for those that are also in 'other'
-     */
-    except<T>(this: T[], other: T[]): T[];
-
-    genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
+    isEqual(this: string[], other: string[]): boolean;
     /**
      * Like normal .join() but skips over empty, null, and undefined
      */
     joinStr(this: (string | null | undefined)[], separator: string): string;
+    last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
+    max<T>(this: T[], selector: (x: T) => number): number;
+    maxBy<T>(this: T[], selector: (x: T) => number): T | undefined;
+    min<T>(this: T[], selector: (x: T) => number): number;
+    minBy<T>(this: T[], selector: (x: T) => number): T | undefined;
+
+    orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
+    pushDistinct<T>(this: T[], ...elements: T[]): void;
+    remove(obj: T): boolean;
+    removeAll(selector: (x: T) => boolean): number;
+    sum<T>(this: T[], selector: (x: T) => number): number;
 
     toMap<TItem, TKey, TValue>(
       this: TItem[],
@@ -63,18 +70,11 @@ declare global {
       computeValue: (item: TItem) => TValue
     ): Map<TKey, TValue>;
 
-    filterNull<T>(this: (T | null | undefined)[]): T[];
-    filterFalsy<T>(this: (T | null | undefined)[]): T[];
-
     /**
      * Replace the content with the given data.
      * This function computes the difference and adds/removes elements in-place.
      */
     updateWith<T>(this: T[], newData: T[]): { removed: number; added: number };
-
-    isEqual(this: string[], other: string[]): boolean;
-
-    orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
   }
 }
 
@@ -109,8 +109,6 @@ Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolea
       return e;
     }
   }
-
-  return;
 };
 
 Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
@@ -119,7 +117,6 @@ Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean)
       return this[i];
     }
   }
-  return;
 };
 
 Array.prototype.count = function count<T>(this: T[], selector: (x: T) => boolean) {

@@ -168,7 +168,9 @@ export function CommaSeparatedStringList(props: {
           className="h-full min-w-[120px] px-4"
           disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
           onClick={() => {
-            if (!newEntry) return;
+            if (!newEntry) {
+              return;
+            }
             setData((prev) => [...prev, { id: newEntry }]);
             setNewEntry(null);
           }}

@@ -738,7 +738,9 @@ const LogsTab = (p: {
       setLogState((prev) => {
         const updated = [...prev.messages];
         const idx = updated.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-        if (idx > -1) updated[idx] = result[0];
+        if (idx > -1) {
+          updated[idx] = result[0];
+        }
         return { ...prev, messages: updated };
       });
     } else {

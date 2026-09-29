@@ -91,7 +91,9 @@ const errorModals: ErrorModalProps[] = [];
 const subscribers = new Set<() => void>();
 
 function notifySubscribers() {
-  for (const sub of subscribers) sub();
+  for (const sub of subscribers) {
+    sub();
+  }
 }
 
 let nextErrorKey = 0;
@@ -152,7 +154,9 @@ const onClose = (key: number) => {
 
 const afterClose = (key: number) => {
   const idx = errorModals.findIndex((x) => x.key === key);
-  if (idx > -1) errorModals.splice(idx, 1);
+  if (idx > -1) {
+    errorModals.splice(idx, 1);
+  }
   notifySubscribers();
 };
 
