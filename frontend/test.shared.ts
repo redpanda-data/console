@@ -10,7 +10,9 @@ const fromHere = (relativePath: string) => fileURLToPath(new URL(relativePath, i
 /** Shared resolution aliases for the unit and integration test projects. */
 export const sharedAliases: Alias = {
   '@bufbuild/buf$': '@bufbuild/protobuf/dist/esm/index.js',
-  'monaco-editor$': 'monaco-editor/esm/vs/editor/editor.api.js',
+  'monaco-editor$': 'monaco-editor/editor/editor.api.js',
+  // Mirrors rsbuild.config.ts: monaco-worker-manager's pre-0.56 deep import.
+  'monaco-editor/esm/vs/editor/editor.worker.js$': 'monaco-editor/editor/editor.worker.js',
 };
 
 export const sharedCoverage = {

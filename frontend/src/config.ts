@@ -470,14 +470,14 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     getWorker(_workerId, label) {
       switch (label) {
         case 'json':
-          return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
+          return new Worker(new URL('monaco-editor/languages/features/json/json.worker', import.meta.url));
         case 'yaml':
           return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
         case 'typescript':
         case 'javascript':
-          return new Worker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
+          return new Worker(new URL('monaco-editor/languages/features/typescript/ts.worker', import.meta.url));
         default:
-          return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
+          return new Worker(new URL('monaco-editor/editor/editor.worker', import.meta.url));
       }
     },
   };

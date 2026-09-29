@@ -11,7 +11,7 @@
 
 import { Base64, fromUint8Array } from 'js-base64';
 import prettyBytesOriginal from 'pretty-bytes';
-import prettyMillisecondsOriginal from 'pretty-ms';
+import prettyMillisecondsOriginal, { type Options as PrettyMillisecondsOptions } from 'pretty-ms';
 
 import type { TopicMessage } from '../state/rest-interfaces';
 
@@ -535,10 +535,7 @@ export const prettyBytes = (n: number | string | null | undefined, options?: Pre
   return prettyBytesOriginal(n, { binary: true });
 };
 
-export const prettyMilliseconds = (
-  n: number | string,
-  options?: prettyMillisecondsOriginal.Options & PrettyValueOptions
-) => {
+export const prettyMilliseconds = (n: number | string, options?: PrettyMillisecondsOptions & PrettyValueOptions) => {
   if (typeof n === 'undefined' || n === null) {
     return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
   }

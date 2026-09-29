@@ -2,10 +2,11 @@
 
 'use strict';
 
-const remote = require('../../dist/federation-test/remoteEntry.cjs');
+// `commonjs-module` exports the container itself (@module-federation >= 2.9).
+const container = require('../../dist/federation-test/remoteEntry.cjs');
 
-if (!remote.rp_console) {
+if (typeof container.get !== 'function' || typeof container.init !== 'function') {
   throw new Error('Federation build did not export the rp_console container');
 }
 
-module.exports = remote.rp_console;
+module.exports = container;

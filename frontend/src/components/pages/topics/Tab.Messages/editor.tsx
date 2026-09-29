@@ -10,7 +10,7 @@
  */
 
 import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
-import type { editor, languages, Uri } from 'monaco-editor';
+import type { editor, typescript, Uri } from 'monaco-editor';
 import { type FC, useRef, useState } from 'react';
 
 import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/kowl-editor';
@@ -25,7 +25,7 @@ const options: editor.IStandaloneEditorConstructionOptions = {
 };
 
 async function tryTranspile(
-  tsWorkerClient: languages.typescript.TypeScriptWorker,
+  tsWorkerClient: typescript.TypeScriptWorker,
   formattedEditorUri: string,
   fallback: string
 ): Promise<string> {
@@ -43,7 +43,7 @@ async function tryTranspile(
 const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
   const [editorUri, setEditorUri] = useState<Uri>();
-  const [tsWorkerClient, setTsWorkerClient] = useState<languages.typescript.TypeScriptWorker>();
+  const [tsWorkerClient, setTsWorkerClient] = useState<typescript.TypeScriptWorker>();
 
   const editorRef = useRef<undefined | IStandaloneCodeEditor>(undefined);
 
@@ -52,7 +52,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     if (!isEditorReady) {
       const uri = editorRef.current?.getModel()?.uri;
       setEditorUri(uri);
-      const worker = await monacoInstance?.languages.typescript.getTypeScriptWorker();
+      const worker = await monacoInstance?.typescript.getTypeScriptWorker();
       const client = await worker();
       setTsWorkerClient(client);
     }
@@ -77,18 +77,18 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
         `;
     const libUri = 'ts:filename/definitions.ts';
     if (!monaco.editor.getModel(monaco.Uri.parse(libUri))) {
-      monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource, libUri);
+      monaco.typescript.javascriptDefaults.addExtraLib(libSource, libUri);
       monaco.editor.createModel(libSource, 'typescript', monaco.Uri.parse(libUri));
     }
     if (!isEditorReady) {
-      monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-        target: monaco.languages.typescript.ScriptTarget.ES3,
-        module: monaco.languages.typescript.ModuleKind.ES2015,
+      monaco.typescript.typescriptDefaults.setCompilerOptions({
+        target: monaco.typescript.ScriptTarget.ES3,
+        module: monaco.typescript.ModuleKind.ES2015,
         removeComments: true,
         allowNonTsExtensions: true,
         lib: ['es2018'],
       });
-      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
         diagnosticCodesToIgnore: [1108],
       });
     }
