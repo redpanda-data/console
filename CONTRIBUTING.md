@@ -110,7 +110,12 @@ tests are added to cover the new functionality. Tests can be run from command li
 
 **Frontend:**
 - Open a terminal tab and go to the /frontend directory
-- Run `bun test` to run all tests
+- Run `bun run test` to run all tests (unit, integration, and federation)
+- Run `bun run type:check && bun run lint && bun run test` before pushing
+
+Always invoke frontend tooling through `bun run <script>`. `bun test` runs Bun's own test
+runner rather than the project's Rstest configuration, and `bunx`/`npx` bypass the pinned
+versions.
 
 **Backend:**
 - Some integration tests require a running Docker instance
@@ -118,6 +123,25 @@ tests are added to cover the new functionality. Tests can be run from command li
 - Run `task backend:test-integration` to run the unit and integration tests
 - Run `task backend:cover` to run the unit and integration tests with code coverage report
 - Run `task backend:verify` to run the linter and all tests
+
+### AI agent and Copilot instructions
+
+Coding agents read instruction files from the repository. Rules for an area live in the
+`AGENTS.md` file closest to it, and the nearest file to a changed path wins:
+
+| File | Covers |
+|---|---|
+| [AGENTS.md](AGENTS.md) | repo layout, Task commands, generated paths, proto workflow, the enterprise boundary |
+| [backend/AGENTS.md](backend/AGENTS.md) | Go conventions, `apierrors`, slog rules, architecture, testing, linting |
+| [frontend/AGENTS.md](frontend/AGENTS.md) | React/Bun conventions, UI Registry, Connect Query, test split |
+| [.github/copilot-instructions.md](.github/copilot-instructions.md) | commit and PR conventions, review priorities, what CI already enforces |
+
+The `CLAUDE.md` files at the repository root and in `backend/` and `frontend/` are one-line
+pointers at the matching `AGENTS.md`; GitHub Copilot only honors a root-level `CLAUDE.md`, so
+the content has to live in `AGENTS.md` to be read in both tools.
+
+If you change a convention, update the `AGENTS.md` that owns it in the same pull request as
+the code change.
 
 ### Commit history
 
