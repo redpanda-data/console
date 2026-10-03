@@ -549,8 +549,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   }, [loadMorePhase]);
   const currentSearchRunRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const prevStartOffsetRef = useRef<number>(startOffset);
-  const prevMaxResultsRef = useRef<number>(maxResults);
   const prevPageIndexRef = useRef<number>(pageIndex);
 
   const currentMessageSearchRef = useRef<ReturnType<typeof createMessageSearch> | null>(null);
@@ -639,23 +637,28 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
     }
   }, [continuousPaginationEnabled, maxResults, pageSize, setPageSize]);
 
-  // Reset to page 1 when start offset changes (e.g., switching from Newest to Beginning)
-  useEffect(() => {
-    // Only reset if startOffset actually changed (not on initial mount or re-renders)
-    if (prevStartOffsetRef.current !== startOffset) {
-      setPageIndex(0);
-      prevStartOffsetRef.current = startOffset;
-    }
-  }, [startOffset, setPageIndex]);
+  // Page resets live in the setters, not in effects watching the URL: navigating away briefly
+  // renders this view with the next route's (empty) search, and an effect reacting to that
+  // queues a nuqs update that navigates back to this topic (UX-1514).
+  const changeStartOffset = useCallback(
+    (value: number) => {
+      if (value !== startOffset) {
+        setPageIndex(0);
+      }
+      setStartOffset(value);
+    },
+    [startOffset, setStartOffset, setPageIndex]
+  );
 
-  // Reset to page 1 when max results changes (e.g., switching from Unlimited to fixed size)
-  useEffect(() => {
-    // Only reset if maxResults actually changed (not on initial mount or re-renders)
-    if (prevMaxResultsRef.current !== maxResults) {
-      setPageIndex(0);
-      prevMaxResultsRef.current = maxResults;
-    }
-  }, [maxResults, setPageIndex]);
+  const changeMaxResults = useCallback(
+    (value: number) => {
+      if (value !== maxResults) {
+        setPageIndex(0);
+      }
+      setMaxResults(value);
+    },
+    [maxResults, setMaxResults, setPageIndex]
+  );
 
   // Convert executeMessageSearch to useCallback
   const executeMessageSearch = useCallback(
@@ -1374,10 +1377,10 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                   const e = Number(val) as PartitionOffsetOriginType;
                   if (e === PartitionOffsetOrigin.Custom) {
                     if (startOffset < 0) {
-                      setStartOffset(0);
+                      changeStartOffset(0);
                     }
                   } else {
-                    setStartOffset(e);
+                    changeStartOffset(e);
                   }
 
                   // Auto-disable continuous pagination for unsupported offsets
@@ -1426,7 +1429,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                           onChange={(e) => {
                             setCustomStartOffsetValue(e.target.value);
                             if (!Number.isNaN(Number(e.target.value))) {
-                              setStartOffset(Number(e.target.value));
+                              changeStartOffset(Number(e.target.value));
                             }
                           }}
                           style={{ width: '7.5em' }}
@@ -1451,7 +1454,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           <Label text="Max Results">
             <Select
               data-testid="max-results-select"
-              onValueChange={(val) => setMaxResults(Number(val))}
+              onValueChange={(val) => changeMaxResults(Number(val))}
               value={String(maxResults)}
             >
               <SelectTrigger>
