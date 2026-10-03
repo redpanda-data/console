@@ -28,6 +28,7 @@ import (
 	redpandafactory "github.com/redpanda-data/console/backend/pkg/factory/redpanda"
 	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
 	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/glue"
 	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
@@ -114,7 +115,20 @@ func NewService(
 		}
 	}
 
-	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, bsrClient, cfg.Serde.Cbor)
+	// Declared as the interface and not as *glue.Client so that a disabled
+	// registry yields a nil interface. Storing a nil *glue.Client in an
+	// interface produces a non-nil interface holding a nil pointer, which
+	// would defeat the nil check in serde.NewService.
+	var glueClient serde.GlueSchemaRegistryClient
+	if cfg.Serde.GlueSchemaRegistry.Enabled {
+		glueSvc, err := glue.NewClient(context.Background(), cfg.Serde.GlueSchemaRegistry, loggerpkg.Named(logger, "glue_client"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create AWS Glue Schema Registry client: %w", err)
+		}
+		glueClient = glueSvc
+	}
+
+	serdeSvc, err := serde.NewService(protoSvc, msgPackSvc, cachedSchemaClient, bsrClient, glueClient, cfg.Serde.Cbor)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating serde service: %w", err)
 	}
