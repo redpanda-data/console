@@ -1,13 +1,8 @@
 import type { DescMessage, DescMethodUnary, MessageInitShape, MessageShape } from '@bufbuild/protobuf';
-import type { ConnectError, Transport } from '@connectrpc/connect';
-import { useInfiniteQuery } from '@connectrpc/connect-query';
-import type { ConnectInfiniteQueryOptions, ConnectQueryKey } from '@connectrpc/connect-query-core';
-import type {
-  InfiniteData,
-  SkipToken,
-  UseInfiniteQueryOptions as TanStackUseInfiniteQueryOptions,
-  UseInfiniteQueryResult,
-} from '@tanstack/react-query';
+import type { ConnectError } from '@connectrpc/connect';
+import { type UseInfiniteQueryOptions, useInfiniteQuery } from '@connectrpc/connect-query';
+import type { MessageInitWithPageParam, MessagePageParamKey } from '@connectrpc/connect-query-core';
+import type { InfiniteData, SkipToken, UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 /**
@@ -16,21 +11,8 @@ import { useEffect } from 'react';
 export type UseInfiniteQueryWithAllPagesOptions<
   I extends DescMessage,
   O extends DescMessage,
-  ParamKey extends keyof MessageInitShape<I>,
-> = Omit<
-  TanStackUseInfiniteQueryOptions<
-    MessageShape<O>,
-    ConnectError,
-    InfiniteData<MessageShape<O>>,
-    ConnectQueryKey<O>,
-    MessageInitShape<I>[ParamKey]
-  >,
-  'getNextPageParam' | 'initialPageParam' | 'queryFn' | 'queryKey'
-> &
-  ConnectInfiniteQueryOptions<I, O, ParamKey> & {
-    /** The transport to be used for the fetching. */
-    transport?: Transport;
-  };
+  ParamKey extends MessagePageParamKey<MessageInitShape<I>>,
+> = UseInfiniteQueryOptions<I, O, ParamKey>;
 
 /**
  * Enhanced version of useInfiniteQuery that automatically fetches all pages
@@ -41,10 +23,10 @@ export type UseInfiniteQueryWithAllPagesOptions<
 export function useInfiniteQueryWithAllPages<
   I extends DescMessage,
   O extends DescMessage,
-  ParamKey extends keyof MessageInitShape<I>,
+  const ParamKey extends MessagePageParamKey<MessageInitShape<I>>,
 >(
   schema: DescMethodUnary<I, O>,
-  input: SkipToken | (MessageInitShape<I> & Required<Pick<MessageInitShape<I>, ParamKey>>),
+  input: SkipToken | MessageInitWithPageParam<MessageInitShape<I>, ParamKey>,
   options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>
 ): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
   // Use the standard ConnectRPC useInfiniteQuery hook

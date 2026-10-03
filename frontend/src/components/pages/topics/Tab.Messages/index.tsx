@@ -543,7 +543,9 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   const showLoadingIndicator = loadMorePhase === 'loading-visible';
 
   useEffect(() => {
-    if (loadMorePhase !== 'loading') return;
+    if (loadMorePhase !== 'loading') {
+      return;
+    }
     const timer = setTimeout(() => setSearchState((prev) => ({ ...prev, loadMorePhase: 'loading-visible' })), 1000);
     return () => clearTimeout(timer);
   }, [loadMorePhase]);
@@ -1743,7 +1745,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
-                        style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                        style={{ width: header.getSize() === 150 ? undefined : header.getSize() }}
                       >
                         {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                         {header.column.getIsSorted() === 'asc' && ' ↑'}
@@ -1782,7 +1784,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                         {row.getVisibleCells().map((cell) => (
                           <TableCell
                             key={cell.id}
-                            style={{ width: cell.column.getSize() !== 150 ? cell.column.getSize() : undefined }}
+                            style={{ width: cell.column.getSize() === 150 ? undefined : cell.column.getSize() }}
                           >
                             {<table.FlexRender cell={cell} />}
                           </TableCell>

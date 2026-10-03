@@ -65,7 +65,9 @@ export function TimestampDisplay({
 }) {
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (format !== 'relative') return;
+    if (format !== 'relative') {
+      return;
+    }
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [format]);

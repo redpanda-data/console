@@ -70,7 +70,9 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open && isUpdateUserPending) setIsOpen(false);
+        if (!open && isUpdateUserPending) {
+          setIsOpen(false);
+        }
       }}
       open={isOpen}
     >
@@ -183,7 +185,9 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   }, [originalRoles, isLoading, selectedRoles]);
 
   const onSaveRoles = async () => {
-    if (!featureRolesApi) return;
+    if (!featureRolesApi) {
+      return;
+    }
 
     const formattedSelectedRoles = selectedRoles ?? [];
     const addedRoles = formattedSelectedRoles.except(originalRoles);
@@ -223,7 +227,9 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open && isUpdateMembershipPending) setIsOpen(false);
+        if (!open && isUpdateMembershipPending) {
+          setIsOpen(false);
+        }
       }}
       open={isOpen}
     >

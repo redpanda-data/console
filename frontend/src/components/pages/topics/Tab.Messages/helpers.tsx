@@ -43,7 +43,6 @@ export function getDeleteErrorText(
   if (!isSupported(Feature.DeleteRecords)) {
     return "The cluster doesn't support deleting records.";
   }
-  return;
 }
 
 /**

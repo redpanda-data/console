@@ -73,7 +73,6 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   if (item.isErrorPath) {
     return 'on error';
   }
-  return;
 };
 
 const childItemCondColor = (item: InspectorChildItem): string => {
@@ -170,7 +169,6 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
   if (spec.name === 'resource' && spec.kind === 'scalar' && componentResourceKind) {
     return componentResourceKind;
   }
-  return;
 }
 
 // Dropdown for a `resource:` link — never free text, so the reference can't be mistyped; a stale

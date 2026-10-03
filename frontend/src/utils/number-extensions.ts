@@ -14,14 +14,13 @@ export {};
 declare global {
   // biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
   interface Number {
+    clamp(this: number, min: number | undefined, max: number | undefined): number;
     /**
      * linear interpolation to another number
      * @param to number to interpolate to
      * @param t factor between 0 and 1
      */
     lerp(this: number, to: number, t: number): number;
-
-    clamp(this: number, min: number | undefined, max: number | undefined): number;
   }
 }
 

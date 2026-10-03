@@ -1025,9 +1025,6 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
-
-    // otherwise 'x' might be 'Date', which means timestamps are resolved yet
-    return;
   };
 
   const topicOffsets = offsets

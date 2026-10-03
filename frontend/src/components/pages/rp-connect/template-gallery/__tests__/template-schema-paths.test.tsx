@@ -36,19 +36,16 @@ describe('PIPELINE_TEMPLATES schemaField paths resolve against the schema snapsh
       })
   );
 
-  test.each(slotsWithSchemaField)('$templateId · $slotId → $component.$schemaField', ({
-    templateId,
-    slotId,
-    schemaField,
-    component,
-    type,
-  }) => {
-    const comp = findComponentByName(componentList, component, type);
-    expect(comp, `template "${templateId}": ${type} "${component}" not in schema snapshot`).toBeDefined();
-    const field = resolveFieldByPath(comp?.config, schemaField);
-    expect(
-      field,
-      `template "${templateId}", slot "${slotId}": schemaField "${schemaField}" doesn't resolve on ${type} "${component}"`
-    ).toBeDefined();
-  });
+  test.each(slotsWithSchemaField)(
+    '$templateId · $slotId → $component.$schemaField',
+    ({ templateId, slotId, schemaField, component, type }) => {
+      const comp = findComponentByName(componentList, component, type);
+      expect(comp, `template "${templateId}": ${type} "${component}" not in schema snapshot`).toBeDefined();
+      const field = resolveFieldByPath(comp?.config, schemaField);
+      expect(
+        field,
+        `template "${templateId}", slot "${slotId}": schemaField "${schemaField}" doesn't resolve on ${type} "${component}"`
+      ).toBeDefined();
+    }
+  );
 });

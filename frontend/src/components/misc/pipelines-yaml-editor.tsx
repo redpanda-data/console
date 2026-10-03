@@ -23,8 +23,9 @@ annotateAnyOfTitles(benthosSchema);
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
 
-export type { IStandaloneCodeEditor, IStandaloneDiffEditor };
 export type { EditorProps, Monaco } from '@monaco-editor/react';
+
+export type { IStandaloneCodeEditor, IStandaloneDiffEditor };
 
 export type PipelinesYamlEditorProps = EditorProps & {
   'data-testid'?: string;

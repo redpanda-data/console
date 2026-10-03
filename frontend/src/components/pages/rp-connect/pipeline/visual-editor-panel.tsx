@@ -616,11 +616,11 @@ export function VisualEditorPanel({
   const confirmDeleteNode = useCallback(() => {
     if (pendingDelete) {
       const next = removeComponentAt(yamlContent, pendingDelete);
-      if (next !== null) {
-        onYamlChange(next);
-      } else {
+      if (next === null) {
         // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. a shared anchor) — say so.
         toast.error('Couldn’t remove this node — edit it in the YAML view instead.');
+      } else {
+        onYamlChange(next);
       }
     }
     // Deleting discards any pending edit for the node (don't commit it).

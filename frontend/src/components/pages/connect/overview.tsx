@@ -416,8 +416,8 @@ const TabConnectors = () => {
 };
 
 interface TaskType extends ClusterConnectorTaskInfo {
-  connector: ConnectorType;
   cluster: ClusterConnectors;
+  connector: ConnectorType;
   connectorName: string;
 }
 

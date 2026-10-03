@@ -219,9 +219,9 @@ export const AclsStep = () => {
                                   <Select
                                     onValueChange={(v) => resourceTypeField.onChange(Number(v))}
                                     value={
-                                      resourceTypeField.value !== undefined
-                                        ? String(resourceTypeField.value)
-                                        : undefined
+                                      resourceTypeField.value === undefined
+                                        ? undefined
+                                        : String(resourceTypeField.value)
                                     }
                                   >
                                     <FormControl>
@@ -261,9 +261,9 @@ export const AclsStep = () => {
                                   <Select
                                     onValueChange={(v) => resourcePatternField.onChange(Number(v))}
                                     value={
-                                      resourcePatternField.value !== undefined
-                                        ? String(resourcePatternField.value)
-                                        : undefined
+                                      resourcePatternField.value === undefined
+                                        ? undefined
+                                        : String(resourcePatternField.value)
                                     }
                                   >
                                     <FormControl>
@@ -331,7 +331,7 @@ export const AclsStep = () => {
                                   <Select
                                     onValueChange={(v) => operationField.onChange(Number(v))}
                                     value={
-                                      operationField.value !== undefined ? String(operationField.value) : undefined
+                                      operationField.value === undefined ? undefined : String(operationField.value)
                                     }
                                   >
                                     <FormControl>
@@ -377,9 +377,9 @@ export const AclsStep = () => {
                                   <Select
                                     onValueChange={(v) => permissionTypeField.onChange(Number(v))}
                                     value={
-                                      permissionTypeField.value !== undefined
-                                        ? String(permissionTypeField.value)
-                                        : undefined
+                                      permissionTypeField.value === undefined
+                                        ? undefined
+                                        : String(permissionTypeField.value)
                                     }
                                   >
                                     <FormControl>

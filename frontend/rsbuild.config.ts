@@ -48,6 +48,13 @@ export default defineConfig({
       globals: { process: true },
     }),
   ],
+  resolve: {
+    alias: {
+      // monaco-worker-manager (via monaco-yaml) still imports the pre-0.56 deep path, which
+      // monaco-editor's `exports` map now rewrites to `esm/vs/esm/vs/...`.
+      'monaco-editor/esm/vs/editor/editor.worker.js$': 'monaco-editor/editor/editor.worker.js',
+    },
+  },
   dev: {
     hmr: true,
     lazyCompilation: false,

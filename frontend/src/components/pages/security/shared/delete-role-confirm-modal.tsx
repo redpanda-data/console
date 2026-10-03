@@ -40,9 +40,13 @@ export const DeleteRoleConfirmModal: FC<{
   const open = isControlled ? openProp : internalOpen;
 
   const handleOpenChange = (o: boolean) => {
-    if (!isControlled) setInternalOpen(o);
+    if (!isControlled) {
+      setInternalOpen(o);
+    }
     onOpenChangeProp?.(o);
-    if (!o) setConfirmText('');
+    if (!o) {
+      setConfirmText('');
+    }
   };
 
   const handleConfirm = async () => {

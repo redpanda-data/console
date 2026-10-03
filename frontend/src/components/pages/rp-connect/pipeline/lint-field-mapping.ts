@@ -57,7 +57,6 @@ function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): s
     }
     path.pop();
   }
-  return;
 }
 
 // The deepest field whose YAML range contains the line.
