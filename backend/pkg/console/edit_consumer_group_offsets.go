@@ -87,6 +87,24 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		}
 	}
 
+	// OffsetCommit protocol v10 identifies topics by topic ID instead of name
+	// Brokers that negotiate v9 or lower use the topic name again (there the ID will be ignored)
+	metadata, err := adminCl.Metadata(ctx, topicNames...)
+	if err != nil {
+		return nil, &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to fetch topic metadata: %v", err.Error()),
+			InternalLogs: nil,
+		}
+	}
+	topicIDs := make(map[string][16]byte, len(metadata.Topics))
+	topicNamesByID := make(map[[16]byte]string, len(metadata.Topics))
+	for _, topicDetail := range metadata.Topics {
+		topicIDs[topicDetail.Topic] = topicDetail.ID
+		topicNamesByID[topicDetail.ID] = topicDetail.Topic
+	}
+
 	startOffsets, err := adminCl.ListStartOffsets(ctx, topicNames...)
 	if err != nil {
 		return nil, &rest.Error{
@@ -144,6 +162,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		}
 		substitutedTopics[i] = kmsg.OffsetCommitRequestTopic{
 			Topic:      topic.Topic,
+			TopicID:    topicIDs[topic.Topic],
 			Partitions: substitutedPartitions,
 		}
 	}
@@ -162,6 +181,10 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 
 	editedTopics := make([]EditConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics))
 	for i, topic := range commitResponse.Topics {
+		// v10+ responses carry the topic ID instead of the name.
+		if topic.Topic == "" {
+			topic.Topic = topicNamesByID[topic.TopicID]
+		}
 		partitions := make([]EditConsumerGroupOffsetsResponseTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
 			err := kerr.ErrorForCode(partition.ErrorCode)
