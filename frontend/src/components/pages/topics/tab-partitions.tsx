@@ -34,24 +34,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 type TopicPartitionsProps = { topic: Topic };
 
+const EMPTY_PARTITIONS: Partition[] = [];
+
 export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
   const clusterHealth = useApiStoreHook((s) => s.clusterHealth);
 
-  // Kept above the early returns so the hook order stays stable; clamping no-ops until partitions load.
+  // All hooks stay above the early returns so the hook order is stable while partitions load.
   const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
     keyPrefix: 'partition',
     settings: uiSettings.topicPartitionsList,
     rowCount: Array.isArray(partitions) ? partitions.length : 0,
     enabled: Array.isArray(partitions),
   });
-
-  if (partitions === undefined) {
-    return DefaultSkeleton;
-  }
-  if (partitions === null) {
-    return <div />;
-  }
 
   const leaderlessPartitions = (clusterHealth?.leaderlessPartitions ?? []).find(
     ({ topicName }) => topicName === topic.topicName
@@ -108,7 +103,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   ];
 
   const table = useDataTable({
-    data: partitions,
+    data: Array.isArray(partitions) ? partitions : EMPTY_PARTITIONS,
     columns,
     enableHiding: false,
     enableRowSelection: false,
@@ -117,6 +112,13 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
     onPaginationChange,
     autoResetPageIndex: false,
   });
+
+  if (partitions === undefined) {
+    return DefaultSkeleton;
+  }
+  if (partitions === null) {
+    return <div />;
+  }
 
   return (
     <>
