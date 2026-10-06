@@ -2,13 +2,1648 @@
 version: v1.25.1
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
 ignore:
-  SNYK-JS-POSTCSS-18313038:
-    - '*':
+  SNYK-JS-ADMZIP-17954277:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
         reason: >-
-          Not reachable from attacker input in Console UI: vulnerable PostCSS is
-          build tooling used by Rsbuild and Vite. The build consumes
-          repository-controlled CSS and source maps; no server endpoint
-          processes user-submitted CSS or returns generated source maps.
-        expires: 2026-10-27T00:00:00.000Z
-        created: 2026-07-29T12:58:49.133Z
+          Module Federation DTS archive tooling only. ZIP header-sized Buffer
+          allocation is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:44.803Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. ZIP header-sized Buffer
+          allocation is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:46.922Z
+  SNYK-JS-ADMZIP-19276676:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only.
+          extractAllTo/extractEntryTo through a destination symlink is behind
+          remote type archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:49.247Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only.
+          extractAllTo/extractEntryTo through a destination symlink is behind
+          remote type archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:51.206Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only.
+          extractAllTo/extractEntryTo through a destination symlink is behind
+          remote type archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:53.337Z
+  SNYK-JS-ADMZIP-19846655:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. inflater expansion of
+          misleading ZIP sizes is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:55.704Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. inflater expansion of
+          misleading ZIP sizes is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:11:57.872Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. inflater expansion of
+          misleading ZIP sizes is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:00.746Z
+  SNYK-JS-ADMZIP-19963965:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. async inflater output
+          without maxOutputLength is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:02.874Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. async inflater output
+          without maxOutputLength is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:05.246Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. async inflater output
+          without maxOutputLength is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:08.151Z
+  SNYK-JS-ADMZIP-20335412:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. getEntry/extractAllTo
+          duplicate-entry validation mismatch is behind remote type archive
+          consumption; rsbuild.config.ts and rsbuild.config.federation-test.ts
+          set dts:false, and the Rstest plugin defaults dts to false. No
+          application ZIP extraction caller. Recheck before enabling DTS or
+          processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:10.834Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. getEntry/extractAllTo
+          duplicate-entry validation mismatch is behind remote type archive
+          consumption; rsbuild.config.ts and rsbuild.config.federation-test.ts
+          set dts:false, and the Rstest plugin defaults dts to false. No
+          application ZIP extraction caller. Recheck before enabling DTS or
+          processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:12.910Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. getEntry/extractAllTo
+          duplicate-entry validation mismatch is behind remote type archive
+          consumption; rsbuild.config.ts and rsbuild.config.federation-test.ts
+          set dts:false, and the Rstest plugin defaults dts to false. No
+          application ZIP extraction caller. Recheck before enabling DTS or
+          processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:14.863Z
+  SNYK-JS-ADMZIP-20335417:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. inflateAsync malformed
+          DEFLATE errors is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:16.863Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. inflateAsync malformed
+          DEFLATE errors is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:18.756Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. inflateAsync malformed
+          DEFLATE errors is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:20.988Z
+  SNYK-JS-ADMZIP-20335419:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. fileAttr permission
+          preservation during privileged extraction is behind remote type
+          archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:23.182Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. fileAttr permission
+          preservation during privileged extraction is behind remote type
+          archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:25.456Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. fileAttr permission
+          preservation during privileged extraction is behind remote type
+          archive consumption; rsbuild.config.ts and
+          rsbuild.config.federation-test.ts set dts:false, and the Rstest plugin
+          defaults dts to false. No application ZIP extraction caller. Recheck
+          before enabling DTS or processing external archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:27.492Z
+  SNYK-JS-ADMZIP-20335421:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. async ZIP expansion beyond
+          declared size is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:29.558Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > adm-zip@0.5.10':
+        reason: >-
+          Module Federation DTS archive tooling only. async ZIP expansion beyond
+          declared size is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:31.673Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > adm-zip@0.6.0':
+        reason: >-
+          Module Federation DTS archive tooling only. async ZIP expansion beyond
+          declared size is behind remote type archive consumption;
+          rsbuild.config.ts and rsbuild.config.federation-test.ts set dts:false,
+          and the Rstest plugin defaults dts to false. No application ZIP
+          extraction caller. Recheck before enabling DTS or processing external
+          archives.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:33.783Z
+  SNYK-JS-BRACEEXPANSION-18512280:
+    - testcontainers@12.0.4 > archiver@7.0.1 > archiver-utils@5.0.2 > glob@10.5.0 > minimatch@9.0.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand/combine intermediate array growth receives repository glob
+          patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:36.303Z
+    - testcontainers@12.0.4 > archiver@7.0.1 > readdir-glob@1.1.3 > minimatch@5.1.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand/combine intermediate array growth receives repository glob
+          patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:39.093Z
+    - ultracite@6.4.2 > glob@13.0.0 > minimatch@10.2.5 > brace-expansion@5.0.8:
+        reason: >-
+          expand/combine intermediate array growth receives repository glob
+          patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:41.805Z
+  SNYK-JS-BRACEEXPANSION-20244948:
+    - testcontainers@12.0.4 > archiver@7.0.1 > archiver-utils@5.0.2 > glob@10.5.0 > minimatch@9.0.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand_ nested-brace recursion receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:44.048Z
+    - testcontainers@12.0.4 > archiver@7.0.1 > readdir-glob@1.1.3 > minimatch@5.1.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand_ nested-brace recursion receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:46.372Z
+    - ultracite@6.4.2 > glob@13.0.0 > minimatch@10.2.5 > brace-expansion@5.0.8:
+        reason: >-
+          expand_ nested-brace recursion receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:48.647Z
+  SNYK-JS-BRACEEXPANSION-20244950:
+    - testcontainers@12.0.4 > archiver@7.0.1 > archiver-utils@5.0.2 > glob@10.5.0 > minimatch@9.0.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand_ repeated brace rewrites receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:50.717Z
+    - testcontainers@12.0.4 > archiver@7.0.1 > readdir-glob@1.1.3 > minimatch@5.1.9 > brace-expansion@2.1.2:
+        reason: >-
+          expand_ repeated brace rewrites receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:53.131Z
+    - ultracite@6.4.2 > glob@13.0.0 > minimatch@10.2.5 > brace-expansion@5.0.8:
+        reason: >-
+          expand_ repeated brace rewrites receives repository glob patterns via
+          Ultracite or Testcontainers archiver, not customer-supplied patterns.
+          No application expansion caller or exposed glob API. Developer/CI
+          tooling is in scope but arbitrary repository code already requires a
+          trusted build boundary. Recheck external pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:55.139Z
+  SNYK-JS-BRACEEXPANSION-20244952:
+    - testcontainers@12.0.4 > archiver@7.0.1 > archiver-utils@5.0.2 > glob@10.5.0 > minimatch@9.0.9 > brace-expansion@2.1.2:
+        reason: >-
+          parseCommaParts recursion and push.apply argument growth receives
+          repository glob patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:57.286Z
+    - testcontainers@12.0.4 > archiver@7.0.1 > readdir-glob@1.1.3 > minimatch@5.1.9 > brace-expansion@2.1.2:
+        reason: >-
+          parseCommaParts recursion and push.apply argument growth receives
+          repository glob patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:12:59.270Z
+    - ultracite@6.4.2 > glob@13.0.0 > minimatch@10.2.5 > brace-expansion@5.0.8:
+        reason: >-
+          parseCommaParts recursion and push.apply argument growth receives
+          repository glob patterns via Ultracite or Testcontainers archiver, not
+          customer-supplied patterns. No application expansion caller or exposed
+          glob API. Developer/CI tooling is in scope but arbitrary repository
+          code already requires a trusted build boundary. Recheck external
+          pattern input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:01.428Z
+  SNYK-JS-BRACES-19963945:
+    - '@rsbuild/plugin-sass@2.0.1 > sass-embedded@1.100.0 > sass-embedded-all-unknown@1.100.0 > sass@1.100.0 > @parcel/watcher@2.5.1 > micromatch@4.0.8 > braces@3.0.3':
+        reason: >-
+          Recursive brace AST walkers are used by Sass/Parcel watcher and React
+          Doctor/Knip file globs, with repository-controlled patterns. No
+          application braces import or customer-pattern expansion boundary
+          found. Recheck runtime glob adoption or external tool input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:03.818Z
+    - react-doctor@0.0.29 > knip@5.88.1 > fast-glob@3.3.3 > micromatch@4.0.8 > braces@3.0.3:
+        reason: >-
+          Recursive brace AST walkers are used by Sass/Parcel watcher and React
+          Doctor/Knip file globs, with repository-controlled patterns. No
+          application braces import or customer-pattern expansion boundary
+          found. Recheck runtime glob adoption or external tool input.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:05.697Z
+  SNYK-JS-BROWSERSLIST-18854715:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/core@8.1.0 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
+        reason: >-
+          normalizeStats poisoned stats keys is in build-target tooling via
+          Babel, Router, SVGR or Rsdoctor. Inputs are repository browser
+          targets; no uploaded stats or long-running customer query service
+          found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:07.477Z
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsbuild/plugin-check-syntax@1.6.1 > browserslist-to-es-version@1.2.0 > browserslist@4.28.0':
+        reason: >-
+          normalizeStats poisoned stats keys is in build-target tooling via
+          Babel, Router, SVGR or Rsdoctor. Inputs are repository browser
+          targets; no uploaded stats or long-running customer query service
+          found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:09.388Z
+    - '@tanstack/router-plugin@1.168.35 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
+        reason: >-
+          normalizeStats poisoned stats keys is in build-target tooling via
+          Babel, Router, SVGR or Rsdoctor. Inputs are repository browser
+          targets; no uploaded stats or long-running customer query service
+          found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:11.310Z
+    - react-doctor@0.0.29 > eslint-plugin-react-hooks@7.0.1 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2:
+        reason: >-
+          normalizeStats poisoned stats keys is in build-target tooling via
+          Babel, Router, SVGR or Rsdoctor. Inputs are repository browser
+          targets; no uploaded stats or long-running customer query service
+          found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:13.284Z
+  SNYK-JS-BROWSERSLIST-18856271:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/core@8.1.0 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
+        reason: >-
+          unbounded cache/parseCache of distinct queries is in build-target
+          tooling via Babel, Router, SVGR or Rsdoctor. Inputs are repository
+          browser targets; no uploaded stats or long-running customer query
+          service found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:15.385Z
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsbuild/plugin-check-syntax@1.6.1 > browserslist-to-es-version@1.2.0 > browserslist@4.28.0':
+        reason: >-
+          unbounded cache/parseCache of distinct queries is in build-target
+          tooling via Babel, Router, SVGR or Rsdoctor. Inputs are repository
+          browser targets; no uploaded stats or long-running customer query
+          service found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:17.727Z
+    - '@tanstack/router-plugin@1.168.35 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
+        reason: >-
+          unbounded cache/parseCache of distinct queries is in build-target
+          tooling via Babel, Router, SVGR or Rsdoctor. Inputs are repository
+          browser targets; no uploaded stats or long-running customer query
+          service found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:19.748Z
+    - react-doctor@0.0.29 > eslint-plugin-react-hooks@7.0.1 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2:
+        reason: >-
+          unbounded cache/parseCache of distinct queries is in build-target
+          tooling via Babel, Router, SVGR or Rsdoctor. Inputs are repository
+          browser targets; no uploaded stats or long-running customer query
+          service found. Recheck externally supplied browser targets/stats.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:21.716Z
+  SNYK-JS-DEEPMERGE-19964053:
+    - '@rsbuild/plugin-sass@2.0.1 > deepmerge@4.3.1':
+        reason: >-
+          mergeObject is used for repository Sass, SVGR and Ultracite build
+          configuration. No application deepmerge import or merge of
+          customer-controlled objects found. Prototype-key injection requires an
+          untrusted source object reaching that merge. Recheck configuration
+          upload or runtime merge adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:23.808Z
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/plugin-svgo@8.1.0 > deepmerge@4.3.1':
+        reason: >-
+          mergeObject is used for repository Sass, SVGR and Ultracite build
+          configuration. No application deepmerge import or merge of
+          customer-controlled objects found. Prototype-key injection requires an
+          untrusted source object reaching that merge. Recheck configuration
+          upload or runtime merge adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:25.790Z
+    - '@rsbuild/plugin-svgr@2.0.5 > deepmerge@4.3.1':
+        reason: >-
+          mergeObject is used for repository Sass, SVGR and Ultracite build
+          configuration. No application deepmerge import or merge of
+          customer-controlled objects found. Prototype-key injection requires an
+          untrusted source object reaching that merge. Recheck configuration
+          upload or runtime merge adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:28.501Z
+    - ultracite@6.4.2 > deepmerge@4.3.1:
+        reason: >-
+          mergeObject is used for repository Sass, SVGR and Ultracite build
+          configuration. No application deepmerge import or merge of
+          customer-controlled objects found. Prototype-key injection requires an
+          untrusted source object reaching that merge. Recheck configuration
+          upload or runtime merge adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:30.531Z
+  SNYK-JS-DOMPURIFY-18593782:
+    - monaco-editor@0.54.0 > dompurify@3.4.12:
+        reason: >-
+          DOMPurify IS used by Registry SanitizedHtml and Monaco. Registry uses
+          RETURN_DOM_FRAGMENT:true; Monaco sanitizes strings/fragments with
+          attribute/plaintext hooks. Neither uses IN_PLACE, the required
+          condition with a containing-element removal hook for this advisory.
+          Recheck IN_PLACE or hook changes; this is not a claim that
+          sanitization is unused.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:32.890Z
+  SNYK-JS-ELLIPTIC-14908844:
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > crypto-browserify@3.12.1 > browserify-sign@4.2.5 > elliptic@6.6.1':
+        reason: >-
+          crypto-browserify signing/ECDH polyfill graph only; no Console
+          application elliptic signing or ECDSA caller found. Faulty
+          nonce-length signatures and corresponding secret-key recovery are not
+          demonstrated. No upstream fix listed. Recheck signing/private-key
+          feature adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:35.404Z
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > crypto-browserify@3.12.1 > create-ecdh@4.0.4 > elliptic@6.6.1':
+        reason: >-
+          crypto-browserify signing/ECDH polyfill graph only; no Console
+          application elliptic signing or ECDSA caller found. Faulty
+          nonce-length signatures and corresponding secret-key recovery are not
+          demonstrated. No upstream fix listed. Recheck signing/private-key
+          feature adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:37.457Z
+  SNYK-JS-ENGINEIO-17900543:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
+        reason: >-
+          invalid Engine.IO v4 polling POST response retention belongs to
+          Rsdoctor SDK Socket.IO. rsbuild.config.ts sets
+          disableClientServer:true and brief JSON-only analysis, so the
+          inspector transport endpoint is not started. No application Engine.IO
+          server. Recheck analyzer server or WebTransport enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:39.956Z
+  SNYK-JS-ENGINEIO-17900560:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
+        reason: >-
+          WebTransport upgrade prototype-key sessions belongs to Rsdoctor SDK
+          Socket.IO. rsbuild.config.ts sets disableClientServer:true and brief
+          JSON-only analysis, so the inspector transport endpoint is not
+          started. No application Engine.IO server. Recheck analyzer server or
+          WebTransport enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:41.915Z
+  SNYK-JS-ENGINEIO-20335255:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
+        reason: >-
+          protocol-mismatched session upgrades belongs to Rsdoctor SDK
+          Socket.IO. rsbuild.config.ts sets disableClientServer:true and brief
+          JSON-only analysis, so the inspector transport endpoint is not
+          started. No application Engine.IO server. Recheck analyzer server or
+          WebTransport enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:44.705Z
+  SNYK-JS-FASTURI-18506908:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          parseWithStatus authority separator mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:47.083Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          parseWithStatus authority separator mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:49.357Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          parseWithStatus authority separator mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:51.340Z
+  SNYK-JS-FASTURI-19256867:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          resolve scheme-relative authority mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:53.703Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          resolve scheme-relative authority mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:55.620Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          resolve scheme-relative authority mismatch is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:57.767Z
+  SNYK-JS-FASTURI-19256869:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          encoded scheme delimiters in normalize/resolve is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:13:59.781Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          encoded scheme delimiters in normalize/resolve is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:01.772Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          encoded scheme delimiters in normalize/resolve is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:03.789Z
+  SNYK-JS-FASTURI-19256871:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalizeIPv6 malformed host rewriting is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:05.684Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalizeIPv6 malformed host rewriting is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:07.508Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalizeIPv6 malformed host rewriting is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:09.452Z
+  SNYK-JS-FASTURI-19256873:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalize/resolve nested hostname decoding is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:11.380Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalize/resolve nested hostname decoding is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:13.354Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          normalize/resolve nested hostname decoding is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:15.395Z
+  SNYK-JS-FASTURI-19502739:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          recomposeAuthority unvalidated component port is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:17.458Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          recomposeAuthority unvalidated component port is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:19.405Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          recomposeAuthority unvalidated component port is through Module
+          Federation schema-utils/AJV for repository configuration/schema URIs.
+          Not used as a customer URL allowlist, redirect check or
+          outbound-routing boundary. No application fast-uri caller found.
+          Recheck any security-policy URL parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:21.247Z
+  SNYK-JS-FASTURI-19846649:
+    - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          percent-encoded host case mismatch is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:23.249Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          percent-encoded host case mismatch is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:25.171Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
+        reason: >-
+          percent-encoded host case mismatch is through Module Federation
+          schema-utils/AJV for repository configuration/schema URIs. Not used as
+          a customer URL allowlist, redirect check or outbound-routing boundary.
+          No application fast-uri caller found. Recheck any security-policy URL
+          parsing adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:27.220Z
+  SNYK-JS-GRPCGRPCJS-20251007:
+    - testcontainers@12.0.4 > dockerode@5.0.1 > @grpc/grpc-js@1.14.4:
+        reason: >-
+          Dockerode test tooling creates a grpc.Server only on the injected
+          Docker /session socket, without a public listener. The fixed
+          Credentials handler returns static auth or an empty object; no
+          remote-controlled throwing application handler was found. Sensitive
+          exception disclosure is unproven on this path. Recheck
+          handler/public-listener changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:29.475Z
+  SNYK-JS-GRPCGRPCJS-20251010:
+    - testcontainers@12.0.4 > dockerode@5.0.1 > @grpc/grpc-js@1.14.4:
+        reason: >-
+          Dockerode test tooling creates a grpc.Server over an injected Docker
+          /session socket using createInsecure credentials, not an mTLS
+          listener. It does not use getAuthContext for authorization;
+          invalid-certificate acceptance cannot bypass this absent mTLS policy.
+          No application gRPC-JS server. Recheck TLS/auth-context adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:31.538Z
+  SNYK-JS-IMMUTABLE-17900558:
+    - '@rsbuild/plugin-sass@2.0.1 > sass-embedded@1.100.0 > immutable@5.1.5':
+        reason: >-
+          HashCollisionNode colliding Map/Set keys is in Sass compiler values
+          from repository styles, not attacker-supplied collection keys or list
+          bounds. No application Immutable import or uploaded Sass processing
+          boundary found. Recheck runtime collection/Sass processing.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:33.641Z
+    - '@rsbuild/plugin-sass@2.0.1 > sass-embedded@1.100.0 > sass-embedded-all-unknown@1.100.0 > sass@1.100.0 > immutable@5.1.5':
+        reason: >-
+          HashCollisionNode colliding Map/Set keys is in Sass compiler values
+          from repository styles, not attacker-supplied collection keys or list
+          bounds. No application Immutable import or uploaded Sass processing
+          boundary found. Recheck runtime collection/Sass processing.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:35.727Z
+  SNYK-JS-IMMUTABLE-17900573:
+    - '@rsbuild/plugin-sass@2.0.1 > sass-embedded@1.100.0 > immutable@5.1.5':
+        reason: >-
+          setListBounds oversized indices/sizes is in Sass compiler values from
+          repository styles, not attacker-supplied collection keys or list
+          bounds. No application Immutable import or uploaded Sass processing
+          boundary found. Recheck runtime collection/Sass processing.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:37.739Z
+    - '@rsbuild/plugin-sass@2.0.1 > sass-embedded@1.100.0 > sass-embedded-all-unknown@1.100.0 > sass@1.100.0 > immutable@5.1.5':
+        reason: >-
+          setListBounds oversized indices/sizes is in Sass compiler values from
+          repository styles, not attacker-supplied collection keys or list
+          bounds. No application Immutable import or uploaded Sass processing
+          boundary found. Recheck runtime collection/Sass processing.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:39.759Z
+  SNYK-JS-JSYAML-18593780:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/core@8.1.0 > cosmiconfig@8.3.6 > js-yaml@4.3.0':
+        reason: >-
+          load large omap documents is reachable only through SVGR cosmiconfig
+          repository config loading. The browser YAML editor uses the separate
+          yaml package, not this loader. No untrusted YAML upload reaches
+          js-yaml here. Recheck external SVGR config or runtime loader use.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:41.729Z
+  SNYK-JS-JSYAML-19496768:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/core@8.1.0 > cosmiconfig@8.3.6 > js-yaml@4.3.0':
+        reason: >-
+          loader repeated empty merge mappings is reachable only through SVGR
+          cosmiconfig repository config loading. The browser YAML editor uses
+          the separate yaml package, not this loader. No untrusted YAML upload
+          reaches js-yaml here. Recheck external SVGR config or runtime loader
+          use.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:43.664Z
+  SNYK-JS-NANOID-18506894:
+    - '@rsbuild/plugin-sass@2.0.1 > postcss@8.5.15 > nanoid@3.3.12':
+        reason: >-
+          non-secure nanoid/customAlphabet negative size is not called on this
+          PostCSS path: lib/input.js imports nanoid/non-secure and calls
+          nanoid(6), a constant positive size. No customRandom or
+          attacker-controlled size caller found. Recheck ID generator size
+          changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:45.633Z
+  SNYK-JS-NANOID-18506897:
+    - '@rsbuild/plugin-sass@2.0.1 > postcss@8.5.15 > nanoid@3.3.12':
+        reason: >-
+          customRandom zero size is not called on this PostCSS path:
+          lib/input.js imports nanoid/non-secure and calls nanoid(6), a constant
+          positive size. No customRandom or attacker-controlled size caller
+          found. Recheck ID generator size changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:47.720Z
+  SNYK-JS-PBKDF2-20251013:
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > crypto-browserify@3.12.1 > browserify-sign@4.2.5 > parse-asn1@5.1.9 > pbkdf2@3.1.5':
+        reason: >-
+          crypto-browserify/parse-asn1 polyfill dependency only. No application
+          PBKDF2, signing or encrypted-private-key caller found. The vulnerable
+          pure-JS synchronous long-password iteration path is not used for
+          Console authentication. Recheck password derivation/private-key
+          feature adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:49.775Z
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > crypto-browserify@3.12.1 > pbkdf2@3.1.5':
+        reason: >-
+          crypto-browserify/parse-asn1 polyfill dependency only. No application
+          PBKDF2, signing or encrypted-private-key caller found. The vulnerable
+          pure-JS synchronous long-password iteration path is not used for
+          Console authentication. Recheck password derivation/private-key
+          feature adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:51.835Z
+  SNYK-JS-POSTCSS-18313038:
+    - '@rsbuild/plugin-sass@2.0.1 > postcss@8.5.15':
+        reason: >-
+          loadMap sourceMappingURL traversal is build-time Sass/PostCSS
+          processing of repository CSS, not customer CSS processing with
+          generated source maps returned to a caller. No runtime CSS
+          transformation endpoint found. Recheck CSS upload/transform
+          boundaries; replaces the former broad Rsbuild/Vite dismissal.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:54.096Z
+  SNYK-JS-POSTCSS-18512282:
+    - '@rsbuild/plugin-sass@2.0.1 > postcss@8.5.15':
+        reason: >-
+          PreviousMap.loadFile traversal without from is build-time Sass/PostCSS
+          processing of repository CSS, not customer CSS processing with
+          generated source maps returned to a caller. No runtime CSS
+          transformation endpoint found. Recheck CSS upload/transform
+          boundaries; replaces the former broad Rsbuild/Vite dismissal.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:56.673Z
+  SNYK-JS-PROTOBUFJS-17900550:
+    - testcontainers@12.0.4 > dockerode@5.0.1 > @grpc/grpc-js@1.14.4 > @grpc/proto-loader@0.8.0 > protobufjs@7.6.4:
+        reason: >-
+          option parsing is introduced by Dockerode test tooling loading the
+          fixed lib/proto/auth.proto through proto-loader, not customer .proto
+          schemas. Console application protobuf uses Buf-generated messages
+          instead. No external schema reaches this protobufjs parser. Recheck
+          Docker schema input or parser adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:14:58.787Z
+    - testcontainers@12.0.4 > dockerode@5.0.1 > @grpc/proto-loader@0.7.15 > protobufjs@7.6.4:
+        reason: >-
+          option parsing is introduced by Dockerode test tooling loading the
+          fixed lib/proto/auth.proto through proto-loader, not customer .proto
+          schemas. Console application protobuf uses Buf-generated messages
+          instead. No external schema reaches this protobufjs parser. Recheck
+          Docker schema input or parser adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:01.090Z
+    - testcontainers@12.0.4 > dockerode@5.0.1 > protobufjs@7.6.4:
+        reason: >-
+          option parsing is introduced by Dockerode test tooling loading the
+          fixed lib/proto/auth.proto through proto-loader, not customer .proto
+          schemas. Console application protobuf uses Buf-generated messages
+          instead. No external schema reaches this protobufjs parser. Recheck
+          Docker schema input or parser adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:03.300Z
+  SNYK-JS-QS-19432017:
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > url@0.11.4 > qs@6.15.2':
+        reason: >-
+          parseArrayValue comma:true bracket-key arrays requires non-default
+          options absent from the node-polyfill url@0.11.4 caller. url.parse
+          uses default qs.parse options, without comma:true, plainObjects:true
+          or allowPrototypes:true. No direct application qs caller found.
+          Recheck parse-option or round-trip changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:05.557Z
+  SNYK-JS-QS-19432019:
+    - '@rsbuild/plugin-node-polyfill@1.4.6 > url@0.11.4 > qs@6.15.2':
+        reason: >-
+          parse plainObjects/allowPrototypes followed by stringify/isBuffer
+          requires non-default options absent from the node-polyfill url@0.11.4
+          caller. url.parse uses default qs.parse options, without comma:true,
+          plainObjects:true or allowPrototypes:true. No direct application qs
+          caller found. Recheck parse-option or round-trip changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:08.999Z
+  SNYK-JS-SHELLQUOTE-20250993:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > launch-editor@2.14.1 > shell-quote@1.10.0':
+        reason: >-
+          Comment-token/newline quote injection is in Rsdoctor launch-editor
+          tooling. rsbuild.config.ts disables the analyzer client/server and
+          emits brief JSON, so no remote editor input reaches this endpoint. No
+          application shell parse/quote caller found. Recheck analyzer/editor
+          server enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:11.539Z
+  SNYK-JS-SMOLTOML-19643959:
+    - react-doctor@0.0.29 > knip@5.88.1 > smol-toml@1.6.1:
+        reason: >-
+          parse/skipUntil is used by React Doctor/Knip to load repository
+          configuration, not uploaded TOML or an application parser endpoint.
+          Malformed external TOML is not delivered to this path. Recheck
+          external configuration loading or runtime parser adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:13.602Z
+  SNYK-JS-SVGO-19498536:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/plugin-svgo@8.1.0 > svgo@3.3.4':
+        reason: >-
+          removeScriptElement used as a security sanitizer concerns using SVGO
+          as a security sanitizer. This copy is SVGR build-time optimization of
+          repository SVGs, not uploaded SVG sanitization. No application SVG
+          optimization endpoint found. Recheck external SVG input; optimization
+          is not a sanitization guarantee.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:15.557Z
+  SNYK-JS-SVGO-19498539:
+    - '@rsbuild/plugin-svgr@2.0.5 > @svgr/plugin-svgo@8.1.0 > svgo@3.3.4':
+        reason: >-
+          removeScripts filtering of executable namespaced links concerns using
+          SVGO as a security sanitizer. This copy is SVGR build-time
+          optimization of repository SVGs, not uploaded SVG sanitization. No
+          application SVG optimization endpoint found. Recheck external SVG
+          input; optimization is not a sanitization guarantee.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:17.864Z
+  SNYK-JS-UNDICI-17372609:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; ProxyAgent with SOCKS5 plus requestTls
+          is not configured. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:20.188Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; ProxyAgent with SOCKS5 plus requestTls
+          is not configured. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:22.111Z
+  SNYK-JS-UNDICI-17372658:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; parseSetCookie followed by forwarding
+          cookie values is not used. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:24.342Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; parseSetCookie followed by forwarding
+          cookie values is not used. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:26.283Z
+  SNYK-JS-UNDICI-17372667:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; multi-origin Socks5ProxyAgent is not
+          used. Remote type consumption is disabled by dts:false in production
+          and federation-test builds; Rstest also defaults it off. The
+          downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:28.599Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; multi-origin Socks5ProxyAgent is not
+          used. Remote type consumption is disabled by dts:false in production
+          and federation-test builds; Rstest also defaults it off. The
+          downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:30.646Z
+  SNYK-JS-UNDICI-17372697:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared interceptors.cache is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:32.685Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared interceptors.cache is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:34.764Z
+  SNYK-JS-UNDICI-17372752:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; idle HTTP/1.1 response injection
+          requires a malicious upstream. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:38.974Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; idle HTTP/1.1 response injection
+          requires a malicious upstream. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:42.718Z
+  SNYK-JS-UNDICI-17372754:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket fragment handling is
+          not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:44.813Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket fragment handling is
+          not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:46.946Z
+  SNYK-JS-UNDICI-17372758:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; parsed SameSite attributes are not
+          relied on or forwarded. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:49.006Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; parsed SameSite attributes are not
+          relied on or forwarded. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:51.310Z
+  SNYK-JS-UNDICI-18426061:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; setCookie domain/unparsed serialization
+          is not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:54.076Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; setCookie domain/unparsed serialization
+          is not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:15:58.198Z
+  SNYK-JS-UNDICI-18426063:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.retry response forwarding
+          is not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:01.017Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.retry response forwarding
+          is not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:04.091Z
+  SNYK-JS-UNDICI-18426065:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared cache-control parsing is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:06.579Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared cache-control parsing is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:09.167Z
+  SNYK-JS-UNDICI-18426067:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; attacker-provided blob-like bodies and
+          body.type are not sent. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:11.236Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; attacker-provided blob-like bodies and
+          body.type are not sent. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:13.586Z
+  SNYK-JS-UNDICI-18426521:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.cache private directive
+          parsing is not enabled. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:15.710Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.cache private directive
+          parsing is not enabled. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:18.014Z
+  SNYK-JS-UNDICI-19635206:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; RetryHandler/retry interceptor is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:20.087Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; RetryHandler/retry interceptor is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:22.214Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; RetryHandler/retry interceptor is not
+          enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:24.234Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; RetryHandler/retry
+          interceptor is not enabled. IntervalRetry is not Undici RetryHandler.
+          No browser application Undici endpoint. Recheck external test targets
+          or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:26.109Z
+  SNYK-JS-UNDICI-19635208:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.decompress is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:27.952Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.decompress is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:29.866Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; interceptors.decompress is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:32.510Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent;
+          interceptors.decompress is not enabled. IntervalRetry is not Undici
+          RetryHandler. No browser application Undici endpoint. Recheck external
+          test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:34.726Z
+  SNYK-JS-UNDICI-19635210:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket handshake is not used.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:37.373Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket handshake is not used.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:40.703Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket handshake is not used.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:43.639Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; Undici WebSocket
+          handshake is not used. IntervalRetry is not Undici RetryHandler. No
+          browser application Undici endpoint. Recheck external test targets or
+          dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:45.885Z
+  SNYK-JS-UNDICI-19635212:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.retry plus downstream
+          response forwarding is not used. Remote type consumption is disabled
+          by dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:47.933Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.retry plus downstream
+          response forwarding is not used. Remote type consumption is disabled
+          by dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:51.564Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; interceptors.retry plus downstream
+          response forwarding is not used. Remote type consumption is disabled
+          by dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:54.309Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; interceptors.retry
+          plus downstream response forwarding is not used. IntervalRetry is not
+          Undici RetryHandler. No browser application Undici endpoint. Recheck
+          external test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:16:56.931Z
+  SNYK-JS-UNDICI-19635214:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.dump is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:01.339Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.dump is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:11.941Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; interceptors.dump is not enabled.
+          Remote type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:15.193Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; interceptors.dump
+          is not enabled. IntervalRetry is not Undici RetryHandler. No browser
+          application Undici endpoint. Recheck external test targets or
+          dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:18.145Z
+  SNYK-JS-UNDICI-19635216:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared interceptors.cache cookie
+          retention is not enabled. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:27.928Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; shared interceptors.cache cookie
+          retention is not enabled. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:37.828Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; shared interceptors.cache cookie
+          retention is not enabled. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:44.832Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; shared
+          interceptors.cache cookie retention is not enabled. IntervalRetry is
+          not Undici RetryHandler. No browser application Undici endpoint.
+          Recheck external test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:17:54.170Z
+  SNYK-JS-UNDICI-19635218:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; BalancedPool with function-valued TLS
+          callbacks is not used. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:11.270Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; BalancedPool with function-valued TLS
+          callbacks is not used. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:17.209Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; BalancedPool with function-valued TLS
+          callbacks is not used. Remote type consumption is disabled by
+          dts:false in production and federation-test builds; Rstest also
+          defaults it off. The downloader uses a plain Agent, not optional
+          proxy/cache/WebSocket features. Recheck DTS or HTTP feature
+          enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:27.051Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; BalancedPool with
+          function-valued TLS callbacks is not used. IntervalRetry is not Undici
+          RetryHandler. No browser application Undici endpoint. Recheck external
+          test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:34.881Z
+  SNYK-JS-UNDICI-19635220:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.cache method selection is
+          not enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:42.598Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; interceptors.cache method selection is
+          not enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:18:53.494Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; interceptors.cache method selection is
+          not enabled. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:00.787Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; interceptors.cache
+          method selection is not enabled. IntervalRetry is not Undici
+          RetryHandler. No browser application Undici endpoint. Recheck external
+          test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:10.036Z
+  SNYK-JS-UNDICI-19635222:
+    - '@module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; WebSocketStream is not used. Remote
+          type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:17.137Z
+    - '@module-federation/rsbuild-plugin@2.5.1 > @module-federation/enhanced@2.5.1 > @module-federation/cli@2.5.1 > @module-federation/dts-plugin@2.5.1 > undici@7.24.7':
+        reason: >-
+          Module Federation DTS tooling; WebSocketStream is not used. Remote
+          type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:24.782Z
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; WebSocketStream is not used. Remote
+          type consumption is disabled by dts:false in production and
+          federation-test builds; Rstest also defaults it off. The downloader
+          uses a plain Agent, not optional proxy/cache/WebSocket features.
+          Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:28.947Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; WebSocketStream is
+          not used. IntervalRetry is not Undici RetryHandler. No browser
+          application Undici endpoint. Recheck external test targets or
+          dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:31.815Z
+  SNYK-JS-UNDICI-19635226:
+    - '@module-federation/rstest@2.9.0 > @module-federation/enhanced@2.9.0 > @module-federation/cli@2.9.0 > @module-federation/dts-plugin@2.9.0 > undici@7.29.0':
+        reason: >-
+          Module Federation DTS tooling; Undici WebSocket permessage-deflate is
+          not used. Remote type consumption is disabled by dts:false in
+          production and federation-test builds; Rstest also defaults it off.
+          The downloader uses a plain Agent, not optional proxy/cache/WebSocket
+          features. Recheck DTS or HTTP feature enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:34.453Z
+    - testcontainers@12.0.4 > undici@8.9.0:
+        reason: >-
+          Testcontainers HTTP wait strategy calls request with a timeout against
+          local test containers and an optional plain Agent; Undici WebSocket
+          permessage-deflate is not used. IntervalRetry is not Undici
+          RetryHandler. No browser application Undici endpoint. Recheck external
+          test targets or dispatcher/interceptor changes.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:36.599Z
+  SNYK-JS-WS-16722635:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4 > ws@8.17.1':
+        reason: >-
+          Sender.close typed-array reason disclosure belongs to Rsdoctor
+          Socket.IO/adapter copies. disableClientServer:true in
+          rsbuild.config.ts prevents inspector socket exposure; no application
+          caller sends typed-array close reasons or receives external frames
+          through these copies. Recheck analyzer server enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:38.795Z
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > socket.io-adapter@2.5.5 > ws@8.17.1':
+        reason: >-
+          Sender.close typed-array reason disclosure belongs to Rsdoctor
+          Socket.IO/adapter copies. disableClientServer:true in
+          rsbuild.config.ts prevents inspector socket exposure; no application
+          caller sends typed-array close reasons or receives external frames
+          through these copies. Recheck analyzer server enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:40.642Z
+  SNYK-JS-WS-17344547:
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4 > ws@8.17.1':
+        reason: >-
+          receiver accumulation of tiny fragmented frames belongs to Rsdoctor
+          Socket.IO/adapter copies. disableClientServer:true in
+          rsbuild.config.ts prevents inspector socket exposure; no application
+          caller sends typed-array close reasons or receives external frames
+          through these copies. Recheck analyzer server enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:42.817Z
+    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > socket.io-adapter@2.5.5 > ws@8.17.1':
+        reason: >-
+          receiver accumulation of tiny fragmented frames belongs to Rsdoctor
+          Socket.IO/adapter copies. disableClientServer:true in
+          rsbuild.config.ts prevents inspector socket exposure; no application
+          caller sends typed-array close reasons or receives external frames
+          through these copies. Recheck analyzer server enablement.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:45.542Z
+  SNYK-JS-ZOD-20510278:
+    - '@tanstack/router-plugin@1.168.35 > @tanstack/router-generator@1.167.33 > zod@4.6.5':
+        reason: >-
+          Tooling Zod validates repository Router, Ultracite or React
+          Doctor/Knip configurations, not remotely submitted application bulk
+          arrays. No attacker-delivered huge invalid array reaches this nested
+          $ZodArray/handleArrayResult copy in the audited path. No upstream fix.
+          Recheck external configuration or server validation adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:48.220Z
+    - '@tanstack/router-plugin@1.168.35 > zod@4.6.5':
+        reason: >-
+          Tooling Zod validates repository Router, Ultracite or React
+          Doctor/Knip configurations, not remotely submitted application bulk
+          arrays. No attacker-delivered huge invalid array reaches this nested
+          $ZodArray/handleArrayResult copy in the audited path. No upstream fix.
+          Recheck external configuration or server validation adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:50.541Z
+    - react-doctor@0.0.29 > eslint-plugin-react-hooks@7.0.1 > zod@4.6.5:
+        reason: >-
+          Tooling Zod validates repository Router, Ultracite or React
+          Doctor/Knip configurations, not remotely submitted application bulk
+          arrays. No attacker-delivered huge invalid array reaches this nested
+          $ZodArray/handleArrayResult copy in the audited path. No upstream fix.
+          Recheck external configuration or server validation adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:52.748Z
+    - react-doctor@0.0.29 > knip@5.88.1 > zod@4.3.5:
+        reason: >-
+          Tooling Zod validates repository Router, Ultracite or React
+          Doctor/Knip configurations, not remotely submitted application bulk
+          arrays. No attacker-delivered huge invalid array reaches this nested
+          $ZodArray/handleArrayResult copy in the audited path. No upstream fix.
+          Recheck external configuration or server validation adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:54.929Z
+    - ultracite@6.4.2 > zod@4.3.5:
+        reason: >-
+          Tooling Zod validates repository Router, Ultracite or React
+          Doctor/Knip configurations, not remotely submitted application bulk
+          arrays. No attacker-delivered huge invalid array reaches this nested
+          $ZodArray/handleArrayResult copy in the audited path. No upstream fix.
+          Recheck external configuration or server validation adoption.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:19:57.268Z
+    - zod@4.6.5:
+        reason: >-
+          Time-bounded dismissal, not proof all arrays are bounded: browser form
+          schemas and rpcn-editor-autosave.ts localStorage recovery DO use
+          unbounded arrays. No cross-user attacker delivery of huge invalid
+          arrays to $ZodArray/handleArrayResult was demonstrated; no Node
+          validation endpoint or upstream fix. Recheck external bulk-array
+          validation and autosave storage boundaries.
+        expires: 2027-01-03T18:00:00.000Z
+        created: 2026-10-05T18:20:00.602Z
 patch: {}
