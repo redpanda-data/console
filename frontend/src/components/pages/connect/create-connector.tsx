@@ -18,11 +18,13 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { type KafkaConnectStarting, retryWhileKafkaConnectStarting } from 'utils/kafka-connect-starting';
 import { showToast } from 'utils/toast.utils';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
 import { ConfigPage } from './dynamic-ui/components';
 import { findConnectorMetadata } from './helper';
+import { KafkaConnectStartingAlert, type KafkaConnectStartingState } from './kafka-connect-starting-alert';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
@@ -261,6 +263,10 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
   const [isCreatingModalOpen, setIsCreatingModalOpen] = useState(false);
   const openCreatingModal = () => setIsCreatingModalOpen(true);
   const closeCreatingModal = () => setIsCreatingModalOpen(false);
+  // Set while a validate/create call waits for Kafka Connect to boot after scale-to-zero.
+  const [connectStarting, setConnectStarting] = useState<KafkaConnectStartingState | null>(null);
+  const onConnectStarting = (info: KafkaConnectStarting, secondsRemaining: number) =>
+    setConnectStarting({ info, secondsRemaining });
 
   useEffect(() => {
     const init = async () => {
@@ -350,6 +356,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
       content: selectedPlugin && (
         <Review
           connectorPlugin={selectedPlugin}
+          connectStarting={connectStarting}
           creationFailure={creationFailure}
           genericFailure={genericFailure}
           invalidValidationResult={invalidValidationResult}
@@ -400,11 +407,11 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
           | Record<string, unknown>
           | undefined;
         try {
-          const validationResult = await api.validateConnectorConfig(
-            activeCluster,
-            selectedPlugin?.class ?? '',
-            propertiesObject ?? {}
+          const validationResult = await retryWhileKafkaConnectStarting(
+            () => api.validateConnectorConfig(activeCluster, selectedPlugin?.class ?? '', propertiesObject ?? {}),
+            { onWait: onConnectStarting, onRetry: () => setConnectStarting(null) }
           );
+          setConnectStarting(null);
 
           const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
 
@@ -414,7 +421,11 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
             return { conditionMet: false };
           }
         } catch (e) {
-          throw new ConnectorValidationError(String(e));
+          // Previously this threw past the wizard and left the step on its skeleton forever.
+          setConnectStarting(null);
+          setValidationFailure(new ConnectorValidationError(String(e)).message);
+          setLoading(false);
+          return { conditionMet: false };
         }
 
         const pluginClass = selectedPlugin?.class ?? '';
@@ -423,7 +434,8 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
         try {
           openCreatingModal();
 
-          await connectClusterStore.createConnector(pluginClass, parsedConfig);
+          await connectClusterStore.createConnector(pluginClass, parsedConfig, onConnectStarting);
+          setConnectStarting(null);
 
           // Wait a bit for the connector to appear, then navigate to it
           const maxScanTime = 10_000;
@@ -459,6 +471,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
           });
           closeCreatingModal();
         } catch (e: unknown) {
+          setConnectStarting(null);
           closeCreatingModal();
           const error = e as { name?: string; message?: string };
           switch (error?.name) {
@@ -531,9 +544,14 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
       <Dialog open={isCreatingModalOpen}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Creating connector...</DialogTitle>
+            <DialogTitle>{connectStarting ? 'Waiting for Kafka Connect...' : 'Creating connector...'}</DialogTitle>
           </DialogHeader>
           <DialogBody className="py-8">
+            {connectStarting ? (
+              <div className="mb-6">
+                <KafkaConnectStartingAlert state={connectStarting} />
+              </div>
+            ) : null}
             <div className="flex items-center justify-center">
               <Spinner className="size-10" />
             </div>
@@ -569,6 +587,7 @@ type ReviewProps = {
   creationFailure: unknown;
   genericFailure: Error | null;
   isCreating: boolean;
+  connectStarting: KafkaConnectStartingState | null;
 };
 
 function Review({
@@ -580,6 +599,7 @@ function Review({
   genericFailure,
   onChange,
   isCreating,
+  connectStarting,
 }: ReviewProps) {
   return (
     <>
@@ -597,6 +617,11 @@ function Review({
 
       {isCreating ? (
         <div className="mt-5">
+          {connectStarting ? (
+            <div className="mb-4">
+              <KafkaConnectStartingAlert state={connectStarting} />
+            </div>
+          ) : null}
           <SkeletonText lines={6} width="full" />
         </div>
       ) : (

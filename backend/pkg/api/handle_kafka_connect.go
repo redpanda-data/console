@@ -133,20 +133,20 @@ func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 		var req putConnectorConfigRequest
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
 		cInfo, restErr := api.ConnectSvc.PutConnectorConfig(r.Context(), clusterName, connectorName, req.ToClientRequest())
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
 		// restart the instance and all the tasks
 		restErr = api.ConnectSvc.RestartConnector(r.Context(), clusterName, connectorName, true, false)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -162,13 +162,13 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 		var req map[string]any
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
 		cInfo, restErr := api.ConnectSvc.ValidateConnectorConfig(r.Context(), clusterName, pluginClassName, req)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, cInfo)
@@ -199,13 +199,13 @@ func (api *API) handleCreateConnector() http.HandlerFunc {
 		var req createConnectorRequest
 		restErr := rest.Decode(w, r, &req)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
 		cInfo, restErr := api.ConnectSvc.CreateConnector(r.Context(), clusterName, req.ToClientRequest())
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -223,7 +223,7 @@ func (api *API) handleDeleteConnector() http.HandlerFunc {
 
 		restErr := api.ConnectSvc.DeleteConnector(ctx, clusterName, connector)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -241,7 +241,7 @@ func (api *API) handlePauseConnector() http.HandlerFunc {
 
 		restErr := api.ConnectSvc.PauseConnector(ctx, clusterName, connector)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -259,7 +259,7 @@ func (api *API) handleResumeConnector() http.HandlerFunc {
 
 		restErr := api.ConnectSvc.ResumeConnector(ctx, clusterName, connector)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -277,7 +277,7 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 
 		restErr := api.ConnectSvc.RestartConnector(ctx, clusterName, connector, true, false)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 
@@ -306,7 +306,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 
 		restErr := api.ConnectSvc.RestartConnectorTask(ctx, clusterName, connector, taskID)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			api.sendKafkaConnectError(w, r, restErr)
 			return
 		}
 

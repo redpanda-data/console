@@ -10,6 +10,11 @@
  */
 
 import { removeNamespace } from '../../components/pages/connect/helper';
+import {
+  asKafkaConnectStarting,
+  type KafkaConnectStarting,
+  retryWhileKafkaConnectStarting,
+} from '../../utils/kafka-connect-starting';
 import { encodeBase64, retrier } from '../../utils/utils';
 import { api } from '../backend-api';
 import {
@@ -137,7 +142,11 @@ export class ConnectClusterStore {
 
   // CRUD operations
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
-  async createConnector(pluginClass: string, updatedConfig: Record<string, unknown> = {}) {
+  async createConnector(
+    pluginClass: string,
+    updatedConfig: Record<string, unknown> = {},
+    onStarting?: (info: KafkaConnectStarting, secondsRemaining: number) => void
+  ) {
     const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
     if (secrets) {
@@ -216,7 +225,12 @@ export class ConnectClusterStore {
         }
       }
 
-      await api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
+      // Secrets above are created once; only the connector POST is retried through a
+      // Kafka Connect cold start.
+      await retryWhileKafkaConnectStarting(
+        () => api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties),
+        { onWait: onStarting }
+      );
       this.removePluginState(pluginClass);
     } catch (error) {
       throw new ConnectorCreationError(String(error));
@@ -462,6 +476,8 @@ export class ConnectorPropertiesStore {
   propsByName = new Map<string, Property>();
   jsonText = '';
   error: string | undefined = undefined;
+  /** Progress text while the initial validation waits for Kafka Connect to boot. */
+  startingNotice: string | undefined = undefined;
   crud: 'create' | 'update' = 'create';
   secrets: SecretsStore | null = null;
   showAdvancedOptions = false;
@@ -614,11 +630,20 @@ export class ConnectorPropertiesStore {
         name: '',
       };
 
-      const validationResult = await api.validateConnectorConfig(
-        clusterName,
-        pluginClassName,
-        this.appliedConfig ?? basicConfig
+      const validationResult = await retryWhileKafkaConnectStarting(
+        () => api.validateConnectorConfig(clusterName, pluginClassName, this.appliedConfig ?? basicConfig),
+        {
+          onWait: (info, secondsRemaining) => {
+            this.startingNotice = `${info.message} Retrying in ${secondsRemaining}s…`;
+            this.notifyChange();
+          },
+          onRetry: () => {
+            this.startingNotice = undefined;
+            this.notifyChange();
+          },
+        }
       );
+      this.startingNotice = undefined;
       const allProps = this.createCustomProperties(validationResult.configs);
 
       // Save props to map, so we can quickly find them to set their validation errors
@@ -730,7 +755,16 @@ export class ConnectorPropertiesStore {
     const { clusterName, pluginClassName } = this;
     try {
       // Validate the current config
-      const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
+      let validationResult: Awaited<ReturnType<typeof api.validateConnectorConfig>>;
+      try {
+        validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
+      } catch (err) {
+        if (asKafkaConnectStarting(err)) {
+          // Kafka Connect is booting after scale-to-zero; the next edit re-validates.
+          return;
+        }
+        throw err;
+      }
       const srcProps = this.createCustomProperties(validationResult.configs);
 
       this.connectorStepDefinitions = validationResult.steps;

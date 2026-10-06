@@ -26,12 +26,16 @@ func (s *Service) ResumeConnector(ctx context.Context, clusterName string, conne
 		return restErr
 	}
 
+	ctx, starting := withStartingCapture(ctx)
 	err := c.Client.ResumeConnector(ctx, connector)
 	if err != nil {
+		if starting.err != nil {
+			return startingRestError(starting.err, "resume connector", slog.String("cluster_name", clusterName), slog.String("connector", connector))
+		}
 		return &rest.Error{
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
-			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to resume connector: %v", err.Error()),
 			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("connector", connector)},
 			IsSilent:     false,
 		}

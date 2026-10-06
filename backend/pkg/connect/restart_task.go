@@ -25,8 +25,12 @@ func (s *Service) RestartConnectorTask(ctx context.Context, clusterName string, 
 		return restErr
 	}
 
+	ctx, starting := withStartingCapture(ctx)
 	err := c.Client.RestartConnectorTask(ctx, connector, taskID)
 	if err != nil {
+		if starting.err != nil {
+			return startingRestError(starting.err, "restart connector task", slog.String("cluster_name", clusterName), slog.String("connector", connector), slog.Int("task_id", taskID))
+		}
 		return &rest.Error{
 			Err:     err,
 			Status:  http.StatusServiceUnavailable,

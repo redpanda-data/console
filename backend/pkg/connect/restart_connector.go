@@ -26,8 +26,12 @@ func (s *Service) RestartConnector(ctx context.Context, clusterName string, conn
 		return restErr
 	}
 
+	ctx, starting := withStartingCapture(ctx)
 	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{IncludeTasks: restartTasks, OnlyFailed: restartOnlyFailed})
 	if err != nil {
+		if starting.err != nil {
+			return startingRestError(starting.err, "restart connector", slog.String("cluster_name", clusterName), slog.String("connector", connector))
+		}
 		return &rest.Error{
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),
