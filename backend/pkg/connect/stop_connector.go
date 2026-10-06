@@ -27,8 +27,12 @@ func (s *Service) StopConnector(ctx context.Context, clusterName string, connect
 		return restErr
 	}
 
+	ctx, starting := withStartingCapture(ctx)
 	err := c.Client.StopConnector(ctx, connector)
 	if err != nil {
+		if starting.err != nil {
+			return startingRestError(starting.err, "stop connector", slog.String("cluster_name", clusterName), slog.String("connector", connector))
+		}
 		return &rest.Error{
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
