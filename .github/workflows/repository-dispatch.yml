@@ -63,6 +63,18 @@ jobs:
           repository: redpanda-data/console-enterprise
           event-type: push
           client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
+      - name: Trigger docs quickstart tests on release
+        # The docs repo runs its Doc Detective quickstart (which drives the
+        # Console UI end to end) against this Console version, so UI changes
+        # that break documented procedures and screenshots surface at release
+        # time instead of in the docs repo's nightly run.
+        uses: peter-evans/repository-dispatch@v4
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          token: ${{ env.ACTIONS_BOT_TOKEN }}
+          repository: redpanda-data/docs
+          event-type: trigger-tests
+          client-payload: '{"console_version": "${{ github.ref_name }}"}'
       - name: Set pending enterprise CI status
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: actions/github-script@v9
