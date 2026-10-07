@@ -15,7 +15,6 @@ import (
 	"log/slog"
 	"sort"
 	"sync"
-	"time"
 )
 
 // DocumentationState denotes whether topic documentation is available for a certain
@@ -77,7 +76,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 
 	// 3. Get log dir sizes & configs for each topic concurrently
 	// Use a shorter ctx timeout so that we don't wait for too long if one broker is currently down.
-	childCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	childCtx, cancel := context.WithTimeout(ctx, s.cfg.Console.OperationTimeouts.TopicsOverview)
 	defer cancel()
 
 	configs := make(map[string]*TopicConfig)
