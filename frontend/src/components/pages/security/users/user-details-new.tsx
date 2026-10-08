@@ -36,8 +36,12 @@ type UserDetailsPageProps = {
 };
 
 const formatMechanism = (mechanism?: SASLMechanism): string | null => {
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) return 'SCRAM-SHA-256';
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) return 'SCRAM-SHA-512';
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) {
+    return 'SCRAM-SHA-256';
+  }
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) {
+    return 'SCRAM-SHA-512';
+  }
   return null;
 };
 

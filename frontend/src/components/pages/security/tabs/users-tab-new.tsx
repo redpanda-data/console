@@ -78,13 +78,19 @@ type PrincipalEntry = {
 };
 
 const mechanismLabel = (mechanism?: SASLMechanism) => {
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) return 'SCRAM-SHA-512';
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) return 'SCRAM-SHA-256';
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) {
+    return 'SCRAM-SHA-512';
+  }
+  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) {
+    return 'SCRAM-SHA-256';
+  }
   return null;
 };
 
 const nameFilterFn = (row: DataTableRow<PrincipalEntry>, columnId: string, filterValue: string) => {
-  if (!filterValue) return true;
+  if (!filterValue) {
+    return true;
+  }
   try {
     return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
   } catch {
@@ -93,7 +99,9 @@ const nameFilterFn = (row: DataTableRow<PrincipalEntry>, columnId: string, filte
 };
 
 const mechanismFilterFn = (row: DataTableRow<PrincipalEntry>, columnId: string, filterValues: string[]) => {
-  if (!filterValues?.length) return true;
+  if (!filterValues?.length) {
+    return true;
+  }
   return filterValues.includes(String(row.getValue(columnId)));
 };
 

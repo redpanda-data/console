@@ -173,7 +173,6 @@ export function hintFromError(error: unknown): string | undefined {
       }
     }
   }
-  return;
 }
 
 // Word-boundary anchored so geometric/temporal names that merely contain a

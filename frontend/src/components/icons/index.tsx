@@ -8,8 +8,9 @@
 // Deep per-icon imports: the package barrel re-exports ~3000 icons (59MB),
 // which dev-mode bundlers pre-bundle whole — crashing browser-mode test runs.
 export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs'; // FaGithub
-export { default as SlackIcon } from '@icons-pack/react-simple-icons/icons/SiSlack.mjs'; // FaSlack
 export { default as TwitterIcon } from '@icons-pack/react-simple-icons/icons/SiX.mjs'; // FaTwitter (Twitter rebranded to X)
+
+export { OpenAIIcon, SalesforceIcon, SlackIcon } from './brand-icons';
 
 // LinkedIn removed from both lucide-react (v1.x) and @icons-pack/react-simple-icons
 // (trademark). Inline SVG preserves the brand mark while staying dependency-free.

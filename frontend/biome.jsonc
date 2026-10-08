@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite/core", "ultracite/react"],
+  "extends": ["ultracite/biome/core", "ultracite/biome/react"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -20,6 +20,8 @@
       "!**/coverage/**/*",
       "!**/.nyc_output/**/*",
       "!**/*.css",
+      "!**/*.svg",
+      "!**/*.html",
       "!**/tests/global-setup.mjs",
       "!**/tests/console",
       "!**/tests/console-enterprise",
@@ -55,17 +57,17 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "correctness": {
         "useImageSize": "off",
         "useJsonImportAttributes": "error" // this may slow down the linting process
       },
+      "performance": {
+        "noJsxPropsBind": "off" // React Compiler (rsbuild.config.ts) memoizes inline callbacks
+      },
       "nursery": {
-        "noReactForwardRef": "off", // enable once we use React 19+
-        "noDeprecatedImports": "error", // this may slow down the linting process
         "noFloatingPromises": "off", // Disabled - navigate() and similar fire-and-forget promises are intentional
         "noMisusedPromises": "error", // this may slow down the linting process
-        "noImportCycles": "off", // this may slow down the linting process
         "useExhaustiveSwitchCases": "error" // this may slow down the linting process
       },
       "style": {
@@ -89,7 +91,10 @@
         "useReactFunctionComponents": "off"
       },
       "suspicious": {
-        "noConsole": "error"
+        "noConsole": "error",
+        "noReactForwardRef": "off",
+        "noDeprecatedImports": "error",
+        "noImportCycles": "off"
       }
     }
   },
@@ -135,9 +140,10 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup*.ts"],
+      "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup*.ts", "**/*-test-helpers.ts"],
       "javascript": {
-        "globals": ["rs"]
+        // rstest `globals: true` injects these at runtime (typed via @rstest/core/globals)
+        "globals": ["rs", "test", "it", "expect", "describe", "beforeEach", "afterEach", "beforeAll", "afterAll"]
       },
       "linter": {
         "rules": {

@@ -144,18 +144,26 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
     <>
       <DeleteUserConfirmModal
         onConfirm={async () => {
-          if (pendingDelete === 'user-and-acls') onDelete(true, true);
-          if (pendingDelete === 'user-only') onDelete(true, false);
+          if (pendingDelete === 'user-and-acls') {
+            onDelete(true, true);
+          }
+          if (pendingDelete === 'user-only') {
+            onDelete(true, false);
+          }
         }}
         onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
+          if (!open) {
+            setPendingDelete(null);
+          }
         }}
         open={pendingDelete === 'user-and-acls' || pendingDelete === 'user-only'}
         userName={group.principalName}
       />
       <Dialog
         onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
+          if (!open) {
+            setPendingDelete(null);
+          }
         }}
         open={pendingDelete === 'acls-only'}
       >
@@ -419,13 +427,25 @@ export const PermissionsListTabNew: FC = () => {
   };
 
   const matchesSearch = (group: PrincipalPermissionGroup, query: string): boolean => {
-    if (!query) return true;
+    if (!query) {
+      return true;
+    }
     const q = query.toLowerCase();
-    if (group.principalName.toLowerCase().includes(q)) return true;
-    if (group.principal.toLowerCase().includes(q)) return true;
-    if (group.directAcls.some((a) => a.resourceName.toLowerCase().includes(q))) return true;
-    if (group.roleAclGroups.some((rg) => rg.roleName.toLowerCase().includes(q))) return true;
-    if (group.roleAclGroups.some((rg) => rg.acls.some((a) => a.resourceName.toLowerCase().includes(q)))) return true;
+    if (group.principalName.toLowerCase().includes(q)) {
+      return true;
+    }
+    if (group.principal.toLowerCase().includes(q)) {
+      return true;
+    }
+    if (group.directAcls.some((a) => a.resourceName.toLowerCase().includes(q))) {
+      return true;
+    }
+    if (group.roleAclGroups.some((rg) => rg.roleName.toLowerCase().includes(q))) {
+      return true;
+    }
+    if (group.roleAclGroups.some((rg) => rg.acls.some((a) => a.resourceName.toLowerCase().includes(q)))) {
+      return true;
+    }
     return false;
   };
 

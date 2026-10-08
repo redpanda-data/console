@@ -86,12 +86,12 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
       {
         title: subjectNameRaw,
         titleNode:
-          parsed.context !== 'default' ? (
+          parsed.context === 'default' ? undefined : (
             <>
               <span className="text-disabled">:.{parsed.context}:</span>
               {parsed.displayName}
             </>
-          ) : undefined,
+          ),
         linkTo: `/schema-registry/${encodeURIComponent(subjectNameRaw)}?version=${version}`,
         options: {
           canBeTruncated: true,
@@ -268,7 +268,9 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
       <DeleteDialog
         onConfirm={() => executeDeleteSubject(false)}
         onOpenChange={(open) => {
-          if (!open) setSubjectDeleteKind(null);
+          if (!open) {
+            setSubjectDeleteKind(null);
+          }
         }}
         open={subjectDeleteKind === 'soft'}
         schemaVersionName={subjectNameRaw}
@@ -276,7 +278,9 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
       <PermanentDeleteDialog
         onConfirm={() => executeDeleteSubject(true)}
         onOpenChange={(open) => {
-          if (!open) setSubjectDeleteKind(null);
+          if (!open) {
+            setSubjectDeleteKind(null);
+          }
         }}
         open={subjectDeleteKind === 'permanent'}
         schemaVersionName={subjectNameRaw}
@@ -569,7 +573,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       <DeleteDialog
         onConfirm={executeSoftDelete}
         onOpenChange={(open) => {
-          if (!open) setVersionDeleteKind(null);
+          if (!open) {
+            setVersionDeleteKind(null);
+          }
         }}
         open={versionDeleteKind === 'soft'}
         schemaVersionName={`${subjectData.name} version ${schema.version}`}
@@ -577,7 +583,9 @@ const SubjectDefinition = (p: { subject: SchemaRegistrySubjectDetails }) => {
       <PermanentDeleteDialog
         onConfirm={executePermanentDelete}
         onOpenChange={(open) => {
-          if (!open) setVersionDeleteKind(null);
+          if (!open) {
+            setVersionDeleteKind(null);
+          }
         }}
         open={versionDeleteKind === 'permanent'}
         schemaVersionName={`${subjectData.name} version ${schema.version}`}

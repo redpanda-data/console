@@ -97,7 +97,7 @@ describe('KowlJsonView', () => {
       lineNumbers: 'off',
       renderLineHighlight: 'none',
       renderValidationDecorations: 'off',
-      hover: { enabled: false },
+      hover: { enabled: 'off' },
       links: false,
       matchBrackets: 'never',
       stickyScroll: { enabled: false },

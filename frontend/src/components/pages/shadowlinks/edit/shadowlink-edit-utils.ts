@@ -177,7 +177,6 @@ export const buildAuthenticationConfiguration = (values: FormValues) => {
       },
     });
   }
-  return;
 };
 
 /**

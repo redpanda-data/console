@@ -182,11 +182,21 @@ export const CreateUserButton = ({
   onClick,
 }: CreateUserButtonProps) => {
   const disabledReason = (() => {
-    if (isSubmitting) return null;
-    if (usernameEmpty) return 'Enter a username to continue';
-    if (userExists) return 'This username already exists';
-    if (!isValidUsername) return 'Fix the username to continue';
-    if (!isValidPassword) return `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
+    if (isSubmitting) {
+      return null;
+    }
+    if (usernameEmpty) {
+      return 'Enter a username to continue';
+    }
+    if (userExists) {
+      return 'This username already exists';
+    }
+    if (!isValidUsername) {
+      return 'Fix the username to continue';
+    }
+    if (!isValidPassword) {
+      return `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
+    }
     return null;
   })();
   const isDisabled = isSubmitting || !isValidUsername || !isValidPassword || userExists;
@@ -198,7 +208,9 @@ export const CreateUserButton = ({
     </Button>
   );
 
-  if (!disabledReason) return button;
+  if (!disabledReason) {
+    return button;
+  }
 
   return (
     <Tooltip>
@@ -241,7 +253,6 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
     if (userAlreadyExists) {
       return 'User already exists';
     }
-    return;
   }
   const errorText = getErrorText();
 

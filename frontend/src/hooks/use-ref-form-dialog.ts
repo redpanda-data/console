@@ -114,5 +114,5 @@ function useRefFormDialog<TData, TTarget = boolean>(
   };
 }
 
-export { useRefFormDialog };
 export type { RefFormSubmittable, UseRefFormDialogOptions, UseRefFormDialogReturn };
+export { useRefFormDialog };

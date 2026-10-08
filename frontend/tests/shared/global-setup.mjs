@@ -341,7 +341,9 @@ topic.creation.enable=false
         );
         break;
       } catch {
-        if ((i + 1) % 5 === 0) console.log(`  Still waiting for Kafka Connect API... (attempt ${i + 1}/30)`);
+        if ((i + 1) % 5 === 0) {
+          console.log(`  Still waiting for Kafka Connect API... (attempt ${i + 1}/30)`);
+        }
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
@@ -517,7 +519,9 @@ export async function buildBackendImage(isEnterprise) {
       let match;
       while ((match = useRegex.exec(originalGoWork)) !== null) {
         const modulePath = match[1];
-        if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') continue;
+        if (modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')') {
+          continue;
+        }
 
         // Resolve the actual path relative to backendDir, or fall back to the
         // repo root (parent of backendDir). go.work paths like ../console/backend
@@ -769,7 +773,9 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
         );
         break;
       } catch {
-        if ((i + 1) % 10 === 0) console.log(`  Still waiting for backend... (attempt ${i + 1}/90)`);
+        if ((i + 1) % 10 === 0) {
+          console.log(`  Still waiting for backend... (attempt ${i + 1}/90)`);
+        }
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }

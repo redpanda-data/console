@@ -711,11 +711,11 @@ const _apiCreator = (set: any, get: any) => ({
 
   deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
     const partitions =
-      partitionId !== undefined
-        ? [{ partitionId, offset }]
-        : get()
+      partitionId === undefined
+        ? get()
             .topicPartitions?.get(topicName)
-            ?.map((partition: Partition) => ({ partitionId: partition.id, offset }));
+            ?.map((partition: Partition) => ({ partitionId: partition.id, offset }))
+        : [{ partitionId, offset }];
 
     if (!partitions || partitions.length === 0) {
       addError(new Error(`Topic ${topicName} doesn't have partitions.`));
@@ -2922,8 +2922,8 @@ function useApiStoreHook<T>(selector: (state: ReturnType<typeof _apiCreator>) =>
 export {
   useApiStore,
   useApiStoreHook,
-  useRolesStore,
   usePipelinesStore,
+  useRolesStore,
   useRpcnSecretManagerStore,
   useTransformsStore,
 };

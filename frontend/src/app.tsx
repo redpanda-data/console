@@ -101,12 +101,12 @@ declare module '@tanstack/react-router' {
 
   // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
   interface StaticDataRouteOption {
-    /** Route title shown in the page header/breadcrumbs. */
-    title?: string;
-    /** Lucide icon for the route's sidebar entry. */
-    icon?: LucideIcon;
     /** Route has its own title bar: the app header shows only the breadcrumb row. */
     breadcrumbOnlyHeader?: boolean;
+    /** Lucide icon for the route's sidebar entry. */
+    icon?: LucideIcon;
+    /** Route title shown in the page header/breadcrumbs. */
+    title?: string;
   }
 }
 
