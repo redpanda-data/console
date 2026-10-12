@@ -35,7 +35,7 @@ export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }
   }
 
   return (
-    <div className="my-6 flex gap-10">
+    <div className="my-6 flex flex-wrap gap-x-10 gap-y-4">
       {Object.entries(data).map(([k, v]) => (
         <div className="flex flex-col gap-[0.4em]" key={k}>
           <div className="font-semibold text-body-lg">{k}</div>

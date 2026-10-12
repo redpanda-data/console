@@ -396,9 +396,11 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
 
         <Tabs data-testid="topic-details-tabs" onValueChange={setTabPage} value={selectedTabId}>
           <TopicTabModeCtx.Provider value="trigger">
-            <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
-              {tabElements}
-            </TabsList>
+            <div className="overflow-x-auto">
+              <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
+                {tabElements}
+              </TabsList>
+            </div>
           </TopicTabModeCtx.Provider>
           <TopicTabModeCtx.Provider value="content">{tabElements}</TopicTabModeCtx.Provider>
         </Tabs>

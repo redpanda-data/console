@@ -1366,7 +1366,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
   return (
     <>
       <div className="my-4 grid w-full grid-cols-[auto_1fr] gap-3">
-        <div className="col-span-full flex gap-3 md:col-auto">
+        <div className="col-span-full flex flex-wrap gap-3 md:col-auto">
           <Label text="Start Offset">
             <div className="flex gap-3">
               <Select
@@ -1669,10 +1669,11 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
           }}
         />
 
-        <div className="col-span-full mt-4 flex gap-4">
+        <div className="col-span-full mt-4 flex flex-wrap gap-4">
           {/* Quick Search */}
           <Input
             className="px-4"
+            containerClassName="min-w-48 flex-1"
             data-testid="message-quick-search-input"
             onChange={(x) => {
               setQuickSearch(x.target.value);
@@ -1733,7 +1734,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
         </Alert>
       ) : (
         <>
-          <div data-testid="messages-table">
+          <div className="@container" data-testid="messages-table">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -1791,14 +1792,17 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
                       {row.getIsExpanded() && (
                         <TableRow>
                           <TableCell className="p-0" colSpan={row.getVisibleCells().length}>
-                            <ExpandedMessage
-                              msg={row.original}
-                              onCopyKey={handleCopyKey}
-                              onCopyValue={handleCopyValue}
-                              onLoadLargeMessage={onLoadLargeMessage}
-                              onSetDownloadMessages={onSetDownloadMessages}
-                              topicName={topicName}
-                            />
+                            {/* Pin to the visible width so the details don't scroll away with a wide table */}
+                            <div className="sticky left-0 w-[100cqw]">
+                              <ExpandedMessage
+                                msg={row.original}
+                                onCopyKey={handleCopyKey}
+                                onCopyValue={handleCopyValue}
+                                onLoadLargeMessage={onLoadLargeMessage}
+                                onSetDownloadMessages={onSetDownloadMessages}
+                                topicName={topicName}
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       )}

@@ -137,7 +137,7 @@ class Overview extends PageComponent {
         <PageContent className="overviewGrid">
           <div className="my-4">
             <Section className="py-5">
-              <div className="flex gap-8">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:flex md:flex-wrap md:gap-8">
                 <Stat
                   label="Cluster Status"
                   size="lg"
