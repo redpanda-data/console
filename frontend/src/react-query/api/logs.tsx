@@ -450,16 +450,30 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
   return state;
 }
 
+/** History and tail can both hold a message written as the tail opened; keeps the first of each. */
+function withoutRepeats(messages: TopicMessage[]): TopicMessage[] {
+  const seen = new Set<string>();
+  return messages.filter((msg) => {
+    const id = `${msg.partitionID}:${msg.offset}`;
+    if (seen.has(id)) {
+      return false;
+    }
+    seen.add(id);
+    return true;
+  });
+}
+
 export function useLogSearch({
   pipelineId,
   live,
   enabled,
   serverless = true,
 }: UseLogSearchOptions): UseLogSearchReturn {
+  // Stays on in live mode: the tail starts at the end, so history is what it shows before anything new.
   const history = useLogHistory({
     pipelineId,
     serverless,
-    enabled: enabled && !live,
+    enabled,
   });
 
   const liveResult = useLogLive({
@@ -468,21 +482,30 @@ export function useLogSearch({
     enabled: enabled && live,
   });
 
-  if (live) {
-    return {
-      messages: liveResult.messages,
-      phase: liveResult.phase,
-      error: liveResult.error,
-      progress: liveResult.progress,
-      refresh: noop,
-    };
-  }
+  // Re-read on entering live mode, or logs written since the last search fall between the two; and on
+  // leaving it, since the tail's messages go with it.
+  const { messages: historyMessages, refetch: refetchHistory } = history;
+  const wasLive = useRef(live);
+  useEffect(() => {
+    const leftLive = wasLive.current && !live;
+    wasLive.current = live;
+    if (enabled && (live || leftLive)) {
+      refetchHistory();
+    }
+  }, [enabled, live, refetchHistory]);
+
+  const liveMessages = liveResult.messages;
+  const messages = useMemo(
+    () => (live ? withoutRepeats([...liveMessages, ...historyMessages]) : historyMessages),
+    [live, liveMessages, historyMessages]
+  );
 
   return {
-    messages: history.messages,
+    messages,
+    // The tail stays open until it is turned off, so only the history read counts as searching.
     phase: history.phase,
-    error: history.error,
     progress: history.progress,
-    refresh: history.refetch,
+    error: (live ? liveResult.error : null) ?? history.error,
+    refresh: live ? noop : refetchHistory,
   };
 }
