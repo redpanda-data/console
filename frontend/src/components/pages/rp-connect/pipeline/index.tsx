@@ -23,7 +23,6 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -1905,10 +1904,6 @@ function PipelinePageContent() {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
-            <DialogDescription>
-              This component requires a Redpanda topic for logging the data. Select an existing topic, or create a new
-              one.
-            </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <AddTopicStep hideTitle inline ref={topicStepRef} />
@@ -1939,10 +1934,6 @@ function PipelinePageContent() {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
-            <DialogDescription>
-              Select or create a user for this connector. ACLs will be configured automatically for the topic when
-              creating a new user.
-            </DialogDescription>
           </DialogHeader>
           <DialogBody>
             {connectorTopics && connectorTopics.length > 1 && (
