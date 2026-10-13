@@ -67,6 +67,7 @@ describe('LogExplorer', () => {
     mockReturn.progress = { bytesConsumed: 0, messagesConsumed: 0 };
     renderExplorer();
     expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
+    expect(screen.getByText('Searching recent logs…')).toBeInTheDocument();
   });
 
   test('shows progress text (no spinner) when backend provides progress data', () => {
@@ -80,6 +81,11 @@ describe('LogExplorer', () => {
   test('shows history empty state when no messages and search complete', () => {
     renderExplorer();
     expect(screen.getByText('No logs found for this pipeline.')).toBeInTheDocument();
+  });
+
+  test('says when logs will appear on a pipeline that is not running', () => {
+    renderExplorer({ pipeline: { ...pipeline, state: Pipeline_State.STOPPED } as Pipeline });
+    expect(screen.getByText('No recent logs. Logs appear here once the pipeline is running.')).toBeInTheDocument();
   });
 
   test('shows live empty state when live mode enabled and no messages', async () => {

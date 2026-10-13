@@ -444,7 +444,10 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                             {prettyBytes(progress.bytesConsumed)} scanned, {progress.messagesConsumed.toLocaleString()} messages checked
                           </span>
                         ) : (
-                          <Spinner className="size-6" data-testid="log-loading-spinner" />
+                          <>
+                            <Spinner className="size-6" data-testid="log-loading-spinner" />
+                            <span className="text-body-sm text-muted-foreground">Searching recent logs…</span>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -486,6 +489,8 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                   emptyText = 'No messages match the current filters';
                 } else if (liveViewEnabled) {
                   emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
+                } else if (pipelineNotRunning) {
+                  emptyText = 'No recent logs. Logs appear here once the pipeline is running.';
                 } else {
                   emptyText = 'No logs found for this pipeline.';
                 }

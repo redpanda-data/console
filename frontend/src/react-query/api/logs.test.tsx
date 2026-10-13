@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
+import { toast } from 'sonner';
 
 import type { TopicMessage } from '../../state/rest-interfaces';
 
@@ -60,9 +62,9 @@ function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   } as TopicMessage;
 }
 
-function createWrapper() {
+function createWrapper({ retry = false }: { retry?: boolean | number } = {}) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry, retryDelay: 0 } },
   });
   return ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -227,6 +229,42 @@ describe('useLogSearch history mode', () => {
 
     expect(result.current.messages[0].offset).toBe(3);
     expect(result.current.messages[2].offset).toBe(1);
+  });
+
+  test('treats a missing logs topic as no logs, not an error', async () => {
+    mockListMessages.mockImplementation(async function* () {
+      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Get Partitions' } } };
+      throw new ConnectError(
+        'failed to get metadata for topic __redpanda.connect.logs: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.',
+        Code.Unknown
+      );
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.phase).toBeNull());
+    expect(result.current.error).toBeNull();
+    expect(result.current.messages).toEqual([]);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  // The embedded app's client retries once by default.
+  test('does not retry a timed-out search, and says it timed out', async () => {
+    mockListMessages.mockImplementation(async function* () {
+      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
+      throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper({ retry: 1 }) }
+    );
+
+    await waitFor(() => expect(result.current.error).toBe('The log search timed out. Refresh to try again.'));
+    expect(mockListMessages).toHaveBeenCalledTimes(1);
   });
 });
 
