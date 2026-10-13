@@ -29,13 +29,12 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import {
   ServiceAccountSelector,
   type ServiceAccountSelectorRef,
 } from 'components/ui/service-account/service-account-selector';
-import { CircleAlert, RefreshCcw, XIcon } from 'lucide-react';
+import { CircleAlert, RefreshCcw } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
 import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
@@ -349,14 +348,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       [form]
     );
 
-    const handleClearUsername = useCallback(() => {
-      form.setValue('username', '', { shouldDirty: true });
-    }, [form]);
-
-    const handleClearConsumerGroup = useCallback(() => {
-      form.setValue('consumerGroup', '', { shouldDirty: true });
-    }, [form]);
-
     useImperativeHandle(ref, () => ({
       triggerSubmit: async (signal?: AbortSignal) => {
         if (signal?.aborted) {
@@ -385,10 +376,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
     const formBody = (
       <Form {...form}>
-        <div className={inline ? 'flex flex-col gap-8' : 'mt-4 max-w-2xl space-y-8'}>
+        <div className={inline ? 'flex flex-col gap-6' : 'mt-4 max-w-2xl space-y-8'}>
           <div className="flex flex-col gap-2">
-            <FormLabel>Authentication Method</FormLabel>
-            <FormDescription>Choose how to authenticate the pipeline with your Redpanda cluster</FormDescription>
+            <FormLabel>Authentication method</FormLabel>
             <Tabs
               onValueChange={(value) => {
                 if (!value) {
@@ -398,20 +388,15 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
               }}
               value={authMethod}
             >
-              <TabsList variant="underline">
-                <TabsTrigger
-                  disabled={isPending || isServiceAccountPending}
-                  value={AuthenticationMethod.SASL}
-                  variant="underline"
-                >
-                  SASL User
+              <TabsList>
+                <TabsTrigger disabled={isPending || isServiceAccountPending} value={AuthenticationMethod.SASL}>
+                  SASL user
                 </TabsTrigger>
                 <TabsTrigger
                   disabled={isPending || isServiceAccountPending}
                   value={AuthenticationMethod.SERVICE_ACCOUNT}
-                  variant="underline"
                 >
-                  Service Account
+                  Service account
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -422,51 +407,44 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                 <FormLabel>Username</FormLabel>
                 <FormDescription>
                   {topicName
-                    ? `Choose an existing user that has permissions for ${topicName}, or create a new one with full permissions.`
-                    : 'Select an existing user or create a new one.'}
+                    ? `Use an existing user with access to ${topicName}, or create a new one.`
+                    : 'Use an existing user, or create a new one.'}
                 </FormDescription>
-                <div className="flex flex-col items-start gap-2">
-                  {selectionMode === 'both' && (
-                    <ToggleGroup
-                      disabled={isPending}
-                      onValueChange={([value]) => {
-                        // Prevent deselection - ToggleGroup emits empty string when trying to deselect
-                        if (!value) {
-                          return;
-                        }
-                        handleUserSelectionTypeChange(value as CreatableSelectionType);
-                      }}
-                      value={[userSelectionType]}
-                      variant="outline"
-                    >
-                      <ToggleGroupItem
-                        disabled={isPending}
-                        id={CreatableSelectionOptions.EXISTING}
-                        value={CreatableSelectionOptions.EXISTING}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start gap-2">
+                    {selectionMode === 'both' && (
+                      <Tabs
+                        className="shrink-0"
+                        onValueChange={(value) => {
+                          if (!value) {
+                            return;
+                          }
+                          handleUserSelectionTypeChange(value as CreatableSelectionType);
+                        }}
+                        value={userSelectionType}
                       >
-                        Existing
-                      </ToggleGroupItem>
-                      <ToggleGroupItem
-                        disabled={isPending}
-                        id={CreatableSelectionOptions.CREATE}
-                        value={CreatableSelectionOptions.CREATE}
-                      >
-                        New
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  )}
+                        {/* h-9 matches the field beside it. */}
+                        <TabsList className="h-9">
+                          <TabsTrigger disabled={isPending} value={CreatableSelectionOptions.EXISTING}>
+                            Existing
+                          </TabsTrigger>
+                          <TabsTrigger disabled={isPending} value={CreatableSelectionOptions.CREATE}>
+                            New
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    )}
 
-                  <div className="flex gap-2">
                     <FormField
                       control={form.control}
                       name="username"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="min-w-0 flex-1">
                           <FormControl>
                             {userSelectionType === CreatableSelectionOptions.EXISTING ? (
                               <Combobox
                                 {...field}
-                                className="w-[300px]"
+                                className="w-full"
                                 disabled={isPending}
                                 onChange={(value) => {
                                   field.onChange(value);
@@ -489,24 +467,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                                 placeholder="Select a user"
                               />
                             ) : (
-                              <Input
-                                {...field}
-                                className="w-[300px]"
-                                disabled={isPending}
-                                placeholder="Enter a username"
-                              />
+                              <Input {...field} disabled={isPending} placeholder="Enter a username" />
                             )}
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
-                    {watchedUsername && (
-                      <Button disabled={isPending} onClick={handleClearUsername} size="icon" variant="ghost">
-                        <XIcon size={16} />
-                      </Button>
-                    )}
                   </div>
 
                   {existingUserSelected && userSelectionType === CreatableSelectionOptions.CREATE && !isPending && (
@@ -591,12 +558,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         </FormDescription>
                         <FormControl>
                           <Group>
-                            <Input containerClassName="max-w-[300px]" type="password" {...field} />
-                            <CopyButton content={field.value} disabled={isReadOnly} size="sm" variant="outline" />
+                            <Input type="password" {...field} />
+                            <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
                             <Button
+                              className="[&_svg]:size-4"
                               disabled={isReadOnly}
                               onClick={generateNewPassword}
-                              size="icon-sm"
+                              size="icon"
                               type="button"
                               variant="outline"
                             >
@@ -636,7 +604,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                         <FormLabel>SASL mechanism</FormLabel>
                         <FormControl>
                           <Select {...field} onValueChange={field.onChange}>
-                            <SelectTrigger className="w-[300px]">
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select a SASL Mechanism" />
                             </SelectTrigger>
                             <SelectContent>
@@ -660,53 +628,44 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       name="grantTopicPermissions"
                       render={({ field }) => (
                         <FormItem>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center space-x-3">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  disabled={field.disabled}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-medium text-body">
-                                Enable topic-specific permissions for this user for "{topicName}"
-                              </FormLabel>
-                            </div>
-                            <p className="text-body text-muted-foreground">
-                              {field.value && topicName ? (
-                                <span>
-                                  This user will have full permissions (read, write, create, delete, describe, alter) on
-                                  for the <b>{topicName}</b> topic.
-                                </span>
-                              ) : (
-                                <Alert variant="destructive">
-                                  <AlertTitle>
-                                    <div className="flex items-center gap-2 text-label">
-                                      <CircleAlert size={15} />
-                                      User will not be able to read from topic
-                                    </div>
-                                  </AlertTitle>
-                                  <AlertDescription>
-                                    <div className="text-body-sm">
-                                      You will need to configure{' '}
-                                      <TanStackRouterLink
-                                        rel="noopener noreferrer"
-                                        target="_blank"
-                                        to="/security/permissions"
-                                      >
-                                        Permissions
-                                      </TanStackRouterLink>{' '}
-                                      for custom user permissions if you want the user to be able to read from the
-                                      topic.
-                                    </div>
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-                            </p>
-
-                            <FormMessage />
+                          <div className="flex items-center gap-3">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                disabled={field.disabled}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">Grant this user full access to {topicName}</FormLabel>
                           </div>
+                          {field.value ? (
+                            <FormDescription className="pl-7">
+                              Read, write, create, delete, describe and alter permissions on the topic.
+                            </FormDescription>
+                          ) : (
+                            <Alert variant="destructive">
+                              <AlertTitle>
+                                <div className="flex items-center gap-2 text-label">
+                                  <CircleAlert size={15} />
+                                  User will not be able to read from topic
+                                </div>
+                              </AlertTitle>
+                              <AlertDescription>
+                                <div className="text-body-sm">
+                                  You will need to configure{' '}
+                                  <TanStackRouterLink
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                    to="/security/permissions"
+                                  >
+                                    Permissions
+                                  </TanStackRouterLink>{' '}
+                                  for custom user permissions if you want the user to be able to read from the topic.
+                                </div>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -716,45 +675,36 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
               {Boolean(showConsumerGroupFields) && (
                 <div className="flex flex-col gap-2">
-                  <FormLabel>Consumer Group (Optional)</FormLabel>
+                  <FormLabel>Consumer group (optional)</FormLabel>
                   <FormDescription>
                     Associate a consumer group with this user to persist consumer offset position. Or when creating your
                     pipeline specify a partition on the topic instead.
                   </FormDescription>
-                  <div className="flex flex-col items-start gap-2">
-                    <div className="flex gap-2">
-                      <FormField
-                        control={form.control}
-                        name="consumerGroup"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                className="w-[300px]"
-                                disabled={isPending}
-                                onFocus={() => {
-                                  queryClient.invalidateQueries({
-                                    queryKey: createConnectQueryKey({
-                                      schema: listACLs,
-                                      cardinality: 'finite',
-                                    }),
-                                  });
-                                }}
-                                placeholder="Enter a consumer group name"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {watchedConsumerGroup && (
-                        <Button disabled={isPending} onClick={handleClearConsumerGroup} size="icon" variant="ghost">
-                          <XIcon size={16} />
-                        </Button>
+                  <div className="flex flex-col gap-2">
+                    <FormField
+                      control={form.control}
+                      name="consumerGroup"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={isPending}
+                              onFocus={() => {
+                                queryClient.invalidateQueries({
+                                  queryKey: createConnectQueryKey({
+                                    schema: listACLs,
+                                    cardinality: 'finite',
+                                  }),
+                                });
+                              }}
+                              placeholder="Enter a consumer group name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                    </div>
+                    />
 
                     {existingUserSelected &&
                       watchedConsumerGroup &&
@@ -815,14 +765,13 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           )}
 
           {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <FormLabel htmlFor="serviceAccountName">Service Account Name</FormLabel>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2">
+                <FormLabel htmlFor="serviceAccountName">Service account name</FormLabel>
                 <FormDescription>
                   Auto-generated name for the service account. You can customize it if needed.
                 </FormDescription>
                 <Input
-                  className="w-[300px]"
                   disabled={isPending || isServiceAccountPending}
                   id="serviceAccountName"
                   onChange={(e) => setServiceAccountName(e.target.value)}

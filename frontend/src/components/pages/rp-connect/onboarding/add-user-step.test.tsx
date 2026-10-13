@@ -372,10 +372,10 @@ describe('AddUserStep', () => {
       renderWithFileRoutes(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
       // Wait for component to render
-      await screen.findByText('SASL User');
+      await screen.findByText('SASL user');
 
       // Click the Service Account tab
-      const saTab = screen.getByText('Service Account');
+      const saTab = screen.getByText('Service account');
       await user.click(saTab);
 
       // Service Account form should be visible
@@ -393,11 +393,11 @@ describe('AddUserStep', () => {
       });
 
       // Switch to Service Account tab
-      const saTab = await screen.findByText('Service Account');
+      const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
       await waitFor(() => {
-        const nameInput = screen.getByLabelText('Service Account Name') as HTMLInputElement;
+        const nameInput = screen.getByLabelText('Service account name') as HTMLInputElement;
         // The generateServiceAccountName with pipelineName='my-pipe' should contain 'my-pipe'
         expect(nameInput.value).toContain('my-pipe');
       });
@@ -420,7 +420,7 @@ describe('AddUserStep', () => {
       );
 
       // Switch to Service Account tab
-      const saTab = await screen.findByText('Service Account');
+      const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
       await waitFor(() => {
