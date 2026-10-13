@@ -269,6 +269,24 @@ rs.mock('sonner', () => {
 // Import after all mocks are set up.
 import PipelinePage from '.';
 
+// What a draft-capable backend returns: the console backend drops `create_time` when it predates drafts.
+const DRAFT_ERA_PIPELINE = create(PipelineSchema, {
+  id: 'existing',
+  displayName: 'Existing pipeline',
+  createTime: timestampFromMs(1_700_000_000_000),
+});
+
+const listPipelinesResponse = (pipelines: ReturnType<typeof create<typeof PipelineSchema>>[]) =>
+  create(ConsoleListPipelinesResponseSchema, { response: create(ListPipelinesResponseSchema, { pipelines }) });
+
+/** Answers the create page's draft-support sample with a draft-era pipeline; name lookups go to `lookup`. */
+const routeNameLookups = (lookup: (req: unknown) => unknown) =>
+  rs
+    .fn()
+    .mockImplementation((req: { request?: { filter?: { nameContains?: string } } }) =>
+      req.request?.filter?.nameContains ? lookup(req) : listPipelinesResponse([DRAFT_ERA_PIPELINE])
+    );
+
 function createTransport(overrides?: {
   getPipelineMock?: ReturnType<typeof rs.fn>;
   createPipelineMock?: ReturnType<typeof rs.fn>;
@@ -318,15 +336,10 @@ function createTransport(overrides?: {
       deletePipeline,
       overrides?.deletePipelineMock ?? rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}))
     );
-    // Read to number an unnamed draft against the names already in use.
+    // Sampled on the create page for draft support, and read to number an unnamed draft.
     rpc(
       listPipelines,
-      overrides?.listPipelinesMock ??
-        rs.fn().mockReturnValue(
-          create(ConsoleListPipelinesResponseSchema, {
-            response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-          })
-        )
+      overrides?.listPipelinesMock ?? rs.fn().mockReturnValue(listPipelinesResponse([DRAFT_ERA_PIPELINE]))
     );
     rpc(
       startPipeline,
@@ -1052,6 +1065,22 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
     });
 
+    // A console backend that predates drafts drops `draft` on the way in and `create_time` on the way
+    // out, so a pipeline without the latter means a draft save would deploy.
+    it.each([
+      ['the console backend predates drafts', [create(PipelineSchema, { id: 'p1', displayName: 'Old pipeline' })]],
+      ['the cluster has no pipeline to prove support', []],
+    ])('offers no draft when %s', async (_case, pipelines) => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs.fn().mockReturnValue(listPipelinesResponse(pipelines));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
+      expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/);
+    });
+
     // The flag can be on before the API that understands it has rolled out, in which case `draft` is
     // dropped in transit and the pipeline deploys for real. Never report that as a parked draft, and
     // do not leave the deployment running on the strength of a toast the user may not read.
@@ -1278,17 +1307,15 @@ describe('PipelinePage', () => {
       const user = userEvent.setup();
       const requests: unknown[] = [];
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockImplementation((req: unknown) => {
+      const listPipelinesMock = routeNameLookups((req) => {
         requests.push(req);
-        return create(ConsoleListPipelinesResponseSchema, {
-          response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-        });
+        return listPipelinesResponse([]);
       });
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
 
       fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
-      // Nothing listed just by opening the editor.
+      // No name lookup just by opening the editor.
       expect(requests).toHaveLength(0);
 
       await user.click(screen.getByTestId('save-pipeline'));
@@ -1302,12 +1329,8 @@ describe('PipelinePage', () => {
     it('numbers an unnamed draft against the names already taken', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockReturnValue(
-        create(ConsoleListPipelinesResponseSchema, {
-          response: create(ListPipelinesResponseSchema, {
-            pipelines: [create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })],
-          }),
-        })
+      const listPipelinesMock = routeNameLookups(() =>
+        listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })])
       );
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
@@ -1323,15 +1346,10 @@ describe('PipelinePage', () => {
     it('shows the save as busy while the untitled name is being looked up', async () => {
       const user = userEvent.setup();
       let releaseLookup: () => void = () => undefined;
-      const listPipelinesMock = rs.fn().mockImplementation(
+      const listPipelinesMock = routeNameLookups(
         () =>
           new Promise((resolve) => {
-            releaseLookup = () =>
-              resolve(
-                create(ConsoleListPipelinesResponseSchema, {
-                  response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-                })
-              );
+            releaseLookup = () => resolve(listPipelinesResponse([]));
           })
       );
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
@@ -1353,7 +1371,7 @@ describe('PipelinePage', () => {
     it('still saves the draft when the name lookup fails', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockImplementation(() => {
+      const listPipelinesMock = routeNameLookups(() => {
         throw new ConnectError('list unavailable', Code.Unavailable);
       });
 

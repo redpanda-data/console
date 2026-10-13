@@ -69,6 +69,7 @@ import {
   useDeletePipelineMutation,
   useFetchPipelineNames,
   useGetPipelineQuery,
+  usePipelineSampleQuery,
   useStartPipelineMutation,
   useStopPipelineMutation,
   useUpdatePipelineMutation,
@@ -101,6 +102,7 @@ import {
   DRAFT_VIEW_NOTICE_TITLE,
   isDraft,
   NOTHING_TO_SAVE_MESSAGE,
+  provesDraftSupport,
   startBlockedMessage,
   timestampToMillis,
   UNTITLED_PIPELINE_NAME,
@@ -1187,7 +1189,11 @@ function PipelinePageContent() {
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
-  const draftsEnabled = areDraftsEnabled();
+  const draftsFlagEnabled = areDraftsEnabled();
+  // A new pipeline has nothing of its own to prove support with, so it borrows another one's answer.
+  const { data: sampleResponse } = usePipelineSampleQuery({ enabled: draftsFlagEnabled && mode === 'create' });
+  const draftsEnabled =
+    draftsFlagEnabled && provesDraftSupport(mode === 'create' ? sampleResponse?.response?.pipelines[0] : pipeline);
   const saveContext = useMemo<SaveContext>(
     () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
     [mode, pipeline?.state, draftsEnabled]
