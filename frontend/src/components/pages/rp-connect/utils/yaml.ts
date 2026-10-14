@@ -885,6 +885,12 @@ export function extractConnectorTopics(
   return { topics: undefined, parseError: false };
 }
 
+/** The consumer group an input component reads with, if it names one. */
+export function extractConnectorConsumerGroup(yamlContent: string, componentName: string): string | undefined {
+  const group = readComponent(yamlContent, 'input', componentName).component?.consumer_group;
+  return typeof group === 'string' && group !== '' ? group : undefined;
+}
+
 /** Extract all referenced topic names from input/output configs. */
 export function extractAllTopics(yamlContent: string): string[] {
   if (!yamlContent.trim()) {
