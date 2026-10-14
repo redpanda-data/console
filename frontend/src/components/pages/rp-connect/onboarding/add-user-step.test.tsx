@@ -468,6 +468,38 @@ describe('AddUserStep', () => {
         expect(result.data?.serviceAccountId).toBe('sa-123');
       });
     });
+
+    // Connect logs every service-account component in as the pipeline's one account, so a second one
+    // would replace it for all of them and orphan the first.
+    test('keeps the pipeline service account instead of creating another', async () => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport();
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          hasServiceAccount
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          pipelineName="test-pipeline"
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      await user.click(await screen.findByText('Service account'));
+
+      expect(await screen.findByText("Uses this pipeline's service account")).toBeInTheDocument();
+      expect(screen.queryByTestId('service-account-selector')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Service account name')).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(capturedResult).toEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
+      );
+    });
   });
 
   // ── Permissions ────────────────────────────────────────────────────────────

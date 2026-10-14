@@ -39,7 +39,7 @@ export type BaseStepRef<T> = {
 // User step-specific submission result
 export type UserStepSubmissionResult = {
   success: boolean;
-  data?: AddUserFormData | ServiceAccountSubmissionData;
+  data?: AddUserFormData | ServiceAccountSubmissionData | ExistingServiceAccountSubmissionData;
 };
 
 // New ref type for user step
@@ -134,4 +134,10 @@ export type ServiceAccountSubmissionData = {
   serviceAccountName: string;
   serviceAccountId: string;
   serviceAccountSecretName: string;
+};
+
+/** The pipeline's own service account was kept, so nothing was created. */
+export type ExistingServiceAccountSubmissionData = {
+  authMethod: 'service-account';
+  existing: true;
 };

@@ -394,6 +394,9 @@ function createTransport(overrides?: {
   });
 }
 
+/** How the save sends a service account secret's field. */
+const secretRef = (secretName: string, key: string) => `\${secrets.${secretName}.${key}}`;
+
 /** Logs its output in with the pipeline's service account, which the YAML itself doesn't carry. */
 const SERVICE_ACCOUNT_LOGIN_YAML =
   'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n';
@@ -1038,8 +1041,10 @@ describe('PipelinePage', () => {
   // outside the YAML has to reach the save as well.
   describe('Add user quick action', () => {
     const REDPANDA_OUTPUT_YAML = 'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n';
-    const secretRef = (key: string) => `\${secrets.ORDERS_SA.${key}}`;
-    const editablePipeline = (configYaml: string) =>
+    const editablePipeline = (
+      configYaml: string,
+      overrides: { tags?: Record<string, string>; serviceAccount?: { clientId: string; clientSecret: string } } = {}
+    ) =>
       rs.fn().mockReturnValue(
         create(ConsoleGetPipelineResponseSchema, {
           response: create(GetPipelineResponseSchema, {
@@ -1050,6 +1055,7 @@ describe('PipelinePage', () => {
               state: Pipeline_State.STOPPED,
               resources: { cpuShares: '100m', memoryShares: '0' },
               tags: {},
+              ...overrides,
             }),
           }),
         })
@@ -1096,10 +1102,89 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
       const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
       expect(sent.serviceAccount).toMatchObject({
-        clientId: secretRef('client_id'),
-        clientSecret: secretRef('client_secret'),
+        clientId: secretRef('ORDERS_SA', 'client_id'),
+        clientSecret: secretRef('ORDERS_SA', 'client_secret'),
       });
       expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
+    });
+
+    // The save already read the account, so the edits it leaves behind must carry the new one.
+    it('keeps an account attached during an in-flight save recoverable', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      let releaseUpdate: (() => void) | undefined;
+      const updatePipelineMock = rs.fn().mockReturnValue(
+        new Promise((resolve) => {
+          releaseUpdate = () => resolve(create(ConsoleUpdatePipelineResponseSchema, {}));
+        })
+      );
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML), updatePipelineMock }),
+      });
+
+      await user.click(await screen.findByTestId('save-pipeline'));
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      await addServiceAccountToOutput(user);
+      releaseUpdate?.();
+
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
+      expect(buffer?.serviceAccount).toEqual({ serviceAccountId: 'sa-123', secretName: 'ORDERS_SA' });
+    });
+
+    it("keeps the pipeline's own service account rather than creating another", async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const existing = {
+        clientId: secretRef('EXISTING_SA', 'client_id'),
+        clientSecret: secretRef('EXISTING_SA', 'client_secret'),
+      };
+      const existingTags = { rp_cloud_service_account_id: 'sa-existing', rp_cloud_secret_id: 'EXISTING_SA' };
+      userStep.submission = { authMethod: 'service-account', existing: true };
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML, { tags: existingTags, serviceAccount: existing }),
+          updatePipelineMock,
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(true);
+      await user.click(screen.getByRole('button', { name: 'Add' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toContain(
+          'REDPANDA_CLOUD_SERVICE_ACCOUNT'
+        )
+      );
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
+      expect(sent.serviceAccount).toMatchObject(existing);
+      expect(sent.tags).toMatchObject(existingTags);
+    });
+
+    it('offers the account it attached to the next component', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML) }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'Add' }));
+      await waitFor(() => expect(screen.queryByTestId('add-user-step')).not.toBeInTheDocument());
+
+      await user.click(screen.getByTestId('add-user-input'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(true);
     });
 
     // The YAML only names the login mechanism, so recovering it without the account restores a
@@ -1199,7 +1284,7 @@ describe('PipelinePage', () => {
 
       await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
       const sent = createPipelineMock.mock.calls[0][0].request.pipeline;
-      expect(sent.serviceAccount).toMatchObject({ clientId: secretRef('client_id') });
+      expect(sent.serviceAccount).toMatchObject({ clientId: secretRef('ORDERS_SA', 'client_id') });
       expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
     });
   });
@@ -2562,7 +2647,7 @@ describe('PipelinePage', () => {
 
       await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
       const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
-      expect(sent.serviceAccount).toMatchObject({ clientId: `\${secrets.${secretName}.client_id}` });
+      expect(sent.serviceAccount).toMatchObject({ clientId: secretRef(secretName, 'client_id') });
       expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: secretName });
     });
 

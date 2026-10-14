@@ -151,6 +151,7 @@ import type {
   AddTopicFormData,
   AddUserFormData,
   BaseStepRef,
+  ExistingServiceAccountSubmissionData,
   ServiceAccountSubmissionData,
   UserStepRef,
 } from '../types/wizard';
@@ -371,6 +372,10 @@ function usePipelineSave({
 
   const clearErrorLintHints = useCallback(() => setErrorLintHints({}), []);
 
+  // Add user can attach one while a save is in flight, after the save read it.
+  const latestServiceAccount = useRef(attachedServiceAccount);
+  latestServiceAccount.current = attachedServiceAccount;
+
   const clearWizardStore = useCallback(() => {
     if (!isPipelineDiagramsEnabled) {
       useRpcnWizardStore.getState().setYamlContent({ yamlContent: '' });
@@ -406,6 +411,7 @@ function usePipelineSave({
           tags: onScreen.tags,
           configYaml: currentYaml,
           basedOnUpdateTime: savedUpdateTime,
+          serviceAccount: latestServiceAccount.current,
         });
       }
     },
@@ -694,15 +700,21 @@ function useDiagramDialogs(
     },
   });
 
-  const userDialog = useRefFormDialog<AddUserFormData | ServiceAccountSubmissionData, DiagramDialogTarget>({
+  const userDialog = useRefFormDialog<
+    AddUserFormData | ServiceAccountSubmissionData | ExistingServiceAccountSubmissionData,
+    DiagramDialogTarget
+  >({
     ref: userStepRef,
     onSuccess: (data, target) => {
       let setupResult: RedpandaSetupResultLike = {};
       let serviceAccount: AttachedServiceAccount | undefined;
       if ('authMethod' in data && data.authMethod === 'service-account') {
-        const { serviceAccountId, serviceAccountSecretName } = data as ServiceAccountSubmissionData;
-        setupResult = { authMethod: 'service-account', serviceAccountSecretName };
-        serviceAccount = { serviceAccountId, secretName: serviceAccountSecretName };
+        setupResult = { authMethod: 'service-account' };
+        // A kept account is already the one the save sends.
+        if (!('existing' in data)) {
+          const { serviceAccountId, serviceAccountSecretName } = data as ServiceAccountSubmissionData;
+          serviceAccount = { serviceAccountId, secretName: serviceAccountSecretName };
+        }
       } else if ('username' in data) {
         setupResult = {
           authMethod: 'sasl',
@@ -2059,6 +2071,7 @@ function PipelinePageContent() {
             )}
             <AddUserStep
               defaultConsumerGroup={connectorConsumerGroup}
+              hasServiceAccount={savesWithServiceAccount(mode, attachedServiceAccount, pipeline)}
               hideTitle
               inline
               ref={userStepRef}

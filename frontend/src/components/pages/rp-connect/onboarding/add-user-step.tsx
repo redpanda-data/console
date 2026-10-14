@@ -79,6 +79,8 @@ type AddUserStepProps = {
   onValidityChange?: (isValid: boolean) => void;
   defaultAuthMethod?: 'sasl' | 'service-account';
   defaultServiceAccountName?: string;
+  /** The pipeline already has a service account, which the Service account tab keeps instead of creating one. */
+  hasServiceAccount?: boolean;
   pipelineName?: string;
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
@@ -100,6 +102,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       onValidityChange,
       defaultAuthMethod,
       defaultServiceAccountName,
+      hasServiceAccount = false,
       pipelineName,
       selectionMode = 'both',
       hideTitle,
@@ -198,10 +201,18 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     useEffect(() => {
       const isValid =
         authMethod === AuthenticationMethod.SERVICE_ACCOUNT
-          ? Boolean(serviceAccountName && serviceAccountName.trim().length > 0 && !isServiceAccountPending)
+          ? hasServiceAccount ||
+            Boolean(serviceAccountName && serviceAccountName.trim().length > 0 && !isServiceAccountPending)
           : form.formState.isValid;
       onValidityChange?.(isValid);
-    }, [authMethod, serviceAccountName, isServiceAccountPending, form.formState.isValid, onValidityChange]);
+    }, [
+      authMethod,
+      hasServiceAccount,
+      serviceAccountName,
+      isServiceAccountPending,
+      form.formState.isValid,
+      onValidityChange,
+    ]);
 
     const userOptions = useMemo(
       () =>
@@ -266,6 +277,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex form with dual auth methods requires conditional logic
       async (userData: AddUserFormData): Promise<UserStepSubmissionResult> => {
         if (authMethod === AuthenticationMethod.SERVICE_ACCOUNT) {
+          if (hasServiceAccount) {
+            return { success: true, data: { authMethod: AuthenticationMethod.SERVICE_ACCOUNT, existing: true } };
+          }
           if (!serviceAccountSelectorRef.current) {
             toast.error('Service account selector not initialized');
             return { success: false };
@@ -328,6 +342,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       },
       [
         authMethod,
+        hasServiceAccount,
         serviceAccountName,
         pipelineName,
         topicName,
@@ -764,7 +779,16 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
             </>
           )}
 
-          {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && (
+          {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && hasServiceAccount && (
+            <Alert variant="informative">
+              <AlertTitle>Uses this pipeline's service account</AlertTitle>
+              <AlertDescription>
+                This pipeline already has a service account, so this component logs in with it. No new account is
+                created.
+              </AlertDescription>
+            </Alert>
+          )}
+          {authMethod === AuthenticationMethod.SERVICE_ACCOUNT && !hasServiceAccount && (
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <FormLabel htmlFor="serviceAccountName">Service account name</FormLabel>
