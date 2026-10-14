@@ -147,14 +147,7 @@ import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentType } from '../types/schema';
-import type {
-  AddTopicFormData,
-  AddUserFormData,
-  BaseStepRef,
-  ExistingServiceAccountSubmissionData,
-  ServiceAccountSubmissionData,
-  UserStepRef,
-} from '../types/wizard';
+import type { AddTopicFormData, BaseStepRef, UserStepRef, UserStepSubmissionData } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -658,6 +651,31 @@ function usePipelineSave({
 
 type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
 
+/** What an Add user result writes into the component, and the new service account it brings. */
+function userDialogSetup(data: UserStepSubmissionData): {
+  setupResult: RedpandaSetupResultLike;
+  serviceAccount?: AttachedServiceAccount;
+} {
+  if ('username' in data) {
+    return {
+      setupResult: {
+        authMethod: 'sasl',
+        username: data.username,
+        saslMechanism: data.saslMechanism,
+        consumerGroup: data.consumerGroup,
+      },
+    };
+  }
+  return {
+    setupResult: { authMethod: 'service-account' },
+    // A kept account is already the one the save sends.
+    serviceAccount:
+      'serviceAccountId' in data
+        ? { serviceAccountId: data.serviceAccountId, secretName: data.serviceAccountSecretName }
+        : undefined,
+  };
+}
+
 function useDiagramDialogs(
   yamlContent: string,
   patchComponent: (section: 'input' | 'output', componentName: string, patch: RedpandaSetupResultLike) => boolean,
@@ -676,27 +694,10 @@ function useDiagramDialogs(
     },
   });
 
-  const userDialog = useRefFormDialog<
-    AddUserFormData | ServiceAccountSubmissionData | ExistingServiceAccountSubmissionData,
-    DiagramDialogTarget
-  >({
+  const userDialog = useRefFormDialog<UserStepSubmissionData, DiagramDialogTarget>({
     ref: userStepRef,
     onSuccess: (data, target) => {
-      let setupResult: RedpandaSetupResultLike = {};
-      let serviceAccount: AttachedServiceAccount | undefined;
-      if ('authMethod' in data && data.authMethod === 'service-account') {
-        setupResult = { authMethod: 'service-account' };
-        // A kept account is already the one the save sends.
-        if ('serviceAccountId' in data) {
-          serviceAccount = { serviceAccountId: data.serviceAccountId, secretName: data.serviceAccountSecretName };
-        }
-      } else if ('username' in data) {
-        setupResult = {
-          authMethod: 'sasl',
-          username: (data as AddUserFormData).username,
-          saslMechanism: (data as AddUserFormData).saslMechanism,
-        };
-      }
+      const { setupResult, serviceAccount } = userDialogSetup(data);
       if (patchComponent(target.section, target.componentName, setupResult)) {
         if (serviceAccount) {
           onServiceAccountAttached(serviceAccount);

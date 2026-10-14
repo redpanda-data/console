@@ -22,7 +22,7 @@ import {
   type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { convertToScreamingSnakeCase } from '../types/constants';
+import { userSecretIds } from '../types/constants';
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
 const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {
@@ -254,7 +254,7 @@ const createUsernameSecret = async (
   try {
     const usernameSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
-        id: `KAFKA_USER_${convertToScreamingSnakeCase(username)}`,
+        id: userSecretIds(username).username,
         secretData: base64ToUInt8Array(encodeBase64(username)),
         scopes: [Scope.REDPANDA_CONNECT],
         labels: {
@@ -292,7 +292,7 @@ const createPasswordSecret = async (
   try {
     const passwordSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
-        id: `KAFKA_PASSWORD_${convertToScreamingSnakeCase(username)}`,
+        id: userSecretIds(username).password,
         secretData: base64ToUInt8Array(encodeBase64(password)),
         scopes: [Scope.REDPANDA_CONNECT],
         labels: {
@@ -326,6 +326,12 @@ const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
   'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
   'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
 };
+
+/** The SCRAM mechanism a user was created with, if it is one. */
+export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): SaslMechanism | undefined =>
+  (Object.keys(saslMechanismToProtoMapping) as SaslMechanism[]).find(
+    (name) => saslMechanismToProtoMapping[name] === mechanism
+  );
 
 const createKafkaUser = async (
   userData: AddUserFormData,

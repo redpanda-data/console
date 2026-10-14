@@ -14,8 +14,11 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CreateSecretResponseSchema as CreateSecretResponseSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { createSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import {
+  CreateSecretResponseSchema as CreateSecretResponseSchemaConsole,
+  ListSecretsResponseSchema as ListSecretsResponseSchemaConsole,
+} from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -26,10 +29,12 @@ import {
   ListACLsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { ListSecretsResponseSchema, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   CreateUserResponseSchema,
   ListUsersResponse_UserSchema,
   ListUsersResponseSchema,
+  SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { useRef } from 'react';
@@ -130,6 +135,7 @@ function buildTransport(overrides?: {
   listACLsMock?: ReturnType<typeof rs.fn>;
   createACLMock?: ReturnType<typeof rs.fn>;
   createSecretMock?: ReturnType<typeof rs.fn>;
+  listSecretsMock?: ReturnType<typeof rs.fn>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
@@ -156,6 +162,9 @@ function buildTransport(overrides?: {
     rpc(listACLs, listACLsMock);
     rpc(createACL, createACLMock);
     rpc(createSecret, createSecretMock);
+    if (overrides?.listSecretsMock) {
+      rpc(listSecrets, overrides.listSecretsMock);
+    }
   });
 
   return {
@@ -169,6 +178,8 @@ function buildTransport(overrides?: {
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
+
+const ALREADY_EXISTS = /already exists/;
 
 describe('AddUserStep', () => {
   beforeEach(() => {
@@ -500,6 +511,66 @@ describe('AddUserStep', () => {
       await waitFor(() =>
         expect(capturedResult).toEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
       );
+    });
+  });
+
+  // A component logs in as the user it's given, so an existing one has to work as configured.
+  describe('Existing user', () => {
+    const existingUser = () =>
+      rs.fn().mockReturnValue(
+        create(ListUsersResponseSchema, {
+          users: [
+            create(ListUsersResponse_UserSchema, {
+              name: 'existing-user',
+              mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
+            }),
+          ],
+        })
+      );
+    const storedSecrets = (...ids: string[]) =>
+      rs.fn().mockReturnValue(
+        create(ListSecretsResponseSchemaConsole, {
+          response: create(ListSecretsResponseSchema, { secrets: ids.map((id) => create(SecretSchema, { id })) }),
+        })
+      );
+
+    test('logs in with the mechanism the user was created with', async () => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport({ listUsersMock: existingUser() });
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      await user.type(await screen.findByPlaceholderText('Enter a username'), 'existing-user');
+      await screen.findByText(ALREADY_EXISTS);
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(capturedResult).toMatchObject({ success: true, data: { saslMechanism: 'SCRAM-SHA-512' } })
+      );
+    });
+
+    // Its password isn't known here, so the pipeline can only use secrets stored when it was created.
+    test.each([
+      ['none', [], 'KAFKA_USER_EXISTING_USER and KAFKA_PASSWORD_EXISTING_USER secrets, which'],
+      ['only the username', ['KAFKA_USER_EXISTING_USER'], 'with the KAFKA_PASSWORD_EXISTING_USER secret, which'],
+    ])('names the credential secrets it lacks when %s are stored', async (_case, ids, named) => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport({ listUsersMock: existingUser(), listSecretsMock: storedSecrets(...ids) });
+
+      renderWithFileRoutes(<TestHarness onResult={rs.fn()} selectionMode="new" />, { transport });
+
+      await user.type(await screen.findByPlaceholderText('Enter a username'), 'existing-user');
+      expect(await screen.findByText('No stored credentials for this user')).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(named))).toBeInTheDocument();
     });
   });
 

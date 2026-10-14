@@ -2202,6 +2202,38 @@ output_resources:
       const parsed = parseYaml(next as string) as { input: { redpanda: { topics: unknown[] } } };
       expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
     });
+
+    // The dialog grants the group it shows, so the input has to read as that one.
+    test('sets the consumer group an input reads as', () => {
+      const next = tryPatchRedpandaYaml(
+        'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: old-readers\n',
+        'input',
+        'redpanda',
+        { authMethod: 'sasl', username: 'orders-reader', consumerGroup: 'orders-readers' }
+      );
+      expect(parseYaml(next ?? '').input.redpanda.consumer_group).toBe('orders-readers');
+    });
+
+    test('leaves a consumer group the input already reads with, even from a merge key', () => {
+      const yaml =
+        'common: &rp\n  consumer_group: orders-readers\ninput:\n  redpanda:\n    <<: *rp\n    topics: [orders]\n';
+      const next = tryPatchRedpandaYaml(yaml, 'input', 'redpanda', {
+        authMethod: 'sasl',
+        username: 'orders-reader',
+        consumerGroup: 'orders-readers',
+      });
+      expect(next).not.toContain('    consumer_group:');
+      expect(parseYaml(next ?? '', { merge: true }).input.redpanda.consumer_group).toBe('orders-readers');
+    });
+
+    test('gives an output no consumer group', () => {
+      const next = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
+        authMethod: 'sasl',
+        username: 'orders-writer',
+        consumerGroup: 'orders-readers',
+      });
+      expect(parseYaml(next ?? '').output.redpanda.consumer_group).toBeUndefined();
+    });
   });
 
   describe('field-less component templates', () => {

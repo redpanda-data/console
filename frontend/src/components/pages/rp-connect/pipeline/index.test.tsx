@@ -1262,6 +1262,27 @@ describe('PipelinePage', () => {
       expect(userStep.props).toMatchObject({ defaultConsumerGroup: 'orders-readers', showConsumerGroupFields: true });
     });
 
+    it('reads as the consumer group the dialog granted', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      userStep.submission = { username: 'orders-reader', saslMechanism: 'SCRAM-SHA-256', consumerGroup: 'orders-v2' };
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(
+            'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
+          ),
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-input'));
+      await user.click(await screen.findByRole('button', { name: 'Add' }));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toContain('consumer_group: orders-v2')
+      );
+    });
+
     it('attaches the service account it created to a new pipeline', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'create' });
