@@ -1232,6 +1232,46 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'));
     });
 
+    // Unknown support must not turn the primary save into one that deploys.
+    it('offers a draft when the sample fails', async () => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs.fn().mockRejectedValue(new ConnectError('unavailable', Code.Unavailable));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'), {
+        timeout: 5000,
+      });
+    });
+
+    // Until the sample answers, the primary save would deploy, so a quick click or ⌘S has to wait.
+    it('holds save until it knows whether the cluster can store drafts', async () => {
+      const user = userEvent.setup();
+      let answerSample: (() => void) | undefined;
+      const listPipelinesMock = rs.fn(
+        () =>
+          new Promise((resolve) => {
+            answerSample = () => resolve(listPipelinesResponse([DRAFT_ERA_PIPELINE]));
+          })
+      );
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock, createPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  generate: {}' } });
+      await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
+      expect(screen.getByTestId('save-pipeline')).toBeDisabled();
+      fireEvent.keyDown(window, { key: 's', metaKey: true });
+
+      answerSample?.();
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toBeEnabled());
+      expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft');
+      // The held ⌘S was dropped, not queued.
+      expect(createPipelineMock).not.toHaveBeenCalled();
+    });
+
     // The flag can be on before the API that understands it has rolled out, in which case `draft` is
     // dropped in transit and the pipeline deploys for real. Never report that as a parked draft, and
     // do not leave the deployment running on the strength of a toast the user may not read.

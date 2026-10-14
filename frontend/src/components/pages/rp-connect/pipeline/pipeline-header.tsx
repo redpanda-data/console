@@ -359,10 +359,12 @@ export function PipelineViewHeader({
 const SaveActions = ({
   context,
   isSaving,
+  disabled,
   onSave,
 }: {
   context: SaveContext;
   isSaving?: boolean;
+  disabled?: boolean;
   onSave: (intent?: SaveIntent) => void;
 }) => {
   const primary = primaryRunIntent(context);
@@ -370,7 +372,7 @@ const SaveActions = ({
   return (
     // Positions come from JSX order, not DOM siblings: the open menu's focus guards land inside this div.
     <Group attached className="w-auto">
-      <Button disabled={isSaving} onClick={() => onSave({ run: primary })} testId="save-pipeline">
+      <Button disabled={isSaving || disabled} onClick={() => onSave({ run: primary })} testId="save-pipeline">
         {runIntentLabel(primary, context)}
         {isSaving ? <Spinner /> : null}
       </Button>
@@ -378,7 +380,12 @@ const SaveActions = ({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button aria-label="More save options" disabled={isSaving} size="icon" testId="save-pipeline-options">
+              <Button
+                aria-label="More save options"
+                disabled={isSaving || disabled}
+                size="icon"
+                testId="save-pipeline-options"
+              >
                 <ChevronDown />
               </Button>
             }
@@ -405,6 +412,7 @@ export function PipelineEditHeader({
   onEditSettings,
   onRequestDelete,
   isSaving,
+  isSaveBlocked,
   hasUnsavedChanges,
   expanded,
   draftIssueCount,
@@ -419,6 +427,8 @@ export function PipelineEditHeader({
   /** Only offered while editing a draft. */
   onRequestDelete?: () => void;
   isSaving?: boolean;
+  /** Save stays off until what it would do is known. */
+  isSaveBlocked?: boolean;
   hasUnsavedChanges?: boolean;
   expanded: boolean;
   /** Outstanding lint issues; shown on a draft only. */
@@ -461,7 +471,7 @@ export function PipelineEditHeader({
             >
               Docs
             </Button>
-            <SaveActions context={saveContext} isSaving={isSaving} onSave={onSave} />
+            <SaveActions context={saveContext} disabled={isSaveBlocked} isSaving={isSaving} onSave={onSave} />
             {hasUnsavedChanges ? (
               <span
                 className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-body-sm text-muted-foreground"
