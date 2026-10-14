@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
+import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import type { PipelineFormValues } from '.';
@@ -27,16 +27,20 @@ export function useEditorAutosave({
   pipelineId,
   form,
   editorStore,
+  serviceAccount,
 }: {
   enabled: boolean;
   /** Undefined on the create page. */
   pipelineId: string | undefined;
   form: UseFormReturn<PipelineFormValues>;
   editorStore: ReturnType<typeof usePipelineEditorStoreApi>;
+  serviceAccount: AttachedServiceAccount | undefined;
 }) {
   const targetKey = autosaveTargetKey(pipelineId);
   const formRef = useRef(form);
   formRef.current = form;
+  const serviceAccountRef = useRef(serviceAccount);
+  serviceAccountRef.current = serviceAccount;
   // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
   const hasWrittenRef = useRef(false);
 
@@ -61,6 +65,7 @@ export function useEditorAutosave({
       tags: values.tags,
       configYaml: yamlContent,
       basedOnUpdateTime: baselineUpdateTime,
+      serviceAccount: serviceAccountRef.current,
     });
   }, [targetKey, editorStore]);
 

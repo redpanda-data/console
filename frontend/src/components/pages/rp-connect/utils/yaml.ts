@@ -830,6 +830,25 @@ export function tryPatchRedpandaYaml(
   return patchRedpandaConfig(yamlContent, section, componentName, patch);
 }
 
+/** Whether any client logs in with the pipeline's service account, which it then can't run without. */
+export function usesServiceAccountLogin(yamlContent: string): boolean {
+  let found = false;
+  visit(parseDocument(yamlContent), {
+    Pair(_, pair) {
+      if (
+        isScalar(pair.key) &&
+        pair.key.value === 'mechanism' &&
+        isScalar(pair.value) &&
+        pair.value.value === CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM
+      ) {
+        found = true;
+        return visit.BREAK;
+      }
+    },
+  });
+  return found;
+}
+
 /**
  * Extract topic(s) from a Redpanda connector. All Redpanda types keep topics at
  * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).

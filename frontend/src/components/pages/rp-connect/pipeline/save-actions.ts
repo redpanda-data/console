@@ -139,6 +139,9 @@ export const isBlankConfig = (configYaml: string): boolean => configYaml.trim().
 
 export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting this pipeline.';
 
+export const MISSING_SERVICE_ACCOUNT_MESSAGE =
+  "This config logs in with the pipeline's service account, but the pipeline doesn't have one. Create one with Add user on the component, or use a SASL user.";
+
 export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): string {
   const isCreate = context.mode === 'create';
   if (run === 'draft') {

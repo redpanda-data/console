@@ -315,6 +315,25 @@ describe('rpcn-editor-autosave', () => {
     });
   });
 
+  describe('serviceAccount', () => {
+    const account = { serviceAccountId: 'sa-123', secretName: 'ORDERS_SA' };
+
+    // The config only names the login mechanism; the account it logs in with is stored beside it.
+    it('round-trips the account the edits attached', () => {
+      rpcnEditorAutosave.save(buffer({ serviceAccount: account }));
+      useRpcnEditorAutosaveStore.getState().refresh();
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.serviceAccount).toEqual(account);
+    });
+
+    it('keeps a buffer written without one', () => {
+      rpcnEditorAutosave.save(buffer());
+      useRpcnEditorAutosaveStore.getState().refresh();
+
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).not.toBeNull();
+    });
+  });
+
   describe('selectAutosaveEntry', () => {
     it('returns nothing without a target', () => {
       expect(selectAutosaveEntry([], undefined)).toBeNull();
