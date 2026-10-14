@@ -1190,18 +1190,29 @@ describe('PipelinePage', () => {
 
     // A console backend that predates drafts drops `draft` on the way in and `create_time` on the way
     // out, so a pipeline without the latter means a draft save would deploy.
-    it.each([
-      ['the console backend predates drafts', [create(PipelineSchema, { id: 'p1', displayName: 'Old pipeline' })]],
-      ['the cluster has no pipeline to prove support', []],
-    ])('offers no draft when %s', async (_case, pipelines) => {
+    it('offers no draft when the console backend predates drafts', async () => {
       const user = userEvent.setup();
-      const listPipelinesMock = rs.fn().mockReturnValue(listPipelinesResponse(pipelines));
+      const listPipelinesMock = rs
+        .fn()
+        .mockReturnValue(listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Old pipeline' })]));
 
       render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
       await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
       expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/);
+    });
+
+    // A brand-new cluster has no pipeline to lend an answer, and hiding drafts there would hide them
+    // from every first pipeline.
+    it('offers a draft on a cluster with no pipelines yet', async () => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs.fn().mockReturnValue(listPipelinesResponse([]));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'));
     });
 
     // The flag can be on before the API that understands it has rolled out, in which case `draft` is
