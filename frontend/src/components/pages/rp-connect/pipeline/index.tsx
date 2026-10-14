@@ -236,6 +236,22 @@ function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: strin
   }
 }
 
+/** A service account created in this editor for a component to log in with. */
+type AttachedServiceAccount = { serviceAccountId: string; secretName: string };
+
+/** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
+function serviceAccountFields(account: AttachedServiceAccount) {
+  const tags: Record<string, string> = {};
+  addServiceAccountTags(tags, account.serviceAccountId, account.secretName);
+  return {
+    tags,
+    serviceAccount: create(Pipeline_ServiceAccountSchema, {
+      clientId: `\${secrets.${account.secretName}.client_id}`,
+      clientSecret: `\${secrets.${account.secretName}.client_secret}`,
+    }),
+  };
+}
+
 function buildCreateRequest(opts: {
   name: string;
   description: string | undefined;
@@ -243,20 +259,21 @@ function buildCreateRequest(opts: {
   userTags: Record<string, string>;
   yamlContent: string;
   draft: boolean;
+  serviceAccount: AttachedServiceAccount | undefined;
 }) {
   const userData = useRpcnWizardStore.getState();
   const tags: Record<string, string> = {
     __redpanda_cloud_pipeline_type: 'pipeline',
   };
 
-  let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
-  if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
-    addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
-    serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
-      clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
-      clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
-    });
-  }
+  const wizardAccount =
+    userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName
+      ? { serviceAccountId: userData.serviceAccountId, secretName: userData.serviceAccountSecretName }
+      : undefined;
+  const account = opts.serviceAccount ?? wizardAccount;
+  const accountFields = account ? serviceAccountFields(account) : undefined;
+  Object.assign(tags, accountFields?.tags);
+  const serviceAccountConfig = accountFields?.serviceAccount;
 
   return create(CreatePipelineRequestSchema, {
     request: create(CreatePipelineRequestSchemaDataPlane, {
@@ -297,6 +314,7 @@ function usePipelineSave({
   isPipelineDiagramsEnabled,
   onBeforeGuardedNavigate,
   saveContext,
+  attachedServiceAccount,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   /** The editor store — read fresh at save time (after flushing pending visual edits). */
@@ -308,6 +326,8 @@ function usePipelineSave({
   /** Stands the unsaved-changes guard down before a navigation this page performs itself. */
   onBeforeGuardedNavigate?: () => void;
   saveContext: SaveContext;
+  /** Replaces the pipeline's service account on save. */
+  attachedServiceAccount: AttachedServiceAccount | undefined;
 }) {
   const navigate = useNavigate();
   const { mutateAsync: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -420,7 +440,15 @@ function usePipelineSave({
       try {
         if (mode === 'create') {
           const response = await createMutation(
-            buildCreateRequest({ name, description, computeUnits, userTags, yamlContent, draft: isDraftSave })
+            buildCreateRequest({
+              name,
+              description,
+              computeUnits,
+              userTags,
+              yamlContent,
+              draft: isDraftSave,
+              serviceAccount: attachedServiceAccount,
+            })
           );
           const createdPipeline = response.response?.pipeline;
           const newPipelineId = createdPipeline?.id;
@@ -478,6 +506,7 @@ function usePipelineSave({
           return false;
         }
 
+        const attachedAccount = attachedServiceAccount ? serviceAccountFields(attachedServiceAccount) : undefined;
         const response = await updateMutation(
           create(UpdatePipelineRequestSchema, {
             request: create(UpdatePipelineRequestSchemaDataPlane, {
@@ -489,9 +518,10 @@ function usePipelineSave({
                 resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
                 tags: {
                   ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
+                  ...attachedAccount?.tags,
                   ...userTags,
                 },
-                serviceAccount: pipeline?.serviceAccount,
+                serviceAccount: attachedAccount?.serviceAccount ?? pipeline?.serviceAccount,
                 // Asserted so the server refuses the write if the draft was started meanwhile.
                 draft: isDraftSave ? true : undefined,
               }),
@@ -578,6 +608,7 @@ function usePipelineSave({
       markSaved,
       saveContext,
       nextUntitledName,
+      attachedServiceAccount,
     ]
   );
 
@@ -619,7 +650,8 @@ type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string 
 function useDiagramDialogs(
   yamlContent: string,
   patchComponent: (section: 'input' | 'output', componentName: string, patch: RedpandaSetupResultLike) => boolean,
-  focusEditorEnd: () => void
+  focusEditorEnd: () => void,
+  onServiceAccountAttached: (account: AttachedServiceAccount) => void
 ) {
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
@@ -637,11 +669,11 @@ function useDiagramDialogs(
     ref: userStepRef,
     onSuccess: (data, target) => {
       let setupResult: RedpandaSetupResultLike = {};
+      let serviceAccount: AttachedServiceAccount | undefined;
       if ('authMethod' in data && data.authMethod === 'service-account') {
-        setupResult = {
-          authMethod: 'service-account',
-          serviceAccountSecretName: (data as ServiceAccountSubmissionData).serviceAccountSecretName,
-        };
+        const { serviceAccountId, serviceAccountSecretName } = data as ServiceAccountSubmissionData;
+        setupResult = { authMethod: 'service-account', serviceAccountSecretName };
+        serviceAccount = { serviceAccountId, secretName: serviceAccountSecretName };
       } else if ('username' in data) {
         setupResult = {
           authMethod: 'sasl',
@@ -650,6 +682,9 @@ function useDiagramDialogs(
         };
       }
       if (patchComponent(target.section, target.componentName, setupResult)) {
+        if (serviceAccount) {
+          onServiceAccountAttached(serviceAccount);
+        }
         focusEditorEnd();
       }
     },
@@ -1226,6 +1261,9 @@ function PipelinePageContent() {
     [setYamlContent, form]
   );
 
+  // A component given a new service account logs in as the pipeline's, so the save attaches it.
+  const [attachedServiceAccount, setAttachedServiceAccount] = useState<AttachedServiceAccount>();
+
   const {
     handleSave,
     handleDelete,
@@ -1244,6 +1282,7 @@ function PipelinePageContent() {
     isPipelineDiagramsEnabled,
     onBeforeGuardedNavigate: markNavigationAllowed,
     saveContext,
+    attachedServiceAccount,
   });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
@@ -1333,7 +1372,7 @@ function PipelinePageContent() {
   }, [editorStore]);
 
   const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
-    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd);
+    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd, setAttachedServiceAccount);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
