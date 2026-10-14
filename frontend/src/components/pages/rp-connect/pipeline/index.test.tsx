@@ -13,6 +13,7 @@ import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/ap
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';

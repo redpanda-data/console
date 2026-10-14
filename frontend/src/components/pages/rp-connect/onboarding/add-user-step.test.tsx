@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CreateSecretResponseSchema as CreateSecretResponseSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
