@@ -1243,6 +1243,7 @@ describe('PipelinePage', () => {
       await user.click(await screen.findByTestId('add-user-output'));
       await screen.findByTestId('add-user-step');
       expect(Boolean(screen.queryByText('No topic yet'))).toBe(warns);
+      expect(userStep.props.topicAccess).toBe('write');
     });
 
     it('starts the dialog from the consumer group the input reads with', async () => {
@@ -1262,6 +1263,7 @@ describe('PipelinePage', () => {
       expect(userStep.props).toMatchObject({
         defaultConsumerGroup: 'orders-readers',
         showConsumerGroupFields: true,
+        topicAccess: 'read',
         pipelineName: 'Test Pipeline',
       });
     });

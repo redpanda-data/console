@@ -2053,6 +2053,7 @@ function PipelinePageContent() {
               pipelineName={settingsValues.name || undefined}
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
+              topicAccess={userDialog.target?.section === 'input' ? 'read' : 'write'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
             />
           </DialogBody>
