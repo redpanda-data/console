@@ -626,12 +626,10 @@ export type RedpandaSetupResultLike = {
   username?: string;
   saslMechanism?: string;
   authMethod?: 'sasl' | 'service-account';
-  serviceAccountSecretName?: string;
 };
 
 function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
-  if (result.authMethod === 'service-account' && result.serviceAccountSecretName) {
-    // Logs in with the pipeline's own service account, which the save attaches to the pipeline.
+  if (result.authMethod === 'service-account') {
     return [{ mechanism: CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM }];
   }
   if (result.username) {

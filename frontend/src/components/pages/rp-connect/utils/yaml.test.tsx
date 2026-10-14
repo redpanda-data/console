@@ -1471,13 +1471,11 @@ output:
       test('logs a service account in with the pipeline account', () => {
         const result = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
           authMethod: 'service-account',
-          serviceAccountSecretName: 'ORDERS_SA',
         });
         expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
           seed_brokers: [brokersVariable],
           sasl: [{ mechanism: 'REDPANDA_CLOUD_SERVICE_ACCOUNT' }],
         });
-        expect(result).not.toContain('ORDERS_SA');
       });
 
       test('adds nothing for a topic alone, or for components that never borrow the shared client', () => {
