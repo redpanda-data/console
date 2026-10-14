@@ -36,7 +36,7 @@ import {
 } from 'components/ui/service-account/service-account-selector';
 import { CircleAlert, RefreshCcw } from 'lucide-react';
 import type { MotionProps } from 'motion/react';
-import { ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { ACL_ResourcePatternType, ACL_ResourceType } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
@@ -178,6 +178,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         filter: {
           resourceType: ACL_ResourceType.TOPIC,
           resourceName: topicName,
+          // Also returns the prefixed and wildcard ACLs that cover the topic.
+          resourcePatternType: ACL_ResourcePatternType.MATCH,
         },
       },
       {
@@ -244,6 +246,10 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
 
       return checkUserHasTopicReadWritePermissions(aclData.aclResources, topicName, existingUserSelected.name);
     }, [existingUserSelected, topicName, aclData]);
+
+    // An existing user is granted the topic only if they lack access, which is assumed until their ACLs load.
+    const needsTopicGrant =
+      Boolean(topicName) && !(existingUserSelected && userTopicPermissions?.missingPermissions.length === 0);
 
     const userConsumerGroupPermissions = useMemo(() => {
       if (
@@ -327,7 +333,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         const existingMechanism = saslMechanismFromProto(existingUserSelected?.mechanism);
         const result = await createUserWithSecrets({
           userData: existingMechanism ? { ...userData, saslMechanism: existingMechanism } : userData,
-          topicName,
+          topicName: needsTopicGrant ? topicName : undefined,
           consumerGroup: showConsumerGroupFields ? form.getValues('consumerGroup') : undefined,
           existingUserSelected: Boolean(existingUserSelected),
         });
@@ -360,6 +366,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         serviceAccountName,
         pipelineName,
         topicName,
+        needsTopicGrant,
         createUserWithSecrets,
         existingUserSelected,
         showConsumerGroupFields,
@@ -434,11 +441,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
             <>
               <div className="flex flex-col gap-2">
                 <FormLabel>Username</FormLabel>
-                <FormDescription>
-                  {topicName
-                    ? `Use an existing user with access to ${topicName}, or create a new one.`
-                    : 'Use an existing user, or create a new one.'}
-                </FormDescription>
+                <FormDescription>Use an existing user, or create a new one.</FormDescription>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-start gap-2">
                     {selectionMode === 'both' && (
@@ -525,63 +528,24 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                     </Alert>
                   )}
 
-                  {existingUserSelected &&
-                    userSelectionType === CreatableSelectionOptions.EXISTING &&
-                    topicName &&
-                    userTopicPermissions &&
-                    userTopicPermissions.missingPermissions.length > 0 && (
-                      <Alert variant="destructive">
-                        <AlertTitle>
-                          <CircleAlert className="h-4 w-4" /> User does not have required permissions
-                        </AlertTitle>
-                        <AlertDescription>
-                          <div className="text-body-sm">
-                            The user <b>{existingUserSelected.name}</b> requires the following permissions for the{' '}
-                            <b>{topicName}</b> topic:
-                            <List>
-                              {userTopicPermissions.missingPermissions.map((permission) => (
-                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                              ))}
-                            </List>
-                          </div>
-                          <div className="text-body-sm">
-                            Edit the user's{' '}
-                            <TanStackRouterLink
-                              className="text-informative"
-                              params={{ userName: existingUserSelected.name }}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                              to="/security/users/$userName/details"
-                            >
-                              ACLs
-                            </TanStackRouterLink>{' '}
-                            to add permissions.
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  {existingUserSelected &&
-                    topicName &&
-                    userSelectionType === CreatableSelectionOptions.EXISTING &&
-                    userTopicPermissions &&
-                    userTopicPermissions.hasPermissions.length > 0 && (
-                      <Alert variant="success">
-                        <AlertTitle>
-                          <CircleAlert className="h-4 w-4" /> User has required permissions
-                        </AlertTitle>
-                        <AlertDescription>
-                          <div className="text-body-sm">
-                            The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
-                            <b>{topicName}</b> topic:
-                            <List>
-                              {userTopicPermissions.hasPermissions.map((permission) => (
-                                <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
-                              ))}
-                            </List>
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                  {existingUserSelected && userTopicPermissions && !needsTopicGrant && (
+                    <Alert variant="success">
+                      <AlertTitle>
+                        <CircleAlert className="h-4 w-4" /> User has required permissions
+                      </AlertTitle>
+                      <AlertDescription>
+                        <div className="text-body-sm">
+                          The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
+                          <b>{topicName}</b> topic:
+                          <List>
+                            {userTopicPermissions.hasPermissions.map((permission) => (
+                              <ListItem key={permission}>{getACLOperationName(permission)}</ListItem>
+                            ))}
+                          </List>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
               {userSelectionType === CreatableSelectionOptions.CREATE && (
@@ -660,57 +624,49 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       </FormItem>
                     )}
                   />
-
-                  {Boolean(topicName) && (
-                    <FormField
-                      control={form.control}
-                      disabled={isPending || isReadOnly}
-                      name="grantTopicPermissions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center gap-3">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                disabled={field.disabled}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">Grant this user full access to {topicName}</FormLabel>
-                          </div>
-                          {field.value ? (
-                            <FormDescription className="pl-7">
-                              Read, write, create, delete, describe and alter permissions on the topic.
-                            </FormDescription>
-                          ) : (
-                            <Alert variant="destructive">
-                              <AlertTitle>
-                                <div className="flex items-center gap-2 text-label">
-                                  <CircleAlert size={15} />
-                                  User will not be able to read from topic
-                                </div>
-                              </AlertTitle>
-                              <AlertDescription>
-                                <div className="text-body-sm">
-                                  You will need to configure{' '}
-                                  <TanStackRouterLink
-                                    rel="noopener noreferrer"
-                                    target="_blank"
-                                    to="/security/permissions"
-                                  >
-                                    Permissions
-                                  </TanStackRouterLink>{' '}
-                                  for custom user permissions if you want the user to be able to read from the topic.
-                                </div>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
                 </>
+              )}
+
+              {Boolean(needsTopicGrant) && (
+                <FormField
+                  control={form.control}
+                  disabled={isPending}
+                  name="grantTopicPermissions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-3">
+                        <FormControl>
+                          <Checkbox checked={field.value} disabled={field.disabled} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <FormLabel className="font-normal">Grant this user full access to {topicName}</FormLabel>
+                      </div>
+                      {field.value ? (
+                        <FormDescription className="pl-7">
+                          Read, write, create, delete, describe and alter permissions on the topic.
+                        </FormDescription>
+                      ) : (
+                        <Alert variant="destructive">
+                          <AlertTitle>
+                            <div className="flex items-center gap-2 text-label">
+                              <CircleAlert size={15} />
+                              User will not be able to read from topic
+                            </div>
+                          </AlertTitle>
+                          <AlertDescription>
+                            <div className="text-body-sm">
+                              You will need to configure{' '}
+                              <TanStackRouterLink rel="noopener noreferrer" target="_blank" to="/security/permissions">
+                                Permissions
+                              </TanStackRouterLink>{' '}
+                              for custom user permissions if you want the user to be able to read from the topic.
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
 
               {Boolean(showConsumerGroupFields) && (
