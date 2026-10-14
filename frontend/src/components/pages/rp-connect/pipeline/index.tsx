@@ -1225,10 +1225,14 @@ function PipelinePageContent() {
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
   const draftsFlagEnabled = areDraftsEnabled();
-  // A new pipeline has nothing of its own to prove support with, so it borrows another one's answer.
+  // Create mode proves draft support from another pipeline; an empty cluster falls back to the flag.
   const { data: sampleResponse } = usePipelineSampleQuery({ enabled: draftsFlagEnabled && mode === 'create' });
+  const samplePipelines = sampleResponse?.response?.pipelines;
   const draftsEnabled =
-    draftsFlagEnabled && provesDraftSupport(mode === 'create' ? sampleResponse?.response?.pipelines[0] : pipeline);
+    draftsFlagEnabled &&
+    (mode === 'create'
+      ? samplePipelines?.length === 0 || provesDraftSupport(samplePipelines?.[0])
+      : provesDraftSupport(pipeline));
   const saveContext = useMemo<SaveContext>(
     () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
     [mode, pipeline?.state, draftsEnabled]
