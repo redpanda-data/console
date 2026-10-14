@@ -76,6 +76,7 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import {
+  type AttachedServiceAccount,
   autosaveTargetKey,
   type EditorAutosaveEntry,
   rpcnEditorAutosave,
@@ -118,6 +119,7 @@ import {
   isBlankConfig,
   isInvalidConfigError,
   isNoLongerDraftError,
+  MISSING_SERVICE_ACCOUNT_MESSAGE,
   NO_LONGER_DRAFT_MESSAGE,
   primaryRunIntent,
   type SaveContext,
@@ -164,6 +166,7 @@ import {
   extractConnectorTopics,
   getConnectTemplate,
   type RedpandaSetupResultLike,
+  usesServiceAccountLogin,
 } from '../utils/yaml';
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
@@ -241,9 +244,6 @@ function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: strin
   }
 }
 
-/** A service account created in this editor for a component to log in with. */
-type AttachedServiceAccount = { serviceAccountId: string; secretName: string };
-
 /** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
 function serviceAccountFields(account: AttachedServiceAccount) {
   const tags: Record<string, string> = {};
@@ -257,6 +257,26 @@ function serviceAccountFields(account: AttachedServiceAccount) {
   };
 }
 
+/** The account the onboarding wizard created for a new pipeline. */
+function wizardServiceAccount(): AttachedServiceAccount | undefined {
+  const userData = useRpcnWizardStore.getState();
+  return userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName
+    ? { serviceAccountId: userData.serviceAccountId, secretName: userData.serviceAccountSecretName }
+    : undefined;
+}
+
+/** Whether a save gives the pipeline a service account: the attached one, else the pipeline's or the wizard's. */
+function savesWithServiceAccount(
+  mode: string,
+  attached: AttachedServiceAccount | undefined,
+  pipeline: Pipeline | undefined
+): boolean {
+  if (attached) {
+    return true;
+  }
+  return mode === 'create' ? Boolean(wizardServiceAccount()) : Boolean(pipeline?.serviceAccount);
+}
+
 function buildCreateRequest(opts: {
   name: string;
   description: string | undefined;
@@ -266,16 +286,11 @@ function buildCreateRequest(opts: {
   draft: boolean;
   serviceAccount: AttachedServiceAccount | undefined;
 }) {
-  const userData = useRpcnWizardStore.getState();
   const tags: Record<string, string> = {
     __redpanda_cloud_pipeline_type: 'pipeline',
   };
 
-  const wizardAccount =
-    userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName
-      ? { serviceAccountId: userData.serviceAccountId, secretName: userData.serviceAccountSecretName }
-      : undefined;
-  const account = opts.serviceAccount ?? wizardAccount;
+  const account = opts.serviceAccount ?? wizardServiceAccount();
   const accountFields = account ? serviceAccountFields(account) : undefined;
   Object.assign(tags, accountFields?.tags);
   const serviceAccountConfig = accountFields?.serviceAccount;
@@ -435,6 +450,15 @@ function usePipelineSave({
 
       if (!isDraftSave && isBlankConfig(yamlContent)) {
         toast.error(BLANK_CONFIG_MESSAGE);
+        return false;
+      }
+
+      // A draft can wait for its account; a deploy would start a pipeline that can't log in.
+      if (
+        !(isDraftSave || savesWithServiceAccount(mode, attachedServiceAccount, pipeline)) &&
+        usesServiceAccountLogin(yamlContent)
+      ) {
+        toast.error(MISSING_SERVICE_ACCOUNT_MESSAGE);
         return false;
       }
 
@@ -1266,10 +1290,14 @@ function PipelinePageContent() {
   const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
   const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
 
+  // A component given a new service account logs in as the pipeline's, so the save attaches it.
+  const [attachedServiceAccount, setAttachedServiceAccount] = useState<AttachedServiceAccount>();
+
   // Restored work is unsaved, so the form must read dirty against the loaded defaults.
   const applyAutosave = useCallback(
     (entry: EditorAutosaveEntry) => {
       setYamlContent(entry.configYaml);
+      setAttachedServiceAccount(entry.serviceAccount ?? undefined);
       form.reset(
         {
           name: entry.name,
@@ -1282,9 +1310,6 @@ function PipelinePageContent() {
     },
     [setYamlContent, form]
   );
-
-  // A component given a new service account logs in as the pipeline's, so the save attaches it.
-  const [attachedServiceAccount, setAttachedServiceAccount] = useState<AttachedServiceAccount>();
 
   const {
     handleSave,
@@ -1528,6 +1553,7 @@ function PipelinePageContent() {
     pipelineId: mode === 'create' ? undefined : pipelineId,
     form,
     editorStore,
+    serviceAccount: attachedServiceAccount,
   });
 
   // Flushed, not debounced: the pending write dies with the page.

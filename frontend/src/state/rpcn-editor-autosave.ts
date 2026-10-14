@@ -39,6 +39,11 @@ export const CREATE_AUTOSAVE_TARGET = 'create';
 
 export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
 
+const attachedServiceAccountSchema = z.object({ serviceAccountId: z.string(), secretName: z.string() });
+
+/** A service account created in the editor for the pipeline to log in with, not yet saved to it. */
+export type AttachedServiceAccount = z.infer<typeof attachedServiceAccountSchema>;
+
 // Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
 const editorAutosaveEntrySchema = z.object({
   version: z.literal(AUTOSAVE_ENTRY_VERSION),
@@ -54,6 +59,8 @@ const editorAutosaveEntrySchema = z.object({
   updatedAt: z.number(),
   /** The pipeline's `update_time` (epoch ms) these edits were based on; staleness compares server clocks only. */
   basedOnUpdateTime: z.number().nullish(),
+  /** Lives outside the YAML, so the config's service-account login needs it restored alongside. */
+  serviceAccount: attachedServiceAccountSchema.nullish(),
 });
 
 export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;

@@ -25,6 +25,7 @@ import {
   renameResourceReferences,
   setComponentAt,
   tryPatchRedpandaYaml,
+  usesServiceAccountLogin,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -1542,6 +1543,31 @@ output:
         ''
       );
     });
+  });
+});
+
+// The account a service-account login uses lives outside the YAML, so the save has to know it's needed.
+describe('usesServiceAccountLogin', () => {
+  test.each([
+    ['a component', 'output:\n  redpanda:\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n'],
+    ['the shared client', 'redpanda:\n  sasl:\n    - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n'],
+    [
+      'a nested output',
+      'output:\n  broker:\n    outputs:\n      - kafka_franz:\n          sasl:\n            - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n',
+    ],
+  ])('finds it on %s', (_case, yaml) => {
+    expect(usesServiceAccountLogin(yaml)).toBe(true);
+  });
+
+  test.each([
+    ['a SCRAM login', 'output:\n  redpanda:\n    sasl:\n      - mechanism: SCRAM-SHA-256\n'],
+    [
+      'a commented-out login',
+      'output:\n  redpanda:\n    # sasl:\n    #   - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n',
+    ],
+    ['an empty config', ''],
+  ])('ignores %s', (_case, yaml) => {
+    expect(usesServiceAccountLogin(yaml)).toBe(false);
   });
 });
 
