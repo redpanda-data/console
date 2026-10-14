@@ -839,10 +839,10 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
               />
 
               <Alert variant="warning">
-                <AlertTitle>Service Account Authentication</AlertTitle>
+                <AlertTitle>Creates a service account</AlertTitle>
                 <AlertDescription>
-                  A service account will be created with Writer role permissions on the cluster. Credentials are stored
-                  securely and referenced in the pipeline configuration.
+                  Adding creates it right away, with the Writer role on this cluster. It's attached to the pipeline when
+                  you save, and every component that logs in with a service account uses it.
                 </AlertDescription>
               </Alert>
             </div>

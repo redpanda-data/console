@@ -1259,7 +1259,11 @@ describe('PipelinePage', () => {
 
       await user.click(await screen.findByTestId('add-user-input'));
       await screen.findByTestId('add-user-step');
-      expect(userStep.props).toMatchObject({ defaultConsumerGroup: 'orders-readers', showConsumerGroupFields: true });
+      expect(userStep.props).toMatchObject({
+        defaultConsumerGroup: 'orders-readers',
+        showConsumerGroupFields: true,
+        pipelineName: 'Test Pipeline',
+      });
     });
 
     it('reads as the consumer group the dialog granted', async () => {
