@@ -765,6 +765,20 @@ output:
       expect(input?.missingSasl).toBeUndefined();
     });
 
+    // Connect only uses a `redpanda` component's own sasl when it also names seed_brokers.
+    it('sets missingSasl on a redpanda output whose sasl has no seed_brokers to use it', () => {
+      const yaml = 'output:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: SCRAM-SHA-256';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      expect(nodes.find((n) => n.id === 'output-0')).toMatchObject({ label: 'redpanda', missingSasl: true });
+    });
+
+    it('does not set missingSasl on a redpanda output that connects with its own sasl', () => {
+      const yaml =
+        'output:\n  redpanda:\n    seed_brokers: ["broker-0:9092"]\n    topic: orders\n    sasl:\n      - mechanism: SCRAM-SHA-256';
+      const { nodes } = parsePipelineFlowTree(yaml);
+      expect(nodes.find((n) => n.id === 'output-0')?.missingSasl).toBeUndefined();
+    });
+
     it('does not set missingSasl when root-level redpanda.sasl is configured', () => {
       const yaml =
         'redpanda:\n  sasl:\n    - mechanism: SCRAM-SHA-256\ninput:\n  redpanda_common:\n    topics: ["test"]';

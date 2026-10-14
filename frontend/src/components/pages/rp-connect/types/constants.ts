@@ -13,6 +13,15 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
   'redpanda_migrator_offsets',
 ];
 
+/**
+ * Without `seed_brokers`, Connect ignores these components' own `sasl` and `tls` and connects through the
+ * pipeline's shared client, which authenticates as the platform's user rather than the configured one.
+ */
+export const SHARED_CLIENT_FALLBACK_COMPONENTS: ReadonlySet<string> = new Set(['redpanda']);
+
+/** Connect's SASL mechanism for logging in with the pipeline's Redpanda Cloud service account. */
+export const CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM = 'REDPANDA_CLOUD_SERVICE_ACCOUNT';
+
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
     name: 'REDPANDA_BROKERS' as const,

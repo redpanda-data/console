@@ -15,6 +15,7 @@ import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flo
 import {
   type EditTarget,
   firstKey,
+  hasSeedBrokers,
   type ParsedYamlConfig,
   parseMultiInputs,
   type ResourceArrayKey,
@@ -23,7 +24,7 @@ import {
   resourceKindForComponentName,
   resourceKindForFieldName,
 } from './yaml';
-import { REDPANDA_TOPIC_AND_USER_COMPONENTS } from '../types/constants';
+import { REDPANDA_TOPIC_AND_USER_COMPONENTS, SHARED_CLIENT_FALLBACK_COMPONENTS } from '../types/constants';
 
 const REDPANDA_COMPONENTS: ReadonlySet<string> = new Set(REDPANDA_TOPIC_AND_USER_COMPONENTS);
 
@@ -363,8 +364,11 @@ function hasNonEmptySasl(obj: unknown): boolean {
   return false;
 }
 
-function hasSaslConfig(componentConfig: unknown, rootConfig: ParsedYamlConfig): boolean {
-  return hasNonEmptySasl(componentConfig) || hasNonEmptySasl(rootConfig.redpanda);
+function hasSaslConfig(componentName: string, componentConfig: unknown, rootConfig: ParsedYamlConfig): boolean {
+  const ownSaslIsUsed =
+    hasNonEmptySasl(componentConfig) &&
+    (!SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) || hasSeedBrokers(componentConfig));
+  return ownSaslIsUsed || hasNonEmptySasl(rootConfig.redpanda);
 }
 
 function parseInputNodes(
@@ -405,7 +409,7 @@ function parseInputNodes(
       section: 'input',
       parentId: sectionId,
       missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(inputObj[inputKey], config) ? true : undefined,
+      missingSasl: isRedpanda && !hasSaslConfig(inputKey, inputObj[inputKey], config) ? true : undefined,
       editTarget: { kind: 'input' },
       meta: summarizeComponent(inputKey, inputObj[inputKey]),
       resourceRef: indirectionResourceRef(inputKey, inputObj[inputKey]),
@@ -937,7 +941,7 @@ function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
       ...(labelText ? { labelText } : {}),
       ...(topics ? { topics } : {}),
       missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(value, config) ? true : undefined,
+      missingSasl: isRedpanda && !hasSaslConfig(key, value, config) ? true : undefined,
       editTarget,
       meta: summarizeComponent(key, value),
       resourceRef: indirectionResourceRef(key, value),
