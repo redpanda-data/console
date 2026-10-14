@@ -42,7 +42,7 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { type Resolver, useForm, useWatch } from 'react-hook-form';
-import { useCreateSecretMutation } from 'react-query/api/secret';
+import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { userSecretIds } from '../types/constants';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 import {
   type AddUserFormData,
@@ -66,6 +67,7 @@ import {
   checkUserHasConsumerGroupPermissions,
   checkUserHasTopicReadWritePermissions,
   getACLOperationName,
+  saslMechanismFromProto,
   useCreateUserWithSecretsMutation,
 } from '../utils/user';
 
@@ -257,6 +259,16 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       );
     }, [showConsumerGroupFields, existingUserSelected, watchedConsumerGroup, consumerGroupACLData]);
 
+    // The pipeline reads a user's credentials from secrets, which only exist for users created here.
+    const { data: secretsData } = useListSecretsQuery({}, { enabled: Boolean(existingUserSelected) });
+    const missingUserSecrets = useMemo(() => {
+      if (!(existingUserSelected && secretsData)) {
+        return [];
+      }
+      const stored = new Set(secretsData.secrets.map((secret) => secret.id));
+      return Object.values(userSecretIds(existingUserSelected.name)).filter((id) => !stored.has(id));
+    }, [existingUserSelected, secretsData]);
+
     const isReadOnly = Boolean(existingUserSelected) || userSelectionType === CreatableSelectionOptions.EXISTING;
 
     const generateNewPassword = useCallback(() => {
@@ -311,8 +323,10 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           }
         }
 
+        // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
+        const existingMechanism = saslMechanismFromProto(existingUserSelected?.mechanism);
         const result = await createUserWithSecrets({
-          userData,
+          userData: existingMechanism ? { ...userData, saslMechanism: existingMechanism } : userData,
           topicName,
           consumerGroup: showConsumerGroupFields ? form.getValues('consumerGroup') : undefined,
           existingUserSelected: Boolean(existingUserSelected),
@@ -496,6 +510,17 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       <AlertDescription>
                         A user named <b>{watchedUsername}</b> already exists. A reference to the existing user will be
                         used.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {missingUserSecrets.length > 0 && !isPending && (
+                    <Alert variant="warning">
+                      <AlertTitle>No stored credentials for this user</AlertTitle>
+                      <AlertDescription>
+                        {missingUserSecrets.length === 1
+                          ? `The pipeline logs in with the ${missingUserSecrets[0]} secret, which doesn't exist yet. Create it, or create a new user here instead.`
+                          : `The pipeline logs in with the ${missingUserSecrets.join(' and ')} secrets, which don't exist yet. Create them, or create a new user here instead.`}
                       </AlertDescription>
                     </Alert>
                   )}
@@ -692,8 +717,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                 <div className="flex flex-col gap-2">
                   <FormLabel>Consumer group (optional)</FormLabel>
                   <FormDescription>
-                    Associate a consumer group with this user to persist consumer offset position. Or when creating your
-                    pipeline specify a partition on the topic instead.
+                    The group this input reads as, so its offsets are kept between restarts. It's set on the input and
+                    the user is granted access to it. Leave it empty if the input reads explicit topic partitions.
                   </FormDescription>
                   <div className="flex flex-col gap-2">
                     <FormField

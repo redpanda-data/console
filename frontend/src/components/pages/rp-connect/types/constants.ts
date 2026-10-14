@@ -63,6 +63,12 @@ export const convertToScreamingSnakeCase = (value: string): string => value.toUp
 
 export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
 
+/** The secrets a pipeline reads a SASL user's credentials from. */
+export const userSecretIds = (username: string) => {
+  const name = convertToScreamingSnakeCase(username);
+  return { username: `KAFKA_USER_${name}`, password: `KAFKA_PASSWORD_${name}` };
+};
+
 export const RedpandaConnectorSetupStep = {
   ADD_TOPIC: 'redpanda-connector-add-topic',
   ADD_USER: 'redpanda-connector-add-user',

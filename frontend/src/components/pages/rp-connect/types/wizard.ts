@@ -36,10 +36,15 @@ export type BaseStepRef<T> = {
   isPending: boolean;
 };
 
+export type UserStepSubmissionData =
+  | AddUserFormData
+  | ServiceAccountSubmissionData
+  | ExistingServiceAccountSubmissionData;
+
 // User step-specific submission result
 export type UserStepSubmissionResult = {
   success: boolean;
-  data?: AddUserFormData | ServiceAccountSubmissionData | ExistingServiceAccountSubmissionData;
+  data?: UserStepSubmissionData;
 };
 
 // New ref type for user step

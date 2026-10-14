@@ -17,10 +17,10 @@ import {
 import { schemaToConfig } from './schema';
 import {
   CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM,
-  convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
   SHARED_CLIENT_FALLBACK_COMPONENTS,
+  userSecretIds,
 } from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
@@ -618,6 +618,7 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
 
 type RedpandaPatch = {
   topicName?: string;
+  consumerGroup?: string;
   sasl?: { mechanism: string; username?: string; password?: string }[];
 };
 
@@ -625,6 +626,7 @@ export type RedpandaSetupResultLike = {
   topicName?: string;
   username?: string;
   saslMechanism?: string;
+  consumerGroup?: string;
   authMethod?: 'sasl' | 'service-account';
 };
 
@@ -633,13 +635,12 @@ function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] 
     return [{ mechanism: CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM }];
   }
   if (result.username) {
-    const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(result.username)}`;
-    const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(result.username)}`;
+    const secretIds = userSecretIds(result.username);
     return [
       {
         mechanism: result.saslMechanism || 'SCRAM-SHA-256',
-        username: getSecretSyntax(usernameSecretId),
-        password: getSecretSyntax(passwordSecretId),
+        username: getSecretSyntax(secretIds.username),
+        password: getSecretSyntax(secretIds.password),
       },
     ];
   }
@@ -782,9 +783,16 @@ export function patchRedpandaConfig(
   }
 
   const patchedKeys: string[] = [];
+  const resolved = readComponent(existingYaml, section, componentName).component;
 
   if (patch.topicName) {
     patchedKeys.push(patchTopicName(doc, section, componentName, patch.topicName));
+  }
+
+  // Left alone when the input already reads with it, which may come from a merge key.
+  if (patch.consumerGroup && section === 'input' && resolved?.consumer_group !== patch.consumerGroup) {
+    doc.setIn([section, componentName, 'consumer_group'], patch.consumerGroup);
+    patchedKeys.push('consumer_group');
   }
 
   if (patch.sasl) {
@@ -793,7 +801,6 @@ export function patchRedpandaConfig(
       doc.setIn(['redpanda', 'sasl'], patch.sasl);
     } else {
       doc.setIn([section, componentName, 'sasl'], patch.sasl);
-      const resolved = readComponent(existingYaml, section, componentName).component;
       patchedKeys.push(...ensureOwnConnection(doc, section, componentName, resolved));
     }
     patchedKeys.push('sasl');
@@ -818,11 +825,14 @@ export function tryPatchRedpandaYaml(
   if (result.topicName) {
     patch.topicName = result.topicName;
   }
+  if (result.consumerGroup) {
+    patch.consumerGroup = result.consumerGroup;
+  }
   const sasl = buildSaslPatch(result);
   if (sasl) {
     patch.sasl = sasl;
   }
-  if (!(patch.topicName || patch.sasl)) {
+  if (!(patch.topicName || patch.consumerGroup || patch.sasl)) {
     return;
   }
   return patchRedpandaConfig(yamlContent, section, componentName, patch);
