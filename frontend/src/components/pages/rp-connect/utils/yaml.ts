@@ -848,10 +848,6 @@ export function usesServiceAccountLogin(yamlContent: string): boolean {
 }
 
 /**
- * Extract topic(s) from a Redpanda connector. All Redpanda types keep topics at
- * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).
- */
-/**
  * One input or output component as plain values. `merge: true` resolves `<<: *anchor` keys, matching
  * the flow parser and extractAllTopics, so values pulled from a shared anchor count as set. parseDocument
  * collects structural errors instead of throwing, so malformed-but-parseable YAML reads as a missing
@@ -880,6 +876,10 @@ function readComponent(
   return { component: component as Record<string, unknown>, parseError: false };
 }
 
+/**
+ * Extract topic(s) from a Redpanda connector. All Redpanda types keep topics at
+ * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).
+ */
 export function extractConnectorTopics(
   yamlContent: string,
   section: RedpandaSection,

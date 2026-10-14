@@ -246,7 +246,10 @@ function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: strin
 }
 
 /** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
-function serviceAccountFields(account: AttachedServiceAccount) {
+function serviceAccountFields(account: AttachedServiceAccount | undefined) {
+  if (!account) {
+    return {};
+  }
   const tags: Record<string, string> = {};
   addServiceAccountTags(tags, account.serviceAccountId, account.secretName);
   return {
@@ -258,26 +261,6 @@ function serviceAccountFields(account: AttachedServiceAccount) {
   };
 }
 
-/** The account the onboarding wizard created for a new pipeline. */
-function wizardServiceAccount(): AttachedServiceAccount | undefined {
-  const userData = useRpcnWizardStore.getState();
-  return userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName
-    ? { serviceAccountId: userData.serviceAccountId, secretName: userData.serviceAccountSecretName }
-    : undefined;
-}
-
-/** Whether a save gives the pipeline a service account: the attached one, else the pipeline's or the wizard's. */
-function savesWithServiceAccount(
-  mode: string,
-  attached: AttachedServiceAccount | undefined,
-  pipeline: Pipeline | undefined
-): boolean {
-  if (attached) {
-    return true;
-  }
-  return mode === 'create' ? Boolean(wizardServiceAccount()) : Boolean(pipeline?.serviceAccount);
-}
-
 function buildCreateRequest(opts: {
   name: string;
   description: string | undefined;
@@ -287,14 +270,7 @@ function buildCreateRequest(opts: {
   draft: boolean;
   serviceAccount: AttachedServiceAccount | undefined;
 }) {
-  const tags: Record<string, string> = {
-    __redpanda_cloud_pipeline_type: 'pipeline',
-  };
-
-  const account = opts.serviceAccount ?? wizardServiceAccount();
-  const accountFields = account ? serviceAccountFields(account) : undefined;
-  Object.assign(tags, accountFields?.tags);
-  const serviceAccountConfig = accountFields?.serviceAccount;
+  const account = serviceAccountFields(opts.serviceAccount);
 
   return create(CreatePipelineRequestSchema, {
     request: create(CreatePipelineRequestSchemaDataPlane, {
@@ -303,8 +279,8 @@ function buildCreateRequest(opts: {
         configYaml: opts.yamlContent,
         description: opts.description || '',
         resources: { cpuShares: tasksToCPU(opts.computeUnits) || '0', memoryShares: '0' },
-        tags: { ...tags, ...opts.userTags },
-        serviceAccount: serviceAccountConfig,
+        tags: { __redpanda_cloud_pipeline_type: 'pipeline', ...account.tags, ...opts.userTags },
+        serviceAccount: account.serviceAccount,
         draft: opts.draft,
       }),
     }),
@@ -461,7 +437,7 @@ function usePipelineSave({
 
       // A draft can wait for its account; a deploy would start a pipeline that can't log in.
       if (
-        !(isDraftSave || savesWithServiceAccount(mode, attachedServiceAccount, pipeline)) &&
+        !(isDraftSave || attachedServiceAccount || pipeline?.serviceAccount) &&
         usesServiceAccountLogin(yamlContent)
       ) {
         toast.error(MISSING_SERVICE_ACCOUNT_MESSAGE);
@@ -541,7 +517,7 @@ function usePipelineSave({
           return false;
         }
 
-        const attachedAccount = attachedServiceAccount ? serviceAccountFields(attachedServiceAccount) : undefined;
+        const attachedAccount = serviceAccountFields(attachedServiceAccount);
         const response = await updateMutation(
           create(UpdatePipelineRequestSchema, {
             request: create(UpdatePipelineRequestSchemaDataPlane, {
@@ -553,10 +529,10 @@ function usePipelineSave({
                 resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
                 tags: {
                   ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
-                  ...attachedAccount?.tags,
+                  ...attachedAccount.tags,
                   ...userTags,
                 },
-                serviceAccount: attachedAccount?.serviceAccount ?? pipeline?.serviceAccount,
+                serviceAccount: attachedAccount.serviceAccount ?? pipeline?.serviceAccount,
                 // Asserted so the server refuses the write if the draft was started meanwhile.
                 draft: isDraftSave ? true : undefined,
               }),
@@ -711,9 +687,8 @@ function useDiagramDialogs(
       if ('authMethod' in data && data.authMethod === 'service-account') {
         setupResult = { authMethod: 'service-account' };
         // A kept account is already the one the save sends.
-        if (!('existing' in data)) {
-          const { serviceAccountId, serviceAccountSecretName } = data as ServiceAccountSubmissionData;
-          serviceAccount = { serviceAccountId, secretName: serviceAccountSecretName };
+        if ('serviceAccountId' in data) {
+          serviceAccount = { serviceAccountId: data.serviceAccountId, secretName: data.serviceAccountSecretName };
         }
       } else if ('username' in data) {
         setupResult = {
@@ -2071,7 +2046,7 @@ function PipelinePageContent() {
             )}
             <AddUserStep
               defaultConsumerGroup={connectorConsumerGroup}
-              hasServiceAccount={savesWithServiceAccount(mode, attachedServiceAccount, pipeline)}
+              hasServiceAccount={Boolean(attachedServiceAccount ?? pipeline?.serviceAccount)}
               hideTitle
               inline
               ref={userStepRef}
