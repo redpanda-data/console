@@ -1098,6 +1098,21 @@ describe('PipelinePage', () => {
       expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
     });
 
+    // A user added before its topic gets no topic ACL, and adding the topic later grants nothing.
+    it.each([
+      ['has no topic yet', 'output:\n  redpanda: {}\n', true],
+      ['already names its topic', REDPANDA_OUTPUT_YAML, false],
+    ])('warns about topic access only when the component %s', async (_case, configYaml, warns) => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport({ getPipelineMock: editablePipeline(configYaml) }) });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(Boolean(screen.queryByText('No topic yet'))).toBe(warns);
+    });
+
     it('starts the dialog from the consumer group the input reads with', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });

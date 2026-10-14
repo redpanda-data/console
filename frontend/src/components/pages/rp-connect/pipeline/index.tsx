@@ -2013,6 +2013,15 @@ function PipelinePageContent() {
             <DialogTitle>Add user</DialogTitle>
           </DialogHeader>
           <DialogBody>
+            {connectorTopics === undefined && (
+              <Alert variant="warning">
+                <AlertTitle>No topic yet</AlertTitle>
+                <AlertDescription>
+                  This connector has no topic yet, so the user won't be granted access to one. Add a topic first, or
+                  grant access later in the Security settings.
+                </AlertDescription>
+              </Alert>
+            )}
             {connectorTopics && connectorTopics.length > 1 && (
               <Alert variant="warning">
                 <AlertTitle>Multiple topics configured</AlertTitle>
