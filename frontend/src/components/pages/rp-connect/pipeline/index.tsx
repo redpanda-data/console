@@ -2050,6 +2050,7 @@ function PipelinePageContent() {
               hasServiceAccount={Boolean(attachedServiceAccount ?? pipeline?.serviceAccount)}
               hideTitle
               inline
+              pipelineName={settingsValues.name || undefined}
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
