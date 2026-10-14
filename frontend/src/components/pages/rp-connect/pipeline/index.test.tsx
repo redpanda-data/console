@@ -1098,6 +1098,23 @@ describe('PipelinePage', () => {
       expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
     });
 
+    it('starts the dialog from the consumer group the input reads with', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(
+            'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
+          ),
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-input'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props).toMatchObject({ defaultConsumerGroup: 'orders-readers', showConsumerGroupFields: true });
+    });
+
     it('attaches the service account it created to a new pipeline', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'create' });

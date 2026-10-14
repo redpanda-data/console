@@ -362,6 +362,34 @@ describe('AddUserStep', () => {
     });
   });
 
+  // An input connecting as this user reads through its consumer group, so starting from the
+  // pipeline's group has to end in that group being granted.
+  describe('Consumer group from the pipeline', () => {
+    test('grants the consumer group the dialog starts with', async () => {
+      const user = userEvent.setup();
+      const { transport, createACLMock } = buildTransport();
+
+      renderWithFileRoutes(
+        <TestHarness
+          defaultConsumerGroup="orders-readers"
+          onResult={rs.fn()}
+          selectionMode="new"
+          showConsumerGroupFields={true}
+          topicName="orders"
+        />,
+        { transport }
+      );
+
+      expect(await screen.findByPlaceholderText('Enter a consumer group name')).toHaveValue('orders-readers');
+      await user.type(screen.getByPlaceholderText('Enter a username'), 'orders-reader');
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(createACLMock.mock.calls.some(([request]) => request.resourceName === 'orders-readers')).toBe(true)
+      );
+    });
+  });
+
   // ── Service Account path ───────────────────────────────────────────────────
 
   describe('Service Account path', () => {

@@ -159,7 +159,12 @@ import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/p
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
+import {
+  extractConnectorConsumerGroup,
+  extractConnectorTopics,
+  getConnectTemplate,
+  type RedpandaSetupResultLike,
+} from '../utils/yaml';
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
@@ -691,6 +696,7 @@ function useDiagramDialogs(
   });
 
   const [connectorTopics, setConnectorTopics] = useState<string[] | undefined>();
+  const [connectorConsumerGroup, setConnectorConsumerGroup] = useState<string | undefined>();
 
   const openTopicDialog = topicDialog.open;
   const openUserDialog = userDialog.open;
@@ -701,6 +707,7 @@ function useDiagramDialogs(
     topicStepRef,
     userStepRef,
     connectorTopics,
+    connectorConsumerGroup,
     handleAddTopic: useCallback(
       (section: string, componentName: string) => {
         openTopicDialog({ section: section as 'input' | 'output', componentName });
@@ -718,6 +725,10 @@ function useDiagramDialogs(
           toast.error('Failed to parse pipeline YAML');
         }
         setConnectorTopics(topics);
+        // An input reading as its own user needs the group granted too, so the dialog starts from it.
+        setConnectorConsumerGroup(
+          section === 'input' ? extractConnectorConsumerGroup(yamlContent, componentName) : undefined
+        );
         openUserDialog({ section: section as 'input' | 'output', componentName });
       },
       [openUserDialog, yamlContent]
@@ -1375,8 +1386,16 @@ function PipelinePageContent() {
     }, 0);
   }, [editorStore]);
 
-  const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
-    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd, setAttachedServiceAccount);
+  const {
+    topicDialog,
+    userDialog,
+    topicStepRef,
+    userStepRef,
+    connectorTopics,
+    connectorConsumerGroup,
+    handleAddTopic,
+    handleAddSasl,
+  } = useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd, setAttachedServiceAccount);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -1995,6 +2014,7 @@ function PipelinePageContent() {
               </Alert>
             )}
             <AddUserStep
+              defaultConsumerGroup={connectorConsumerGroup}
               hideTitle
               inline
               ref={userStepRef}
