@@ -1236,13 +1236,20 @@ function PipelinePageContent() {
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
   const draftsFlagEnabled = areDraftsEnabled();
-  // Create mode proves draft support from another pipeline; an empty cluster falls back to the flag.
-  const { data: sampleResponse } = usePipelineSampleQuery({ enabled: draftsFlagEnabled && mode === 'create' });
+  // Create mode proves draft support from another pipeline; an empty cluster, or a failed sample, falls
+  // back to the flag rather than to a save that deploys.
+  const {
+    data: sampleResponse,
+    isLoading: isCheckingDraftSupport,
+    isError: isSampleFailed,
+  } = usePipelineSampleQuery({
+    enabled: draftsFlagEnabled && mode === 'create',
+  });
   const samplePipelines = sampleResponse?.response?.pipelines;
   const draftsEnabled =
     draftsFlagEnabled &&
     (mode === 'create'
-      ? samplePipelines?.length === 0 || provesDraftSupport(samplePipelines?.[0])
+      ? isSampleFailed || samplePipelines?.length === 0 || provesDraftSupport(samplePipelines?.[0])
       : provesDraftSupport(pipeline));
   const saveContext = useMemo<SaveContext>(
     () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
@@ -1351,8 +1358,9 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
-  useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
+  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes. Until draft support is known, a save could
+  // deploy what was meant as a draft.
+  useSaveHotkey({ enabled: mode !== 'view', isSaving: isSaving || isCheckingDraftSupport, onSave: handleSave });
 
   // On document change: clear stale lint and mirror create-mode YAML to the wizard store.
   useEffect(
@@ -1695,6 +1703,7 @@ function PipelinePageContent() {
           expanded={expanded}
           form={form}
           hasUnsavedChanges={hasUnsavedChanges}
+          isSaveBlocked={isCheckingDraftSupport}
           isSaving={isSaving}
           onBack={handleCancel}
           onEditSettings={() => setIsConfigDialogOpen(true)}
