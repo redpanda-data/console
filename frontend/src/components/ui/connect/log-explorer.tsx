@@ -390,7 +390,7 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
               </span>} />
             <TooltipContent side="top" testId="log-live-tooltip-content">
               {liveViewEnabled
-                ? 'Showing new log messages as they arrive in real time.'
+                ? 'Showing recent log messages, with new ones added as they arrive.'
                 : 'Showing the most recent log messages. Toggle on to see live logs as they arrive.'}
             </TooltipContent>
           </Tooltip>
@@ -409,7 +409,12 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
             }}
           />
           </div>
-          <RefreshButton loading={isSearching} onClick={refresh} testId="log-refresh-button" />
+          <RefreshButton
+            disabled={liveViewEnabled || isSearching}
+            loading={isSearching}
+            onClick={refresh}
+            testId="log-refresh-button"
+          />
         </div>
       </div>
       <div className="relative overflow-x-auto">
@@ -444,7 +449,10 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                             {prettyBytes(progress.bytesConsumed)} scanned, {progress.messagesConsumed.toLocaleString()} messages checked
                           </span>
                         ) : (
-                          <Spinner className="size-6" data-testid="log-loading-spinner" />
+                          <>
+                            <Spinner className="size-6" data-testid="log-loading-spinner" />
+                            <span className="text-body-sm text-muted-foreground">Searching recent logs…</span>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -485,7 +493,9 @@ export function LogExplorer({ pipeline, serverless, enableLiveView = false, titl
                 if (messages.length > 0) {
                   emptyText = 'No messages match the current filters';
                 } else if (liveViewEnabled) {
-                  emptyText = 'Listening for new log messages… Switch to Recent Logs to view historical logs.';
+                  emptyText = 'No recent logs. Listening for new log messages…';
+                } else if (pipelineNotRunning) {
+                  emptyText = 'No recent logs. Logs appear here once the pipeline is running.';
                 } else {
                   emptyText = 'No logs found for this pipeline.';
                 }

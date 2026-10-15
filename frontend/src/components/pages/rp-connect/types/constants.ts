@@ -13,6 +13,15 @@ export const REDPANDA_TOPIC_AND_USER_COMPONENTS = [
   'redpanda_migrator_offsets',
 ];
 
+/**
+ * Without `seed_brokers`, Connect ignores these components' own `sasl` and `tls` and connects through the
+ * pipeline's shared client, which authenticates as the platform's user rather than the configured one.
+ */
+export const SHARED_CLIENT_FALLBACK_COMPONENTS: ReadonlySet<string> = new Set(['redpanda']);
+
+/** Connect's SASL mechanism for logging in with the pipeline's Redpanda Cloud service account. */
+export const CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM = 'REDPANDA_CLOUD_SERVICE_ACCOUNT';
+
 export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_BROKERS: {
     name: 'REDPANDA_BROKERS' as const,
@@ -53,6 +62,12 @@ export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '_');
 
 export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
+
+/** The secrets a pipeline reads a SASL user's credentials from. */
+export const userSecretIds = (username: string) => {
+  const name = convertToScreamingSnakeCase(username);
+  return { username: `KAFKA_USER_${name}`, password: `KAFKA_PASSWORD_${name}` };
+};
 
 export const RedpandaConnectorSetupStep = {
   ADD_TOPIC: 'redpanda-connector-add-topic',
