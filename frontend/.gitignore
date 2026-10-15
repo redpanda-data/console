@@ -5,6 +5,7 @@ public/static
 
 # production
 /build
+/build-stats/
 
 # misc
 .DS_Store
