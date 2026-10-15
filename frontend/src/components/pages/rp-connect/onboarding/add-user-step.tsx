@@ -533,10 +533,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                   )}
 
                   {existingUserSelected && userTopicPermissions && !needsTopicGrant && (
-                    <Alert variant="success">
-                      <AlertTitle>
-                        <CircleAlert className="h-4 w-4" /> User has required permissions
-                      </AlertTitle>
+                    <Alert icon={<CircleAlert />} variant="success">
+                      <AlertTitle>User has required permissions</AlertTitle>
                       <AlertDescription>
                         <div className="text-body-sm">
                           The user <b>{existingUserSelected.name}</b> has the following permissions for the{' '}
@@ -649,13 +647,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                           Read, write, create, delete, describe and alter permissions on the topic.
                         </FormDescription>
                       ) : (
-                        <Alert variant="destructive">
-                          <AlertTitle>
-                            <div className="flex items-center gap-2 text-label">
-                              <CircleAlert size={15} />
-                              User will not be able to read from topic
-                            </div>
-                          </AlertTitle>
+                        <Alert icon={<CircleAlert />} variant="destructive">
+                          <AlertTitle>User will not be able to read from topic</AlertTitle>
                           <AlertDescription>
                             <div className="text-body-sm">
                               You will need to configure{' '}
@@ -711,10 +704,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       userConsumerGroupPermissions &&
                       userConsumerGroupPermissions.missingPermissions.length === 0 &&
                       userConsumerGroupPermissions.hasPermissions.length > 0 && (
-                        <Alert variant="success">
-                          <AlertTitle>
-                            <CircleAlert className="h-4 w-4" /> User has required consumer group permissions
-                          </AlertTitle>
+                        <Alert icon={<CircleAlert />} variant="success">
+                          <AlertTitle>User has required consumer group permissions</AlertTitle>
                           <AlertDescription>
                             <div className="text-body-sm">
                               The user <b>{existingUserSelected?.name}</b> has the following permissions for the{' '}
@@ -734,13 +725,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
                       (!existingUserSelected ||
                         (userConsumerGroupPermissions &&
                           userConsumerGroupPermissions.missingPermissions.length > 0)) && (
-                        <Alert variant="warning">
-                          <AlertTitle>
-                            <div className="flex items-center gap-2 text-label">
-                              <CircleAlert size={15} />
-                              Consumer group permissions will be configured
-                            </div>
-                          </AlertTitle>
+                        <Alert icon={<CircleAlert />} variant="warning">
+                          <AlertTitle>Consumer group permissions will be configured</AlertTitle>
                           <AlertDescription>
                             <div className="text-body-sm">
                               {existingUserSelected ? (
