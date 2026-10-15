@@ -8,7 +8,7 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 
@@ -186,10 +186,14 @@ export default defineConfig({
         plugins.push(
           new RsdoctorRspackPlugin({
             disableClientServer: true,
+            supports: {
+              brotli: true,
+            },
             output: {
               mode: 'brief',
+              reportDir: 'build-stats/rsdoctor',
               options: {
-                type: ['json'],
+                type: ['html', 'json'],
               },
             },
           })
