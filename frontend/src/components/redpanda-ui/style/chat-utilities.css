@@ -3,7 +3,12 @@
  * Source: https://github.com/shadcn-ui/ui/tree/main/packages/shadcn
  * License: MIT
  */
-/* scrollbar */
+/* scrollbar
+ * Tailwind 4.3 added scrollbar-none, scrollbar-thin and scrollbar-gutter-stable to core, and on 4.3
+ * each definition here merges with core's into one rule. They stay: consumers on Tailwind before 4.3
+ * install this file and have no core versions, and core's scrollbar-none sets only `scrollbar-width`,
+ * so the `::-webkit-scrollbar` rule below is still what hides the bar in Safari before 18.2.
+ */
 @utility scrollbar-none {
   scrollbar-width: none;
 

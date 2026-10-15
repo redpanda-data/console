@@ -77,8 +77,8 @@ export type ModalRootProps = PortalRootProps & {
 };
 
 /**
- * Radix-compat auto-focus hooks. Base UI exposes neither, so everywhere but Drawer these type-check
- * and then do nothing, silently. Drawer is vaul rather than Base UI and honours `onOpenAutoFocus`.
+ * Radix-compat auto-focus hooks. Base UI exposes neither, so these type-check and then do nothing,
+ * silently. Drawer, now Base UI too, doesn't accept them at all.
  */
 export interface FocusScopeContentProps {
   /**
@@ -87,8 +87,8 @@ export interface FocusScopeContentProps {
    */
   onCloseAutoFocus?: (event: Event) => void;
   /**
-   * @deprecated Honoured by Drawer only. On Base UI components use `initialFocus` on the
-   * underlying `Popup`. Scheduled for removal in a future major.
+   * @deprecated Honoured by nothing. Use `initialFocus` on the underlying `Popup` (`initialFocus={false}`
+   * replaces `onOpenAutoFocus={(e) => e.preventDefault()}`). Scheduled for removal in a future major.
    */
   onOpenAutoFocus?: (event: Event) => void;
 }

@@ -1,11 +1,32 @@
 'use client';
 
 import { Menu as DropdownMenuPrimitive } from '@base-ui/react/menu';
-import { Check, ChevronRight, Circle } from 'lucide-react';
+import { Check, ChevronRight, Circle, SearchIcon, X } from 'lucide-react';
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
+
+/**
+ * Whether the nearest filterable menu has a query. Base UI hides the groups and items that stop
+ * matching, but a separator or a group-less label belongs to no item, so those read this instead.
+ */
+const DropdownMenuFilteringContext = React.createContext(false);
+
+/**
+ * A provider's query state, waiting for the root or submenu it wraps to claim it; `null` once
+ * claimed, so a submenu without a provider of its own never inherits its parent's query.
+ */
+const DropdownMenuUnclaimedFilterContext = React.createContext<boolean | null>(null);
+
+function DropdownMenuFilterScope({ children }: { children: React.ReactNode }) {
+  const filtering = React.useContext(DropdownMenuUnclaimedFilterContext) ?? false;
+  return (
+    <DropdownMenuUnclaimedFilterContext.Provider value={null}>
+      <DropdownMenuFilteringContext.Provider value={filtering}>{children}</DropdownMenuFilteringContext.Provider>
+    </DropdownMenuUnclaimedFilterContext.Provider>
+  );
+}
 
 /**
  * Items tint in CSS off `data-[highlighted]`, as Context Menu's and Select's do. Base UI sets it
@@ -24,15 +45,54 @@ function DropdownMenu({
   ...props
 }: DropdownMenuProps) {
   return (
-    <DropdownMenuPrimitive.Root
-      data-slot="dropdown-menu"
-      data-testid={testId}
-      modal={modal}
-      {...props}
-      onOpenChange={onOpenChange}
-    >
-      {children}
-    </DropdownMenuPrimitive.Root>
+    <DropdownMenuFilterScope>
+      <DropdownMenuPrimitive.Root
+        data-slot="dropdown-menu"
+        data-testid={testId}
+        modal={modal}
+        {...props}
+        onOpenChange={onOpenChange}
+      >
+        {children}
+      </DropdownMenuPrimitive.Root>
+    </DropdownMenuFilterScope>
+  );
+}
+
+type DropdownMenuFilterProviderProps = React.ComponentProps<typeof DropdownMenuPrimitive.FilterProvider>;
+
+/**
+ * Makes the `DropdownMenu` or `DropdownMenuSub` it wraps filterable: add a `DropdownMenuInput` to
+ * the content and put the items in a `DropdownMenuList`. Wrap each filterable submenu in its own
+ * provider. Highlights the first match by default so Enter picks it. A Base UI preview API.
+ */
+function DropdownMenuFilterProvider({
+  value,
+  defaultValue = '',
+  onValueChange,
+  autoHighlight = true,
+  ...props
+}: DropdownMenuFilterProviderProps) {
+  // Mirrors the query Base UI keeps. Every change reaches `onValueChange`, the reset on close included
+  // (reason `popup-close`), and like Base UI the mirror skips changes the consumer cancels.
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(defaultValue);
+  const query = value ?? uncontrolledValue;
+
+  return (
+    <DropdownMenuUnclaimedFilterContext.Provider value={query.trim() !== ''}>
+      <DropdownMenuPrimitive.FilterProvider
+        autoHighlight={autoHighlight}
+        defaultValue={defaultValue}
+        onValueChange={(nextValue, eventDetails) => {
+          onValueChange?.(nextValue, eventDetails);
+          if (!eventDetails.isCanceled) {
+            setUncontrolledValue(nextValue);
+          }
+        }}
+        value={value}
+        {...props}
+      />
+    </DropdownMenuUnclaimedFilterContext.Provider>
   );
 }
 
@@ -69,7 +129,11 @@ function DropdownMenuPortal(props: DropdownMenuPortalProps) {
 type DropdownMenuSubProps = React.ComponentProps<typeof DropdownMenuPrimitive.SubmenuRoot>;
 
 function DropdownMenuSub(props: DropdownMenuSubProps) {
-  return <DropdownMenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />;
+  return (
+    <DropdownMenuFilterScope>
+      <DropdownMenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />
+    </DropdownMenuFilterScope>
+  );
 }
 
 type DropdownMenuRadioGroupProps = React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>;
@@ -201,6 +265,66 @@ function DropdownMenuContent({
   );
 }
 
+type DropdownMenuInputProps = React.ComponentProps<typeof DropdownMenuPrimitive.Input> & SharedProps;
+
+/**
+ * The search field of a filterable menu, with a clear button once it has text. Needs a
+ * `DropdownMenuFilterProvider`, and a name via `aria-label`, `aria-labelledby`, or a `<label>`.
+ */
+function DropdownMenuInput({ className, testId, ...props }: DropdownMenuInputProps) {
+  return (
+    <div
+      className="-mx-1 -mt-1 mb-1 flex h-9 items-center gap-2 border-b pr-1.5 pl-3"
+      data-slot="dropdown-menu-input-wrapper"
+    >
+      <SearchIcon aria-hidden className="size-4 shrink-0 text-subtle" />
+      <DropdownMenuPrimitive.Input
+        className={cn(
+          'h-full w-full min-w-0 bg-transparent pointer-coarse:text-body-lg text-body outline-hidden selection:bg-selection selection:text-selection-foreground placeholder:text-placeholder',
+          className
+        )}
+        data-slot="dropdown-menu-input"
+        data-testid={testId}
+        {...props}
+      />
+      {/* Pointer-only: Base UI hides it from assistive tech and the tab order. */}
+      <DropdownMenuPrimitive.Clear
+        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-subtle transition-colors hover:bg-accent hover:text-accent-foreground motion-reduce:transition-none [&_svg]:size-4"
+        data-slot="dropdown-menu-clear"
+      >
+        <X />
+      </DropdownMenuPrimitive.Clear>
+    </div>
+  );
+}
+
+type DropdownMenuListProps = React.ComponentProps<typeof DropdownMenuPrimitive.List>;
+
+/** Holds the items so a `DropdownMenuInput` can share the content, and scrolls them under it. */
+function DropdownMenuList({ className, ...props }: DropdownMenuListProps) {
+  return (
+    <DropdownMenuPrimitive.List
+      className={cn('max-h-72 scroll-py-1 overflow-y-auto overflow-x-hidden outline-hidden', className)}
+      data-slot="dropdown-menu-list"
+      {...props}
+    />
+  );
+}
+
+type DropdownMenuEmptyProps = React.ComponentProps<typeof DropdownMenuPrimitive.Empty> & SharedProps;
+
+/** Shown, and announced, once the query matches no items. Needs a `DropdownMenuFilterProvider`. */
+function DropdownMenuEmpty({ className, testId, ...props }: DropdownMenuEmptyProps) {
+  return (
+    <DropdownMenuPrimitive.Empty
+      className={cn('px-2 py-6 text-center text-body text-subtle', className)}
+      data-slot="dropdown-menu-empty"
+      data-testid={testId}
+      {...props}
+    />
+  );
+}
+
 type DropdownMenuItemProps = React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean;
   variant?: 'default' | 'destructive';
@@ -315,6 +439,7 @@ type DropdownMenuLabelProps = React.ComponentProps<typeof DropdownMenuPrimitive.
 // Base UI's GroupLabel throws without an ancestor Group; auto-wrap if needed.
 function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProps) {
   const insideGroup = React.useContext(DropdownMenuGroupContext);
+  const filtering = React.useContext(DropdownMenuFilteringContext);
   const label = (
     <DropdownMenuPrimitive.GroupLabel
       className={cn('px-2 py-1.5 font-semibold text-label', inset && 'pl-8', className)}
@@ -326,12 +451,21 @@ function DropdownMenuLabel({ className, inset, ...props }: DropdownMenuLabelProp
   if (insideGroup) {
     return label;
   }
+  // A group-less label heads no items, so it can't tell whether anything under it still matches.
+  if (filtering) {
+    return null;
+  }
   return <DropdownMenuPrimitive.Group>{label}</DropdownMenuPrimitive.Group>;
 }
 
 type DropdownMenuSeparatorProps = React.ComponentProps<typeof DropdownMenuPrimitive.Separator>;
 
 function DropdownMenuSeparator({ className, ...props }: DropdownMenuSeparatorProps) {
+  const filtering = React.useContext(DropdownMenuFilteringContext);
+  // Filtered results read as one list; separators between hidden groups would stack up.
+  if (filtering) {
+    return null;
+  }
   return (
     <DropdownMenuPrimitive.Separator
       className={cn('-mx-1 my-1 h-px bg-border', className)}
@@ -359,12 +493,20 @@ export {
   type DropdownMenuCheckboxItemProps,
   DropdownMenuContent,
   type DropdownMenuContentProps,
+  DropdownMenuEmpty,
+  type DropdownMenuEmptyProps,
+  DropdownMenuFilterProvider,
+  type DropdownMenuFilterProviderProps,
   DropdownMenuGroup,
   type DropdownMenuGroupProps,
+  DropdownMenuInput,
+  type DropdownMenuInputProps,
   DropdownMenuItem,
   type DropdownMenuItemProps,
   DropdownMenuLabel,
   type DropdownMenuLabelProps,
+  DropdownMenuList,
+  type DropdownMenuListProps,
   DropdownMenuPortal,
   type DropdownMenuPortalProps,
   type DropdownMenuProps,
