@@ -124,6 +124,29 @@ versions.
 - Run `task backend:cover` to run the unit and integration tests with code coverage report
 - Run `task backend:verify` to run the linter and all tests
 
+### Bundle analysis
+
+From `frontend/`, run `bun run analyze` to generate
+`build-stats/rsdoctor/rsdoctor-report.html` and `build-stats/rsdoctor/rsdoctor-data.json`.
+Open the HTML report locally to inspect compilation, dependencies, and bundle sizes,
+including gzip and Brotli sizes. Monaco worker reports are stored alongside the main report
+in hidden subdirectories. Copy or delete the complete `build-stats/rsdoctor/` directory;
+moving individual files breaks compiler selection in the Agent CLI.
+Reports are opt-in; normal builds do not generate them. Keep analysis reports local
+because they contain project paths and dependency information.
+
+For structured queries against the same build, use the pinned Agent CLI:
+`list` enumerates available queries and needs no report; analysis queries require `--data-file`.
+
+```bash
+bun run analyze:agent list
+bun run analyze:agent compilers list --data-file build-stats/rsdoctor/rsdoctor-data.json
+bun run analyze:agent query packages_duplicates --data-file build-stats/rsdoctor/rsdoctor-data.json --compiler web
+bun run analyze:agent bundle optimize --data-file build-stats/rsdoctor/rsdoctor-data.json --compiler web
+```
+
+See the [Rsdoctor analysis guide](https://v2.rsdoctor.rs/guide/start/ai) for query options.
+
 ### AI agent and Copilot instructions
 
 Coding agents read instruction files from the repository. Rules for an area live in the

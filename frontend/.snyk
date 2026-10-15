@@ -384,14 +384,6 @@ ignore:
           found. Recheck externally supplied browser targets/stats.
         expires: 2027-01-03T18:00:00.000Z
         created: 2026-10-05T18:13:07.477Z
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsbuild/plugin-check-syntax@1.6.1 > browserslist-to-es-version@1.2.0 > browserslist@4.28.0':
-        reason: >-
-          normalizeStats poisoned stats keys is in build-target tooling via
-          Babel, Router, SVGR or Rsdoctor. Inputs are repository browser
-          targets; no uploaded stats or long-running customer query service
-          found. Recheck externally supplied browser targets/stats.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:13:09.388Z
     - '@tanstack/router-plugin@1.168.35 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
         reason: >-
           normalizeStats poisoned stats keys is in build-target tooling via
@@ -417,14 +409,6 @@ ignore:
           service found. Recheck externally supplied browser targets/stats.
         expires: 2027-01-03T18:00:00.000Z
         created: 2026-10-05T18:13:15.385Z
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsbuild/plugin-check-syntax@1.6.1 > browserslist-to-es-version@1.2.0 > browserslist@4.28.0':
-        reason: >-
-          unbounded cache/parseCache of distinct queries is in build-target
-          tooling via Babel, Router, SVGR or Rsdoctor. Inputs are repository
-          browser targets; no uploaded stats or long-running customer query
-          service found. Recheck externally supplied browser targets/stats.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:13:17.727Z
     - '@tanstack/router-plugin@1.168.35 > @babel/core@7.29.7 > @babel/helper-compilation-targets@7.29.7 > browserslist@4.28.2':
         reason: >-
           unbounded cache/parseCache of distinct queries is in build-target
@@ -508,36 +492,6 @@ ignore:
           feature adoption.
         expires: 2027-01-03T18:00:00.000Z
         created: 2026-10-05T18:13:37.457Z
-  SNYK-JS-ENGINEIO-17900543:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
-        reason: >-
-          invalid Engine.IO v4 polling POST response retention belongs to
-          Rsdoctor SDK Socket.IO. rsbuild.config.ts sets
-          disableClientServer:true and brief JSON-only analysis, so the
-          inspector transport endpoint is not started. No application Engine.IO
-          server. Recheck analyzer server or WebTransport enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:13:39.956Z
-  SNYK-JS-ENGINEIO-17900560:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
-        reason: >-
-          WebTransport upgrade prototype-key sessions belongs to Rsdoctor SDK
-          Socket.IO. rsbuild.config.ts sets disableClientServer:true and brief
-          JSON-only analysis, so the inspector transport endpoint is not
-          started. No application Engine.IO server. Recheck analyzer server or
-          WebTransport enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:13:41.915Z
-  SNYK-JS-ENGINEIO-20335255:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4':
-        reason: >-
-          protocol-mismatched session upgrades belongs to Rsdoctor SDK
-          Socket.IO. rsbuild.config.ts sets disableClientServer:true and brief
-          JSON-only analysis, so the inspector transport endpoint is not
-          started. No application Engine.IO server. Recheck analyzer server or
-          WebTransport enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:13:44.705Z
   SNYK-JS-FASTURI-18506908:
     - '@module-federation/enhanced@2.5.1 > schema-utils@4.3.0 > ajv@8.18.0 > fast-uri@3.1.4':
         reason: >-
@@ -914,16 +868,6 @@ ignore:
           caller found. Recheck parse-option or round-trip changes.
         expires: 2027-01-03T18:00:00.000Z
         created: 2026-10-05T18:15:08.999Z
-  SNYK-JS-SHELLQUOTE-20250993:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > launch-editor@2.14.1 > shell-quote@1.10.0':
-        reason: >-
-          Comment-token/newline quote injection is in Rsdoctor launch-editor
-          tooling. rsbuild.config.ts disables the analyzer client/server and
-          emits brief JSON, so no remote editor input reaches this endpoint. No
-          application shell parse/quote caller found. Recheck analyzer/editor
-          server enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:15:11.539Z
   SNYK-JS-SMOLTOML-19643959:
     - react-doctor@0.0.29 > knip@5.88.1 > smol-toml@1.6.1:
         reason: >-
@@ -1552,44 +1496,6 @@ ignore:
           test targets or dispatcher/interceptor changes.
         expires: 2027-01-03T18:00:00.000Z
         created: 2026-10-05T18:19:36.599Z
-  SNYK-JS-WS-16722635:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4 > ws@8.17.1':
-        reason: >-
-          Sender.close typed-array reason disclosure belongs to Rsdoctor
-          Socket.IO/adapter copies. disableClientServer:true in
-          rsbuild.config.ts prevents inspector socket exposure; no application
-          caller sends typed-array close reasons or receives external frames
-          through these copies. Recheck analyzer server enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:19:38.795Z
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > socket.io-adapter@2.5.5 > ws@8.17.1':
-        reason: >-
-          Sender.close typed-array reason disclosure belongs to Rsdoctor
-          Socket.IO/adapter copies. disableClientServer:true in
-          rsbuild.config.ts prevents inspector socket exposure; no application
-          caller sends typed-array close reasons or receives external frames
-          through these copies. Recheck analyzer server enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:19:40.642Z
-  SNYK-JS-WS-17344547:
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > engine.io@6.6.4 > ws@8.17.1':
-        reason: >-
-          receiver accumulation of tiny fragmented frames belongs to Rsdoctor
-          Socket.IO/adapter copies. disableClientServer:true in
-          rsbuild.config.ts prevents inspector socket exposure; no application
-          caller sends typed-array close reasons or receives external frames
-          through these copies. Recheck analyzer server enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:19:42.817Z
-    - '@rsdoctor/rspack-plugin@1.6.0 > @rsdoctor/core@1.6.0 > @rsdoctor/sdk@1.6.0 > socket.io@4.8.1 > socket.io-adapter@2.5.5 > ws@8.17.1':
-        reason: >-
-          receiver accumulation of tiny fragmented frames belongs to Rsdoctor
-          Socket.IO/adapter copies. disableClientServer:true in
-          rsbuild.config.ts prevents inspector socket exposure; no application
-          caller sends typed-array close reasons or receives external frames
-          through these copies. Recheck analyzer server enablement.
-        expires: 2027-01-03T18:00:00.000Z
-        created: 2026-10-05T18:19:45.542Z
   SNYK-JS-ZOD-20510278:
     - '@tanstack/router-plugin@1.168.35 > @tanstack/router-generator@1.167.33 > zod@4.6.5':
         reason: >-

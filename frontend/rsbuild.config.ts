@@ -8,7 +8,7 @@ import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 
@@ -16,6 +16,7 @@ import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
 import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
+import { fileURLToPath } from 'node:url';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
@@ -186,10 +187,14 @@ export default defineConfig({
         plugins.push(
           new RsdoctorRspackPlugin({
             disableClientServer: true,
+            supports: {
+              brotli: true,
+            },
             output: {
               mode: 'brief',
+              reportDir: fileURLToPath(new URL('./build-stats/rsdoctor', import.meta.url)),
               options: {
-                type: ['json'],
+                type: ['html', 'json'],
               },
             },
           })
