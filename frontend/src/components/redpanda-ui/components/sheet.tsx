@@ -113,6 +113,12 @@ type SheetContentProps = SheetPrimitive.Popup.Props &
      */
     size?: SheetSize;
     showCloseButton?: boolean;
+    /**
+     * Pads the top so content starts below the close button instead of under it. Opt-in because it
+     * moves content down. Ignored when `showCloseButton` is false.
+     * @default false
+     */
+    closeButtonGutter?: boolean;
   };
 
 function SheetContent({
@@ -124,6 +130,7 @@ function SheetContent({
   container,
   showOverlay = true,
   showCloseButton = true,
+  closeButtonGutter = false,
   ...props
 }: SheetContentProps) {
   const portalContainer = usePortalContainer();
@@ -133,7 +140,9 @@ function SheetContent({
       {showOverlay ? <SheetOverlay /> : null}
       <SheetPrimitive.Popup
         aria-modal="true"
-        className={cn(sheetVariants({ side, size }), className)}
+        // pt-16: the close button ends 48px down (top-5 + a 28px icon), plus one gap-4. Last, so a
+        // padding shorthand in `className` cannot merge it away.
+        className={cn(sheetVariants({ side, size }), className, showCloseButton && closeButtonGutter && 'pt-16')}
         data-side={side}
         data-slot="sheet-content"
         data-testid={testId}

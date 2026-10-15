@@ -48,6 +48,8 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> &
     allowCopy?: boolean;
     viewportProps?: ScrollAreaViewportProps;
     onCopy?: () => void;
+    /** `data-testid` for the copy button. @defaultValue `` `${testId}-copy` `` when `testId` is set */
+    copyTestId?: string;
   };
 
 export const Pre = ({ className, ref, ...props }: HTMLAttributes<HTMLPreElement> & { ref?: Ref<HTMLPreElement> }) => (
@@ -76,12 +78,14 @@ export const CodeBlock = ({
   maxHeight,
   className,
   testId,
+  copyTestId,
   ref,
   ...props
 }: CodeBlockProps & { ref?: Ref<HTMLElement> }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [copyError, setCopyError] = useState<string>();
   const areaRef = useRef<HTMLDivElement>(null);
+  const resolvedCopyTestId = copyTestId ?? (testId ? `${testId}-copy` : undefined);
 
   const onCopy = useCallback(async () => {
     const pre = areaRef.current?.getElementsByTagName('pre').item(0);
@@ -126,6 +130,7 @@ export const CodeBlock = ({
               isCopied={isCopied}
               onClick={onCopy}
               size="sm"
+              testId={resolvedCopyTestId}
               variant="ghost"
             />
           ) : null}
@@ -137,6 +142,7 @@ export const CodeBlock = ({
             isCopied={isCopied}
             onClick={onCopy}
             size="sm"
+            testId={resolvedCopyTestId}
             variant="ghost"
           />
         )
@@ -184,6 +190,8 @@ interface SimpleCodeBlockProps {
   allowCopy?: boolean;
   className?: string;
   code: string;
+  /** `data-testid` for the copy button. @defaultValue `` `${testId}-copy` `` when `testId` is set */
+  copyTestId?: string;
   icon?: ReactNode;
   language?: string;
   maxHeight?: 'sm' | 'md' | 'lg' | 'none';
@@ -206,10 +214,12 @@ export const SimpleCodeBlock = ({
   onCopy,
   className,
   testId,
+  copyTestId,
 }: SimpleCodeBlockProps) => (
   <CodeBlock
     allowCopy={allowCopy}
     className={className}
+    copyTestId={copyTestId}
     icon={icon}
     maxHeight={maxHeight}
     onCopy={onCopy}

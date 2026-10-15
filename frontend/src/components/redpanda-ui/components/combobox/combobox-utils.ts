@@ -1,105 +1,68 @@
 import type { ComboboxOption } from './index';
 
-/** Prefix for the creatable item's cmdk value to distinguish from real options. */
-export const CREATE_ITEM_PREFIX = '__create__';
+/** Selection value of the "Create" row, kept apart from every consumer option value. */
+export const CREATE_ITEM_VALUE = '__combobox_create__';
 
-export interface GroupedOptions {
+/** The "Create" row: its label is the typed text, so the list filter always keeps it. */
+export interface ComboboxCreateItem {
+  readonly create: true;
+  readonly label: string;
+  readonly value: typeof CREATE_ITEM_VALUE;
+}
+
+export type ComboboxListItem = ComboboxOption | ComboboxCreateItem;
+
+/** One section of the list. Options without a `group` share a section with an empty heading. */
+export interface ComboboxListGroup {
   readonly heading: string;
-  readonly options: readonly ComboboxOption[];
+  readonly items: readonly ComboboxListItem[];
+  readonly key: string;
   readonly testId?: string;
 }
 
-/** Resolve a controlled value to its display label. */
-export const resolveLabel = (options: readonly ComboboxOption[], value: string): string => {
-  const opt = options.find((o) => o.value === value);
-  return opt?.label ?? value;
-};
+export const isCreateItem = (item: ComboboxListItem): item is ComboboxCreateItem => 'create' in item;
 
-/** Filter options by a case-insensitive query against label and value. */
-export const filterOptions = (
-  options: readonly ComboboxOption[],
-  query: string,
-  selectedLabel: string
-): ComboboxOption[] => {
-  if (!query) {
-    return [...options];
-  }
-  // If input matches the selected option's label exactly, show all options
-  if (query === selectedLabel && selectedLabel) {
-    return [...options];
-  }
-  const lowerQuery = query.toLowerCase();
-  return options.filter(
-    (option) => option.label.toLowerCase().includes(lowerQuery) || option.value.toLowerCase().includes(lowerQuery)
-  );
-};
-
-/** Group options by their `group` field, preserving insertion order. Returns undefined if no groups exist. */
-export const groupOptions = (options: readonly ComboboxOption[]): GroupedOptions[] | undefined => {
-  if (!options.some((option) => option.group)) {
-    return;
-  }
-
-  const groups = new Map<string, GroupedOptions>();
+/** Group options by their `group` field, preserving first-seen order. */
+export const groupOptions = (options: readonly ComboboxOption[]): ComboboxListGroup[] => {
+  const groups = new Map<string, { items: ComboboxOption[]; testId?: string }>();
   for (const option of options) {
-    const groupKey = option.group || '';
-    const existing = groups.get(groupKey);
-    if (existing) {
-      groups.set(groupKey, { ...existing, options: [...existing.options, option] });
+    const heading = option.group ?? '';
+    const group = groups.get(heading);
+    if (group) {
+      group.items.push(option);
     } else {
-      groups.set(groupKey, {
-        heading: groupKey,
-        options: [option],
-        testId: option.groupTestId,
-      });
+      groups.set(heading, { items: [option], testId: option.groupTestId });
     }
   }
-  return Array.from(groups.values());
+  return Array.from(groups, ([heading, group]) => ({
+    heading,
+    items: group.items,
+    key: `group:${heading}`,
+    testId: group.testId,
+  }));
 };
 
-/** Build the flat list of navigable cmdk values for keyboard navigation. */
-export const getNavigableValues = (
-  filteredOptions: readonly ComboboxOption[],
-  canCreate: boolean,
-  inputValue: string
-): string[] => {
-  const base = filteredOptions.map((opt) => opt.label);
-  return canCreate ? [...base, `${CREATE_ITEM_PREFIX}${inputValue}`] : base;
-};
-
-/** Compute the next highlight value with circular wrapping. */
-export const computeNextHighlight = (
-  navigableValues: readonly string[],
-  currentHighlight: string,
-  direction: 1 | -1
-): string => {
-  if (navigableValues.length === 0) {
-    return '';
-  }
-  const currentIndex = navigableValues.findIndex((v) => v.toLowerCase() === currentHighlight.toLowerCase());
-  let nextIndex: number;
-  if (currentIndex === -1) {
-    nextIndex = direction === 1 ? 0 : navigableValues.length - 1;
-  } else {
-    nextIndex = currentIndex + direction;
-    if (nextIndex < 0) {
-      nextIndex = navigableValues.length - 1;
-    }
-    if (nextIndex >= navigableValues.length) {
-      nextIndex = 0;
-    }
-  }
-  return navigableValues[nextIndex];
-};
-
-/** Find the first matching option for a query string (used for auto-highlight on type). */
-export const findFirstMatch = (options: readonly ComboboxOption[], query: string): string => {
-  if (!query) {
-    return '';
+/** Whether `text` names something new: not blank, not the current value, not an existing option. */
+export const canCreateOption = (options: readonly ComboboxOption[], text: string, value: string): boolean => {
+  const query = text.trim();
+  if (query === '' || query === value) {
+    return false;
   }
   const lowerQuery = query.toLowerCase();
-  const match = options.find(
-    (opt) => opt.label.toLowerCase().includes(lowerQuery) || opt.value.toLowerCase().includes(lowerQuery)
+  return !options.some(
+    (option) => option.value.toLowerCase() === lowerQuery || option.label.toLowerCase() === lowerQuery
   );
-  return match?.label ?? '';
+};
+
+/** The sections Base UI renders: the grouped options, plus a trailing "Create" section when offered. */
+export const buildListGroups = (
+  options: readonly ComboboxOption[],
+  createText: string | undefined
+): ComboboxListGroup[] => {
+  const groups = groupOptions(options);
+  if (createText === undefined) {
+    return groups;
+  }
+  const createItem: ComboboxCreateItem = { create: true, label: createText, value: CREATE_ITEM_VALUE };
+  return [...groups, { heading: '', items: [createItem], key: 'create' }];
 };
