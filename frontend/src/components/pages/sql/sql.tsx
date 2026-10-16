@@ -49,6 +49,14 @@ export function isWriteKeyword(stmt: string): boolean {
   return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
 
+// Statements that can add, remove or rename catalog objects, so the catalog
+// tree must be refetched after they succeed.
+const CATALOG_CHANGING_KEYWORDS = new Set(['CREATE', 'DROP', 'ALTER', 'RENAME']);
+
+export function isCatalogChangingKeyword(stmt: string): boolean {
+  return CATALOG_CHANGING_KEYWORDS.has(firstKeyword(stmt));
+}
+
 // Strip line/block comments and single-quoted string literals so `=>` inside
 // them isn't mistaken for a catalog reference. Leaves the structural SQL intact.
 const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/g;

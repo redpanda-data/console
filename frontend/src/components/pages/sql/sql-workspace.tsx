@@ -42,7 +42,7 @@ import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isCatalogChangingKeyword, isWriteKeyword } from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -156,8 +156,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     setStudioPageHeader();
   }, []);
 
-  const { data: catalogsData, isLoading } = useListCatalogsQuery();
+  const { data: catalogsData, isLoading, isFetching: isFetchingCatalogs } = useListCatalogsQuery();
   const executeQuery = useExecuteQueryMutation();
+  const invalidateSqlCatalog = useInvalidateSqlCatalog();
 
   // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
   // derive it from the SQL identity — admin unlocks write/DDL affordances like
@@ -226,7 +227,9 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
   // editor autocomplete (and the bridge indicator below) can resolve table refs.
   const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
-  const { data: redpandaTablesData } = useListTablesQuery({ catalog: redpandaCatalogName });
+  const { data: redpandaTablesData, isFetching: isFetchingTables } = useListTablesQuery({
+    catalog: redpandaCatalogName,
+  });
   const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
 
   // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
@@ -299,6 +302,10 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
         { request: create(ExecuteQueryRequestSchema, { statement: sql }), signal: aborter.signal },
         {
           onSuccess: (res) => {
+            // Refresh even when a newer run superseded this one: the DDL still ran.
+            if (isCatalogChangingKeyword(sql)) {
+              invalidateSqlCatalog();
+            }
             if (latestRunToken.current !== token) {
               return;
             }
@@ -333,7 +340,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
         }
       );
     },
-    [completionCatalogs, executeQuery]
+    [completionCatalogs, executeQuery, invalidateSqlCatalog]
   );
 
   const onCancelRun = useCallback(() => abortRef.current?.abort(), []);
@@ -350,7 +357,6 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
   const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
-  const invalidateSqlCatalog = useInvalidateSqlCatalog();
 
   // Topics already exposed as tables in the Redpanda catalog — excluded from
   // the wizard's topic picker so you can't create a duplicate.
@@ -435,8 +441,10 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           <CatalogTree
             catalogs={catalogs}
             isLoading={isLoading}
+            isRefreshing={isFetchingCatalogs || isFetchingTables}
             onAddTable={openWizard}
             onQueryTable={onQueryTable}
+            onRefresh={invalidateSqlCatalog}
             sqlRole={sqlRole}
           />
         </div>
