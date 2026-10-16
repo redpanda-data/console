@@ -11,7 +11,7 @@
 
 import { describe, expect, test } from '@rstest/core';
 
-import { bridgeTopicForQuery, firstKeyword, isWriteKeyword } from './sql';
+import { bridgeTopicForQuery, firstKeyword, isCatalogChangingKeyword, isWriteKeyword } from './sql';
 import type { Catalog } from './sql-types';
 
 const CATALOGS: Catalog[] = [
@@ -66,6 +66,18 @@ describe('sql helpers', () => {
     // Writes / DDL / DCL — still blocked.
     expect(isWriteKeyword('INSERT INTO t VALUES (1)')).toBe(true);
     expect(isWriteKeyword('DELETE FROM t')).toBe(true);
+  });
+
+  test('isCatalogChangingKeyword matches DDL that adds or removes catalog objects', () => {
+    expect(isCatalogChangingKeyword("CREATE TABLE rp=>orders WITH (topic = 'orders')")).toBe(true);
+    expect(isCatalogChangingKeyword('drop table rp=>orders')).toBe(true);
+    expect(isCatalogChangingKeyword('-- cleanup\nDROP TABLE rp=>orders')).toBe(true);
+    expect(isCatalogChangingKeyword('ALTER TABLE t RENAME TO u')).toBe(true);
+    expect(isCatalogChangingKeyword('RENAME TABLE t TO u')).toBe(true);
+    expect(isCatalogChangingKeyword('TRUNCATE t')).toBe(false);
+    expect(isCatalogChangingKeyword('SELECT * FROM rp=>orders')).toBe(false);
+    expect(isCatalogChangingKeyword('SHOW TABLES')).toBe(false);
+    expect(isCatalogChangingKeyword('')).toBe(false);
   });
 
   test('bridgeTopicForQuery resolves a single Redpanda SQL table to its backing topic', () => {

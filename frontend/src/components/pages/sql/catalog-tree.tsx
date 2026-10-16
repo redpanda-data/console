@@ -24,6 +24,7 @@ import {
   Table as LucideTable,
   Play,
   Plus,
+  RefreshCw,
   Search,
 } from 'lucide-react';
 import type { Column } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
@@ -53,6 +54,10 @@ export type CatalogTreeProps = {
   onQueryTable: (catalog: Catalog, table: TableRef) => void;
   /** Admin entry point for the add-topic wizard (scoped to the Redpanda catalog). */
   onAddTable?: () => void;
+  /** Refetch catalogs and tables, e.g. after DDL run outside the editor. */
+  onRefresh?: () => void;
+  /** True while catalogs or tables are being refetched. */
+  isRefreshing?: boolean;
 };
 
 // Promote search past this many tables in a namespace.
@@ -530,6 +535,8 @@ export function CatalogTree({
   activeTableId,
   onQueryTable,
   onAddTable,
+  onRefresh,
+  isRefreshing,
 }: CatalogTreeProps) {
   // Expand/collapse state per node id. Undefined => default open for catalogs
   // and namespaces (see `!== false` checks in the nodes).
@@ -570,6 +577,20 @@ export function CatalogTree({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center px-3.5 pt-3.5 pb-2">
         <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wider">Catalogs</span>
+        {onRefresh ? (
+          <Button
+            aria-label="Refresh catalogs"
+            className="ml-auto shrink-0"
+            disabled={isRefreshing}
+            onClick={onRefresh}
+            size="icon-xs"
+            title="Refresh catalogs"
+            type="button"
+            variant="ghost"
+          >
+            <RefreshCw className={cn(isRefreshing && 'animate-spin')} />
+          </Button>
+        ) : null}
       </div>
       <div className="px-3 pb-2.5">
         <Input onChange={(e) => setQuery(e.target.value)} placeholder="Search tables" size="sm" value={query}>
