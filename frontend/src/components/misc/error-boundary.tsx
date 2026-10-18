@@ -42,8 +42,10 @@ type ErrorBoundaryState = {
   infoItems: InfoItem[];
 };
 
-export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }, ErrorBoundaryState> {
-  constructor(p: { children?: React.ReactNode }) {
+type ErrorBoundaryProps = { children?: React.ReactNode; fallback?: React.ReactNode };
+
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(p: ErrorBoundaryProps) {
     super(p);
     this.state = {
       hasError: false,
@@ -196,6 +198,10 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
   render() {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    if (this.props.fallback !== undefined) {
+      return this.props.fallback;
     }
 
     return (

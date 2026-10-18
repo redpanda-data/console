@@ -9,17 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import Editor, { type EditorProps, type Monaco } from '@monaco-editor/react';
-import 'monaco-editor';
+import type { EditorProps, Monaco } from '@monaco-editor/react';
+import { LoadingBoundary } from 'components/ui/loading-boundary';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { useEffect, useMemo, useRef } from 'react';
+import { lazy, useEffect, useMemo, useRef } from 'react';
 
 import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
 
 import { normalizePastedWhitespace } from './whitespace';
+
+const Editor = lazy(() => import('../../misc/monaco-editor'));
 
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
@@ -180,43 +182,45 @@ export const YamlEditor = (props: YamlEditorProps) => {
   }, []);
 
   return (
-    <Editor
-      beforeMount={(monaco) => {
-        monacoRef.current = monaco;
-        yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
-        applyTheme(monaco, transparentBackground ?? false);
-      }}
-      defaultLanguage="yaml"
-      loading={<LoadingPlaceholder />}
-      onMount={(editorInstance) => {
-        // Normalize invisible spaces in the pasted range (see whitespace.ts).
-        editorInstance.onDidPaste((e) => {
-          const model = editorInstance.getModel();
-          if (!model) {
-            return;
-          }
-          const pasted = model.getValueInRange(e.range);
-          const normalized = normalizePastedWhitespace(pasted);
-          if (normalized !== pasted) {
-            editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
-          }
-        });
-        onEditorMount?.(editorInstance);
-      }}
-      options={options}
-      path="pipeline.yaml"
-      theme={THEME_NAME}
-      wrapperProps={{
-        style: {
-          minWidth: 0,
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexBasis: '100%',
-        },
-      }}
-      {...rest}
-    />
+    <LoadingBoundary fallback={<LoadingPlaceholder />}>
+      <Editor
+        beforeMount={(monaco) => {
+          monacoRef.current = monaco;
+          yamlRef.current = configureMonacoYaml(monaco, monacoYamlOptions);
+          applyTheme(monaco, transparentBackground ?? false);
+        }}
+        defaultLanguage="yaml"
+        loading={<LoadingPlaceholder />}
+        onMount={(editorInstance) => {
+          // Normalize invisible spaces in the pasted range (see whitespace.ts).
+          editorInstance.onDidPaste((e) => {
+            const model = editorInstance.getModel();
+            if (!model) {
+              return;
+            }
+            const pasted = model.getValueInRange(e.range);
+            const normalized = normalizePastedWhitespace(pasted);
+            if (normalized !== pasted) {
+              editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
+            }
+          });
+          onEditorMount?.(editorInstance);
+        }}
+        options={options}
+        path="pipeline.yaml"
+        theme={THEME_NAME}
+        wrapperProps={{
+          style: {
+            minWidth: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexBasis: '100%',
+          },
+        }}
+        {...rest}
+      />
+    </LoadingBoundary>
   );
 };
 

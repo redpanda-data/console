@@ -178,7 +178,7 @@ rs.mock('components/ui/yaml/yaml-editor', () => ({
 }));
 
 // Monaco's diff editor is heavy and needs a real layout; stub it to a marker carrying both sides.
-rs.mock('@monaco-editor/react', () => ({
+rs.mock('components/misc/monaco-editor', () => ({
   DiffEditor: (props: { original?: string; modified?: string }) =>
     React.createElement('div', {
       'data-testid': 'diff-editor',

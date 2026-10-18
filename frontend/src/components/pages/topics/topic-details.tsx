@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { type JSX, useState } from 'react';
+import React, { type JSX, lazy, useState } from 'react';
 
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -18,6 +18,8 @@ import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
+import { ErrorBoundary } from 'components/misc/error-boundary';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -30,6 +32,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { LoadingBoundary } from 'components/ui/loading-boundary';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicMessagesTab } from './messages';
@@ -38,13 +41,25 @@ import AclList from './Tab.Acl/acl-list';
 import { DeleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
 import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
-import { TopicDocumentation } from './tab-docu';
 import { TopicPartitions } from './tab-partitions';
 import { isServerless } from '../../../config';
 import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
+
+const TopicDocumentation = lazy(() => import('./tab-docu').then((m) => ({ default: m.TopicDocumentation })));
+
+const documentationError = (
+  <Alert variant="destructive">
+    <AlertDescription>
+      Unable to load documentation. Reload the page to try again.
+      <Button onClick={() => window.location.reload()} variant="outline">
+        Reload page
+      </Button>
+    </AlertDescription>
+  </Alert>
+);
 
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
@@ -355,7 +370,15 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
           titleText="Documentation"
           topic={topic}
         >
-          {(t) => <TopicDocumentation topic={t} />}
+          {(t) =>
+            selectedTabId === 'documentation' && (
+              <ErrorBoundary fallback={documentationError}>
+                <LoadingBoundary fallback={DefaultSkeleton}>
+                  <TopicDocumentation topic={t} />
+                </LoadingBoundary>
+              </ErrorBoundary>
+            )
+          }
         </TopicTab>
       )}
     </>

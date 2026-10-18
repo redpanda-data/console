@@ -9,16 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { DiffEditor, type Monaco } from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { LoadingBoundary } from 'components/ui/loading-boundary';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import { CheckCircle2, Info, MousePointerClick, TriangleAlert } from 'lucide-react';
 import type { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useEffect, useRef } from 'react';
+import { lazy, useEffect, useRef } from 'react';
 
 import { applyDiffTheme, DIFF_THEME } from './changes-diff-theme';
 import {
@@ -29,6 +30,8 @@ import {
   NO_CHANGES_COPY,
   type SettingsChange,
 } from './changes-summary';
+
+const DiffEditor = lazy(() => import('../../../misc/monaco-editor').then((m) => ({ default: m.DiffEditor })));
 
 const KIND_LABEL: Record<ChangeKind, string> = {
   added: 'Added',
@@ -240,18 +243,20 @@ export function ChangesPanel({
         <div className="relative min-w-0 flex-1">
           <div className="absolute inset-0">
             {configChanged ? (
-              <DiffEditor
-                beforeMount={(monaco) => {
-                  monacoRef.current = monaco;
-                  applyDiffTheme(monaco);
-                }}
-                language="yaml"
-                loading={DIFF_LOADING}
-                modified={editedYaml}
-                options={DIFF_OPTIONS}
-                original={savedYaml}
-                theme={DIFF_THEME}
-              />
+              <LoadingBoundary fallback={DIFF_LOADING}>
+                <DiffEditor
+                  beforeMount={(monaco) => {
+                    monacoRef.current = monaco;
+                    applyDiffTheme(monaco);
+                  }}
+                  language="yaml"
+                  loading={DIFF_LOADING}
+                  modified={editedYaml}
+                  options={DIFF_OPTIONS}
+                  original={savedYaml}
+                  theme={DIFF_THEME}
+                />
+              </LoadingBoundary>
             ) : (
               <p className="flex h-full items-center justify-center p-8 text-center text-body-sm text-muted-foreground">
                 The configuration itself is unchanged.
