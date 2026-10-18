@@ -38,6 +38,7 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 	}
 	req.Config = s.Interceptor.ConsoleToKafkaConnect(className, req.Config)
 
+	ctx, starting := withStartingCapture(ctx)
 	cInfo, err := c.Client.PutConnectorConfig(ctx, connectorName, req)
 	connectorClass := getMapValueOrString(cInfo.Config, "connector.class", "unknown")
 	cInfo = con.ConnectorInfo{
@@ -48,6 +49,9 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 	}
 
 	if err != nil {
+		if starting.err != nil {
+			return con.ConnectorInfo{}, startingRestError(starting.err, "update connector config", slog.String("cluster_name", clusterName), slog.String("connector_name", connectorName))
+		}
 		return con.ConnectorInfo{}, &rest.Error{
 			Err:          fmt.Errorf("failed to patch connector config: %w", err),
 			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),

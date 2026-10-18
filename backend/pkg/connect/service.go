@@ -87,6 +87,10 @@ func NewService(cfg config.KafkaConnect, logger *slog.Logger) (*Service, error) 
 
 		// Create client
 		client := con.NewClient(opts...)
+		// Capture the details of a connect-gate "starting" 503, which the
+		// client itself reduces to a code and a message.
+		hc := client.GetClient()
+		hc.Transport = newGateTransport(hc.Transport)
 		clientsByCluster[clusterCfg.Name] = &ClientWithConfig{
 			Client: client,
 			Cfg:    clusterCfg,

@@ -42,8 +42,10 @@ import { Stat } from 'components/redpanda-ui/components/stat';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { type CSSProperties, type JSX, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
+import { retryWhileKafkaConnectStarting } from 'utils/kafka-connect-starting';
 import { showToast } from 'utils/toast.utils';
 
+import { KafkaConnectStartingAlert, type KafkaConnectStartingState } from './kafka-connect-starting-alert';
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
@@ -578,6 +580,7 @@ type ConfirmModalProps<T> = {
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
+  const [starting, setStarting] = useState<KafkaConnectStartingState | null>(null);
 
   const renderError = (): { title: string; content: string } | undefined => {
     if (!error) {
@@ -615,6 +618,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const cancel = () => {
     setIsPending(false);
     setError(null);
+    setStarting(null);
     props.clearTarget();
   };
 
@@ -634,10 +638,16 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
     // biome-ignore lint/style/noNonNullAssertion: guaranteed by isOpen check
     const target = props.target()!;
     try {
-      await props.onOk(target);
+      // Kafka Connect may be booting after scale-to-zero; wait it out instead of failing.
+      await retryWhileKafkaConnectStarting(() => props.onOk(target), {
+        onWait: (info, secondsRemaining) => setStarting({ info, secondsRemaining }),
+        onRetry: () => setStarting(null),
+      });
+      setStarting(null);
       success(target);
-    } catch (err) {
-      setError(err as Error);
+    } catch (e) {
+      setStarting(null);
+      setError(e as Error);
     } finally {
       setIsPending(false);
     }
@@ -665,6 +675,11 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
             long API error would otherwise be clipped with no way to scroll to the footer. */}
         <AlertDialogDescription className="min-h-0 overflow-y-auto text-foreground">
           {content}
+          {starting ? (
+            <div className="mt-4">
+              <KafkaConnectStartingAlert state={starting} />
+            </div>
+          ) : null}
           {err ? (
             <div className="mt-4">
               <Alert icon={<AlertIcon />} variant="destructive">

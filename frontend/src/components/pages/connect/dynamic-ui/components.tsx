@@ -22,6 +22,7 @@ import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/
 import type { ConnectorStep } from '../../../../state/rest-interfaces';
 import { clone } from '../../../../utils/json-utils';
 import KowlEditor from '../../../misc/kowl-editor';
+import { KafkaConnectStartingNotice } from '../kafka-connect-starting-alert';
 
 export type ConfigPageProps = {
   connectorStore: ConnectorPropertiesStore;
@@ -46,6 +47,11 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
   if (connectorStore.initPending) {
     return (
       <div className="mt-5">
+        {connectorStore.startingNotice ? (
+          <div className="mb-4">
+            <KafkaConnectStartingNotice message={connectorStore.startingNotice} />
+          </div>
+        ) : null}
         <SkeletonText lines={20} width="full" />
       </div>
     );

@@ -17,11 +17,15 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"connectrpc.com/connect"
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
 	"github.com/redpanda-data/common-go/api/pagination"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	apierrors "github.com/redpanda-data/console/backend/pkg/api/connect/errors"
@@ -362,6 +366,22 @@ func (*Service) matchError(err *rest.Error) *connect.Error {
 				v1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
 			),
 		)
+	case http.StatusServiceUnavailable:
+		// Kafka Connect behind connect-gate answers 503 while its workers are
+		// scaled to zero and booting; that is retryable, and the gate's retry
+		// hint travels as RetryInfo plus ErrorInfo metadata.
+		errInfo := apierrors.NewErrorInfo(v1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String())
+		details := []proto.Message{}
+		if se, ok := kafkaconnect.AsStartingError(err); ok {
+			errInfo = apierrors.NewErrorInfo(
+				v1.Reason_REASON_KAFKA_CONNECT_API_ERROR.String(),
+				apierrors.KeyVal{Key: "reason", Value: kafkaconnect.StartingReason},
+				apierrors.KeyVal{Key: "phase", Value: se.Phase},
+				apierrors.KeyVal{Key: "retry_after_seconds", Value: strconv.Itoa(se.RetryAfterSeconds())},
+			)
+			details = append(details, &errdetails.RetryInfo{RetryDelay: durationpb.New(se.RetryAfter)})
+		}
+		return apierrors.NewConnectError(connect.CodeUnavailable, err.Err, errInfo, details...)
 	default:
 		return apierrors.NewConnectError(
 			connect.CodeInternal,

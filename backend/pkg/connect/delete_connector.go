@@ -26,8 +26,12 @@ func (s *Service) DeleteConnector(ctx context.Context, clusterName string, conne
 		return restErr
 	}
 
+	ctx, starting := withStartingCapture(ctx)
 	err := c.Client.DeleteConnector(ctx, connector)
 	if err != nil {
+		if starting.err != nil {
+			return startingRestError(starting.err, "delete connector", slog.String("cluster_name", clusterName), slog.String("connector", connector))
+		}
 		return &rest.Error{
 			Err:          err,
 			Status:       GetStatusCodeFromAPIError(err, http.StatusServiceUnavailable),

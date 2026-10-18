@@ -25,6 +25,14 @@ import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alph
 export type ApiError = {
   statusCode: number;
   message: string;
+  /** Machine-readable cause, e.g. `kafka_connect_starting` while the Kafka Connect workers boot. */
+  reason?: string;
+  /** Boot phase reported by connect-gate while Kafka Connect is starting. */
+  phase?: string;
+  /** Seconds the server asks the client to wait before retrying. */
+  retryAfterSeconds?: number;
+  /** Rough seconds until the service answers again. */
+  estimatedWaitSeconds?: number;
 };
 
 export function isApiError(obj: unknown): obj is ApiError {
@@ -46,12 +54,23 @@ export function isApiError(obj: unknown): obj is ApiError {
 export class WrappedApiError extends Error {
   statusCode: number;
   path: string;
+  reason?: string;
+  phase?: string;
+  retryAfterSeconds?: number;
+  estimatedWaitSeconds?: number;
 
   constructor(response: Response, apiError: ApiError) {
     super(apiError.message);
     Object.setPrototypeOf(this, WrappedApiError.prototype);
 
     this.statusCode = apiError.statusCode;
+    this.reason = apiError.reason;
+    this.phase = apiError.phase;
+    this.estimatedWaitSeconds = apiError.estimatedWaitSeconds;
+    // Prefer the body's hint; fall back to the Retry-After header.
+    const headerRetryAfter = Number.parseInt(response.headers?.get('Retry-After') ?? '', 10);
+    this.retryAfterSeconds =
+      apiError.retryAfterSeconds ?? (Number.isFinite(headerRetryAfter) ? headerRetryAfter : undefined);
 
     // try showing only the path of the url
     try {

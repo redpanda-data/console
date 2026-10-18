@@ -37,11 +37,15 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 	configs = s.Interceptor.ConsoleToKafkaConnect(pluginClassName, configs)
 
 	options := con.ValidateConnectorConfigOptions{Config: configs}
+	ctx, starting := withStartingCapture(ctx)
 	cValidationResult, err := c.Client.PutValidateConnectorConfig(ctx, pluginClassName, options)
 	if err != nil {
+		if starting.err != nil {
+			return model.ValidationResponse{}, startingRestError(starting.err, "validate connector config", slog.String("cluster_name", clusterName), slog.String("plugin_class_name", pluginClassName))
+		}
 		return model.ValidationResponse{}, &rest.Error{
 			Err:          fmt.Errorf("failed to validate connector config: %w", err),
-			Status:       http.StatusOK,
+			Status:       GetStatusCodeFromAPIError(err, http.StatusInternalServerError),
 			Message:      fmt.Sprintf("Failed to validate Connector config: %v", err.Error()),
 			InternalLogs: []slog.Attr{slog.String("cluster_name", clusterName), slog.String("plugin_class_name", pluginClassName)},
 			IsSilent:     false,
