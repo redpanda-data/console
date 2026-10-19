@@ -19,6 +19,10 @@ type TagChipInputProps = {
   placeholder: string;
   testId: string;
   mono?: boolean;
+  /** For a `<label htmlFor>` that names the text field. */
+  id?: string;
+  /** A muted note after a chip's value, such as where it came from. */
+  noteFor?: (item: string) => string | undefined;
 };
 
 /**
@@ -26,7 +30,15 @@ type TagChipInputProps = {
  * removes the last chip). The registry Tags component is a select-from-list
  * combobox, so it can't be used for arbitrary contexts/subjects.
  */
-export const TagChipInput = ({ value, onChange, placeholder, testId, mono = false }: TagChipInputProps) => {
+export const TagChipInput = ({
+  value,
+  onChange,
+  placeholder,
+  testId,
+  mono = false,
+  id,
+  noteFor,
+}: TagChipInputProps) => {
   const [draft, setDraft] = useState('');
 
   const commitDraft = () => {
@@ -69,22 +81,27 @@ export const TagChipInput = ({ value, onChange, placeholder, testId, mono = fals
       className="flex min-h-9 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
       data-testid={testId}
     >
-      {value.map((item) => (
-        <TagsValue
-          className={cn(mono && 'font-mono')}
-          key={item}
-          onRemove={() => onChange(value.filter((existing) => existing !== item))}
-          testId={`${testId}-chip-${item}`}
-        >
-          {item}
-        </TagsValue>
-      ))}
+      {value.map((item) => {
+        const note = noteFor?.(item);
+        return (
+          <TagsValue
+            className={cn(mono && 'font-mono')}
+            key={item}
+            onRemove={() => onChange(value.filter((existing) => existing !== item))}
+            testId={`${testId}-chip-${item}`}
+          >
+            {item}
+            {note ? <span className="pl-1 font-sans text-muted-foreground">{note}</span> : null}
+          </TagsValue>
+        );
+      })}
       <input
         className={cn(
           'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground',
           mono && 'font-mono'
         )}
         data-testid={`${testId}-field`}
+        id={id}
         onBlur={commitDraft}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={handleKeyDown}

@@ -47,6 +47,7 @@ import { NotFoundPage } from '../components/misc/not-found-page';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
+import { useShadowBoxStore } from '../stores/shadow-box-store';
 
 /**
  * Re-root the generated route tree onto Console's federated root.
@@ -187,8 +188,17 @@ function ConsoleAppInner({
   onError,
   config: configOverrides,
   featureFlags,
+  shadowLinkTopology,
+  onOpenCluster,
 }: ConsoleAppProps) {
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Kept out of setup(): the host re-sends the topology every time it polls, and re-running setup
+  // would tear Console down.
+  useEffect(() => {
+    useShadowBoxStore.getState().setHostContext(shadowLinkTopology ?? null, onOpenCluster ?? null);
+  }, [shadowLinkTopology, onOpenCluster]);
+
   // Track last notified path to prevent navigation loops between host and remote
   const lastNotifiedPathRef = useRef<string>(initialPath);
 

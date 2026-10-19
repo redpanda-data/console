@@ -12,17 +12,21 @@
 'use client';
 
 import { Code } from '@connectrpc/connect';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
+import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import {
   ShadowLinkEmptyState,
@@ -34,7 +38,10 @@ import {
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
+import { hasBoxActivity } from '../../../shadow-box/shadow-box-model';
+import { ShadowBoxSourcePanel } from '../../../shadow-box/shadow-box-source-panel';
 import { getShadowLinkStateLabel } from '../model';
+import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
 
 // Extracted component for table body content
 const ShadowLinkTableRows = ({
@@ -103,7 +110,7 @@ export const createColumns: DataTableColumnDef<ListShadowLinksResponse_ShadowLin
   },
 ];
 
-export const ShadowLinkListPage = () => {
+const ShadowLinksOnThisCluster = () => {
   const navigate = useNavigate();
 
   // React Query hooks
@@ -114,11 +121,6 @@ export const ShadowLinkListPage = () => {
 
   // Check if a shadowlink already exists (only one allowed)
   const hasShadowLink = shadowLinks.length > 0;
-
-  useEffect(() => {
-    uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '' }];
-    uiState.pageTitle = 'Shadow Links';
-  }, []);
 
   // Show toast on error (except for feature-disabled or unavailable admin API errors)
   useEffect(() => {
@@ -164,7 +166,7 @@ export const ShadowLinkListPage = () => {
   }
 
   // Feature disabled state
-  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
+  if (isShadowLinkingDisabledError(error)) {
     return (
       <div className="my-2 flex justify-center gap-2">
         <ShadowLinkFeatureDisabledState />
@@ -253,5 +255,86 @@ export const ShadowLinkListPage = () => {
         </TableBody>
       </Table>
     </div>
+  );
+};
+
+type ShadowLinksTab = 'links' | 'source';
+
+/**
+ * Open on the box only when this cluster is plainly acting as a source: it's boxed, or Cloud knows
+ * links that read from it. Otherwise Links on this cluster, with its Create shadow link prompt.
+ * Undefined until everything that decides it has loaded.
+ */
+const useDefaultTab = (): ShadowLinksTab | undefined => {
+  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery({});
+  const { known, summary, isError } = useShadowBoxStatusQuery();
+  const topology = useShadowBoxStore((state) => state.topology);
+
+  if ((shadowLinksData?.shadowLinks.length ?? 0) > 0) {
+    return 'links';
+  }
+  if (known && hasBoxActivity(summary.phase)) {
+    return 'source';
+  }
+  if (topology && topology.readers.length > 0) {
+    return 'source';
+  }
+  const settled = !isLoading && (known || isError) && !topology?.resolving;
+  return settled ? 'links' : undefined;
+};
+
+export const ShadowLinkListPage = () => {
+  const navigate = useNavigate();
+  // Read from the location, not the route match: the page also renders outside its route in tests.
+  const searchTab = (useLocation().search as { tab?: unknown }).tab;
+  const requestedTab = searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
+  const { available } = useShadowBoxStatusQuery();
+  const defaultTab = useDefaultTab();
+  const tab = requestedTab ?? defaultTab;
+
+  useEffect(() => {
+    uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '' }];
+    uiState.pageTitle = 'Shadow Links';
+  }, []);
+
+  // Write the resolved default into the URL, so the banner and the host see which tab is showing.
+  useEffect(() => {
+    if (available && defaultTab && !requestedTab) {
+      navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true });
+    }
+  }, [available, requestedTab, defaultTab, navigate]);
+
+  if (!available) {
+    return <ShadowLinksOnThisCluster />;
+  }
+
+  return (
+    <Tabs
+      onValueChange={(value) =>
+        navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true })
+      }
+      value={tab ?? null}
+    >
+      <TabsList testId="shadowlinks-tabs">
+        <TabsTrigger testId="shadowlinks-tab-links" value="links" variant="underline">
+          Links on this cluster
+        </TabsTrigger>
+        <TabsTrigger testId="shadowlinks-tab-source" value="source" variant="underline">
+          This cluster as a source
+        </TabsTrigger>
+      </TabsList>
+      {tab ? (
+        <TabsContents>
+          <TabsContent className="pt-4" value="links">
+            <ShadowLinksOnThisCluster />
+          </TabsContent>
+          <TabsContent className="pt-4" value="source">
+            <ShadowBoxSourcePanel />
+          </TabsContent>
+        </TabsContents>
+      ) : (
+        <Skeleton className="mt-4 h-48" testId="shadowlinks-tab-loading" />
+      )}
+    </Tabs>
   );
 };

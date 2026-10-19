@@ -1,5 +1,6 @@
-import type { ConnectError } from '@connectrpc/connect';
+import { Code, type ConnectError } from '@connectrpc/connect';
 import { toast } from 'components/redpanda-ui/components/toast';
+import { hasBoxActivity } from 'components/shadow-box/shadow-box-model';
 import {
   BadRequestSchema,
   ErrorInfoSchema,
@@ -9,6 +10,7 @@ import {
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
 import type { ReactNode } from 'react';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 export type ErrorHttpPayload = {
   internalCode: number;
@@ -161,7 +163,43 @@ function collectErrorDetails(error: ConnectError): string[] {
   ];
 }
 
+/**
+ * The Kafka error name Redpanda answers with when a box rejects a request. Produce is rejected with a
+ * timeout instead, but produce errors don't come through these toasts, and a timeout is too common
+ * a failure to blame on the box.
+ */
+const BOX_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
+const BOX_MENTION = /shadow.?box|\bboxed\b/i;
+const TRAILING_PERIOD = /\.$/;
+
+/**
+ * A box rejection reads as a policy violation, which looks like an outage. Only when
+ * the cluster is known to be boxed, and the error is one a box produces, is the box named as the
+ * likely cause, after the broker's own message.
+ */
+const shadowBoxHint = (error: ConnectError): string | undefined => {
+  const phase = useShadowBoxStore.getState().phase;
+  if (!(phase && hasBoxActivity(phase))) {
+    return;
+  }
+  const rejected =
+    error.findDetails(ErrorInfoSchema).some((info) => BOX_REJECTION_REASONS.has(info.reason)) ||
+    (error.code === Code.FailedPrecondition && BOX_MENTION.test(error.rawMessage));
+  if (!rejected) {
+    return;
+  }
+  return phase === 'unboxing'
+    ? 'This cluster is being unboxed, and brokers that haven’t picked up Unbox yet still reject writes.'
+    : 'This cluster is shadow boxed, which rejects writes and most changes a shadow link copies until it’s unboxed.';
+};
+
 export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {
+  const message = formatGRPCErrorMessage({ error, action, entity });
+  const hint = shadowBoxHint(error);
+  return hint ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
+}
+
+function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps): string {
   const localizedText = error.findDetails(LocalizedMessageSchema).find((m) => m.message)?.message;
 
   const baseMessage = localizedText || error.rawMessage;
