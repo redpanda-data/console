@@ -9,7 +9,7 @@ deps:
   - buf.build/googleapis/googleapis
   - buf.build/grpc-ecosystem/grpc-gateway:v2.24.0
   - buf.build/redpandadata/common:6e06f84ad8234f5d9040a34f8c602fd4
-  - buf.build/redpandadata/core:ee867ae38d234429be446a794c27b345
+  - buf.build/redpandadata/core:f6cd9cf86d2e4d08957865108d7a5504
   - buf.build/redpandadata/otel
 lint:
   use:
