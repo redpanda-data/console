@@ -11,12 +11,14 @@ import { groupItemClasses, useGroup } from './group';
 import { Spinner } from './spinner';
 import { cn, type SharedProps } from '../lib/utils';
 
+// Base UI uses data-disabled for focusable disabled controls; keep :disabled for
+// native elements styled directly with the exported buttonVariants helper.
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center',
     'whitespace-nowrap font-semibold transition-all motion-reduce:transition-none',
     'cursor-pointer',
-    'disabled:pointer-events-none disabled:cursor-not-allowed data-disabled:pointer-events-none data-disabled:cursor-not-allowed',
+    'disabled:pointer-events-none disabled:cursor-not-allowed data-disabled:not-data-focusable:pointer-events-none data-disabled:cursor-not-allowed data-disabled:active:scale-100',
     'shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0',
     // `!` to outrank the outline variants' `!important` rest border.
     'focus-visible:!border-ring outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -33,39 +35,39 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground shadow-xs',
           'hover:bg-secondary-hover',
           'active:bg-secondary-pressed',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         primary: [
           'bg-primary text-primary-foreground shadow-xs',
           'hover:bg-primary-hover',
           'active:bg-primary-pressed',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         brand: [
           'bg-brand text-brand-foreground shadow-xs',
           'hover:bg-brand-hover',
           'active:bg-brand-pressed',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         warning: [
           'bg-surface-warning text-warning-foreground shadow-xs',
           'hover:bg-surface-warning-hover',
           'active:bg-surface-warning-pressed',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         destructive: [
           'bg-surface-destructive text-destructive-foreground shadow-xs',
           'hover:bg-surface-destructive-hover',
           'active:bg-surface-destructive-pressed',
           'focus-visible:ring-destructive/50',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         // Both sides flip, so it stays light on a dark ground and dark on a light one.
         inverse: [
           'bg-inverse text-strong shadow-xs',
           'hover:bg-inverse-hover',
           'active:bg-inverse-pressed',
-          'disabled:bg-surface-disabled disabled:text-disabled',
+          'disabled:bg-surface-disabled disabled:text-disabled data-disabled:bg-surface-disabled data-disabled:text-disabled',
         ],
         // Outline, ghost and dashed repeat the filled tones with a border, no border, and a dashed
         // one. Each state steps the ramp its own rest token sits on, so a line moves one rung rather
@@ -74,32 +76,32 @@ const buttonVariants = cva(
           '!border-secondary-line border bg-transparent text-secondary shadow-xs',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
           'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'primary-outline': [
           '!border-primary-line border bg-transparent text-primary shadow-xs',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'brand-outline': [
           '!border-brand-line border bg-transparent text-brand shadow-xs',
           'hover:!border-brand-line-hover hover:bg-brand-wash',
           'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'warning-outline': [
           '!border-warning-line border bg-transparent text-warning shadow-xs',
           'hover:!border-warning-line-hover hover:bg-warning-wash',
           'active:!border-warning-line-pressed active:bg-warning-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'destructive-outline': [
           '!border-destructive-line border bg-transparent text-destructive shadow-xs',
           'hover:!border-destructive-line-hover hover:bg-destructive-wash',
           'active:!border-destructive-line-pressed active:bg-destructive-wash-pressed',
           'focus-visible:ring-destructive/50',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         // Takes the ground's own ink, for a fill this variant cannot know. Alpha, not a `-subtle`
         // token, so the wash steps off that inherited ink.
@@ -107,88 +109,88 @@ const buttonVariants = cva(
           '!border-current border bg-transparent text-current shadow-xs',
           'hover:bg-current/15',
           'active:bg-current/25',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         ghost: [
           'bg-transparent text-secondary',
           'hover:bg-secondary-wash',
           'active:bg-secondary-wash-pressed',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'primary-ghost': [
           'bg-transparent text-primary',
           'hover:bg-primary-wash',
           'active:bg-primary-wash-pressed',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'brand-ghost': [
           'bg-transparent text-brand',
           'hover:bg-brand-wash',
           'active:bg-brand-wash-pressed',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'warning-ghost': [
           'bg-transparent text-warning',
           'hover:bg-warning-wash',
           'active:bg-warning-wash-pressed',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'destructive-ghost': [
           'bg-transparent text-destructive',
           'hover:bg-destructive-wash',
           'active:bg-destructive-wash-pressed',
           'focus-visible:ring-destructive/50',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'current-ghost': [
           'bg-transparent text-current',
           'hover:bg-current/15',
           'active:bg-current/25',
-          'disabled:text-disabled',
+          'disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         // Unshadowed, unlike `outline`: a placeholder should not sit proud of its ground.
         dashed: [
           '!border-secondary-line border border-dashed bg-transparent text-secondary',
           'hover:!border-secondary-line-hover hover:bg-secondary-wash',
           'active:!border-secondary-line-pressed active:bg-secondary-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'primary-dashed': [
           '!border-primary-line border border-dashed bg-transparent text-primary',
           'hover:!border-primary-line-hover hover:bg-primary-wash',
           'active:!border-primary-line-pressed active:bg-primary-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'brand-dashed': [
           '!border-brand-line border border-dashed bg-transparent text-brand',
           'hover:!border-brand-line-hover hover:bg-brand-wash',
           'active:!border-brand-line-pressed active:bg-brand-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'warning-dashed': [
           '!border-warning-line border border-dashed bg-transparent text-warning',
           'hover:!border-warning-line-hover hover:bg-warning-wash',
           'active:!border-warning-line-pressed active:bg-warning-wash-pressed',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'destructive-dashed': [
           '!border-destructive-line border border-dashed bg-transparent text-destructive',
           'hover:!border-destructive-line-hover hover:bg-destructive-wash',
           'active:!border-destructive-line-pressed active:bg-destructive-wash-pressed',
           'focus-visible:ring-destructive/50',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         'current-dashed': [
           '!border-current border border-dashed bg-transparent text-current',
           'hover:bg-current/15',
           'active:bg-current/25',
-          'disabled:!border-border disabled:text-disabled',
+          'disabled:!border-border data-disabled:!border-border disabled:text-disabled data-disabled:bg-transparent data-disabled:text-disabled',
         ],
         link: [
           'link-standalone text-action-primary',
           'hover:text-action-primary-hover',
           'active:text-action-primary-pressed',
-          'disabled:text-disabled disabled:no-underline',
+          'disabled:text-disabled disabled:no-underline data-disabled:text-disabled data-disabled:no-underline',
         ],
         unstyled: '',
       },
@@ -288,6 +290,7 @@ function Button({
   icon,
   isLoading = false,
   disabled,
+  focusableWhenDisabled = false,
   render,
   nativeButton,
   children,
@@ -313,10 +316,12 @@ function Button({
     <ButtonPrimitive
       aria-busy={isLoading || undefined}
       className={resolvedClassName}
+      data-focusable={focusableWhenDisabled || undefined}
       data-loading={isLoading || undefined}
       data-slot="button"
       data-testid={testId}
       disabled={isDisabled}
+      focusableWhenDisabled={focusableWhenDisabled}
       nativeButton={resolvedNativeButton}
       render={resolvedRender}
       {...props}
