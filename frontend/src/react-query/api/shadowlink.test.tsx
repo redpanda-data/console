@@ -18,7 +18,11 @@ import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
 import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { GetShadowLinkResponseSchema, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
-import { getShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
+import {
+  failOver,
+  getShadowLink,
+  listShadowLinkTopics,
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
 
@@ -61,7 +65,13 @@ import {
   useControlplaneDeleteShadowLinkMutation,
   useControlplaneGetShadowLinkByNameQuery,
 } from './controlplane/shadowlink';
-import { useDeleteShadowLinkUnified, useEditShadowLink, useGetShadowLinkUnified } from './shadowlink';
+import {
+  useDeleteShadowLinkUnified,
+  useEditShadowLink,
+  useFailoverShadowLinkMutation,
+  useGetShadowLinkUnified,
+  useListShadowTopicQuery,
+} from './shadowlink';
 
 const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockUseControlplaneGetShadowLinkByNameQuery = rs.mocked(useControlplaneGetShadowLinkByNameQuery);
@@ -459,5 +469,52 @@ describe('useDeleteShadowLinkUnified', () => {
 
     // Verify controlplane mutation was NOT called
     expect(mockControlplaneMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe('useFailoverShadowLinkMutation', () => {
+  const setup = (refreshTopics: boolean) => {
+    const reads = { topics: 0 };
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(listShadowLinkTopics, () => {
+        reads.topics += 1;
+        return { shadowTopics: [] };
+      });
+      rpc(failOver, () => ({ name: 'test-shadow-link' }));
+    });
+    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+    const onSuccess = rs.fn();
+    const { result } = renderHook(
+      () => ({
+        topics: useListShadowTopicQuery({ shadowLinkName: 'test-shadow-link', pageSize: -1 }),
+        failover: useFailoverShadowLinkMutation({ onSuccess, refreshTopics }),
+      }),
+      { wrapper }
+    );
+    const failOverLink = () =>
+      result.current.failover.mutate({ name: 'test-shadow-link' } as Parameters<
+        typeof result.current.failover.mutate
+      >[0]);
+    return { reads, result, onSuccess, failOverLink };
+  };
+
+  test('re-reads the link’s topics once the failover is accepted, so their state shows straight away', async () => {
+    const { reads, result, failOverLink } = setup(true);
+    await waitFor(() => expect(result.current.topics.isSuccess).toBe(true));
+    expect(reads.topics).toBe(1);
+
+    failOverLink();
+
+    await waitFor(() => expect(reads.topics).toBe(2));
+  });
+
+  test('leaves the topics alone unless asked, as it did before the Cutover tab', async () => {
+    const { reads, result, onSuccess, failOverLink } = setup(false);
+    await waitFor(() => expect(result.current.topics.isSuccess).toBe(true));
+
+    failOverLink();
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    expect(reads.topics).toBe(1);
   });
 });
