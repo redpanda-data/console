@@ -5,6 +5,8 @@ import { expect, test } from '@playwright/test';
 
 import { TopicPage } from '../utils/topic-page';
 
+const MESSAGES_TAB_CONTENT = /No messages found|Partition|Offset/i;
+
 test.describe('Topic Details - Navigation and Tabs', () => {
   test('should navigate to topic details and view basic information', async ({ page }) => {
     const topicName = `nav-test-${Date.now()}`;
@@ -97,6 +99,27 @@ test.describe('Topic Details - Navigation and Tabs', () => {
 
       // Verify Retention group is present (a core group that should always exist)
       await expect(page.getByRole('heading', { name: 'Retention' })).toBeVisible();
+    });
+
+    await topicPage.deleteTopic(topicName);
+  });
+
+  test('should open produce record with non-default max results in the URL', async ({ page }) => {
+    const topicName = `produce-nav-${Date.now()}`;
+
+    const topicPage = new TopicPage(page);
+    await topicPage.createTopic(topicName);
+
+    await test.step('Produce Record stays on the produce page', async () => {
+      await page.goto(`/topics/${topicName}?s=20&pageSize=10`);
+      await expect(page.getByText(MESSAGES_TAB_CONTENT).first()).toBeVisible({ timeout: 10_000 });
+
+      await topicPage.clickProduceRecordButton();
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
+
+      // A queued messages-tab URL update used to bounce straight back to the topic (UX-1514).
+      await page.waitForTimeout(1000);
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
     });
 
     await topicPage.deleteTopic(topicName);
