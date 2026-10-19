@@ -22,6 +22,8 @@ jobs:
           # changes between bun versions, which trips the lint job's dirty-tree check.
           bun-version-file: frontend/.bun-version
       - name: Install dependencies
+        id: install-dependencies
+        background: true
         run: bun install --frozen-lockfile
       - name: Get Biome version
         id: biome-version
@@ -30,6 +32,8 @@ jobs:
         uses: biomejs/setup-biome@v2
         with:
           version: ${{ steps.biome-version.outputs.version }}
+      - name: Wait for dependencies
+        wait: install-dependencies
       - name: Check Ultracite setup
         run: bun x ultracite doctor
       - name: Run Biome/Ultracite
