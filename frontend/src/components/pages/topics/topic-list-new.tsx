@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { CreateTopicDialog } from './create-topic-dialog';
+import { TopicListPagination } from './topic-list-pagination';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -44,7 +45,6 @@ import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import {
   type DataTableColumnDef,
   DataTableColumnHeader,
-  DataTablePagination,
   type DataTableRow,
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
@@ -213,7 +213,7 @@ const TopicList: FC = () => {
       cell: ({ row: { original: topic } }) => (
         <div className="flex items-start gap-2">
           <Link
-            className="text-inherit no-underline hover:no-underline"
+            className="wrap-anywhere min-w-0 whitespace-normal text-inherit no-underline hover:no-underline"
             data-testid={`topic-link-${topic.topicName}`}
             params={{ topicName: encodeURIComponent(topic.topicName) }}
             search={{} as never}
@@ -259,6 +259,7 @@ const TopicList: FC = () => {
           <DropdownMenuTrigger
             render={
               <Button
+                aria-label={`Actions for ${topic.topicName}`}
                 className="deleteButton"
                 data-testid={`topic-actions-trigger-${topic.topicName}`}
                 size="icon-sm"
@@ -299,6 +300,20 @@ const TopicList: FC = () => {
     autoResetPageIndex: false,
   });
 
+  const pageCount = table.getPageCount();
+  useEffect(
+    function clampPageIndex() {
+      if (isLoading || isError) {
+        return;
+      }
+      const lastPageIndex = Math.max(0, pageCount - 1);
+      if (pageIndex < 0 || pageIndex > lastPageIndex) {
+        void setPageIndex(Math.max(0, Math.min(pageIndex, lastPageIndex)));
+      }
+    },
+    [isLoading, isError, pageCount, pageIndex, setPageIndex]
+  );
+
   if (isError && error) {
     return (
       <Alert variant="destructive">
@@ -309,7 +324,7 @@ const TopicList: FC = () => {
   }
 
   const renderBody = () => {
-    if (isLoading) {
+    if (isLoading || (pageCount > 0 && (pageIndex < 0 || pageIndex >= pageCount))) {
       return [0, 1, 2, 3, 4].map((i) => (
         <TableRow key={i}>
           {columns.map((_col, colIdx) => (
@@ -327,7 +342,12 @@ const TopicList: FC = () => {
           {row.getVisibleCells().map((cell) => {
             const meta = readColumnMeta(cell.column.columnDef.meta);
             return (
-              <TableCell align={meta?.align} key={cell.id} testId="data-table-cell">
+              <TableCell
+                align={meta?.align}
+                className={cell.column.id === 'topicName' ? 'min-w-48 max-w-0' : undefined}
+                key={cell.id}
+                testId="data-table-cell"
+              >
                 {<table.FlexRender cell={cell} />}
               </TableCell>
             );
@@ -471,7 +491,7 @@ const TopicList: FC = () => {
           <TableBody>{renderBody()}</TableBody>
         </Table>
 
-        <DataTablePagination table={table} />
+        <TopicListPagination table={table} />
       </ListLayout>
     </>
   );

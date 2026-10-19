@@ -11,11 +11,12 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
 const mockMutateAsync = rs.fn();
+const TOPIC_NAME_LABEL = /topic name/i;
 
 rs.mock('../../../react-query/api/topic', () => {
   const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
@@ -96,18 +97,54 @@ describe('CreateTopicDialog', () => {
     expect(createButton).toBeDisabled();
   });
 
-  test('Shows inline validation error when topic name contains spaces', async () => {
+  test.each([
+    ['topic with spaces', 'Topic name cannot contain spaces'],
+    ['orders/', 'Use only letters, numbers, dots, underscores, and hyphens'],
+    ['orders-消費者', 'Use only letters, numbers, dots, underscores, and hyphens'],
+    ['.', 'Topic name cannot be . or ..'],
+    ['..', 'Topic name cannot be . or ..'],
+    ['a'.repeat(250), 'Topic name must be 249 characters or fewer'],
+  ])('rejects invalid topic name %s without sending a request', async (name, message) => {
     const user = userEvent.setup();
     renderDialog();
 
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'topic with spaces');
+    const input = screen.getByRole('textbox', { name: TOPIC_NAME_LABEL });
+    await user.click(input);
+    await user.paste(name);
+    await user.tab();
 
-    await waitFor(() => {
-      expect(screen.getByText(/topic name cannot contain spaces/i)).toBeInTheDocument();
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAccessibleDescription(message);
+    expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
+
+    const form = input.closest('form');
+    if (!form) {
+      throw new Error('Topic name must belong to the create form');
+    }
+    await act(() => {
+      fireEvent.submit(form);
     });
+    await waitFor(() => expect(mockMutateAsync).not.toHaveBeenCalled());
+  });
 
-    expect(screen.getByTestId('onOk-button')).toBeDisabled();
+  test('accepts a 249-character topic name and submits it unchanged', async () => {
+    const user = userEvent.setup();
+    const name = `orders.${'a'.repeat(239)}_-9`;
+    renderDialog();
+
+    await user.click(screen.getByRole('textbox', { name: TOPIC_NAME_LABEL }));
+    await user.paste(name);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Create' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+
+    await waitFor(() =>
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          topic: expect.objectContaining({ name }),
+        })
+      )
+    );
   });
 
   test('Create button is enabled when topic name is valid', async () => {
