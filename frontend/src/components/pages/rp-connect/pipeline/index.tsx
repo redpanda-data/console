@@ -1724,6 +1724,7 @@ function PipelinePageContent() {
       ) : null}
       {mode === 'view' ? null : (
         <PipelineEditHeader
+          configYaml={yamlContent}
           draftIssueCount={Object.keys(lintHints).length}
           expanded={expanded}
           form={form}
@@ -1734,6 +1735,7 @@ function PipelinePageContent() {
           onEditSettings={() => setIsConfigDialogOpen(true)}
           onRequestDelete={editingDraft ? () => setIsDeleteAlertOpen(true) : undefined}
           onSave={handleSave}
+          pipelineId={pipeline?.id}
           saveContext={saveContext}
           url={pipeline?.url}
         />
