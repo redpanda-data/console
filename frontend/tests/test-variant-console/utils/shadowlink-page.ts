@@ -478,13 +478,12 @@ export class ShadowlinkPage {
    * Actions
    */
   async performFailover() {
-    // Find "Failover all topics" button specifically (not individual topic failover buttons)
-    const failoverButton = this.page.getByRole('button', { name: /^failover all topics$/i });
+    // Find "Fail over all topics" button specifically (not individual topic failover buttons)
+    const failoverButton = this.page.getByRole('button', { name: /^fail ?over all topics$/i });
     await failoverButton.click();
 
     // Confirm in dialog
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|failover/i }).last();
-    await confirmButton.click();
+    await this.page.getByTestId('confirm-failover').click();
 
     // Wait a moment for failover to initiate
     await this.page.waitForTimeout(1000);
@@ -497,8 +496,7 @@ export class ShadowlinkPage {
     await failoverButton.click();
 
     // Confirm in dialog
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|failover/i }).last();
-    await confirmButton.click();
+    await this.page.getByTestId('confirm-failover').click();
 
     // Wait a moment for failover to process
     // await this.page.waitForTimeout(1000);

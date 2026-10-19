@@ -16,8 +16,13 @@ import { createFileRoute, notFound, useParams } from '@tanstack/react-router';
 import { NotFoundContent } from 'components/misc/not-found-content';
 import { GetShadowLinkRequestSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { getShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
+import { z } from 'zod';
 
 import { ShadowLinkDetailsPage } from '../../../components/pages/shadowlinks/details/shadowlink-details-page';
+
+const searchSchema = z.object({
+  tab: z.enum(['overview', 'tasks', 'configuration', 'cutover']).optional().catch(undefined),
+});
 
 function ShadowLinkNotFound() {
   const { name } = useParams({ from: '/shadowlinks/$name/' });
@@ -35,6 +40,7 @@ export const Route = createFileRoute('/shadowlinks/$name/')({
   staticData: {
     title: 'Shadow Link Details',
   },
+  validateSearch: searchSchema,
   loader: async ({ context: { queryClient, dataplaneTransport }, params: { name } }) => {
     try {
       await queryClient.ensureQueryData(
