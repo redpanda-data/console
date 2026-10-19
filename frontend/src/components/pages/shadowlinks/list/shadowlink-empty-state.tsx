@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { AlertCircle, Info, Lock, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
@@ -35,9 +36,11 @@ const ShadowingDescription = () => (
 
 type ShadowLinkEmptyStateProps = {
   onCreateClick: () => void;
+  /** Why a shadow link can't be created here right now, such as a shadow box. */
+  createDisabledReason?: string;
 };
 
-export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
+export const ShadowLinkEmptyState = ({ onCreateClick, createDisabledReason }: ShadowLinkEmptyStateProps) => (
   <Card size={'full'}>
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
@@ -46,15 +49,17 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
-          Create shadow link
-        </Button>
+        <DisabledReasonTooltip reason={createDisabledReason}>
+          <Button disabled={Boolean(createDisabledReason)} onClick={onCreateClick} testId="create-shadowlink-button">
+            Create shadow link
+          </Button>
+        </DisabledReasonTooltip>
       </div>
     </CardContent>
   </Card>
 );
 
-export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
+export const ShadowLinkEmptyStateCloud = ({ onCreateClick, createDisabledReason }: ShadowLinkEmptyStateProps) => (
   <Card size={'full'}>
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
@@ -63,9 +68,11 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
-          Create shadow link in Redpanda Cloud
-        </Button>
+        <DisabledReasonTooltip reason={createDisabledReason}>
+          <Button disabled={Boolean(createDisabledReason)} onClick={onCreateClick} testId="create-shadowlink-button">
+            Create shadow link in Redpanda Cloud
+          </Button>
+        </DisabledReasonTooltip>
       </div>
     </CardContent>
   </Card>

@@ -32,6 +32,7 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 
 type ChangePasswordModalProps = {
   userName: string;
@@ -173,6 +174,7 @@ type ChangeRolesModalProps = {
 
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
+  const rolesBoxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
   const { mutateAsync: updateRoleMembership, isPending: isUpdateMembershipPending } = useUpdateRoleMembershipMutation();
   const { data, isLoading } = useListRolesQuery({ filter: { principal: userName } });
@@ -248,7 +250,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
           <Button disabled={isUpdateMembershipPending} onClick={() => setIsOpen(false)} variant="outline">
             Cancel
           </Button>
-          <Button disabled={isUpdateMembershipPending} onClick={onSaveRoles} type="submit">
+          <Button disabled={isUpdateMembershipPending || rolesBoxed} onClick={onSaveRoles} type="submit">
             Save changes
           </Button>
         </DialogFooter>

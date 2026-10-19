@@ -52,6 +52,8 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { userSecretIds } from '../types/constants';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 import {
@@ -254,6 +256,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     // An existing user is granted the topic only if they lack access, which is assumed until their ACLs load.
     const needsTopicGrant =
       Boolean(topicName) && !(existingUserSelected && userTopicPermissions?.missingPermissions.length === 0);
+    /** The box rejects ACL writes, so a user that needs a grant can't be set up until it's unboxed. */
+    const aclsBoxedReason = useShadowBoxGuard().reasonFor('editAcls');
+    const grantBoxed = Boolean(aclsBoxedReason) && (needsTopicGrant || showConsumerGroupFields);
 
     const userConsumerGroupPermissions = useMemo(() => {
       if (
@@ -333,6 +338,11 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           }
         }
 
+        if (grantBoxed) {
+          toast.error(aclsBoxedReason);
+          return { success: false };
+        }
+
         // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
         const existingMechanism = saslMechanismFromProto(existingUserSelected?.mechanism);
         const result = await createUserWithSecrets({
@@ -376,6 +386,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
         showConsumerGroupFields,
         form,
         queryClient,
+        grantBoxed,
+        aclsBoxedReason,
       ]
     );
 
@@ -417,6 +429,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
     const formBody = (
       <Form {...form}>
         <div className={inline ? 'flex flex-col gap-6' : 'mt-4 max-w-2xl space-y-8'}>
+          {grantBoxed && authMethod !== AuthenticationMethod.SERVICE_ACCOUNT ? (
+            <ShadowBoxedAlert action="editAcls" testId="add-user-shadow-boxed-alert" />
+          ) : null}
           <div className="flex flex-col gap-2">
             <FormLabel>Authentication method</FormLabel>
             <Tabs

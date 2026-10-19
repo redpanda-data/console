@@ -21,6 +21,9 @@ import {
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -91,6 +94,9 @@ const TopicList: FC = () => {
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
   const [deletionPending, setDeletionPending] = useState(false);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
+  const { reasonFor } = useShadowBoxGuard();
+  const createTopicReason = reasonFor('createTopic');
+  const deleteTopicReason = reasonFor('deleteTopic');
 
   const refreshData = useCallback(() => {
     api.refreshClusterOverview();
@@ -272,7 +278,7 @@ const TopicList: FC = () => {
           <DropdownMenuContent>
             <DropdownMenuItem
               data-testid={`delete-topic-button-${topic.topicName}`}
-              disabled={!hasDeletePrivilege() || undefined}
+              disabled={!hasDeletePrivilege() || Boolean(deleteTopicReason) || undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 setTopicToDelete(topic);
@@ -281,6 +287,7 @@ const TopicList: FC = () => {
             >
               <TrashIcon />
               Delete
+              <ShadowBoxedMenuHint reason={hasDeletePrivilege() ? deleteTopicReason : undefined} />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -374,7 +381,11 @@ const TopicList: FC = () => {
             </EmptyHeader>
             {!isFiltered && (
               <EmptyContent>
-                <Button onClick={() => setIsCreateTopicModalOpen(true)}>Create topic</Button>
+                <DisabledReasonTooltip reason={createTopicReason}>
+                  <Button disabled={Boolean(createTopicReason)} onClick={() => setIsCreateTopicModalOpen(true)}>
+                    Create topic
+                  </Button>
+                </DisabledReasonTooltip>
               </EmptyContent>
             )}
           </Empty>
@@ -428,9 +439,15 @@ const TopicList: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <Button data-testid="create-topic-button" onClick={() => setIsCreateTopicModalOpen(true)}>
-              Create topic
-            </Button>
+            <DisabledReasonTooltip reason={createTopicReason}>
+              <Button
+                data-testid="create-topic-button"
+                disabled={Boolean(createTopicReason)}
+                onClick={() => setIsCreateTopicModalOpen(true)}
+              >
+                Create topic
+              </Button>
+            </DisabledReasonTooltip>
           }
         >
           <div className="relative">

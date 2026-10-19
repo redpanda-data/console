@@ -44,6 +44,8 @@ import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 
 const DEFAULT_OPTION = {
   value: SchemaRegistryModes.DEFAULT,
@@ -189,6 +191,7 @@ function EditSchemaMode({
   contextMode?: SchemaRegistryModeWithDefault;
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
   const updateGlobalMutation = useUpdateGlobalModeMutation();
   const updateSubjectMutation = useUpdateSubjectModeMutation();
   const updateContextMutation = useUpdateContextModeMutation();
@@ -278,13 +281,16 @@ function EditSchemaMode({
             ))}
           </Choicebox>
 
+          <div className="mt-6">
+            <ShadowBoxedAlert action="editSchemas" />
+          </div>
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Button
                     data-testid="edit-mode-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    disabled={api.userData?.canManageSchemaRegistry === false || boxed}
                     onClick={onSave}
                     variant="primary"
                   >

@@ -25,6 +25,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useApiStoreHook } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import {
   type AclRulesProps,
   getIdFromRule,
@@ -44,6 +46,7 @@ import {
   OperationTypeNotSet,
   type PrincipalFieldProps,
   type PrincipalType,
+  PrincipalTypeRedpandaRole,
   parsePrincipal,
   type ResourcePatternType,
   ResourcePatternTypeAny,
@@ -766,6 +769,8 @@ export default function CreateACL({
   renderPrincipal,
 }: CreateACLProps) {
   const schemaRegistryEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
+  const boxedAction = principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls';
+  const boxed = Boolean(useShadowBoxGuard().reasonFor(boxedAction));
   const [principalError, setPrincipalError] = useState<string>('');
   const [sharedConfig, setSharedConfig] = useState({
     principal: propSharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
@@ -1137,10 +1142,13 @@ export default function CreateACL({
             <div className="lg:col-span-1">
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />
+                <div className="mt-4">
+                  <ShadowBoxedAlert action={boxedAction} />
+                </div>
                 <div className="mt-4 flex items-center gap-2">
                   <Button
                     data-testid="submit-acl-button"
-                    disabled={!!principalError || !isValidRule}
+                    disabled={!!principalError || !isValidRule || boxed}
                     onClick={() => {
                       if (parsePrincipal(sharedConfig.principal).name) {
                         onSubmit?.(sharedConfig.principal, sharedConfig.host, rules);

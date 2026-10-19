@@ -12,9 +12,12 @@
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -219,6 +222,8 @@ export const ShadowLinkCreatePage = () => {
 
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
+  /** A boxed cluster rejects a new shadow link with UNAVAILABLE, and retrying won't help. */
+  const boxedReason = useShadowBoxGuard().reasonFor('createShadowLink');
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
@@ -257,6 +262,12 @@ export const ShadowLinkCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      {boxedReason ? (
+        <Alert testId="shadowlink-create-boxed" variant="warning">
+          <AlertTitle>This cluster is shadow boxed</AlertTitle>
+          <AlertDescription>{boxedReason}</AlertDescription>
+        </Alert>
+      ) : null}
       <div className="text-body text-muted-foreground" data-testid="shadowLink-create-page-description">
         Shadowing copies data at the byte level, ensuring shadow topics contain identical copies of source topics with
         preserved offsets and timestamps. Select the replicated content for this shadow link.
@@ -299,9 +310,11 @@ export const ShadowLinkCreatePage = () => {
             <div className="w-1/2">
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
-                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)}>
-                    Create shadow link
-                  </Button>
+                  <DisabledReasonTooltip reason={boxedReason}>
+                    <Button disabled={isCreating || Boolean(boxedReason)} onClick={form.handleSubmit(onSubmit)}>
+                      Create shadow link
+                    </Button>
+                  </DisabledReasonTooltip>
                 ) : (
                   <Button onClick={() => next(methods)} type="button">
                     Next

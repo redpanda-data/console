@@ -17,6 +17,9 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { InfoIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -81,6 +84,7 @@ const TABLE_OPTIONS = {
 type AclRowActionsContextValue = {
   users: { name: string }[];
   canDeleteUsers: boolean;
+  editAclsReason: string | undefined;
   deleteAclsForPrincipal: (principal: string, host: string) => Promise<void>;
   deleteUser: (name: string) => Promise<void>;
   invalidateUsers: () => Promise<void>;
@@ -94,7 +98,7 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
   if (!ctx) {
     return null;
   }
-  const { users, canDeleteUsers, deleteAclsForPrincipal, deleteUser, invalidateUsers, onFailure } = ctx;
+  const { users, canDeleteUsers, editAclsReason, deleteAclsForPrincipal, deleteUser, invalidateUsers, onFailure } = ctx;
 
   // Only a User row may offer the user deletes; a same-named Group would delete an unrelated user.
   const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
@@ -143,13 +147,17 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <DropdownMenuItem disabled={!canDeleteUser || Boolean(editAclsReason)} onClick={handle(true, true)}>
           Delete (User and ACLs)
+          <ShadowBoxedMenuHint reason={canDeleteUser ? editAclsReason : undefined} />
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+        <DropdownMenuItem disabled={Boolean(editAclsReason)} onClick={handle(false, true)}>
+          Delete (ACLs only)
+          <ShadowBoxedMenuHint reason={editAclsReason} />
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -219,6 +227,8 @@ const AclsTabContent: FC = () => {
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
+  const { reasonFor } = useShadowBoxGuard();
+  const editAclsReason = reasonFor('editAcls');
 
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -232,6 +242,7 @@ const AclsTabContent: FC = () => {
   const rowActions: AclRowActionsContextValue = {
     users: usersData?.users ?? [],
     canDeleteUsers: Boolean(featureDeleteUser),
+    editAclsReason,
     deleteAclsForPrincipal: async (principal, host) => {
       await deleteACLMutation(allAclsFor(principal, host));
       toast.success(
@@ -285,17 +296,20 @@ const AclsTabContent: FC = () => {
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />
 
-        <Button
-          data-testid="create-acls"
-          onClick={() => {
-            navigate({
-              to: '/security/acls/create',
-              search: { principalType: undefined, principalName: undefined },
-            });
-          }}
-        >
-          Create ACLs
-        </Button>
+        <DisabledReasonTooltip reason={editAclsReason}>
+          <Button
+            data-testid="create-acls"
+            disabled={Boolean(editAclsReason)}
+            onClick={() => {
+              navigate({
+                to: '/security/acls/create',
+                search: { principalType: undefined, principalName: undefined },
+              });
+            }}
+          >
+            Create ACLs
+          </Button>
+        </DisabledReasonTooltip>
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>
