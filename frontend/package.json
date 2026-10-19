@@ -22,6 +22,7 @@
     "e2e-test:variant": "node tests/scripts/run-variant.mjs",
     "e2e-test:dev": "E2E_DEV_MODE=true node tests/scripts/run-variant.mjs console --ui",
     "e2e-test-enterprise:dev": "E2E_DEV_MODE=true node tests/scripts/run-variant.mjs console-enterprise --ui",
+    "test:bundle": "playwright test --config tests/bundle/playwright.config.ts",
     "test:ci": "bun run test:unit && bun run test:integration && bun run test:federation",
     "test": "bun run test:ci",
     "test:unit": "TZ=GMT rstest --config=rstest.config.unit.ts",
@@ -44,6 +45,7 @@
     "doctor": "bunx react-doctor . -y --fail-on error",
     "quality:gate": "bun run lint && bun run doctor && bun run type:check && bun run build && bun run test:unit && bun run test:integration",
     "analyze": "RSDOCTOR=true bun run build",
+    "analyze:agent": "rsdoctor-agent",
     "prepare": "lefthook install"
   },
   "dependencies": {
@@ -142,7 +144,8 @@
     "@rsbuild/plugin-svgr": "2.0.5",
     "@rsbuild/plugin-tailwindcss": "2.0.3",
     "@rsbuild/plugin-yaml": "2.0.0",
-    "@rsdoctor/rspack-plugin": "1.6.0",
+    "@rsdoctor/agent-cli": "0.1.2",
+    "@rsdoctor/core": "2.0.0",
     "@rstest/core": "0.11.11",
     "@rstest/coverage-v8": "0.11.11",
     "@tanstack/react-query-devtools": "^5.101.4",

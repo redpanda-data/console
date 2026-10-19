@@ -21,10 +21,9 @@ import {
   type Transport,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { loader, type Monaco } from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
-// biome-ignore lint/performance/noNamespaceImport: part of monaco editor
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
 import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { ClusterStatusService } from 'protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
@@ -295,7 +294,7 @@ export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, mon
     rules: [],
   });
 
-  monaco.editor.setTheme('kowl');
+  monacoInstance.editor.setTheme('kowl');
 };
 
 // Subscribe to UI state changes for breadcrumbs and sidebar items.
@@ -463,50 +462,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
     subscriptionInstallTimeoutId = null;
     currentSetupTeardown = installUiStateSubscriptions();
   }, 50);
-
-  // Use `new Worker(new URL(...))` so rsbuild bundles each as its own chunk
-  // (needed for monaco-yaml's CJS/ESM interop).
-  window.MonacoEnvironment = {
-    getWorker(_workerId, label) {
-      switch (label) {
-        case 'json':
-          return new Worker(new URL('monaco-editor/esm/vs/language/json/json.worker', import.meta.url));
-        case 'yaml':
-          return new Worker(new URL('monaco-yaml/yaml.worker', import.meta.url));
-        case 'typescript':
-        case 'javascript':
-          return new Worker(new URL('monaco-editor/esm/vs/language/typescript/ts.worker', import.meta.url));
-        default:
-          return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url));
-      }
-    },
-  };
-
-  // Tell monaco editor where to load dependencies from
-  loader.config({ monaco });
-
-  // Override `vs` (the default theme `@monaco-editor/react` applies) so every
-  // editor without an explicit `theme` prop uses these colors.
-  const kowlThemeColors = {
-    'editor.background': '#fcfcfc',
-    'editorGutter.background': '#00000018',
-    'editor.lineHighlightBackground': '#aaaaaa20',
-    'editor.lineHighlightBorder': '#00000000',
-    'editorLineNumber.foreground': '#8c98a8',
-    'editorOverviewRuler.background': '#606060',
-  };
-  monaco.editor.defineTheme('vs', {
-    base: 'vs',
-    inherit: true,
-    colors: kowlThemeColors,
-    rules: [],
-  });
-  monaco.editor.defineTheme('kowl', {
-    base: 'vs',
-    inherit: false,
-    colors: kowlThemeColors,
-    rules: [],
-  });
 
   // Get supported endpoints / kafka cluster version
   // In the business version, that endpoint (like any other api endpoint) is

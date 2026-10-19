@@ -12,7 +12,7 @@
 import type { DiffEditorProps, EditorProps } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 import type { editor } from 'monaco-editor';
-import { type ComponentType, lazy } from 'react';
+import { lazy } from 'react';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -50,12 +50,8 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   renderLineHighlight: 'all',
 } as const;
 
-const LazyEditor = lazy(() =>
-  import('@monaco-editor/react').then((m) => ({ default: m.default as ComponentType<EditorProps> }))
-);
-const LazyDiffEditor = lazy(() =>
-  import('@monaco-editor/react').then((m) => ({ default: m.DiffEditor as ComponentType<DiffEditorProps> }))
-);
+const LazyEditor = lazy(() => import('./monaco-editor'));
+const LazyDiffEditor = lazy(() => import('./monaco-editor').then((m) => ({ default: m.DiffEditor })));
 
 export default function KowlEditor(props: KowlEditorProps) {
   const { options: givenOptions, ...rest } = props;
