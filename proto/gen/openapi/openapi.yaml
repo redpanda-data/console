@@ -1065,10 +1065,36 @@ components:
       type: object
     FailOverBody:
       properties:
+        fail_over_link:
+          description: |-
+            When `true`, fails over the shadow link itself instead of failing over
+            its topics one by one: the link permanently stops its metadata sync
+            tasks, fails over every active and paused shadow topic, and ends in
+            `SHADOW_LINK_STATE_FAILED_OVER`. If a phase does not finish within the
+            `shadow_link_failover_timeout` cluster property, the link stops in
+            `SHADOW_LINK_STATE_FAILOVER_FAULTED` instead, and sending this request
+            again resumes the failover from the phase in
+            `ShadowLinkStatus.cutover`. The response returns the link as the
+            request left it, so check the returned link state. Mutually exclusive
+            with `shadow_topic_name`. Requires the
+            `shadow_link_orchestrated_failover` feature, which activates on its
+            own once every broker runs a version that supports it. A broker that
+            predates this field ignores it and fails over every active topic one
+            by one instead.
+          type: boolean
         shadow_topic_name:
-          title: |-
-            The name of the shadow topic to fail over, if not set will fail over
-            the entire shadow link
+          description: |-
+            The shadow topic to fail over. Only an active shadow topic can be
+            failed over by name: resume a paused one first, and a topic in any
+            other state is refused. When empty and `fail_over_link` is unset,
+            every active shadow topic of the link is failed over one by one,
+            which is what `rpk shadow failover --all` does; the link itself keeps
+            its state and its sync tasks keep running, and the link must be
+            active. In that form, shadow topics that already failed over, are
+            still failing over, were promoted or have faulted are skipped, and
+            the whole request is refused if any shadow topic on the link is
+            paused or being promoted, with the error naming those topics.
+            Either form is refused after the link's own failover has started.
           type: string
       title: Request to fail over a shadow link or a single shadow topic
       type: object
@@ -3150,9 +3176,20 @@ components:
       description: |-
         - SHADOW_LINK_STATE_ACTIVE: Shadow link is active
          - SHADOW_LINK_STATE_PAUSED: Shadow link was paused
+         - SHADOW_LINK_STATE_FAILING_OVER: A link failover has started and is running. See
+        `ShadowLinkStatus.cutover` for progress.
+         - SHADOW_LINK_STATE_FAILED_OVER: The link failover completed. Terminal.
+         - SHADOW_LINK_STATE_FAILOVER_FAULTED: A phase of the link failover did not complete within the
+        `shadow_link_failover_timeout` cluster property, and the failover
+        stopped. `ShadowLinkStatus.status_reason` says what blocked it. Not
+        terminal: requesting the failover again resumes from the phase in
+        `ShadowLinkStatus.cutover`.
       enum:
         - SHADOW_LINK_STATE_ACTIVE
         - SHADOW_LINK_STATE_PAUSED
+        - SHADOW_LINK_STATE_FAILING_OVER
+        - SHADOW_LINK_STATE_FAILED_OVER
+        - SHADOW_LINK_STATE_FAILOVER_FAULTED
       title: State of the shadow link
       type: string
     ShadowLinkTaskStatus:
@@ -3373,12 +3410,14 @@ components:
          - TASK_STATE_LINK_UNAVAILABLE: Task is unable to communicate with source cluster
          - TASK_STATE_NOT_RUNNING: Task is not running
          - TASK_STATE_FAULTED: Task is faulted
+         - TASK_STATE_FINISHED: Task was ended by link failover and will never run again. Terminal.
       enum:
         - TASK_STATE_ACTIVE
         - TASK_STATE_PAUSED
         - TASK_STATE_LINK_UNAVAILABLE
         - TASK_STATE_NOT_RUNNING
         - TASK_STATE_FAULTED
+        - TASK_STATE_FINISHED
       title: Task states
       type: string
     TaskStatus:
