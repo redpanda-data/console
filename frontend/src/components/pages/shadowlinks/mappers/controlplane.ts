@@ -65,18 +65,27 @@ function mapControlplaneTlsSettings(
 function mapControlplaneAuthentication(
   authProto: ControlplaneClientOptions['authenticationConfiguration']
 ): UnifiedAuthenticationConfiguration | undefined {
-  if (authProto?.authentication?.case !== 'scramConfiguration') {
+  if (authProto?.authentication?.case === 'scramConfiguration') {
+    const scram = authProto.authentication.value;
+    return {
+      authentication: {
+        case: 'scramConfiguration',
+        value: {
+          username: scram.username,
+          password: scram.password,
+          scramMechanism: scram.scramMechanism,
+        },
+      },
+    };
+  }
+  const { plainConfig } = extractRawAuthConfigs(authProto);
+  if (!plainConfig) {
     return;
   }
-  const scram = authProto.authentication.value;
   return {
     authentication: {
-      case: 'scramConfiguration',
-      value: {
-        username: scram.username,
-        password: scram.password,
-        scramMechanism: scram.scramMechanism,
-      },
+      case: 'plainConfiguration',
+      value: { username: plainConfig.username ?? '', password: plainConfig.password ?? '' },
     },
   };
 }
