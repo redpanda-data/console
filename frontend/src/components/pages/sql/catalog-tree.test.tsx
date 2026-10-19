@@ -176,4 +176,22 @@ describe('CatalogTree', () => {
     expect(catalogRow).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('treeitem', { name: PUBLIC_RE })).toBeNull();
   });
+
+  test('refresh button calls onRefresh', async () => {
+    const onRefresh = rs.fn();
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} onRefresh={onRefresh} sqlRole="viewer" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh catalogs' }));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  test('refresh button is disabled while refreshing and hidden without onRefresh', () => {
+    const { unmount } = render(
+      <CatalogTree catalogs={[catalog()]} isRefreshing onQueryTable={rs.fn()} onRefresh={rs.fn()} sqlRole="viewer" />
+    );
+    expect(screen.getByRole('button', { name: 'Refresh catalogs' })).toBeDisabled();
+    unmount();
+
+    render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+    expect(screen.queryByRole('button', { name: 'Refresh catalogs' })).toBeNull();
+  });
 });
