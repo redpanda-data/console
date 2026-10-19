@@ -16,6 +16,8 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
@@ -96,7 +98,7 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
   if (!ctx) {
     return null;
   }
-  const { users, canDeleteUsers } = ctx;
+  const { users, canDeleteUsers, editAclsReason } = ctx;
 
   // Only a User row may offer the user deletes; a same-named Group would delete an unrelated user.
   const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
@@ -119,13 +121,17 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <DropdownMenuItem disabled={!canDeleteUser || Boolean(editAclsReason)} onClick={handle(true, true)}>
           Delete (User and ACLs)
+          <ShadowBoxedMenuHint reason={canDeleteUser ? editAclsReason : undefined} />
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+        <DropdownMenuItem disabled={Boolean(editAclsReason)} onClick={handle(false, true)}>
+          Delete (ACLs only)
+          <ShadowBoxedMenuHint reason={editAclsReason} />
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -238,19 +244,22 @@ const AclsTabBody = ({
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={onDismissFailure} />
 
-        <Button
-          data-testid="create-acls"
-          onClick={() => {
-            navigate({
-              to: '/security/acls/create',
-              search: { principalType: undefined, principalName: undefined },
-            }).catch((error: unknown) => {
-              toast.error('Failed to navigate', { description: String(error) });
-            });
-          }}
-        >
-          Create ACLs
-        </Button>
+        <DisabledReasonTooltip reason={rowActions.editAclsReason}>
+          <Button
+            data-testid="create-acls"
+            disabled={Boolean(rowActions.editAclsReason)}
+            onClick={() => {
+              navigate({
+                to: '/security/acls/create',
+                search: { principalType: undefined, principalName: undefined },
+              }).catch((error: unknown) => {
+                toast.error('Failed to navigate', { description: String(error) });
+              });
+            }}
+          >
+            Create ACLs
+          </Button>
+        </DisabledReasonTooltip>
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>

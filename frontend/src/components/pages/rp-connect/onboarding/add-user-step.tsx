@@ -63,6 +63,8 @@ import { SASL_MECHANISMS } from 'utils/user';
 
 import { StepSurface } from './step-surface';
 import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { userSecretIds } from '../types/constants';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 import {
@@ -484,6 +486,8 @@ function useAddUserSubmit({
   createUserWithSecrets,
   existingUserSelected,
   showConsumerGroupFields,
+  grantBoxed,
+  aclsBoxedReason,
 }: {
   form: UserForm;
   authMethod: AuthenticationMethodType;
@@ -495,6 +499,8 @@ function useAddUserSubmit({
   createUserWithSecrets: ReturnType<typeof useCreateUserWithSecretsMutation>['createUserWithSecrets'];
   existingUserSelected?: User;
   showConsumerGroupFields: boolean;
+  grantBoxed: boolean;
+  aclsBoxedReason: string | undefined;
 }) {
   const queryClient = useQueryClient();
   const { serviceAccountName, serviceAccountSelectorRef } = serviceAccount;
@@ -508,6 +514,11 @@ function useAddUserSubmit({
           serviceAccountLabel: pipelineName || topicName || 'pipeline',
           serviceAccountName,
         });
+      }
+
+      if (grantBoxed) {
+        toast.error(aclsBoxedReason);
+        return { success: false };
       }
 
       // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
@@ -538,6 +549,8 @@ function useAddUserSubmit({
       showConsumerGroupFields,
       form,
       queryClient,
+      grantBoxed,
+      aclsBoxedReason,
     ]
   );
 }
@@ -1101,6 +1114,7 @@ type AddUserFormBodyProps = Omit<SaslUserFieldsProps, 'isPending'> & {
   serviceAccount: ServiceAccountDraft;
   hasServiceAccount: boolean;
   isPending: boolean;
+  grantBoxed: boolean;
 };
 
 function AddUserFormBody({
@@ -1109,6 +1123,7 @@ function AddUserFormBody({
   onAuthMethodChange,
   serviceAccount,
   hasServiceAccount,
+  grantBoxed,
   ...saslProps
 }: AddUserFormBodyProps) {
   const { form, isPending } = saslProps;
@@ -1116,6 +1131,9 @@ function AddUserFormBody({
   return (
     <Form {...form}>
       <div className={inline ? 'flex flex-col gap-6' : 'mt-4 max-w-2xl space-y-8'}>
+        {grantBoxed && !isServiceAccount ? (
+          <ShadowBoxedAlert action="editAcls" testId="add-user-shadow-boxed-alert" />
+        ) : null}
         <AuthMethodField
           authMethod={authMethod}
           disabled={isPending || serviceAccount.isServiceAccountPending}
@@ -1170,6 +1188,9 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       defaultAuthMethod || AuthenticationMethod.SASL
     );
     const serviceAccount = useServiceAccountDraft({ defaultServiceAccountName, pipelineName, topicName });
+    /** The box rejects ACL writes, so a user that needs a grant can't be set up until it's unboxed. */
+    const aclsBoxedReason = useShadowBoxGuard().reasonFor('editAcls');
+    const grantBoxed = Boolean(aclsBoxedReason) && (access.needsTopicGrant || showConsumerGroupFields);
 
     useReportStepValidity({
       authMethod,
@@ -1191,6 +1212,8 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       createUserWithSecrets,
       existingUserSelected: users.existingUserSelected,
       showConsumerGroupFields,
+      grantBoxed,
+      aclsBoxedReason,
     });
 
     useImperativeHandle(ref, () => ({
@@ -1211,6 +1234,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           access={access}
           authMethod={authMethod}
           form={form}
+          grantBoxed={grantBoxed}
           hasServiceAccount={hasServiceAccount}
           inline={inline}
           isPending={isPending}

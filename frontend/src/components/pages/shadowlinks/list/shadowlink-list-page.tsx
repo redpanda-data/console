@@ -19,7 +19,8 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
@@ -139,17 +140,24 @@ const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
 // Empty state when no shadowlinks exist
 const ShadowLinkCreateEmptyState = () => {
   const navigate = useNavigate();
+  const boxedReason = useShadowBoxGuard().reasonFor('createShadowLink');
 
   if (isEmbedded()) {
     return (
       <ShadowLinkEmptyStateCloud
+        createDisabledReason={boxedReason}
         onCreateClick={() => {
           window.location.href = `${getBasePath()}/shadowlinks/create`;
         }}
       />
     );
   }
-  return <ShadowLinkEmptyState onCreateClick={() => navigate({ to: '/shadowlinks/create' })} />;
+  return (
+    <ShadowLinkEmptyState
+      createDisabledReason={boxedReason}
+      onCreateClick={() => navigate({ to: '/shadowlinks/create' })}
+    />
+  );
 };
 
 type ShadowLinkListFallbackOptions = {
@@ -185,6 +193,8 @@ type ShadowLinkListToolbarProps = {
 
 const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLinkListToolbarProps) => {
   const navigate = useNavigate();
+  const boxedReason = useShadowBoxGuard().reasonFor('createShadowLink');
+  const createDisabledReason = hasShadowLink ? 'Only one shadowlink can be created at this time' : boxedReason;
 
   return (
     <div className="flex items-center gap-2">
@@ -199,23 +209,16 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
         <RefreshCw className="h-4 w-4" />
       </Button>
 
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger
-          render={
-            <span className="inline-block">
-              <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
-                <Plus className="h-4 w-4" />
-                Create shadow link
-              </Button>
-            </span>
-          }
-        />
-        {Boolean(hasShadowLink) && (
-          <TooltipContent>
-            <p>Only one shadowlink can be created at this time</p>
-          </TooltipContent>
-        )}
-      </Tooltip>
+      <DisabledReasonTooltip reason={createDisabledReason}>
+        <Button
+          disabled={Boolean(createDisabledReason)}
+          onClick={() => navigate({ to: '/shadowlinks/create' })}
+          size="sm"
+        >
+          <Plus className="h-4 w-4" />
+          Create shadow link
+        </Button>
+      </DisabledReasonTooltip>
     </div>
   );
 };

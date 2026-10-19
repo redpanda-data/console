@@ -22,6 +22,9 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -232,7 +235,10 @@ function useTopicNameFilter(setPageIndex: SetPageIndex) {
   return { columnFilters, handleColumnFiltersChange };
 }
 
-function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColumnDef<Topic>[] {
+function buildTopicColumns(
+  onDeleteTopic: (topic: Topic) => void,
+  deleteTopicReason: string | undefined
+): DataTableColumnDef<Topic>[] {
   return [
     {
       accessorKey: 'topicName',
@@ -301,7 +307,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
           <DropdownMenuContent>
             <DropdownMenuItem
               data-testid={`delete-topic-button-${topic.topicName}`}
-              disabled={!hasDeletePrivilege() || undefined}
+              disabled={!hasDeletePrivilege() || Boolean(deleteTopicReason) || undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteTopic(topic);
@@ -310,6 +316,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             >
               <TrashIcon />
               Delete
+              <ShadowBoxedMenuHint reason={hasDeletePrivilege() ? deleteTopicReason : undefined} />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -321,16 +328,18 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
 function useTopicListTable({
   topics,
   onDeleteTopic,
+  deleteTopicReason,
   isReady,
 }: {
   topics: Topic[];
   onDeleteTopic: (topic: Topic) => void;
+  deleteTopicReason: string | undefined;
   isReady: boolean;
 }) {
   const { pageIndex, setPageIndex, pagination, handlePaginationChange } = useTopicListPagination();
   const { sorting, handleSortingChange } = useTopicListSorting(setPageIndex);
   const { columnFilters, handleColumnFiltersChange } = useTopicNameFilter(setPageIndex);
-  const columns = buildTopicColumns(onDeleteTopic);
+  const columns = buildTopicColumns(onDeleteTopic, deleteTopicReason);
 
   const table = useDataTable({
     data: topics,
@@ -374,9 +383,17 @@ type TopicTableBodyProps = {
   showSkeleton: boolean;
   isFiltered: boolean;
   onCreateTopic: () => void;
+  createTopicReason: string | undefined;
 };
 
-const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreateTopic }: TopicTableBodyProps) => {
+const TopicTableBody = ({
+  table,
+  columnCount,
+  showSkeleton,
+  isFiltered,
+  onCreateTopic,
+  createTopicReason,
+}: TopicTableBodyProps) => {
   if (showSkeleton) {
     return [0, 1, 2, 3, 4].map((i) => (
       <TableRow key={i}>
@@ -426,7 +443,11 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <Button onClick={onCreateTopic}>Create topic</Button>
+              <DisabledReasonTooltip reason={createTopicReason}>
+                <Button disabled={Boolean(createTopicReason)} onClick={onCreateTopic}>
+                  Create topic
+                </Button>
+              </DisabledReasonTooltip>
             </EmptyContent>
           )}
         </Empty>
@@ -442,9 +463,12 @@ const TopicList: FC = () => {
   const { allTopics, statistics } = useVisibleTopics(data.topics, showInternalTopics);
   const { topicToDelete, setTopicToDelete, deletionPending, handleDeleteTopic } = useDeleteTopic(refreshData);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
+  const { reasonFor } = useShadowBoxGuard();
+  const createTopicReason = reasonFor('createTopic');
   const { table, columnCount, isFiltered, pageIndex, pageCount, setPageIndex } = useTopicListTable({
     topics: allTopics,
     onDeleteTopic: setTopicToDelete,
+    deleteTopicReason: reasonFor('deleteTopic'),
     isReady: !(isLoading || isError),
   });
 
@@ -502,9 +526,15 @@ const TopicList: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <Button data-testid="create-topic-button" onClick={() => setIsCreateTopicModalOpen(true)}>
-              Create topic
-            </Button>
+            <DisabledReasonTooltip reason={createTopicReason}>
+              <Button
+                data-testid="create-topic-button"
+                disabled={Boolean(createTopicReason)}
+                onClick={() => setIsCreateTopicModalOpen(true)}
+              >
+                Create topic
+              </Button>
+            </DisabledReasonTooltip>
           }
         >
           <div className="relative">
@@ -567,6 +597,7 @@ const TopicList: FC = () => {
           <TableBody>
             <TopicTableBody
               columnCount={columnCount}
+              createTopicReason={createTopicReason}
               isFiltered={isFiltered}
               onCreateTopic={() => setIsCreateTopicModalOpen(true)}
               showSkeleton={isLoading || (pageCount > 0 && (pageIndex < 0 || pageIndex >= pageCount))}

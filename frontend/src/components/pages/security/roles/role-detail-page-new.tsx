@@ -37,6 +37,8 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -52,9 +54,10 @@ type RolePrincipalRowsProps = {
   members: RoleMember[];
   isRemoveDisabled: (memberPrincipal: string) => boolean;
   onRemove: (memberPrincipal: string) => void;
+  boxedReason?: string;
 };
 
-const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: RolePrincipalRowsProps) => {
+const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove, boxedReason }: RolePrincipalRowsProps) => {
   if (isLoading) {
     return (
       <TableRow>
@@ -102,15 +105,17 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
           <span className="font-mono">{displayName}</span>
         </TableCell>
         <TableCell align="right">
-          <Button
-            data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
-            disabled={isRemoveDisabled(member.principal)}
-            onClick={() => onRemove(member.principal)}
-            size="icon-sm"
-            variant="destructive-ghost"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <DisabledReasonTooltip reason={boxedReason}>
+            <Button
+              data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
+              disabled={isRemoveDisabled(member.principal)}
+              onClick={() => onRemove(member.principal)}
+              size="icon-sm"
+              variant="destructive-ghost"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </DisabledReasonTooltip>
         </TableCell>
       </TableRow>
     );
@@ -124,6 +129,8 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
   );
   const { data: usersData } = useListUsersQuery(create(ListUsersRequestSchema));
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
+  const { reasonFor } = useShadowBoxGuard();
+  const editRolesReason = reasonFor('editRoles');
   const allMembers = membersData?.members ?? [];
 
   const addMember = async (userName: string) => {
@@ -168,18 +175,20 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
     <ListLayout className="my-4 min-h-0">
       <ListLayoutFilters
         actions={
-          <Combobox
-            className="w-56"
-            clearable={false}
-            creatable
-            createLabel="principal"
-            disabled={isSubmitting}
-            onChange={addMember}
-            options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
-            placeholder="Select or type a principal..."
-            testId="add-principal-combobox"
-            value=""
-          />
+          <DisabledReasonTooltip reason={editRolesReason}>
+            <Combobox
+              className="w-56"
+              clearable={false}
+              creatable
+              createLabel="principal"
+              disabled={isSubmitting || Boolean(editRolesReason)}
+              onChange={addMember}
+              options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
+              placeholder="Select or type a principal..."
+              testId="add-principal-combobox"
+              value=""
+            />
+          </DisabledReasonTooltip>
         }
       >
         <h2 className="text-heading-sm">Principals</h2>
@@ -194,8 +203,11 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
           </TableHeader>
           <TableBody>
             <RolePrincipalRows
+              boxedReason={editRolesReason}
               isLoading={membersLoading}
-              isRemoveDisabled={(memberPrincipal) => deletingPrincipal === memberPrincipal || isSubmitting}
+              isRemoveDisabled={(memberPrincipal) =>
+                deletingPrincipal === memberPrincipal || isSubmitting || Boolean(editRolesReason)
+              }
               members={allMembers}
               onRemove={handleRemoveMember}
             />

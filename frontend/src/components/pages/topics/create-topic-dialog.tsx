@@ -47,6 +47,8 @@ import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { TonedIcon } from '../shared/toned-icon';
 
 const createTopicFormSchema = z
@@ -638,6 +640,8 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
   // Not `Boolean(...)`: the truthiness check narrows `result` to non-null for the success branch below.
   const isSuccess = result && !result.error;
+  /** The dialog can already be open when the box lands; a submit then would only be rejected. */
+  const createTopicBoxed = Boolean(useShadowBoxGuard().reasonFor('createTopic'));
 
   return (
     <Dialog
@@ -654,6 +658,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
         </DialogHeader>
 
         <DialogBody>
+          {isSuccess ? null : <ShadowBoxedAlert action="createTopic" />}
           {result?.error ? (
             <Alert variant="destructive">
               <AlertTitle>{result.error instanceof Error ? result.error.name : 'Error'}</AlertTitle>
@@ -704,7 +709,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               </Button>
               <Button
                 data-testid="onOk-button"
-                disabled={!form.formState.isValid || isLoading}
+                disabled={!form.formState.isValid || isLoading || createTopicBoxed}
                 form="create-topic-form"
                 type="submit"
               >

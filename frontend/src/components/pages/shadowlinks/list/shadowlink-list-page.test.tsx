@@ -74,6 +74,7 @@ const mockBox = (status: { available: boolean; known?: boolean; phase?: string; 
     available: status.available,
     known: status.known ?? false,
     isError: status.isError ?? false,
+    blocking: Boolean(status.known) && (status.phase === 'boxing' || status.phase === 'boxed'),
     summary: { phase: status.phase ?? 'unboxed' },
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
 
@@ -178,5 +179,15 @@ describe('ShadowLinkListPage with shadow boxing', () => {
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
 
     expect(await screen.findByTestId('shadowlinks-tab-loading')).toBeInTheDocument();
+  });
+
+  test('a boxed cluster can’t take a new shadow link, and Create says why', async () => {
+    mockBox({ available: false, known: true, phase: 'boxed' });
+    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
+    renderWithFileRoutes(<ShadowLinkListPage />);
+
+    const create = await screen.findByTestId('create-shadowlink-button');
+    expect(create).toBeDisabled();
+    expect(screen.getByText('rejects new shadow links', { exact: false })).toBeInTheDocument();
   });
 });

@@ -28,6 +28,8 @@ import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Spinner } from '../../../redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { useCreateUserForm } from '../hooks/use-create-user-form';
 
 const UserCreatePage = () => {
@@ -377,9 +379,15 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
   const {
     data: { roles: allRoles },
   } = useListRolesQuery();
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
   const availableRoles = (allRoles ?? [])
     .filter((r: { name: string }) => !roles.includes(r.name))
     .map((r: { name: string }) => r.name);
+
+  /** Users stay writable while boxed, role membership doesn't: the user can still be saved without roles. */
+  if (boxed) {
+    return <ShadowBoxedAlert action="editRoles" testId="user-roles-shadow-boxed-alert" />;
+  }
 
   return (
     <div className="w-[280px]">

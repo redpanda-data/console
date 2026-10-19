@@ -7,6 +7,7 @@ import { generatePassword } from 'utils/password';
 import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import type { CreateUserModalState } from '../users/user-create';
 
 type CreateUserFormState = {
@@ -35,6 +36,8 @@ export function useCreateUserForm(onCreated: () => void) {
   const { mutateAsync: createUserMutate } = useCreateUserMutation();
   const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
   const { data: usersData } = useListUsersQuery();
+  /** The box rejects role membership but not the user, so roles picked before it landed aren't sent. */
+  const rolesBoxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
 
   const setField =
     <K extends keyof CreateUserFormState>(key: K) =>
@@ -58,7 +61,7 @@ export function useCreateUserForm(onCreated: () => void) {
       return false;
     }
     await Promise.allSettled(
-      selectedRoles.map((r) =>
+      (rolesBoxed ? [] : selectedRoles).map((r) =>
         updateMembership(create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: username }] }))
       )
     );

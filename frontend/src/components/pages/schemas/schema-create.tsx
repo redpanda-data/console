@@ -66,6 +66,8 @@ import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -233,9 +235,11 @@ const SchemaPageButtons = (p: {
   const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
   const isMissingContext = srContextsEnabled && !editorState.context;
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
 
   return (
     <>
+      <ShadowBoxedAlert action="editSchemas" testId="schema-create-shadow-boxed-alert" />
       {persistentValidationError ? (
         <Alert
           className="my-4"
@@ -267,7 +271,9 @@ const SchemaPageButtons = (p: {
       ) : null}
       <div className="mt-4 flex gap-4">
         <Button
-          disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
+          disabled={
+            boxed || isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue
+          }
           onClick={async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
             setValidating(true);
