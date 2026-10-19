@@ -16,6 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
@@ -52,6 +55,65 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 	actual, err := svc.calculateConsumeRequests(t.Context(), nil, req, []int32{0, 1, 2}, startOffsets, endOffsets)
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual, "expected other result for unbalanced message distribution - all partition IDs")
+}
+
+func TestCalculateConsumeRequests_TimestampEmptyRetainedPartition(t *testing.T) {
+	const (
+		topicName = "test-topic"
+		timestamp = int64(1785733373576)
+	)
+
+	fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1), kfake.SeedTopics(1, topicName))
+	require.NoError(t, err)
+	t.Cleanup(fakeCluster.Close)
+
+	client, err := kgo.NewClient(kgo.SeedBrokers(fakeCluster.ListenAddrs()...))
+	require.NoError(t, err)
+	t.Cleanup(client.Close)
+
+	fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+		fakeCluster.KeepControl()
+
+		listOffsetsReq, ok := req.(*kmsg.ListOffsetsRequest)
+		if !ok {
+			return nil, nil, false
+		}
+
+		require.Len(t, listOffsetsReq.Topics, 1)
+		assert.Equal(t, topicName, listOffsetsReq.Topics[0].Topic)
+		require.Len(t, listOffsetsReq.Topics[0].Partitions, 1)
+		assert.Equal(t, timestamp, listOffsetsReq.Topics[0].Partitions[0].Timestamp)
+
+		res := listOffsetsReq.ResponseKind().(*kmsg.ListOffsetsResponse)
+		res.Topics = []kmsg.ListOffsetsResponseTopic{kmsg.NewListOffsetsResponseTopic()}
+		res.Topics[0].Topic = topicName
+		res.Topics[0].Partitions = []kmsg.ListOffsetsResponseTopicPartition{kmsg.NewListOffsetsResponseTopicPartition()}
+		res.Topics[0].Partitions[0].Partition = 0
+		res.Topics[0].Partitions[0].Timestamp = timestamp
+		// Kafka returns -1 when timestamp lookup finds no retained record.
+		res.Topics[0].Partitions[0].Offset = -1
+
+		return res, nil, true
+	})
+
+	// Retention has removed every record, so the low and high watermarks are equal.
+	offsets := kadm.ListedOffsets{
+		topicName: {
+			0: {Topic: topicName, Partition: 0, Offset: 150},
+		},
+	}
+	req := &ListMessageRequest{
+		TopicName:      topicName,
+		PartitionID:    partitionsAll,
+		StartOffset:    StartOffsetTimestamp,
+		StartTimestamp: timestamp,
+		MessageCount:   10,
+	}
+
+	// Pass the same offsets as earliest and latest to model an empty partition.
+	actual, err := (&Service{}).calculateConsumeRequests(t.Context(), client, req, []int32{0}, offsets, offsets)
+	require.NoError(t, err)
+	assert.Empty(t, actual)
 }
 
 func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
