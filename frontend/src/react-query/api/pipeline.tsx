@@ -151,6 +151,14 @@ export const useListPipelinesQuery = (
   };
 };
 
+const PIPELINE_SAMPLE_REQUEST = create(ListPipelinesRequestSchema, {
+  request: create(ListPipelinesRequestSchemaDataPlane, { pageSize: 1, filter: { includeDrafts: true } }),
+});
+
+/** At most one pipeline, for checks any pipeline on the cluster can answer. Retried once: callers wait on it. */
+export const usePipelineSampleQuery = ({ enabled }: { enabled: boolean }) =>
+  useQuery(listPipelines, PIPELINE_SAMPLE_REQUEST, { enabled, retry: 1 });
+
 /** The page header's refresh button. */
 export const useInvalidatePipelineQueries = () => {
   const queryClient = useQueryClient();

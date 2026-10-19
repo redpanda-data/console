@@ -67,6 +67,7 @@ describe('LogExplorer', () => {
     mockReturn.progress = { bytesConsumed: 0, messagesConsumed: 0 };
     renderExplorer();
     expect(screen.getByTestId('log-loading-spinner')).toBeInTheDocument();
+    expect(screen.getByText('Searching recent logs…')).toBeInTheDocument();
   });
 
   test('shows progress text (no spinner) when backend provides progress data', () => {
@@ -82,14 +83,27 @@ describe('LogExplorer', () => {
     expect(screen.getByText('No logs found for this pipeline.')).toBeInTheDocument();
   });
 
+  test('says when logs will appear on a pipeline that is not running', () => {
+    renderExplorer({ pipeline: { ...pipeline, state: Pipeline_State.STOPPED } as Pipeline });
+    expect(screen.getByText('No recent logs. Logs appear here once the pipeline is running.')).toBeInTheDocument();
+  });
+
   test('shows live empty state when live mode enabled and no messages', async () => {
     const user = userEvent.setup();
     renderExplorer({ enableLiveView: true });
     const liveSwitch = screen.getByTestId('log-live-toggle');
     await user.click(liveSwitch);
     expect(
-      screen.getByText('Listening for new log messages\u2026 Switch to Recent Logs to view historical logs.'),
+      screen.getByText('No recent logs. Listening for new log messages\u2026'),
     ).toBeInTheDocument();
+  });
+
+  test('disables refresh while live, since the tail already brings new logs in', async () => {
+    const user = userEvent.setup();
+    renderExplorer({ enableLiveView: true });
+    expect(screen.getByTestId('log-refresh-button')).toBeEnabled();
+    await user.click(screen.getByTestId('log-live-toggle'));
+    expect(screen.getByTestId('log-refresh-button')).toBeDisabled();
   });
 
   test('live toggle is disabled when enableLiveView is false', () => {

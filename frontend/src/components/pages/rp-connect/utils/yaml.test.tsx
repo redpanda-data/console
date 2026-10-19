@@ -2,6 +2,7 @@ import { describe, expect, test } from '@rstest/core';
 import { parse as parseYaml } from 'yaml';
 
 import { mockComponents } from './__fixtures__/component-schemas';
+import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { schemaToConfig } from './schema';
 import {
   appendResource,
@@ -24,6 +25,7 @@ import {
   renameResourceReferences,
   setComponentAt,
   tryPatchRedpandaYaml,
+  usesServiceAccountLogin,
 } from './yaml';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -1350,6 +1352,145 @@ input:
       expect(result).toContain('SCRAM-SHA-256');
     });
 
+    describe('connecting a redpanda component as the user it is given', () => {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Connect interpolation syntax, not a JS template
+      const brokersVariable = '${REDPANDA_BROKERS}';
+      const sasl = [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }];
+
+      test('names the cluster brokers first, keeping the TLS default', () => {
+        const yaml = `output:
+  redpanda:
+    tls:
+      enabled: true
+    topic: orders
+`;
+        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+        const component = parseYaml(result ?? '').output.redpanda;
+        expect(Object.keys(component)[0]).toBe('seed_brokers');
+        expect(component).toEqual({
+          seed_brokers: [brokersVariable],
+          tls: { enabled: true },
+          topic: 'orders',
+          sasl,
+        });
+      });
+
+      test('enables TLS when the component has none', () => {
+        const result = patchRedpandaConfig('input:\n  redpanda:\n    topics: [orders]\n', 'input', 'redpanda', {
+          sasl,
+        });
+        expect(parseYaml(result ?? '').input.redpanda).toMatchObject({
+          seed_brokers: [brokersVariable],
+          tls: { enabled: true },
+        });
+      });
+
+      test('keeps brokers and TLS the user already set', () => {
+        const yaml = `output:
+  redpanda:
+    seed_brokers:
+      - broker-0:9092
+    tls:
+      enabled: false
+`;
+        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+        expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
+          seed_brokers: ['broker-0:9092'],
+          tls: { enabled: false },
+        });
+      });
+
+      // Brokers the user names may be a plaintext listener, as localdev's is.
+      test('leaves TLS alone on brokers the component names', () => {
+        const yaml = 'output:\n  redpanda:\n    seed_brokers: [localhost:9092]\n    topic: orders\n';
+        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+        expect(parseYaml(result ?? '').output.redpanda.tls).toBeUndefined();
+      });
+
+      test('keeps TLS that comes from a merge key', () => {
+        const yaml = `common: &rp
+  tls:
+    enabled: false
+output:
+  redpanda:
+    <<: *rp
+    topic: orders
+`;
+        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+        const component = parseYaml(result ?? '', { merge: true }).output.redpanda;
+        expect(component.seed_brokers).toEqual([brokersVariable]);
+        expect(component.tls).toEqual({ enabled: false });
+      });
+
+      test('fills an empty broker list', () => {
+        const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: []\n', 'output', 'redpanda', {
+          sasl,
+        });
+        expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
+      });
+
+      test('replaces a placeholder broker list that names no broker', () => {
+        const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: [""]\n', 'output', 'redpanda', {
+          sasl,
+        });
+        expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
+      });
+
+      test('keeps brokers that come from a merge key', () => {
+        const yaml = `common: &rp
+  seed_brokers: [broker-0:9092]
+output:
+  redpanda:
+    <<: *rp
+    topic: orders
+`;
+        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+        expect(parseYaml(result ?? '', { merge: true }).output.redpanda.seed_brokers).toEqual(['broker-0:9092']);
+      });
+
+      // What the patch writes and what the node checks must agree, or "Add user" never goes away.
+      test.each([
+        ['no brokers', 'output:\n  redpanda:\n    topic: orders\n'],
+        ['an empty broker list', 'output:\n  redpanda:\n    seed_brokers: []\n    topic: orders\n'],
+        ['a placeholder broker', 'output:\n  redpanda:\n    seed_brokers: [""]\n    topic: orders\n'],
+        [
+          'brokers from a merge key',
+          'common: &rp\n  seed_brokers: [broker-0:9092]\noutput:\n  redpanda:\n    <<: *rp\n    topic: orders\n',
+        ],
+      ])('leaves the node nothing to ask for once patched, starting from %s', (_case, yaml) => {
+        const result = tryPatchRedpandaYaml(yaml, 'output', 'redpanda', {
+          authMethod: 'sasl',
+          username: 'orders-writer',
+        });
+        const node = parsePipelineFlowTree(result ?? '').nodes.find((n) => n.id === 'output-0');
+        expect(node).toMatchObject({ label: 'redpanda' });
+        expect(node?.missingSasl).toBeUndefined();
+      });
+
+      // Connect logs a service account in through the pipeline's own account rather than a SCRAM user.
+      test('logs a service account in with the pipeline account', () => {
+        const result = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
+          authMethod: 'service-account',
+        });
+        expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
+          seed_brokers: [brokersVariable],
+          sasl: [{ mechanism: 'REDPANDA_CLOUD_SERVICE_ACCOUNT' }],
+        });
+      });
+
+      test('adds nothing for a topic alone, or for components that never borrow the shared client', () => {
+        const topicOnly = patchRedpandaConfig('output:\n  redpanda: {}\n', 'output', 'redpanda', {
+          topicName: 'orders',
+        });
+        expect(parseYaml(topicOnly ?? '').output.redpanda).toEqual({ topic: 'orders' });
+
+        const franz = patchRedpandaConfig('output:\n  kafka_franz:\n    topic: orders\n', 'output', 'kafka_franz', {
+          sasl,
+        });
+        expect(parseYaml(franz ?? '').output.kafka_franz.seed_brokers).toBeUndefined();
+      });
+    });
+
     test('returns undefined for unparseable YAML', () => {
       const result = patchRedpandaConfig('{{{', 'input', 'kafka', { topicName: 'test' });
       expect(result).toBeUndefined();
@@ -1400,6 +1541,31 @@ input:
         ''
       );
     });
+  });
+});
+
+// The account a service-account login uses lives outside the YAML, so the save has to know it's needed.
+describe('usesServiceAccountLogin', () => {
+  test.each([
+    ['a component', 'output:\n  redpanda:\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n'],
+    ['the shared client', 'redpanda:\n  sasl:\n    - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n'],
+    [
+      'a nested output',
+      'output:\n  broker:\n    outputs:\n      - kafka_franz:\n          sasl:\n            - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n',
+    ],
+  ])('finds it on %s', (_case, yaml) => {
+    expect(usesServiceAccountLogin(yaml)).toBe(true);
+  });
+
+  test.each([
+    ['a SCRAM login', 'output:\n  redpanda:\n    sasl:\n      - mechanism: SCRAM-SHA-256\n'],
+    [
+      'a commented-out login',
+      'output:\n  redpanda:\n    # sasl:\n    #   - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n',
+    ],
+    ['an empty config', ''],
+  ])('ignores %s', (_case, yaml) => {
+    expect(usesServiceAccountLogin(yaml)).toBe(false);
   });
 });
 
@@ -2035,6 +2201,38 @@ output_resources:
       expect(next).toContain('# keep me');
       const parsed = parseYaml(next as string) as { input: { redpanda: { topics: unknown[] } } };
       expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
+    });
+
+    // The dialog grants the group it shows, so the input has to read as that one.
+    test('sets the consumer group an input reads as', () => {
+      const next = tryPatchRedpandaYaml(
+        'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: old-readers\n',
+        'input',
+        'redpanda',
+        { authMethod: 'sasl', username: 'orders-reader', consumerGroup: 'orders-readers' }
+      );
+      expect(parseYaml(next ?? '').input.redpanda.consumer_group).toBe('orders-readers');
+    });
+
+    test('leaves a consumer group the input already reads with, even from a merge key', () => {
+      const yaml =
+        'common: &rp\n  consumer_group: orders-readers\ninput:\n  redpanda:\n    <<: *rp\n    topics: [orders]\n';
+      const next = tryPatchRedpandaYaml(yaml, 'input', 'redpanda', {
+        authMethod: 'sasl',
+        username: 'orders-reader',
+        consumerGroup: 'orders-readers',
+      });
+      expect(next).not.toContain('    consumer_group:');
+      expect(parseYaml(next ?? '', { merge: true }).input.redpanda.consumer_group).toBe('orders-readers');
+    });
+
+    test('gives an output no consumer group', () => {
+      const next = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
+        authMethod: 'sasl',
+        username: 'orders-writer',
+        consumerGroup: 'orders-readers',
+      });
+      expect(parseYaml(next ?? '').output.redpanda.consumer_group).toBeUndefined();
     });
   });
 

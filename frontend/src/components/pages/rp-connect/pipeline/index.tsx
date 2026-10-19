@@ -23,7 +23,6 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -70,12 +69,14 @@ import {
   useDeletePipelineMutation,
   useFetchPipelineNames,
   useGetPipelineQuery,
+  usePipelineSampleQuery,
   useStartPipelineMutation,
   useStopPipelineMutation,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import {
+  type AttachedServiceAccount,
   autosaveTargetKey,
   type EditorAutosaveEntry,
   rpcnEditorAutosave,
@@ -102,6 +103,7 @@ import {
   DRAFT_VIEW_NOTICE_TITLE,
   isDraft,
   NOTHING_TO_SAVE_MESSAGE,
+  provesDraftSupport,
   startBlockedMessage,
   timestampToMillis,
   UNTITLED_PIPELINE_NAME,
@@ -117,6 +119,7 @@ import {
   isBlankConfig,
   isInvalidConfigError,
   isNoLongerDraftError,
+  MISSING_SERVICE_ACCOUNT_MESSAGE,
   NO_LONGER_DRAFT_MESSAGE,
   primaryRunIntent,
   type SaveContext,
@@ -144,13 +147,7 @@ import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS, tasksToCPU } from '../tasks';
 import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentType } from '../types/schema';
-import type {
-  AddTopicFormData,
-  AddUserFormData,
-  BaseStepRef,
-  ServiceAccountSubmissionData,
-  UserStepRef,
-} from '../types/wizard';
+import type { AddTopicFormData, BaseStepRef, UserStepRef, UserStepSubmissionData } from '../types/wizard';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -158,7 +155,13 @@ import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/p
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
-import { extractConnectorTopics, getConnectTemplate, type RedpandaSetupResultLike } from '../utils/yaml';
+import {
+  extractConnectorConsumerGroup,
+  extractConnectorTopics,
+  getConnectTemplate,
+  type RedpandaSetupResultLike,
+  usesServiceAccountLogin,
+} from '../utils/yaml';
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
@@ -235,6 +238,22 @@ function warnIfResized(form: UseFormReturn<PipelineFormValues>, cpuShares: strin
   }
 }
 
+/** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
+function serviceAccountFields(account: AttachedServiceAccount | undefined) {
+  if (!account) {
+    return {};
+  }
+  const tags: Record<string, string> = {};
+  addServiceAccountTags(tags, account.serviceAccountId, account.secretName);
+  return {
+    tags,
+    serviceAccount: create(Pipeline_ServiceAccountSchema, {
+      clientId: `\${secrets.${account.secretName}.client_id}`,
+      clientSecret: `\${secrets.${account.secretName}.client_secret}`,
+    }),
+  };
+}
+
 function buildCreateRequest(opts: {
   name: string;
   description: string | undefined;
@@ -242,20 +261,9 @@ function buildCreateRequest(opts: {
   userTags: Record<string, string>;
   yamlContent: string;
   draft: boolean;
+  serviceAccount: AttachedServiceAccount | undefined;
 }) {
-  const userData = useRpcnWizardStore.getState();
-  const tags: Record<string, string> = {
-    __redpanda_cloud_pipeline_type: 'pipeline',
-  };
-
-  let serviceAccountConfig: ReturnType<typeof create<typeof Pipeline_ServiceAccountSchema>> | undefined;
-  if (userData.authMethod === 'service-account' && userData.serviceAccountId && userData.serviceAccountSecretName) {
-    addServiceAccountTags(tags, userData.serviceAccountId, userData.serviceAccountSecretName);
-    serviceAccountConfig = create(Pipeline_ServiceAccountSchema, {
-      clientId: `\${secrets.${userData.serviceAccountSecretName}.client_id}`,
-      clientSecret: `\${secrets.${userData.serviceAccountSecretName}.client_secret}`,
-    });
-  }
+  const account = serviceAccountFields(opts.serviceAccount);
 
   return create(CreatePipelineRequestSchema, {
     request: create(CreatePipelineRequestSchemaDataPlane, {
@@ -264,8 +272,8 @@ function buildCreateRequest(opts: {
         configYaml: opts.yamlContent,
         description: opts.description || '',
         resources: { cpuShares: tasksToCPU(opts.computeUnits) || '0', memoryShares: '0' },
-        tags: { ...tags, ...opts.userTags },
-        serviceAccount: serviceAccountConfig,
+        tags: { __redpanda_cloud_pipeline_type: 'pipeline', ...account.tags, ...opts.userTags },
+        serviceAccount: account.serviceAccount,
         draft: opts.draft,
       }),
     }),
@@ -296,6 +304,7 @@ function usePipelineSave({
   isPipelineDiagramsEnabled,
   onBeforeGuardedNavigate,
   saveContext,
+  attachedServiceAccount,
 }: {
   form: UseFormReturn<PipelineFormValues>;
   /** The editor store — read fresh at save time (after flushing pending visual edits). */
@@ -307,6 +316,8 @@ function usePipelineSave({
   /** Stands the unsaved-changes guard down before a navigation this page performs itself. */
   onBeforeGuardedNavigate?: () => void;
   saveContext: SaveContext;
+  /** Replaces the pipeline's service account on save. */
+  attachedServiceAccount: AttachedServiceAccount | undefined;
 }) {
   const navigate = useNavigate();
   const { mutateAsync: createMutation, isPending: isCreatePending } = useCreatePipelineMutation();
@@ -329,6 +340,10 @@ function usePipelineSave({
   }, [fetchPipelineNames]);
 
   const clearErrorLintHints = useCallback(() => setErrorLintHints({}), []);
+
+  // Add user can attach one while a save is in flight, after the save read it.
+  const latestServiceAccount = useRef(attachedServiceAccount);
+  latestServiceAccount.current = attachedServiceAccount;
 
   const clearWizardStore = useCallback(() => {
     if (!isPipelineDiagramsEnabled) {
@@ -365,6 +380,7 @@ function usePipelineSave({
           tags: onScreen.tags,
           configYaml: currentYaml,
           basedOnUpdateTime: savedUpdateTime,
+          serviceAccount: latestServiceAccount.current,
         });
       }
     },
@@ -412,6 +428,15 @@ function usePipelineSave({
         return false;
       }
 
+      // A draft can wait for its account; a deploy would start a pipeline that can't log in.
+      if (
+        !(isDraftSave || attachedServiceAccount || pipeline?.serviceAccount) &&
+        usesServiceAccountLogin(yamlContent)
+      ) {
+        toast.error(MISSING_SERVICE_ACCOUNT_MESSAGE);
+        return false;
+      }
+
       const submittedSettings = form.getValues();
       const { name, description, computeUnits, tags: formTags } = submittedSettings;
       const userTags = buildUserTags(formTags);
@@ -419,7 +444,15 @@ function usePipelineSave({
       try {
         if (mode === 'create') {
           const response = await createMutation(
-            buildCreateRequest({ name, description, computeUnits, userTags, yamlContent, draft: isDraftSave })
+            buildCreateRequest({
+              name,
+              description,
+              computeUnits,
+              userTags,
+              yamlContent,
+              draft: isDraftSave,
+              serviceAccount: attachedServiceAccount,
+            })
           );
           const createdPipeline = response.response?.pipeline;
           const newPipelineId = createdPipeline?.id;
@@ -477,6 +510,7 @@ function usePipelineSave({
           return false;
         }
 
+        const attachedAccount = serviceAccountFields(attachedServiceAccount);
         const response = await updateMutation(
           create(UpdatePipelineRequestSchema, {
             request: create(UpdatePipelineRequestSchemaDataPlane, {
@@ -488,9 +522,10 @@ function usePipelineSave({
                 resources: { cpuShares: tasksToCPU(computeUnits) || '0', memoryShares: '0' },
                 tags: {
                   ...Object.fromEntries(Object.entries(pipeline?.tags ?? {}).filter(([k]) => isSystemTag(k))),
+                  ...attachedAccount.tags,
                   ...userTags,
                 },
-                serviceAccount: pipeline?.serviceAccount,
+                serviceAccount: attachedAccount.serviceAccount ?? pipeline?.serviceAccount,
                 // Asserted so the server refuses the write if the draft was started meanwhile.
                 draft: isDraftSave ? true : undefined,
               }),
@@ -577,6 +612,7 @@ function usePipelineSave({
       markSaved,
       saveContext,
       nextUntitledName,
+      attachedServiceAccount,
     ]
   );
 
@@ -615,10 +651,36 @@ function usePipelineSave({
 
 type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
 
+/** What an Add user result writes into the component, and the new service account it brings. */
+function userDialogSetup(data: UserStepSubmissionData): {
+  setupResult: RedpandaSetupResultLike;
+  serviceAccount?: AttachedServiceAccount;
+} {
+  if ('username' in data) {
+    return {
+      setupResult: {
+        authMethod: 'sasl',
+        username: data.username,
+        saslMechanism: data.saslMechanism,
+        consumerGroup: data.consumerGroup,
+      },
+    };
+  }
+  return {
+    setupResult: { authMethod: 'service-account' },
+    // A kept account is already the one the save sends.
+    serviceAccount:
+      'serviceAccountId' in data
+        ? { serviceAccountId: data.serviceAccountId, secretName: data.serviceAccountSecretName }
+        : undefined,
+  };
+}
+
 function useDiagramDialogs(
   yamlContent: string,
   patchComponent: (section: 'input' | 'output', componentName: string, patch: RedpandaSetupResultLike) => boolean,
-  focusEditorEnd: () => void
+  focusEditorEnd: () => void,
+  onServiceAccountAttached: (account: AttachedServiceAccount) => void
 ) {
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
@@ -632,29 +694,21 @@ function useDiagramDialogs(
     },
   });
 
-  const userDialog = useRefFormDialog<AddUserFormData | ServiceAccountSubmissionData, DiagramDialogTarget>({
+  const userDialog = useRefFormDialog<UserStepSubmissionData, DiagramDialogTarget>({
     ref: userStepRef,
     onSuccess: (data, target) => {
-      let setupResult: RedpandaSetupResultLike = {};
-      if ('authMethod' in data && data.authMethod === 'service-account') {
-        setupResult = {
-          authMethod: 'service-account',
-          serviceAccountSecretName: (data as ServiceAccountSubmissionData).serviceAccountSecretName,
-        };
-      } else if ('username' in data) {
-        setupResult = {
-          authMethod: 'sasl',
-          username: (data as AddUserFormData).username,
-          saslMechanism: (data as AddUserFormData).saslMechanism,
-        };
-      }
+      const { setupResult, serviceAccount } = userDialogSetup(data);
       if (patchComponent(target.section, target.componentName, setupResult)) {
+        if (serviceAccount) {
+          onServiceAccountAttached(serviceAccount);
+        }
         focusEditorEnd();
       }
     },
   });
 
   const [connectorTopics, setConnectorTopics] = useState<string[] | undefined>();
+  const [connectorConsumerGroup, setConnectorConsumerGroup] = useState<string | undefined>();
 
   const openTopicDialog = topicDialog.open;
   const openUserDialog = userDialog.open;
@@ -665,6 +719,7 @@ function useDiagramDialogs(
     topicStepRef,
     userStepRef,
     connectorTopics,
+    connectorConsumerGroup,
     handleAddTopic: useCallback(
       (section: string, componentName: string) => {
         openTopicDialog({ section: section as 'input' | 'output', componentName });
@@ -682,6 +737,10 @@ function useDiagramDialogs(
           toast.error('Failed to parse pipeline YAML');
         }
         setConnectorTopics(topics);
+        // An input reading as its own user needs the group granted too, so the dialog starts from it.
+        setConnectorConsumerGroup(
+          section === 'input' ? extractConnectorConsumerGroup(yamlContent, componentName) : undefined
+        );
         openUserDialog({ section: section as 'input' | 'output', componentName });
       },
       [openUserDialog, yamlContent]
@@ -1188,7 +1247,22 @@ function PipelinePageContent() {
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
 
-  const draftsEnabled = areDraftsEnabled();
+  const draftsFlagEnabled = areDraftsEnabled();
+  // Create mode proves draft support from another pipeline; an empty cluster, or a failed sample, falls
+  // back to the flag rather than to a save that deploys.
+  const {
+    data: sampleResponse,
+    isLoading: isCheckingDraftSupport,
+    isError: isSampleFailed,
+  } = usePipelineSampleQuery({
+    enabled: draftsFlagEnabled && mode === 'create',
+  });
+  const samplePipelines = sampleResponse?.response?.pipelines;
+  const draftsEnabled =
+    draftsFlagEnabled &&
+    (mode === 'create'
+      ? isSampleFailed || samplePipelines?.length === 0 || provesDraftSupport(samplePipelines?.[0])
+      : provesDraftSupport(pipeline));
   const saveContext = useMemo<SaveContext>(
     () => ({ mode: mode === 'create' ? 'create' : 'edit', state: pipeline?.state, draftsEnabled }),
     [mode, pipeline?.state, draftsEnabled]
@@ -1204,10 +1278,14 @@ function PipelinePageContent() {
   const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
   const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
 
+  // A component given a new service account logs in as the pipeline's, so the save attaches it.
+  const [attachedServiceAccount, setAttachedServiceAccount] = useState<AttachedServiceAccount>();
+
   // Restored work is unsaved, so the form must read dirty against the loaded defaults.
   const applyAutosave = useCallback(
     (entry: EditorAutosaveEntry) => {
       setYamlContent(entry.configYaml);
+      setAttachedServiceAccount(entry.serviceAccount ?? undefined);
       form.reset(
         {
           name: entry.name,
@@ -1239,6 +1317,7 @@ function PipelinePageContent() {
     isPipelineDiagramsEnabled,
     onBeforeGuardedNavigate: markNavigationAllowed,
     saveContext,
+    attachedServiceAccount,
   });
   const { lintHints, isLintPending } = usePipelineLint(yamlContent, errorLintHints, mode !== 'view');
 
@@ -1292,8 +1371,9 @@ function PipelinePageContent() {
     setAllowNavigation(false);
   }, [mode, setAllowNavigation]);
 
-  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes.
-  useSaveHotkey({ enabled: mode !== 'view', isSaving, onSave: handleSave });
+  // ⌘S / Ctrl+S saves from both the YAML and Visual lanes. Until draft support is known, a save could
+  // deploy what was meant as a draft.
+  useSaveHotkey({ enabled: mode !== 'view', isSaving: isSaving || isCheckingDraftSupport, onSave: handleSave });
 
   // On document change: clear stale lint and mirror create-mode YAML to the wizard store.
   useEffect(
@@ -1327,8 +1407,16 @@ function PipelinePageContent() {
     }, 0);
   }, [editorStore]);
 
-  const { topicDialog, userDialog, topicStepRef, userStepRef, connectorTopics, handleAddTopic, handleAddSasl } =
-    useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd);
+  const {
+    topicDialog,
+    userDialog,
+    topicStepRef,
+    userStepRef,
+    connectorTopics,
+    connectorConsumerGroup,
+    handleAddTopic,
+    handleAddSasl,
+  } = useDiagramDialogs(yamlContent, patchComponent, focusEditorEnd, setAttachedServiceAccount);
 
   const handleConnectorSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -1453,6 +1541,7 @@ function PipelinePageContent() {
     pipelineId: mode === 'create' ? undefined : pipelineId,
     form,
     editorStore,
+    serviceAccount: attachedServiceAccount,
   });
 
   // Flushed, not debounced: the pending write dies with the page.
@@ -1628,6 +1717,7 @@ function PipelinePageContent() {
           expanded={expanded}
           form={form}
           hasUnsavedChanges={hasUnsavedChanges}
+          isSaveBlocked={isCheckingDraftSupport}
           isSaving={isSaving}
           onBack={handleCancel}
           onEditSettings={() => setIsConfigDialogOpen(true)}
@@ -1905,10 +1995,6 @@ function PipelinePageContent() {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add topic</DialogTitle>
-            <DialogDescription>
-              This component requires a Redpanda topic for logging the data. Select an existing topic, or create a new
-              one.
-            </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <AddTopicStep hideTitle inline ref={topicStepRef} />
@@ -1939,12 +2025,17 @@ function PipelinePageContent() {
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Add user</DialogTitle>
-            <DialogDescription>
-              Select or create a user for this connector. ACLs will be configured automatically for the topic when
-              creating a new user.
-            </DialogDescription>
           </DialogHeader>
           <DialogBody>
+            {connectorTopics === undefined && (
+              <Alert variant="warning">
+                <AlertTitle>No topic yet</AlertTitle>
+                <AlertDescription>
+                  This connector has no topic yet, so the user won't be granted access to one. Add a topic first, or
+                  grant access later in the Security settings.
+                </AlertDescription>
+              </Alert>
+            )}
             {connectorTopics && connectorTopics.length > 1 && (
               <Alert variant="warning">
                 <AlertTitle>Multiple topics configured</AlertTitle>
@@ -1955,10 +2046,14 @@ function PipelinePageContent() {
               </Alert>
             )}
             <AddUserStep
+              defaultConsumerGroup={connectorConsumerGroup}
+              hasServiceAccount={Boolean(attachedServiceAccount ?? pipeline?.serviceAccount)}
               hideTitle
               inline
+              pipelineName={settingsValues.name || undefined}
               ref={userStepRef}
               showConsumerGroupFields={userDialog.target?.section === 'input'}
+              topicAccess={userDialog.target?.section === 'input' ? 'read' : 'write'}
               topicName={connectorTopics?.length === 1 ? connectorTopics[0] : undefined}
             />
           </DialogBody>

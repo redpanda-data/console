@@ -11,10 +11,14 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CreateSecretResponseSchema as CreateSecretResponseSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { createSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import {
+  CreateSecretResponseSchema as CreateSecretResponseSchemaConsole,
+  ListSecretsResponseSchema as ListSecretsResponseSchemaConsole,
+} from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -25,10 +29,12 @@ import {
   ListACLsResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { createACL, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { ListSecretsResponseSchema, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import {
   CreateUserResponseSchema,
   ListUsersResponse_UserSchema,
   ListUsersResponseSchema,
+  SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { useRef } from 'react';
@@ -129,6 +135,7 @@ function buildTransport(overrides?: {
   listACLsMock?: ReturnType<typeof rs.fn>;
   createACLMock?: ReturnType<typeof rs.fn>;
   createSecretMock?: ReturnType<typeof rs.fn>;
+  listSecretsMock?: ReturnType<typeof rs.fn>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
@@ -155,6 +162,9 @@ function buildTransport(overrides?: {
     rpc(listACLs, listACLsMock);
     rpc(createACL, createACLMock);
     rpc(createSecret, createSecretMock);
+    if (overrides?.listSecretsMock) {
+      rpc(listSecrets, overrides.listSecretsMock);
+    }
   });
 
   return {
@@ -168,6 +178,9 @@ function buildTransport(overrides?: {
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
+
+const ALREADY_EXISTS = /already exists/;
+const HAS_TOPIC_ACCESS = /has required permissions/i;
 
 describe('AddUserStep', () => {
   beforeEach(() => {
@@ -362,6 +375,34 @@ describe('AddUserStep', () => {
     });
   });
 
+  // An input connecting as this user reads through its consumer group, so starting from the
+  // pipeline's group has to end in that group being granted.
+  describe('Consumer group from the pipeline', () => {
+    test('grants the consumer group the dialog starts with', async () => {
+      const user = userEvent.setup();
+      const { transport, createACLMock } = buildTransport();
+
+      renderWithFileRoutes(
+        <TestHarness
+          defaultConsumerGroup="orders-readers"
+          onResult={rs.fn()}
+          selectionMode="new"
+          showConsumerGroupFields={true}
+          topicName="orders"
+        />,
+        { transport }
+      );
+
+      expect(await screen.findByPlaceholderText('Enter a consumer group name')).toHaveValue('orders-readers');
+      await user.type(screen.getByPlaceholderText('Enter a username'), 'orders-reader');
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(createACLMock.mock.calls.some(([request]) => request.resourceName === 'orders-readers')).toBe(true)
+      );
+    });
+  });
+
   // ── Service Account path ───────────────────────────────────────────────────
 
   describe('Service Account path', () => {
@@ -372,10 +413,10 @@ describe('AddUserStep', () => {
       renderWithFileRoutes(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
       // Wait for component to render
-      await screen.findByText('SASL User');
+      await screen.findByText('SASL user');
 
       // Click the Service Account tab
-      const saTab = screen.getByText('Service Account');
+      const saTab = screen.getByText('Service account');
       await user.click(saTab);
 
       // Service Account form should be visible
@@ -393,11 +434,11 @@ describe('AddUserStep', () => {
       });
 
       // Switch to Service Account tab
-      const saTab = await screen.findByText('Service Account');
+      const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
       await waitFor(() => {
-        const nameInput = screen.getByLabelText('Service Account Name') as HTMLInputElement;
+        const nameInput = screen.getByLabelText('Service account name') as HTMLInputElement;
         // The generateServiceAccountName with pipelineName='my-pipe' should contain 'my-pipe'
         expect(nameInput.value).toContain('my-pipe');
       });
@@ -420,7 +461,7 @@ describe('AddUserStep', () => {
       );
 
       // Switch to Service Account tab
-      const saTab = await screen.findByText('Service Account');
+      const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
       await waitFor(() => {
@@ -440,58 +481,176 @@ describe('AddUserStep', () => {
         expect(result.data?.serviceAccountId).toBe('sa-123');
       });
     });
+
+    // Connect logs every service-account component in as the pipeline's one account, so a second one
+    // would replace it for all of them and orphan the first.
+    test('keeps the pipeline service account instead of creating another', async () => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport();
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          hasServiceAccount
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          pipelineName="test-pipeline"
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      await user.click(await screen.findByText('Service account'));
+
+      expect(await screen.findByText("Uses this pipeline's service account")).toBeInTheDocument();
+      expect(screen.queryByTestId('service-account-selector')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Service account name')).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(capturedResult).toEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
+      );
+    });
+  });
+
+  // A component logs in as the user it's given, so an existing one has to work as configured.
+  describe('Existing user', () => {
+    const existingUser = () =>
+      rs.fn().mockReturnValue(
+        create(ListUsersResponseSchema, {
+          users: [
+            create(ListUsersResponse_UserSchema, {
+              name: 'existing-user',
+              mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
+            }),
+          ],
+        })
+      );
+    const storedSecrets = (...ids: string[]) =>
+      rs.fn().mockReturnValue(
+        create(ListSecretsResponseSchemaConsole, {
+          response: create(ListSecretsResponseSchema, { secrets: ids.map((id) => create(SecretSchema, { id })) }),
+        })
+      );
+
+    test('logs in with the mechanism the user was created with', async () => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport({ listUsersMock: existingUser() });
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      await user.type(await screen.findByPlaceholderText('Enter a username'), 'existing-user');
+      await screen.findByText(ALREADY_EXISTS);
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() =>
+        expect(capturedResult).toMatchObject({ success: true, data: { saslMechanism: 'SCRAM-SHA-512' } })
+      );
+    });
+
+    // Its password isn't known here, so the pipeline can only use secrets stored when it was created.
+    test.each([
+      ['none', [], 'KAFKA_USER_EXISTING_USER and KAFKA_PASSWORD_EXISTING_USER secrets, which'],
+      ['only the username', ['KAFKA_USER_EXISTING_USER'], 'with the KAFKA_PASSWORD_EXISTING_USER secret, which'],
+    ])('names the credential secrets it lacks when %s are stored', async (_case, ids, named) => {
+      const user = userEvent.setup();
+      const { transport } = buildTransport({ listUsersMock: existingUser(), listSecretsMock: storedSecrets(...ids) });
+
+      renderWithFileRoutes(<TestHarness onResult={rs.fn()} selectionMode="new" />, { transport });
+
+      await user.type(await screen.findByPlaceholderText('Enter a username'), 'existing-user');
+      expect(await screen.findByText('No stored credentials for this user')).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(named))).toBeInTheDocument();
+    });
   });
 
   // ── Permissions ────────────────────────────────────────────────────────────
 
   describe('Permissions', () => {
-    test('10. missing permissions alert for existing user', async () => {
+    const userWithoutAccess = () =>
+      rs
+        .fn()
+        .mockReturnValue(
+          create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'no-perms-user' })] })
+        );
+    const topicGrants = (createACLMock: ReturnType<typeof rs.fn>) =>
+      createACLMock.mock.calls.filter(([request]) => request.resourceName === 'my-topic');
+
+    // A reused user has to end up able to use the topic, as a new one does.
+    test.each([
+      'existing',
+      'new',
+    ] as const)('10. grants an existing user without access the topic (%s tab)', async (selectionMode) => {
       const user = userEvent.setup();
-      const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'no-perms-user' })];
+      const { transport, listACLsMock, createACLMock, createUserMock, createSecretMock } = buildTransport({
+        listUsersMock: userWithoutAccess(),
+      });
+      let capturedResult: unknown;
 
-      const listUsersMock = rs.fn().mockReturnValue(
-        create(ListUsersResponseSchema, {
-          users: existingUsers,
-          nextPageToken: '',
-        })
-      );
-
-      // Return empty ACLs — user has no permissions
-      const listACLsMock = rs.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
-
-      const { transport } = buildTransport({ listUsersMock, listACLsMock });
-
-      // Use selectionMode="new" and type username that matches existing user.
-      // The component detects existingUserSelected and shows the permission alert
-      // when selectionMode="both" userSelectionType=CREATE and user exists.
-      // But for the destructive alert, it requires selectionMode="existing"
-      // (userSelectionType=EXISTING). Use defaultUsername to pre-fill.
       renderWithFileRoutes(
         <TestHarness
           defaultUsername="no-perms-user"
-          onResult={() => {}}
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          selectionMode={selectionMode}
+          topicName="my-topic"
+        />,
+        { transport }
+      );
+
+      // The topic's ACLs are only fetched once the name resolves to an existing user.
+      await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
+      expect(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeChecked();
+      await user.click(screen.getByTestId('submit'));
+
+      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+      expect(topicGrants(createACLMock)).toEqual([
+        [expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }), expect.anything()],
+      ]);
+      expect(createUserMock).not.toHaveBeenCalled();
+      expect(createSecretMock).not.toHaveBeenCalled();
+    });
+
+    test("10b. leaves an existing user's access alone when the grant is unticked", async () => {
+      const user = userEvent.setup();
+      const { transport, listACLsMock, createACLMock } = buildTransport({ listUsersMock: userWithoutAccess() });
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          defaultUsername="no-perms-user"
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
           selectionMode="existing"
           topicName="my-topic"
         />,
         { transport }
       );
 
-      // Wait for user list to load so existingUserSelected is computed
-      await waitFor(() => {
-        expect(listUsersMock).toHaveBeenCalled();
-      });
+      await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
+      await user.click(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' }));
+      expect(await screen.findByText('User will not be able to read from topic')).toBeInTheDocument();
+      await user.click(screen.getByTestId('submit'));
 
-      // With defaultUsername pre-filled, the component should detect the existing
-      // user and fire the ACL query. Wait for the missing permissions alert.
-      await waitFor(
-        () => {
-          expect(screen.getByText(/does not have required permissions/i)).toBeInTheDocument();
-        },
-        { timeout: 5000 }
-      );
+      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+      expect(topicGrants(createACLMock)).toEqual([]);
     });
 
     test('11. has permissions alert when user has ACLs', async () => {
+      const user = userEvent.setup();
       const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'perms-user' })];
 
       const listUsersMock = rs.fn().mockReturnValue(
@@ -528,11 +687,19 @@ describe('AddUserStep', () => {
         })
       );
 
-      const { transport } = buildTransport({ listUsersMock, listACLsMock });
+      const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
+      let capturedResult: unknown;
 
       // Use defaultUsername to pre-fill the existing user selection
       renderWithFileRoutes(
-        <TestHarness defaultUsername="perms-user" onResult={() => {}} selectionMode="existing" topicName="my-topic" />,
+        <TestHarness
+          defaultUsername="perms-user"
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          selectionMode="existing"
+          topicName="my-topic"
+        />,
         { transport }
       );
 
@@ -544,10 +711,119 @@ describe('AddUserStep', () => {
       // Should show success alert about having permissions
       await waitFor(
         () => {
-          expect(screen.getByText(/has required permissions/i)).toBeInTheDocument();
+          expect(screen.getByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
         },
         { timeout: 5000 }
       );
+
+      // Nothing to grant, so nothing is offered or created.
+      expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
+      await user.click(screen.getByTestId('submit'));
+      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+      expect(topicGrants(createACLMock)).toEqual([]);
+    });
+    test.each([
+      ['a prefixed', 'my-', ACL_ResourcePatternType.PREFIXED],
+      ['a wildcard', '*', ACL_ResourcePatternType.LITERAL],
+    ])('11b. counts %s ACL that covers the topic as access', async (_case, resourceName, resourcePatternType) => {
+      const listUsersMock = rs
+        .fn()
+        .mockReturnValue(
+          create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
+        );
+      const listACLsMock = rs.fn().mockReturnValue(
+        create(ListACLsResponseSchema, {
+          resources: [
+            create(ListACLsResponse_ResourceSchema, {
+              resourceType: ACL_ResourceType.TOPIC,
+              resourceName,
+              resourcePatternType,
+              acls: [
+                create(ListACLsResponse_PolicySchema, {
+                  principal: 'User:perms-user',
+                  host: '*',
+                  operation: ACL_Operation.ALL,
+                  permissionType: ACL_PermissionType.ALLOW,
+                }),
+              ],
+            }),
+          ],
+        })
+      );
+      const { transport } = buildTransport({ listUsersMock, listACLsMock });
+
+      renderWithFileRoutes(
+        <TestHarness defaultUsername="perms-user" onResult={rs.fn()} selectionMode="existing" topicName="my-topic" />,
+        { transport }
+      );
+
+      expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
+      expect(listACLsMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ resourcePatternType: ACL_ResourcePatternType.MATCH }),
+        }),
+        expect.anything()
+      );
+    });
+
+    // The grant is ALL, so a user who can already do what the component needs mustn't be offered it.
+    test.each([
+      ['a reader', 'read', false, ACL_Operation.READ],
+      ['a writer', 'write', false, ACL_Operation.WRITE],
+      ['a reader', 'write', true, ACL_Operation.READ],
+    ] as const)('11c. %s, for a component that needs %s access, is offered the grant: %s', async (_user, topicAccess, offered, operation) => {
+      const user = userEvent.setup();
+      const listUsersMock = rs
+        .fn()
+        .mockReturnValue(
+          create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
+        );
+      const listACLsMock = rs.fn().mockReturnValue(
+        create(ListACLsResponseSchema, {
+          resources: [
+            create(ListACLsResponse_ResourceSchema, {
+              resourceType: ACL_ResourceType.TOPIC,
+              resourceName: 'my-topic',
+              resourcePatternType: ACL_ResourcePatternType.LITERAL,
+              acls: [
+                create(ListACLsResponse_PolicySchema, {
+                  principal: 'User:perms-user',
+                  host: '*',
+                  operation,
+                  permissionType: ACL_PermissionType.ALLOW,
+                }),
+              ],
+            }),
+          ],
+        })
+      );
+      const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
+      let capturedResult: unknown;
+
+      renderWithFileRoutes(
+        <TestHarness
+          defaultUsername="perms-user"
+          onResult={(r: unknown) => {
+            capturedResult = r;
+          }}
+          selectionMode="existing"
+          topicAccess={topicAccess}
+          topicName="my-topic"
+        />,
+        { transport }
+      );
+
+      const checkbox = { name: 'Grant this user full access to my-topic' };
+      if (offered) {
+        expect(await screen.findByRole('checkbox', checkbox)).toBeChecked();
+      } else {
+        expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', checkbox)).toBeNull();
+      }
+      await user.click(screen.getByTestId('submit'));
+      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+      expect(topicGrants(createACLMock)).toHaveLength(offered ? 1 : 0);
     });
   });
 

@@ -13,6 +13,7 @@ import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/ap
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';
@@ -58,7 +59,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
 import * as React from 'react';
 import { toast } from 'sonner';
-import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { rpcnEditorAutosave, useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
 import {
@@ -66,7 +67,7 @@ import {
   DRAFT_UNSUPPORTED_STOPPED_MESSAGE,
   DRAFT_UPDATE_UNSUPPORTED_MESSAGE,
 } from './draft-copy';
-import { NO_LONGER_DRAFT_MESSAGE } from './save-actions';
+import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
 
@@ -146,6 +147,9 @@ const mockEditorInstance = {
     }
   }),
   revealLineInCenterIfOutsideViewport: rs.fn(),
+  // A quick action's patch moves the cursor to the end of the document.
+  setPosition: rs.fn(),
+  revealLine: rs.fn(),
   executeEdits: rs.fn(),
   focus: rs.fn(),
   // Scroll API used by the read-only viewer's vertical overflow shadows.
@@ -187,10 +191,34 @@ rs.mock('@monaco-editor/react', () => ({
     }),
 }));
 
-// The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML.
+// The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML, with the
+// node's "Add user" action for each section's `redpanda` component.
 rs.mock('./pipeline-flow-canvas', () => ({
-  PipelineFlowCanvas: (props: { configYaml: string }) =>
-    React.createElement('div', { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml }),
+  PipelineFlowCanvas: (props: { configYaml: string; onAddSasl?: (section: string, componentName: string) => void }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'flow-canvas', 'data-configyaml': props.configYaml },
+      ['input', 'output'].map((section) =>
+        React.createElement('button', {
+          'data-testid': `add-user-${section}`,
+          key: section,
+          onClick: () => props.onAddSasl?.(section, 'redpanda'),
+          type: 'button',
+        })
+      )
+    ),
+}));
+// The Add user dialog's form, reduced to what the editor hands it and what it submits back.
+const userStep: { submission: unknown; props: Record<string, unknown> } = { submission: undefined, props: {} };
+rs.mock('../onboarding/add-user-step', () => ({
+  AddUserStep: React.forwardRef((props: Record<string, unknown>, ref) => {
+    userStep.props = props;
+    React.useImperativeHandle(ref, () => ({
+      triggerSubmit: async () => ({ success: true, data: userStep.submission }),
+      isPending: false,
+    }));
+    return React.createElement('div', { 'data-testid': 'add-user-step' });
+  }),
 }));
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: () => null }));
 rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: () => null }));
@@ -269,6 +297,24 @@ rs.mock('sonner', () => {
 // Import after all mocks are set up.
 import PipelinePage from '.';
 
+// What a draft-capable backend returns: the console backend drops `create_time` when it predates drafts.
+const DRAFT_ERA_PIPELINE = create(PipelineSchema, {
+  id: 'existing',
+  displayName: 'Existing pipeline',
+  createTime: timestampFromMs(1_700_000_000_000),
+});
+
+const listPipelinesResponse = (pipelines: ReturnType<typeof create<typeof PipelineSchema>>[]) =>
+  create(ConsoleListPipelinesResponseSchema, { response: create(ListPipelinesResponseSchema, { pipelines }) });
+
+/** Answers the create page's draft-support sample with a draft-era pipeline; name lookups go to `lookup`. */
+const routeNameLookups = (lookup: (req: unknown) => unknown) =>
+  rs
+    .fn()
+    .mockImplementation((req: { request?: { filter?: { nameContains?: string } } }) =>
+      req.request?.filter?.nameContains ? lookup(req) : listPipelinesResponse([DRAFT_ERA_PIPELINE])
+    );
+
 function createTransport(overrides?: {
   getPipelineMock?: ReturnType<typeof rs.fn>;
   createPipelineMock?: ReturnType<typeof rs.fn>;
@@ -318,15 +364,10 @@ function createTransport(overrides?: {
       deletePipeline,
       overrides?.deletePipelineMock ?? rs.fn().mockReturnValue(create(ConsoleDeletePipelineResponseSchema, {}))
     );
-    // Read to number an unnamed draft against the names already in use.
+    // Sampled on the create page for draft support, and read to number an unnamed draft.
     rpc(
       listPipelines,
-      overrides?.listPipelinesMock ??
-        rs.fn().mockReturnValue(
-          create(ConsoleListPipelinesResponseSchema, {
-            response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-          })
-        )
+      overrides?.listPipelinesMock ?? rs.fn().mockReturnValue(listPipelinesResponse([DRAFT_ERA_PIPELINE]))
     );
     rpc(
       startPipeline,
@@ -353,6 +394,13 @@ function createTransport(overrides?: {
     );
   });
 }
+
+/** How the save sends a service account secret's field. */
+const secretRef = (secretName: string, key: string) => `\${secrets.${secretName}.${key}}`;
+
+/** Logs its output in with the pipeline's service account, which the YAML itself doesn't carry. */
+const SERVICE_ACCOUNT_LOGIN_YAML =
+  'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n';
 
 /** A stored draft: unfinished, unlintable, and never deployed. */
 const draftPipeline = () =>
@@ -990,6 +1038,285 @@ describe('PipelinePage', () => {
     expect(screen.queryByTestId('add-connector-dialog')).not.toBeInTheDocument();
   });
 
+  // The node's Add user action writes the component's login into the YAML; whatever that login needs
+  // outside the YAML has to reach the save as well.
+  describe('Add user quick action', () => {
+    const REDPANDA_OUTPUT_YAML = 'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n';
+    const editablePipeline = (
+      configYaml: string,
+      overrides: { tags?: Record<string, string>; serviceAccount?: { clientId: string; clientSecret: string } } = {}
+    ) =>
+      rs.fn().mockReturnValue(
+        create(ConsoleGetPipelineResponseSchema, {
+          response: create(GetPipelineResponseSchema, {
+            pipeline: create(PipelineSchema, {
+              id: 'test-pipeline',
+              displayName: 'Test Pipeline',
+              configYaml,
+              state: Pipeline_State.STOPPED,
+              resources: { cpuShares: '100m', memoryShares: '0' },
+              tags: {},
+              ...overrides,
+            }),
+          }),
+        })
+      );
+
+    const addServiceAccountToOutput = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(await screen.findByTestId('add-user-output'));
+      await user.click(await screen.findByRole('button', { name: 'Add' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toContain(
+          'REDPANDA_CLOUD_SERVICE_ACCOUNT'
+        )
+      );
+    };
+
+    beforeEach(() => {
+      mockIsFeatureFlagEnabled.mockImplementation(
+        (flag: string) => flag === 'enableRpcnVisualEditor' || flag === 'enablePipelineDiagrams'
+      );
+      mockIsEmbedded.mockReturnValue(true);
+      userStep.props = {};
+      userStep.submission = {
+        authMethod: 'service-account',
+        serviceAccountName: 'orders-sa',
+        serviceAccountId: 'sa-123',
+        serviceAccountSecretName: 'ORDERS_SA',
+      };
+    });
+
+    // Connect's service-account login uses the pipeline's account, so without it the component
+    // cannot authenticate at all.
+    it('attaches the service account it created to the pipeline being edited', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML), updatePipelineMock }),
+      });
+
+      await addServiceAccountToOutput(user);
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
+      expect(sent.serviceAccount).toMatchObject({
+        clientId: secretRef('ORDERS_SA', 'client_id'),
+        clientSecret: secretRef('ORDERS_SA', 'client_secret'),
+      });
+      expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
+    });
+
+    // The save already read the account, so the edits it leaves behind must carry the new one.
+    it('keeps an account attached during an in-flight save recoverable', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      let releaseUpdate: (() => void) | undefined;
+      const updatePipelineMock = rs.fn().mockReturnValue(
+        new Promise((resolve) => {
+          releaseUpdate = () => resolve(create(ConsoleUpdatePipelineResponseSchema, {}));
+        })
+      );
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML), updatePipelineMock }),
+      });
+
+      await user.click(await screen.findByTestId('save-pipeline'));
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      await addServiceAccountToOutput(user);
+      releaseUpdate?.();
+
+      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
+      expect(buffer?.serviceAccount).toEqual({ serviceAccountId: 'sa-123', secretName: 'ORDERS_SA' });
+    });
+
+    it("keeps the pipeline's own service account rather than creating another", async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const existing = {
+        clientId: secretRef('EXISTING_SA', 'client_id'),
+        clientSecret: secretRef('EXISTING_SA', 'client_secret'),
+      };
+      const existingTags = { rp_cloud_service_account_id: 'sa-existing', rp_cloud_secret_id: 'EXISTING_SA' };
+      userStep.submission = { authMethod: 'service-account', existing: true };
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML, { tags: existingTags, serviceAccount: existing }),
+          updatePipelineMock,
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(true);
+      await user.click(screen.getByRole('button', { name: 'Add' }));
+      await waitFor(() =>
+        expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toContain(
+          'REDPANDA_CLOUD_SERVICE_ACCOUNT'
+        )
+      );
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
+      expect(sent.serviceAccount).toMatchObject(existing);
+      expect(sent.tags).toMatchObject(existingTags);
+    });
+
+    it('offers the account it attached to the next component', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML) }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'Add' }));
+      await waitFor(() => expect(screen.queryByTestId('add-user-step')).not.toBeInTheDocument());
+
+      await user.click(screen.getByTestId('add-user-input'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props.hasServiceAccount).toBe(true);
+    });
+
+    // The YAML only names the login mechanism, so recovering it without the account restores a
+    // config that can't log in.
+    it('keeps the account it attached in the recovery buffer', async () => {
+      const user = userEvent.setup();
+      localStorage.clear();
+      useRpcnEditorAutosaveStore.getState().refresh();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, {
+        transport: createTransport({ getPipelineMock: editablePipeline(REDPANDA_OUTPUT_YAML) }),
+      });
+
+      await addServiceAccountToOutput(user);
+      await waitFor(
+        () =>
+          expect(rpcnEditorAutosave.get('test-pipeline')?.serviceAccount).toEqual({
+            serviceAccountId: 'sa-123',
+            secretName: 'ORDERS_SA',
+          }),
+        { timeout: AUTOSAVE_DEBOUNCE_MS + 2000 }
+      );
+    });
+
+    it("won't deploy a config that logs in with a service account the pipeline doesn't have", async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(SERVICE_ACCOUNT_LOGIN_YAML),
+          updatePipelineMock,
+        }),
+      });
+
+      await screen.findByTestId('flow-canvas');
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(MISSING_SERVICE_ACCOUNT_MESSAGE));
+      expect(updatePipelineMock).not.toHaveBeenCalled();
+    });
+
+    // A user added before its topic gets no topic ACL, and adding the topic later grants nothing.
+    it.each([
+      ['has no topic yet', 'output:\n  redpanda: {}\n', true],
+      ['already names its topic', REDPANDA_OUTPUT_YAML, false],
+    ])('warns about topic access only when the component %s', async (_case, configYaml, warns) => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, { transport: createTransport({ getPipelineMock: editablePipeline(configYaml) }) });
+
+      await user.click(await screen.findByTestId('add-user-output'));
+      await screen.findByTestId('add-user-step');
+      expect(Boolean(screen.queryByText('No topic yet'))).toBe(warns);
+      expect(userStep.props.topicAccess).toBe('write');
+    });
+
+    it('starts the dialog from the consumer group the input reads with', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(
+            'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
+          ),
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-input'));
+      await screen.findByTestId('add-user-step');
+      expect(userStep.props).toMatchObject({
+        defaultConsumerGroup: 'orders-readers',
+        showConsumerGroupFields: true,
+        topicAccess: 'read',
+        pipelineName: 'Test Pipeline',
+      });
+    });
+
+    it('reads as the consumer group the dialog granted', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      userStep.submission = { username: 'orders-reader', saslMechanism: 'SCRAM-SHA-256', consumerGroup: 'orders-v2' };
+
+      render(<PipelinePage />, {
+        transport: createTransport({
+          getPipelineMock: editablePipeline(
+            'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
+          ),
+        }),
+      });
+
+      await user.click(await screen.findByTestId('add-user-input'));
+      await user.click(await screen.findByRole('button', { name: 'Add' }));
+
+      await waitFor(() =>
+        expect(screen.getByTestId('flow-canvas').getAttribute('data-configyaml')).toContain('consumer_group: orders-v2')
+      );
+    });
+
+    it('attaches the service account it created to a new pipeline', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'create' });
+      const createPipelineMock = rs.fn().mockReturnValue(
+        create(ConsoleCreatePipelineResponseSchema, {
+          response: create(CreatePipelineResponseSchema, {
+            pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.STOPPED }),
+          }),
+        })
+      );
+      const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock, stopPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'orders');
+      await user.click(await screen.findByRole('tab', { name: 'YAML' }));
+      fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: REDPANDA_OUTPUT_YAML } });
+      await user.click(screen.getByRole('tab', { name: 'Visual' }));
+      await addServiceAccountToOutput(user);
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      const sent = createPipelineMock.mock.calls[0][0].request.pipeline;
+      expect(sent.serviceAccount).toMatchObject({ clientId: secretRef('ORDERS_SA', 'client_id') });
+      expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
+    });
+  });
+
   describe('drafts and save semantics', () => {
     // What CreatePipeline answers with. The state is not incidental: the editor trusts the response
     // over the flag it sent. Defaults to what a drafts-capable server returns.
@@ -1050,6 +1377,93 @@ describe('PipelinePage', () => {
       // Parking work keeps the editor open, now bound to the draft so the next save updates it rather
       // than forking a second one.
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
+    });
+
+    // A draft never runs, so it can wait for the account its login needs.
+    it("saves a draft that logs in with a service account the pipeline doesn't have yet", async () => {
+      const user = userEvent.setup();
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+
+      render(<PipelinePage />, { transport: createTransport({ createPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: SERVICE_ACCOUNT_LOGIN_YAML } });
+
+      await openSaveOptions(user);
+      await user.click(await screen.findByRole('menuitem', { name: 'Save and start' }));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(MISSING_SERVICE_ACCOUNT_MESSAGE));
+      expect(createPipelineMock).not.toHaveBeenCalled();
+
+      await user.click(screen.getByTestId('save-pipeline'));
+      await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
+      expect(createPipelineMock.mock.calls[0][0].request.pipeline.draft).toBe(true);
+    });
+
+    // A console backend that predates drafts drops `draft` on the way in and `create_time` on the way
+    // out, so a pipeline without the latter means a draft save would deploy.
+    it('offers no draft when the console backend predates drafts', async () => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs
+        .fn()
+        .mockReturnValue(listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Old pipeline' })]));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
+      expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/);
+    });
+
+    // A brand-new cluster has no pipeline to lend an answer, and hiding drafts there would hide them
+    // from every first pipeline.
+    it('offers a draft on a cluster with no pipelines yet', async () => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs.fn().mockReturnValue(listPipelinesResponse([]));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'));
+    });
+
+    // Unknown support must not turn the primary save into one that deploys.
+    it('offers a draft when the sample fails', async () => {
+      const user = userEvent.setup();
+      const listPipelinesMock = rs.fn().mockRejectedValue(new ConnectError('unavailable', Code.Unavailable));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'), {
+        timeout: 5000,
+      });
+    });
+
+    // Until the sample answers, the primary save would deploy, so a quick click or ⌘S has to wait.
+    it('holds save until it knows whether the cluster can store drafts', async () => {
+      const user = userEvent.setup();
+      let answerSample: (() => void) | undefined;
+      const listPipelinesMock = rs.fn(
+        () =>
+          new Promise((resolve) => {
+            answerSample = () => resolve(listPipelinesResponse([DRAFT_ERA_PIPELINE]));
+          })
+      );
+      const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
+
+      render(<PipelinePage />, { transport: createTransport({ listPipelinesMock, createPipelineMock }) });
+
+      await setPipelineNameViaDialog(user, 'my-pipeline');
+      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  generate: {}' } });
+      await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
+      expect(screen.getByTestId('save-pipeline')).toBeDisabled();
+      fireEvent.keyDown(window, { key: 's', metaKey: true });
+
+      answerSample?.();
+      await waitFor(() => expect(screen.getByTestId('save-pipeline')).toBeEnabled());
+      expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft');
+      // The held ⌘S was dropped, not queued.
+      expect(createPipelineMock).not.toHaveBeenCalled();
     });
 
     // The flag can be on before the API that understands it has rolled out, in which case `draft` is
@@ -1278,17 +1692,15 @@ describe('PipelinePage', () => {
       const user = userEvent.setup();
       const requests: unknown[] = [];
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockImplementation((req: unknown) => {
+      const listPipelinesMock = routeNameLookups((req) => {
         requests.push(req);
-        return create(ConsoleListPipelinesResponseSchema, {
-          response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-        });
+        return listPipelinesResponse([]);
       });
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
 
       fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
-      // Nothing listed just by opening the editor.
+      // No name lookup just by opening the editor.
       expect(requests).toHaveLength(0);
 
       await user.click(screen.getByTestId('save-pipeline'));
@@ -1302,12 +1714,8 @@ describe('PipelinePage', () => {
     it('numbers an unnamed draft against the names already taken', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockReturnValue(
-        create(ConsoleListPipelinesResponseSchema, {
-          response: create(ListPipelinesResponseSchema, {
-            pipelines: [create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })],
-          }),
-        })
+      const listPipelinesMock = routeNameLookups(() =>
+        listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })])
       );
 
       render(<PipelinePage />, { transport: createTransport({ createPipelineMock, listPipelinesMock }) });
@@ -1323,15 +1731,10 @@ describe('PipelinePage', () => {
     it('shows the save as busy while the untitled name is being looked up', async () => {
       const user = userEvent.setup();
       let releaseLookup: () => void = () => undefined;
-      const listPipelinesMock = rs.fn().mockImplementation(
+      const listPipelinesMock = routeNameLookups(
         () =>
           new Promise((resolve) => {
-            releaseLookup = () =>
-              resolve(
-                create(ConsoleListPipelinesResponseSchema, {
-                  response: create(ListPipelinesResponseSchema, { pipelines: [] }),
-                })
-              );
+            releaseLookup = () => resolve(listPipelinesResponse([]));
           })
       );
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
@@ -1353,7 +1756,7 @@ describe('PipelinePage', () => {
     it('still saves the draft when the name lookup fails', async () => {
       const user = userEvent.setup();
       const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));
-      const listPipelinesMock = rs.fn().mockImplementation(() => {
+      const listPipelinesMock = routeNameLookups(() => {
         throw new ConnectError('list unavailable', Code.Unavailable);
       });
 
@@ -2248,6 +2651,32 @@ describe('PipelinePage', () => {
       await waitFor(() => expect(yamlEditor.value).toBe('input:\n  recovered: {}'));
       // Nothing left to offer once it's loaded.
       expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
+    });
+
+    it('restores the service account along with the edits it was attached for', async () => {
+      const user = userEvent.setup();
+      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const secretName = 'ORDERS_SA';
+      useRpcnEditorAutosaveStore.getState().save({
+        targetKey: 'test-pipeline',
+        name: 'Test Pipeline',
+        description: '',
+        computeUnits: 1,
+        tags: [],
+        configYaml: SERVICE_ACCOUNT_LOGIN_YAML,
+        serviceAccount: { serviceAccountId: 'sa-123', secretName },
+      });
+
+      render(<PipelinePage />, { transport: createTransport({ updatePipelineMock }) });
+
+      await user.click(await screen.findByTestId('restore-autosave'));
+      await user.click(screen.getByTestId('save-pipeline'));
+
+      await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
+      const sent = updatePipelineMock.mock.calls[0][0].request.pipeline;
+      expect(sent.serviceAccount).toMatchObject({ clientId: secretRef(secretName, 'client_id') });
+      expect(sent.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: secretName });
     });
 
     // A save writes the settings as well as the configuration, so an unsaved resize is recoverable work.

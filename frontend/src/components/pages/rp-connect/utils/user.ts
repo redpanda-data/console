@@ -22,7 +22,7 @@ import {
   type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
-import { convertToScreamingSnakeCase } from '../types/constants';
+import { userSecretIds } from '../types/constants';
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
 const createConsumerGroupACLs = (consumerGroupName: string, username: string) => {
@@ -83,7 +83,7 @@ const doesPatternMatchTopic = (
 ): boolean => {
   switch (patternType) {
     case ACL_ResourcePatternType.LITERAL:
-      return resourceName === topicName;
+      return resourceName === topicName || resourceName === '*';
     case ACL_ResourcePatternType.PREFIXED:
       return topicName.startsWith(resourceName);
     case ACL_ResourcePatternType.ANY:
@@ -93,12 +93,22 @@ const doesPatternMatchTopic = (
   }
 };
 
-export const checkUserHasTopicReadWritePermissions = (
+/** What a component does with its topic. */
+export type TopicAccess = 'read' | 'write' | 'read-write';
+
+const TOPIC_ACCESS_OPERATIONS: Record<TopicAccess, ACL_Operation[]> = {
+  read: [ACL_Operation.READ],
+  write: [ACL_Operation.WRITE],
+  'read-write': [ACL_Operation.READ, ACL_Operation.WRITE],
+};
+
+export const checkUserHasTopicPermissions = (
   aclResources: ListACLsResponse_Resource[],
   topicName: string,
-  username: string
+  username: string,
+  access: TopicAccess
 ): TopicPermissionCheck => {
-  const requiredOps = [ACL_Operation.READ, ACL_Operation.WRITE];
+  const requiredOps = TOPIC_ACCESS_OPERATIONS[access];
 
   // Filter ACLs for this specific topic (including LITERAL, PREFIXED, and ANY patterns)
   const topicACLs = aclResources.filter(
@@ -254,7 +264,7 @@ const createUsernameSecret = async (
   try {
     const usernameSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
-        id: `KAFKA_USER_${convertToScreamingSnakeCase(username)}`,
+        id: userSecretIds(username).username,
         secretData: base64ToUInt8Array(encodeBase64(username)),
         scopes: [Scope.REDPANDA_CONNECT],
         labels: {
@@ -292,7 +302,7 @@ const createPasswordSecret = async (
   try {
     const passwordSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
-        id: `KAFKA_PASSWORD_${convertToScreamingSnakeCase(username)}`,
+        id: userSecretIds(username).password,
         secretData: base64ToUInt8Array(encodeBase64(password)),
         scopes: [Scope.REDPANDA_CONNECT],
         labels: {
@@ -326,6 +336,12 @@ const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
   'SCRAM-SHA-256': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
   'SCRAM-SHA-512': SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512,
 };
+
+/** The SCRAM mechanism a user was created with, if it is one. */
+export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): SaslMechanism | undefined =>
+  (Object.keys(saslMechanismToProtoMapping) as SaslMechanism[]).find(
+    (name) => saslMechanismToProtoMapping[name] === mechanism
+  );
 
 const createKafkaUser = async (
   userData: AddUserFormData,
@@ -388,43 +404,17 @@ export const useCreateUserWithSecretsMutation = () => {
   const createUserWithSecrets = async (params: CreateUserWithSecretsParams) => {
     const { userData, topicName, consumerGroup, existingUserSelected } = params;
 
-    // Early return: existing user without consumer group
-    if (existingUserSelected && !consumerGroup) {
+    // Step 1: Create user, unless it exists
+    if (existingUserSelected) {
       toast.success(`Using existing user "${userData.username}"`);
-      return { success: true, data: userData };
-    }
-
-    // Early return: existing user with consumer group - only configure ACLs
-    if (existingUserSelected && consumerGroup) {
-      toast.info(`Configuring permissions for "${userData.username}"`);
-
-      const consumerGroupACLResult = await configureConsumerGroupPermissions(
-        consumerGroup,
-        userData.username,
-        createACLMutation
-      );
-
-      if (!consumerGroupACLResult.success) {
-        toast.error(consumerGroupACLResult.error || 'Failed to configure consumer group permissions');
+    } else {
+      const userResult = await createKafkaUser(userData, createUserMutation);
+      if (!userResult.success) {
+        toast.error(userResult.error || 'Failed to create user');
         return { success: false, data: userData };
       }
-
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
-        exact: false,
-      });
-
-      toast.success(consumerGroupACLResult.message || 'Permissions configured');
-      return { success: true, data: userData };
+      toast.success(userResult.message || `User "${userData.username}" created`);
     }
-
-    // Step 1: Create user
-    const userResult = await createKafkaUser(userData, createUserMutation);
-    if (!userResult.success) {
-      toast.error(userResult.error || 'Failed to create user');
-      return { success: false, data: userData };
-    }
-    toast.success(userResult.message || `User "${userData.username}" created`);
 
     // Step 2: Configure topic ACL if needed
     if (topicName && userData.grantTopicPermissions) {
@@ -453,6 +443,11 @@ export const useCreateUserWithSecretsMutation = () => {
         queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
         exact: false,
       });
+    }
+
+    // Only a user created here has a password to store.
+    if (existingUserSelected) {
+      return { success: true, data: userData };
     }
 
     // Step 4: Create username secret

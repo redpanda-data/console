@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
@@ -31,7 +32,8 @@ const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
-const HISTORY_TIMEOUT_MS = 30 * ONE_SECOND;
+// Reads at most HISTORY_MAX_RESULTS per partition, so a healthy search is well under a second.
+const HISTORY_TIMEOUT_MS = 15 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
 /**
  * Sliding-window cap for the live-tail log buffer. A live stream runs for up to 30 minutes
@@ -97,6 +99,16 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
   return req;
 }
 
+// The logs topic is created by the first pipeline that logs, so until then there is nothing to find.
+const isMissingLogsTopic = (message: string) => message.includes('UNKNOWN_TOPIC_OR_PARTITION');
+
+function describeHistoryError(error: Error): string {
+  if (ConnectError.from(error).code === Code.DeadlineExceeded) {
+    return 'The log search timed out. Refresh to try again.';
+  }
+  return error.message;
+}
+
 function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean): boolean {
   // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
@@ -141,7 +153,9 @@ function handleHistoryMessage(res: ListMessagesResponse, opts: HistoryStreamOpts
       break;
     case 'error': {
       const errMsg = res.controlMessage.value.message;
-      sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+      if (!isMissingLogsTopic(errMsg)) {
+        sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+      }
       throw new Error(errMsg);
     }
     default:
@@ -169,6 +183,9 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
     }
   } catch (e) {
     opts.setPhase(null);
+    if (e instanceof Error && isMissingLogsTopic(e.message)) {
+      return [];
+    }
     throw e;
   }
 
@@ -219,12 +236,20 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
     staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
+    // A retried timeout doubles the wait; Refresh is the retry.
+    retry: false,
   });
 
   // Incremental messages while streaming, query data once resolved; newest-first to match live tail.
   const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
-  return { messages, phase, progress, error: query.error?.message ?? null, refetch: query.refetch };
+  return {
+    messages,
+    phase,
+    progress,
+    error: query.error ? describeHistoryError(query.error) : null,
+    refetch: query.refetch,
+  };
 }
 
 type LiveState = {
@@ -425,16 +450,30 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
   return state;
 }
 
+/** History and tail can both hold a message written as the tail opened; keeps the first of each. */
+function withoutRepeats(messages: TopicMessage[]): TopicMessage[] {
+  const seen = new Set<string>();
+  return messages.filter((msg) => {
+    const id = `${msg.partitionID}:${msg.offset}`;
+    if (seen.has(id)) {
+      return false;
+    }
+    seen.add(id);
+    return true;
+  });
+}
+
 export function useLogSearch({
   pipelineId,
   live,
   enabled,
   serverless = true,
 }: UseLogSearchOptions): UseLogSearchReturn {
+  // Stays on in live mode: the tail starts at the end, so history is what it shows before anything new.
   const history = useLogHistory({
     pipelineId,
     serverless,
-    enabled: enabled && !live,
+    enabled,
   });
 
   const liveResult = useLogLive({
@@ -443,21 +482,31 @@ export function useLogSearch({
     enabled: enabled && live,
   });
 
-  if (live) {
-    return {
-      messages: liveResult.messages,
-      phase: liveResult.phase,
-      error: liveResult.error,
-      progress: liveResult.progress,
-      refresh: noop,
-    };
-  }
+  // Re-read on entering live mode, or logs written since the last search fall between the two; and on
+  // leaving it, since the tail's messages go with it.
+  const { messages: historyMessages, refetch: refetchHistory } = history;
+  const wasLive = useRef(live);
+  useEffect(() => {
+    const leftLive = wasLive.current && !live;
+    wasLive.current = live;
+    if (enabled && (live || leftLive)) {
+      refetchHistory();
+    }
+  }, [enabled, live, refetchHistory]);
+
+  const liveMessages = liveResult.messages;
+  const messages = useMemo(
+    () => (live ? withoutRepeats([...liveMessages, ...historyMessages]) : historyMessages),
+    [live, liveMessages, historyMessages]
+  );
 
   return {
-    messages: history.messages,
+    messages,
+    // The tail stays open until it is turned off, so only the history read counts as searching.
     phase: history.phase,
-    error: history.error,
     progress: history.progress,
-    refresh: history.refetch,
+    // Refresh is off while live, so a failed history read leaves the tail showing on its own.
+    error: live ? liveResult.error : history.error,
+    refresh: live ? noop : refetchHistory,
   };
 }

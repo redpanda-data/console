@@ -9,18 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
+import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
+import { toast } from 'sonner';
 
 import type { TopicMessage } from '../../state/rest-interfaces';
+import { PartitionOffsetOrigin } from '../../state/ui';
 
 // Track messages returned by convertListMessageData
 let convertCallIndex = 0;
 const fakeMessages: TopicMessage[] = [];
 
 rs.mock('../../utils/message-converters', () => ({
-  convertListMessageData: () => {
+  // Tests that run two streams at once pass the message in the payload instead of relying on call order.
+  convertListMessageData: (value: { message?: TopicMessage }) => {
+    if (value?.message) {
+      return value.message;
+    }
     const msg = fakeMessages[convertCallIndex];
     convertCallIndex++;
     return msg;
@@ -60,14 +67,34 @@ function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   } as TopicMessage;
 }
 
-function createWrapper() {
+function createWrapper({ retry = false }: { retry?: boolean | number } = {}) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry, retryDelay: 0 } },
   });
   return ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }
+
+const dataOf = (message: TopicMessage) => ({ controlMessage: { case: 'data' as const, value: { message } } });
+const DONE = { controlMessage: { case: 'done' as const, value: {} } };
+const LIVE_START_OFFSET = BigInt(PartitionOffsetOrigin.End);
+
+type StreamRequest = { startOffset: bigint };
+type StreamOptions = { signal: AbortSignal };
+
+/** Live mode opens a history read and a tail side by side; this tells them apart. */
+function mockStreams(streams: {
+  history: (opts: StreamOptions) => AsyncGenerator<unknown>;
+  live: (opts: StreamOptions) => AsyncGenerator<unknown>;
+}) {
+  mockListMessages.mockImplementation((req: StreamRequest, opts: StreamOptions) =>
+    req.startOffset === LIVE_START_OFFSET ? streams.live(opts) : streams.history(opts)
+  );
+}
+
+const untilAborted = (signal: AbortSignal) =>
+  new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve()));
 
 describe('useLogSearch live mode', () => {
   beforeEach(() => {
@@ -76,83 +103,135 @@ describe('useLogSearch live mode', () => {
     fakeMessages.length = 0;
   });
 
-  test('reports progress during live streaming', async () => {
-    fakeMessages.push(makeMessage(1));
-
-    mockListMessages.mockImplementation(async function* () {
-      yield {
-        controlMessage: {
-          case: 'progress' as const,
-          value: { bytesConsumed: BigInt(5000), messagesConsumed: BigInt(42) },
-        },
-      };
-      yield {
-        controlMessage: { case: 'data' as const, value: {} },
-      };
-      yield {
-        controlMessage: { case: 'done' as const, value: {} },
-      };
+  test('shows recent history, with new messages on top', async () => {
+    mockStreams({
+      async *history() {
+        yield dataOf(makeMessage(1));
+        yield dataOf(makeMessage(2));
+        yield DONE;
+      },
+      async *live({ signal }) {
+        yield dataOf(makeMessage(3));
+        await untilAborted(signal);
+      },
     });
 
     const { result } = renderHook(
-      () =>
-        useLogSearch({
-          pipelineId: 'pipeline-1',
-          live: true,
-          enabled: true,
-          serverless: false,
-        }),
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      expect(result.current.progress.bytesConsumed).toBe(5000);
-      expect(result.current.progress.messagesConsumed).toBe(42);
-    });
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
   });
 
-  test('prepends new messages in live mode (newest first)', async () => {
-    const msg1 = makeMessage(1);
-    const msg2 = makeMessage(2);
-    const msg3 = makeMessage(3);
-    fakeMessages.push(msg1, msg2, msg3);
-
-    mockListMessages.mockImplementation(async function* () {
-      for (const _msg of fakeMessages) {
-        yield {
-          controlMessage: {
-            case: 'data' as const,
-            value: {}, // passed to convertListMessageData mock which uses fakeMessages by index
-          },
-        };
-      }
-      yield {
-        controlMessage: {
-          case: 'done' as const,
-          value: {},
-        },
-      };
+  test('keeps one copy of a message both the history and the tail returned', async () => {
+    mockStreams({
+      async *history() {
+        yield dataOf(makeMessage(1));
+        yield dataOf(makeMessage(2));
+        yield DONE;
+      },
+      async *live({ signal }) {
+        yield dataOf(makeMessage(2));
+        yield dataOf(makeMessage(3));
+        await untilAborted(signal);
+      },
     });
 
     const { result } = renderHook(
-      () =>
-        useLogSearch({
-          pipelineId: 'pipeline-1',
-          live: true,
-          enabled: true,
-          serverless: false,
-        }),
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      expect(result.current.messages).toHaveLength(3);
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
+  });
+
+  // The tail heartbeats with empty progress while open, which isn't a search in progress.
+  test('stops searching once history is read, while the tail stays open', async () => {
+    mockStreams({
+      async *history() {
+        yield dataOf(makeMessage(1));
+        yield DONE;
+      },
+      async *live({ signal }) {
+        yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
+        yield { controlMessage: { case: 'progress' as const, value: { bytesConsumed: 0n, messagesConsumed: 0n } } };
+        await untilAborted(signal);
+      },
     });
 
-    // Newest message (msg3) should be first, oldest (msg1) last
-    expect(result.current.messages[0].offset).toBe(3);
-    expect(result.current.messages[1].offset).toBe(2);
-    expect(result.current.messages[2].offset).toBe(1);
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.messages).toHaveLength(1));
+    expect(result.current.phase).toBeNull();
+  });
+
+  // Refresh is off while live, so the error would offer a retry that can't be taken.
+  test('keeps the tail showing when the history read fails', async () => {
+    mockStreams({
+      // biome-ignore lint/correctness/useYield: fails before the first message
+      async *history() {
+        throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
+      },
+      async *live({ signal }) {
+        yield dataOf(makeMessage(3));
+        await untilAborted(signal);
+      },
+    });
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result, rerender } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
+      {
+        wrapper: ({ children }: PropsWithChildren) => (
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+      }
+    );
+
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3]));
+    await waitFor(() =>
+      expect(
+        queryClient
+          .getQueryCache()
+          .getAll()
+          .some((query) => query.state.status === 'error')
+      ).toBe(true)
+    );
+    rerender();
+    expect(result.current.error).toBeNull();
+  });
+
+  // Entering re-reads so logs written since the search aren't skipped; leaving re-reads because the
+  // tail's messages go with it.
+  test.each([
+    ['entering', false],
+    ['leaving', true],
+  ])('reads history again on %s live mode', async (_case, startsLive) => {
+    const history = rs.fn(async function* () {
+      yield DONE;
+    });
+    mockStreams({
+      history,
+      async *live({ signal }) {
+        await untilAborted(signal);
+      },
+    });
+
+    const { result, rerender } = renderHook(
+      ({ live }: { live: boolean }) =>
+        useLogSearch({ pipelineId: 'pipeline-1', live, enabled: true, serverless: false }),
+      { wrapper: createWrapper(), initialProps: { live: startsLive } }
+    );
+    await waitFor(() => expect(result.current.phase).toBeNull());
+    const reads = history.mock.calls.length;
+
+    rerender({ live: !startsLive });
+
+    await waitFor(() => expect(history).toHaveBeenCalledTimes(reads + 1));
   });
 });
 
@@ -227,6 +306,42 @@ describe('useLogSearch history mode', () => {
 
     expect(result.current.messages[0].offset).toBe(3);
     expect(result.current.messages[2].offset).toBe(1);
+  });
+
+  test('treats a missing logs topic as no logs, not an error', async () => {
+    mockListMessages.mockImplementation(async function* () {
+      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Get Partitions' } } };
+      throw new ConnectError(
+        'failed to get metadata for topic __redpanda.connect.logs: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.',
+        Code.Unknown
+      );
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => expect(result.current.phase).toBeNull());
+    expect(result.current.error).toBeNull();
+    expect(result.current.messages).toEqual([]);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  // The embedded app's client retries once by default.
+  test('does not retry a timed-out search, and says it timed out', async () => {
+    mockListMessages.mockImplementation(async function* () {
+      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
+      throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
+    });
+
+    const { result } = renderHook(
+      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
+      { wrapper: createWrapper({ retry: 1 }) }
+    );
+
+    await waitFor(() => expect(result.current.error).toBe('The log search timed out. Refresh to try again.'));
+    expect(mockListMessages).toHaveBeenCalledTimes(1);
   });
 });
 

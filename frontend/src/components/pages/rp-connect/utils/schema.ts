@@ -10,10 +10,10 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
 import {
-  convertToScreamingSnakeCase,
   getContextualVariableSyntax,
   getSecretSyntax,
   REDPANDA_TOPIC_AND_USER_COMPONENTS,
+  userSecretIds,
 } from '../types/constants';
 import type {
   ConnectComponentSpec,
@@ -125,14 +125,13 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
   const redpandaConfig: Record<string, unknown> = {};
 
   if (userData?.username) {
-    const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(userData.username)}`;
-    const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(userData.username)}`;
+    const secretIds = userSecretIds(userData.username);
 
     redpandaConfig.sasl = [
       {
         mechanism: userData.saslMechanism || 'SCRAM-SHA-256',
-        username: getSecretSyntax(usernameSecretId),
-        password: getSecretSyntax(passwordSecretId),
+        username: getSecretSyntax(secretIds.username),
+        password: getSecretSyntax(secretIds.password),
       },
     ];
   }
@@ -256,13 +255,11 @@ function populateWizardFields(
     isSaslContext
   ) {
     if (isUserField(spec.name)) {
-      const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(userData.username)}`;
-      return getSecretSyntax(usernameSecretId);
+      return getSecretSyntax(userSecretIds(userData.username).username);
     }
 
     if (isPasswordField(spec.name)) {
-      const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(userData.username)}`;
-      return getSecretSyntax(passwordSecretId);
+      return getSecretSyntax(userSecretIds(userData.username).password);
     }
   }
 

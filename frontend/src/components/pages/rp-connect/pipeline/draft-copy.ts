@@ -19,6 +19,13 @@ export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnP
 export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boolean =>
   pipeline?.state === Pipeline_State.DRAFT;
 
+/**
+ * A pipeline carries `create_time` only when both the console backend and the dataplane know drafts.
+ * Without a pipeline there is no proof.
+ */
+export const provesDraftSupport = (pipeline: Pick<Pipeline, 'state' | 'createTime'> | undefined): boolean =>
+  isDraft(pipeline) || pipeline?.createTime !== undefined;
+
 export const DRAFT_BADGE_TOOLTIP =
   "Saved but never deployed — it uses no compute and processes no data. It still counts against the cluster's pipeline limit. Starting it makes it a regular pipeline.";
 

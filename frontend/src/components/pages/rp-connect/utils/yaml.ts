@@ -4,6 +4,7 @@ import { escapeRegExp } from 'utils/regex';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import {
   Document,
+  isMap,
   isPair,
   isScalar,
   isSeq,
@@ -14,7 +15,13 @@ import {
 } from 'yaml';
 
 import { schemaToConfig } from './schema';
-import { convertToScreamingSnakeCase, getSecretSyntax } from '../types/constants';
+import {
+  CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM,
+  getContextualVariableSyntax,
+  getSecretSyntax,
+  SHARED_CLIENT_FALLBACK_COMPONENTS,
+  userSecretIds,
+} from '../types/constants';
 import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, RawFieldSpec } from '../types/schema';
 
 // `lineWidth: 0` disables folding: the lib default folds long single-line bloblang mappings at
@@ -611,35 +618,29 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
 
 type RedpandaPatch = {
   topicName?: string;
-  sasl?: { mechanism: string; username: string; password: string }[];
+  consumerGroup?: string;
+  sasl?: { mechanism: string; username?: string; password?: string }[];
 };
 
 export type RedpandaSetupResultLike = {
   topicName?: string;
   username?: string;
   saslMechanism?: string;
+  consumerGroup?: string;
   authMethod?: 'sasl' | 'service-account';
-  serviceAccountSecretName?: string;
 };
 
 function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] | undefined {
-  if (result.authMethod === 'service-account' && result.serviceAccountSecretName) {
-    return [
-      {
-        mechanism: 'SCRAM-SHA-256',
-        username: getSecretSyntax(`${result.serviceAccountSecretName}.client_id`),
-        password: getSecretSyntax(`${result.serviceAccountSecretName}.client_secret`),
-      },
-    ];
+  if (result.authMethod === 'service-account') {
+    return [{ mechanism: CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM }];
   }
   if (result.username) {
-    const usernameSecretId = `KAFKA_USER_${convertToScreamingSnakeCase(result.username)}`;
-    const passwordSecretId = `KAFKA_PASSWORD_${convertToScreamingSnakeCase(result.username)}`;
+    const secretIds = userSecretIds(result.username);
     return [
       {
         mechanism: result.saslMechanism || 'SCRAM-SHA-256',
-        username: getSecretSyntax(usernameSecretId),
-        password: getSecretSyntax(passwordSecretId),
+        username: getSecretSyntax(secretIds.username),
+        password: getSecretSyntax(secretIds.password),
       },
     ];
   }
@@ -720,6 +721,50 @@ function patchTopicName(
   return 'topics';
 }
 
+/** Whether a parsed component names at least one broker to connect to. */
+export function hasSeedBrokers(component: unknown): boolean {
+  const brokers =
+    component && typeof component === 'object' ? (component as Record<string, unknown>).seed_brokers : undefined;
+  return (Array.isArray(brokers) ? brokers : [brokers]).some((broker) => typeof broker === 'string' && broker !== '');
+}
+
+/**
+ * Points a component that would otherwise borrow the shared client at the cluster itself, so the SASL
+ * user just written is the one it connects as. Only those generated brokers get Cloud's TLS default.
+ * Returns the added keys. `resolved` is the component with aliases and merge keys applied, as the flow
+ * parser reads it.
+ */
+function ensureOwnConnection(
+  doc: Document.Parsed,
+  section: RedpandaSection,
+  componentName: string,
+  resolved: unknown
+): string[] {
+  const component = doc.getIn([section, componentName]);
+  if (!(SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) && isMap(component))) {
+    return [];
+  }
+  if (hasSeedBrokers(resolved)) {
+    return [];
+  }
+  const brokers = doc.createNode([getContextualVariableSyntax('REDPANDA_BROKERS')]);
+  if (component.has('seed_brokers')) {
+    component.set('seed_brokers', brokers);
+  } else {
+    component.items.unshift(doc.createPair('seed_brokers', brokers));
+  }
+  const added = ['seed_brokers'];
+  const resolvedTls = (resolved as { tls?: unknown } | undefined)?.tls;
+  const tls = component.get('tls', true);
+  if (resolvedTls === undefined || resolvedTls === null) {
+    component.set('tls', doc.createNode({ enabled: true }));
+    added.push('tls');
+  } else if (isMap(tls) && (resolvedTls as { enabled?: unknown }).enabled === undefined) {
+    tls.set('enabled', true);
+  }
+  return added;
+}
+
 export function patchRedpandaConfig(
   existingYaml: string,
   section: RedpandaSection,
@@ -738,9 +783,16 @@ export function patchRedpandaConfig(
   }
 
   const patchedKeys: string[] = [];
+  const resolved = readComponent(existingYaml, section, componentName).component;
 
   if (patch.topicName) {
     patchedKeys.push(patchTopicName(doc, section, componentName, patch.topicName));
+  }
+
+  // Left alone when the input already reads with it, which may come from a merge key.
+  if (patch.consumerGroup && section === 'input' && resolved?.consumer_group !== patch.consumerGroup) {
+    doc.setIn([section, componentName, 'consumer_group'], patch.consumerGroup);
+    patchedKeys.push('consumer_group');
   }
 
   if (patch.sasl) {
@@ -749,6 +801,7 @@ export function patchRedpandaConfig(
       doc.setIn(['redpanda', 'sasl'], patch.sasl);
     } else {
       doc.setIn([section, componentName, 'sasl'], patch.sasl);
+      patchedKeys.push(...ensureOwnConnection(doc, section, componentName, resolved));
     }
     patchedKeys.push('sasl');
   }
@@ -772,14 +825,65 @@ export function tryPatchRedpandaYaml(
   if (result.topicName) {
     patch.topicName = result.topicName;
   }
+  if (result.consumerGroup) {
+    patch.consumerGroup = result.consumerGroup;
+  }
   const sasl = buildSaslPatch(result);
   if (sasl) {
     patch.sasl = sasl;
   }
-  if (!(patch.topicName || patch.sasl)) {
+  if (!(patch.topicName || patch.consumerGroup || patch.sasl)) {
     return;
   }
   return patchRedpandaConfig(yamlContent, section, componentName, patch);
+}
+
+/** Whether any client logs in with the pipeline's service account, which it then can't run without. */
+export function usesServiceAccountLogin(yamlContent: string): boolean {
+  let found = false;
+  visit(parseDocument(yamlContent), {
+    Pair(_, pair) {
+      if (
+        isScalar(pair.key) &&
+        pair.key.value === 'mechanism' &&
+        isScalar(pair.value) &&
+        pair.value.value === CLOUD_SERVICE_ACCOUNT_SASL_MECHANISM
+      ) {
+        found = true;
+        return visit.BREAK;
+      }
+    },
+  });
+  return found;
+}
+
+/**
+ * One input or output component as plain values. `merge: true` resolves `<<: *anchor` keys, matching
+ * the flow parser and extractAllTopics, so values pulled from a shared anchor count as set. parseDocument
+ * collects structural errors instead of throwing, so malformed-but-parseable YAML reads as a missing
+ * component rather than a parse error.
+ */
+function readComponent(
+  yamlContent: string,
+  section: RedpandaSection,
+  componentName: string
+): { component: Record<string, unknown> | undefined; parseError: boolean } {
+  if (!yamlContent.trim()) {
+    return { component: undefined, parseError: false };
+  }
+  let parsed: unknown;
+  try {
+    parsed = parseDocument(yamlContent, { merge: true }).toJS();
+  } catch {
+    return { component: undefined, parseError: true };
+  }
+  const sectionObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[section] : undefined;
+  const component =
+    sectionObj && typeof sectionObj === 'object' ? (sectionObj as Record<string, unknown>)[componentName] : undefined;
+  if (!component || typeof component !== 'object' || Array.isArray(component)) {
+    return { component: undefined, parseError: false };
+  }
+  return { component: component as Record<string, unknown>, parseError: false };
 }
 
 /**
@@ -791,28 +895,10 @@ export function extractConnectorTopics(
   section: RedpandaSection,
   componentName: string
 ): { topics: string[] | undefined; parseError: boolean } {
-  if (!yamlContent.trim()) {
-    return { topics: undefined, parseError: false };
+  const { component: config, parseError } = readComponent(yamlContent, section, componentName);
+  if (!config) {
+    return { topics: undefined, parseError };
   }
-
-  // `merge: true` resolves `<<: *anchor` keys, matching the flow parser and extractAllTopics —
-  // a component pulling `topics` from a shared anchor must not read as "missing topic" here.
-  // parseDocument collects structural errors instead of throwing, so malformed-but-parseable
-  // YAML still reads as "no topics" rather than a parse error.
-  let parsed: unknown;
-  try {
-    parsed = parseDocument(yamlContent, { merge: true }).toJS();
-  } catch {
-    return { topics: undefined, parseError: true };
-  }
-
-  const sectionObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[section] : undefined;
-  const component =
-    sectionObj && typeof sectionObj === 'object' ? (sectionObj as Record<string, unknown>)[componentName] : undefined;
-  if (!component || typeof component !== 'object' || Array.isArray(component)) {
-    return { topics: undefined, parseError: false };
-  }
-  const config = component as Record<string, unknown>;
 
   if (Array.isArray(config.topics)) {
     const filtered = config.topics.filter((t): t is string => typeof t === 'string' && t !== '');
@@ -824,6 +910,12 @@ export function extractConnectorTopics(
   }
 
   return { topics: undefined, parseError: false };
+}
+
+/** The consumer group an input component reads with, if it names one. */
+export function extractConnectorConsumerGroup(yamlContent: string, componentName: string): string | undefined {
+  const group = readComponent(yamlContent, 'input', componentName).component?.consumer_group;
+  return typeof group === 'string' && group !== '' ? group : undefined;
 }
 
 /** Extract all referenced topic names from input/output configs. */
