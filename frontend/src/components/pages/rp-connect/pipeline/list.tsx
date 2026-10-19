@@ -106,10 +106,12 @@ import {
   pipelineListEmptyText,
   stateFilterValues,
 } from './list-utils';
+import { PIPELINE_END_RUNS, PipelineRunsCell } from './pipeline-end-chip';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { cpuToTasks } from '../tasks';
+import type { PipelineEndStatus } from '../utils/input-end-behavior';
 
 type TagPair = { key: string; value: string };
 
@@ -127,10 +129,12 @@ type Pipeline = {
   /** Empty on a deployed row: only a draft opens the start confirmation, which names these. */
   configYaml: string;
   computeUnits: number;
+  /** Whether it stops on its own — what a schedule will need. */
+  end: PipelineEndStatus;
 };
 
 const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
-  const { inputs, outputs } = parseConfigComponentsCached(apiPipeline.configYaml);
+  const { inputs, outputs, end } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
   const draft = isDraft(apiPipeline);
   return {
@@ -145,6 +149,7 @@ const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
     editedAt: timestampToMillis(apiPipeline.updateTime),
     configYaml: draft ? apiPipeline.configYaml : '',
     computeUnits: draft ? (cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0) : 0,
+    end,
   };
 };
 
@@ -183,10 +188,11 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
   );
 };
 
-// autoRemove as the built-in array filters do: an empty selection means "no filter", not "match nothing".
-const stateInFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
+// A row matches when its value is one of the selected ones (status, how it runs). autoRemove as the
+// built-in array filters do: an empty selection means "no filter", not "match nothing".
+const inSelectionFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
-stateInFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
+inSelectionFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
 const sortPriority = (row: Pipeline): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
@@ -541,6 +547,13 @@ const createColumns = ({
     cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs') as string[]} />,
   },
   {
+    id: 'end',
+    accessorFn: (row) => row.end,
+    header: 'Runs',
+    filterFn: inSelectionFilterFn,
+    cell: ({ row }) => <PipelineRunsCell status={row.original.end} />,
+  },
+  {
     id: 'tags',
     accessorFn: (row) => row.tags.map(tagFilterValue),
     header: 'Tags',
@@ -579,7 +592,7 @@ const createColumns = ({
     id: 'state',
     accessorFn: (row) => String(row.state),
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    filterFn: stateInFilterFn,
+    filterFn: inSelectionFilterFn,
     // Unknown states sort last; drafts tie-break on recency.
     sortFn: (rowA, rowB) => {
       const byState = sortPriority(rowA.original) - sortPriority(rowB.original);
@@ -796,7 +809,7 @@ const usePipelineNameSearch = (table: PipelinesTable) => {
 
   const clearFilters = useCallback(() => {
     setSearch('');
-    for (const columnId of ['name', 'inputs', 'outputs', 'tags']) {
+    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end']) {
       table.getColumn(columnId)?.setFilterValue(undefined);
     }
   }, [table]);
@@ -886,6 +899,7 @@ const PipelineListToolbar = ({
       <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
       <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
       <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
+      <DataTableFacetedFilter column={table.getColumn('end')} options={PIPELINE_END_RUNS} title="Runs" />
       <FadePresence show={nameSearch.hasActiveFilters}>
         <Button onClick={nameSearch.clearFilters} size="sm" variant="ghost">
           <X /> Clear filters

@@ -227,11 +227,20 @@ function useDiagramDialogs(
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
+  // A component that comes from a merge key, or sits inside nested wrappers, can't be rewritten safely.
+  const warnUnpatched = (componentName: string) =>
+    toast.warning('Couldn’t add it to the YAML', { description: `Add it to the ${componentName} config by hand.` });
+
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
-      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+      if (!data.topicName) {
+        return;
+      }
+      if (patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -245,6 +254,8 @@ function useDiagramDialogs(
           onServiceAccountAttached(serviceAccount);
         }
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });

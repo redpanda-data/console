@@ -22,7 +22,6 @@ import {
   useStoreApi,
   ViewportPortal,
 } from '@xyflow/react';
-import { useDebouncedValue } from 'hooks/use-debounced-value';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import {
   memo,
@@ -43,9 +42,34 @@ import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { useResilientParse } from './use-resilient-parse';
 import { computeGraphLayout, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
+
+// The first change after a quiet spell applies at once, so a visual edit shows on the canvas as it
+// lands; during a burst the latest value applies at most once per `delay`, and always last.
+function useLeadingDebouncedValue<T>(value: T, delay: number): T {
+  const [settled, setSettled] = useState(value);
+  const lastAppliedAt = useRef(0);
+  useEffect(() => {
+    if (Object.is(value, settled)) {
+      return;
+    }
+    const apply = () => {
+      lastAppliedAt.current = Date.now();
+      setSettled(value);
+    };
+    const wait = delay - (Date.now() - lastAppliedAt.current);
+    if (wait <= 0) {
+      apply();
+      return;
+    }
+    const timer = setTimeout(apply, wait);
+    return () => clearTimeout(timer);
+  }, [value, delay, settled]);
+  return settled;
+}
 // How far past the diagram the canvas may be panned, so an edge node can be brought to the middle.
 const PAN_PADDING = 240;
 
@@ -368,8 +392,13 @@ function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
   return zDown ? (alt ? 'out' : 'in') : null;
 }
 
+// Typing, or anything inside a popup (e.g. a stop-condition editor's radios), keeps its own keys.
 const isTypingTarget = (target: EventTarget | null): boolean =>
-  Boolean((target as HTMLElement | null)?.closest('input, textarea, [contenteditable="true"], .monaco-editor'));
+  Boolean(
+    (target as HTMLElement | null)?.closest(
+      'input, textarea, [contenteditable="true"], [role="dialog"], .monaco-editor'
+    )
+  );
 
 // Figma-style hold-to-activate zoom: while Z is held a click zooms toward the pointer (Option/Alt to
 // zoom out); releasing returns to pan/select. The wheel is left to the page. Ignored while typing.
@@ -944,6 +973,7 @@ type CanvasCallbacks = {
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
+  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => void;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
@@ -976,6 +1006,10 @@ function wireInsertActions(data: FlowCardData, node: Node, cb: CanvasCallbacks):
   if (data.addAction && cb.onSlotInsert) {
     const payload = data.addAction.payload;
     data.onAddChild = () => cb.onSlotInsert?.(payload);
+  }
+  if (data.stopSlot && cb.onSetStopCondition) {
+    const setStop = cb.onSetStopCondition;
+    data.onSetStopCondition = (draft) => setStop(node.id, draft);
   }
   if (node.type === 'flowInsert' && cb.onSlotInsert) {
     (data as { onInsert?: (payload: FlowInsertPayload) => void }).onInsert = cb.onSlotInsert;
@@ -1203,6 +1237,8 @@ type PipelineFlowCanvasProps = {
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
+  /** Set or clear an input's stop condition (`read_until`) from its card's stop row. */
+  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => void;
 };
 
 // Layout-derived canvas geometry: the Dagre pass plus its pan extent, size and legend vocabulary.
@@ -1246,7 +1282,7 @@ function tryCatchPairsOf(layoutEdges: Edge[]): Map<string, string> {
 
 // Parses (debounced, holding the last good graph) and lays out the YAML, plus each node's scope.
 function useCanvasGraph(configYaml: string, editable: boolean) {
-  const debouncedYaml = useDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
+  const debouncedYaml = useLeadingDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
 
   // A node's "scope" — itself plus all descendants — so selecting/hovering a container lights its whole branch.
@@ -1291,6 +1327,7 @@ function useCanvasZoom() {
 type DecoratedNodesOptions = Omit<CanvasCallbacks, 'collapsedIds' | 'toggleCollapse' | 'previousIds'> & {
   layoutNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
+  showingStale: boolean;
 };
 
 // Per-render node decoration (selection, lint, unsaved, collapse, edit actions) over the laid-out
@@ -1302,6 +1339,8 @@ function useDecoratedNodes({
   onAddTopic,
   onAddSasl,
   onSlotInsert,
+  onSetStopCondition,
+  showingStale,
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
@@ -1332,6 +1371,8 @@ function useDecoratedNodes({
       onAddTopic,
       onAddSasl,
       onSlotInsert,
+      // A stale layout's paths may no longer match the YAML, so its stop conditions are read-only.
+      onSetStopCondition: showingStale ? undefined : onSetStopCondition,
       collapsedIds,
       toggleCollapse,
       selectedNodeId,
@@ -1361,6 +1402,8 @@ function useDecoratedNodes({
     onAddTopic,
     onAddSasl,
     onSlotInsert,
+    onSetStopCondition,
+    showingStale,
     scopeOf,
   ]);
 
@@ -1389,6 +1432,7 @@ export function PipelineFlowCanvas({
   onAddConnector,
   onAddTopic,
   onAddSasl,
+  onSetStopCondition,
 }: PipelineFlowCanvasProps) {
   // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
@@ -1417,6 +1461,8 @@ export function PipelineFlowCanvas({
     onAddTopic,
     onAddSasl,
     onSlotInsert,
+    onSetStopCondition,
+    showingStale,
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,

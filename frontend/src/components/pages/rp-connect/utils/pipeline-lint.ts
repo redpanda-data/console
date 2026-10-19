@@ -11,10 +11,21 @@
 
 import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
-import { type Document, LineCounter, parseDocument } from 'yaml';
+import {
+  type Document,
+  isMap,
+  isPair,
+  isScalar,
+  LineCounter,
+  type Pair,
+  parseDocument,
+  visit,
+  type YAMLMap,
+} from 'yaml';
 
 import { type PipelineFlowNode, parseEditableNodes } from './pipeline-flow-parser';
-import { editTargetPath } from './yaml';
+import { idleTimeoutFires, isEnvRef, isIdleTimeoutParseable, isIdleTimeoutSet } from './read-until';
+import { editTargetPath, READ_UNTIL, readStopCondition, type StopCondition, slotComponentKey } from './yaml';
 
 type NodeRange = { id: string; start: number; end: number; span: number };
 
@@ -56,18 +67,31 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
     }
   };
   for (const node of nodes) {
-    // A switchCase target (processor-switch case wrapper) spans the same lines as its caseEditTarget
-    // and would win the enclosingNodeId tie — the case branch below attributes that range instead.
-    if (node.editTarget && node.editTarget.kind !== 'switchCase') {
-      pushRange(node.id, editTargetPath(node.editTarget));
-    }
-    // Attribute a case's range (incl. its `check`) to the rendered case-entry node, so a condition
-    // error selects and outlines the entry card.
-    if (node.caseEditTarget) {
-      pushRange(caseEntryId(node, nodes), editTargetPath(node.caseEditTarget));
+    for (const [id, path] of nodeRangePaths(node, nodes)) {
+      pushRange(id, path);
     }
   }
   return ranges;
+}
+
+// The YAML paths whose lines a node owns, each with the id of the node they're attributed to.
+function nodeRangePaths(node: PipelineFlowNode, nodes: PipelineFlowNode[]): [string, (string | number)[]][] {
+  const paths: [string, (string | number)[]][] = [];
+  // A switchCase target (processor-switch case wrapper) spans the same lines as its caseEditTarget
+  // and would win the enclosingNodeId tie — the case branch below attributes that range instead.
+  if (node.editTarget && node.editTarget.kind !== 'switchCase') {
+    paths.push([node.id, editTargetPath(node.editTarget)]);
+  }
+  // A wrapped input's `read_until` settings sit outside its component — attribute them to it too.
+  if (node.stopSlot?.condition) {
+    paths.push([node.id, node.stopSlot.path]);
+  }
+  // Attribute a case's range (incl. its `check`) to the rendered case-entry node, so a condition
+  // error selects and outlines the entry card.
+  if (node.caseEditTarget) {
+    paths.push([caseEntryId(node, nodes), editTargetPath(node.caseEditTarget)]);
+  }
+  return paths;
 }
 
 /**
@@ -123,6 +147,102 @@ export function localYamlLintHints(configYaml: string): LintHint[] {
       lintType: 'error',
     });
   });
+}
+
+const READ_UNTIL_ROOTS: ReadonlySet<unknown> = new Set(['input', 'input_resources']);
+
+const lintAt = (lineCounter: LineCounter, node: unknown, hint: string): LintHint => {
+  const offset = (node as { range?: [number, number, number] } | undefined)?.range?.[0] ?? 0;
+  const pos = lineCounter.linePos(offset);
+  return create(LintHintSchema, { line: pos.line, column: pos.col, hint, lintType: 'config' });
+};
+
+// The idle timeout's own problem: one Connect rejects at start, or one it accepts but never fires.
+function idleTimeoutProblem(idle: string): string | undefined {
+  if (!isIdleTimeoutParseable(idle)) {
+    return 'idle_timeout must be a duration such as 30s, 5m or 1h.';
+  }
+  if (isEnvRef(idle) || idleTimeoutFires(idle)) {
+    return;
+  }
+  return isIdleTimeoutSet(idle)
+    ? 'An idle_timeout of 0 never fires. Use a duration such as 30s.'
+    : 'A negative idle_timeout is ignored. Use a duration such as 30s.';
+}
+
+// What a resolved `read_until` is missing for Connect to build it.
+function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondition): string[] {
+  const missing: string[] = [];
+  // An unparseable timeout fails on its own, so it isn't also reported as missing.
+  const idleGiven =
+    stop.idleTimeout !== undefined && (!isIdleTimeoutParseable(stop.idleTimeout) || isIdleTimeoutSet(stop.idleTimeout));
+  if (!(stop.check || idleGiven)) {
+    missing.push('read_until needs a check or an idle_timeout to know when to stop.');
+  }
+  if (!slotComponentKey(resolved.input)) {
+    missing.push('read_until needs an input to read from.');
+  }
+  return missing;
+}
+
+// What a `read_until` value is missing for Connect to build it, or sets but never acts on, as hints on its own keys.
+// A null value (`read_until:` with nothing under it) is missing everything.
+function readUntilProblems(
+  lineCounter: LineCounter,
+  doc: Document,
+  keyNode: unknown,
+  value: YAMLMap | null
+): LintHint[] {
+  // Merge keys resolved, as Connect sees the wrapper.
+  const resolved = (value?.toJS(doc) ?? {}) as Record<string, unknown>;
+  const stop = readStopCondition(resolved);
+  const hints = missingWrapperParts(resolved, stop).map((hint) => lintAt(lineCounter, keyNode, hint));
+  const idleProblem = stop.idleTimeout === undefined ? undefined : idleTimeoutProblem(stop.idleTimeout);
+  if (idleProblem) {
+    const idlePair = value?.items.find((p) => isScalar(p.key) && p.key.value === 'idle_timeout');
+    hints.push(lintAt(lineCounter, idlePair?.key ?? keyNode, idleProblem));
+  }
+  return hints;
+}
+
+/**
+ * Stop conditions Connect's lint accepts but that fail when the pipeline starts (a `read_until` with
+ * nothing to stop on or no input, an `idle_timeout` that isn't a duration) or never fire (a zero or
+ * negative `idle_timeout`).
+ */
+export function localStopConditionLintHints(configYaml: string): LintHint[] {
+  if (!configYaml.includes(READ_UNTIL)) {
+    return [];
+  }
+  const lineCounter = new LineCounter();
+  const doc = parseDocument(configYaml, { lineCounter, merge: true });
+  if (doc.errors.length > 0) {
+    return [];
+  }
+  try {
+    return readUntilHints(doc, lineCounter);
+  } catch {
+    // Resolving a wrapper throws on excessive alias expansion; lint runs during render.
+    return [];
+  }
+}
+
+// The problems of every `read_until` under `input` or `input_resources`.
+function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
+  const hints: LintHint[] = [];
+  visit(doc, {
+    Pair(_, pair, path) {
+      const empty = pair.value === null || (isScalar(pair.value) && pair.value.value === null);
+      if (!(isScalar(pair.key) && pair.key.value === READ_UNTIL && (isMap(pair.value) || empty))) {
+        return;
+      }
+      const root = path.find((n) => isPair(n)) as Pair | undefined;
+      if (root && isScalar(root.key) && READ_UNTIL_ROOTS.has(root.key.value)) {
+        hints.push(...readUntilProblems(lineCounter, doc, pair.key, isMap(pair.value) ? pair.value : null));
+      }
+    },
+  });
+  return hints;
 }
 
 // Smallest node range containing `line` (most specific enclosing node).

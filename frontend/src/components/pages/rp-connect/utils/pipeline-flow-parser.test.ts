@@ -1668,6 +1668,12 @@ output:
       expect(nodes.find((n) => n.id === 'input-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
       expect(nodes.find((n) => n.id === 'output-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
     });
+
+    test('an input that contains itself through an alias still renders', () => {
+      const { nodes, error } = parsePipelineFlowTree('input: &a\n  broker:\n    inputs:\n      - kafka: {}\n      - *a\n');
+      expect(error).toBeUndefined();
+      expect(nodes.find((n) => n.id === 'input-broker')?.endBehavior?.kind).toBe('invalid');
+    });
   });
 });
 
@@ -1808,5 +1814,182 @@ describe('the SECTION_LABEL', () => {
       output: 'Output',
       resource: 'Resource',
     });
+  });
+});
+
+describe('stop conditions (read_until)', () => {
+  it('renders a wrapped input as the input it reads, edited at the wrapped path', () => {
+    const yaml = `
+input:
+  label: orders_in
+  read_until:
+    check: counter() >= 100
+    input:
+      redpanda:
+        topics: [orders]
+output:
+  drop: {}
+`;
+    const input = parsePipelineFlowTree(yaml).nodes.find((n) => n.id === 'input-0');
+    expect(input).toMatchObject({
+      label: 'redpanda',
+      labelText: 'orders_in',
+      topics: ['orders'],
+      editTarget: { kind: 'path', path: ['input', 'read_until', 'input'], componentType: 'input' },
+      stopSlot: { path: ['input'], condition: { check: 'counter() >= 100' }, ownEnd: { kind: 'continuous' } },
+      endBehavior: { kind: 'condition', reason: 'Stops after 100 messages.' },
+    });
+  });
+
+  it('gives an unwrapped input an empty slot and its own end', () => {
+    const input = parsePipelineFlowTree('input:\n  aws_s3: { bucket: b }').nodes.find((n) => n.id === 'input-0');
+    expect(input?.editTarget).toEqual({ kind: 'input' });
+    expect(input?.stopSlot).toEqual({ path: ['input'], ownEnd: expect.objectContaining({ kind: 'natural' }) });
+    expect(input?.endBehavior?.kind).toBe('natural');
+  });
+
+  it('gives each broker member its own slot, and keeps the broker growable when members are wrapped', () => {
+    const yaml = `
+input:
+  broker:
+    inputs:
+      - read_until:
+          idle_timeout: 30s
+          input:
+            kafka: { topics: [a] }
+      - sql_select: { table: t }
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const broker = nodes.find((n) => n.id === 'input-broker');
+    expect(broker).toMatchObject({
+      stopSlot: { path: ['input'] },
+      endBehavior: { kind: 'natural' },
+      insertSlot: { containerPath: ['input', 'broker', 'inputs'], accepts: 'input' },
+    });
+    expect(nodes.find((n) => n.id === 'input-broker-0')).toMatchObject({
+      label: 'kafka',
+      editTarget: { kind: 'path', path: ['input', 'broker', 'inputs', 0, 'read_until', 'input'] },
+      stopSlot: { path: ['input', 'broker', 'inputs', 0], condition: { idleTimeout: '30s' } },
+      endBehavior: { kind: 'condition' },
+    });
+    expect(nodes.find((n) => n.id === 'input-broker-1')).toMatchObject({
+      label: 'sql_select',
+      editTarget: { kind: 'path', path: ['input', 'broker', 'inputs', 1] },
+      stopSlot: { path: ['input', 'broker', 'inputs', 1] },
+      endBehavior: { kind: 'natural' },
+    });
+  });
+
+  it('a stop condition around a whole broker rides the broker; its members nest under the wrapper', () => {
+    const yaml = `
+input:
+  read_until:
+    idle_timeout: 1m
+    input:
+      broker:
+        inputs:
+          - kafka: {}
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    expect(nodes.find((n) => n.id === 'input-broker')).toMatchObject({
+      editTarget: { kind: 'path', path: ['input', 'read_until', 'input'] },
+      stopSlot: { path: ['input'], condition: { idleTimeout: '1m' } },
+      endBehavior: { kind: 'condition' },
+    });
+    expect(nodes.find((n) => n.id === 'input-broker-0')?.editTarget).toMatchObject({
+      path: ['input', 'read_until', 'input', 'broker', 'inputs', 0],
+    });
+  });
+
+  it('a read_until with no input yet stays a plain component', () => {
+    const input = parsePipelineFlowTree('input:\n  read_until:\n    check: "true"').nodes.find(
+      (n) => n.id === 'input-0'
+    );
+    expect(input).toMatchObject({
+      label: 'read_until',
+      editTarget: { kind: 'input' },
+      endBehavior: { kind: 'invalid' },
+      stopSlot: { locked: expect.stringContaining('no input to read from yet') },
+    });
+  });
+
+  it('a read_until wrapping another one keeps its own condition editable', () => {
+    const yaml = `
+input:
+  read_until:
+    idle_timeout: 5s
+    input:
+      read_until:
+        check: counter() >= 3
+        input: { kafka_franz: {} }
+`;
+    const input = parsePipelineFlowTree(yaml).nodes.find((n) => n.id === 'input-0');
+    expect(input).toMatchObject({
+      label: 'read_until',
+      stopSlot: { path: ['input'], condition: { idleTimeout: '5s' } },
+    });
+    expect(input?.stopSlot?.locked).toBeUndefined();
+  });
+
+  it('locks the stop condition of an input the YAML reaches through an alias or merge key', () => {
+    const yaml = `
+k: &k { kafka: {} }
+in: &in { generate: {} }
+ru: &ru
+  read_until: { check: this.done, input: { sql_select: {} } }
+input:
+  broker:
+    inputs:
+      - *k
+      - read_until: { check: this.done, input: *in }
+      - <<: *ru
+      - sql_select: {}
+`;
+    const { nodes } = parsePipelineFlowTree(yaml);
+    const lockOf = (i: number) => nodes.find((n) => n.id === `input-broker-${i}`)?.stopSlot?.locked;
+    expect(lockOf(0)).toContain('alias');
+    expect(lockOf(1)).toContain('alias');
+    expect(lockOf(2)).toContain('merge key');
+    expect(lockOf(3)).toBeUndefined();
+  });
+
+  it('reserves the broker marker row and passes the slot to the cards', () => {
+    const yaml = `
+input:
+  broker:
+    inputs:
+      - kafka: {}
+      - sql_select: {}
+`;
+    const { rfNodes } = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
+    const hub = rfNodes.find((n) => n.id === 'input-broker');
+    const member = rfNodes.find((n) => n.id === 'input-broker-0');
+    expect(hub?.type).toBe('flowSplit');
+    expect(hub?.initialHeight).toBe(56 + 30);
+    expect(member?.data).toMatchObject({
+      stopSlot: { path: ['input', 'broker', 'inputs', 0] },
+      endBehavior: { kind: 'continuous' },
+    });
+  });
+
+  it('reserves a stop row on every input card, inside its own width', () => {
+    const yaml = `
+input:
+  broker:
+    inputs:
+      - read_until: { idle_timeout: 30s, check: counter() >= 1000, input: { kafka: {} } }
+      - sql_select: {}
+pipeline:
+  processors:
+    - sql_select: {}
+`;
+    const { rfNodes } = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
+    const [a, b] = ['input-broker-0', 'input-broker-1'].map((id) => rfNodes.find((n) => n.id === id));
+    const processor = rfNodes.find((n) => n.id === 'proc-0');
+    expect(a?.initialWidth).toBe(256);
+    expect(a?.initialHeight).toBe(b?.initialHeight);
+    // The same component without a stop row is one row shorter.
+    expect((b?.initialHeight ?? 0) - (processor?.initialHeight ?? 0)).toBe(30);
+    expect(a?.position.x).toBe(b?.position.x);
   });
 });

@@ -15,9 +15,28 @@ function MockPipelineFlowCanvas(props: {
   onSelectNode?: (id: string, t: unknown) => void;
   onClearSelection?: () => void;
   onInsert?: (index: number) => void;
+  onSetStopCondition?: (id: string, draft: unknown) => void;
 }) {
   return (
     <div data-configyaml={props.configYaml} data-testid="flow-canvas">
+      <button onClick={() => props.onSetStopCondition?.('input-0', { idleTimeout: '30s' })} type="button">
+        set-input-stop
+      </button>
+      <button onClick={() => props.onSetStopCondition?.('input-0', null)} type="button">
+        clear-input-stop
+      </button>
+      <button
+        onClick={() =>
+          props.onSelectNode?.('input-broker-0', {
+            kind: 'path',
+            path: ['input', 'broker', 'inputs', 0, 'read_until', 'input'],
+            componentType: 'input',
+          })
+        }
+        type="button"
+      >
+        select-wrapped-member
+      </button>
       <button
         onClick={() =>
           props.onSelectNode?.('input-0', {
@@ -612,5 +631,164 @@ output:
       renderPanel({ onBrowseTemplates: rs.fn(), yamlContent: 'not-a-pipeline: true\nother: value' });
       expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument();
     });
+  });
+});
+
+function StopHarness({ initialYaml = sampleYaml }: { initialYaml?: string }) {
+  const [yaml, setYaml] = useState(initialYaml);
+  return (
+    <PipelineEditorProvider>
+      <VisualEditorPanel
+        componentList={{} as ComponentList}
+        components={[]}
+        mode="edit"
+        onYamlChange={setYaml}
+        yamlContent={yaml}
+      />
+    </PipelineEditorProvider>
+  );
+}
+
+const WRAPPED_BROKER_YAML =
+  'input:\n  broker:\n    inputs:\n      - read_until:\n          idle_timeout: 5s\n          input:\n            kafka: {}\n      - aws_s3: {}\noutput:\n  drop: {}\n';
+
+const ALIASED_YAML =
+  'defs:\n  whole: &whole\n    generate:\n      mapping: root = 1\ninput:\n  read_until:\n    idle_timeout: 5s\n    input: *whole\noutput:\n  drop: {}\n';
+
+// Starts on `sampleYaml`; its load-aliased button swaps in `ALIASED_YAML`.
+function AliasHarness() {
+  const [yaml, setYaml] = useState(sampleYaml);
+  return (
+    <PipelineEditorProvider>
+      <button onClick={() => setYaml(ALIASED_YAML)} type="button">
+        load-aliased
+      </button>
+      <VisualEditorPanel
+        componentList={{} as ComponentList}
+        components={[]}
+        mode="edit"
+        onYamlChange={setYaml}
+        yamlContent={yaml}
+      />
+    </PipelineEditorProvider>
+  );
+}
+
+describe('the VisualEditorPanel stop conditions', () => {
+  const canvasYaml = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
+
+  test('setting one wraps the input in read_until, and the inspector stays on the input', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('select-input'));
+    expect(screen.getByTestId('stop-condition-section')).toHaveTextContent(
+      'Generates messages until the pipeline is stopped.'
+    );
+    expect(screen.getByTestId('pipeline-end-chip')).toHaveTextContent('Runs continuously');
+
+    await user.click(screen.getByText('set-input-stop'));
+
+    expect(canvasYaml()).toContain('read_until:\n    idle_timeout: 30s\n    input:\n      generate:');
+    // Wrapping moved the component's path; the selection followed it instead of closing.
+    expect(screen.getByTestId('stop-condition-section')).toHaveTextContent(
+      'Stops after 30 seconds without new messages.'
+    );
+    expect(screen.getByTestId('pipeline-end-chip')).toHaveTextContent('Stops on its own');
+  });
+
+  test('the inspector names an input listed after its own processors', async () => {
+    const user = userEvent.setup();
+    render(
+      <StopHarness
+        initialYaml={`input:\n  processors:\n    - mapping: root = this\n${sampleYaml.slice('input:\n'.length)}`}
+      />
+    );
+    await user.click(screen.getByText('select-input'));
+    expect(screen.getByTestId('stop-condition-section')).toHaveTextContent(
+      'Generates messages until the pipeline is stopped.'
+    );
+  });
+
+  test('clearing it puts the input back as it was', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('set-input-stop'));
+    await user.click(screen.getByText('clear-input-stop'));
+    expect(canvasYaml()).not.toContain('read_until');
+    expect(canvasYaml()).toContain("input:\n  generate:\n    mapping: 'root = {}'");
+  });
+
+  test('a pending inspector edit lands before the input is wrapped', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('select-input'));
+    const editor = screen.getByTestId('node-yaml');
+    await user.clear(editor);
+    await user.type(editor, 'generate:{enter}  mapping: root = 42');
+
+    await user.click(screen.getByText('set-input-stop'));
+
+    expect(canvasYaml()).toContain('read_until:');
+    expect(canvasYaml()).toContain('mapping: root = 42');
+  });
+
+  test('an edit the inspector can’t apply yet survives setting a stop condition', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('select-input'));
+    const editor = screen.getByTestId('node-yaml');
+    await user.clear(editor);
+    await user.type(editor, 'generate:{enter}  mapping: [[');
+
+    await user.click(screen.getByText('set-input-stop'));
+
+    expect(canvasYaml()).toContain('read_until:');
+    // Same node, so the same editor: the half-typed text is still there to finish.
+    expect(editor).toBeInTheDocument();
+    expect(screen.getByTestId('node-yaml')).toHaveValue('generate:\n  mapping: [');
+  });
+
+  test('undoing after a flushed edit takes off only the stop condition', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('select-input'));
+    const editor = screen.getByTestId('node-yaml');
+    await user.clear(editor);
+    await user.type(editor, 'generate:{enter}  mapping: root = 42');
+    await user.click(screen.getByText('set-input-stop'));
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(canvasYaml()).not.toContain('read_until');
+    expect(canvasYaml()).toContain('mapping: root = 42');
+  });
+
+  test('deleting a wrapped broker member removes its stop condition with it', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness initialYaml={WRAPPED_BROKER_YAML} />);
+    await user.click(screen.getByText('select-wrapped-member'));
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent('kafka node and its stop condition');
+    await user.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(canvasYaml()).not.toContain('read_until');
+    expect(canvasYaml()).not.toContain('kafka');
+    expect(canvasYaml()).toContain('aws_s3');
+  });
+
+  test('a selected input that moves where it can’t be followed closes instead of looping', async () => {
+    const user = userEvent.setup();
+    render(<AliasHarness />);
+    await user.click(screen.getByText('select-input'));
+    expect(screen.getByTestId('stop-condition-section')).toBeInTheDocument();
+    await user.click(screen.getByText('load-aliased'));
+    expect(canvasYaml()).toBe(ALIASED_YAML);
+  });
+
+  test('undo takes the stop condition off again', async () => {
+    const user = userEvent.setup();
+    render(<StopHarness />);
+    await user.click(screen.getByText('set-input-stop'));
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(canvasYaml()).toBe(sampleYaml);
   });
 });

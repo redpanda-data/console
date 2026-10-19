@@ -12,7 +12,7 @@
 import type { Document } from 'yaml';
 
 import { parseEditableNodes } from './pipeline-flow-parser';
-import { type EditTarget, editTargetPath } from './yaml';
+import { editTargetPath } from './yaml';
 
 export type NodeSignatures = {
   // Signature of each editable node's config, keyed by node id, for node-by-node comparison.
@@ -21,9 +21,9 @@ export type NodeSignatures = {
   parentOf: Map<string, string | undefined>;
 };
 
-// The JSON of the config an edit target addresses, so equal configs sign equally.
-function editTargetSignature(doc: Document, target: EditTarget): string {
-  const value = doc.getIn(editTargetPath(target)) as { toJSON?: () => unknown } | undefined;
+// The JSON of the config at a YAML path, so equal configs sign equally.
+function configSignature(doc: Document, path: ReturnType<typeof editTargetPath>): string {
+  const value = doc.getIn(path) as { toJSON?: () => unknown } | undefined;
   return JSON.stringify(value?.toJSON?.() ?? value ?? null);
 }
 
@@ -32,7 +32,8 @@ function collectNodeSignatures(yaml: string, out: NodeSignatures): void {
   for (const node of nodes) {
     out.parentOf.set(node.id, node.parentId);
     if (node.editTarget) {
-      out.signatures.set(node.id, editTargetSignature(doc, node.editTarget));
+      // An input signs its whole slot, so a stop-condition (`read_until`) edit marks it too.
+      out.signatures.set(node.id, configSignature(doc, node.stopSlot?.path ?? editTargetPath(node.editTarget)));
     }
   }
 }
