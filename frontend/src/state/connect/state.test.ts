@@ -31,6 +31,7 @@ function createMockProperty(overrides: {
   custom_default_value?: string;
   value?: string | null;
   required?: boolean;
+  errors?: string[];
 }): ConnectorProperty {
   return {
     definition: {
@@ -50,9 +51,31 @@ function createMockProperty(overrides: {
       name: overrides.name,
       value: overrides.value ?? null,
       recommended_values: [],
-      errors: [],
+      errors: overrides.errors ?? [],
       visible: true,
     },
+    metadata: {},
+  };
+}
+
+// Creates a ConnectorProperty whose entire value section is null.
+// Kafka Connect returns this for deprecated/inapplicable properties,
+// e.g. database.out.server.name in Debezium Oracle 3.5.x (LogMiner mode).
+function createNullValueProperty(name: string): ConnectorProperty {
+  return {
+    definition: {
+      name,
+      type: DataType.String as ConnectorProperty['definition']['type'],
+      required: false,
+      default_value: null,
+      importance: PropertyImportance.High,
+      documentation: '',
+      width: PropertyWidth.Medium,
+      display_name: name,
+      dependents: [],
+      order: 0,
+    },
+    value: null,
     metadata: {},
   };
 }
@@ -216,6 +239,88 @@ describe('ConnectorPropertiesStore', () => {
       // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');
       expect(store.propsByName.get('bool.custom.false')?.value).toBe('false');
+    });
+  });
+
+  describe('null value section handling', () => {
+    // Regression tests for Debezium Oracle 3.5.x returning "value": null for
+    // deprecated XStream properties (e.g. database.out.server.name).
+
+    it('excludes properties with a null value section from initConfig', async () => {
+      const properties = [
+        createMockProperty({ name: 'topic.prefix', value: 'cdc_oracle' }),
+        createNullValueProperty('database.out.server.name'),
+      ];
+
+      mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
+
+      const store = new ConnectorPropertiesStore('test-cluster', 'io.example.Connector', 'source', undefined);
+      await vi.waitFor(() => expect(store.initPending).toBe(false));
+
+      // The null-value property must be absent; the valid one must be present.
+      expect(store.propsByName.has('database.out.server.name')).toBe(false);
+      expect(store.propsByName.has('topic.prefix')).toBe(true);
+    });
+
+    it('does not throw when validate() response contains a null value section', async () => {
+      // initConfig: only valid properties
+      mockValidateConnectorConfig.mockResolvedValue(
+        createMockValidationResult([createMockProperty({ name: 'topic.prefix', value: 'cdc_oracle' })])
+      );
+
+      const store = new ConnectorPropertiesStore('test-cluster', 'io.example.Connector', 'source', undefined);
+      await vi.waitFor(() => expect(store.initPending).toBe(false));
+
+      // validate(): mix of valid and null-value property
+      mockValidateConnectorConfig.mockResolvedValue(
+        createMockValidationResult([
+          createMockProperty({ name: 'topic.prefix', value: 'cdc_oracle', errors: ['required field'] }),
+          createNullValueProperty('database.out.server.name'),
+        ])
+      );
+
+      await expect(store.validate({ 'topic.prefix': 'cdc_oracle' })).resolves.not.toThrow();
+
+      expect(store.propsByName.has('database.out.server.name')).toBe(false);
+      // Errors reported by the validate response should be reflected on the property.
+      expect(store.propsByName.get('topic.prefix')?.showErrors).toBe(true);
+    });
+
+    it('does not throw when validate() response contains null recommended_values or errors', async () => {
+      mockValidateConnectorConfig.mockResolvedValue(
+        createMockValidationResult([createMockProperty({ name: 'topic.prefix', value: 'cdc_oracle' })])
+      );
+
+      const store = new ConnectorPropertiesStore('test-cluster', 'io.example.Connector', 'source', undefined);
+      await vi.waitFor(() => expect(store.initPending).toBe(false));
+
+      // validate(): property with null recommended_values and null errors inside value
+      const propertyWithNullFields: ConnectorProperty = {
+        definition: {
+          name: 'topic.prefix',
+          type: DataType.String as ConnectorProperty['definition']['type'],
+          required: false,
+          default_value: null,
+          importance: PropertyImportance.High,
+          documentation: '',
+          width: PropertyWidth.Medium,
+          display_name: 'topic.prefix',
+          dependents: [],
+          order: 0,
+        },
+        value: {
+          name: 'topic.prefix',
+          value: 'cdc_oracle',
+          recommended_values: null,
+          errors: null,
+          visible: true,
+        },
+        metadata: {},
+      };
+
+      mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult([propertyWithNullFields]));
+
+      await expect(store.validate({ 'topic.prefix': 'cdc_oracle' })).resolves.not.toThrow();
     });
   });
 
