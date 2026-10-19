@@ -10,6 +10,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, rs } from '@rstest/core';
+import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
 import { render, screen } from 'test-utils';
@@ -82,6 +83,9 @@ const ADD_OUTPUT_RE = /add output/i;
 const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
 const NO_OUTPUT_NOTE_RE = /no output configured/i;
 const STALE_LAYOUT_RE = /showing the last valid layout/i;
+
+// An input card's stop row: its visible text, then what it does.
+const STOP_BUTTON_RE = /stop condition for generate$/;
 
 // The minimap svg's accessible name.
 const OVERVIEW_LABEL_RE = /pipeline overview/i;
@@ -248,5 +252,64 @@ describe('PipelineMiniMap — viewport outside the pan extent', () => {
     expect(y).toBeGreaterThanOrEqual(0);
     expect(x + w).toBeLessThanOrEqual(svgWidth);
     expect(y + h).toBeLessThanOrEqual(svgHeight);
+  });
+});
+
+describe('PipelineFlowCanvas — stop conditions', () => {
+  const BROKER_YAML = `input:
+  broker:
+    inputs:
+      - read_until:
+          idle_timeout: 30s
+          input:
+            kafka_franz: { topics: [a] }
+      - aws_s3: { bucket: b }
+      - redpanda: { topics: [c] }
+output:
+  drop: {}`;
+
+  it('gives every input card a row saying how it stops, and sums them up on the broker', async () => {
+    render(<PipelineFlowCanvas configYaml={BROKER_YAML} />);
+    const rows = await screen.findAllByTestId('stop-row');
+    expect(rows.map((r) => r.textContent).sort()).toEqual(
+      [
+        'Stopsafter 30s idle',
+        'Stopswhen its data runs out',
+        'Continuousno stop condition',
+        'Continuous1 of 3 inputs never stops',
+      ].sort()
+    );
+  });
+
+  it('opens the editor without selecting the card behind it', async () => {
+    const user = userEvent.setup();
+    const onSelectNode = rs.fn();
+    const onSetStopCondition = rs.fn();
+    render(
+      <PipelineFlowCanvas
+        configYaml={VALID_PIPELINE_YAML}
+        onSelectNode={onSelectNode}
+        onSetStopCondition={onSetStopCondition}
+        onSlotInsert={rs.fn()}
+      />
+    );
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('When should generate stop?');
+    expect(onSelectNode).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('radio', { name: 'When it goes idle' }));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onSetStopCondition).toHaveBeenCalledWith('input-0', { idleTimeout: '30s' });
+    expect(onSelectNode).not.toHaveBeenCalled();
+  });
+
+  it('is read-only in view mode', async () => {
+    const user = userEvent.setup();
+    render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    expect(
+      await screen.findByText('Generates messages until the pipeline is stopped.', { exact: false })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
 });

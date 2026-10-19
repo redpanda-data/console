@@ -46,19 +46,24 @@ import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlString
 
 import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
 import { ChildItemsList, formFieldKeys, type InspectorChildItem, NodeConfigForm } from './node-config-form';
+import { StopConditionSection } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
+import type { InputEndBehavior } from '../utils/input-end-behavior';
+import type { StopSlot } from '../utils/pipeline-flow-parser';
+import type { StopConditionDraft } from '../utils/read-until';
 import { findConnectComponent } from '../utils/schema';
 import {
   appendResource,
   buildInsertableComponent,
+  componentKeyAt,
   countResourceReferences,
   type EditTarget,
   editTargetPath,
-  firstKey,
   getComponentAt,
   listResourceLabels,
+  READ_UNTIL,
   type ResourceKind,
   renameResourceReferences,
   resourceArrayKey,
@@ -67,6 +72,18 @@ import {
   setComponentAt,
   targetComponentType,
 } from '../utils/yaml';
+
+// Which node the inspector shows: its path with any `read_until` wrapper steps left out, so setting or
+// clearing a stop condition keeps the same form and its unsaved edits.
+function nodeIdentity(target: EditTarget): string {
+  const path = editTargetPath(target);
+  return JSON.stringify(
+    path.filter(
+      (step, i) =>
+        !((step === READ_UNTIL && path[i + 1] === 'input') || (step === 'input' && path[i - 1] === READ_UNTIL))
+    )
+  );
+}
 
 // Default component per kind for the dangling-reference quick-fix.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
@@ -114,6 +131,10 @@ type NodeInspectorProps = {
   resetToken?: number;
   /** Opens the Add-topic dialog for a top-level input/output; the result is patched into its YAML. */
   onAddTopic?: (section: string, componentName: string) => void;
+  /** An input's stop condition (`read_until`), shown under the header. */
+  stop?: { slot: StopSlot; effective: InputEndBehavior; isGroup?: boolean };
+  /** Set or clear that stop condition; absent in read-only mode. */
+  onSetStopCondition?: (draft: StopConditionDraft | null) => void;
 };
 
 /** The inspector's pending-edit hooks, registered into the panel's `commitRef`. */
@@ -123,6 +144,16 @@ export type PendingNodeCommit = {
   /** Drop the pending edits without applying (delete / undo / redo). */
   discard: () => void;
 };
+
+const WRAPPED_TOP_LEVEL_INPUT = JSON.stringify(['input', READ_UNTIL, 'input']);
+
+// The top-level section a target's component is, counting an input inside its `read_until`.
+function topLevelSection(target: EditTarget | null): 'input' | 'output' | undefined {
+  if (target?.kind === 'input' || target?.kind === 'output') {
+    return target.kind;
+  }
+  return target?.kind === 'path' && JSON.stringify(target.path) === WRAPPED_TOP_LEVEL_INPUT ? 'input' : undefined;
+}
 
 // Lint message falling on a switch case's routing `check` line, so the condition field can show its own error.
 function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {
@@ -167,6 +198,8 @@ export function NodeInspector({
   onRequestCommit,
   resetToken,
   onAddTopic,
+  stop,
+  onSetStopCondition,
 }: NodeInspectorProps) {
   const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
   // The routing condition for a case-entry node, read from its switch case.
@@ -234,17 +267,19 @@ export function NodeInspector({
     };
   }, [commit, commitRef]);
   // Clear pending drafts when the selected node changes — the inspector instance is reused.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: target/caseTarget are change triggers; the body only resets refs.
+  const targetIdentity = target ? nodeIdentity(target) : '';
+  const caseIdentity = caseTarget ? JSON.stringify(editTargetPath(caseTarget)) : '';
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the identities are change triggers; the body only resets refs.
   useEffect(() => {
     componentDraftRef.current = null;
     conditionDraftRef.current = null;
-  }, [target, caseTarget]);
+  }, [targetIdentity, caseIdentity]);
   // Lint problem on the condition's `check` line, so the field shows its own error, not just the banner.
   const conditionError = useMemo(
     () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
     [yaml, caseTarget, lintHints]
   );
-  const componentName = component ? firstKey(component) : undefined;
+  const componentName = component && target ? componentKeyAt(target, component) : undefined;
 
   const spec = useMemo(() => {
     if (!(target && componentName)) {
@@ -283,13 +318,13 @@ export function NodeInspector({
 
   // Create-topic is patched by section+componentName, which only resolves for top-level
   // input/output nodes; nested topic fields still get the picker, just not the create flow.
-  const targetKind = target?.kind;
+  const section = topLevelSection(target);
   const createTopicForNode = useMemo(() => {
-    if (readOnly || !(onAddTopic && componentName) || !(targetKind === 'input' || targetKind === 'output')) {
+    if (readOnly || !(onAddTopic && componentName && section)) {
       return;
     }
-    return () => onAddTopic(targetKind, componentName);
-  }, [readOnly, onAddTopic, componentName, targetKind]);
+    return () => onAddTopic(section, componentName);
+  }, [readOnly, onAddTopic, componentName, section]);
 
   if (!(target && component && componentName)) {
     return <InspectorEmptyState readOnly={readOnly} />;
@@ -387,6 +422,15 @@ export function NodeInspector({
       {danglingRef && !readOnly ? (
         <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
       ) : null}
+      {stop ? (
+        <StopConditionSection
+          effective={stop.effective}
+          isGroup={stop.isGroup}
+          name={componentName}
+          onApply={readOnly ? undefined : onSetStopCondition}
+          slot={stop.slot}
+        />
+      ) : null}
       <InspectorBody
         childItems={childItems}
         component={component}
@@ -466,7 +510,7 @@ const InspectorBody = ({
         // sibling with identical config can't inherit dirty state); the token remounts on undo/redo,
         // dropping stale edit state. Same-node saved-value changes (field-blur commits, Topic/User
         // dialogs) re-sync IN PLACE inside the form, so focus and scroll survive a commit.
-        key={`${JSON.stringify(editTargetPath(target))}:${resetToken ?? 0}`}
+        key={`${nodeIdentity(target)}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
@@ -496,7 +540,7 @@ const InspectorBody = ({
       {conditionSection}
       <RawComponentEditor
         component={component}
-        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        key={`${nodeIdentity(target)}:${JSON.stringify(component)}`}
         onConfigChange={reportComponentDraft}
       />
     </>

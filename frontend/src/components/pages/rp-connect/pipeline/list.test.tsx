@@ -90,7 +90,7 @@ const FIXTURES: Fixture[] = [
     id: 'ccc333',
     displayName: 'nightly-export',
     state: Pipeline_State.STOPPED,
-    inputs: ['generate'],
+    inputs: ['sql_select'],
     outputs: ['gcp_cloud_storage'],
   },
   {
@@ -167,6 +167,7 @@ const rowFor = (displayName: string) => {
 };
 
 const SEARCH_INPUT_RE = /search pipelines/i;
+const UNTIL_DONE_RE = /Until done/;
 const CLEAR_FILTERS_RE = /clear filters/i;
 
 // Every row links to its pipeline, so the link text is the visible rows.
@@ -414,6 +415,19 @@ describe('PipelineListPage', () => {
         expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
       });
     });
+  });
+
+  it('says whether each pipeline stops on its own, and filters on it', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    expect(within(rowFor('nightly-export')).getByText('Until done')).toBeInTheDocument();
+    expect(within(rowFor('orders-enrichment')).getByText('Continuously')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Runs' }));
+    await user.click(await screen.findByRole('option', { name: UNTIL_DONE_RE }));
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
   });
 
   it('collapses repeated connectors into a single badge with a multiplier', async () => {

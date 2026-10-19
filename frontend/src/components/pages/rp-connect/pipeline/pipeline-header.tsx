@@ -47,6 +47,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { PipelineEndMeta } from './pipeline-end-chip';
 import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
 import {
   alternateRunIntents,
@@ -57,6 +58,7 @@ import {
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
+import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -262,6 +264,12 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
   );
 };
 
+// Whether the pipeline stops on its own, for the meta row (null with no input to judge).
+function usePipelineEndMeta(configYaml: string | undefined): ReactNode {
+  const summary = useMemo(() => summarizePipelineEndYaml(configYaml ?? ''), [configYaml]);
+  return summary.status === 'none' ? null : <PipelineEndMeta summary={summary} />;
+}
+
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -285,6 +293,7 @@ export function PipelineViewHeader({
     () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
     [pipeline.configYaml]
   );
+  const endMeta = usePipelineEndMeta(pipeline.configYaml);
 
   const viewingDraft = isDraft(pipeline);
   const editedAt = timestampToMillis(pipeline.updateTime);
@@ -296,6 +305,7 @@ export function PipelineViewHeader({
       key: 'topics',
       node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
     },
+    { key: 'end', node: endMeta },
     {
       key: 'url',
       node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
