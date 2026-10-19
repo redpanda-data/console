@@ -37,6 +37,7 @@ import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/co
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
+  Box,
   Check,
   ChevronDown,
   ChevronRight,
@@ -74,6 +75,13 @@ import {
 } from './visual-debuggers';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
+import {
+  getShadowBoxSimulatorOptions,
+  isShadowBoxSimulatorEnabled,
+  resetShadowBoxSimulator,
+  setShadowBoxSimulatorEnabled,
+  setShadowBoxSimulatorOptions,
+} from '../../utils/shadow-box-simulator';
 import { FEATURE_FLAGS } from '../constants';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
@@ -389,6 +397,85 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const SIMULATOR_TOGGLES = [
+  {
+    id: 'unreachableBroker',
+    label: 'A broker never answers',
+    description: 'The last broker never confirms, so Box stays in Boxing and that broker reports an error.',
+  },
+  {
+    id: 'blockingMigration',
+    label: 'An unfinished data migration blocks Box',
+    description: 'Box fails with FAILED_PRECONDITION, the way it does while a data migration runs.',
+  },
+] as const;
+
+function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
+  const enabled = isShadowBoxSimulatorEnabled();
+  const options = getShadowBoxSimulatorOptions();
+  const flagOn = Boolean(getEffectiveFlags().enableShadowBoxing);
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {flagOn ? null : (
+        <div className="rounded-md border border-warning-line bg-warning-wash px-3 py-2 text-body-sm">
+          The <InlineCode>enableShadowBoxing</InlineCode> flag is off, so the shadow boxing UI stays hidden. Turn it on
+          in Feature flags (or in Cloud UI when embedded).
+        </div>
+      )}
+      <div className="overflow-hidden rounded-md border">
+        <div className="flex items-center gap-2.5 border-b px-3 py-1.5">
+          <Switch
+            checked={enabled}
+            onCheckedChange={(checked) => {
+              setShadowBoxSimulatorEnabled(checked);
+              onMutate();
+            }}
+            testId="debug-shadow-box-simulator"
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className="font-medium text-body-sm">Simulate the Shadow Box API</div>
+            <div className="text-body-sm text-muted-foreground">
+              Answers ShadowBoxService in the browser, per cluster. Cloud UI on the same origin reads the same simulated
+              boxes.
+            </div>
+          </div>
+        </div>
+        {SIMULATOR_TOGGLES.map(({ id, label, description }) => (
+          <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0" key={id}>
+            <Switch
+              checked={options[id]}
+              disabled={!enabled}
+              onCheckedChange={(checked) => {
+                setShadowBoxSimulatorOptions({ [id]: checked });
+                onMutate();
+              }}
+            />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className="font-medium text-body-sm">{label}</div>
+              <div className="text-body-sm text-muted-foreground">{description}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div>
+        <Button
+          icon={<Trash2 />}
+          onClick={() => {
+            resetShadowBoxSimulator();
+            toast.success('Reset every simulated shadow box to unboxed');
+            onMutate();
+          }}
+          size="xs"
+          variant="destructive-ghost"
+        >
+          Reset simulated boxes
+        </Button>
       </div>
     </div>
   );
@@ -762,7 +849,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
+type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'shadowbox' | 'storage' | 'env' | 'configs';
 
 const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   overview: {
@@ -782,6 +869,10 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
     title: 'Feature flags',
     description:
       'Override config.featureFlags locally. Overrides persist to localStorage; reload after toggling — most components read flags during render.',
+  },
+  shadowbox: {
+    title: 'Shadow box',
+    description: 'Stand in for the Shadow Box API, which no released Redpanda serves yet, and force its failure modes.',
   },
   storage: {
     title: 'Storage',
@@ -811,6 +902,7 @@ const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: Re
     items: [
       { id: 'visual', label: 'Visual', icon: <Eye className="h-3.5 w-3.5 shrink-0" /> },
       { id: 'flags', label: 'Feature flags', icon: <Flag className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'shadowbox', label: 'Shadow box', icon: <Box className="h-3.5 w-3.5 shrink-0" /> },
     ],
   },
   {
@@ -916,6 +1008,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         return <VisualPanel onMutate={forceUpdate} />;
       case 'flags':
         return <FeatureFlagsPanel onMutate={forceUpdate} />;
+      case 'shadowbox':
+        return <ShadowBoxPanel onMutate={forceUpdate} />;
       case 'storage':
         return <StoragePanel />;
       case 'env':
