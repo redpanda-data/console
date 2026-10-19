@@ -107,6 +107,7 @@ import {
   stateFilterValues,
 } from './list-utils';
 import { PIPELINE_END_RUNS, PipelineRunsCell } from './pipeline-end-chip';
+import { areSchedulesEnabled, PipelineScheduleLine } from './pipeline-schedule';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { TabKafkaConnect } from '../../connect/overview';
 import { ConnectorLogo } from '../onboarding/connector-logo';
@@ -551,7 +552,15 @@ const createColumns = ({
     accessorFn: (row) => row.end,
     header: 'Runs',
     filterFn: inSelectionFilterFn,
-    cell: ({ row }) => <PipelineRunsCell status={row.original.end} />,
+    cell: ({ row }) =>
+      areSchedulesEnabled() ? (
+        <div className="flex flex-col items-start gap-0.5">
+          <PipelineRunsCell status={row.original.end} />
+          <PipelineScheduleLine end={{ status: row.original.end }} pipelineId={row.original.id} />
+        </div>
+      ) : (
+        <PipelineRunsCell status={row.original.end} />
+      ),
   },
   {
     id: 'tags',
