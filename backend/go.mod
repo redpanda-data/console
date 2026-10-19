@@ -7,8 +7,8 @@ require (
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260323171043-6e06f84ad823.1
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.20.0-20260729012103-56ecb1a5ae87.1
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260729012103-56ecb1a5ae87.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.20.0-20261016223653-f6cd9cf86d2e.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20261016223653-f6cd9cf86d2e.1
 	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
 	connectrpc.com/connect v1.20.0

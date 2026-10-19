@@ -73,6 +73,35 @@ export const updateShadowLink = ShadowLinkService.method.updateShadowLink;
 export const failOver = ShadowLinkService.method.failOver;
 
 /**
+ * PauseTask
+ *
+ * Pauses one metadata sync task of a shadow link. The task enters the
+ * `paused` state and stops syncing until it is resumed; the other tasks
+ * of the link are unaffected. This sets the same `paused` option as
+ * `UpdateShadowLink` does; the most recent write from either path wins.
+ * Pausing the `Schema Registry Shadowing` task also allows client writes
+ * again to the destination contexts that the link's `source_filter` and
+ * `destination` select; that task can only be paused when the link
+ * shadows the Schema Registry over its API
+ * (`shadow_schema_registry_api`). A task cannot be paused or resumed
+ * after a failover has started on the link, so a task paused beforehand
+ * keeps those contexts writable throughout the failover.
+ *
+ * @generated from rpc redpanda.core.admin.v2.ShadowLinkService.PauseTask
+ */
+export const pauseTask = ShadowLinkService.method.pauseTask;
+
+/**
+ * ResumeTask
+ *
+ * Resumes a paused metadata sync task of a shadow link. A task cannot be
+ * resumed after a failover has started on the link.
+ *
+ * @generated from rpc redpanda.core.admin.v2.ShadowLinkService.ResumeTask
+ */
+export const resumeTask = ShadowLinkService.method.resumeTask;
+
+/**
  * GetShadowTopic
  *
  * Returns information about a shadow topic on a shadow link.

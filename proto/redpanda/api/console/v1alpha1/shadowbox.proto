@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package redpanda.api.console.v1alpha1;
+
+import "redpanda/api/auth/v1/authorization.proto";
+import "redpanda/core/admin/v2/shadow_box.proto";
+
+// ShadowBoxService exposes the cluster's shadow box, the fence an operator puts
+// on a shadow link's source cluster before failing the link over. Every RPC
+// passes through to the Redpanda Admin API's ShadowBoxService.
+service ShadowBoxService {
+  // GetShadowBoxStatus reports the box as the controller leader has it, and
+  // each broker's copy.
+  rpc GetShadowBoxStatus(core.admin.v2.GetShadowBoxStatusRequest) returns (core.admin.v2.GetShadowBoxStatusResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // GetShadowBoxBrokerStatus reports one broker's copy of the box, answered by
+  // that broker. It works when the cluster has no controller leader, so
+  // GetShadowBoxStatus can't answer.
+  rpc GetShadowBoxBrokerStatus(core.admin.v2.GetShadowBoxBrokerStatusRequest) returns (core.admin.v2.GetShadowBoxBrokerStatusResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // UpdateShadowBoxSettings saves the settings that Box uses.
+  rpc UpdateShadowBoxSettings(core.admin.v2.UpdateShadowBoxSettingsRequest) returns (core.admin.v2.UpdateShadowBoxSettingsResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Box boxes the cluster with the saved settings.
+  rpc Box(core.admin.v2.BoxRequest) returns (core.admin.v2.BoxResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Unbox releases the box.
+  rpc Unbox(core.admin.v2.UnboxRequest) returns (core.admin.v2.UnboxResponse) {
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
