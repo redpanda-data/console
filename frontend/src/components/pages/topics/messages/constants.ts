@@ -32,6 +32,7 @@ export const PAYLOAD_ENCODING_PAIRS = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
   { value: PayloadEncoding.NULL, label: 'None (Null)' },
   { value: PayloadEncoding.AVRO, label: 'AVRO' },
+  { value: PayloadEncoding.AVRO_GLUE, label: 'AVRO (AWS Glue)' },
   { value: PayloadEncoding.PROTOBUF, label: 'Protobuf' },
   { value: PayloadEncoding.PROTOBUF_SCHEMA, label: 'Protobuf Schema' },
   { value: PayloadEncoding.JSON, label: 'JSON' },

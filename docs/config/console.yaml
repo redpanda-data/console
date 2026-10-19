@@ -264,7 +264,23 @@ serde:
     # enabled: false
     # List of topic name regexes, defaults to /.*/
     # topicNames: ["/.*/"]
-
+  # AWS Glue Schema Registry is used to deserialize Avro encoded records that
+  # were produced with the AWS Glue serializers. Records carry the schema
+  # version id, so no registry name has to be configured here.
+  # Serializing (producing) records in this format is not supported.
+  # Credentials are resolved through the default AWS credential chain
+  # (environment variables, shared config files, IAM roles for service
+  # accounts, EC2/ECS instance metadata).
+  # glueSchemaRegistry:
+    # enabled: false
+    # AWS region that hosts the registry. Required when enabled.
+    # region: us-east-1
+    # Optional custom endpoint, useful for testing against a local mock.
+    # endpoint:
+    # How long resolved schemas are kept in memory before they are fetched again.
+    # cacheTtl: 1h
+    # Timeout applied to each AWS Glue API call.
+    # clientTimeout: 10s
 
 #----------------------------------------------------------------------------
 # Console settings
