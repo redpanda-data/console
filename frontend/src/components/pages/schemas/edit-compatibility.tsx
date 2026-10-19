@@ -48,6 +48,8 @@ import {
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 
 const DEFAULT_OPTION = {
   value: SchemaRegistryCompatibilityModes.DEFAULT,
@@ -213,6 +215,7 @@ function EditSchemaCompatibility(p: {
   onClose: () => void;
 }) {
   const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
   const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
   const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
   const updateContextMutation = useUpdateContextCompatibilityMutation();
@@ -304,13 +307,16 @@ function EditSchemaCompatibility(p: {
             ))}
           </Choicebox>
 
+          <div className="mt-6">
+            <ShadowBoxedAlert action="editSchemas" />
+          </div>
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Button
                     data-testid="edit-compatibility-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    disabled={api.userData?.canManageSchemaRegistry === false || boxed}
                     onClick={onSave}
                     variant="primary"
                   >

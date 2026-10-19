@@ -27,6 +27,9 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import {
   ChevronDown,
   ChevronRight,
@@ -119,9 +122,17 @@ type PrincipalRowProps = {
   onToggle: () => void;
   onDelete: (deleteUser: boolean, deleteAcls: boolean) => void;
   canDeleteUser: boolean;
+  editAclsReason?: string;
 };
 
-const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDelete, canDeleteUser }) => {
+const PrincipalRow: FC<PrincipalRowProps> = ({
+  group,
+  isExpanded,
+  onToggle,
+  onDelete,
+  canDeleteUser,
+  editAclsReason,
+}) => {
   const [pendingDelete, setPendingDelete] = useState<'user-and-acls' | 'user-only' | 'acls-only' | null>(null);
 
   const summaryText = (() => {
@@ -259,7 +270,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       {group.principalType === 'User' && (
                         <>
                           <DropdownMenuItem
-                            disabled={!canDeleteUser}
+                            disabled={!canDeleteUser || Boolean(editAclsReason)}
                             onClick={(e) => {
                               e.stopPropagation();
                               setPendingDelete('user-and-acls');
@@ -268,6 +279,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           >
                             <Trash2Icon />
                             Delete (User and ACLs)
+                            <ShadowBoxedMenuHint reason={canDeleteUser ? editAclsReason : undefined} />
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
@@ -283,6 +295,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                         </>
                       )}
                       <DropdownMenuItem
+                        disabled={Boolean(editAclsReason)}
                         onClick={(e) => {
                           e.stopPropagation();
                           setPendingDelete('acls-only');
@@ -291,6 +304,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       >
                         <Trash2Icon />
                         Delete (ACLs only)
+                        <ShadowBoxedMenuHint reason={editAclsReason} />
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -367,6 +381,8 @@ export const PermissionsListTabNew: FC = () => {
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
+  const { reasonFor } = useShadowBoxGuard();
+  const editAclsReason = reasonFor('editAcls');
 
   const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
     usePrincipalPermissions();
@@ -496,7 +512,11 @@ export const PermissionsListTabNew: FC = () => {
             </EmptyHeader>
             <EmptyContent>
               <div className="flex items-center gap-3">
-                <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
+                <DisabledReasonTooltip reason={editAclsReason}>
+                  <Button disabled={Boolean(editAclsReason)} onClick={() => setCreateAclOpen(true)}>
+                    Create ACL
+                  </Button>
+                </DisabledReasonTooltip>
                 <Button
                   render={
                     <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
@@ -516,6 +536,7 @@ export const PermissionsListTabNew: FC = () => {
         {filteredGroups.map((group) => (
           <PrincipalRow
             canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
+            editAclsReason={editAclsReason}
             group={group}
             isExpanded={expanded.has(group.principal)}
             key={group.principal}
@@ -545,7 +566,15 @@ export const PermissionsListTabNew: FC = () => {
           </DescriptionWithHelp>
         </div>
 
-        <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
+        <ListLayoutFilters
+          actions={
+            <DisabledReasonTooltip reason={editAclsReason}>
+              <Button disabled={Boolean(editAclsReason)} onClick={() => setCreateAclOpen(true)}>
+                Create ACL
+              </Button>
+            </DisabledReasonTooltip>
+          }
+        >
           <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."

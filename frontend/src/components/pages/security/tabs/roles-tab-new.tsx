@@ -36,6 +36,9 @@ import {
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
@@ -95,6 +98,8 @@ export const RolesTabNew: FC = () => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const userData = useApiStoreHook((s) => s.userData);
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
+  const { reasonFor } = useShadowBoxGuard();
+  const editRolesReason = reasonFor('editRoles');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pageIndex, setPageIndex] = useState(0);
@@ -158,6 +163,7 @@ export const RolesTabNew: FC = () => {
       meta: columnMeta({ align: 'right' as const }),
       cell: ({ row: { original: entry } }) => (
         <RoleActions
+          boxedReason={editRolesReason}
           memberCount={entry.members.length}
           onDelete={async () => {
             await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
@@ -184,11 +190,14 @@ export const RolesTabNew: FC = () => {
     return <ErrorResult error={rolesError} />;
   }
 
-  const createRoleDisabled = userData?.canCreateRoles === false || !featureRolesApi;
+  const createRoleBlocked = userData?.canCreateRoles === false || !featureRolesApi;
+  const createRoleBoxedReason = createRoleBlocked ? undefined : editRolesReason;
+  const createRoleDisabled = createRoleBlocked || Boolean(createRoleBoxedReason);
   const createRoleTooltip = [
     userData?.canCreateRoles === false &&
       'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
     !featureRolesApi && 'This feature is not enabled.',
+    createRoleBoxedReason,
   ]
     .filter(Boolean)
     .join(' ');
@@ -237,9 +246,11 @@ export const RolesTabNew: FC = () => {
             {!isFiltered && (
               <EmptyContent>
                 <div className="flex items-center gap-3">
-                  <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
-                    Create role
-                  </Button>
+                  <DisabledReasonTooltip reason={createRoleBoxedReason}>
+                    <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
+                      Create role
+                    </Button>
+                  </DisabledReasonTooltip>
                   <Button
                     render={
                       <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
@@ -280,7 +291,8 @@ export const RolesTabNew: FC = () => {
           actions={
             <Tooltip>
               <TooltipTrigger
-                render={
+                render={hoverableWhenDisabled(
+                  createRoleBoxedReason,
                   <Button
                     data-testid="create-role-button"
                     disabled={createRoleDisabled}
@@ -288,7 +300,7 @@ export const RolesTabNew: FC = () => {
                   >
                     Create role
                   </Button>
-                }
+                )}
               />
               {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
             </Tooltip>
@@ -329,10 +341,12 @@ const RoleActions = ({
   roleName,
   memberCount,
   onDelete,
+  boxedReason,
 }: {
   roleName: string;
   memberCount: number;
   onDelete: () => Promise<void>;
+  boxedReason?: string;
 }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -363,6 +377,7 @@ const RoleActions = ({
         <DropdownMenuContent>
           <DropdownMenuItem
             data-testid={`delete-role-button-${roleName}`}
+            disabled={Boolean(boxedReason)}
             onClick={(e) => {
               e.stopPropagation();
               setIsDeleteOpen(true);
@@ -371,6 +386,7 @@ const RoleActions = ({
           >
             <Trash2Icon />
             Delete
+            <ShadowBoxedMenuHint reason={boxedReason} />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

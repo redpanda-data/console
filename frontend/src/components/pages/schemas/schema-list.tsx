@@ -37,6 +37,9 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -149,6 +152,8 @@ const SchemaList: FC = () => {
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
+  const { reasonFor } = useShadowBoxGuard();
+  const editSchemasReason = reasonFor('editSchemas');
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
   const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
   const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
@@ -448,7 +453,7 @@ const SchemaList: FC = () => {
             <DropdownMenuContent>
               <DropdownMenuItem
                 data-testid={`schema-list-delete-btn-${subject.name}`}
-                disabled={api.userData?.canDeleteSchemas === false || undefined}
+                disabled={api.userData?.canDeleteSchemas === false || Boolean(editSchemasReason) || undefined}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -458,13 +463,16 @@ const SchemaList: FC = () => {
               >
                 <TrashIcon />
                 {subject.isSoftDeleted ? 'Delete permanently' : 'Delete'}
+                <ShadowBoxedMenuHint
+                  reason={api.userData?.canDeleteSchemas === false ? undefined : editSchemasReason}
+                />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    [isAllContext, selectedContext]
+    [isAllContext, selectedContext, editSchemasReason]
   );
 
   const table = useDataTable({
@@ -520,6 +528,9 @@ const SchemaList: FC = () => {
     return <SchemaNotConfiguredPage />;
   }
 
+  const manageSchemaBoxedReason = api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason;
+  const createSchemaBoxedReason = api.userData?.canCreateSchemas === false ? undefined : editSchemasReason;
+
   return (
     <PageContent key="b">
       {/* Statistics Bar — the context selector lives here, not in the table filters,
@@ -555,11 +566,12 @@ const SchemaList: FC = () => {
               {displayMode ?? <Skeleton variant="text" width="sm" />}
               <Tooltip>
                 <TooltipTrigger
-                  render={
+                  render={hoverableWhenDisabled(
+                    manageSchemaBoxedReason,
                     <Button
                       aria-label="Edit mode"
                       data-testid="schema-list-edit-mode-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageSchemaBoxedReason)}
                       onClick={() =>
                         isNamedContext(selectedContext) && schemaRegistryContextsSupported
                           ? appGlobal.historyPush(
@@ -572,11 +584,12 @@ const SchemaList: FC = () => {
                     >
                       <EditIcon />
                     </Button>
-                  }
+                  )}
                 />
                 {api.userData?.canManageSchemaRegistry === false && (
                   <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
                 )}
+                {manageSchemaBoxedReason ? <TooltipContent side="top">{manageSchemaBoxedReason}</TooltipContent> : null}
               </Tooltip>
             </div>
           }
@@ -593,11 +606,12 @@ const SchemaList: FC = () => {
               {displayCompat ?? <Skeleton variant="text" width="sm" />}
               <Tooltip>
                 <TooltipTrigger
-                  render={
+                  render={hoverableWhenDisabled(
+                    manageSchemaBoxedReason,
                     <Button
                       aria-label="Edit compatibility"
                       data-testid="schema-list-edit-compatibility-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false}
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageSchemaBoxedReason)}
                       onClick={() =>
                         isNamedContext(selectedContext) && schemaRegistryContextsSupported
                           ? appGlobal.historyPush(
@@ -610,11 +624,12 @@ const SchemaList: FC = () => {
                     >
                       <EditIcon />
                     </Button>
-                  }
+                  )}
                 />
                 {api.userData?.canManageSchemaRegistry === false && (
                   <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
                 )}
+                {manageSchemaBoxedReason ? <TooltipContent side="top">{manageSchemaBoxedReason}</TooltipContent> : null}
               </Tooltip>
             </div>
           }
@@ -668,10 +683,11 @@ const SchemaList: FC = () => {
             actions={
               <Tooltip>
                 <TooltipTrigger
-                  render={
+                  render={hoverableWhenDisabled(
+                    createSchemaBoxedReason,
                     <Button
                       data-testid="schema-list-create-btn"
-                      disabled={api.userData?.canCreateSchemas === false}
+                      disabled={api.userData?.canCreateSchemas === false || Boolean(createSchemaBoxedReason)}
                       onClick={() => {
                         // Carry the selected context into the create page URL so the
                         // form pre-fills it and survives a reload. "All" has no single
@@ -686,11 +702,12 @@ const SchemaList: FC = () => {
                     >
                       Create new schema
                     </Button>
-                  }
+                  )}
                 />
                 {api.userData?.canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
+                {createSchemaBoxedReason ? <TooltipContent side="top">{createSchemaBoxedReason}</TooltipContent> : null}
               </Tooltip>
             }
           >

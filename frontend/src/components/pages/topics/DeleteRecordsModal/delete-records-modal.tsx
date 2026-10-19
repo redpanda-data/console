@@ -40,6 +40,8 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
+import { ShadowBoxedAlert } from 'components/shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -437,6 +439,8 @@ type DeleteRecordsModalProps = {
 };
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
+  /** The modal can already be open when the box lands; deleting then would only be rejected. */
+  const deleteRecordsBoxed = Boolean(useShadowBoxGuard().reasonFor('deleteRecords'));
   const { visible, topic, onCancel, onFinish } = props;
 
   useEffect(() => {
@@ -497,6 +501,9 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const isPrimaryDisabled = (isOffsetStep: boolean) => {
     if (hasErrors) {
       return false;
+    }
+    if (deleteRecordsBoxed && isOffsetStep) {
+      return true;
     }
 
     if (isOffsetStep) {
@@ -578,6 +585,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             return (
               <>
                 <DialogBody>
+                  {hasErrors ? null : <ShadowBoxedAlert action="deleteRecords" />}
                   {hasErrors ? (
                     <Alert variant="destructive">
                       <AlertDescription>

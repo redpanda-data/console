@@ -20,6 +20,10 @@ rs.mock('../../../config', () => {
   };
 });
 
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ fenced: false, readsBlocked: false, reasonFor: () => undefined }),
+}));
+
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
 const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }): ConfigEntryExtended => ({

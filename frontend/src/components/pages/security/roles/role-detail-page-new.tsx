@@ -37,6 +37,8 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -64,6 +66,8 @@ export const RoleDetailPageNew = () => {
   );
   const { data: usersData } = useListUsersQuery(create(ListUsersRequestSchema));
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
+  const { reasonFor } = useShadowBoxGuard();
+  const editRolesReason = reasonFor('editRoles');
 
   const allMembers = membersData?.members ?? [];
 
@@ -118,18 +122,20 @@ export const RoleDetailPageNew = () => {
       <ListLayout className="my-4 min-h-0 gap-3 py-0">
         <ListLayoutFilters
           actions={
-            <Combobox
-              className="w-56"
-              clearable={false}
-              creatable
-              createLabel="principal"
-              disabled={isSubmitting}
-              onChange={addMember}
-              options={availablePrincipalOptions}
-              placeholder="Select or type a principal..."
-              testId="add-principal-combobox"
-              value=""
-            />
+            <DisabledReasonTooltip reason={editRolesReason}>
+              <Combobox
+                className="w-56"
+                clearable={false}
+                creatable
+                createLabel="principal"
+                disabled={isSubmitting || Boolean(editRolesReason)}
+                onChange={addMember}
+                options={availablePrincipalOptions}
+                placeholder="Select or type a principal..."
+                testId="add-principal-combobox"
+                value=""
+              />
+            </DisabledReasonTooltip>
           }
         >
           <h2 className="text-heading-sm">Principals</h2>
@@ -184,15 +190,19 @@ export const RoleDetailPageNew = () => {
                     <TableRow key={member.principal}>
                       <TableCell className="font-mono">{displayName}</TableCell>
                       <TableCell align="right">
-                        <Button
-                          data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
-                          disabled={deletingPrincipal === member.principal || isSubmitting}
-                          onClick={() => handleRemoveMember(member.principal)}
-                          size="icon-sm"
-                          variant="destructive-ghost"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DisabledReasonTooltip reason={editRolesReason}>
+                          <Button
+                            data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
+                            disabled={
+                              deletingPrincipal === member.principal || isSubmitting || Boolean(editRolesReason)
+                            }
+                            onClick={() => handleRemoveMember(member.principal)}
+                            size="icon-sm"
+                            variant="destructive-ghost"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </DisabledReasonTooltip>
                       </TableCell>
                     </TableRow>
                   );
