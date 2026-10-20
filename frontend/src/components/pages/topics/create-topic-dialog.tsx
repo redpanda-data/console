@@ -51,7 +51,13 @@ const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
 
 const createTopicFormSchema = z
   .object({
-    topicName: z.string().min(1, 'Topic name is required').regex(/^\S+$/, 'Topic name cannot contain spaces'),
+    topicName: z
+      .string()
+      .min(1, 'Topic name is required')
+      .max(249, 'Topic name must be 249 characters or fewer')
+      .regex(/^\S*$/, 'Topic name cannot contain spaces')
+      .regex(/^[a-zA-Z0-9._-]*$/, 'Use only letters, numbers, dots, underscores, and hyphens')
+      .refine((name) => name !== '.' && name !== '..', 'Topic name cannot be . or ..'),
     partitions: z.number().int().min(1, 'Must be at least 1').optional(),
     replicationFactor: z.number().int().min(1, 'Must be at least 1').optional(),
     minInSyncReplicas: z.number().int().min(1, 'Must be at least 1').optional(),

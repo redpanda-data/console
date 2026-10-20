@@ -931,11 +931,12 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
   .versionText {
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 2em;
-
-    white-space: nowrap;
+    justify-content: center;
+    gap: 0.5em 2em;
+    min-width: 0;
+    overflow-wrap: anywhere;
 
     .versionGitData {
       font-family: monospace;
