@@ -110,12 +110,13 @@ tests are added to cover the new functionality. Tests can be run from command li
 
 **Frontend:**
 - Open a terminal tab and go to the /frontend directory
-- Run `bun run test` to run all tests (unit, integration, and federation)
+- Run `bun run install:chromium` once before tests (Linux also needs `--with-deps`)
+- Run `bun run test` to run unit, integration, federation and browser checks
 - Run `bun run type:check && bun run lint && bun run test` before pushing
 
-Always invoke frontend tooling through `bun run <script>`. `bun test` runs Bun's own test
-runner rather than the project's Rstest configuration, and `bunx`/`npx` bypass the pinned
-versions.
+Always invoke frontend tooling through `bun run <script>`. `test:unit` uses Bun; integration,
+federation, browser, bundle and full-stack E2E use Rstest. See [the frontend test guide](frontend/tests/README.md)
+for required builds, Testcontainers and enterprise setup. `bunx`/`npx` bypass pinned versions.
 
 **Backend:**
 - Some integration tests require a running Docker instance

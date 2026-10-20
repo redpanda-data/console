@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
-import type { Locator, Page } from '@playwright/test';
-import { expect } from '@playwright/test';
+import type { Locator, Page } from '../../shared/e2e';
+import { appURL, expect } from '../../shared/e2e';
 
 /**
  * Helper function to select an option from a custom Select component (react-select based)
@@ -175,7 +175,7 @@ export class SchemaPage {
     await cancelButton.click();
 
     // Should navigate back to list
-    await expect(this.page).toHaveURL('/schema-registry?showSoftDeleted=false');
+    await expect(this.page).toHaveURL(appURL('/schema-registry?showSoftDeleted=false'));
   }
 
   async recoverVersion() {
@@ -261,14 +261,14 @@ export class SchemaPage {
     const createButton = this.page.getByTestId('schema-list-create-btn');
     await expect(createButton).toBeVisible();
     await createButton.click();
-    await expect(this.page).toHaveURL('/schema-registry/create');
+    await expect(this.page).toHaveURL(appURL('/schema-registry/create'));
   }
 
   async clickEditCompatibilityButton() {
     const editButton = this.page.getByTestId('schema-list-edit-compatibility-btn');
     await expect(editButton).toBeVisible();
     await editButton.click();
-    await expect(this.page).toHaveURL('/schema-registry/edit-compatibility');
+    await expect(this.page).toHaveURL(appURL('/schema-registry/edit-compatibility'));
   }
 
   /**

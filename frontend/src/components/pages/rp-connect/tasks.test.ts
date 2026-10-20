@@ -1,6 +1,5 @@
-import { describe, expect, test } from '@rstest/core';
-
 import { clampTasks, MAX_TASKS, MIN_TASKS } from './tasks';
+import { describe, expect, test } from 'bun:test';
 
 describe('clampTasks', () => {
   test('holds the minimum against a stepper walking below it', () => {

@@ -15,15 +15,14 @@
  * difference specific to multi-host. Needs deeper diagnosis with trace review.
  */
 
-import { test } from '@playwright/test';
+import { test } from '../../shared/e2e';
 
-test.describe
-  .serial('ACL multi-match delete', () => {
-    test.skip('Delete (ACLs only) with multiple hosts deletes all matching rows', async () => {
-      // TODO(UX-1216): un-skip once the multi-host delete confirmation flow is stable.
-    });
-
-    test.skip('Delete (ACLs only) is disabled or absent when principal has zero ACLs', async () => {
-      // TODO(UX-1216): un-skip alongside the first test.
-    });
+test.describe.sequential('ACL multi-match delete', () => {
+  test.skip('Delete (ACLs only) with multiple hosts deletes all matching rows', async () => {
+    // TODO(UX-1216): un-skip once the multi-host delete confirmation flow is stable.
   });
+
+  test.skip('Delete (ACLs only) is disabled or absent when principal has zero ACLs', async () => {
+    // TODO(UX-1216): un-skip alongside the first test.
+  });
+});

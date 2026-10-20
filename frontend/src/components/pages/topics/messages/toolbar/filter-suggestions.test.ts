@@ -9,26 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { buildSuggestions, computeGhost, type SuggestionsInput } from './filter-suggestions';
+import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage =>
-  ({
-    partitionID,
-    offset,
-    timestamp: 0,
-    compression: 'uncompressed',
-    isTransactional: false,
-    headers: [],
-    key: { payload: `key-${offset}`, isPayloadNull: false, size: 1 },
-    value: { payload: value, isPayloadNull: false, size: 1 },
-    keyJson: `"key-${offset}"`,
-    valueJson: JSON.stringify(value),
-    keyBinHexPreview: '',
-    valueBinHexPreview: '',
-  }) as TopicMessage;
+const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage => ({
+  partitionID,
+  offset,
+  timestamp: 0,
+  compression: 'uncompressed',
+  isTransactional: false,
+  headers: [],
+  key: { payload: `key-${offset}`, isPayloadNull: false, size: 1, encoding: 'json', schemaId: 0 },
+  value: { payload: value, isPayloadNull: false, size: 1, encoding: 'json', schemaId: 0 },
+  keyJson: `"key-${offset}"`,
+  valueJson: JSON.stringify(value),
+  keyBinHexPreview: '',
+  valueBinHexPreview: '',
+});
 
 const messages = [
   makeMsg(0, 1, { type: 'INVOICE', address: { city: 'Berlin' } }),

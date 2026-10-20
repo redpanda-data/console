@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import {
   formatTokenText,
   looksLikeJs,
@@ -21,6 +19,7 @@ import {
   tokenEditText,
   tokenQueryText,
 } from './filter-token';
+import { describe, expect, test } from 'bun:test';
 import { fieldTokensParser } from '../hooks/use-messages-url-state';
 import type { FieldFilterToken } from '../types';
 

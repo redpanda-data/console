@@ -9,20 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { waitFor } from '@testing-library/dom';
 
+import { afterAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { type api, useApiStore } from '../backend-api';
 import type { ConnectorProperty, ConnectorValidationResult } from '../rest-interfaces';
 import { DataType, PropertyImportance, PropertyWidth } from '../rest-interfaces';
 
-// Mock the backend-api module before importing the store
-rs.mock('../backend-api', () => ({
-  api: {
-    validateConnectorConfig: rs.fn(),
-  },
-}));
+const mockValidateConnectorConfig = spyOn(useApiStore.getState(), 'validateConnectorConfig').mockImplementation(
+  mock<typeof api.validateConnectorConfig>()
+);
 
-import { ConnectorPropertiesStore, SecretsStore } from './state';
-import { api } from '../backend-api';
+afterAll(() => {
+  mockValidateConnectorConfig.mockRestore();
+});
+
+const { ConnectorPropertiesStore, SecretsStore } = await import('./state');
 
 function createMockProperty(overrides: {
   name: string;
@@ -77,10 +79,8 @@ function createMockValidationResult(properties: ConnectorProperty[]): ConnectorV
 }
 
 describe('ConnectorPropertiesStore', () => {
-  const mockValidateConnectorConfig = rs.mocked(api.validateConnectorConfig);
-
   beforeEach(() => {
-    rs.clearAllMocks();
+    mock.clearAllMocks();
   });
 
   describe('custom_default_value handling', () => {
@@ -107,7 +107,7 @@ describe('ConnectorPropertiesStore', () => {
       );
 
       // Wait for async initialization
-      await rs.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => expect(store.initPending).toBe(false));
 
       // Assert: custom_default_value should be applied
       const prop = store.propsByName.get('flush.lsn.source');
@@ -138,7 +138,7 @@ describe('ConnectorPropertiesStore', () => {
       );
 
       // Wait for async initialization
-      await rs.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => expect(store.initPending).toBe(false));
 
       // Assert: user's value should be preserved, not overwritten by custom_default_value
       const prop = store.propsByName.get('flush.lsn.source');
@@ -178,7 +178,7 @@ describe('ConnectorPropertiesStore', () => {
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
       // Wait for async initialization
-      await rs.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => expect(store.initPending).toBe(false));
 
       // Assert: Only prop with custom_default_value gets the custom default
       expect(store.propsByName.get('prop.with.custom.default')?.value).toBe('custom-default');
@@ -211,7 +211,7 @@ describe('ConnectorPropertiesStore', () => {
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
       // Wait for async initialization
-      await rs.waitFor(() => expect(store.initPending).toBe(false));
+      await waitFor(() => expect(store.initPending).toBe(false));
 
       // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');
@@ -227,7 +227,7 @@ describe('ConnectorPropertiesStore', () => {
       const passwordSecret = store.getSecret('source.cluster.sasl.password');
       passwordSecret.value = 'my-password';
 
-      const emptySecret = store.getSecret('source.cluster.ssl.truststore.certificates');
+      store.getSecret('source.cluster.ssl.truststore.certificates');
       // value remains '' (default)
 
       const nullSecret = store.getSecret('source.cluster.ssl.keystore.key');

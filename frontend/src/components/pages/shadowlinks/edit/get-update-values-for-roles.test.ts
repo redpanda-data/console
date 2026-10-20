@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { getUpdateValuesForRoles } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 

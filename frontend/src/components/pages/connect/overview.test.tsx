@@ -11,8 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { describe, expect, it, rs } from '@rstest/core';
-import { isEmbedded } from 'config';
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { config, isEmbedded } from 'config';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
@@ -23,6 +23,8 @@ rs.mock('config', () => ({
 }));
 
 import KafkaConnectOverview from './overview';
+import { useApiStore } from '../../../state/backend-api';
+import type { KafkaConnectors } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 
 const NEW_LIST_CTA = 'Create a pipeline';
@@ -37,6 +39,21 @@ const renderPage = (embedded: boolean) => {
 };
 
 describe('Connect overview mount', () => {
+  const initialState = useApiStore.getState();
+  beforeEach(() => {
+    const originalFetch = config.fetch;
+    rs.spyOn(config, 'fetch').mockImplementation((input, init) => {
+      if (input === `${config.restBasePath}/kafka-connect/connectors` && init?.method === 'GET') {
+        return Promise.resolve(Response.json({ isConfigured: false, clusters: null } satisfies KafkaConnectors));
+      }
+      return originalFetch(input, init);
+    });
+  });
+  afterEach(() => {
+    rs.restoreAllMocks();
+    useApiStore.setState(initialState, true);
+  });
+
   it('renders the new pipelines list in Cloud', async () => {
     renderPage(true);
 

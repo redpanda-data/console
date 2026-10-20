@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page } from '../../shared/e2e';
 
 /**
  * Page Object Model for Quotas pages
@@ -11,8 +11,7 @@ export class QuotaPage {
    * Navigation methods
    */
   async goToQuotasList() {
-    const baseURL = this.page.context().baseURL || 'http://localhost:3000';
-    await this.page.goto(`${baseURL}/quotas`);
+    await this.page.goto('/quotas');
     await expect(this.page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
   }
 
@@ -59,8 +58,7 @@ export class QuotaPage {
    * Reload the page and wait for quotas to load
    */
   async reloadPage() {
-    const baseURL = this.page.context().baseURL || 'http://localhost:3000';
-    await this.page.goto(`${baseURL}/quotas`);
+    await this.page.goto('/quotas');
     await expect(this.page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
   }
 

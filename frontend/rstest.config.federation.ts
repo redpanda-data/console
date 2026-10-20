@@ -2,13 +2,13 @@
 
 import { federation } from '@module-federation/rstest';
 import { pluginReact } from '@rsbuild/plugin-react';
-import { defineProject } from '@rstest/core';
+import { defineConfig } from '@rstest/core';
 
 import { fileURLToPath } from 'node:url';
 
 const remoteEntry = fileURLToPath(new URL('./tests/federation/remote-adapter.cjs', import.meta.url));
 
-export default defineProject({
+export default defineConfig({
   name: 'federation',
   globals: true,
   passWithNoTests: false,

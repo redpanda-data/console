@@ -28,7 +28,7 @@
     "strictNullChecks": true,
     "paths": { "*": ["./src/*"] }
   },
-  "include": ["src", "./rstest.setup.ts", "./rstest.setup.unit.ts"],
+  "include": ["src", "./rstest.setup.ts"],
   "exclude": [
     "src/utils/interpreter/**",
     "node_modules",

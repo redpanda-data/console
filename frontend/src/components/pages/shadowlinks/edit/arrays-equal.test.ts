@@ -9,12 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { arraysEqual } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 
 describe('arraysEqual', () => {
-  test.each([
+  test.each<{ description: string; arrayA: string[]; arrayB: string[]; expected: boolean }>([
     {
       description: 'both arrays empty',
       arrayA: [],

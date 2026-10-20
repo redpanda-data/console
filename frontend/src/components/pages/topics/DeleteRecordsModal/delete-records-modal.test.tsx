@@ -10,6 +10,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
+import { config } from 'config';
 
 import DeleteRecordsModal from './delete-records-modal';
 import type { Topic } from '../../../../state/rest-interfaces';
@@ -30,7 +31,16 @@ const testTopic: Topic = {
 };
 
 describe('DeleteRecordsModal', () => {
+  afterEach(() => rs.restoreAllMocks());
+
   test('renders all expected elements in step 1', () => {
+    const originalFetch = config.fetch;
+    rs.spyOn(config, 'fetch').mockImplementation((input, init) => {
+      if (input === `${config.restBasePath}/topics/test_topic/partitions` && (init?.method ?? 'GET') === 'GET') {
+        return Promise.resolve(Response.json({ partitions: [] }));
+      }
+      return originalFetch(input, init);
+    });
     render(
       <DeleteRecordsModal afterClose={rs.fn()} onCancel={rs.fn()} onFinish={rs.fn()} topic={testTopic} visible={true} />
     );

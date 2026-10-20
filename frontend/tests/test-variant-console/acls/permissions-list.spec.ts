@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Page } from '../../shared/e2e';
+import { appURL, expect, step, test } from '../../shared/e2e';
 
 function generateUsername(): string {
   const rand = Math.random().toString(36).substring(2, 7);
@@ -25,7 +25,7 @@ async function createScramUser(page: Page, username: string) {
   await page.getByTestId('create-user-submit').click();
   await expect(page.getByTestId('user-created-successfully')).toBeVisible();
   await page.getByTestId('done-button').click();
-  await expect(page).toHaveURL('/security/users');
+  await expect(page).toHaveURL(appURL('/security/users'));
 }
 
 /** Grants a single cluster-level ALLOW ALL ACL to `username` via the Permissions List "Create ACL" dialog. */
@@ -62,12 +62,12 @@ test.describe('Permissions List - delete dropdown', () => {
   test('SCRAM user with ACLs: all three delete options are visible', async ({ page }) => {
     const username = generateUsername();
 
-    await test.step('Create SCRAM user with ACLs', async () => {
+    await step('Create SCRAM user with ACLs', async () => {
       await createScramUser(page, username);
       await createAclForUser(page, username);
     });
 
-    await test.step('Open dropdown and verify options', async () => {
+    await step('Open dropdown and verify options', async () => {
       await openDeleteDropdown(page, username);
 
       await expect(page.getByRole('menuitem', { name: 'Delete (User and ACLs)' })).toBeVisible();
@@ -77,15 +77,14 @@ test.describe('Permissions List - delete dropdown', () => {
   });
 
   test('Delete (User and ACLs) removes user and ACLs', async ({ page }) => {
-    test.setTimeout(120_000);
     const username = generateUsername();
 
-    await test.step('Create SCRAM user with ACLs', async () => {
+    await step('Create SCRAM user with ACLs', async () => {
       await createScramUser(page, username);
       await createAclForUser(page, username);
     });
 
-    await test.step('Delete via dropdown', async () => {
+    await step('Delete via dropdown', async () => {
       await openDeleteDropdown(page, username);
       await page.getByRole('menuitem', { name: 'Delete (User and ACLs)' }).click();
 
@@ -96,45 +95,44 @@ test.describe('Permissions List - delete dropdown', () => {
       await expect(page.getByTestId('txt-confirmation-delete')).not.toBeVisible({ timeout: 10_000 });
     });
 
-    await test.step('Verify removed from permissions list', async () => {
+    await step('Verify removed from permissions list', async () => {
       await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
       await page.getByPlaceholder('Search principals, resources, roles...').fill(username);
       await expect(page.getByTestId(`row-${username}`)).not.toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify user also removed', async () => {
+    await step('Verify user also removed', async () => {
       await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
       await page.getByPlaceholder('Filter by name (regexp)...').fill(username);
       await expect(page.getByRole('link', { name: username, exact: true })).not.toBeVisible({ timeout: 5000 });
     });
-  });
+  }, 120_000);
 
   test('Delete (ACLs only) removes ACLs but SCRAM user remains', async ({ page }) => {
-    test.setTimeout(120_000);
     const username = generateUsername();
 
-    await test.step('Create SCRAM user with ACLs', async () => {
+    await step('Create SCRAM user with ACLs', async () => {
       await createScramUser(page, username);
       await createAclForUser(page, username);
     });
 
-    await test.step('Delete ACLs only via dropdown', async () => {
+    await step('Delete ACLs only via dropdown', async () => {
       await openDeleteDropdown(page, username);
       await page.getByRole('menuitem', { name: 'Delete (ACLs only)' }).click();
       await page.getByRole('button', { name: 'Delete ACLs' }).click();
     });
 
-    await test.step('Verify SCRAM user still exists', async () => {
+    await step('Verify SCRAM user still exists', async () => {
       await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
       await page.getByPlaceholder('Filter by name (regexp)...').fill(username);
       await expect(page.getByRole('link', { name: username, exact: true })).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify ACLs removed', async () => {
+    await step('Verify ACLs removed', async () => {
       // The principal row persists (the user still exists) but its ACL count drops to zero.
       const row = await openPrincipalRow(page, username);
       await row.click();
       await expect(row.getByText('No ACLs assigned')).toBeVisible({ timeout: 5000 });
     });
-  });
+  }, 120_000);
 });

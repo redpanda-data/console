@@ -3,11 +3,13 @@ paths:
   - "src/**/*.test.{ts,tsx}"
 ---
 
-# Unit vs Integration Tests
+# Test classification
 
-| Extension | Environment | Use For |
-|-----------|-------------|---------|
-| `.test.ts` | Node (no DOM) | Pure logic, utils, transforms |
-| `.test.tsx` | JSDOM (browser) | Components, hooks, DOM interaction |
+Classify what the test exercises before choosing its filename:
 
-Wrong extension = test silently passes or fails in CI. See [full rule](../skills/testing/rules/test-unit-vs-integration.md) for details.
+- Pure logic/mocked module contracts: `.test.ts`, Bun (`bun run test:unit`).
+- React, DOM, hooks, state/transport integration: `.test.tsx`, Rstest + Happy DOM.
+- Configuration/subprocess integration: `.integration.test.ts`, Rstest.
+- Native browser and full running-app journeys: `.spec.ts`, Rstest + Playwright.
+
+See [test guide](../../tests/README.md) for commands and fixtures. Keep full-stack journeys on Testcontainers; mocked bundle tests do not replace them.

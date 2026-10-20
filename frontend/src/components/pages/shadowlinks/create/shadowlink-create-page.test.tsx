@@ -9,9 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import { createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
@@ -82,7 +86,12 @@ const resetSchemaRegistrySyncGate = () => {
 /**
  * Render the create page with all necessary providers
  */
-const renderCreatePage = () => renderWithFileRoutes(<ShadowLinkCreatePage />);
+const renderCreatePage = () =>
+  renderWithFileRoutes(<ShadowLinkCreatePage />, {
+    transport: createRouterTransport(({ rpc }) => {
+      rpc(listShadowLinks, () => create(ListShadowLinksResponseSchema, { shadowLinks: [] }));
+    }),
+  });
 
 /**
  * Create form specific action types

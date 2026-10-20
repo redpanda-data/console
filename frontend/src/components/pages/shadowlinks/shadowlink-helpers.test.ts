@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
@@ -20,6 +19,7 @@ import {
   getPermissionTypeLabel,
   getResourceTypeLabel,
 } from './shadowlink-helpers';
+import { describe, expect, test } from 'bun:test';
 
 describe('shadowlink-helpers', () => {
   describe('getFilterTypeLabel', () => {

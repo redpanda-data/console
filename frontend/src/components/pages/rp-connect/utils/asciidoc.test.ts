@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
-
 import { asciidocToMarkdown, markdownToPlainText } from './asciidoc';
+import { describe, expect, it } from 'bun:test';
 
 const lines = (...rows: string[]) => rows.join('\n');
 

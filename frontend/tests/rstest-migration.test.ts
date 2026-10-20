@@ -1,6 +1,8 @@
-// Copyright 2026 Redpanda Data, Inc.
+import { version } from 'bun';
 
-import { describe, expect, test } from '@rstest/core';
+import { describe, expect, test } from 'bun:test';
+
+// Copyright 2026 Redpanda Data, Inc.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -34,36 +36,38 @@ function findVitestUsages(files: URL[]): string[] {
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
 
 describe('test runner policy', () => {
-  test('runs unit, integration, and federation tests with Rstest', () => {
+  test('runs units with Bun and integration and federation tests with Rstest', () => {
     const frontendWorkflow = readFileSync(
       new URL('../../.github/workflows/frontend-verify.yml', import.meta.url),
       'utf8'
     );
 
-    expect(packageJson.scripts?.['test:unit']).toContain('rstest');
+    expect(packageJson.scripts?.['test:unit']).toContain('bun test');
     expect(packageJson.scripts?.['test:integration']).toContain('rstest');
     expect(packageJson.scripts?.['test:federation']).toContain('rstest');
     expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
-    expect(packageJson.scripts?.['test:coverage']).toContain('rstest');
+    expect(packageJson.scripts?.['test:coverage']).toContain('test:unit --coverage');
     // Exact pins, no ranges, because pre-1.0 Rstest minors break; coverage-v8 must match core.
     expect(packageJson.devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
     expect(packageJson.devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
     expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe(packageJson.devDependencies?.['@rstest/core']);
     expect(frontendWorkflow).toContain('bun run test:federation');
-    expect(import.meta.env.RSTEST).toBe('true');
+    expect(version).toMatch(/^1\./);
   });
 
   test('keeps frontend tests independent from Vitest', () => {
     const testFiles = [
       ...[new URL('src/', frontendRoot), new URL('tests/', frontendRoot), new URL('__mocks__/', frontendRoot)].flatMap(
-        (directory) => findFiles(directory, /\.(?:test|spec)\.tsx?$/)
+        (directory) => findFiles(directory, /\.(?:test|spec|cases)\.tsx?$/)
       ),
       new URL('rstest.setup.ts', frontendRoot),
-      new URL('rstest.setup.unit.ts', frontendRoot),
+      new URL('bun.setup.ts', frontendRoot),
     ];
 
     expect(
-      testFiles.every((file) => /\.(?:test|spec)\.tsx?$|\/rstest\.setup(?:\.unit)?\.ts$/.test(fileURLToPath(file)))
+      testFiles.every((file) =>
+        /\.(?:test|spec|cases)\.tsx?$|\/(?:rstest|bun)\.setup(?:\.unit)?\.ts$/.test(fileURLToPath(file))
+      )
     ).toBe(true);
     expect(findVitestUsages(testFiles)).toEqual([]);
     expect(packageJson.devDependencies?.vitest).toBeUndefined();

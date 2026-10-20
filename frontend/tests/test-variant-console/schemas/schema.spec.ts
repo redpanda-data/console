@@ -1,7 +1,6 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-import type { Locator } from '@playwright/test';
-import { expect, test } from '@playwright/test';
-
+import type { Locator } from '../../shared/e2e';
+import { appURL, expect, test } from '../../shared/e2e';
 import { SchemaPage } from '../utils/schema-page';
 
 const SCHEMA_REGISTRY_TABLE_NAME_TESTID = 'schema-registry-table-name';
@@ -179,7 +178,7 @@ test.describe('Schema Registry E2E Tests', () => {
 
       await page.getByRole('link', { name: 'Schema Registry' }).first().click();
 
-      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
+      await expect(page).toHaveURL(appURL('/schema-registry?showSoftDeleted=false'));
     });
   });
 
@@ -272,7 +271,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.gotoCreate();
 
       await schemaPage.cancelCreation();
-      await expect(page).toHaveURL('/schema-registry?showSoftDeleted=false');
+      await expect(page).toHaveURL(appURL('/schema-registry?showSoftDeleted=false'));
     });
 
     test('should navigate to create page from list', async ({ page }) => {
@@ -280,7 +279,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.goto();
 
       await schemaPage.clickCreateButton();
-      await expect(page).toHaveURL('/schema-registry/create');
+      await expect(page).toHaveURL(appURL('/schema-registry/create'));
     });
   });
 
@@ -376,7 +375,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await expect(rightSelect).toBeVisible();
     });
 
-    test('should show soft-deleted alert when version is deleted', async ({ page }) => {
+    test('should show soft-deleted alert when version is deleted', async ({ page, skip }) => {
       await page.goto('/schema-registry');
 
       // Enable soft-deleted checkbox to see deleted schemas
@@ -403,7 +402,7 @@ test.describe('Schema Registry E2E Tests', () => {
           await expect(recoverButton).toBeVisible();
         }
       } else {
-        test.skip();
+        skip();
       }
     });
   });
@@ -418,7 +417,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await schemaPage.goto();
 
       await schemaPage.clickEditCompatibilityButton();
-      await expect(page).toHaveURL('/schema-registry/edit-compatibility');
+      await expect(page).toHaveURL(appURL('/schema-registry/edit-compatibility'));
     });
 
     test('should show save button on compatibility edit page', async ({ page }) => {
@@ -446,7 +445,7 @@ test.describe('Schema Registry E2E Tests', () => {
       await expect(description).toContainText('Compatibility determines how schema validation occurs');
     });
 
-    test('should navigate to subject-specific compatibility edit', async ({ page }) => {
+    test('should navigate to subject-specific compatibility edit', async ({ page, skip }) => {
       await page.goto('/schema-registry');
 
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
@@ -464,7 +463,7 @@ test.describe('Schema Registry E2E Tests', () => {
         const subjectName = page.getByTestId('edit-compatibility-subject-name');
         await expect(subjectName).toBeVisible();
       } else {
-        test.skip();
+        skip();
       }
     });
   });

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, it } from 'bun:test';
 
 import { normalizePastedWhitespace } from './whitespace';
 

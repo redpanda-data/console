@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 /**
  * Smoke coverage for the overview page — the first screen anyone sees, and until now

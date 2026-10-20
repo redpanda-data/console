@@ -1,5 +1,3 @@
-import { describe, expect, test } from '@rstest/core';
-
 import {
   addSeriesToMap,
   formatChartTimestamp,
@@ -9,6 +7,7 @@ import {
   mergeTimeSeries,
   type TimeSeriesResult,
 } from './pipeline-throughput.utils';
+import { describe, expect, test } from 'bun:test';
 
 describe('addSeriesToMap', () => {
   test('adds ingress data points to an empty map', () => {

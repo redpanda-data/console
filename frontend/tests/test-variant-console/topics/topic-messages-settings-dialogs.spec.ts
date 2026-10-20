@@ -1,7 +1,6 @@
 // spec: specs/topics.md
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 const GLOB_PATTERNS_LINK = /glob patterns/;

@@ -1,8 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('Filter Messages by Timestamp', () => {
@@ -14,7 +15,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, message);
 
-    await test.step('Navigate to topic and select Timestamp offset origin', async () => {
+    await step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
       await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
@@ -33,14 +34,14 @@ test.describe('Filter Messages by Timestamp', () => {
       await expect(page.getByTestId('start-timestamp-input')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Set timestamp and verify URL update and API request', async () => {
+    await step('Set timestamp and verify URL update and API request', async () => {
       const timestampValue = Date.now() - 60 * 60 * 1000;
       const date = new Date(timestampValue);
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const timeValue = `${hours}:${minutes}`;
 
-      await test.step('Open date/time picker', async () => {
+      await step('Open date/time picker', async () => {
         const calendarTrigger = page.getByTestId('start-timestamp-input').getByLabel('Open calendar');
         await expect(calendarTrigger).toBeVisible();
         await calendarTrigger.click();
@@ -49,7 +50,7 @@ test.describe('Filter Messages by Timestamp', () => {
         await expect(page.locator('input[type="time"]')).toBeVisible();
       });
 
-      await test.step('Fill time input and wait for API request', async () => {
+      await step('Fill time input and wait for API request', async () => {
         // The time input lives inside the popover (portaled), so search the page.
         const timeInput = page.locator('input[type="time"]');
         await expect(timeInput).toBeVisible();
@@ -80,7 +81,7 @@ test.describe('Filter Messages by Timestamp', () => {
       });
     });
 
-    await test.step('Verify URL contains timestamp parameter', () => {
+    await step('Verify URL contains timestamp parameter', () => {
       // Verify URL contains the timestamp parameter 't'
       const currentUrl = page.url();
       expect(currentUrl).toContain('t=');
@@ -92,7 +93,7 @@ test.describe('Filter Messages by Timestamp', () => {
       expect(Number(urlTimestamp)).toBeGreaterThan(0);
     });
 
-    await test.step('Verify date input displays a value', async () => {
+    await step('Verify date input displays a value', async () => {
       // Close the popover.
       await page.keyboard.press('Escape');
       await expect(page.locator('input[type="time"]')).not.toBeVisible({ timeout: 3000 });
@@ -117,7 +118,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, message);
 
-    await test.step('Navigate to topic and select Timestamp offset origin', async () => {
+    await step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
       await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
@@ -136,7 +137,7 @@ test.describe('Filter Messages by Timestamp', () => {
       await expect(page.getByTestId('start-timestamp-input')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Input unix timestamp in seconds format', async () => {
+    await step('Input unix timestamp in seconds format', async () => {
       // Unix timestamp in seconds (e.g., January 1, 2024, 00:00:00 UTC)
       const timestampInSeconds = 1_704_067_200; // 2024-01-01 00:00:00 UTC
       const timestampInMilliseconds = timestampInSeconds * 1000; // 1704067200000
@@ -208,7 +209,7 @@ test.describe('Filter Messages by Timestamp', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, message);
 
-    await test.step('Navigate to topic and select Timestamp offset origin', async () => {
+    await step('Navigate to topic and select Timestamp offset origin', async () => {
       await page.goto(`/topics/${topicName}`);
 
       await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
@@ -227,7 +228,7 @@ test.describe('Filter Messages by Timestamp', () => {
       await expect(page.getByTestId('start-timestamp-input')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify timestamp parameter is added to URL', async () => {
+    await step('Verify timestamp parameter is added to URL', async () => {
       // Wait for URL to update with timestamp parameter
       await page.waitForURL((url) => url.searchParams.has('t'), { timeout: 5000 });
 
@@ -241,7 +242,7 @@ test.describe('Filter Messages by Timestamp', () => {
       expect(Number(urlTimestamp)).toBeGreaterThan(0);
     });
 
-    await test.step('Switch to Beginning offset type', async () => {
+    await step('Switch to Beginning offset type', async () => {
       // Open the start offset dropdown again
       const startOffsetDropdown = page.getByTestId('start-offset-dropdown');
       await expect(startOffsetDropdown).toBeVisible();
@@ -256,7 +257,7 @@ test.describe('Filter Messages by Timestamp', () => {
       await expect(page.getByTestId('start-timestamp-input')).not.toBeVisible();
     });
 
-    await test.step('Verify timestamp parameter is removed from URL', async () => {
+    await step('Verify timestamp parameter is removed from URL', async () => {
       // Wait for URL to update and remove timestamp parameter
       await page.waitForURL((url) => !url.searchParams.has('t'), { timeout: 5000 });
 

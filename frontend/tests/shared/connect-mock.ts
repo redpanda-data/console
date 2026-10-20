@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test';
+import type { Page, Route } from './e2e';
 
 /**
  * Connect protocol error codes per https://connectrpc.com/docs/protocol#error-codes.

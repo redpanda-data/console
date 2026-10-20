@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './e2e';
 
 const REDPANDA_TITLE_REGEX = /Redpanda/;
 

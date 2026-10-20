@@ -76,13 +76,27 @@
       "style": {
         "noDefaultExport": "off",
         "noRestrictedImports": {
-          "level": "warn",
+          "level": "error",
           "options": {
             "paths": {
               "mobx": "Deprecated — use Zustand instead",
               "mobx-react-lite": "Deprecated — use Zustand instead",
               "yup": "Deprecated — use Zod instead"
-            }
+            },
+            "patterns": [
+              {
+                "group": [
+                  "vitest",
+                  "vitest/**",
+                  "@vitest/**",
+                  "jsdom",
+                  "jsdom/**",
+                  "@playwright/test",
+                  "@playwright/test/**"
+                ],
+                "message": "Use Bun for units, Happy DOM for DOM integration, and Rstest with native Playwright for browser/E2E tests."
+              }
+            ]
           }
         },
         "useConsistentTypeDefinitions": {
@@ -95,6 +109,7 @@
       },
       "suspicious": {
         "noConsole": "error",
+        "noFocusedTests": "error",
         "noReactForwardRef": "off",
         "noDeprecatedImports": "error",
         "noImportCycles": "off"

@@ -1,6 +1,4 @@
-import { type Page, test as setup } from '@playwright/test';
-
-const authFile = 'playwright/.auth/user.json';
+import type { Page } from 'playwright';
 
 /**
  * Dismisses the login error modal if present and waits for it to close.
@@ -16,7 +14,7 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
   }
 }
 
-setup('authenticate', async ({ page }) => {
+export async function authenticate(page: Page) {
   await page.goto('/', { waitUntil: 'networkidle' });
 
   // Wait for login form to be visible
@@ -35,7 +33,4 @@ setup('authenticate', async ({ page }) => {
 
   // Wait for successful login - version title appears in footer
   await page.getByTestId('versionTitle').waitFor({ state: 'visible', timeout: 30_000 });
-
-  // End of authentication steps.
-  await page.context().storageState({ path: authFile });
-});
+}

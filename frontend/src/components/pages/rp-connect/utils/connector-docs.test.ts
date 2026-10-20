@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
-
 import { getConnectorDocsUrl, getFieldDocsUrl, getNodeDocsUrl } from './connector-docs';
+import { describe, expect, it } from 'bun:test';
 
 const DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components';
 

@@ -1,7 +1,6 @@
-import { expect, test } from '@playwright/test';
-
 import { randomUUID } from 'node:crypto';
 import { createConnector, deleteConnector } from '../../shared/connector.utils';
+import { expect, test } from '../../shared/e2e';
 
 // biome-ignore lint/suspicious/noExportsInTest: ignore for this test
 export const ACCESS_KEY = 'accesskey';

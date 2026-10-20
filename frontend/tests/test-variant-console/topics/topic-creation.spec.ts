@@ -1,15 +1,16 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('Topic Creation', () => {
   test('should create topic with default settings', async ({ page }) => {
     const topicName = `default-topic-${Date.now()}`;
 
-    await test.step('Open create topic modal', async () => {
+    await step('Open create topic modal', async () => {
       await page.goto('/topics');
       await page.getByTestId('create-topic-button').click();
 
@@ -18,7 +19,7 @@ test.describe('Topic Creation', () => {
       await expect(page.getByTestId('topic-name')).toBeFocused();
     });
 
-    await test.step('Create topic with default settings', async () => {
+    await step('Create topic with default settings', async () => {
       await page.getByTestId('topic-name').fill(topicName);
       await page.getByTestId('onOk-button').click();
 
@@ -40,7 +41,7 @@ test.describe('Topic Creation', () => {
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
 
-    await test.step('Configure topic settings', async () => {
+    await step('Configure topic settings', async () => {
       await page.getByTestId('topic-name').fill(topicName);
 
       // Set custom partitions
@@ -54,11 +55,11 @@ test.describe('Topic Creation', () => {
       await page.getByTestId('create-topic-success__close-button').click();
     });
 
-    await test.step('Verify topic was created', async () => {
+    await step('Verify topic was created', async () => {
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();
     });
 
-    await test.step('Verify configuration', async () => {
+    await step('Verify configuration', async () => {
       // Navigate directly to topic configuration tab
       await page.goto(`/topics/${topicName}#configuration`);
 
@@ -74,7 +75,7 @@ test.describe('Topic Creation', () => {
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
 
-    await test.step('Verify create button is disabled for empty name', async () => {
+    await step('Verify create button is disabled for empty name', async () => {
       // Leave topic name field empty
       await expect(page.getByTestId('topic-name')).toHaveValue('');
 
@@ -86,7 +87,7 @@ test.describe('Topic Creation', () => {
       await expect(page.getByTestId('topic-name')).toBeVisible();
     });
 
-    await test.step('Cancel creation', async () => {
+    await step('Cancel creation', async () => {
       await page.getByRole('button', { name: 'Cancel' }).click();
       await expect(page.getByTestId('create-topic-button')).toBeVisible();
     });
@@ -96,7 +97,7 @@ test.describe('Topic Creation', () => {
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
 
-    await test.step('Test invalid topic name with spaces', async () => {
+    await step('Test invalid topic name with spaces', async () => {
       await page.getByTestId('topic-name').fill('invalid topic name with spaces!');
 
       const createButton = page.getByTestId('onOk-button');
@@ -120,7 +121,7 @@ test.describe('Topic Creation', () => {
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
 
-    await test.step('Set high replication factor', async () => {
+    await step('Set high replication factor', async () => {
       await page.getByTestId('topic-name').fill(`replication-test-${Date.now()}`);
 
       // Try to set replication factor higher than broker count
@@ -144,7 +145,7 @@ test.describe('Topic Creation', () => {
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
 
-    await test.step('Fill form and cancel', async () => {
+    await step('Fill form and cancel', async () => {
       await page.getByTestId('topic-name').fill('cancelled-topic');
 
       // Click cancel button
@@ -154,7 +155,7 @@ test.describe('Topic Creation', () => {
       await expect(page.getByTestId('create-topic-button')).toBeVisible();
     });
 
-    await test.step('Verify topic was not created', async () => {
+    await step('Verify topic was not created', async () => {
       // Topic should not appear in list
       await expect(page.getByTestId('topic-link-cancelled-topic')).not.toBeVisible();
     });
@@ -169,17 +170,17 @@ test.describe('Topic Creation', () => {
     await page.getByTestId('onOk-button').click();
     await page.getByTestId('create-topic-success__close-button').click();
 
-    await test.step('Verify in topics list', async () => {
+    await step('Verify in topics list', async () => {
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();
     });
 
-    await test.step('Navigate to topic details', async () => {
+    await step('Navigate to topic details', async () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
       await expect(page.getByText(topicName).first()).toBeVisible();
     });
 
-    await test.step('Navigate back to list', async () => {
+    await step('Navigate back to list', async () => {
       await page.goto('/topics');
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();
     });

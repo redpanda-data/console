@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 /**
  * Smoke coverage for the reassign-partitions wizard: three steps of shared state.

@@ -1,3 +1,5 @@
+import { definePlaywrightOptions } from '../shared/playwright-options';
+
 /**
  * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
  * parent epic: UX-1198 — REST-to-Connect RPC migration
@@ -9,17 +11,15 @@
  * Blocked on: new view-only auth fixture (playwright/.auth/view-only.json) — see UX-1209.
  */
 
-import { expect, test } from '@playwright/test';
+import { test as base, expect } from '../shared/e2e';
+
+const test = base.extend({ playwright: definePlaywrightOptions({ storageState: 'playwright/.auth/view-only.json' }) });
 
 // TODO(UX-1209): flip to true once the view-only fixture lands. All assertions below are
 // ready; only the seeded role and storageState are missing.
-const VIEW_ONLY_STORAGE_STATE = 'playwright/.auth/view-only.json';
 const VIEW_ONLY_FIXTURE_READY = false;
 
-test.describe('Authorization - Users page (view-only role)', () => {
-  test.skip(!VIEW_ONLY_FIXTURE_READY, 'view-only auth fixture pending — see UX-1209');
-  test.use({ storageState: VIEW_ONLY_STORAGE_STATE });
-
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Users page (view-only role)', () => {
   test('users list renders for view-only role', async ({ page }) => {
     await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
 
@@ -75,10 +75,7 @@ test.describe('Authorization - Users page (view-only role)', () => {
   });
 });
 
-test.describe('Authorization - ACLs page (view-only role)', () => {
-  test.skip(!VIEW_ONLY_FIXTURE_READY, 'view-only auth fixture pending — see UX-1209');
-  test.use({ storageState: VIEW_ONLY_STORAGE_STATE });
-
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - ACLs page (view-only role)', () => {
   test('ACLs list is visible but Create ACL is blocked', async ({ page }) => {
     await page.goto('/security/acls', { waitUntil: 'domcontentloaded' });
     expect(page.url()).toContain('/security/acls');
@@ -101,13 +98,15 @@ test.describe('Authorization - ACLs page (view-only role)', () => {
     }
   });
 
-  test('DeleteACLs dropdown items are hidden in permissions list for view-only', async ({ page }) => {
+  test('DeleteACLs dropdown items are hidden in permissions list for view-only', async ({ page, skip }) => {
     await page.goto('/security/permissions-list', { waitUntil: 'domcontentloaded' });
 
     // Find any row and open its dropdown.
     const firstRow = page.getByRole('row').nth(1); // nth(0) is the header
     const rowExists = await firstRow.isVisible().catch(() => false);
-    test.skip(!rowExists, 'no permission-list rows to exercise; seed required');
+    if (!rowExists) {
+      skip();
+    }
 
     await firstRow.getByRole('button').click();
 
@@ -124,10 +123,7 @@ test.describe('Authorization - ACLs page (view-only role)', () => {
   });
 });
 
-test.describe('Authorization - Quotas page (view-only role)', () => {
-  test.skip(!VIEW_ONLY_FIXTURE_READY, 'view-only auth fixture pending — see UX-1209');
-  test.use({ storageState: VIEW_ONLY_STORAGE_STATE });
-
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Quotas page (view-only role)', () => {
   test('quotas table loads for view-only role', async ({ page }) => {
     await page.goto('/quotas', { waitUntil: 'domcontentloaded' });
 

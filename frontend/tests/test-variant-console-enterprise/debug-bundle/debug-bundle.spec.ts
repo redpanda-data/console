@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-
+import { appURL, expect, test } from '../../shared/e2e';
 import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-page';
 
 /**
@@ -19,7 +18,7 @@ test.describe('Debug Bundle - Navigation and Display', () => {
     await debugBundlePage.goto();
 
     // Verify navigation
-    await expect(page).toHaveURL('/debug-bundle');
+    await expect(page).toHaveURL(appURL('/debug-bundle'));
 
     // Verify basic mode is active (generate button visible)
     await debugBundlePage.verifyBasicModeActive();
@@ -60,7 +59,7 @@ test.describe('Debug Bundle - Generation Progress', () => {
     await expect(page).toHaveURL(/\/debug-bundle\/progress\//);
   });
 
-  test('should display broker status during generation', async ({ page }) => {
+  test('should display broker status during generation', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
 
     // First check if there's an existing bundle in progress
@@ -71,11 +70,11 @@ test.describe('Debug Bundle - Generation Progress', () => {
       await debugBundlePage.verifyGenerationInProgress();
       await debugBundlePage.verifyBrokerStatus();
     } else {
-      test.skip();
+      skip();
     }
   });
 
-  test('should display stop/cancel button during generation', async ({ page }) => {
+  test('should display stop/cancel button during generation', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     const hasProgress = await debugBundlePage.isBundleGenerationInProgress();
 
@@ -85,11 +84,11 @@ test.describe('Debug Bundle - Generation Progress', () => {
       const stopButton = page.getByTestId('debug-bundle-stop-button');
       await expect(stopButton).toBeVisible();
     } else {
-      test.skip();
+      skip();
     }
   });
 
-  test('should show generation status per broker', async ({ page }) => {
+  test('should show generation status per broker', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     const hasProgress = await debugBundlePage.isBundleGenerationInProgress();
 
@@ -102,13 +101,13 @@ test.describe('Debug Bundle - Generation Progress', () => {
       const count = await brokerStatuses.count();
       expect(count).toBeGreaterThan(0);
     } else {
-      test.skip();
+      skip();
     }
   });
 });
 
 test.describe('Debug Bundle - Download and Deletion', () => {
-  test('should display download link when bundle is ready', async ({ page }) => {
+  test('should display download link when bundle is ready', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -120,11 +119,11 @@ test.describe('Debug Bundle - Download and Deletion', () => {
       await expect(downloadLink).toBeVisible();
       await expect(downloadLink).toHaveAttribute('href', /\/api\/debug_bundle\/files\//);
     } else {
-      test.skip();
+      skip();
     }
   });
 
-  test('should download bundle with correct filename', async ({ page }) => {
+  test('should download bundle with correct filename', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -135,11 +134,11 @@ test.describe('Debug Bundle - Download and Deletion', () => {
       const download = await debugBundlePage.downloadBundle();
       expect(download.suggestedFilename()).toMatch(/debug-bundle\.zip/);
     } else {
-      test.skip();
+      skip();
     }
   });
 
-  test('should display delete button for existing bundle', async ({ page }) => {
+  test('should display delete button for existing bundle', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -151,14 +150,13 @@ test.describe('Debug Bundle - Download and Deletion', () => {
     if (hasDelete) {
       await expect(deleteButton).toBeVisible();
     } else {
-      test.skip();
+      skip();
     }
   });
 });
 
-test.describe('Debug Bundle - Error Handling', () => {
-  test.skip(!!process.env.CI, 'Flaky in CI - page load timeout issues');
-  test('should display error message if bundle generation fails', async ({ page }) => {
+test.describe.skipIf(!!process.env.CI)('Debug Bundle - Error Handling', () => {
+  test('should display error message if bundle generation fails', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -169,11 +167,11 @@ test.describe('Debug Bundle - Error Handling', () => {
     if (hasError) {
       await debugBundlePage.verifyGenerationFailed();
     } else {
-      test.skip();
+      skip();
     }
   });
 
-  test('should allow retry after failure', async ({ page }) => {
+  test('should allow retry after failure', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -185,7 +183,7 @@ test.describe('Debug Bundle - Error Handling', () => {
       await expect(retryButton).toBeVisible();
       await expect(retryButton).toHaveText('Try again');
     } else {
-      test.skip();
+      skip();
     }
   });
 });
@@ -219,7 +217,7 @@ test.describe('Debug Bundle - Permissions and Access', () => {
 });
 
 test.describe('Debug Bundle - Bundle Expiration', () => {
-  test('should display expiration indicator for expired bundles', async ({ page }) => {
+  test('should display expiration indicator for expired bundles', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
@@ -230,7 +228,7 @@ test.describe('Debug Bundle - Bundle Expiration', () => {
     if (hasExpired) {
       await debugBundlePage.verifyBundleExpired();
     } else {
-      test.skip();
+      skip();
     }
   });
 });
@@ -260,7 +258,7 @@ test.skip('Debug Bundle - Confirmation Dialogs', () => {
       await cancelButton.click();
 
       // Should still be on main page
-      await expect(page).toHaveURL('/debug-bundle');
+      await expect(page).toHaveURL(appURL('/debug-bundle'));
     }
   });
 });

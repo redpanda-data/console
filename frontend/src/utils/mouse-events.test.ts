@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { isModifiedClick } from './mouse-events';
+import { describe, expect, test } from 'bun:test';
 
 const click = (overrides: Partial<Parameters<typeof isModifiedClick>[0]> = {}) => ({
   metaKey: false,

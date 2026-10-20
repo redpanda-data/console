@@ -17,7 +17,7 @@ import { render, screen } from 'test-utils';
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
 
-// jsdom polyfills needed by Radix Popover + cmdk
+// Happy DOM polyfills needed by Radix Popover + cmdk
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}

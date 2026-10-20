@@ -10,11 +10,12 @@
  */
 
 import { TokenManager } from './token-manager';
+import { describe, expect, mock, test } from 'bun:test';
 
 describe('TokenManager', () => {
   describe('refresh', () => {
     test('calls getAccessToken and returns the token', async () => {
-      const mockGetToken = rs.fn().mockResolvedValue('test-token-123');
+      const mockGetToken = mock().mockResolvedValue('test-token-123');
       const tokenManager = new TokenManager(mockGetToken);
 
       const result = await tokenManager.refresh();
@@ -28,7 +29,7 @@ describe('TokenManager', () => {
       const tokenPromise = new Promise<string>((resolve) => {
         resolveToken = resolve;
       });
-      const mockGetToken = rs.fn().mockReturnValue(tokenPromise);
+      const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
       // Start multiple refresh calls concurrently
@@ -50,7 +51,7 @@ describe('TokenManager', () => {
     });
 
     test('allows new refresh after previous completes', async () => {
-      const mockGetToken = rs.fn().mockResolvedValueOnce('token-1').mockResolvedValueOnce('token-2');
+      const mockGetToken = mock().mockResolvedValueOnce('token-1').mockResolvedValueOnce('token-2');
       const tokenManager = new TokenManager(mockGetToken);
 
       const result1 = await tokenManager.refresh();
@@ -63,15 +64,14 @@ describe('TokenManager', () => {
 
     test('propagates errors from getAccessToken', async () => {
       const mockError = new Error('Token fetch failed');
-      const mockGetToken = rs.fn().mockRejectedValue(mockError);
+      const mockGetToken = mock().mockRejectedValue(mockError);
       const tokenManager = new TokenManager(mockGetToken);
 
       await expect(tokenManager.refresh()).rejects.toThrow('Token fetch failed');
     });
 
     test('clears state after error allowing retry', async () => {
-      const mockGetToken = rs
-        .fn()
+      const mockGetToken = mock()
         .mockRejectedValueOnce(new Error('First attempt failed'))
         .mockResolvedValueOnce('retry-token');
       const tokenManager = new TokenManager(mockGetToken);
@@ -92,7 +92,7 @@ describe('TokenManager', () => {
       const tokenPromise = new Promise<string>((resolve) => {
         resolveToken = resolve;
       });
-      const mockGetToken = rs.fn().mockReturnValue(tokenPromise);
+      const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
       // Start a refresh
@@ -108,7 +108,7 @@ describe('TokenManager', () => {
     });
 
     test('is safe to call when no refresh is in progress', () => {
-      const mockGetToken = rs.fn();
+      const mockGetToken = mock();
       const tokenManager = new TokenManager(mockGetToken);
 
       // Should not throw
@@ -116,7 +116,7 @@ describe('TokenManager', () => {
     });
 
     test('is safe to call multiple times', () => {
-      const mockGetToken = rs.fn();
+      const mockGetToken = mock();
       const tokenManager = new TokenManager(mockGetToken);
 
       // Should not throw
@@ -130,7 +130,7 @@ describe('TokenManager', () => {
 
   describe('isRefreshing', () => {
     test('returns false when no refresh is in progress', () => {
-      const mockGetToken = rs.fn();
+      const mockGetToken = mock();
       const tokenManager = new TokenManager(mockGetToken);
 
       expect(tokenManager.isRefreshing).toBe(false);
@@ -141,7 +141,7 @@ describe('TokenManager', () => {
       const tokenPromise = new Promise<string>((resolve) => {
         resolveToken = resolve;
       });
-      const mockGetToken = rs.fn().mockReturnValue(tokenPromise);
+      const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
       tokenManager.refresh();
@@ -153,7 +153,7 @@ describe('TokenManager', () => {
     });
 
     test('returns false after refresh completes', async () => {
-      const mockGetToken = rs.fn().mockResolvedValue('token');
+      const mockGetToken = mock().mockResolvedValue('token');
       const tokenManager = new TokenManager(mockGetToken);
 
       await tokenManager.refresh();
@@ -161,7 +161,7 @@ describe('TokenManager', () => {
     });
 
     test('returns false after refresh fails', async () => {
-      const mockGetToken = rs.fn().mockRejectedValue(new Error('Failed'));
+      const mockGetToken = mock().mockRejectedValue(new Error('Failed'));
       const tokenManager = new TokenManager(mockGetToken);
 
       try {

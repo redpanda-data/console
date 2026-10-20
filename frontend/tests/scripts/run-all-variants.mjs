@@ -7,15 +7,15 @@ import { buildBackendImage } from '../shared/global-setup.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const reportsDir = resolve(__dirname, '..', 'playwright-report');
+const reportsDir = resolve(__dirname, '..', '.rstest');
 
-async function runVariant(variant, playwrightArgs = []) {
-  const configPath = join(variant.path, 'playwright.config.ts');
+async function runVariant(variant, rstestArgs = []) {
+  const configPath = join(variant.path, 'rstest.config.ts');
   const startTime = Date.now();
 
   console.log(`[${variant.name}] Starting...`);
 
-  const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
+  const args = ['run', 'rstest', ...rstestArgs, '--config', configPath];
 
   // In CI with parallel variants, pipe output to log files to avoid interleaving.
   // Locally or with a single variant, inherit stdio for immediate feedback.
@@ -28,11 +28,12 @@ async function runVariant(variant, playwrightArgs = []) {
     const logPath = join(reportsDir, `${variant.name}.log`);
     logStream = createWriteStream(logPath);
 
-    child = spawn('npx', args, {
+    child = spawn('bun', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      cwd: variant.path,
+      cwd: resolve(__dirname, '..'),
       env: {
         ...process.env,
+        E2E_VARIANT: variant.name,
         // Force IPv4 for testcontainers wait strategies
         TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
       },
@@ -41,11 +42,12 @@ async function runVariant(variant, playwrightArgs = []) {
     child.stdout.pipe(logStream);
     child.stderr.pipe(logStream);
   } else {
-    child = spawn('npx', args, {
+    child = spawn('bun', args, {
       stdio: 'inherit',
-      cwd: variant.path,
+      cwd: resolve(__dirname, '..'),
       env: {
         ...process.env,
+        E2E_VARIANT: variant.name,
         TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
       },
     });
@@ -54,7 +56,7 @@ async function runVariant(variant, playwrightArgs = []) {
   return new Promise((resolve) => {
     child.on('close', (code) => {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      const status = code === 0 ? 'PASSED' : 'FAILED';
+      const status = code === 0 ? (rstestArgs.includes('list') ? 'COLLECTED' : 'PASSED') : 'FAILED';
       console.log(`[${variant.name}] ${status} (${elapsed}s)`);
       if (logStream) {
         logStream.end();
@@ -71,7 +73,7 @@ async function runVariant(variant, playwrightArgs = []) {
   });
 }
 
-async function runAllVariants(playwrightArgs = []) {
+async function runAllVariants(rstestArgs = []) {
   const variants = discoverVariants();
 
   if (variants.length === 0) {
@@ -84,20 +86,21 @@ async function runAllVariants(playwrightArgs = []) {
   // Pre-build backend Docker images once before launching variants in parallel.
   // This avoids race conditions where multiple variants try to copy frontend assets
   // and build the same Docker image concurrently.
-  console.log('\nPre-building backend Docker image(s)...');
-  const needsEnterprise = variants.some((v) => v.config.isEnterprise);
-  const ossImageTag = await buildBackendImage(false);
-  process.env.E2E_PREBUILT_IMAGE_TAG = ossImageTag;
+  if (!rstestArgs.includes('list')) {
+    console.log('\nPre-building backend Docker image(s)...');
+    const needsEnterprise = variants.some((v) => v.config.isEnterprise);
+    const ossImageTag = await buildBackendImage(false);
+    process.env.E2E_PREBUILT_IMAGE_TAG = ossImageTag;
 
-  if (needsEnterprise) {
-    const enterpriseImageTag = await buildBackendImage(true);
-    process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE = enterpriseImageTag;
+    if (needsEnterprise) {
+      const enterpriseImageTag = await buildBackendImage(true);
+      process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE = enterpriseImageTag;
+    }
   }
-
   console.log(`\nRunning ${variants.length} variant(s) in parallel...`);
 
   // Run all variants in parallel — each uses different ports and Docker networks
-  const results = await Promise.all(variants.map((variant) => runVariant(variant, playwrightArgs)));
+  const results = await Promise.all(variants.map((variant) => runVariant(variant, rstestArgs)));
 
   // Summary
   console.log(`\n${'='.repeat(60)}`);
@@ -106,7 +109,7 @@ async function runAllVariants(playwrightArgs = []) {
 
   let hasFailures = false;
   for (const result of results) {
-    const status = result.code === 0 ? 'PASSED' : 'FAILED';
+    const status = result.code === 0 ? (rstestArgs.includes('list') ? 'COLLECTED' : 'PASSED') : 'FAILED';
     const icon = result.code === 0 ? '\u2714' : '\u2718';
     console.log(`  ${icon} ${result.variant}: ${status}`);
     if (result.code !== 0) {
@@ -146,7 +149,9 @@ async function runAllVariants(playwrightArgs = []) {
     process.exit(1);
   }
 
-  console.log('All variants passed');
+  console.log(
+    rstestArgs.includes('list') ? 'All variant inventories collected; no tests executed' : 'All variants passed'
+  );
 }
 
 // CLI

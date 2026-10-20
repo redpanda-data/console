@@ -1,7 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 /**
  * Mock cluster API response for testing default values
@@ -104,27 +106,27 @@ test.describe('Create Topic Modal - Default Values', () => {
       });
     });
 
-    await test.step('Navigate to topics page and open create modal', async () => {
+    await step('Navigate to topics page and open create modal', async () => {
       await page.goto('/topics');
       await page.getByTestId('create-topic-button').click();
       await expect(page.getByTestId('topic-name')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify partitions default value', async () => {
+    await step('Verify partitions default value', async () => {
       const partitionsInput = page.getByTestId('topic-partitions');
       await expect(partitionsInput).toBeVisible();
       await expect(partitionsInput).toHaveAttribute('placeholder', '1');
       await expect(partitionsInput).toHaveValue('');
     });
 
-    await test.step('Verify replication factor default value', async () => {
+    await step('Verify replication factor default value', async () => {
       const replicationInput = page.getByTestId('topic-replication-factor');
       await expect(replicationInput).toBeVisible();
       await expect(replicationInput).toHaveAttribute('placeholder', '1');
       await expect(replicationInput).toHaveValue('');
     });
 
-    await test.step('Verify retention time default value shows 7 days', async () => {
+    await step('Verify retention time default value shows 7 days', async () => {
       // prettyMilliseconds(604800000) with verbose=true, unitCount=2 returns "7 days"
       const retentionTimeInput = page.getByTestId('topic-retention-time');
       await expect(retentionTimeInput).toBeVisible();
@@ -132,7 +134,7 @@ test.describe('Create Topic Modal - Default Values', () => {
       await expect(retentionTimeInput).toHaveValue('');
     });
 
-    await test.step('Verify retention size default value shows Infinite', async () => {
+    await step('Verify retention size default value shows Infinite', async () => {
       // 18446744073709551615 (max uint64) is treated as infinite
       const retentionSizeInput = page.getByTestId('topic-retention-size');
       await expect(retentionSizeInput).toBeVisible();
@@ -213,27 +215,27 @@ test.describe('Create Topic Modal - Default Values', () => {
       });
     });
 
-    await test.step('Navigate to topics page and open create modal', async () => {
+    await step('Navigate to topics page and open create modal', async () => {
       await page.goto('/topics');
       await page.getByTestId('create-topic-button').click();
       await expect(page.getByTestId('topic-name')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Verify partitions shows custom default of 3', async () => {
+    await step('Verify partitions shows custom default of 3', async () => {
       const partitionsInput = page.getByTestId('topic-partitions');
       await expect(partitionsInput).toBeVisible();
       await expect(partitionsInput).toHaveAttribute('placeholder', '3');
       await expect(partitionsInput).toHaveValue('');
     });
 
-    await test.step('Verify replication factor shows custom default of 3', async () => {
+    await step('Verify replication factor shows custom default of 3', async () => {
       const replicationInput = page.getByTestId('topic-replication-factor');
       await expect(replicationInput).toBeVisible();
       await expect(replicationInput).toHaveAttribute('placeholder', '3');
       await expect(replicationInput).toHaveValue('');
     });
 
-    await test.step('Verify retention time shows 1 day', async () => {
+    await step('Verify retention time shows 1 day', async () => {
       // prettyMilliseconds(86400000) with verbose=true returns "1 day"
       const retentionTimeInput = page.getByTestId('topic-retention-time');
       await expect(retentionTimeInput).toBeVisible();
@@ -241,7 +243,7 @@ test.describe('Create Topic Modal - Default Values', () => {
       await expect(retentionTimeInput).toHaveValue('');
     });
 
-    await test.step('Verify retention size shows 1 GiB', async () => {
+    await step('Verify retention size shows 1 GiB', async () => {
       // prettyBytes(1073741824) returns "1 GiB"
       const retentionSizeInput = page.getByTestId('topic-retention-size');
       await expect(retentionSizeInput).toBeVisible();

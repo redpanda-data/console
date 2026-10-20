@@ -1,8 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 const MESSAGES_TAB_CONTENT = /No messages found|Partition|Offset/i;
@@ -14,7 +15,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Navigate to topic details', async () => {
+    await step('Navigate to topic details', async () => {
       await page.goto('/topics');
       await page.getByTestId(`topic-link-${topicName}`).click();
 
@@ -37,7 +38,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Navigate to topic and verify Messages tab', async () => {
+    await step('Navigate to topic and verify Messages tab', async () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
 
       // Topic tabs should be visible
@@ -59,14 +60,14 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Navigate directly to Configuration tab via URL', async () => {
+    await step('Navigate directly to Configuration tab via URL', async () => {
       await page.goto(`/topics/${topicName}#configuration`);
 
       // Configuration tab should be active
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 5000 });
     });
 
-    await test.step('Navigate directly to Partitions tab via URL', async () => {
+    await step('Navigate directly to Partitions tab via URL', async () => {
       await page.goto(`/topics/${topicName}#partitions`);
 
       // Partitions tab content should be visible
@@ -82,7 +83,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Navigate to Configuration tab', async () => {
+    await step('Navigate to Configuration tab', async () => {
       await page.goto(`/topics/${topicName}#configuration`);
       // Wait for the topic page to load before checking tab content
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
@@ -110,7 +111,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Produce Record stays on the produce page', async () => {
+    await step('Produce Record stays on the produce page', async () => {
       await page.goto(`/topics/${topicName}?s=20&pageSize=10`);
       await expect(page.getByText(MESSAGES_TAB_CONTENT).first()).toBeVisible({ timeout: 10_000 });
 
@@ -133,7 +134,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
     await page.goto('/topics');
     await page.getByTestId(`topic-link-${topicName}`).click();
 
-    await test.step('Navigate back using breadcrumb', async () => {
+    await step('Navigate back using breadcrumb', async () => {
       // Click on "Topics" breadcrumb
       await page.getByRole('link', { name: 'Topics' }).first().click();
 

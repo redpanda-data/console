@@ -1,165 +1,28 @@
-# Container Setup Reference
+# Container setup reference
 
-## Test Container Lifecycle
+The maintained lifecycle lives in `tests/shared/global-setup.mjs`, shared by all four
+Rstest variant configs. Read [Testcontainers details](../../../../tests/TESTCONTAINERS.md)
+and [test commands](../../../../tests/README.md) before changing it.
 
-```
-Setup (global-setup.mjs):
-1. Build frontend (frontend/build/)
-2. Copy frontend assets to backend/pkg/embed/frontend/
-3. Build backend Docker image with testcontainers
-4. Start Redpanda container with SASL auth
-5. Start backend container serving frontend
-6. Wait for services to be ready
+Build the frontend first. Setup copies its assets into the backend build context,
+builds an image, starts the configured brokers/services and backend, and waits for
+readiness. The returned teardown owns live handles; `global-teardown.mjs` provides
+manual crash recovery using the serialized state. Preserve failure cleanup.
 
-Tests run...
+Variant metadata/configuration lives in `tests/test-variant-*/config/`. Images are
+pinned in `test-images.json` at the repository root. Local single-variant runs remap host ports;
+container-to-container addresses stay unchanged.
 
-Teardown (global-teardown.mjs):
-1. Stop backend container
-2. Stop Redpanda container
-3. Remove Docker network
-4. Clean up copied frontend assets
-```
+Enterprise requires a separate backend checkout (`ENTERPRISE_BACKEND_DIR`). Global
+setup authenticates through the real login form and stores browser state under the
+gitignored `playwright/.auth/` directory. Login-error specs override storage with an
+empty state. There is no HTTP Basic-auth replacement for application login.
 
-## Network Setup
+CI runs three OSS variants in `.github/workflows/frontend-verify.yml`. It installs
+Chromium and Linux dependencies, downloads the same-run frontend build, and invokes
+`bun run e2e-test:variant <variant>`. Failure evidence is uploaded from `tests/.rstest/`.
+The enterprise backend remains the responsibility of downstream enterprise CI.
 
-- All containers on shared Docker network
-- Internal addresses: `redpanda:9092`, `console-backend:3000`
-- External access: `localhost:19092`, `localhost:3000`
-
-## Frontend Asset Copy (Required)
-
-The backend Docker image needs frontend assets embedded at build time:
-
-```typescript
-// In global-setup.mjs
-async function buildBackendImage(isEnterprise) {
-  // Copy frontend build to backend embed directory
-  const frontendBuildDir = resolve(__dirname, '../build');
-  const embedDir = join(backendDir, 'pkg/embed/frontend');
-  await execAsync(`cp -r "${frontendBuildDir}"/* "${embedDir}"/`);
-
-  // Build Docker image using testcontainers
-  // Docker doesn't allow referencing files outside build context,
-  // so we temporarily copy the Dockerfile into the build context
-  const tempDockerfile = join(backendDir, '.dockerfile.e2e.tmp');
-  await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
-
-  try {
-    await GenericContainer
-      .fromDockerfile(backendDir, '.dockerfile.e2e.tmp')
-      .build(imageTag, { deleteOnExit: false });
-  } finally {
-    await execAsync(`rm -f "${tempDockerfile}"`).catch(() => {});
-    await execAsync(`find "${embedDir}" -mindepth 1 ! -name '.gitignore' -delete`).catch(() => {});
-  }
-}
-```
-
-## Container Configuration
-
-**Backend container:**
-```typescript
-const backend = await new GenericContainer(imageTag)
-  .withNetwork(network)
-  .withNetworkAliases('console-backend')
-  .withExposedPorts({ container: 3000, host: 3000 })
-  .withBindMounts([{
-    source: configPath,
-    target: '/etc/console/config.yaml'
-  }])
-  .withCommand(['--config.filepath=/etc/console/config.yaml'])
-  .start();
-```
-
-**Redpanda container:**
-```typescript
-const redpanda = await new GenericContainer('redpandadata/redpanda:v25.2.1')
-  .withNetwork(network)
-  .withNetworkAliases('redpanda')
-  .withExposedPorts(
-    { container: 19_092, host: 19_092 },  // Kafka
-    { container: 18_081, host: 18_081 },  // Schema Registry
-    { container: 9644, host: 19_644 }     // Admin API
-  )
-  .withEnvironment({ RP_BOOTSTRAP_USER: 'e2euser:very-secret' })
-  .withHealthCheck({
-    test: ['CMD-SHELL', "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"],
-    interval: 15_000,
-    retries: 5
-  })
-  .withWaitStrategy(Wait.forHealthCheck())
-  .start();
-```
-
-## Authentication
-
-**OSS Mode:** No authentication required
-
-**Enterprise Mode:** Basic auth with `e2euser:very-secret`
-
-```typescript
-test.use({
-  httpCredentials: {
-    username: 'e2euser',
-    password: 'very-secret',
-  },
-});
-```
-
-## CI Integration (GitHub Actions)
-
-```yaml
-e2e-test:
-  runs-on: ubuntu-latest-8
-  steps:
-    - uses: actions/checkout@v5
-    - uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: 1.4.0
-
-    - name: Install dependencies
-      run: bun install --frozen-lockfile
-
-    - name: Build frontend
-      run: |
-        REACT_APP_CONSOLE_GIT_SHA=$(echo $GITHUB_SHA | cut -c 1-6)
-        bun run build
-
-    - name: Install Playwright browsers
-      run: bun run install:chromium
-
-    - name: Run E2E tests
-      run: bun run e2e-test
-
-    - name: Upload test report
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: playwright-report
-        path: frontend/playwright-report/
-```
-
-## Troubleshooting
-
-### Container Fails to Start
-
-```bash
-# Check if frontend build exists
-ls frontend/build/
-
-# Check if Docker image built successfully
-docker images | grep console-backend
-
-# Check container logs
-docker logs <container-id>
-
-# Verify Docker network
-docker network ls | grep testcontainers
-```
-
-### Port Already in Use
-
-```bash
-# Find and kill process using port 3000
-lsof -ti:3000 | xargs kill -9
-```
+For port conflicts, inspect the owner or use the dynamic-port wrapper. Never kill an
+unidentified developer process. For service failures, inspect Docker logs and the
+variant state file rather than weakening waits or assertions.

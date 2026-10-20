@@ -1,6 +1,5 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { rs } from '@rstest/core';
 import { toast } from 'components/redpanda-ui/components/toast';
 import {
   BadRequest_FieldViolationSchema,
@@ -15,15 +14,16 @@ import {
 } from 'protogen/google/rpc/error_details_pb';
 
 import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
+import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 
 // Spies on the real manager: the unit project shares module caches across files, so a module mock
 // only takes effect when this file happens to load `toast.utils` first.
-const add = rs.spyOn(toast, 'add').mockImplementation(() => 'toast-1');
-const update = rs.spyOn(toast, 'update').mockImplementation(() => undefined);
-const close = rs.spyOn(toast, 'close').mockImplementation(() => undefined);
+const add = spyOn(toast, 'add').mockImplementation(() => 'toast-1');
+const update = spyOn(toast, 'update').mockImplementation(() => undefined);
+const close = spyOn(toast, 'close').mockImplementation(() => undefined);
 
 afterAll(() => {
-  rs.restoreAllMocks();
+  mock.restore();
 });
 
 describe('formatToastErrorMessageGRPC', () => {

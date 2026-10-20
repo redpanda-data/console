@@ -1,12 +1,11 @@
-import { expect, type Page, test } from '@playwright/test';
-
+import { expect, type Page, step } from './e2e';
 import { ACCESS_KEY, S3_BUCKET_NAME, SECRET_ACCESS_KEY } from '../test-variant-console/connectors/connector.spec';
 
 export const createConnector = async (
   page: Page,
   { clusterName, connectorName }: { clusterName: string; connectorName: string }
 ) =>
-  await test.step('Create connector', async () => {
+  await step('Create connector', async () => {
     await page.goto(`/connect-clusters/${clusterName}`);
     await page.waitForURL(`/connect-clusters/${clusterName}`, {
       timeout: 5000,
@@ -48,7 +47,7 @@ export const deleteConnector = async (
   page: Page,
   { clusterName, connectorName }: { clusterName: string; connectorName: string }
 ) =>
-  await test.step('Delete connector', async () => {
+  await step('Delete connector', async () => {
     await page.goto(`/connect-clusters/${clusterName}/${connectorName}`);
 
     await page.getByRole('button', { name: 'Delete' }).click();

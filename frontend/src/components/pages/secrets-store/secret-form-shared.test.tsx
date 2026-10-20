@@ -24,7 +24,7 @@ import { useControllableState } from 'components/redpanda-ui/lib/use-controllabl
 
 import { SCOPE_OPTIONS } from './secret-form-shared';
 
-// cmdk calls scrollIntoView which is not available in jsdom
+// cmdk calls scrollIntoView which is not available in Happy DOM
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });

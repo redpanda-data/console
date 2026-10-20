@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { formatFilterLine, parseFilterLine, tokenizeLine, wordRangeAtCaret } from './filter-line';
+import { describe, expect, test } from 'bun:test';
 
 describe('tokenizeLine', () => {
   test('splits on whitespace with correct offsets', () => {

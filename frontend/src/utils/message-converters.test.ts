@@ -9,15 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { convertListMessageData } from './message-converters';
+import { describe, expect, test } from 'bun:test';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
 } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { ListMessagesResponse_DataMessage } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
-import { CompressionType } from '../state/rest-interfaces';
+import { CompressionType, type TopicMessage } from '../state/rest-interfaces';
 
 const encoder = new TextEncoder();
 
@@ -66,7 +65,7 @@ describe('convertListMessageData', () => {
   });
 
   describe('compression type mapping', () => {
-    const cases: [ProtoCompressionType, string][] = [
+    const cases: [ProtoCompressionType, TopicMessage['compression']][] = [
       [ProtoCompressionType.UNCOMPRESSED, CompressionType.Uncompressed],
       [ProtoCompressionType.GZIP, CompressionType.GZip],
       [ProtoCompressionType.SNAPPY, CompressionType.Snappy],
@@ -84,7 +83,7 @@ describe('convertListMessageData', () => {
   });
 
   describe('key encoding mapping', () => {
-    const cases: [PayloadEncoding, string][] = [
+    const cases: [PayloadEncoding, TopicMessage['key']['encoding']][] = [
       [PayloadEncoding.NULL, 'null'],
       [PayloadEncoding.JSON, 'json'],
       [PayloadEncoding.TEXT, 'text'],
@@ -115,7 +114,7 @@ describe('convertListMessageData', () => {
   });
 
   describe('value encoding mapping', () => {
-    const cases: [PayloadEncoding, string][] = [
+    const cases: [PayloadEncoding, TopicMessage['key']['encoding']][] = [
       [PayloadEncoding.NULL, 'null'],
       [PayloadEncoding.JSON, 'json'],
       [PayloadEncoding.TEXT, 'text'],

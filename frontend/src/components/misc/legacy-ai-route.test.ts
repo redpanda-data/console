@@ -1,4 +1,5 @@
 import { getLegacyAiDestination } from './legacy-ai-route';
+import { describe, expect, test } from 'bun:test';
 
 describe('getLegacyAiDestination', () => {
   test.each([

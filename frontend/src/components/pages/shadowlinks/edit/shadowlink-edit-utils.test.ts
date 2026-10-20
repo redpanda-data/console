@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { describe, expect, test } from '@rstest/core';
 import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
@@ -28,6 +27,7 @@ import {
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
 import { buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
 /**

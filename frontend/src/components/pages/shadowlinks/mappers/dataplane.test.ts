@@ -11,7 +11,6 @@
 
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
@@ -21,6 +20,7 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { buildDefaultFormValues, fromDataplaneShadowLink } from './dataplane';
+import { describe, expect, test } from 'bun:test';
 import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
 import type { UnifiedSchemaRegistryApiOptions } from '../model';
 

@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { appendWithSlackCap, boundedAppend, pruneMapToKeys, trimToLast } from './bounded-array';
+import { describe, expect, test } from 'bun:test';
 
 describe('boundedAppend', () => {
   test('appends an item when under the cap', () => {

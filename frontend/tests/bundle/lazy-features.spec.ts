@@ -1,14 +1,13 @@
-import { expect } from '@playwright/test';
-
 import { measure, test, trackScripts } from './fixtures';
 import { writeFile } from 'node:fs/promises';
+import { expect } from '../shared/e2e';
 
 for (const [route, heading] of [
   ['/overview', 'Overview'],
   ['/topics', 'Topics'],
   ['/topics/bundle-test', 'bundle-test'],
 ] as const) {
-  test(`cold ${route} does not download Monaco`, async ({ page, errors }, testInfo) => {
+  test(`cold ${route} does not download Monaco`, async ({ page, errors, testInfo }) => {
     const scripts = trackScripts(page);
     await page.goto(route);
     await expect(page.getByRole('link', { name: 'Topics', exact: true }).first()).toBeVisible();
@@ -38,7 +37,7 @@ for (const [route, heading] of [
   });
 }
 
-test('Documentation downloads its renderer only when selected', async ({ page, errors }, testInfo) => {
+test('Documentation downloads its renderer only when selected', async ({ page, errors, testInfo }) => {
   const scripts = trackScripts(page);
   await page.goto('/topics/bundle-test');
   await expect(page.getByRole('tab', { name: 'Messages', exact: true })).toHaveAttribute('aria-selected', 'true');
@@ -81,7 +80,7 @@ test('Documentation downloads its renderer only when selected', async ({ page, e
   expect(scripts.size).toBe(loaded);
 });
 
-test('Produce Record mounts the local editor and JSON worker on demand', async ({ page, errors }, testInfo) => {
+test('Produce Record mounts the local editor and JSON worker on demand', async ({ page, errors, testInfo }) => {
   const scripts = trackScripts(page);
   const workers: string[] = [];
   page.on('worker', (worker) => workers.push(worker.url()));
@@ -116,7 +115,7 @@ test('Documentation direct links load without Messages or an editor', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('a rejected Documentation chunk keeps Messages available and reload recovers', async ({ page }, testInfo) => {
+test('a rejected Documentation chunk keeps Messages available and reload recovers', async ({ page, testInfo }) => {
   await page.goto('/topics/bundle-test');
   await expect(page.getByRole('tab', { name: 'Messages', exact: true })).toBeVisible();
   await page.waitForLoadState('networkidle');
@@ -136,7 +135,7 @@ test('a rejected Documentation chunk keeps Messages available and reload recover
   await expect(page.getByRole('heading', { name: 'Bundle documentation' })).toBeVisible();
 });
 
-test('the pipeline YAML editor loads local validation on demand', async ({ page, errors }, testInfo) => {
+test('the pipeline YAML editor loads local validation on demand', async ({ page, errors, testInfo }) => {
   const workers: string[] = [];
   page.on('worker', (worker) => workers.push(worker.url()));
   await page.goto('/rp-connect/create');

@@ -1,4 +1,3 @@
-import { describe, expect, it } from '@rstest/core';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import {
@@ -10,6 +9,7 @@ import {
   matchRank,
   searchableText,
 } from './connect-command-palette-utils';
+import { describe, expect, it } from 'bun:test';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 
 const spec = (

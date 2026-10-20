@@ -1,9 +1,10 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
 import fs from 'node:fs';
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('Message Actions and Export', () => {
@@ -15,7 +16,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageValue);
 
-    await test.step('Copy message value', async () => {
+    await step('Copy message value', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
@@ -25,7 +26,7 @@ test.describe('Message Actions and Export', () => {
       await page.getByRole('button', { name: /copy value/i }).click();
     });
 
-    await test.step('Verify clipboard content', async () => {
+    await step('Verify clipboard content', async () => {
       const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
       expect(clipboardText).toBe(messageValue);
 
@@ -44,7 +45,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageValue);
 
-    await test.step('Export message as JSON', async () => {
+    await step('Export message as JSON', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
@@ -89,7 +90,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageValue);
 
-    await test.step('Export message as CSV', async () => {
+    await step('Export message as CSV', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
@@ -135,7 +136,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageValue);
 
-    await test.step('Export and verify special characters', async () => {
+    await step('Export and verify special characters', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
@@ -174,7 +175,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, 'Message for cancel test');
 
-    await test.step('Open and cancel export', async () => {
+    await step('Open and cancel export', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message
@@ -205,7 +206,7 @@ test.describe('Message Actions and Export', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Produce large message', async () => {
+    await step('Produce large message', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
       const largeContent = 'Large content '.repeat(1000); // ~14KB
@@ -219,7 +220,7 @@ test.describe('Message Actions and Export', () => {
       await page.getByTestId('produce-button').click();
     });
 
-    await test.step('Export large message', async () => {
+    await step('Export large message', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // May need to click "Load anyway" for large message
@@ -263,7 +264,7 @@ test.describe('Message Actions and Export', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageValue);
 
-    await test.step('View expanded message metadata', async () => {
+    await step('View expanded message metadata', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Expand message

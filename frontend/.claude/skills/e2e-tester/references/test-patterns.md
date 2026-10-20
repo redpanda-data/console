@@ -3,7 +3,7 @@
 ## Basic Test Structure
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../shared/e2e';
 
 test.describe('Feature Name', () => {
   test('user can complete workflow', async ({ page }) => {

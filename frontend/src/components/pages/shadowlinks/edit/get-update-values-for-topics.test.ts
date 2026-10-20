@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   FilterType,
@@ -22,6 +21,7 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { getUpdateValuesForTopics } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 import { buildDefaultTopicsValues } from '../mappers/dataplane';

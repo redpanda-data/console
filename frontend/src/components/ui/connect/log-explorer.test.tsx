@@ -122,7 +122,7 @@ describe('LogExplorer', () => {
 
   test('shows filter mismatch text when messages exist but are filtered out', () => {
     // Simulate state where messages exist but table filtering excludes all rows.
-    // The DataTableFilter interaction is complex in jsdom, so we verify the branch
+    // The DataTableFilter interaction is complex in Happy DOM, so we verify the branch
     // indirectly: with messages present and no filters, the table renders rows — not the empty state.
     // Then we verify the empty state text exists in the document when we provide messages
     // but apply a column filter via the table API. Since we can't easily set column filters

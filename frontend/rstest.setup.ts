@@ -52,32 +52,17 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
   }
 }
 
-// Intercept fetch to known test-environment localhost URLs so mocked
-// endpoints don't escape to real TCP connections. Relative URLs are
-// resolved against window.location (happy-dom defaults to localhost:3000),
-// so we MUST resolve them before matching, otherwise ConnectRPC transports
-// built with an empty baseUrl (common in test-utils) leak real TCP
-// connections to 127.0.0.1:3000 / ::1:3000 and emit AggregateError on
-// teardown.
+const unexpectedRequests: Error[] = [];
+
+// Record before rejecting: application error handling must not hide a missing fixture.
 if (typeof window !== 'undefined') {
-  const originalFetch = globalThis.fetch;
-  const BLOCKED_HOSTS = ['localhost', '127.0.0.1', '::1'];
-  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = Object.assign(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    try {
-      // Resolve relative URLs against window.location so that a relative
-      // path like "/service/Method" is matched the same way as the
-      // absolute "http://localhost:3000/service/Method".
-      const base = window.location ? window.location.href : undefined;
-      const parsed = new URL(url, base);
-      if (BLOCKED_HOSTS.some((h) => parsed.hostname === h)) {
-        return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-      }
-    } catch {
-      // Malformed URL — pass through so the caller gets a normal error
-    }
-    return originalFetch(input, init);
-  };
+    const method = init?.method ?? (typeof input === 'string' || input instanceof URL ? 'GET' : input.method);
+    const error = new Error(`Unexpected test request: ${method} ${new URL(url, window.location.href).href}`);
+    unexpectedRequests.push(error);
+    throw error;
+  }, globalThis.fetch);
 }
 
 // Polyfill Element/Document.getAnimations — happy-dom doesn't implement them
@@ -165,6 +150,13 @@ afterEach(async () => {
   rs.clearAllTimers();
 });
 
+afterEach(() => {
+  const errors = unexpectedRequests.splice(0);
+  if (errors.length > 0) {
+    throw new AggregateError(errors, errors.map((error) => error.message).join('\n'));
+  }
+});
+
 // ── Console suppression ──────────────────────────────────────────────
 // Suppress library warnings that are not actionable from tests and
 // pollute CI logs. Each pattern maps to a specific upstream issue or
@@ -176,13 +168,6 @@ const originalWarn = console.warn;
 const originalError = console.error;
 
 const SUPPRESSED_PATTERNS = [
-  // happy-dom DOMException noise from unmocked fetch/script loads
-  /DOMException.*AbortError/,
-  /Failed to load script/,
-  // Network noise from fetch attempts to mocked endpoints that aren't running
-  /socket hang up/,
-  /ECONNREFUSED/,
-  /ECONNRESET/,
   // group-details.tsx nests its per-topic actions in the Accordion trigger's own <button>.
   // Matches phrase and tag separately: React logs it as a `%s ... <%s>` template.
   /cannot appear as a descendant of[\s\S]*<button>/,

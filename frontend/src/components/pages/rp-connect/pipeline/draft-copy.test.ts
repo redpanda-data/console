@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { describe, expect, it } from '@rstest/core';
 import { Pipeline_State, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import {
@@ -25,6 +24,7 @@ import {
   UNTITLED_PIPELINE_NAME,
   untitledPipelineName,
 } from './draft-copy';
+import { describe, expect, it } from 'bun:test';
 
 describe('isDraft', () => {
   it('recognises the draft state and nothing else', () => {

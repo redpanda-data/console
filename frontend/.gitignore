@@ -160,10 +160,17 @@ dist
 **/playwright-report/
 /blob-report/
 /playwright/.cache/
-/playwright/.auth/
+**/playwright/.auth/
 
 # Gemini CLI
 .gemini/settings.json
 
 tests/**/playwright-report/
 tests/**/*.js
+
+# Rstest artifacts and cached compiled tests
+**/.rstest/
+**/.rstest-reports/
+/coverage-integration/
+/coverage-merged/
+/coverage-federation/

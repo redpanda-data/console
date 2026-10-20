@@ -19,7 +19,7 @@ import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipe
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_TITLE_RE = /branches reconverge/i;
 
-// React Flow needs ResizeObserver + measurable container dimensions to mount nodes in jsdom.
+// React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
 class ResizeObserverMock {
   observe() {}
   disconnect() {}
@@ -162,7 +162,7 @@ describe('PipelineFlowCanvas — control-flow render', () => {
 
     // Branches reconverge at explicit join nodes (branch + switch + try/catch).
     expect(screen.getAllByTitle(JOIN_TITLE_RE).length).toBeGreaterThan(0);
-    // Edge labels (the case conditions) render via EdgeLabelRenderer, which jsdom doesn't lay out;
+    // Edge labels (the case conditions) render via EdgeLabelRenderer, which Happy DOM doesn't lay out;
     // asserted in the parser unit test instead.
   });
 
@@ -196,7 +196,7 @@ describe('PipelineFlowCanvas — control-flow render', () => {
   });
 });
 
-// Drives the RF store directly so the test controls pane size and transform without RF measuring jsdom.
+// Drives the RF store directly so the test controls pane size and transform without RF measuring Happy DOM.
 function SetFlowState({
   transform,
   width,

@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun", "node"],
+    "incremental": false
+  },
+  "include": [
+    "tests/**/*.spec.ts",
+    "tests/**/*.cases.ts",
+    "tests/**/fixtures.ts",
+    "tests/shared/e2e.ts",
+    "tests/shared/assertions.ts",
+    "tests/shared/playwright-options.ts",
+    "tests/shared/rstest-config.ts",
+    "tests/retry-assertion.integration.test.ts",
+    "tests/merge-coverage.integration.test.ts",
+    "tests/runner-policy.integration.test.ts",
+    "tests/network-isolation.integration.test.ts",
+    "tests/bun-runtime.integration.test.ts",
+    "tests/bun-mock-isolation.integration.test.ts",
+    "src/federation/console-legacy-app.integration.test.ts",
+    "rstest.config*.ts",
+    "tests/**/rstest.config.ts",
+    "tests/**/rstest-global-setup.ts",
+    "bun.setup.ts",
+    "src/env.d.ts",
+    "src/app.tsx",
+    "src/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "src/**/*.test.tsx"]
+}

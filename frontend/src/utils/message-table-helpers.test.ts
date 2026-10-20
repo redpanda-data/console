@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { isFilterMatch, trimSlidingWindow } from './message-table-helpers';
+import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../state/rest-interfaces';
 
 function makeMessage(overrides: Partial<TopicMessage> = {}): TopicMessage {

@@ -11,13 +11,13 @@
 
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { DurationSchema } from '@bufbuild/protobuf/wkt';
-import { describe, expect, test } from '@rstest/core';
 import {
   SchemaRegistrySyncOptionsSchema,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { formatDurationForInput, mapSchemaRegistrySyncOptionsToFormValues } from './schema-registry';
+import { describe, expect, test } from 'bun:test';
 import { initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../create/model';
 import { durationFromString } from '../create/schema-registry-request';
 
@@ -241,11 +241,12 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
   });
 
   test('maps identity, unset, and empty-exact destinations to preserve', () => {
-    for (const destination of [
+    const destinations: Parameters<typeof apiSyncOptions>[0]['destination'][] = [
       undefined,
       { mapping: { case: 'identity' as const, value: {} } },
       { mapping: { case: 'exact' as const, value: { mappings: [] } } },
-    ]) {
+    ];
+    for (const destination of destinations) {
       const result = mapSchemaRegistrySyncOptionsToFormValues(
         apiSyncOptions({ sourceUrl: 'http://sr.example.com', destination })
       );

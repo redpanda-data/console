@@ -1,7 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { type APIRequestContext, request as playwrightRequest } from 'playwright';
+import { z } from 'zod';
+
+import { expect, retryAssertion, test } from '../../shared/e2e';
 
 const CLUSTER = 'local-connect-cluster';
 const CREATE_URL = `/connect-clusters/${CLUSTER}/create-connector`;
+const { kafkaConnect = 18_283 } = z
+  .object({ kafkaConnect: z.number().int().min(1).max(65_535).optional() })
+  .parse(JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}'));
+const CONNECT_BASE = `http://127.0.0.1:${kafkaConnect}`;
 const CONNECTOR_NAME = `e2e-heartbeat-${Date.now()}`;
 
 const HEARTBEAT_CONFIG = {
@@ -71,38 +78,44 @@ test.describe('Kafka Connect Wizard', () => {
   });
 });
 
-test.describe('Kafka Connect Connector Lifecycle', () => {
+test.describe('Kafka Connect Connector Lifecycle', { timeout: 120_000 }, () => {
   // Run sequentially — delete must happen last, and give more time in CI
-  test.describe.configure({ timeout: 120_000, mode: 'serial' });
 
-  test.beforeAll(async ({ request }) => {
-    const base = 'http://127.0.0.1:18283';
+  let request: APIRequestContext;
+  test.beforeAll(async () => {
+    request = await playwrightRequest.newContext();
+    const base = CONNECT_BASE;
 
     // Delete any existing connector and wait for it to be fully removed
     await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => {});
-    await expect
-      .poll(
-        async () => {
-          const res = await request.get(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => null);
-          return res?.status() ?? 404;
-        },
-        { timeout: 10_000, intervals: [1000] }
-      )
-      .toBe(404);
+    await retryAssertion(
+      async () => {
+        const res = await request.get(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => null);
+        expect(res?.status() ?? 404).toBe(404);
+      },
+      { timeout: 10_000, intervals: [1000] }
+    );
 
     // Retry the POST in case Kafka Connect is briefly unavailable
-    await expect(async () => {
-      const res = await request.post(`${base}/connectors`, {
-        data: HEARTBEAT_CONFIG,
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30_000,
-      });
-      expect(res.ok() || res.status() === 409).toBe(true);
-    }).toPass({ timeout: 30_000, intervals: [3000] });
+    await retryAssertion(
+      async () => {
+        const res = await request.post(`${base}/connectors`, {
+          data: HEARTBEAT_CONFIG,
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30_000,
+        });
+        expect(res.ok() || res.status() === 409).toBe(true);
+      },
+      { timeout: 30_000, intervals: [3000] }
+    );
   });
 
-  test.afterAll(async ({ request }) => {
-    await request.delete(`http://127.0.0.1:18283/connectors/${CONNECTOR_NAME}`).catch(() => {});
+  test.afterAll(async () => {
+    try {
+      await request.delete(`${CONNECT_BASE}/connectors/${CONNECTOR_NAME}`);
+    } finally {
+      await request.dispose();
+    }
   });
 
   test('connector appears in cluster connectors list', async ({ page }) => {

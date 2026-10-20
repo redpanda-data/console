@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
-
 import { RouteError } from './components/routes/route-error';
 import { RoutePending } from './components/routes/route-pending';
 import { routerDefaults } from './router-defaults';
+import { describe, expect, it } from 'bun:test';
 
 describe('routerDefaults', () => {
   it('preloads on intent while TanStack Query owns caching and route boundaries', () => {

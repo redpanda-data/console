@@ -11,9 +11,8 @@
  * dialog is triggered.
  */
 
-import { expect, test } from '@playwright/test';
-
 import { mockConnectError, mockConnectNetworkFailure, rpcUrl } from '../../shared/connect-mock';
+import { appURL, expect, test } from '../../shared/e2e';
 
 const USER_SERVICE = 'redpanda.api.dataplane.v1.UserService';
 const CREATE_USER_FAILURE_TOAST_PREFIX = /^Failed to create user/;
@@ -30,7 +29,7 @@ test.describe('User creation - Connect RPC error handling', () => {
     await page.getByTestId('create-user-submit').click();
 
     // Structural: remain on create form (server error must NOT navigate to detail).
-    await expect(page).toHaveURL('/security/users/create');
+    await expect(page).toHaveURL(appURL('/security/users/create'));
 
     // Form state: username input retained after failed submit.
     await expect(page.getByTestId('create-user-name')).toHaveValue(username);
@@ -60,7 +59,7 @@ test.describe('User creation - Connect RPC error handling', () => {
     await page.getByTestId('create-user-submit').click();
 
     // Structural: no success, still on /create.
-    await expect(page).toHaveURL('/security/users/create');
+    await expect(page).toHaveURL(appURL('/security/users/create'));
     await expect(page.getByTestId('user-created-successfully')).not.toBeVisible();
 
     // Toast copy: rawMessage from the mock envelope is composed verbatim into the toast title.
@@ -77,6 +76,6 @@ test.describe('User creation - Connect RPC error handling', () => {
 
     // Structural: dialog opens without navigating away from the list.
     await expect(page.getByTestId('create-user-name')).toBeVisible();
-    await expect(page).toHaveURL('/security/users');
+    await expect(page).toHaveURL(appURL('/security/users'));
   });
 });

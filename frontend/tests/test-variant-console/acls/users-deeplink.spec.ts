@@ -8,7 +8,7 @@
  * bookmarks, share links).
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 const ACLS_HEADING_NAME = /ACLs/;
 const CACHE_MISS_ERROR_PATTERN = /cannot read|undefined|missing user/i;
@@ -38,9 +38,11 @@ test.describe('Security pages deep-link (cold cache)', () => {
     expect(suspicious).toEqual([]);
   });
 
-  test('direct-load /security/acls/<principal>/details renders for existing principal', async ({ page }) => {
-    test.setTimeout(180_000);
-
+  test('direct-load /security/acls/<principal>/details renders for existing principal', async ({
+    page,
+    browser,
+    playwright,
+  }) => {
     const principal = `deeplink-${Date.now()}`;
     const topicName = 'deeplink-topic';
 
@@ -62,10 +64,7 @@ test.describe('Security pages deep-link (cold cache)', () => {
 
     // Cold-cache simulation: open a fresh page in a new context so Connect Query has no
     // hydrated `getAclsByPrincipal` entry, then deep-link straight to the detail URL.
-    const freshContext = await page.context().browser()?.newContext();
-    if (!freshContext) {
-      throw new Error('Failed to create fresh browser context');
-    }
+    const freshContext = await browser.newContext(playwright.contextOptions);
     const freshPage = await freshContext.newPage();
     try {
       await freshPage.goto(`/security/acls/User:${principal}/details`, { waitUntil: 'domcontentloaded' });
@@ -79,5 +78,5 @@ test.describe('Security pages deep-link (cold cache)', () => {
     } finally {
       await freshContext.close();
     }
-  });
+  }, 180_000);
 });

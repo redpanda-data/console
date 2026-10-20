@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { createMemoryStorage } from './memory-storage';
+import { describe, expect, test } from 'bun:test';
 
 describe('createMemoryStorage', () => {
   test('implements the Storage contract without retaining values after clear', () => {

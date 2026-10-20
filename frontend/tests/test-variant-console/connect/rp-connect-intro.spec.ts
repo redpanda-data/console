@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 // The only rp-connect surface a test variant can reach: the OSS config declares no pipelines API,
 // so `/connect-clusters` renders the intro. Code assertions use `toContainText` — the block

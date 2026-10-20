@@ -1,8 +1,7 @@
-import { test as base, type Page } from '@playwright/test';
-
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { brotliCompressSync, gzipSync } from 'node:zlib';
+import { test as base, type Page } from '../shared/e2e';
 
 export const buildDirectory = resolve(process.env.BUNDLE_BUILD_DIR ?? 'build');
 

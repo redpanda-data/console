@@ -12,7 +12,6 @@
 import { ShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { describe, expect, test } from '@rstest/core';
 import {
   FilterType,
   PatternType,
@@ -20,7 +19,8 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { buildDefaultFormValuesFromControlplane, fromControlplaneShadowLink } from './controlplane';
-import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
+import { describe, expect, test } from 'bun:test';
+import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
 import type { UnifiedSchemaRegistryApiOptions } from '../model';
 
 type SchemaRegistrySyncOptionsInit = NonNullable<
@@ -174,7 +174,11 @@ describe('fromControlplaneShadowLink role sync options', () => {
 });
 
 describe('buildDefaultFormValuesFromControlplane role hydration', () => {
-  test.each([
+  test.each<{
+    description: string;
+    roleSyncOptions: RoleSyncOptionsInit | undefined;
+    expected: Pick<FormValues, 'rolesMode' | 'roles'>;
+  }>([
     {
       description: 'unset role sync options',
       roleSyncOptions: undefined,

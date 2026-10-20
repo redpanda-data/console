@@ -1,22 +1,8 @@
-import { test as base } from '@playwright/test';
+import { test as base } from '../shared/e2e';
 
-// Extend test fixtures to include shadowBackendURL and featureFlags
-export type CustomTestOptions = {
-  shadowBackendURL: string;
-  featureFlags: Record<string, boolean>;
-};
-
-export const test = base.extend<CustomTestOptions>({
-  shadowBackendURL: ['http://localhost:3001', { option: true }],
-  featureFlags: [{}, { option: true }],
-  page: async ({ page, featureFlags }, use) => {
-    if (Object.keys(featureFlags).length > 0) {
-      await page.addInitScript((flags) => {
-        window.__E2E_FEATURE_FLAGS__ = flags;
-      }, featureFlags);
-    }
-    await use(page);
-  },
+const ports = JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}') as Record<string, number>;
+export const test = base.extend<{ shadowBackendURL: string }>({
+  shadowBackendURL: process.env.REACT_APP_SHADOW_ORIGIN ?? `http://localhost:${ports.backendDest ?? 3101}`,
 });
 
-export { expect } from '@playwright/test';
+export { expect } from '../shared/e2e';

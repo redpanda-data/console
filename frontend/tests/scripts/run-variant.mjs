@@ -61,7 +61,7 @@ async function resolveDynamicPorts(variant) {
 }
 
 function printUsage() {
-  console.log('Usage: bun run e2e-test:variant <variant-name> [playwright-options]');
+  console.log('Usage: bun run e2e-test:variant <variant-name> [rstest-options]');
   console.log('');
   console.log('Available variants:');
   const variants = discoverVariants();
@@ -71,11 +71,11 @@ function printUsage() {
   console.log('');
   console.log('Examples:');
   console.log('  bun run e2e-test:variant console');
-  console.log('  bun run e2e-test:variant console-enterprise --ui');
-  console.log('  bun run e2e-test:variant console --headed');
+  console.log('  bun run e2e-test:variant console-enterprise --watch');
+  console.log('  bun run e2e-test:variant console --watch');
 }
 
-async function runVariant(variantName, playwrightArgs = []) {
+async function runVariant(variantName, rstestArgs = []) {
   const variant = getVariant(variantName);
 
   if (!variant) {
@@ -85,10 +85,10 @@ async function runVariant(variantName, playwrightArgs = []) {
     process.exit(1);
   }
 
-  const configPath = join(variant.path, 'playwright.config.ts');
+  const configPath = join(variant.path, 'rstest.config.ts');
 
   if (!existsSync(configPath)) {
-    console.error(`Error: Playwright config not found at ${configPath}`);
+    console.error(`Error: Rstest config not found at ${configPath}`);
     process.exit(1);
   }
 
@@ -96,7 +96,7 @@ async function runVariant(variantName, playwrightArgs = []) {
   console.log(`Config: ${configPath}`);
   console.log('');
 
-  // Pick free host ports up front (before Playwright loads its config, so the
+  // Pick free host ports up front (before Rstest loads its config, so the
   // config's baseURL can read REACT_APP_ORIGIN). global-setup merges
   // E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
   const dynamicPorts = await resolveDynamicPorts(variant);
@@ -110,13 +110,14 @@ async function runVariant(variantName, playwrightArgs = []) {
     console.log('');
   }
 
-  const args = ['playwright', 'test', '--config', configPath, ...playwrightArgs];
+  const args = ['run', 'rstest', ...rstestArgs, '--config', configPath];
 
-  const child = spawn('npx', args, {
+  const child = spawn('bun', args, {
     stdio: 'inherit',
     cwd: testsDir,
     env: {
       ...process.env,
+      E2E_VARIANT: variant.name,
       // Force IPv4 for testcontainers wait strategies (localhost resolves to ::1 on macOS, causing hangs)
       TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
       ...portEnv,
@@ -128,7 +129,7 @@ async function runVariant(variantName, playwrightArgs = []) {
       if (code === 0) {
         resolve(code);
       } else {
-        reject(new Error(`Playwright exited with code ${code}`));
+        reject(new Error(`Rstest exited with code ${code}`));
       }
     });
     child.on('error', reject);
@@ -144,9 +145,9 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
 }
 
 const variantName = args[0];
-const playwrightArgs = args.slice(1);
+const rstestArgs = args.slice(1);
 
-runVariant(variantName, playwrightArgs).catch((error) => {
+runVariant(variantName, rstestArgs).catch((error) => {
   console.error(error.message);
   process.exit(1);
 });
