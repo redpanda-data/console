@@ -141,7 +141,7 @@ function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?
     const line = lineCounter.linePos(checkNode.range[0]).line;
     return lintHints.find((h) => h.line === line)?.hint;
   } catch {
-    return;
+    // Unparseable YAML: no hint, as for a case without a check.
   }
 }
 

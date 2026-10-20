@@ -174,7 +174,9 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
       );
       onOpenChange(false);
       form.reset();
-      if (!principal) resetPrincipalSelector();
+      if (!principal) {
+        resetPrincipalSelector();
+      }
     } catch (err) {
       if (err instanceof ConnectError) {
         const globalMessages: string[] = [];
@@ -211,7 +213,9 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     setSubmitError(null);
     onOpenChange(false);
     form.reset();
-    if (!principal) resetPrincipalSelector();
+    if (!principal) {
+      resetPrincipalSelector();
+    }
   };
 
   return (

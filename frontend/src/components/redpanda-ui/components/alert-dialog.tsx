@@ -1,10 +1,12 @@
 'use client';
 
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
-import type React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import React from 'react';
 
 import { type ButtonVariants, buttonVariants } from './button';
 import { usePortalContainer } from '../lib/use-portal-container';
+import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
 type AlertDialogRootProps = AlertDialogPrimitive.Root.Props & SharedProps;
@@ -56,7 +58,7 @@ function AlertDialogContent({ className, testId, container, showOverlay = true, 
       <AlertDialogPrimitive.Popup
         aria-modal="true"
         className={cn(
-          'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col gap-4 overflow-hidden rounded-lg border bg-background fill-mode-forwards p-6 shadow-lg duration-200 data-[closed]:animate-out data-[open]:animate-in sm:max-w-lg',
+          'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg border bg-background fill-mode-forwards shadow-lg duration-200 data-[closed]:animate-out data-[open]:animate-in sm:max-w-lg',
           className
         )}
         data-slot="alert-dialog-content"
@@ -70,7 +72,10 @@ function AlertDialogContent({ className, testId, container, showOverlay = true, 
 function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex shrink-0 flex-col gap-2 text-center sm:text-left', className)}
+      className={cn(
+        'flex shrink-0 flex-col gap-2 p-4 text-center sm:text-left [&:has(+[data-slot=alert-dialog-body])]:border-b',
+        className
+      )}
       data-slot="alert-dialog-header"
       {...props}
     />
@@ -80,10 +85,78 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
 function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+      className={cn(
+        'flex shrink-0 flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end [[data-slot=alert-dialog-body]+&]:border-t',
+        className
+      )}
       data-slot="alert-dialog-footer"
       {...props}
     />
+  );
+}
+
+// Padding lives on the inner wrapper so scroll shadows can sit flush against the body edges.
+const alertDialogBodyContentVariants = cva('', {
+  variants: {
+    padding: {
+      none: '',
+      sm: 'p-2',
+      md: 'p-4',
+      lg: 'p-6',
+    },
+    spacing: {
+      none: '',
+      sm: 'space-y-2',
+      md: 'space-y-4',
+      lg: 'space-y-6',
+    },
+  },
+  defaultVariants: {
+    padding: 'md',
+    spacing: 'md',
+  },
+});
+
+const alertDialogScrollShadow = 'pointer-events-none sticky z-10 h-0 transition-opacity motion-reduce:transition-none';
+const alertDialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' : 'opacity-0');
+
+interface AlertDialogBodyProps
+  extends React.ComponentProps<'div'>,
+    VariantProps<typeof alertDialogBodyContentVariants> {
+  /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
+  scrollShadow?: boolean;
+}
+
+function AlertDialogBody({
+  className,
+  padding,
+  spacing,
+  scrollShadow = true,
+  children,
+  ...props
+}: AlertDialogBodyProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const edges = useScrollShadow(containerRef, scrollShadow);
+
+  return (
+    <div
+      className={cn('relative min-h-0 flex-1 overflow-y-auto', className)}
+      data-slot="alert-dialog-body"
+      ref={containerRef}
+      {...props}
+    >
+      {scrollShadow ? (
+        <div aria-hidden className={cn(alertDialogScrollShadow, 'top-0', alertDialogScrollShadowState(edges.start))}>
+          <div className="absolute inset-x-0 top-0 h-3 bg-linear-to-b from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+      <div className={alertDialogBodyContentVariants({ padding, spacing })}>{children}</div>
+      {scrollShadow ? (
+        <div aria-hidden className={cn(alertDialogScrollShadow, 'bottom-0', alertDialogScrollShadowState(edges.end))}>
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-linear-to-t from-black/[0.10] to-transparent" />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -137,6 +210,7 @@ function AlertDialogCancel({ className, testId, variant = 'outline', size, ...pr
 
 export type {
   AlertDialogActionProps,
+  AlertDialogBodyProps,
   AlertDialogCancelProps,
   AlertDialogContentProps,
   AlertDialogRootProps,
@@ -145,6 +219,7 @@ export type {
 export {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,

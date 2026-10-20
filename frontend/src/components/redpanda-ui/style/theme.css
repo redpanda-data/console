@@ -496,6 +496,18 @@
   }
 }
 
+/* A highlighted code token, as `lib/highlighter` renders it. Shiki emits both themes' colours as
+   custom properties on the token rather than one token name, so this picks the side for the theme
+   around it, a terminal code block's own `data-theme` included. */
+
+@utility code-token {
+  color: var(--shiki-light);
+
+  &:is([data-theme='dark'] *, .dark *) {
+    color: var(--shiki-dark);
+  }
+}
+
 @custom-variant dark (&:is([data-theme='dark'] *, .dark *));
 
 /* Use plain `hover:`/`active:`. Tailwind wraps `hover:` in `@media (hover: hover)` from 4.3 on, and

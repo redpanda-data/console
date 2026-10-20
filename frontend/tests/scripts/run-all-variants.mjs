@@ -56,12 +56,16 @@ async function runVariant(variant, playwrightArgs = []) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       const status = code === 0 ? 'PASSED' : 'FAILED';
       console.log(`[${variant.name}] ${status} (${elapsed}s)`);
-      if (logStream) logStream.end();
+      if (logStream) {
+        logStream.end();
+      }
       resolve({ variant: variant.name, code });
     });
     child.on('error', (error) => {
       console.error(`[${variant.name}] Error: ${error.message}`);
-      if (logStream) logStream.end();
+      if (logStream) {
+        logStream.end();
+      }
       resolve({ variant: variant.name, code: 1 });
     });
   });

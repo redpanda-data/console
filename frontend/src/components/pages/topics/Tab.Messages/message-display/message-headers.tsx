@@ -78,12 +78,12 @@ export const MessageHeaders = (props: { msg: TopicMessage }) => {
           sorting
           subComponent={({ row: { original: header } }) => (
             <div className="px-10 py-6">
-              {typeof header.value?.payload !== 'object' ? (
+              {typeof header.value?.payload === 'object' ? (
+                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
+              ) : (
                 <div className="codeBox" style={{ margin: '0', width: '100%' }}>
                   {toSafeString(header.value.payload)}
                 </div>
-              ) : (
-                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
               )}
             </div>
           )}

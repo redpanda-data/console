@@ -73,7 +73,6 @@ const childItemConditionText = (item: InspectorChildItem): string | undefined =>
   if (item.isErrorPath) {
     return 'on error';
   }
-  return;
 };
 
 const childItemCondColor = (item: InspectorChildItem): string => {
@@ -170,7 +169,6 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
   if (spec.name === 'resource' && spec.kind === 'scalar' && componentResourceKind) {
     return componentResourceKind;
   }
-  return;
 }
 
 // Dropdown for a `resource:` link — never free text, so the reference can't be mistyped; a stale
@@ -602,10 +600,12 @@ const CreateTopicButton = () => {
 // per keystroke (onInputValueChange): the combobox itself only fires onChange on Enter/selection,
 // which would let a blur-commit save stale YAML while the field still displays the typed text.
 const TopicScalarControl = ({
+  id,
   value,
   onChange,
   invalid,
 }: {
+  id?: string;
   value: string;
   onChange: (value: unknown) => void;
   invalid?: boolean;
@@ -617,6 +617,7 @@ const TopicScalarControl = ({
         className={invalid ? 'ring-1 ring-destructive' : undefined}
         creatable
         createLabel="value"
+        id={id}
         isLoading={isLoading}
         onChange={onChange}
         onInputValueChange={onChange}
@@ -727,7 +728,7 @@ const ScalarControl = ({
     return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
   }
   if (clusterTopicFields && isTopicField(spec.name ?? '')) {
-    return <TopicScalarControl invalid={invalid} onChange={onChange} value={String(value ?? '')} />;
+    return <TopicScalarControl id={id} invalid={invalid} onChange={onChange} value={String(value ?? '')} />;
   }
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
@@ -792,10 +793,8 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { clusterTopicFields, fieldDocsUrl } = useContext(ResourceFieldContext);
+  const { fieldDocsUrl } = useContext(ResourceFieldContext);
   const docsUrl = fieldDocsUrl?.(leaf.path);
-  // The topic picker's combobox can't take an id — don't point the label at a nonexistent one.
-  const labelFor = clusterTopicFields && isTopicField(leaf.spec.name ?? '') ? undefined : inputId;
   return (
     <Controller
       control={control}
@@ -806,7 +805,7 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
         const hasLintError = (lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty;
         return (
           <div className="flex flex-col gap-1.5">
-            <FieldLabel htmlFor={labelFor} spec={leaf.spec} />
+            <FieldLabel htmlFor={inputId} spec={leaf.spec} />
             <ScalarControl
               id={inputId}
               invalid={Boolean(hint) || hasLintError}

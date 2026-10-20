@@ -65,7 +65,9 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
     .map((r) => ({ value: r.name, label: r.name }));
 
   const removeFromRole = async (roleName: string) => {
-    if (!userName) return;
+    if (!userName) {
+      return;
+    }
     await updateRoleMembership(
       create(UpdateRoleMembershipRequestSchema, { roleName, remove: [{ principal: userName }] })
     );
@@ -74,7 +76,9 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   };
 
   const assignRole = async (roleName: string) => {
-    if (!(userName && roleName)) return;
+    if (!(userName && roleName)) {
+      return;
+    }
     await updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName, add: [{ principal: userName }] }));
     await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
   };

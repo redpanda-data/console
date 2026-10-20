@@ -8,6 +8,10 @@ import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import { useTheme } from './theme-provider';
 import type { SharedProps } from '../lib/utils';
 
+/**
+ * @deprecated Use the `Toaster` and `toast` manager from the `toast` component instead. See
+ * https://redpanda-ui-registry.netlify.app/docs/toast#migrating-from-sonner
+ */
 function Toaster(props: ToasterProps & SharedProps) {
   return (
     <Suspense fallback={null}>

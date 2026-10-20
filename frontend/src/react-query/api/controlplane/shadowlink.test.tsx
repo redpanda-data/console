@@ -99,7 +99,7 @@ describe('useControlplaneListShadowLinksQuery', () => {
 
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const opts = testCase.optsEnabled !== undefined ? { enabled: testCase.optsEnabled } : undefined;
+    const opts = testCase.optsEnabled === undefined ? undefined : { enabled: testCase.optsEnabled };
     const { result } = renderHook(() => useControlplaneListShadowLinksQuery(opts), { wrapper });
 
     if (testCase.shouldMakeRequest) {

@@ -89,6 +89,18 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
   Document.prototype.getAnimations = () => [];
 }
 
+// happy-dom >=20.12 implements Web Animations, but Animation.cancel() rejects
+// `finished` without marking it handled as the spec requires, so every
+// unmount mid-animation surfaces an unhandled AbortError
+// (capricorn86/happy-dom#2412). Mark it handled before cancelling.
+if (typeof Animation !== 'undefined') {
+  const originalCancel = Animation.prototype.cancel;
+  Animation.prototype.cancel = function cancel(this: Animation) {
+    this.finished.catch(() => undefined);
+    originalCancel.call(this);
+  };
+}
+
 // ── Mocks ────────────────────────────────────────────────────────────
 // happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
 // matchMedia must be an rs.fn so media-query reads (the theme provider's

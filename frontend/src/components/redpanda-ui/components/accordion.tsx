@@ -123,7 +123,7 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
 }
 
 const accordionTriggerVariants = cva(
-  'group/accordion-trigger flex flex-1 cursor-pointer items-center gap-4 text-start font-medium outline-none transition-colors focus-visible:underline aria-disabled:pointer-events-none aria-disabled:opacity-50 motion-reduce:transition-none',
+  'group/accordion-trigger flex flex-1 cursor-pointer items-center gap-4 text-start font-medium outline-none transition-colors focus-visible:underline data-[disabled]:pointer-events-none data-[disabled]:opacity-50 motion-reduce:transition-none',
   {
     variants: {
       variant: {

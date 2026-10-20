@@ -59,7 +59,9 @@ function abbreviateUnit(unit: string): string {
  * Canonicalize a unit to form "x" or "x/y"
  */
 function canonicalizeUnit(unit: string): string {
-  if (!unit) return '';
+  if (!unit) {
+    return '';
+  }
 
   const normalized = unit.toLowerCase().trim();
 

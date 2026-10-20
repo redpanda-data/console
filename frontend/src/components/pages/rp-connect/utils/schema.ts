@@ -78,7 +78,6 @@ export function findComponentByName(
       return found;
     }
   }
-  return;
 }
 
 /**
@@ -262,8 +261,6 @@ function populateWizardFields(
       return getSecretSyntax(userSecretIds(userData.username).password);
     }
   }
-
-  return;
 }
 
 /** Populates fields with Redpanda contextual variables (e.g. schema_registry.url) for supported components. */
@@ -279,8 +276,6 @@ function populateContextualVariables(
   if (isSchemaRegistryUrlField(spec.name, parentName)) {
     return getContextualVariableSyntax('REDPANDA_SCHEMA_REGISTRY_URL');
   }
-
-  return;
 }
 
 /** Redpanda Cloud connection defaults: TLS enabled, SASL mechanism from session or SCRAM-SHA-256. */
@@ -303,8 +298,6 @@ function populateConnectionDefaults(
     const userData = rpcnWizardStore.getUserData();
     return userData?.saslMechanism || 'SCRAM-SHA-256';
   }
-
-  return;
 }
 
 const isRedpandaComponent = (name?: string): boolean => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
@@ -638,5 +631,4 @@ export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefau
   // Everything else is a non-required field whose default didn't survive serialization (the proto
   // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
   // flips semantics (e.g. auto_replay_nacks defaults to true; a generated `false` overrides it).
-  return;
 }

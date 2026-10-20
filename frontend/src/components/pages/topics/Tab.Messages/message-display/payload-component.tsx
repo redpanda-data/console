@@ -117,7 +117,7 @@ function preparePayloadData(payload: Payload): PayloadRenderData {
     return { type: 'json', content: val };
   } catch (e) {
     const err = e as Error;
-    const msg = err.message !== undefined ? err.message : String(e);
+    const msg = err.message === undefined ? String(e) : err.message;
     return { type: 'error', content: msg };
   }
 }

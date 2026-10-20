@@ -253,7 +253,6 @@ function splitAddAction(
       label: `Add ${node.insertSlot.accepts}`,
     };
   }
-  return;
 }
 
 function addGraphSplit(

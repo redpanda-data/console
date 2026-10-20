@@ -13,7 +13,11 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
-  storageKey?: string;
+  /**
+   * `localStorage` key the theme persists under. `null` keeps it in memory: nothing is read, written,
+   * or picked up from another tab, for a provider that follows a theme something else owns.
+   */
+  storageKey?: string | null;
 }
 
 interface ThemeProviderState {
@@ -68,7 +72,7 @@ const applyTheme = (resolved: ResolvedTheme): void => {
 
 function ThemeProvider({ children, defaultTheme = 'system', storageKey = DEFAULT_STORAGE_KEY }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() =>
-    typeof window === 'undefined' ? defaultTheme : (readStored(storageKey) ?? defaultTheme)
+    typeof window === 'undefined' || storageKey === null ? defaultTheme : (readStored(storageKey) ?? defaultTheme)
   );
   // In state, not read during render: a bare `matchMedia` read cannot re-render on an OS flip.
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
@@ -86,6 +90,9 @@ function ThemeProvider({ children, defaultTheme = 'system', storageKey = DEFAULT
 
   // Another tab is the same app with the same stored preference.
   useEffect(() => {
+    if (storageKey === null) {
+      return;
+    }
     const sync = (event: StorageEvent) => {
       if (event.key === storageKey) {
         setThemeState(isTheme(event.newValue) ? event.newValue : defaultTheme);
@@ -103,10 +110,12 @@ function ThemeProvider({ children, defaultTheme = 'system', storageKey = DEFAULT
 
   const setTheme = useCallback(
     (next: Theme) => {
-      try {
-        localStorage.setItem(storageKey, next);
-      } catch {
-        // Persisting is an optimisation; the theme still applies for this session.
+      if (storageKey !== null) {
+        try {
+          localStorage.setItem(storageKey, next);
+        } catch {
+          // Persisting is an optimisation; the theme still applies for this session.
+        }
       }
       setThemeState(next);
     },

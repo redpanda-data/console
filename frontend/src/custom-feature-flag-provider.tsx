@@ -39,7 +39,7 @@ export const CustomFeatureFlagProvider = ({
   }, []);
 
   const getBooleanFlagValue = useCallback(
-    (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => (flags[key] !== undefined ? flags[key] : defaultValue),
+    (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => (flags[key] === undefined ? defaultValue : flags[key]),
     [flags]
   );
 

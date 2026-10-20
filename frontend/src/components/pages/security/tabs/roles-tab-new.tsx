@@ -71,7 +71,9 @@ type RoleEntry = {
 };
 
 const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValue: string) => {
-  if (!filterValue) return true;
+  if (!filterValue) {
+    return true;
+  }
   try {
     return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
   } catch {

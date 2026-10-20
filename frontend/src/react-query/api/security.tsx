@@ -164,7 +164,9 @@ export const useUpdateRoleMembershipMutation = () => {
       const toRemove = new Set((variables.remove ?? []).map((m) => m.principal));
 
       queryClient.setQueriesData<InfiniteData<ListRoleMembersResponse>>(listRoleMembersQueryFilter, (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           pages: old.pages.map((page, i) => ({

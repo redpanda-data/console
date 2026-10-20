@@ -588,40 +588,43 @@ describe('AddUserStep', () => {
       createACLMock.mock.calls.filter(([request]) => request.resourceName === 'my-topic');
 
     // A reused user has to end up able to use the topic, as a new one does.
-    test.each([
-      'existing',
-      'new',
-    ] as const)('10. grants an existing user without access the topic (%s tab)', async (selectionMode) => {
-      const user = userEvent.setup();
-      const { transport, listACLsMock, createACLMock, createUserMock, createSecretMock } = buildTransport({
-        listUsersMock: userWithoutAccess(),
-      });
-      let capturedResult: unknown;
+    test.each(['existing', 'new'] as const)(
+      '10. grants an existing user without access the topic (%s tab)',
+      async (selectionMode) => {
+        const user = userEvent.setup();
+        const { transport, listACLsMock, createACLMock, createUserMock, createSecretMock } = buildTransport({
+          listUsersMock: userWithoutAccess(),
+        });
+        let capturedResult: unknown;
 
-      renderWithFileRoutes(
-        <TestHarness
-          defaultUsername="no-perms-user"
-          onResult={(r: unknown) => {
-            capturedResult = r;
-          }}
-          selectionMode={selectionMode}
-          topicName="my-topic"
-        />,
-        { transport }
-      );
+        renderWithFileRoutes(
+          <TestHarness
+            defaultUsername="no-perms-user"
+            onResult={(r: unknown) => {
+              capturedResult = r;
+            }}
+            selectionMode={selectionMode}
+            topicName="my-topic"
+          />,
+          { transport }
+        );
 
-      // The topic's ACLs are only fetched once the name resolves to an existing user.
-      await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
-      expect(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeChecked();
-      await user.click(screen.getByTestId('submit'));
+        // The topic's ACLs are only fetched once the name resolves to an existing user.
+        await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
+        expect(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeChecked();
+        await user.click(screen.getByTestId('submit'));
 
-      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toEqual([
-        [expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }), expect.anything()],
-      ]);
-      expect(createUserMock).not.toHaveBeenCalled();
-      expect(createSecretMock).not.toHaveBeenCalled();
-    });
+        await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+        expect(topicGrants(createACLMock)).toEqual([
+          [
+            expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }),
+            expect.anything(),
+          ],
+        ]);
+        expect(createUserMock).not.toHaveBeenCalled();
+        expect(createSecretMock).not.toHaveBeenCalled();
+      }
+    );
 
     test("10b. leaves an existing user's access alone when the grant is unticked", async () => {
       const user = userEvent.setup();
@@ -772,59 +775,62 @@ describe('AddUserStep', () => {
       ['a reader', 'read', false, ACL_Operation.READ],
       ['a writer', 'write', false, ACL_Operation.WRITE],
       ['a reader', 'write', true, ACL_Operation.READ],
-    ] as const)('11c. %s, for a component that needs %s access, is offered the grant: %s', async (_user, topicAccess, offered, operation) => {
-      const user = userEvent.setup();
-      const listUsersMock = rs
-        .fn()
-        .mockReturnValue(
-          create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
+    ] as const)(
+      '11c. %s, for a component that needs %s access, is offered the grant: %s',
+      async (_user, topicAccess, offered, operation) => {
+        const user = userEvent.setup();
+        const listUsersMock = rs
+          .fn()
+          .mockReturnValue(
+            create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
+          );
+        const listACLsMock = rs.fn().mockReturnValue(
+          create(ListACLsResponseSchema, {
+            resources: [
+              create(ListACLsResponse_ResourceSchema, {
+                resourceType: ACL_ResourceType.TOPIC,
+                resourceName: 'my-topic',
+                resourcePatternType: ACL_ResourcePatternType.LITERAL,
+                acls: [
+                  create(ListACLsResponse_PolicySchema, {
+                    principal: 'User:perms-user',
+                    host: '*',
+                    operation,
+                    permissionType: ACL_PermissionType.ALLOW,
+                  }),
+                ],
+              }),
+            ],
+          })
         );
-      const listACLsMock = rs.fn().mockReturnValue(
-        create(ListACLsResponseSchema, {
-          resources: [
-            create(ListACLsResponse_ResourceSchema, {
-              resourceType: ACL_ResourceType.TOPIC,
-              resourceName: 'my-topic',
-              resourcePatternType: ACL_ResourcePatternType.LITERAL,
-              acls: [
-                create(ListACLsResponse_PolicySchema, {
-                  principal: 'User:perms-user',
-                  host: '*',
-                  operation,
-                  permissionType: ACL_PermissionType.ALLOW,
-                }),
-              ],
-            }),
-          ],
-        })
-      );
-      const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
-      let capturedResult: unknown;
+        const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
+        let capturedResult: unknown;
 
-      renderWithFileRoutes(
-        <TestHarness
-          defaultUsername="perms-user"
-          onResult={(r: unknown) => {
-            capturedResult = r;
-          }}
-          selectionMode="existing"
-          topicAccess={topicAccess}
-          topicName="my-topic"
-        />,
-        { transport }
-      );
+        renderWithFileRoutes(
+          <TestHarness
+            defaultUsername="perms-user"
+            onResult={(r: unknown) => {
+              capturedResult = r;
+            }}
+            selectionMode="existing"
+            topicAccess={topicAccess}
+            topicName="my-topic"
+          />,
+          { transport }
+        );
 
-      const checkbox = { name: 'Grant this user full access to my-topic' };
-      if (offered) {
-        expect(await screen.findByRole('checkbox', checkbox)).toBeChecked();
-      } else {
-        expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
-        expect(screen.queryByRole('checkbox', checkbox)).toBeNull();
+        const checkbox = { name: 'Grant this user full access to my-topic' };
+        if (offered) {
+          expect(await screen.findByRole('checkbox', checkbox)).toBeChecked();
+        } else {
+          expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
+          expect(screen.queryByRole('checkbox', checkbox)).toBeNull();
+        }
+        await user.click(screen.getByTestId('submit'));
+        await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+        expect(topicGrants(createACLMock)).toHaveLength(offered ? 1 : 0);
       }
-      await user.click(screen.getByTestId('submit'));
-      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toHaveLength(offered ? 1 : 0);
-    });
+    );
   });
 
   // ── Edge cases ─────────────────────────────────────────────────────────────

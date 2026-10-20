@@ -72,6 +72,9 @@ function getOptionalLottieConfig(
   };
 }
 
+// The unsubscribe callback `addEventListener` returns is deliberately dropped:
+// `destroy()` clears lottie's listener map wholesale, and calling one afterwards
+// reads off that nulled map and throws.
 function subscribeToLottieEvent<Name extends AnimationEventName>(
   animation: AnimationItem,
   optionsRef: React.RefObject<LoadingAnimationLottieOptions>,
@@ -80,24 +83,22 @@ function subscribeToLottieEvent<Name extends AnimationEventName>(
     options: LoadingAnimationLottieOptions
   ) => AnimationEventCallback<AnimationEvents[Name]> | null | undefined
 ) {
-  return animation.addEventListener(name, (event) => {
+  animation.addEventListener(name, (event) => {
     selectHandler(optionsRef.current)?.(event);
   });
 }
 
 function subscribeToLottieEvents(animation: AnimationItem, optionsRef: React.RefObject<LoadingAnimationLottieOptions>) {
-  return [
-    subscribeToLottieEvent(animation, optionsRef, 'complete', (options) => options.onComplete),
-    subscribeToLottieEvent(animation, optionsRef, 'loopComplete', (options) => options.onLoopComplete),
-    subscribeToLottieEvent(animation, optionsRef, 'enterFrame', (options) => options.onEnterFrame),
-    subscribeToLottieEvent(animation, optionsRef, 'segmentStart', (options) => options.onSegmentStart),
-    subscribeToLottieEvent(animation, optionsRef, 'config_ready', (options) => options.onConfigReady),
-    subscribeToLottieEvent(animation, optionsRef, 'data_ready', (options) => options.onDataReady),
-    subscribeToLottieEvent(animation, optionsRef, 'data_failed', (options) => options.onDataFailed),
-    subscribeToLottieEvent(animation, optionsRef, 'loaded_images', (options) => options.onLoadedImages),
-    subscribeToLottieEvent(animation, optionsRef, 'DOMLoaded', (options) => options.onDOMLoaded),
-    subscribeToLottieEvent(animation, optionsRef, 'destroy', (options) => options.onDestroy),
-  ];
+  subscribeToLottieEvent(animation, optionsRef, 'complete', (options) => options.onComplete);
+  subscribeToLottieEvent(animation, optionsRef, 'loopComplete', (options) => options.onLoopComplete);
+  subscribeToLottieEvent(animation, optionsRef, 'enterFrame', (options) => options.onEnterFrame);
+  subscribeToLottieEvent(animation, optionsRef, 'segmentStart', (options) => options.onSegmentStart);
+  subscribeToLottieEvent(animation, optionsRef, 'config_ready', (options) => options.onConfigReady);
+  subscribeToLottieEvent(animation, optionsRef, 'data_ready', (options) => options.onDataReady);
+  subscribeToLottieEvent(animation, optionsRef, 'data_failed', (options) => options.onDataFailed);
+  subscribeToLottieEvent(animation, optionsRef, 'loaded_images', (options) => options.onLoadedImages);
+  subscribeToLottieEvent(animation, optionsRef, 'DOMLoaded', (options) => options.onDOMLoaded);
+  subscribeToLottieEvent(animation, optionsRef, 'destroy', (options) => options.onDestroy);
 }
 
 function seekToProgress(animation: AnimationItem, progress: number) {
@@ -138,7 +139,6 @@ function LottieView({ data, options, progress }: LottieViewProps) {
 
       let disposed = false;
       let loadedAnimation: AnimationItem | undefined;
-      let unsubscribe: Array<() => void> = [];
       loadLottiePlayer()
         .then((player) => {
           if (disposed) {
@@ -155,7 +155,7 @@ function LottieView({ data, options, progress }: LottieViewProps) {
           });
           loadedAnimation = animation;
           animationRef.current = animation;
-          unsubscribe = subscribeToLottieEvents(animation, optionsRef);
+          subscribeToLottieEvents(animation, optionsRef);
           if (progressRef.current !== undefined) {
             seekToProgress(animation, progressRef.current);
           }
@@ -169,10 +169,9 @@ function LottieView({ data, options, progress }: LottieViewProps) {
 
       return function destroyLottieAnimation() {
         disposed = true;
+        // `destroy()` emits the `destroy` event and then nulls lottie's internal
+        // listener map, which is what drops every subscription.
         loadedAnimation?.destroy();
-        for (const removeListener of unsubscribe) {
-          removeListener();
-        }
         if (animationRef.current === loadedAnimation) {
           animationRef.current = undefined;
         }

@@ -22,7 +22,7 @@ export function formatFieldLabel(key: string): string {
 }
 
 /** `pluralize(2, 'child', 'ren')` -> `'children'`. Count not included. */
-export const pluralize = (count: number, noun: string, suffix = 's'): string => `${noun}${count !== 1 ? suffix : ''}`;
+export const pluralize = (count: number, noun: string, suffix = 's'): string => `${noun}${count === 1 ? '' : suffix}`;
 
 /** `pluralizeWithNumber(2, 'child', 'ren')` -> `'2 children'`. */
 export const pluralizeWithNumber = (count: number, noun: string, suffix = 's'): string =>

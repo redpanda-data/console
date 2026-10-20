@@ -87,7 +87,6 @@ function getFirstSelectOption(entry: ConfigEntryExtended): string | undefined {
   if (entry.frontendFormat === 'SELECT') {
     return entry.enumValues?.[0];
   }
-  return;
 }
 
 // Curated categories + order for the grouped layout. Anything the backend tags
@@ -214,7 +213,9 @@ const ConfigEditorForm: FC<{
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
       open
     >
@@ -723,10 +724,16 @@ function NumInput(p: {
   useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
-    if (p.disabled) return;
+    if (p.disabled) {
+      return;
+    }
     let v = x;
-    if (v !== undefined && p.min !== undefined && v < p.min) v = p.min;
-    if (v !== undefined && p.max !== undefined && v > p.max) v = p.max;
+    if (v !== undefined && p.min !== undefined && v < p.min) {
+      v = p.min;
+    }
+    if (v !== undefined && p.max !== undefined && v > p.max) {
+      v = p.max;
+    }
     setEditValue(v === undefined ? undefined : String(v));
     p.onChange?.(v);
   };
@@ -752,8 +759,11 @@ function NumInput(p: {
       onChange={(e) => {
         setEditValue(e.target.value);
         const n = Number(e.target.value);
-        if (e.target.value !== '' && !Number.isNaN(n)) p.onChange?.(n);
-        else p.onChange?.(undefined);
+        if (e.target.value !== '' && !Number.isNaN(n)) {
+          p.onChange?.(n);
+        } else {
+          p.onChange?.(undefined);
+        }
       }}
       onWheel={(e) => commit(Math.round((p.value ?? 0) - Math.sign(e.deltaY)))}
       placeholder={p.placeholder}
@@ -762,7 +772,9 @@ function NumInput(p: {
     />
   );
 
-  if (!p.addonAfter) return input;
+  if (!p.addonAfter) {
+    return input;
+  }
   return (
     <div className="flex">
       {input}
@@ -865,9 +877,13 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
             max={100}
             min={0}
             onChange={(e) => {
-              if (e.target.value === '') return;
+              if (e.target.value === '') {
+                return;
+              }
               const n = Number(e.target.value);
-              if (!Number.isNaN(n) && n >= 0 && n <= 100) p.onChange(n / 100);
+              if (!Number.isNaN(n) && n >= 0 && n <= 100) {
+                p.onChange(n / 100);
+              }
             }}
             type="number"
             value={pct}

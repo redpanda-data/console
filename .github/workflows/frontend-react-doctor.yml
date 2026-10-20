@@ -22,12 +22,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # `--scope changed` reports only new issues. Full history fetches every
+          # branch, so origin/master and the push's previous tip both resolve.
+          fetch-depth: 0
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           # Pinned: bun generates yarn.lock (bunfig print = "yarn") and the output
           # changes between bun versions, which trips the lint job's dirty-tree check.
           bun-version-file: frontend/.bun-version
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          # Matches package.json engines; native deps (isolated-vm) ship no Node 20 prebuilds.
+          node-version-file: frontend/.nvmrc
       - name: Cache dependencies
         uses: actions/cache@v5
         with:
@@ -38,4 +47,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Run React Doctor
-        run: bun run doctor
+        env:
+          IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        # On master, HEAD is origin/master, so the default base would scan nothing:
+        # diff against the tip before this push (its parent if that is unknown).
+        run: |
+          base=origin/master
+          if [ "$IS_MASTER" = "true" ]; then
+            base=$(git rev-parse --verify --quiet "${PUSH_BEFORE}^{commit}" || git rev-parse HEAD^)
+          fi
+          bun run doctor --base "$base"

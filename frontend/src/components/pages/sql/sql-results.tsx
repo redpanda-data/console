@@ -43,7 +43,7 @@ import {
   X,
 } from 'lucide-react';
 import { createContext, useContext, useMemo, useState } from 'react';
-import DataGrid, { type Column } from 'react-data-grid';
+import { type Column, DataGrid } from 'react-data-grid';
 import { isMacOS } from 'utils/platform';
 
 import 'react-data-grid/lib/styles.css';

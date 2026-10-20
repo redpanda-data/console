@@ -253,20 +253,17 @@ describe('getUpdateValuesForConnection', () => {
         newCredentials: { username: 'admin', password: 'pass', mechanism: ScramMechanism.SCRAM_SHA_512 },
         expectedPath: 'configurations.client_options.authentication_configuration',
       },
-    ])('should detect $description', ({
-      originalAuthMethod,
-      newAuthMethod,
-      originalCredentials,
-      newCredentials,
-      expectedPath,
-    }) => {
-      const original = { ...baseFormValues, authMethod: originalAuthMethod, scramCredentials: originalCredentials };
-      const updated = { ...baseFormValues, authMethod: newAuthMethod, scramCredentials: newCredentials };
+    ])(
+      'should detect $description',
+      ({ originalAuthMethod, newAuthMethod, originalCredentials, newCredentials, expectedPath }) => {
+        const original = { ...baseFormValues, authMethod: originalAuthMethod, scramCredentials: originalCredentials };
+        const updated = { ...baseFormValues, authMethod: newAuthMethod, scramCredentials: newCredentials };
 
-      const result = getUpdateValuesForConnection(updated, original);
+        const result = getUpdateValuesForConnection(updated, original);
 
-      expect(result.fieldMaskPaths).toContain(expectedPath);
-    });
+        expect(result.fieldMaskPaths).toContain(expectedPath);
+      }
+    );
 
     test('detects switch from SCRAM to PLAIN', () => {
       const original = {

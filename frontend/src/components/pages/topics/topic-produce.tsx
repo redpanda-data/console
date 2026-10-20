@@ -109,7 +109,6 @@ function encodingToLanguage(encoding: PayloadEncoding) {
   if (encoding === PayloadEncoding.BINARY) {
     return 'plaintext';
   }
-  return;
 }
 
 // Numeric-valued select wrapper bridging the registry Select (string values) with

@@ -104,4 +104,4 @@ if (process.env.NODE_ENV !== 'test') {
   console.log(toJson(envVarDebugObj));
 }
 
-export { envVarDebugObj, envVarDebugAr };
+export { envVarDebugAr, envVarDebugObj };

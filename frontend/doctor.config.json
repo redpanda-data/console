@@ -1,5 +1,5 @@
 {
-  "diff": false,
+  "scope": "full",
   "deadCode": false,
   "ignore": {
     "files": [

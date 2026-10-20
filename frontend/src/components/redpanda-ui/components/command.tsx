@@ -49,6 +49,10 @@ function Command({ className, variant, size, testId, ...props }: CommandProps) {
   );
 }
 
+/** The dialog's own sizing of cmdk's parts: taller input and rows than an inline `Command`. */
+const COMMAND_DIALOG_CHROME =
+  '**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-subtle [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5';
+
 function CommandDialog({
   title = 'Command Palette',
   description = 'Search for a command to run...',
@@ -58,6 +62,7 @@ function CommandDialog({
   showCloseButton = true,
   container,
   className,
+  commandProps,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, 'children'> &
   Pick<FixedPositionContentProps, 'showOverlay' | 'container'> & {
@@ -66,6 +71,8 @@ function CommandDialog({
     className?: string;
     showCloseButton?: boolean;
     children?: React.ReactNode;
+    /** Passed to the inner `Command` (`filter`, `loop`, `shouldFilter`…). `className` merges with the dialog's. */
+    commandProps?: Omit<React.ComponentProps<typeof Command>, 'children'>;
   }) {
   return (
     <Dialog {...props}>
@@ -80,9 +87,10 @@ function CommandDialog({
         showOverlay={showOverlay}
       >
         <Command
-          className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-subtle [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
           size="md"
           variant="dialog"
+          {...commandProps}
+          className={cn(COMMAND_DIALOG_CHROME, commandProps?.className)}
         >
           {children}
         </Command>

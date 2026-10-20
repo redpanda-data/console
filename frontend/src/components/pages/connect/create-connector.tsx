@@ -389,7 +389,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
               // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
               // we need to copy the values from the json into the secrets
               const valueFromJson = parsedUpdatedConfig?.[p.name];
-              if (!secret.value && Boolean(valueFromJson)) {
+              if (!secret.value && valueFromJson) {
                 secret.value = String(valueFromJson);
               }
             }
@@ -583,7 +583,7 @@ function Review({
 }: ReviewProps) {
   return (
     <>
-      {connectorPlugin !== null ? (
+      {connectorPlugin === null ? null : (
         <>
           <h2>Connector Plugin</h2>
           <ConnectorBoxCard
@@ -593,7 +593,7 @@ function Review({
             hoverable={false}
           />
         </>
-      ) : null}
+      )}
 
       {isCreating ? (
         <div className="mt-5">
@@ -601,11 +601,11 @@ function Review({
         </div>
       ) : (
         <>
-          {invalidValidationResult !== null ? (
+          {invalidValidationResult === null ? null : (
             <div className="my-4">
               <ValidationDisplay validationResult={invalidValidationResult} />
             </div>
-          ) : null}
+          )}
 
           {validationFailure ? (
             <div className="my-4">

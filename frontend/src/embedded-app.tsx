@@ -72,15 +72,15 @@ export interface EmbeddedProps extends SetConfigArguments {
    */
   basePath?: string;
   /**
+   * LaunchDarkly feature flags to be used in console UI when in embedded mode.
+   */
+  featureFlags?: Record<string, boolean>;
+  /**
    * We want to get explicit confirmation from the Cloud UI (our parent) so that
    * we don't prematurely render console if the higher-order-component Console.tsx might rerender.
    * In the future we might decide to use memo() as well
    */
   isConsoleReadyToMount?: boolean;
-  /**
-   * LaunchDarkly feature flags to be used in console UI when in embedded mode.
-   */
-  featureFlags?: Record<string, boolean>;
 }
 
 function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {

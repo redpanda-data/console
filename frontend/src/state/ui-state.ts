@@ -225,10 +225,18 @@ export const uiState = new Proxy(
       const store = useUIStateStore.getState();
 
       // Handle computed properties
-      if (prop === 'pageTitle') return store.pageTitle;
-      if (prop === 'selectedClusterName') return store.selectedClusterName;
-      if (prop === 'currentTopicName') return store.currentTopicName;
-      if (prop === 'topicSettings') return store.topicSettings;
+      if (prop === 'pageTitle') {
+        return store.pageTitle;
+      }
+      if (prop === 'selectedClusterName') {
+        return store.selectedClusterName;
+      }
+      if (prop === 'currentTopicName') {
+        return store.currentTopicName;
+      }
+      if (prop === 'topicSettings') {
+        return store.topicSettings;
+      }
 
       // Handle direct properties
       return store[prop as keyof UIStateStore];

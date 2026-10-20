@@ -355,7 +355,9 @@ export class ShadowlinkPage {
       // Check if this button contains an SVG with class matching chevron pattern
       const isChevron = await btn.evaluate((button) => {
         const svg = button.querySelector('svg');
-        if (!svg) return false;
+        if (!svg) {
+          return false;
+        }
         // ChevronDown has specific classes h-4 w-4 transition-transform
         const classes = Array.from(svg.classList);
         return (

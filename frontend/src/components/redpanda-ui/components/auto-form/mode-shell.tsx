@@ -127,23 +127,27 @@ function FormPanel<T extends Record<string, unknown>>({
   const payloadText = safeStringify(payload);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-start lg:gap-10">
-      {/* formSpacing.form drives the column rhythm to match the <Form> primitive's internal spacing. */}
-      <div className={`min-w-0 lg:pr-2 ${formSpacing.form}`}>{children}</div>
-      <aside
-        className="min-w-0 lg:sticky lg:top-6 lg:self-start"
-        data-testid={buildAutoFormTestId(testIdPrefix, 'summary')}
-      >
-        {renderSummary ? (
-          renderSummary(payload, context)
-        ) : (
-          <JsonBlock
-            description="Payload preview for the request AutoForm is preparing. On wider screens this stays pinned on the right, and it drops below the form when space gets tight."
-            jsonText={payloadText}
-            title="Summary"
-          />
-        )}
-      </aside>
+    // A container, so the summary sits beside the form only when the form's own space allows it, not
+    // whenever the viewport is past `lg`: in a panel or a docs preview it would squeeze the labels.
+    <div className="@container/auto-form">
+      <div className="grid @4xl/auto-form:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] @4xl/auto-form:items-start @4xl/auto-form:gap-10 gap-6">
+        {/* formSpacing.form drives the column rhythm to match the <Form> primitive's internal spacing. */}
+        <div className={`min-w-0 @4xl/auto-form:pr-2 ${formSpacing.form}`}>{children}</div>
+        <aside
+          className="@4xl/auto-form:sticky @4xl/auto-form:top-6 min-w-0 @4xl/auto-form:self-start"
+          data-testid={buildAutoFormTestId(testIdPrefix, 'summary')}
+        >
+          {renderSummary ? (
+            renderSummary(payload, context)
+          ) : (
+            <JsonBlock
+              description="Payload preview for the request AutoForm is preparing. On wider screens this stays pinned on the right, and it drops below the form when space gets tight."
+              jsonText={payloadText}
+              title="Summary"
+            />
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

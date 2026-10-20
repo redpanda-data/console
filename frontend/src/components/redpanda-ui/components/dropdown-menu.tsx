@@ -64,13 +64,13 @@ type DropdownMenuFilterProviderProps = React.ComponentProps<typeof DropdownMenuP
 /**
  * Makes the `DropdownMenu` or `DropdownMenuSub` it wraps filterable: add a `DropdownMenuInput` to
  * the content and put the items in a `DropdownMenuList`. Wrap each filterable submenu in its own
- * provider. Highlights the first match by default so Enter picks it. A Base UI preview API.
+ * provider. Keeps the input in the arrow-key loop unless `autoHighlight` is enabled. A Base UI preview API.
  */
 function DropdownMenuFilterProvider({
   value,
   defaultValue = '',
   onValueChange,
-  autoHighlight = true,
+  autoHighlight = false,
   ...props
 }: DropdownMenuFilterProviderProps) {
   // Mirrors the query Base UI keeps. Every change reaches `onValueChange`, the reset on close included
@@ -274,7 +274,7 @@ type DropdownMenuInputProps = React.ComponentProps<typeof DropdownMenuPrimitive.
 function DropdownMenuInput({ className, testId, ...props }: DropdownMenuInputProps) {
   return (
     <div
-      className="-mx-1 -mt-1 mb-1 flex h-9 items-center gap-2 border-b pr-1.5 pl-3"
+      className="-mx-1 -mt-1 mb-1 flex h-9 items-center gap-2 border-b pr-1.5 pl-3 has-[[data-slot=dropdown-menu-input][data-highlighted]]:ring-2 has-[[data-slot=dropdown-menu-input][data-highlighted]]:ring-ring has-[[data-slot=dropdown-menu-input][data-highlighted]]:ring-inset"
       data-slot="dropdown-menu-input-wrapper"
     >
       <SearchIcon aria-hidden className="size-4 shrink-0 text-subtle" />
