@@ -12,7 +12,7 @@
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { AlertCircle, Info, Lock, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
@@ -95,9 +95,11 @@ export const ShadowLinkFeatureDisabledState = () => (
     <CardContent className="flex flex-col gap-3">
       <ShadowingDescription />
       <div className="text-body">To get started, run the following command to enable Shadowing on your cluster:</div>
-      <CodeBlock testId="shadowlink-enable-command">
-        <Pre>rpk cluster config set enable_shadow_linking true</Pre>
-      </CodeBlock>
+      <SimpleCodeBlock
+        code="rpk cluster config set enable_shadow_linking true"
+        language="bash"
+        testId="shadowlink-enable-command"
+      />
     </CardContent>
   </Card>
 );

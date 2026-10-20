@@ -142,8 +142,12 @@ export function isNamedContext(contextId: string): boolean {
 // into the internal context ID used by the editor state.
 // ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
 export function contextNameToId(name: string): string {
-  if (name === 'default') return DEFAULT_CONTEXT_ID;
-  if (name.startsWith('.')) return name;
+  if (name === 'default') {
+    return DEFAULT_CONTEXT_ID;
+  }
+  if (name.startsWith('.')) {
+    return name;
+  }
   return `.${name}`;
 }
 
@@ -151,8 +155,12 @@ export function contextNameToId(name: string): string {
 // Named contexts (e.g. ".staging") → ":.staging:subject"
 // Default context → plain "subject"
 export function buildQualifiedSubjectName(contextId: string, subjectName: string): string {
-  if (!subjectName) return '';
-  if (isNamedContext(contextId)) return `:${contextId}:${subjectName}`;
+  if (!subjectName) {
+    return '';
+  }
+  if (isNamedContext(contextId)) {
+    return `:${contextId}:${subjectName}`;
+  }
   return subjectName;
 }
 

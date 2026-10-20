@@ -404,20 +404,20 @@ const PartitionTable = ({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Log End Offset" />,
       meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original } }) =>
-        original.highWaterMark !== null ? numberToThousandsString(original.highWaterMark) : '—',
+        original.highWaterMark === null ? '—' : numberToThousandsString(original.highWaterMark),
     },
     {
       accessorKey: 'groupOffset',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group Offset" />,
       meta: columnMeta({ headWidth: 'sm' as const }),
       cell: ({ row: { original } }) =>
-        original.groupOffset !== null ? numberToThousandsString(original.groupOffset) : '—',
+        original.groupOffset === null ? '—' : numberToThousandsString(original.groupOffset),
     },
     {
       accessorKey: 'lag',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Lag" />,
       meta: columnMeta({ headWidth: 'sm' as const }),
-      cell: ({ row: { original } }) => (original.lag !== null ? <ShortNum tooltip value={original.lag} /> : '—'),
+      cell: ({ row: { original } }) => (original.lag === null ? '—' : <ShortNum tooltip value={original.lag} />),
     },
     {
       id: 'action',

@@ -96,7 +96,7 @@ const ClusterHealthOverview = () => {
               <div className="flex gap-2">
                 {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor;
                     `$jobId` needs a segment. */}
-                {Boolean(api.isDebugBundleInProgress) && api.debugBundleStatus?.jobId ? (
+                {api.isDebugBundleInProgress && api.debugBundleStatus?.jobId ? (
                   <Link
                     className={cn(buttonVariants({ variant: 'link' }), 'h-auto px-0')}
                     params={{ jobId: api.debugBundleStatus.jobId }}

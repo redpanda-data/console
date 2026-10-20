@@ -79,5 +79,5 @@ test('follows the throttle setting without waiting for a re-render', () => {
   act(() => {
     uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: 1024 };
   });
-  expect(throttleValue()).toHaveTextContent('1 kiB/s');
+  expect(throttleValue()).toHaveTextContent('1 KiB/s');
 });

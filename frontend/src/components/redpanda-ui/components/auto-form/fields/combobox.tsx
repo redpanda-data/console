@@ -29,6 +29,7 @@ function ComboboxFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
   return (
     <Combobox
       disabled={inputProps.disabled}
+      id={id}
       inputTestId={testIds.control}
       onChange={(value) => inputProps.onValueChange(numericOptions ? Number(value) : value)}
       options={options}

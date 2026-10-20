@@ -10,7 +10,7 @@
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
-import { CodeBlock, Pre } from 'components/redpanda-ui/components/code-block';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
 
 import TopicConfigurationEditor from './topic-configuration';
@@ -67,11 +67,7 @@ function renderKafkaError(topicName: string, error: KafkaError) {
           </p>
         </div>
         <div className="m-8">
-          <CodeBlock width="full">
-            <Pre>
-              <code>{toJson(error, 4)}</code>
-            </Pre>
-          </CodeBlock>
+          <SimpleCodeBlock code={toJson(error, 4)} language="json" width="full" />
         </div>
         <Button className="w-48 self-center" onClick={() => appGlobal.onRefresh()} size="lg">
           Retry

@@ -94,42 +94,43 @@ function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | un
 // Stitches each template with sample values and asserts every emitted field resolves against the
 // schema snapshot, so connector field renames/removals fail here rather than as a server lint error post-submit.
 describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
-  test.each(
-    PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t }))
-  )('$id stitches to YAML with only known component fields', ({ template }) => {
-    const yaml = stitchTemplateYaml({
-      template,
-      values: sampleValues(template.slots.map((s) => s.id)),
-      pipelineName: template.defaultPipelineName,
-    });
+  test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
+    '$id stitches to YAML with only known component fields',
+    ({ template }) => {
+      const yaml = stitchTemplateYaml({
+        template,
+        values: sampleValues(template.slots.map((s) => s.id)),
+        pipelineName: template.defaultPipelineName,
+      });
 
-    const doc = parseDocument(yaml);
-    expect(doc.errors, `template "${template.id}" stitched to invalid YAML`).toHaveLength(0);
+      const doc = parseDocument(yaml);
+      expect(doc.errors, `template "${template.id}" stitched to invalid YAML`).toHaveLength(0);
 
-    for (const [yamlKey, type] of [
-      ['input', 'input'],
-      ['output', 'output'],
-    ] as const) {
-      const section = doc.get(yamlKey, true);
-      if (!isMap(section)) {
-        continue;
-      }
-      for (const pair of section.items) {
-        const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string') {
+      for (const [yamlKey, type] of [
+        ['input', 'input'],
+        ['output', 'output'],
+      ] as const) {
+        const section = doc.get(yamlKey, true);
+        if (!isMap(section)) {
           continue;
         }
-        const comp = findComponentByName(componentList, componentName, type);
-        expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
+        for (const pair of section.items) {
+          const componentName = (pair.key as { value?: unknown } | null)?.value;
+          if (typeof componentName !== 'string') {
+            continue;
+          }
+          const comp = findComponentByName(componentList, componentName, type);
+          expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
 
-        const unknownPaths = collectUnknownFieldPaths(pair.value, comp?.config as FieldNode | undefined, '');
-        expect(
-          unknownPaths,
-          `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
-        ).toEqual([]);
+          const unknownPaths = collectUnknownFieldPaths(pair.value, comp?.config as FieldNode | undefined, '');
+          expect(
+            unknownPaths,
+            `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
+          ).toEqual([]);
+        }
       }
     }
-  });
+  );
 
   test('every template stitches without leaving an unresolved slot token', () => {
     for (const template of PIPELINE_TEMPLATES) {
@@ -167,7 +168,6 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     if (section === 'sink') {
       return template.sink;
     }
-    return;
   };
 
   const isSlotRequired = (template: PipelineTemplate, slot: TemplateSlot): boolean => {
@@ -187,50 +187,51 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   const minimalValues = (template: PipelineTemplate): Record<string, string> =>
     Object.fromEntries(template.slots.map((s) => [s.id, isSlotRequired(template, s) ? `value_${s.id}` : '']));
 
-  test.each(
-    PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t }))
-  )('$id emits every schema-required field even with optional slots left blank', ({ template }) => {
-    const yaml = stitchTemplateYaml({
-      template,
-      values: minimalValues(template),
-      pipelineName: template.defaultPipelineName,
-    });
-    const doc = parseDocument(yaml);
-    expect(doc.errors).toHaveLength(0);
+  test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
+    '$id emits every schema-required field even with optional slots left blank',
+    ({ template }) => {
+      const yaml = stitchTemplateYaml({
+        template,
+        values: minimalValues(template),
+        pipelineName: template.defaultPipelineName,
+      });
+      const doc = parseDocument(yaml);
+      expect(doc.errors).toHaveLength(0);
 
-    for (const [yamlKey, type] of [
-      ['input', 'input'],
-      ['output', 'output'],
-    ] as const) {
-      const section = doc.get(yamlKey, true);
-      if (!isMap(section)) {
-        continue;
-      }
-      for (const pair of section.items) {
-        const componentName = (pair.key as { value?: unknown } | null)?.value;
-        if (typeof componentName !== 'string') {
+      for (const [yamlKey, type] of [
+        ['input', 'input'],
+        ['output', 'output'],
+      ] as const) {
+        const section = doc.get(yamlKey, true);
+        if (!isMap(section)) {
           continue;
         }
-        const comp = findComponentByName(componentList, componentName, type);
-        const present = new Set(
-          isMap(pair.value)
-            ? pair.value.items
-                .map((p) => (p.key as { value?: unknown } | null)?.value)
-                .filter((k) => typeof k === 'string')
-            : []
-        );
-        const missing = (comp?.config?.children ?? [])
-          .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
-          .map((field) => (field as { name?: string }).name)
-          .filter((name): name is string => !!name && !present.has(name));
+        for (const pair of section.items) {
+          const componentName = (pair.key as { value?: unknown } | null)?.value;
+          if (typeof componentName !== 'string') {
+            continue;
+          }
+          const comp = findComponentByName(componentList, componentName, type);
+          const present = new Set(
+            isMap(pair.value)
+              ? pair.value.items
+                  .map((p) => (p.key as { value?: unknown } | null)?.value)
+                  .filter((k) => typeof k === 'string')
+              : []
+          );
+          const missing = (comp?.config?.children ?? [])
+            .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
+            .map((field) => (field as { name?: string }).name)
+            .filter((name): name is string => !!name && !present.has(name));
 
-        expect(
-          missing,
-          `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
-        ).toEqual([]);
+          expect(
+            missing,
+            `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
+          ).toEqual([]);
+        }
       }
     }
-  });
+  );
 
   test('slot_name falls back to a deterministic name derived from the pipeline', () => {
     const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');

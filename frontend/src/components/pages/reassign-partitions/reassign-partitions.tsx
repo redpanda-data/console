@@ -66,6 +66,7 @@ export type PartitionSelection = {
 };
 
 const reassignmentTracker = new ReassignmentTracker();
+
 export { reassignmentTracker };
 
 type ReassignPartitionsState = {
@@ -890,7 +891,6 @@ const steps: WizardStep[] = [
               ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
               : '';
         }
-        return;
       },
     },
   },

@@ -291,7 +291,7 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
       properties: parsed.properties as Record<string, JSONSchema> | undefined,
     };
   } catch {
-    return;
+    // Malformed schema: callers treat undefined as "no schema".
   }
 }
 
@@ -1223,7 +1223,7 @@ function PipelinePageContent() {
   });
 
   const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), [setCommandMenuFilter]);
-  const slashCommand = useSlashCommand(mode !== 'view' ? editorInstance : null, isSlashMenuEnabled, handleSlashOpen);
+  const slashCommand = useSlashCommand(mode === 'view' ? null : editorInstance, isSlashMenuEnabled, handleSlashOpen);
 
   const handleCommandMenuOpen = useCallback(
     (filter: 'all' | 'variables' | 'secrets' | 'topics' | 'users' = 'all') => {
@@ -1711,7 +1711,7 @@ function PipelinePageContent() {
           <Skeleton variant="text" width="md" />
         </div>
       ) : null}
-      {mode !== 'view' ? (
+      {mode === 'view' ? null : (
         <PipelineEditHeader
           draftIssueCount={Object.keys(lintHints).length}
           expanded={expanded}
@@ -1726,7 +1726,7 @@ function PipelinePageContent() {
           saveContext={saveContext}
           url={pipeline?.url}
         />
-      ) : null}
+      )}
       {showAutosaveRestore && recoverableEntry ? (
         <div className={cn('transition-[padding] duration-300 ease-in-out', expanded && 'px-4')}>
           <AutosaveRestoreNotice

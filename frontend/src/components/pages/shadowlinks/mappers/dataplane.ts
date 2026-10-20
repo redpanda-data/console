@@ -76,8 +76,6 @@ function mapDataplaneAuthConfig(
       },
     };
   }
-
-  return;
 }
 
 /**

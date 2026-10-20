@@ -37,7 +37,6 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
     if (section === 'sink') {
       return sinkComp;
     }
-    return;
   };
 
   return template.slots.map((slot) => {

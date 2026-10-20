@@ -222,7 +222,9 @@ function EditSchemaCompatibility(p: {
   );
 
   const getInitialCompatibility = (): SchemaRegistryCompatibilityModeWithDefault => {
-    if (contextName) return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
+    if (contextName) {
+      return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
+    }
     const source = subjectName ? schemaDetails?.compatibility : schemaCompatibility;
     return (source as SchemaRegistryCompatibilityModeWithDefault) ?? SchemaRegistryCompatibilityModes.DEFAULT;
   };

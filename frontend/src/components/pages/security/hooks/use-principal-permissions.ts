@@ -58,13 +58,17 @@ export function useUserPermissions(userName: string) {
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
 
   const permissions = useMemo(() => {
-    if (!allAclsData) return { directAcls: [] as FlatAclEntry[], roleAclGroups: [] as RoleAclGroup[] };
+    if (!allAclsData) {
+      return { directAcls: [] as FlatAclEntry[], roleAclGroups: [] as RoleAclGroup[] };
+    }
 
     const aclsByPrincipal = new Map<string, FlatAclEntry[]>();
     for (const resource of allAclsData.resources) {
       for (const acl of resource.acls) {
         const key = acl.principal;
-        if (!aclsByPrincipal.has(key)) aclsByPrincipal.set(key, []);
+        if (!aclsByPrincipal.has(key)) {
+          aclsByPrincipal.set(key, []);
+        }
         aclsByPrincipal.get(key)!.push({
           resourceType: RESOURCE_TYPE_LABELS[resource.resourceType] ?? String(resource.resourceType),
           resourceName: resource.resourceName || '*',
@@ -113,7 +117,9 @@ export function usePrincipalPermissions() {
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
 
   const principalGroups = useMemo<PrincipalPermissionGroup[]>(() => {
-    if (!allAclsData) return [];
+    if (!allAclsData) {
+      return [];
+    }
 
     // Build flat ACL list per principal
     const aclsByPrincipal = new Map<string, FlatAclEntry[]>();

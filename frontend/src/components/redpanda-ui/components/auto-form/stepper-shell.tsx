@@ -24,7 +24,7 @@ interface StepperDefinition {
   id: string;
   title: string;
 }
-type StepperDefinitions = [StepperDefinition, ...StepperDefinition[]];
+type StepperDefinitions = readonly [StepperDefinition, ...StepperDefinition[]];
 type StepperConfig = DefineStepperProps<StepperDefinitions>;
 const STEPPER_CACHE_LIMIT = 50;
 const stepperConfigCache = new Map<string, StepperConfig>();
@@ -143,7 +143,7 @@ export function AutoFormStepperShell({
             methods.goTo(stepId as never);
             return;
           }
-          const isValid = await form.trigger(currentStep.fields);
+          const isValid = await form.trigger(currentStep.fields, { shouldTouch: true });
           if (isValid && completionSatisfied) {
             methods.goTo(stepId as never);
           }
@@ -165,7 +165,7 @@ export function AutoFormStepperShell({
               ))}
             </Stepper.Navigation>
 
-            {methods.switch(
+            {methods.match(
               Object.fromEntries(
                 visibleSteps.map((step) => [
                   step.id,
@@ -184,7 +184,7 @@ export function AutoFormStepperShell({
                   <div />
                 ) : (
                   <Button
-                    onClick={methods.prev}
+                    onClick={() => methods.prev()}
                     testId={buildAutoFormTestId(testIdPrefix, 'previous')}
                     type="button"
                     variant="default"
@@ -199,7 +199,7 @@ export function AutoFormStepperShell({
                   <Button
                     disabled={!completionSatisfied}
                     onClick={async () => {
-                      const isValid = await form.trigger(currentStep.fields);
+                      const isValid = await form.trigger(currentStep.fields, { shouldTouch: true });
                       if (isValid && completionSatisfied) {
                         methods.next();
                       }

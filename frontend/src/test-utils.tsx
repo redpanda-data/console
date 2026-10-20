@@ -193,8 +193,8 @@ export function createTestRouterFromFiles(initialLocation = '/') {
 
 // Legacy router support - now uses file-based routing
 interface RenderWithRouterOptions extends ExtendedRenderOptions {
-  route?: string;
   initialLocation?: string;
+  route?: string;
 }
 
 const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) =>
@@ -242,4 +242,4 @@ const connectQueryWrapper = (
 export * from '@testing-library/react';
 
 // override render method
-export { renderWithRouter, customRender as render, connectQueryWrapper };
+export { connectQueryWrapper, customRender as render, renderWithRouter };

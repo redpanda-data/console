@@ -7,11 +7,11 @@ import { useRender } from '@base-ui/react/use-render';
 import {
   defineStepper as defineStepperPrimitive,
   type Get,
-  type ScopedProps,
   type Step,
-  type StepperReturn,
+  type StepperDefinition,
   type Stepper as StepperType,
-} from '@stepperize/react';
+  type UseStepperOptions,
+} from '@stepperize/react/headless';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -34,12 +34,20 @@ export interface CircleStepIndicatorProps {
   totalSteps: number;
 }
 
-export type DefineStepperProps<Steps extends Step[]> = Omit<StepperReturn<Steps>, 'Scoped'> & {
+export type StepperProviderOptions<Steps extends readonly Step[]> = Pick<
+  UseStepperOptions<Steps>,
+  'beforeStepChange' | 'defaultData' | 'defaultStep' | 'linear' | 'onStepChange' | 'step'
+> & {
+  /** @deprecated Use `defaultStep`. */
+  initialStep?: Get.Id<Steps>;
+};
+
+export type DefineStepperProps<Steps extends readonly Step[]> = Omit<StepperDefinition<Steps>, 'Provider'> & {
   Steps: StepperType<Steps>;
   Stepper: {
     Provider: (
-      props: Omit<ScopedProps<Steps>, 'children'> &
-        Omit<React.ComponentProps<'div'>, 'children'> &
+      props: StepperProviderOptions<Steps> &
+        Omit<React.ComponentProps<'div'>, 'children' | 'defaultValue'> &
         StepperConfigProps & {
           children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
           testId?: string;
@@ -63,17 +71,41 @@ export type DefineStepperProps<Steps extends Step[]> = Omit<StepperReturn<Steps>
 };
 
 const StepperContext = React.createContext<StepperConfigProps | null>(null);
+/** Id of the active step, so parts defined outside `defineStepper` (like `Panel`) can react to navigation. */
+const ActiveStepContext = React.createContext<string | null>(null);
 
 const useStepperProvider = (): StepperConfigProps => {
   const context = React.useContext(StepperContext);
   if (!context) {
-    throw new Error('useStepper must be used within a StepperProvider.');
+    throw new Error('Stepper parts must be rendered inside Stepper.Provider.');
   }
   return context;
 };
 
-const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepperProps<Steps> => {
-  const { Scoped, useStepper, ...rest } = defineStepperPrimitive(...steps);
+/** The step list type `defineStepper` expects after its compile-time duplicate-id check. */
+type CheckedSteps<Steps extends readonly Step[]> = Parameters<typeof defineStepperPrimitive<Steps>>[0];
+
+const getStepIcon = (step: Step | undefined): React.ReactNode =>
+  step && 'icon' in step ? (step.icon as React.ReactNode) : undefined;
+
+const defineStepper = <const Steps extends readonly Step[]>(...steps: Steps): DefineStepperProps<Steps> => {
+  const { Provider, ...definition } = defineStepperPrimitive<Steps>(steps as CheckedSteps<Steps>);
+  const { useStepperContext } = definition;
+  const allSteps: readonly Step[] = definition.steps;
+  /** The shared stepper of the nearest `Stepper.Provider` of this definition, or null outside one. */
+  const SharedStepperContext = React.createContext<StepperType<Steps> | null>(null);
+
+  /**
+   * v5 semantics: inside `Stepper.Provider` this returns the Provider's shared stepper; outside one
+   * it creates an independent stepper. v8's own `useStepper` always creates a local instance, so a
+   * child such as a URL-sync component calling `useStepper().goTo()` would silently stop driving
+   * the Provider. Both hooks always run, so hook order never depends on where it is rendered.
+   */
+  const useStepper: typeof definition.useStepper = (options) => {
+    const local = definition.useStepper(options);
+    const shared = React.useContext(SharedStepperContext);
+    return shared ?? local;
+  };
 
   const StepperContainer = ({
     children,
@@ -84,19 +116,24 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepp
     children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
     testId?: string;
   }) => {
-    const methods = useStepper();
+    // v8: `useStepper()` always creates a new local instance; the Provider's shared state comes from the context.
+    const methods = useStepperContext();
 
     const renderedChildren = typeof children === 'function' ? children({ methods }) : children;
 
     return (
-      <div className={cn('w-full', className)} data-component="stepper" data-testid={testId} {...props}>
-        {renderedChildren}
-      </div>
+      <SharedStepperContext.Provider value={methods}>
+        <ActiveStepContext.Provider value={methods.id}>
+          <div className={cn('w-full', className)} data-component="stepper" data-testid={testId} {...props}>
+            {renderedChildren}
+          </div>
+        </ActiveStepContext.Provider>
+      </SharedStepperContext.Provider>
     );
   };
 
   return {
-    ...rest,
+    ...definition,
     useStepper,
     Steps: {} as StepperType<Steps>,
     Stepper: {
@@ -104,15 +141,27 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepp
         variant = 'horizontal',
         labelOrientation = 'horizontal',
         tracking = false,
+        beforeStepChange,
+        defaultData,
+        defaultStep,
         initialStep,
-        initialMetadata,
+        linear,
+        onStepChange,
+        step,
         children,
         ...props
       }) => (
         <StepperContext.Provider value={{ variant, labelOrientation, tracking }}>
-          <Scoped initialMetadata={initialMetadata} initialStep={initialStep}>
+          <Provider
+            beforeStepChange={beforeStepChange}
+            defaultData={defaultData}
+            defaultStep={defaultStep ?? initialStep}
+            linear={linear}
+            onStepChange={onStepChange}
+            step={step}
+          >
             <StepperContainer {...props}>{children}</StepperContainer>
-          </Scoped>
+          </Provider>
         </StepperContext.Provider>
       ),
       Navigation: ({ children, 'aria-label': ariaLabel = 'Stepper Navigation', testId, ...props }) => {
@@ -127,19 +176,13 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepp
       },
       Step: ({ children, className, icon, testId, ...props }) => {
         const { variant, labelOrientation } = useStepperProvider();
-        const { current } = useStepper();
+        const currentIndex = useStepperContext((stepper) => stepper.index);
 
-        const utils = rest.utils;
-        const allSteps = rest.steps;
+        const stepIndex = allSteps.findIndex((item) => item.id === props.of);
+        const stepIcon = getStepIcon(allSteps[stepIndex]) ?? icon;
 
-        const stepIndex = utils.getIndex(props.of);
-        const step = allSteps[stepIndex];
-        const currentIndex = utils.getIndex(current.id);
-
-        const stepIcon = step.icon || icon;
-
-        const isLast = utils.getLast().id === props.of;
-        const isActive = current.id === props.of;
+        const isLast = stepIndex === allSteps.length - 1;
+        const isActive = stepIndex === currentIndex;
 
         const dataState = getStepState(currentIndex, stepIndex);
         const childMap = useStepChildren(children);
@@ -191,8 +234,8 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepp
                 className={cn('rounded-full', isActive && 'ring-3 ring-secondary/20')}
                 data-component="stepper-step-indicator"
                 data-testid={testId}
-                id={`step-${step.id}`}
-                onKeyDown={(e) => onStepKeyDown(e, utils.getNext(props.of), utils.getPrev(props.of))}
+                id={`step-${props.of}`}
+                onKeyDown={(e) => onStepKeyDown(e, allSteps[stepIndex + 1], allSteps[stepIndex - 1])}
                 role="tab"
                 size="icon"
                 tabIndex={dataState === 'inactive' ? -1 : 0}
@@ -241,55 +284,55 @@ const defineStepper = <const Steps extends Step[]>(...steps: Steps): DefineStepp
       },
       Title,
       Description,
-      Panel: ({ children, render, ...props }) => {
-        const { tracking } = useStepperProvider();
-        /**
-         * React invokes inline ref callbacks on every commit, so scrolling
-         * directly in the ref re-centered the panel on each re-render (e.g.
-         * typing in a field or switching an inner tab). Guard on node identity
-         * so the panel scrolls only when a new panel mounts — i.e. the active
-         * step actually changed.
-         */
-        const scrolledNodeRef = React.useRef<HTMLDivElement | null>(null);
-        const setPanelRef = React.useCallback(
-          (node: HTMLDivElement | null) => {
-            if (node && tracking && scrolledNodeRef.current !== node) {
-              scrolledNodeRef.current = node;
-              scrollIntoStepperPanel(node);
-            }
-          },
-          [tracking]
-        );
-
-        return useRender({
-          defaultTagName: 'div',
-          render,
-          props: mergeProps<'div'>(
-            {
-              'data-component': 'stepper-step-panel',
-              ref: setPanelRef,
-              children,
-            } as useRender.ElementProps<'div'>,
-            props
-          ),
-        });
-      },
-      Controls: ({ children, className, render, ...props }) =>
-        useRender({
-          defaultTagName: 'div',
-          render,
-          props: mergeProps<'div'>(
-            {
-              className: cn('flex justify-end gap-4', className),
-              'data-component': 'stepper-controls',
-              children,
-            } as useRender.ElementProps<'div'>,
-            props
-          ),
-        }),
+      Panel,
+      Controls,
     },
   };
 };
+
+const Panel = ({ children, render, ...props }: useRender.ComponentProps<'div'>) => {
+  const { tracking } = useStepperProvider();
+  const activeStepId = React.useContext(ActiveStepContext);
+  // Scroll when the active step changes, whether the panel remounts (keyed per step) or is reused
+  // (rendered through `methods.match`). Keying on the step, not every commit, stops typing in a
+  // field or switching an inner tab from re-centering the panel.
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(
+    function scrollActivePanelIntoView() {
+      if (tracking && activeStepId !== null && panelRef.current) {
+        scrollIntoStepperPanel(panelRef.current);
+      }
+    },
+    [tracking, activeStepId]
+  );
+
+  return useRender({
+    defaultTagName: 'div',
+    ref: panelRef,
+    render,
+    props: mergeProps<'div'>(
+      {
+        'data-component': 'stepper-step-panel',
+        children,
+      } as useRender.ElementProps<'div'>,
+      props
+    ),
+  });
+};
+
+const Controls = ({ children, className, render, ...props }: useRender.ComponentProps<'div'>) =>
+  useRender({
+    defaultTagName: 'div',
+    render,
+    props: mergeProps<'div'>(
+      {
+        className: cn('flex justify-end gap-4', className),
+        'data-component': 'stepper-controls',
+        children,
+      } as useRender.ElementProps<'div'>,
+      props
+    ),
+  });
 
 const Title = ({ children, className, render, ...props }: useRender.ComponentProps<'h4'>) =>
   useRender({
@@ -447,7 +490,11 @@ const extractChildren = (children: React.ReactNode) => {
   return map;
 };
 
-const onStepKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, nextStep: Step, prevStep: Step) => {
+const onStepKeyDown = (
+  e: React.KeyboardEvent<HTMLButtonElement>,
+  nextStep: Step | undefined,
+  prevStep: Step | undefined
+) => {
   const { key } = e;
   const directions = {
     next: ['ArrowRight', 'ArrowDown'],

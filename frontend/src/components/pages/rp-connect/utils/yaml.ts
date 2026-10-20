@@ -53,7 +53,6 @@ export const parseMultiInputs = (inputKey: string, value: unknown): string[] | u
       return items.map(firstKey).filter((k): k is string => !!k);
     }
   }
-  return;
 };
 
 /** Extract child output names from a multi-output component (broker, switch, fallback). */
@@ -77,8 +76,6 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
   if (outputKey === 'fallback' && Array.isArray(value)) {
     return value.map(firstKey).filter((k): k is string => !!k);
   }
-
-  return;
 };
 
 // Append into the seq at `path` IN PLACE, creating it when absent — rebuilding an existing
@@ -644,7 +641,6 @@ function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] 
       },
     ];
   }
-  return;
 }
 
 type RedpandaSection = 'input' | 'output';
@@ -662,18 +658,24 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
 
   const sectionRegex = new RegExp(`^${section}:`);
   const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
-  if (sectionStart === -1) return yaml;
+  if (sectionStart === -1) {
+    return yaml;
+  }
 
   const componentRegex = new RegExp(`^  ${escapeRegExp(componentName)}:`);
   let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
-    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) break; // left section
+    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) {
+      break; // left section
+    }
     if (componentRegex.test(lines[i])) {
       componentStart = i;
       break;
     }
   }
-  if (componentStart === -1) return yaml;
+  if (componentStart === -1) {
+    return yaml;
+  }
 
   // Component block ends at the next top-level key or next sibling component (2-space indent).
   let componentEnd = lines.length;
@@ -691,7 +693,9 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
 
   return lines
     .filter((line, i) => {
-      if (i <= componentStart || i >= componentEnd) return true;
+      if (i <= componentStart || i >= componentEnd) {
+        return true;
+      }
       return !commentRegex.test(line);
     })
     .join('\n');
@@ -810,7 +814,7 @@ export function patchRedpandaConfig(
     const result = yamlStringify(doc, yamlConfig);
     return stripCommentedKeys(result, patchedKeys, section, componentName);
   } catch {
-    return;
+    // Unserializable document: undefined, as for empty input.
   }
 }
 
@@ -1116,7 +1120,7 @@ export function getComponentAt(yaml: string, target: EditTarget): Record<string,
     const obj = node?.toJSON?.();
     return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
   } catch {
-    return;
+    // Unparseable YAML: no component at the target.
   }
 }
 
@@ -1239,7 +1243,7 @@ export function buildInsertableComponent(
     const arr = parsed[key];
     return Array.isArray(arr) ? (arr[0] as Record<string, unknown>) : undefined;
   } catch {
-    return;
+    // Unparseable template: nothing to insert, as when no template exists.
   }
 }
 
@@ -1287,7 +1291,6 @@ export function resourceKindForFieldName(name: string): ResourceKind | undefined
   if (name === 'rate_limit' || name.endsWith('_rate_limit')) {
     return 'rate_limit';
   }
-  return;
 }
 
 const PATH_RESOURCE_REF_KIND: Record<string, ResourceRefKind> = {
@@ -1385,7 +1388,6 @@ function resourcePairRefKind(path: readonly unknown[]): ResourceRefKind | undefi
       // Not decisive (broker, cases, …) — keep walking up.
     }
   }
-  return;
 }
 
 // Visit every reference to a resource label: `resource:` pairs plus name-referencing fields

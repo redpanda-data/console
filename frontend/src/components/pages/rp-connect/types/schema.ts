@@ -2,14 +2,8 @@ import type { ComponentSpec, ComponentStatus, FieldSpec } from 'protogen/redpand
 
 // RawFieldSpec matches proto FieldSpec structure
 export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
-  comment?: string; // Keep for internal use (YAML generation)
   children?: RawFieldSpec[];
-  /**
-   * Stamped by enrichComponentsWithConfigSchema from the raw config-schema JSON — the proto
-   * FieldSpec has no is_secret field at all. Undefined when the dataplane's schema predates
-   * flag serialization (benthos < 4.59); consumers then fall back to the name heuristic.
-   */
-  secret?: boolean;
+  comment?: string; // Keep for internal use (YAML generation)
   /**
    * Stamped by enrichComponentsWithConfigSchema from the schema's `required` arrays, which the
    * backend computes with full default knowledge (the proto drops non-string defaults, making
@@ -17,6 +11,12 @@ export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
    * schema carries no `required` arrays; consumers then fall back to proto flags.
    */
   requiredBySchema?: boolean;
+  /**
+   * Stamped by enrichComponentsWithConfigSchema from the raw config-schema JSON — the proto
+   * FieldSpec has no is_secret field at all. Undefined when the dataplane's schema predates
+   * flag serialization (benthos < 4.59); consumers then fall back to the name heuristic.
+   */
+  secret?: boolean;
 }
 
 export const CONNECT_COMPONENT_TYPE = [
@@ -120,9 +120,9 @@ export const CONNECT_VALUE_TYPE = [
 export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {});
 
 export interface ConnectComponentSpec extends Omit<ComponentSpec, 'type' | 'status'> {
-  type: ConnectComponentType;
-  status: ComponentStatus;
   logoUrl?: string; // UI-specific field
+  status: ComponentStatus;
+  type: ConnectComponentType;
 }
 
 /**

@@ -313,7 +313,13 @@ export const ShadowLinkCreatePage = () => {
                     Cancel
                   </Button>
                 ) : (
-                  <Button onClick={methods.prev} type="button" variant="ghost">
+                  <Button
+                    onClick={() => {
+                      methods.prev();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
                     Back
                   </Button>
                 )}

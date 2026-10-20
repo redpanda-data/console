@@ -405,7 +405,6 @@ export const useEditShadowLink = (
     if (!embedded && shadowLink) {
       return buildDefaultFormValues(shadowLink);
     }
-    return;
   }, [embedded, controlplaneShadowLink, shadowLink]);
 
   // Unified update function

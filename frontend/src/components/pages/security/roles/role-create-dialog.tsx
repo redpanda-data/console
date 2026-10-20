@@ -55,7 +55,9 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists) return;
+    if (!trimmed || alreadyExists) {
+      return;
+    }
     setIsSubmitting(true);
     try {
       await createRole(create(CreateRoleRequestSchema, { role: { name: trimmed } }));

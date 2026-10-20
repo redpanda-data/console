@@ -4,16 +4,7 @@
 
 import type { Root } from 'hast';
 import { type Components, toJsxRuntime } from 'hast-util-to-jsx-runtime';
-import {
-  type DependencyList,
-  Fragment,
-  type ReactNode,
-  useEffect,
-  useEffectEvent,
-  useId,
-  useRef,
-  useState,
-} from 'react';
+import { type DependencyList, Fragment, type ReactNode, useEffect, useEffectEvent, useId, useState } from 'react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 import type {
   Awaitable,
@@ -117,11 +108,15 @@ export async function getHighlighter(
   engineType: 'js' | 'oniguruma' | 'custom',
   options: BundledHighlighterOptions<BundledLanguage, BundledTheme>
 ) {
-  const { bundledLanguages, bundledThemes, createHighlighter } = await import('shiki');
+  const [{ bundledLanguages }, { bundledThemes }, { createBundledHighlighter }] = await Promise.all([
+    import('shiki/langs'),
+    import('shiki/themes'),
+    import('shiki/core'),
+  ]);
   let highlighter = highlighters.get(engineType);
 
   if (!highlighter) {
-    let engine: Awaitable<RegexEngine> | undefined;
+    let engine: Awaitable<RegexEngine>;
 
     if (engineType === 'js') {
       engine = import('shiki/engine/javascript').then((res) => res.createJavaScriptRegexEngine());
@@ -131,9 +126,20 @@ export async function getHighlighter(
       engine = options.engine;
     }
 
-    highlighter = createHighlighter({
+    const createHighlighter = createBundledHighlighter({
+      langs: bundledLanguages,
+      themes: bundledThemes,
+      engine: () => engine,
+    });
+    const created = createHighlighter({
       ...options,
       engine,
+    });
+    highlighter = created.catch((error: unknown) => {
+      if (highlighters.get(engineType) === highlighter) {
+        highlighters.delete(engineType);
+      }
+      throw error;
     });
 
     highlighters.set(engineType, highlighter);
@@ -185,15 +191,19 @@ export function useShiki(
   deps?: DependencyList
 ): ReactNode {
   const markupId = useId();
-  const key = deps ? JSON.stringify(deps) : `${options.lang}:${code}`;
+  let themeKey: unknown;
+  if ('theme' in options) {
+    themeKey = options.theme;
+  } else if ('themes' in options) {
+    themeKey = options.themes;
+  }
+  const key = JSON.stringify(deps ?? [options.lang, code, themeKey]);
   const shikiOptions: HighlightOptions = {
     ...options,
     engine: options.engine ?? 'js',
   };
 
-  const currentTask = useRef<Task | undefined>(undefined);
-
-  const [rendered, setRendered] = useState<ReactNode>(() => {
+  const [rendered, setRendered] = useState<{ key: string; node: ReactNode }>(() => {
     const element =
       withPrerenderScript && typeof document !== 'undefined'
         ? document.querySelector(`[data-markup-id="${markupId}"]`)
@@ -202,44 +212,49 @@ export function useShiki(
 
     if (attr) {
       const hast = JSON.parse(attr);
-      return renderHighlightWithMarkup(markupId, hast, shikiOptions, attr);
+      return { key, node: renderHighlightWithMarkup(markupId, hast, shikiOptions, attr) };
     }
 
-    return loading;
+    return { key, node: loading };
   });
 
   const startHighlight = useEffectEvent((task: Task) => {
     highlight(code, shikiOptions)
       .then((result) => {
         if (!task.aborted) {
-          setRendered(result);
+          setRendered({ key: task.key, node: result });
         }
       })
       .catch((error: unknown) => {
         if (!task.aborted) {
           const message = error instanceof Error ? error.message : 'Could not highlight code.';
-          setRendered(<span role="alert">{message}</span>);
+          setRendered({
+            key: task.key,
+            node: (
+              <>
+                {loading ?? (
+                  <pre>
+                    <code>{code}</code>
+                  </pre>
+                )}
+                <p role="alert">Syntax highlighting unavailable. Showing plain text. {message}</p>
+              </>
+            ),
+          });
         }
       });
   });
 
   useEffect(
     function synchronizeHighlight() {
-      if (currentTask.current?.key === key) {
-        return;
-      }
-
-      if (currentTask.current) {
-        currentTask.current.aborted = true;
-      }
-
       const task: Task = {
         key,
         aborted: false,
       };
-      currentTask.current = task;
-
       startHighlight(task);
+      return () => {
+        task.aborted = true;
+      };
     },
     [key]
   );
@@ -250,7 +265,7 @@ export function useShiki(
     return loading;
   }
 
-  return rendered;
+  return rendered.key === key ? rendered.node : loading;
 }
 
 function renderHighlightWithMarkup(id: string, tree: Root, shikiOptions: HighlightOptions, rawAttr?: string) {

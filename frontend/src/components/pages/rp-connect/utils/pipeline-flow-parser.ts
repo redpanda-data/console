@@ -310,7 +310,6 @@ function outputContainerMembers(
     const outputs = (value as { outputs?: unknown[] } | undefined)?.outputs;
     return (Array.isArray(outputs) ? outputs : []).map((obj, i) => ({ obj, path: [...path, key, 'outputs', i] }));
   }
-  return;
 }
 
 // The in-place "grow" affordance for an output container: switch appends a `{ check, output }`
@@ -325,7 +324,6 @@ function outputContainerSlot(key: string, path: (string | number)[]): ContainerS
   if (key === 'broker') {
     return { insertSlot: { containerPath: [...path, 'broker', 'outputs'], accepts: 'output' } };
   }
-  return;
 }
 
 function extractLabel(obj: Record<string, unknown>): string | undefined {
@@ -344,7 +342,6 @@ function extractTopics(componentConfig: unknown): string[] | undefined {
   if (typeof config.topic === 'string' && config.topic !== '') {
     return [config.topic];
   }
-  return;
 }
 
 function hasNonEmptySasl(obj: unknown): boolean {
@@ -1140,7 +1137,6 @@ function expectedResourceKey(node: PipelineFlowNode): string | undefined {
   if (node.label === 'resource' && node.section && node.section !== 'resource') {
     return `${node.section}_resources`;
   }
-  return;
 }
 
 type ResourceRefResolver = (node: PipelineFlowNode, label: string) => PipelineFlowNode | undefined;

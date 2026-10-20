@@ -10,7 +10,6 @@ import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
-import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 
 import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
@@ -119,8 +118,11 @@ export default defineConfig({
     // while adding 13 requests; 512 KiB added 127 with no further reduction.
     maxAsyncSize: 4 * 1024 * 1024,
     cacheGroups: {
+      // Core editor only. A named group merges everything it matches into one chunk set,
+      // so monaco's lazily imported language services and tokenizers (the worker-only
+      // TypeScript compiler included) stay out and split on demand instead.
       monaco: {
-        test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+        test: /[\\/]node_modules[\\/]monaco-editor[\\/](?!esm[\\/]vs[\\/](?:language|basic-languages)[\\/])/,
         name: 'lib-monaco-editor',
         priority: 30,
         enforce: true,
@@ -165,23 +167,8 @@ export default defineConfig({
         ignored: ['**/routeTree.gen.ts', '**/.playwright-mcp/**'],
       };
 
-      const plugins = [
-        tanstackRouter(tanstackRouterConfig),
-        new MonacoWebpackPlugin({
-          languages: ['yaml', 'json', 'typescript', 'javascript', 'protobuf'],
-          customLanguages: [
-            {
-              label: 'yaml',
-              entry: 'monaco-yaml',
-              worker: {
-                id: 'monaco-yaml/yamlWorker',
-                entry: 'monaco-yaml/yaml.worker',
-              },
-            },
-          ],
-          filename: 'static/js/[name].worker.js',
-        }),
-      ];
+      // Monaco workers come from `MonacoEnvironment.getWorker` in src/config.ts.
+      const plugins = [tanstackRouter(tanstackRouterConfig)];
 
       if (process.env.RSDOCTOR) {
         plugins.push(

@@ -19,15 +19,19 @@ import { type Components, toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { Check, Copy } from 'lucide-react';
 import {
   type ComponentProps,
+  createContext,
   type ElementType,
   Fragment,
   type HTMLAttributes,
   type MouseEventHandler,
+  type ReactElement,
   type ReactNode,
   type Ref,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -45,7 +49,7 @@ import { createHighlighterCoreSync, type HighlighterCore } from 'shiki/core';
 import { Button, type ButtonVariants, buttonVariants } from './button';
 import { SanitizedHtml } from './sanitized-html';
 import { useShiki } from '../lib/use-shiki';
-import { cn, type SharedProps } from '../lib/utils';
+import { cn } from '../lib/utils';
 
 function splitCodeLines(code: string): Array<{ key: string; line: string }> {
   let offset = 0;
@@ -131,6 +135,8 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> & {
   /** @defaultValue 1 */
   'data-line-numbers-start'?: number;
   testId?: string;
+  /** `data-testid` for the copy button. @defaultValue `` `${testId}-copy` `` when `testId` is set */
+  copyTestId?: string;
   /**
    * Copy-button success callback. Named `onCopied` (not `onCopy`) because `CodeBlockProps`
    * extends `HTMLAttributes`, whose native clipboard `onCopy` collides at react-markdown
@@ -139,6 +145,10 @@ export type CodeBlockProps = HTMLAttributes<HTMLElement> & {
   onCopied?: () => void;
 };
 
+/**
+ * @deprecated Use `CodeBlockContent` from the `code-block` component instead. See
+ * https://redpanda-ui-registry.netlify.app/docs/code-block#migrating-from-code-block-dynamic
+ */
 export const Pre = ({ className, ref, ...props }: HTMLAttributes<HTMLPreElement> & { ref?: Ref<HTMLPreElement> }) => (
   <pre className={cn('w-max min-w-full *:flex *:flex-col', className)} ref={ref} {...props}>
     {props.children}
@@ -147,6 +157,10 @@ export const Pre = ({ className, ref, ...props }: HTMLAttributes<HTMLPreElement>
 
 Pre.displayName = 'Pre';
 
+/**
+ * @deprecated Use `CodeBlock` and its parts from the `code-block` component instead. See
+ * https://redpanda-ui-registry.netlify.app/docs/code-block#migrating-from-code-block-dynamic
+ */
 export const CodeBlock = ({
   title,
   allowCopy = true,
@@ -156,11 +170,13 @@ export const CodeBlock = ({
   viewportProps,
   children,
   testId,
+  copyTestId,
   onCopied,
   ref,
   ...props
 }: CodeBlockProps & { ref?: Ref<HTMLElement> }) => {
   const areaRef = useRef<HTMLDivElement>(null);
+  const resolvedCopyTestId = copyTestId ?? (testId ? `${testId}-copy` : undefined);
   const onCopy = async () => {
     const preElement = areaRef.current?.getElementsByTagName('pre').item(0);
     if (!preElement) {
@@ -192,13 +208,14 @@ export const CodeBlock = ({
         <div className="flex items-center gap-2 bg-surface-subtle px-4 py-1.5">
           {typeof icon === 'string' ? <SanitizedHtml className="text-subtle [&_svg]:size-3.5" html={icon} /> : icon}
           <figcaption className="flex-1 truncate text-subtle">{title}</figcaption>
-          {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} /> : null}
+          {allowCopy ? <CopyButton className="-me-2" onCopy={onCopy} testId={resolvedCopyTestId} /> : null}
         </div>
       ) : (
         allowCopy && (
           <CopyButton
             className="absolute top-2 right-2 z-[2] backdrop-blur-md"
             onCopy={onCopy}
+            testId={resolvedCopyTestId}
             variant={copyButtonVariant ?? (keepBackground ? 'current-ghost' : 'ghost')}
           />
         )
@@ -233,6 +250,7 @@ function CopyButton({
   ...props
 }: ComponentProps<'button'> & {
   onCopy: () => void;
+  testId?: string;
   variant?: ButtonVariants['variant'];
 }) {
   const [checked, onClick, copyError] = useCopyButton(onCopy);
@@ -264,19 +282,35 @@ function CopyButton({
   );
 }
 
-function pre(props: ComponentProps<'pre'> & SharedProps & { keepBackground?: boolean }) {
-  const { keepBackground, ...rest } = props;
+/**
+ * The block's props, for the `pre` slot. A slot closed over during render would be a new component
+ * type each render, so React would remount the block (losing copy state and focus); reading them
+ * from context keeps the slot's identity fixed.
+ */
+type PreSlotProps = Omit<CodeBlockProps, 'children'>;
+
+const PreSlotContext = createContext<PreSlotProps>({});
+
+function PreSlot({ children, className, ...preProps }: ComponentProps<'pre'>) {
+  const { className: blockClassName, ...blockProps } = useContext(PreSlotContext);
   return (
-    <CodeBlock {...rest} className={cn('my-0', rest.className)} keepBackground={keepBackground} testId={rest.testId}>
-      <Pre>{rest.children}</Pre>
+    // Shiki's pre props (.shiki class + --shiki-*-bg vars) go on the figure so keepBackground resolves.
+    <CodeBlock {...preProps} {...blockProps} className={cn(className, blockClassName)}>
+      <Pre>{children}</Pre>
     </CodeBlock>
   );
 }
 
+PreSlot.displayName = 'PreSlot';
+
 /** One Shiki theme per app theme, matching `use-shiki`, `code-editor` and `code-tabs`. */
 export const DEFAULT_THEMES = { light: 'github-light', dark: 'github-dark-default' } as const;
 
-/** For a block that stays a terminal in both app themes. Pair with `keepBackground`. */
+/**
+ * For a block that stays a terminal in both app themes. Pair with `keepBackground`.
+ * @deprecated Use `<CodeBlock variant="terminal">` from the `code-block` component instead. See
+ * https://redpanda-ui-registry.netlify.app/docs/code-block#migrating-from-code-block-dynamic
+ */
 export const TERMINAL_THEMES = { light: 'github-dark-default', dark: 'github-dark-default' } as const;
 
 /**
@@ -295,34 +329,48 @@ export const shikiDualThemeStyles = `
 // ElementType tag avoids React 18 type errors on the React 19 style-hoisting props.
 const StyleResource = 'style' as ElementType;
 
+/**
+ * @deprecated Use `CodeBlock` with the `useHighlightedCode` hook, or `SimpleCodeBlock`, from the
+ * `code-block` component instead. See https://redpanda-ui-registry.netlify.app/docs/code-block#migrating-from-code-block-dynamic
+ */
 export function DynamicCodeBlock({
   lang,
   code,
   options,
   testId,
+  copyTestId,
   keepBackground,
 }: {
   lang: string;
   code: string;
   options?: Omit<HighlightOptionsCommon, 'lang'> & HighlightOptionsThemes;
   testId?: string;
+  /** `data-testid` for the copy button. @defaultValue `` `${testId}-copy` `` when `testId` is set */
+  copyTestId?: string;
   /** Keep the shiki theme's own background instead of the registry's `bg-card`. Required for dark themes. */
   keepBackground?: boolean;
 }) {
   const components: HighlightOptionsCommon['components'] = {
-    pre: (props: ComponentProps<'pre'>) => pre({ ...props, testId, keepBackground }),
+    pre: PreSlot,
     ...options?.components,
   };
+  const preSlotProps = useMemo<PreSlotProps>(
+    () => ({ className: 'my-0', copyTestId, keepBackground, testId }),
+    [copyTestId, keepBackground, testId]
+  );
 
   const PreComponent = (components.pre ?? 'pre') as 'pre';
   const CodeComponent = (components.code ?? 'code') as 'code';
   const loading = (
     <PreComponent>
       <CodeComponent>
-        {splitCodeLines(code).map(({ key, line }) => (
-          <span className="line" key={key}>
-            {line}
-          </span>
+        {/* Newlines between the lines, as Shiki writes them, so copying while highlighting is pending
+            keeps them. A flex column does not render a whitespace-only text node. */}
+        {splitCodeLines(code).map(({ key, line }, index) => (
+          <Fragment key={key}>
+            {index > 0 ? '\n' : null}
+            <span className="line">{line}</span>
+          </Fragment>
         ))}
       </CodeComponent>
     </PreComponent>
@@ -341,7 +389,7 @@ export function DynamicCodeBlock({
       <StyleResource href="shiki-dual-theme" precedence="medium">
         {shikiDualThemeStyles}
       </StyleResource>
-      {highlighted}
+      <PreSlotContext.Provider value={preSlotProps}>{highlighted}</PreSlotContext.Provider>
     </>
   );
 }
@@ -380,6 +428,7 @@ export type SyncCodeBlockProps = {
   | 'icon'
   | 'allowCopy'
   | 'testId'
+  | 'copyTestId'
   | 'className'
   | 'viewportProps'
   | 'onCopied'
@@ -387,36 +436,58 @@ export type SyncCodeBlockProps = {
 
 // Synchronous variant of DynamicCodeBlock: highlights during render (no async/skeleton/flash). Trade-off:
 // languages are fixed at build time (SYNC_LANGS) and ship in the bundle; use DynamicCodeBlock for arbitrary langs.
+/**
+ * @deprecated Use `SimpleCodeBlock`, or `CodeBlock` with the `useHighlightedCode` hook, from the
+ * `code-block` component instead. See https://redpanda-ui-registry.netlify.app/docs/code-block#migrating-from-code-block-dynamic
+ */
 export function SyncCodeBlock({
   code,
   lang,
   themes = DEFAULT_THEMES,
-  keepBackground,
-  ...rest
+  className,
+  ...blockProps
 }: SyncCodeBlockProps): ReactNode {
-  const highlighter = getSyncHighlighter();
-  const resolvedLang = highlighter.getLoadedLanguages().includes(lang) ? lang : 'text';
+  const { light, dark } = themes;
 
-  const hast = highlighter.codeToHast(code, { lang: resolvedLang, themes, defaultColor: false });
+  // Re-highlight only when the code, language or themes change.
+  const highlighted = useMemo((): { pre: ComponentProps<'pre'> } | { error: string } => {
+    const highlighter = getSyncHighlighter();
+    const resolvedLang = highlighter.getLoadedLanguages().includes(lang) ? lang : 'text';
+    try {
+      const hast = highlighter.codeToHast(code, { lang: resolvedLang, themes: { light, dark }, defaultColor: false });
+      // Shiki's root holds one `pre`. Only its props are kept, so CodeBlock renders here directly,
+      // with a fixed type, rather than from a `pre` slot.
+      return {
+        pre: (toJsxRuntime(hast.children[0], { Fragment, jsx, jsxs }) as ReactElement<ComponentProps<'pre'>>).props,
+      };
+    } catch (error) {
+      // A theme the bundle does not hold, say: the code stays readable and copyable as plain text.
+      return { error: error instanceof Error ? error.message : 'Could not highlight code.' };
+    }
+  }, [code, lang, light, dark]);
 
-  const rendered = toJsxRuntime(hast, {
-    Fragment,
-    jsx,
-    jsxs,
-    components: {
-      // Shiki's pre props (.shiki class + --shiki-*-bg vars) go on the figure so keepBackground resolves.
-      pre: ({ children, className, ...preProps }: ComponentProps<'pre'>) => (
-        <CodeBlock {...preProps} {...rest} className={cn(className, rest.className)} keepBackground={keepBackground}>
-          <Pre>{children}</Pre>
-        </CodeBlock>
-      ),
-    },
-  });
+  if ('error' in highlighted) {
+    return (
+      <CodeBlock {...blockProps} className={className}>
+        <Pre>
+          <code>{code}</code>
+        </Pre>
+        <p className="px-4 pb-3 text-body-sm text-subtle" role="alert">
+          Syntax highlighting unavailable. Showing plain text. {highlighted.error}
+        </p>
+      </CodeBlock>
+    );
+  }
+
+  const { children, className: shikiClassName, ...shikiProps } = highlighted.pre;
 
   return (
     <>
       <style>{shikiDualThemeStyles}</style>
-      {rendered}
+      {/* Shiki's pre props (.shiki class + --shiki-*-bg vars) go on the figure so keepBackground resolves. */}
+      <CodeBlock {...shikiProps} {...blockProps} className={cn(shikiClassName, className)}>
+        <Pre>{children}</Pre>
+      </CodeBlock>
     </>
   );
 }

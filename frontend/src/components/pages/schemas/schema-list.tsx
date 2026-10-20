@@ -757,7 +757,9 @@ const SchemaList: FC = () => {
       )}
       <DeleteDialog
         onConfirm={() => {
-          if (!deleteTarget) return;
+          if (!deleteTarget) {
+            return;
+          }
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: false },
             {
@@ -767,14 +769,18 @@ const SchemaList: FC = () => {
           );
         }}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) {
+            setDeleteTarget(null);
+          }
         }}
         open={deleteTarget?.kind === 'soft'}
         schemaVersionName={deleteTarget?.name ?? ''}
       />
       <PermanentDeleteDialog
         onConfirm={() => {
-          if (!deleteTarget) return;
+          if (!deleteTarget) {
+            return;
+          }
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: true },
             {
@@ -784,7 +790,9 @@ const SchemaList: FC = () => {
           );
         }}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) {
+            setDeleteTarget(null);
+          }
         }}
         open={deleteTarget?.kind === 'permanent'}
         schemaVersionName={deleteTarget?.name ?? ''}

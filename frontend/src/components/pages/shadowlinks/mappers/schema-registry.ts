@@ -137,7 +137,6 @@ function mapDestinationMapping(
       })),
     };
   }
-  return;
 }
 
 /**

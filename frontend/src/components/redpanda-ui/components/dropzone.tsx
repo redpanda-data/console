@@ -58,7 +58,7 @@ export const Dropzone = ({
   ref,
   ...props
 }: DropzoneProps & { ref?: React.Ref<HTMLButtonElement> }) => {
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     accept,
     maxFiles,
     maxSize,
@@ -84,6 +84,7 @@ export const Dropzone = ({
         className={cn(
           'group relative h-auto w-full flex-col overflow-hidden p-8',
           isDragActive && 'outline-none ring-2 ring-ring',
+          isDragReject && 'ring-destructive',
           className
         )}
         data-testid={testId}
@@ -93,7 +94,8 @@ export const Dropzone = ({
         variant={variant}
         {...getRootProps()}
       >
-        <input {...inputProps} disabled={disabled} />
+        {/* react-dropzone >= 19 hides the input with a zero-size, in-flow box; keep it out of the flex gap. */}
+        <input {...inputProps} className="absolute" disabled={disabled} />
         {children}
       </Button>
     </DropzoneContext.Provider>
@@ -168,7 +170,11 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
 
   if (accept) {
     caption += 'Accepts ';
-    caption += Object.keys(accept).join(', ');
+    // Grouped filters name themselves ("Images"); fall back to MIME types when a group has no description.
+    const accepted = Array.isArray(accept)
+      ? accept.map((group) => group.description ?? Object.keys(group.accept).join(', '))
+      : Object.keys(accept);
+    caption += accepted.join(', ');
   }
 
   if (minSize && maxSize) {

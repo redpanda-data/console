@@ -33,7 +33,7 @@ export class TokenManager {
    */
   async refresh(): Promise<string> {
     // Return existing promise if refresh is in progress
-    if (this.refreshPromise) {
+    if (this.refreshPromise !== null) {
       return this.refreshPromise;
     }
 

@@ -569,7 +569,8 @@ describe('NodeConfigForm — field-level commit', () => {
     const { rerender } = render(
       <NodeConfigForm componentName="kafka" spec={spec} value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }} />
     );
-    expect(screen.getByPlaceholderText('Select or enter a topic…')).toHaveValue('orig');
+    // Query by role: Base UI's combobox mirrors its value into an aria-hidden form input.
+    expect(screen.getByRole('combobox', { name: /topic/i })).toHaveValue('orig');
 
     // e.g. the Topic dialog wrote into this component while its inspector is open.
     rerender(
@@ -579,7 +580,7 @@ describe('NodeConfigForm — field-level commit', () => {
         value={{ kafka: { topic: 'from-dialog', addresses: ['a:9092'] } }}
       />
     );
-    expect(screen.getByPlaceholderText('Select or enter a topic…')).toHaveValue('from-dialog');
+    expect(screen.getByRole('combobox', { name: /topic/i })).toHaveValue('from-dialog');
   });
 });
 

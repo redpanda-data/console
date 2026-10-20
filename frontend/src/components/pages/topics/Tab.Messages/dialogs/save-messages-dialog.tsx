@@ -191,7 +191,9 @@ export const SaveMessagesDialog = ({
   return (
     <Dialog
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
       open={count > 0}
     >
