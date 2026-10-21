@@ -698,12 +698,12 @@ const PipelineListPageContent = () => {
   }, [pageCount, table]);
 
   const { columnFilters } = table.state;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are the change-triggers — editing either jumps back to page 1.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are the change-triggers — editing either jumps back to page 1. `table` is a new object every render, so depending on it would undo every page move.
   useLayoutEffect(() => {
     if (table.state.pagination.pageIndex !== 0) {
       table.setPageIndex(0);
     }
-  }, [table, columnFilters, sorting]);
+  }, [columnFilters, sorting]);
 
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
   const [search, setSearch] = useState('');
