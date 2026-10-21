@@ -74,6 +74,7 @@ const ShadowLinkTableRows = ({
       {table.getRowModel().rows?.map((row) => (
         <TableRow
           className="cursor-pointer"
+          data-clickable
           data-testid={`shadowlink-row-${row.original.name}`}
           key={row.id}
           onClick={(event) => handleRowClick(row.original.name, event)}
@@ -250,7 +251,8 @@ const ShadowLinksOnThisCluster = () => {
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody className="[&_tr:hover]:bg-transparent">
+        {/* Only rows that open something take the registry's hover fill */}
+        <TableBody className="[&_tr:not([data-clickable]):hover]:bg-transparent">
           <ShadowLinkTableRows columns={columns} handleRowClick={handleRowClick} isLoading={isLoading} table={table} />
         </TableBody>
       </Table>
@@ -315,7 +317,7 @@ export const ShadowLinkListPage = () => {
       }
       value={tab ?? null}
     >
-      <TabsList testId="shadowlinks-tabs">
+      <TabsList testId="shadowlinks-tabs" variant="underline">
         <TabsTrigger testId="shadowlinks-tab-links" value="links" variant="underline">
           Links on this cluster
         </TabsTrigger>
