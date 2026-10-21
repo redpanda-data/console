@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
 import type { EditorTheme } from 'components/redpanda-ui/lib/editor-theme';
 
 import { type DiffBase, diffColors, diffTheme } from './changes-diff-theme';
+import { describe, expect, it } from 'bun:test';
 
 // Shape, not values: pinning the palette would break on every registry change. What is guarded is
 // the reading order the design needs, which Monaco's own defaults get wrong.

@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
+import { describe, expect, test } from 'bun:test';
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 import type { EditTarget } from '../utils/yaml';
 

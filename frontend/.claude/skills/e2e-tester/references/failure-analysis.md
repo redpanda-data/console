@@ -1,23 +1,12 @@
 # Failure Analysis Reference
 
-## Using MCP Playwright Agents
+## CLI and artifacts
 
-```typescript
-// Use mcp__playwright-test__test_list to see all tests
-// Use mcp__playwright-test__test_run to get detailed results
-// Use mcp__playwright-test__test_debug to analyze specific failures
-```
-
-## Finding Missing Test IDs
-
-Use the Task tool with Explore agent:
-
-```
-subagent_type: Explore
-prompt: Search through [feature] UI components and identify all interactive
-        elements (buttons, inputs, links, selects) missing data-testid attributes.
-        List with file:line, element type, purpose, and suggested testid name.
-```
+Run `bun run e2e-test:variant console list --summary` to collect tests without services.
+Run `bun run e2e-test:variant console topics/topic-list.spec.ts` to reproduce against the
+real stack. Inspect `.rstest/` screenshots, first-retry videos and Playwright traces.
+Enterprise screenshots/videos remain disabled. Use native locators/DOM inspection for
+selector diagnosis; do not replace real E2E coverage with mocked component tests.
 
 ## Common Failure Patterns
 
@@ -108,13 +97,13 @@ cat .testcontainers-state.json
 
 ## Systematic Failure Analysis Workflow
 
-1. **Get Test Results** — Use `mcp__playwright-test__test_run` or check console output
+1. **Get Test Results** — Run the relevant variant CLI and inspect console/artifact output
 2. **Analyze Error Patterns:**
    - Selector not found -> Missing/wrong testid or element not visible
    - Strict mode violation -> Need more specific selector
    - Timeout -> Element loads async, need waitFor
    - Connection refused -> Container/service not running
-3. **Find Missing Test IDs** — Use Task tool with Explore agent
+3. **Find Missing Test IDs** — Inspect semantic roles and labels in the source and browser
 4. **Add Test IDs** — Read component, add `data-testid`, follow naming convention
 5. **Update Tests** — Replace brittle selectors with stable testids, add wait conditions
 6. **Verify Fixes** — Run specific test file, then full suite

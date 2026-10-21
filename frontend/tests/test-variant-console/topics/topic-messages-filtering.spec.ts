@@ -1,8 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('View and Filter Messages', () => {
@@ -14,7 +15,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageContent);
 
-    await test.step('Expand message row', async () => {
+    await step('Expand message row', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Wait for message to appear
@@ -45,7 +46,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.produceMessage(topicName, message1);
     await topicPage.produceMessage(topicName, message2);
 
-    await test.step('Search for messages', async () => {
+    await step('Search for messages', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Find search input
@@ -73,7 +74,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, 'Message for partition filter');
 
-    await test.step('Apply partition filter', async () => {
+    await step('Apply partition filter', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Look for partition filter dropdown
@@ -106,7 +107,7 @@ test.describe('View and Filter Messages', () => {
       await topicPage.produceMessage(topicName, `Message ${i}`);
     }
 
-    await test.step('Filter by start offset', async () => {
+    await step('Filter by start offset', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Look for offset filter input
@@ -131,7 +132,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, 'Message for filter clearing');
 
-    await test.step('Apply and clear filters', async () => {
+    await step('Apply and clear filters', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // Apply a search filter
@@ -160,7 +161,7 @@ test.describe('View and Filter Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('View empty topic', async () => {
+    await step('View empty topic', async () => {
       await page.goto(`/topics/${topicName}#messages`);
 
       // Wait for the topic page to load (tablist indicates TopicDetailsContent is rendered)
@@ -183,7 +184,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, 'Test rapid filtering');
 
-    await test.step('Rapidly change filters', async () => {
+    await step('Rapidly change filters', async () => {
       await page.goto(`/topics/${topicName}`);
 
       const searchInput = page.getByPlaceholder(/search|filter/i);
@@ -210,7 +211,7 @@ test.describe('View and Filter Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, 'URL filter test');
 
-    await test.step('Apply filter and check URL', async () => {
+    await step('Apply filter and check URL', async () => {
       await page.goto(`/topics/${topicName}#messages`);
 
       // Use the specific testId for message quick search
@@ -227,7 +228,7 @@ test.describe('View and Filter Messages', () => {
       expect(currentUrl).toContain('q=test-search');
     });
 
-    await test.step('Reload page and verify filter persists', async () => {
+    await step('Reload page and verify filter persists', async () => {
       // Reload the page
       await page.reload();
 

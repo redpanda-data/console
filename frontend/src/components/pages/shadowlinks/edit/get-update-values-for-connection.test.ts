@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { getUpdateValuesForConnection } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
@@ -66,7 +66,12 @@ describe('getUpdateValuesForConnection', () => {
   });
 
   describe('Bootstrap servers changes', () => {
-    test.each([
+    test.each<{
+      description: string;
+      originalServers: Parameters<typeof getUpdateValuesForConnection>[0]['bootstrapServers'];
+      newServers: Parameters<typeof getUpdateValuesForConnection>[0]['bootstrapServers'];
+      expectedPath: string;
+    }>([
       {
         description: 'different server added',
         originalServers: [{ value: 'localhost:9092' }],

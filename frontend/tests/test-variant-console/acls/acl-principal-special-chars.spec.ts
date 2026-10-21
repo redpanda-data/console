@@ -15,7 +15,7 @@
  * rendering are out of sync. Space-rejection case is also deferred pending backend policy.
  */
 
-import { test } from '@playwright/test';
+import { test } from '../../shared/e2e';
 
 test.describe('ACL principal URL encoding', () => {
   test.skip('principalName containing ":" round-trips through create → list → detail', async () => {

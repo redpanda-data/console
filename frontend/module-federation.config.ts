@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ModuleFederationPluginOptions } from '@module-federation/rsbuild-plugin';
+import type { ModuleFederationOptions as ModuleFederationPluginOptions } from '@module-federation/rsbuild-plugin';
 
 export const moduleFederationConfig: ModuleFederationPluginOptions = {
   name: 'rp_console',

@@ -1,72 +1,18 @@
 ---
-title: Unit vs Integration Tests
+title: Unit vs integration tests
 impact: CRITICAL
-impactDescription: Wrong file extension causes tests to run in wrong environment
-tags: rstest, unit, integration, configuration
+tags: bun, rstest, unit, integration
 ---
 
-# Unit vs Integration Tests (CRITICAL)
+# Classify by behavior
 
-## Explanation
+Use Bun (`bun:test`) for pure logic and mocked module contracts, even when the source
+module uses JSX. Name those files `.test.ts`. Bun's Happy DOM preload accommodates
+import-time browser reads; it is not a reason to classify a DOM journey as a unit.
 
-Rstest uses separate unit and integration projects. File extension determines environment:
-- `.test.ts` runs in Node.js (fast, no DOM)
-- `.test.tsx` runs in happy-dom (browser-like, slower)
+Use Rstest (`@rstest/core`) for React/DOM/hooks and module-system/transport integration.
+Use `.test.tsx` for JSX and `.integration.test.ts` for non-JSX integration. Keep native
+CSS/input checks and full running-application journeys in `.spec.ts`, driven by Rstest's
+Playwright integration. Do not replace full-stack tests with render-only fixtures.
 
-Using wrong extension causes environment mismatches and test failures.
-
-## Incorrect
-
-```typescript
-// src/utils/format.test.tsx - WRONG extension for pure logic
-import { formatDate } from './format';
-
-test('formats date', () => {
-  expect(formatDate(new Date())).toBe('...');
-});
-```
-
-```typescript
-// src/components/Button.test.ts - WRONG extension for React
-import { render } from 'test-utils/test-utils';
-import { Button } from './Button';
-
-test('renders button', () => {
-  render(<Button>Click</Button>); // Fails: no DOM
-});
-```
-
-## Correct
-
-```typescript
-// src/utils/format.test.ts - Correct for pure logic
-import { formatDate } from './format';
-
-test('formats date', () => {
-  expect(formatDate(new Date())).toBe('...');
-});
-```
-
-```typescript
-// src/components/Button.test.tsx - Correct for React
-import { render, screen } from 'test-utils/test-utils';
-import { Button } from './Button';
-
-test('renders button', () => {
-  render(<Button>Click</Button>);
-  expect(screen.getByRole('button')).toBeInTheDocument();
-});
-```
-
-## Decision Guide
-
-| Test Type | Extension | Environment | Use For |
-|-----------|-----------|-------------|---------|
-| Unit | `.test.ts` | Node.js | Utilities, helpers, pure functions |
-| Integration | `.test.tsx` | happy-dom | React components, hooks with DOM |
-
-## Reference
-
-- `rstest.config.unit.ts` - Unit test project
-- `rstest.config.integration.ts` - Integration test project
-- `rstest.config.ts` - Multi-project watch configuration
+See [frontend test guide](../../../../tests/README.md) for exact commands/configurations.

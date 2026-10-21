@@ -1,8 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('Produce Messages', () => {
@@ -14,7 +15,7 @@ test.describe('Produce Messages', () => {
     await topicPage.createTopic(topicName);
     await topicPage.produceMessage(topicName, messageContent);
 
-    await test.step('Verify message in messages tab', async () => {
+    await step('Verify message in messages tab', async () => {
       await page.goto(`/topics/${topicName}`);
       await expect(page.getByText(messageContent)).toBeVisible();
     });
@@ -30,7 +31,7 @@ test.describe('Produce Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Produce message with key', async () => {
+    await step('Produce message with key', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
       // Wait for page to load
@@ -66,7 +67,7 @@ test.describe('Produce Messages', () => {
     await topicPage.createTopic(topicName);
 
     for (const message of messages) {
-      await test.step(`Produce message: ${message}`, async () => {
+      await step(`Produce message: ${message}`, async () => {
         await page.goto(`/topics/${topicName}/produce-record`);
 
         const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
@@ -87,7 +88,7 @@ test.describe('Produce Messages', () => {
       });
     }
 
-    await test.step('Verify all messages in topic', async () => {
+    await step('Verify all messages in topic', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // All messages should be visible
@@ -106,7 +107,7 @@ test.describe('Produce Messages', () => {
     await topicPage.createTopic(topicName);
     await page.goto(`/topics/${topicName}/produce-record`);
 
-    await test.step('Produce large message', async () => {
+    await step('Produce large message', async () => {
       // Create message larger than 20KB (DefaultMaxDeserializationPayloadSize)
       const maxMessageSize = 30_000;
       const fillText = 'example content ';
@@ -129,7 +130,7 @@ test.describe('Produce Messages', () => {
       });
     });
 
-    await test.step('Load large message', async () => {
+    await step('Load large message', async () => {
       // Click on the message row to expand
       await page.getByLabel('Expand row').first().click();
 
@@ -159,7 +160,7 @@ test.describe('Produce Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Navigate to produce page', async () => {
+    await step('Navigate to produce page', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
       // Verify produce page loaded with all elements
@@ -180,7 +181,7 @@ test.describe('Produce Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Try to produce empty message', async () => {
+    await step('Try to produce empty message', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
       // Don't enter any value
@@ -206,7 +207,7 @@ test.describe('Produce Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    await test.step('Produce first message', async () => {
+    await step('Produce first message', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
       const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
       await valueEditor.click();
@@ -218,7 +219,7 @@ test.describe('Produce Messages', () => {
       });
     });
 
-    await test.step('Produce second message - editor should be clear or have previous content', async () => {
+    await step('Produce second message - editor should be clear or have previous content', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
       // Editor might be cleared or might have previous content
@@ -239,7 +240,7 @@ test.describe('Produce Messages', () => {
       });
     });
 
-    await test.step('Verify both messages exist', async () => {
+    await step('Verify both messages exist', async () => {
       await page.goto(`/topics/${topicName}`);
       await expect(page.getByText(message1)).toBeVisible();
       await expect(page.getByText(message2)).toBeVisible();

@@ -9,10 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { applyDisplayWindow } from './live-window';
 import { orderForContinuousNewest, visiblePageKeys } from './message-order';
+import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
 const msg = (partitionID: number, offset: number, timestamp: number): TopicMessage =>

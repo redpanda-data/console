@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import {
@@ -20,6 +19,7 @@ import {
   pipelineListEmptyText,
   stateFilterValues,
 } from './list-utils';
+import { describe, expect, it } from 'bun:test';
 
 describe('aggregateConnectors', () => {
   it('collapses duplicates into counts, preserving first-appearance order', () => {

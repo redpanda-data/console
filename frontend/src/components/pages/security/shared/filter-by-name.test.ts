@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { filterByName } from './filter-by-name';
+import { describe, expect, test } from 'bun:test';
 
 const items = [{ name: 'alice' }, { name: 'Bob' }, { name: 'charlie' }, { name: 'ALICE-admin' }];
 const getName = (item: { name: string }) => item.name;

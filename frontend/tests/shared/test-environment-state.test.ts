@@ -9,14 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, rs, test } from '@rstest/core';
-
 import {
   cleanupSerializedResources,
   cleanupStartedResources,
   createEnvironmentState,
   rememberContainer,
 } from './test-environment-state.mjs';
+import { describe, expect, mock, test } from 'bun:test';
 
 describe('test environment state', () => {
   test('tracks source and destination backends independently', () => {
@@ -27,6 +26,9 @@ describe('test environment state', () => {
     rememberContainer(state, 'sourceBackend', sourceBackend);
     rememberContainer(state, 'backend', destinationBackend);
 
+    if (!('sourceBackendContainer' in state && 'backendContainer' in state)) {
+      throw new Error('Expected both live container handles');
+    }
     expect(state.sourceBackendId).toBe('source-id');
     expect(state.sourceBackendContainer).toBe(sourceBackend);
     expect(state.backendId).toBe('destination-id');
@@ -36,49 +38,49 @@ describe('test environment state', () => {
   test('stops containers in parallel before removing the network', async () => {
     const state = createEnvironmentState();
     let finishFirst: (() => void) | undefined;
-    const firstStop = rs.fn(
+    const firstStop = mock(
       () =>
         new Promise<void>((resolve) => {
           finishFirst = resolve;
         })
     );
-    const secondStop = rs.fn().mockResolvedValue(undefined);
-    const networkStop = rs.fn().mockResolvedValue(undefined);
+    const secondStop = mock().mockResolvedValue(undefined);
+    const networkStop = mock().mockResolvedValue(undefined);
 
     rememberContainer(state, 'redpanda', { getId: () => 'redpanda-id', stop: firstStop });
     rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
-    state.network = { stop: networkStop };
+    Object.assign(state, { network: { stop: networkStop } });
 
     const cleanup = cleanupStartedResources(state);
 
-    expect(firstStop).toHaveBeenCalledOnce();
-    expect(secondStop).toHaveBeenCalledOnce();
+    expect(firstStop).toHaveBeenCalledTimes(1);
+    expect(secondStop).toHaveBeenCalledTimes(1);
     expect(networkStop).not.toHaveBeenCalled();
 
     finishFirst?.();
     await cleanup;
 
-    expect(networkStop).toHaveBeenCalledOnce();
+    expect(networkStop).toHaveBeenCalledTimes(1);
   });
 
   test('attempts all cleanup and reports failures', async () => {
     const state = createEnvironmentState();
     const firstError = new Error('first stop failed');
-    const secondStop = rs.fn().mockResolvedValue(undefined);
-    const networkStop = rs.fn().mockRejectedValue(new Error('network stop failed'));
+    const secondStop = mock().mockResolvedValue(undefined);
+    const networkStop = mock().mockRejectedValue(new Error('network stop failed'));
 
     rememberContainer(state, 'redpanda', {
       getId: () => 'redpanda-id',
-      stop: rs.fn().mockRejectedValue(firstError),
+      stop: mock().mockRejectedValue(firstError),
     });
     rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
-    state.network = { stop: networkStop };
+    Object.assign(state, { network: { stop: networkStop } });
 
     await expect(cleanupStartedResources(state)).rejects.toMatchObject({
       errors: [firstError, expect.objectContaining({ message: 'network stop failed' })],
     });
-    expect(secondStop).toHaveBeenCalledOnce();
-    expect(networkStop).toHaveBeenCalledOnce();
+    expect(secondStop).toHaveBeenCalledTimes(1);
+    expect(networkStop).toHaveBeenCalledTimes(1);
   });
 
   test('removes every serialized resource and temporary path after a crashed run', async () => {
@@ -88,9 +90,9 @@ describe('test environment state', () => {
       backendId: 'backend-id',
       tempPaths: ['/tmp/license-one', '/tmp/license-two'],
     });
-    const removeContainer = rs.fn().mockResolvedValue(undefined);
-    const removeNetwork = rs.fn().mockResolvedValue(undefined);
-    const removePath = rs.fn().mockResolvedValue(undefined);
+    const removeContainer = mock().mockResolvedValue(undefined);
+    const removeNetwork = mock().mockResolvedValue(undefined);
+    const removePath = mock().mockResolvedValue(undefined);
 
     await cleanupSerializedResources(state, {
       removeContainer,

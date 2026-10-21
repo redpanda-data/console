@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, step } from './e2e';
 
 export type CreateSchemaOptions = {
   subjectName: string;
@@ -12,7 +12,7 @@ export const createSchema = async (
   page: Page,
   { subjectName, schemaFormat = 'AVRO', schemaText, strategy = 'CUSTOM', keyOrValue }: CreateSchemaOptions
 ) => {
-  return await test.step(`Create schema: ${subjectName}`, async () => {
+  return await step(`Create schema: ${subjectName}`, async () => {
     await page.goto('/schema-registry');
     await page.getByRole('button', { name: 'Create new schema' }).click();
 
@@ -61,7 +61,7 @@ export const deleteSchema = async (
   page: Page,
   { subjectName, permanent = false }: { subjectName: string; permanent?: boolean }
 ) => {
-  return await test.step(`Delete schema: ${subjectName} (${permanent ? 'permanent' : 'soft'})`, async () => {
+  return await step(`Delete schema: ${subjectName} (${permanent ? 'permanent' : 'soft'})`, async () => {
     await page.goto('/schema-registry');
 
     // Find the schema row, open its actions (kebab) menu, then click delete
@@ -83,7 +83,7 @@ export const addSchemaVersion = async (
   page: Page,
   { subjectName, schemaText }: { subjectName: string; schemaText: string }
 ) => {
-  return await test.step(`Add version to schema: ${subjectName}`, async () => {
+  return await step(`Add version to schema: ${subjectName}`, async () => {
     await page.goto(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
 
     // Click add version button

@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 /**
  * Smoke coverage for the transforms setup page.
  *
- * `transforms.spec.ts` is commented out because it needs transforms seeded through the
+ * `transforms.examples.ts` is commented out because it needs transforms seeded through the
  * backend API, which the UI cannot do yet. This page has no such dependency: it renders
  * static getting-started content, so it is reachable in every variant and guards the
  * pieces a re-skin can break — the tab strip, the code blocks, and the hint callout.

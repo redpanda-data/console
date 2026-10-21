@@ -32,4 +32,4 @@ const server = createServer(async (request, response) => {
     response.writeHead(404).end();
   }
 });
-server.listen(4178, '127.0.0.1');
+server.listen(4178, '127.0.0.1', () => process.send?.('ready'));

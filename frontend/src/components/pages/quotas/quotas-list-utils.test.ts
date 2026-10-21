@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
 import type { SortingState } from '@tanstack/react-table';
 import { Quota_EntityType, type Quota_Value, Quota_ValueType } from 'protogen/redpanda/api/dataplane/v1/quota_pb';
 
@@ -21,6 +20,7 @@ import {
   searchToSorting,
   sortingToSearch,
 } from './quotas-list-utils';
+import { describe, expect, test } from 'bun:test';
 
 const value = (valueType: Quota_ValueType, v: number): Quota_Value => ({ valueType, value: v }) as Quota_Value;
 

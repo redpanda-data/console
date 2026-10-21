@@ -1,8 +1,7 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-import { describe, expect, it } from '@rstest/core';
-
 import { classifyGround } from './use-theme-appearance';
+import { describe, expect, it } from 'bun:test';
 
 /**
  * Keeps theming name-agnostic: a theme called `midnight` has to come out dark with nothing matching

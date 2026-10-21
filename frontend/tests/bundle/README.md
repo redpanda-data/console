@@ -21,7 +21,7 @@ pipeline diff wiring; this suite does not authenticate an embedded enterprise ho
 Asset attachments count each requested script URL once, reading physical file sizes
 and independent gzip/Brotli compression. They are content-size estimates, not HTTP
 transfer measurements. No child-compiler or concatenated-module totals are added.
-Screenshots, recordings, and asset inventories are in `test-results/`.
+Screenshots, recordings, and asset inventories are in `.rstest/`.
 
 To compare a retained build, set `BUNDLE_BUILD_DIR` to its absolute directory. Run
 against the same browser/fixtures; old eager builds should fail the deferral budgets.

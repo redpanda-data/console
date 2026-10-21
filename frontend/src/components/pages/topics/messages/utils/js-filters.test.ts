@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { visibleJsFilters } from './js-filters';
+import { describe, expect, test } from 'bun:test';
 import { createFilterEntry } from '../../../../../state/ui';
 
 describe('visibleJsFilters', () => {

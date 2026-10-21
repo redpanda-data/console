@@ -9,7 +9,7 @@ import { VisualEditorPanel } from './visual-editor-panel';
 import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
 // Surface the visual-editor callbacks as buttons so we can drive the panel
-// without React Flow's DOM measurement (which doesn't run under jsdom).
+// without React Flow's DOM measurement (which doesn't run under Happy DOM).
 rs.mock('./pipeline-flow-canvas', () => ({
   PipelineFlowCanvas: (props: {
     configYaml: string;
@@ -248,7 +248,7 @@ describe('VisualEditorPanel', () => {
     const user = userEvent.setup();
     render(<CacheHarness />);
     // The canvas mock reflects the live YAML on its container — assert against that (rather than
-    // reselecting the inspector, which accumulates exiting rails under jsdom's AnimatePresence).
+    // reselecting the inspector, which accumulates exiting rails under Happy DOM's AnimatePresence).
     const yamlOnCanvas = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
 
     // Nothing to undo yet.

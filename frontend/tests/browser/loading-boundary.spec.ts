@@ -1,6 +1,5 @@
-import { expect, test } from '@playwright/test';
-
 import { readFileSync } from 'node:fs';
+import { expect, test } from '../shared/e2e';
 
 const styles = readFileSync(new URL('../../src/components/ui/loading-boundary.css', import.meta.url), 'utf8');
 

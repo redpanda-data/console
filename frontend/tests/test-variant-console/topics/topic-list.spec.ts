@@ -1,8 +1,9 @@
+import { step } from '../../shared/e2e';
+
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('Topic List - Basic Operations', () => {
@@ -24,7 +25,7 @@ test.describe('Topic List - Basic Operations', () => {
 
     await topicPage.createTopic(topicName);
 
-    await test.step('Search for the created topic', async () => {
+    await step('Search for the created topic', async () => {
       await topicPage.searchTopics(topicName);
 
       // Topic should be visible
@@ -49,7 +50,7 @@ test.describe('Topic List - Basic Operations', () => {
     await topicPage.createTopic(topic2);
     await topicPage.createTopic(topic3);
 
-    await test.step('Search with regex pattern', async () => {
+    await step('Search with regex pattern', async () => {
       // Search for topics starting with prefix using regex
       await topicPage.searchTopics(`^${prefix}.*`);
 
@@ -72,7 +73,7 @@ test.describe('Topic List - Basic Operations', () => {
 
     await topicPage.createTopic(topicName);
 
-    await test.step('Apply and clear search filter', async () => {
+    await step('Apply and clear search filter', async () => {
       // Apply search filter
       await topicPage.searchTopics('non-matching-search-term');
 
@@ -92,14 +93,14 @@ test.describe('Topic List - Basic Operations', () => {
     const topicPage = new TopicPage(page);
     await topicPage.goToTopicsList();
 
-    await test.step('Hide internal topics', async () => {
+    await step('Hide internal topics', async () => {
       await topicPage.toggleInternalTopics(false);
 
       // Internal topics (starting with _) should be hidden
       await expect(page.getByTestId('data-table-cell').getByText('_schemas')).not.toBeVisible();
     });
 
-    await test.step('Show internal topics', async () => {
+    await step('Show internal topics', async () => {
       await topicPage.toggleInternalTopics(true);
 
       // Internal topics should be visible
@@ -111,12 +112,12 @@ test.describe('Topic List - Basic Operations', () => {
     const topicPage = new TopicPage(page);
     await topicPage.goToTopicsList();
 
-    await test.step('Set internal topics to visible', async () => {
+    await step('Set internal topics to visible', async () => {
       await topicPage.toggleInternalTopics(true);
       await expect(page.getByTestId('data-table-cell').getByText('_schemas')).toBeVisible();
     });
 
-    await test.step('Reload page and verify setting persists', async () => {
+    await step('Reload page and verify setting persists', async () => {
       await page.reload();
 
       // Setting should persist - internal topics still visible
@@ -124,7 +125,7 @@ test.describe('Topic List - Basic Operations', () => {
       await expect(page.getByTestId('data-table-cell').getByText('_schemas')).toBeVisible();
     });
 
-    await test.step('Hide internal topics and verify persistence', async () => {
+    await step('Hide internal topics and verify persistence', async () => {
       await topicPage.toggleInternalTopics(false);
       await page.reload();
 

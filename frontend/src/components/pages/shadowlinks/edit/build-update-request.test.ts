@@ -12,7 +12,6 @@
 import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create } from '@bufbuild/protobuf';
 import { DurationSchema } from '@bufbuild/protobuf/wkt';
-import { describe, expect, test } from '@rstest/core';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
@@ -30,6 +29,7 @@ import {
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
 import { buildControlplaneUpdateRequest, buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
+import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, SCHEMA_REGISTRY_MODE, TLS_MODE } from '../create/model';
 
@@ -203,7 +203,12 @@ const createBaseControlplaneShadowLink = () =>
 
 describe('buildControlplaneUpdateRequest', () => {
   describe('field mask path stripping', () => {
-    test.each([
+    test.each<{
+      description: string;
+      changes: Partial<FormValues>;
+      expectedPathContains: string;
+      shouldNotContain: string;
+    }>([
       {
         description: 'bootstrap servers change',
         changes: { bootstrapServers: [{ value: 'new-host:9092' }] },
@@ -474,7 +479,7 @@ describe('buildControlplaneUpdateRequest', () => {
 
 describe('buildDataplaneUpdateRequest', () => {
   describe('field mask path preservation', () => {
-    test.each([
+    test.each<{ description: string; changes: Partial<FormValues>; expectedPath: string }>([
       {
         description: 'bootstrap servers change',
         changes: { bootstrapServers: [{ value: 'new-host:9092' }] },
@@ -583,7 +588,7 @@ describe('buildDataplaneUpdateRequest', () => {
   });
 
   describe('combining field masks', () => {
-    test.each([
+    test.each<{ description: string; changes: Partial<FormValues>; expectedPathCount: number }>([
       {
         description: 'single category (connection)',
         changes: { bootstrapServers: [{ value: 'new:9092' }] },

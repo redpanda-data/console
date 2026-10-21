@@ -11,10 +11,10 @@
 
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
-import { describe, expect, test } from '@rstest/core';
 import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
 
 import { arrayElementPgType, columnKindForPgType, hintFromError, isArrayPgType } from './sql-types';
+import { describe, expect, test } from 'bun:test';
 
 describe('columnKindForPgType', () => {
   test.each([

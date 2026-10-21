@@ -45,6 +45,17 @@ const partitions = (topicName: string): Partition[] =>
 const seed = () =>
   useApiStore.setState({
     topics,
+    clusterInfo: {
+      controllerId: 1,
+      kafkaVersion: 'v26.2.0',
+      brokers: [1, 2].map((brokerId) => ({
+        brokerId,
+        logDirSize: 0,
+        address: `broker-${brokerId}:9092`,
+        rack: null,
+        config: { configs: [], error: undefined },
+      })),
+    },
     topicPartitions: new Map(topics.map((topic) => [topic.topicName, partitions(topic.topicName)])),
   });
 

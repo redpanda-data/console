@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { formatWithUnit } from './unit';
+import { describe, expect, test } from 'bun:test';
 
 describe('formatWithUnit', () => {
   test('formats bytes with scale', () => {

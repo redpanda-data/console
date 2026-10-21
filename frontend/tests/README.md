@@ -1,467 +1,139 @@
-# E2E Testing with Testcontainers
+# Frontend tests
 
-This directory contains the E2E test setup that uses Docker containers and Playwright's lifecycle hooks to provide a complete test environment.
+Run tools from `frontend/` through the pinned package scripts. Install with
+`bun install --frozen-lockfile`, then `bun run install:chromium` before running tests
+(Linux also needs `--with-deps`). Bun is pinned in `.bun-version`; Node must satisfy
+`package.json` (Node 22.22 is used for the browser/E2E CI jobs).
 
-## Playwright Test Agents
+## Choose by behavior
 
-This project uses Playwright's test agents for AI-assisted test creation and maintenance:
+| Coverage | Runner/environment | Command |
+| --- | --- | --- |
+| Pure logic, transforms, mocked module contracts | Bun; Happy DOM supplies import-time browser globals | `bun run test:unit` |
+| React components, hooks, DOM, store/transport integration | Rstest + Happy DOM | `bun run test:integration` |
+| Bundler/configuration and subprocess integration | Rstest + Happy DOM | `bun run test:integration` |
+| Built Module Federation remote | Rstest federation plugin + Happy DOM | `bun run test:federation` |
+| Native CSS animation and browser hit testing | Rstest + Playwright Chromium | `bun run test:browser` |
+| Native input, viewport and fixture compatibility | Rstest + Playwright Chromium | `bun run test:e2e:canary` |
+| Production app, mocked REST/Connect boundary, bundle/worker budgets | Rstest + Playwright Chromium | `bun run build && bun run test:bundle` |
+| Running Console + backend + brokers/services | Rstest + Playwright + Testcontainers | `bun run e2e-test:variant console` |
 
-- **Planner Agent** - Explores the application and creates detailed test plans in `specs/`
-- **Generator Agent** - Converts test plans into executable Playwright tests
-- **Healer Agent** - Automatically debugs and fixes failing tests
+Classify before naming: `.test.ts` is the Bun convention, `.test.tsx` covers DOM/React
+integration, `.integration.test.ts` covers non-JSX integration, and `.spec.ts` drives a
+real browser. A test does not become an integration just because its module uses JSX.
+Focused tests and direct legacy runner imports (including subpaths) are lint errors;
+selector helpers such as Ivya and Rstest's transitive internals are not prohibited.
+Bun files share a module cache: use scoped spies and restore them instead of `mock.module()`
+replacements of shared modules. The React 18/19 legacy-host lifecycle suite runs in Rstest's
+isolated integration environment. Bun's DOM preload preserves its native networking globals.
 
-### Test Plans
+Conversely, testing a route loader against a QueryClient/transport is integration even
+without JSX. The shared registry test remains upstream-owned and runs unchanged.
 
-Test plans are stored in the `specs/` directory as markdown files. Each plan contains:
-- Application overview and features
-- Detailed test scenarios with step-by-step instructions
-- Expected results and success criteria
-- Reference to seed test for environment setup
+`bun run test` runs units, integrations, federation, browser and native-input canaries,
+and enforces the native integration coverage thresholds.
+Bundle and full-stack E2E require a built frontend and run as separate CI jobs.
+Use `bun run test:unit:watch` or `bun run test:watch` for integration watch mode.
+Pass file paths to `bun run test:file:unit` or `bun run test:file:integration`.
 
-**Available test plans:**
-- `specs/topics.md` - Comprehensive test plan for Topics page (78 scenarios)
+## Real end-to-end variants
 
-### Using Test Agents
-
-To use the test agents, describe what you need in natural language:
-
-```bash
-# Create a test plan
-"Create a test plan for the /connectors page"
-
-# Generate tests from a plan
-"Generate tests from specs/topics.md"
-
-# Fix failing tests
-"Fix the failing tests in tests/console/topic.spec.ts"
-```
-
-The agents run autonomously and will create test files in the `tests/` directory.
-
-### Seed Test
-
-The `tests/seed.spec.ts` file establishes the baseline environment for test agents:
-- Navigates to application homepage
-- Verifies basic application functionality
-- Provides context for test planning and generation
-
-Agents reference this seed test to understand your application's setup.
-
-## Quick Start
-
-### Run All Tests (Full Automation)
-
-Simply run the E2E tests as usual:
-
-```bash
+```sh
+bun run install:chromium
+bun run build
+bun run e2e-test:variant console
+bun run e2e-test:variant kafka
+bun run e2e-test:variant kafka-connect
+ENTERPRISE_BACKEND_DIR=/absolute/path/to/console-enterprise/backend bun run e2e-test:variant console-enterprise
 bun run e2e-test
 ```
 
-Playwright's globalSetup will automatically:
-1. Start all required Docker containers (Redpanda, Kafka Connect, OwlShop)
-2. Wait for services to be healthy
-3. Start backend and frontend servers
-4. Run the Playwright tests
-5. Clean up everything after tests complete (via the teardown returned by globalSetup)
+Docker must be running. The final command runs every variant, including enterprise;
+enterprise requires a separate checkout. It is not replaced with mocked browser tests.
+Setup uses `tests/shared/global-setup.mjs`, variant JSON/YAML, pinned `test-images.json`
+and the existing Testcontainers resource/cleanup helpers. Teardown also runs after
+failure. Local single-variant runs allocate free host ports; CI variants use separate
+runners. Console uses eight workers. The quota cases are collected by `quotas/quotas.spec.ts`
+and run sequentially within that file so pagination cannot race other quota mutations.
+Other variants retain their worker/retry limits.
 
-### Run Individual Tests (Development Workflow)
+CI builds the OSS backend image once with `bun run e2e-build:oss`, then passes it to the
+E2E matrix as a same-run Docker image artifact. Each matrix job loads the image and sets
+`E2E_PREBUILT_IMAGE_TAG=console-backend:e2e-test`; setup still starts real services but
+does not rebuild the image. Local commands continue to build automatically when no
+prebuilt image is supplied.
 
-For faster development iterations, set up the environment once and run specific tests:
-
-```bash
-# 1. Start all services (Docker, backend, frontend)
-bun run e2e-test:setup
-
-# 2. Run individual tests without global setup/teardown
-npx playwright test tests/console/topic-list.spec.ts --config playwright.config.ts
-
-# Or run specific test
-npx playwright test tests/console/topic-list.spec.ts:21 --config playwright.config.ts
-
-# Or use UI mode for debugging
-npx playwright test tests/console/topic-list.spec.ts --ui --config playwright.config.ts
-
-# 3. When done, clean up everything
-bun run e2e-test:teardown
+```sh
+bun run e2e-test:variant console list --summary
+bun run e2e-test:variant console topics/topic-list.spec.ts
+bun run e2e-test:dev
 ```
 
-**Benefits:**
-- ⚡ Faster test iterations (no 30-40s setup per run)
-- 🔍 Better for debugging specific tests
-- 🎯 Run only the tests you're working on
-- 🖥️ Keep services running between test runs
+Collection does not start services. The `:dev` aliases use Rstest watch mode with the same
+Testcontainers environment; there is no separate Playwright Test UI or dev-server mode. `REACT_APP_ORIGIN` overrides the app URL.
+`E2E_PORTS_OVERRIDE` is a JSON port mapping; shadow-link tests also support
+`REACT_APP_SHADOW_ORIGIN`. See [development mode](E2E_DEV_MODE.md) and
+[Testcontainers details](TESTCONTAINERS.md).
 
-## Test Variants
+Enterprise authentication remains a real login in global setup, plus an explicit
+`authenticate` test. Login-error tests use an unauthenticated context. Pre-existing
+pending/skipped tests retain their conditions; the migration adds none.
 
-This project supports multiple test variants for different configurations. Each variant has its own:
-- Configuration file (`tests/config/console.[variant].config.yaml`)
-- Test directory (`tests/console-[variant]/`)
-- Playwright config (`playwright.[variant].config.ts`)
-- Isolated port allocations (no conflicts)
-- Independent container lifecycle
+## Helpers and native behavior
 
-### Available Variants
+Happy DOM integration tests reject unmocked `fetch` requests and fail at teardown,
+even when application error handling catches the rejection. Use explicit Connect
+router handlers or narrowly matched REST fixtures; unmatched requests still fail.
+There is no localhost success fallback or endpoint allowlist. This guard is confined
+to DOM integration setup; native browser and running-application E2E keep real networking.
 
-View all configured variants:
-```bash
-bun run variant:list
+Import shared `test`/`expect` from `tests/shared/e2e.ts` (or a variant fixture). The runner
+is Rstest; `playwright` is the browser automation runtime. Tests retain native Page,
+Locator, keyboard, drag, `setViewportSize`, evaluation and screenshots. The native-input
+canary exercises trusted events and runtime resizing. No selector-engine adapter,
+maintained fork, browser-mode patch or screenshot comparator is needed for these suites.
+Ivya is a DOM selector engine, not a runner; Console had no Ivya consumer to remove.
+
+CI rejects focused `test.only`/`describe.only` coverage via the Rstest collection reporter;
+real-CLI regressions prove its nonzero exit.
+
+Use `step` and `retryAssertion` from the shared entrypoint for named failures and
+assertion retries. Retry deadlines and the former interval sequences are retained.
+The retry contract has fake-timer integration regressions. Wrap relative URL expectations
+with `appURL('/path')`; Rstest compares full URL strings without resolving them against
+the context base URL. This retains exact origin, path and query checks. `testInfo` is now a fixture;
+its artifact paths and attachment metadata are test/retry-specific. Non-enterprise variants retain failure screenshots and first-retry videos; enterprise
+keeps screenshots/videos off. Traces, videos and screenshots live under `.rstest/` (some commands use `tests/.rstest/`). Upload artifacts
+when reporting failures. Bundle screenshots are evidence, not comparison baselines;
+no pixel tolerance or bundle-size assertion was relaxed.
+
+## Coverage and CI
+
+```sh
+bun run lint:fix
+bun run type:check
+bun run type:check:tests
+bun run test:coverage
 ```
 
-**Currently configured:**
-- **console** (OSS) - Open-source tests without enterprise features
-- **console-enterprise** (Enterprise) - Enterprise tests with authentication and shadowlink
-
-### Running Variant Tests
-
-```bash
-# Run OSS tests
-bun run e2e-test
-
-# Run Enterprise tests
-bun run e2e-test-enterprise
-
-# Run with UI mode
-bun run e2e-test:ui
-bun run e2e-test-enterprise:ui
-
-# Run using variant CLI
-bun run variant run console
-bun run variant run console-enterprise
-```
-
-### Parallel Execution
-
-Variants use isolated ports, enabling parallel execution:
-
-```bash
-# Terminal 1 - Run OSS tests
-bun run e2e-test
-
-# Terminal 2 - Run Enterprise tests simultaneously
-bun run e2e-test-enterprise
-
-# No port conflicts!
-```
-
-### Port Allocation
-
-Each variant uses a dedicated port range (offset by +100):
-
-| Variant | Backend | Kafka | Schema Registry | Admin API | Connect |
-|---------|---------|-------|-----------------|-----------|---------|
-| console | 3000 | 19092 | 18081 | 19644 | 18083 |
-| console-enterprise | 3100 | 19192 | 18181 | 19744 | 18183 |
-| console-custom1 | 3200 | 19292 | 18281 | 19844 | 18283 |
-
-**Formula:** `port = basePort + (variantIndex × 100)`
-
-This prevents conflicts and allows running up to 600+ variants simultaneously.
-
-### Creating a New Variant
-
-Step-by-step guide to create a new test variant:
-
-**1. Scaffold the variant:**
-```bash
-bun run variant:create console-qa
-```
-
-This creates:
-- `tests/console-qa/` - Test directory
-- `tests/config/console.qa.config.yaml` - Backend config (copied from OSS template)
-- `playwright.qa.config.ts` - Playwright config
-- `tests/console-qa/smoke.spec.ts` - Sample test
-
-**2. Add to variant registry:**
-
-Edit `tests/variants.config.mjs` and add your variant:
-
-```javascript
-'console-qa': {
-  name: 'console-qa',
-  displayName: 'QA',
-  configFile: 'console.qa.config.yaml',
-  testDir: 'console-qa',
-  metadata: {
-    isEnterprise: false,  // Change to true if enterprise features needed
-    needsShadowlink: false  // Change to true if shadowlink needed
-  },
-  ports: {
-    backend: 3200,
-    redpandaKafka: 19292,
-    redpandaSchemaRegistry: 18281,
-    redpandaAdmin: 19844,
-    kafkaConnect: 18283
-  }
-}
-```
-
-**3. Add package.json script:**
-
-```json
-{
-  "scripts": {
-    "e2e-test-qa": "playwright test tests/console-qa/ -c playwright.qa.config.ts"
-  }
-}
-```
-
-**4. Customize configuration:**
-
-Edit `tests/config/console.qa.config.yaml` to customize backend settings:
-- Feature flags
-- Authentication settings
-- Cluster connections
-- Service endpoints
-
-**5. Write your tests:**
-
-Add test files in `tests/console-qa/`:
-
-```typescript
-// tests/console-qa/my-feature.spec.ts
-import { test, expect } from '@playwright/test';
-
-test('QA environment smoke test', async ({ page }) => {
-  await page.goto('/');
-  await expect(page).toHaveTitle(/Redpanda Console/);
-});
-```
-
-**6. Run your tests:**
-
-```bash
-bun run e2e-test-qa
-```
-
-### Variant CLI Commands
-
-```bash
-# List all variants with details
-bun run variant:list
-
-# Create a new variant
-bun run variant:create console-staging
-
-# Validate configuration
-bun run variant:validate
-
-# Run variant tests
-bun run variant run console-qa
-```
-
-### Validation
-
-Validate your variant configuration:
-
-```bash
-bun run variant:validate
-```
-
-This checks for:
-- ✅ Port conflicts between variants
-- ✅ Missing test directories
-- ✅ Unconfigured test directories
-- ✅ Missing configuration files
-- ✅ Invalid variant definitions
-
-### Variant Architecture
-
-```
-tests/
-├── variants.config.mjs           # Single source of truth for all variants
-├── playwright-config-factory.mjs # Generates variant-specific configs
-├── variant-cli.mjs               # Management CLI
-├── shared/
-│   ├── global-setup.mjs          # Variant-aware setup and normal cleanup
-│   └── global-teardown.mjs       # Crash-recovery cleanup
-├── config/
-│   ├── console.config.yaml       # OSS config
-│   ├── console.enterprise.config.yaml  # Enterprise config
-│   ├── console.qa.config.yaml    # Custom variant config
-│   └── Dockerfile.backend        # Backend container image
-├── console/                      # OSS tests
-│   ├── topics/
-│   └── connectors/
-├── console-enterprise/           # Enterprise tests
-│   ├── users.spec.ts
-│   ├── acl.spec.ts
-│   └── shadowlink/
-└── console-qa/                   # Custom variant tests
-    └── smoke.spec.ts
-```
-
-### Container State Files
-
-Each variant maintains its own container state file:
-- `.testcontainers-state-console.json`
-- `.testcontainers-state-console-enterprise.json`
-- `.testcontainers-state-console-qa.json`
-
-This allows independent lifecycle management per variant.
-
-### Troubleshooting Variants
-
-**Port Already in Use:**
-```bash
-# Check what's using a port
-lsof -i :3100
-
-# Stop all test containers
-docker ps | grep -E "redpanda|console-backend|owlshop|connect" | awk '{print $1}' | xargs docker stop
-```
-
-**Variant Not Found:**
-```bash
-# Check available variants
-bun run variant:list
-
-# Validate configuration
-bun run variant:validate
-```
-
-**Configuration Issues:**
-```bash
-# Run validation to diagnose
-bun run variant:validate
-
-# Check variant registry
-cat tests/variants.config.mjs
-```
-
-**Stale Container State:**
-```bash
-# Remove state files to force cleanup
-rm tests/.testcontainers-state-*.json
-
-# Restart Docker
-docker restart
-```
-
-## Services
-
-The following services are automatically started:
-
-- **Redpanda** (Kafka-compatible): `localhost:19092`
-- **Schema Registry**: `http://localhost:18081`
-- **Admin API**: `http://localhost:19644`
-- **Kafka Connect**: `http://localhost:18083` (optional - tests continue if slow to start)
-- **OwlShop** (data generator): generates sample data
-
-Setup typically completes in 30-40 seconds with health checks for all critical services.
-
-## Configuration
-
-### Docker Compose
-
-The docker-compose configuration is in `tests/config/docker-compose.yaml`. It includes:
-- Redpanda with SASL authentication (user: `e2euser`, password: `very-secret`)
-- Kafka Connect with SASL configuration
-- OwlShop for generating test data
-
-### Console Configuration
-
-The backend configuration is in `tests/config/console.config.yaml` and matches the docker-compose setup.
-
-## Architecture
-
-The E2E test setup uses Playwright's lifecycle hooks:
-
-- **`shared/global-setup.mjs`**: Runs once before all tests
-  - Starts Docker containers (Redpanda, Kafka Connect, OwlShop)
-  - Waits for services to be healthy
-  - Starts the backend container
-  - Returns a teardown that reuses the live Testcontainers handles
-  - Stops and removes Docker containers
-  - Removes Docker networks and state files
-
-- **`shared/global-teardown.mjs`**: Manual crash-recovery fallback
-  - Cleans serialized resources left by a process that could not run normal teardown
-
-## Manual Management
-
-If you need to manually manage the environment:
-
-### Start everything
-```bash
-cd tests && node -e "import('./shared/global-setup.mjs').then(m => m.default())"
-```
-
-### Stop everything
-```bash
-cd tests && node -e "import('./shared/global-teardown.mjs').then(m => m.default())"
-```
-
-### Check status
-```bash
-# Check Docker containers
-docker ps | grep -E "redpanda|connect|owlshop"
-
-# Check backend (Go server on port 9090)
-lsof -i :9090
-
-# Check frontend (Bun/Rsbuild on port 3000)
-lsof -i :3000
-
-# Check if services are responding
-curl http://localhost:9090/api/cluster/overview  # Backend API
-curl http://localhost:3000  # Frontend
-```
-
-### Development Tips
-
-When using `e2e-test:setup` for development:
-
-1. **Keep services running** - No need to tear down between test runs
-2. **Watch logs** - Terminal shows backend/frontend logs for debugging
-3. **Restart services** - If something breaks, run teardown then setup again
-4. **Check state files** - Process IDs stored in `tests/state/`
-5. **Manual cleanup** - If teardown fails, use:
-   ```bash
-   # Stop processes
-   pkill -f "go run"
-   pkill -f "bun.*start"
-
-   # Stop containers
-   docker stop redpanda owlshop kafka-connect 2>/dev/null
-   docker rm redpanda owlshop kafka-connect 2>/dev/null
-   ```
-
-## Troubleshooting
-
-### Containers not starting
-If containers fail to start, check:
-1. Docker is running
-2. Ports 19092, 18081, 18083, 19644 are not in use
-3. Check Docker logs: `docker logs redpanda`
-
-### Services not ready
-The setup performs health checks for all services:
-- Redpanda health check: up to 30 seconds
-- Admin API: up to 15 seconds
-- Schema Registry: up to 15 seconds
-- Kafka Connect (optional): up to 10 seconds - tests continue if not ready
-
-If services take longer than expected:
-- Check Docker resources (memory/CPU)
-- Review container logs: `docker logs redpanda`
-- The tests will continue even if Kafka Connect is slow (with a warning)
-
-## Files
-
-- **`shared/global-setup.mjs`** - Playwright globalSetup hook
-  - Starts Docker containers
-  - Starts the backend container
-  - Waits for all services to be ready
-  - Returns normal teardown
-
-- **`shared/global-teardown.mjs`** - Manual recovery cleanup
-  - Removes containers and networks recorded by an interrupted run
-
-- **`config/docker-compose.yaml`** - Docker Compose configuration
-  - Redpanda with SASL authentication
-  - Kafka Connect
-  - OwlShop data generator
-
-- **`config/console.config.yaml`** - Redpanda Console backend configuration
-- **`config/conf/.bootstrap.yaml`** - Redpanda bootstrap configuration
+Bun emits line/function LCOV, not statement/branch counters. Bun and V8 instrument
+different source locations, so aggregate hit counts cannot be mixed. All existing
+`coverage.config.json` gates now use measured Rstest integration data only; thresholds
+are unchanged and enforced natively by Rstest. Bun's unit coverage remains in
+`coverage/lcov.info`; Rstest writes its summary, LCOV, HTML and Istanbul maps to
+`coverage-integration/`. No custom counter merge or report-copy scripts are needed.
+
+CI collects native coverage blobs from both existing integration shards and runs
+`bun run test:coverage:merge` after both succeed. The merge adds untested files once
+and enforces the combined thresholds, never thresholds on partial shards. Missing
+shard artifacts fail the producer job. CLI regressions compare merged counters with
+a full run, reject uncovered code, and prove Bun denominators cannot inflate gates.
+
+`bun run type:check:tests` checks browser/tooling and migrated Bun units through
+separate TypeScript projects. Generated/vendored exclusions remain unchanged.
+Bun units also write `.rstest/unit.xml`, so the unit job retains failure diagnostics.
+
+`frontend-verify.yml` keeps unit, integration shards and federation gates, and adds real
+browser/bundle/native-input and three OSS full-stack E2E variants. Enterprise remains
+on the existing downstream enterprise CI path. Browser jobs consume only the build
+artifact from their own workflow run, use read-only permissions and expose no secrets.

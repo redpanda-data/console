@@ -1,4 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { test as base, expect } from '../../shared/e2e';
+import { definePlaywrightOptions } from '../../shared/playwright-options';
+
+const test = base.extend({ playwright: definePlaywrightOptions({ storageState: { cookies: [], origins: [] } }) });
 
 const LOGIN_URL = /\/login/;
 
@@ -8,7 +11,6 @@ const LOGIN_URL = /\/login/;
  */
 test.describe('Login', () => {
   // A fresh context: the shared storageState would skip the form entirely.
-  test.use({ storageState: { cookies: [], origins: [] } });
 
   test('rejects a wrong password inline and stays on the login page', async ({ page }) => {
     await page.goto('/login');

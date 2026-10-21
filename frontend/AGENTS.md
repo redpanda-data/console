@@ -4,7 +4,7 @@ React 19 · Bun · Rsbuild
 
 ## Critical Rules
 
-- New code MUST use Registry components (`src/components/redpanda-ui/`), react-hook-form + Zod, Rstest, and Connect Query
+- New code MUST use Registry components (`src/components/redpanda-ui/`), react-hook-form + Zod, Bun unit tests, Rstest integration/browser/E2E tests, and Connect Query
 - See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited patterns
 - `src/protogen/` is generated — DO NOT EDIT
 
@@ -16,8 +16,8 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 |---------|---------|
 | `bun start` | Dev server :3000 |
 | `bun run build` | Production build |
-| `bun run test` | All tests |
-| `bun run test:unit` | `.test.ts` (node) |
+| `bun run test` | Unit, integration, federation and browser checks |
+| `bun run test:unit` | `.test.ts` (Bun) |
 | `bun run test:integration` | `.test.tsx` (happy-dom) |
 | `bun run lint` | Biome/Ultracite linter |
 | `bun run type:check` | TypeScript |
@@ -25,6 +25,8 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 ## Verify Changes
 
 After changes: `bun run type:check && bun run lint && bun run test`
+
+Classify tests by behavior before choosing filenames. See [test guide](tests/README.md) for full-stack variants, fixtures, coverage and CI.
 
 ## Directory Structure
 

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-
+import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../../test-variant-console/utils/topic-page';
 
 test.describe('Topics - Apache Kafka backend', () => {

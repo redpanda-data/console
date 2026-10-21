@@ -44,7 +44,7 @@ For each issue:
 
 Run all verification steps appropriate for the project:
 1. **Type check** — `tsc --noEmit` / `tsgo --noEmit` / whatever the project uses
-2. **Unit tests** — `bun run test` / `vitest run` / `jest` etc.
+2. **Tests** — `bun run test` (Bun units; Rstest integration, federation and browser checks).
 3. **Build** — `bun run build` / `rsbuild build` / `vite build` etc.
 
 If an override causes a runtime or build error (e.g., a removed export), revert that specific override and note it as unfixable without an upstream library upgrade.

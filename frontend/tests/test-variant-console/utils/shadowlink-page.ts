@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
+import type { Page } from '../../shared/e2e';
+import { expect, retryAssertion } from '../../shared/e2e';
 
 /**
  * Helper to generate unique shadowlink names
@@ -240,7 +240,7 @@ export class ShadowlinkPage {
     await expect(linkElement).not.toBeVisible();
   }
 
-  async verifyOnHomePage(shadowlinkName: string, timeout = 30_000) {
+  async verifyOnHomePage(_shadowlinkName: string, timeout = 30_000) {
     // Navigate to home page (root after login)
     await this.page.goto(this.shadowBackendURL);
 
@@ -249,35 +249,44 @@ export class ShadowlinkPage {
 
     // Verify shadowlink section appears with retry logic
     // The Shadow Cluster section may take time to appear after shadowlink creation
-    await expect(async () => {
-      await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
+    await retryAssertion(
+      async () => {
+        await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
 
-      // Verify "Shadow Cluster" heading exists
-      const shadowClusterHeading = this.page.getByRole('heading', { name: /shadow cluster/i });
-      await expect(shadowClusterHeading).toBeVisible();
+        // Verify "Shadow Cluster" heading exists
+        const shadowClusterHeading = this.page.getByRole('heading', { name: /shadow cluster/i });
+        await expect(shadowClusterHeading).toBeVisible();
 
-      // Verify the "Go to Shadow link" button exists
-      const goToShadowLinkButton = this.page.getByRole('button', { name: /go to shadow link/i });
-      await expect(goToShadowLinkButton).toBeVisible();
-    }).toPass({ timeout, intervals: [2000, 3000] });
+        // Verify the "Go to Shadow link" button exists
+        const goToShadowLinkButton = this.page.getByRole('button', { name: /go to shadow link/i });
+        await expect(goToShadowLinkButton).toBeVisible();
+      },
+      { timeout, intervals: [2000, 3000] }
+    );
   }
 
   async verifyStatus(expectedStatus: 'ACTIVE' | 'PAUSED' | 'FAILED_OVER', timeout = 30_000) {
-    await expect(async () => {
-      await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
-      const statusBadge = this.page.getByTestId('shadowlink-status-badge');
-      await expect(statusBadge).toContainText(expectedStatus);
-    }).toPass({ timeout, intervals: [2000, 3000] });
+    await retryAssertion(
+      async () => {
+        await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
+        const statusBadge = this.page.getByTestId('shadowlink-status-badge');
+        await expect(statusBadge).toContainText(expectedStatus);
+      },
+      { timeout, intervals: [2000, 3000] }
+    );
   }
 
   async verifyTopicCount(expectedCount: number, timeout = 30_000) {
     // Wait for topics to sync
-    await expect(async () => {
-      const topicCountElement = this.page.getByTestId('shadowlink-topic-count');
-      const text = await topicCountElement.textContent();
-      const count = Number.parseInt(text || '0', 10);
-      expect(count).toBe(expectedCount);
-    }).toPass({ timeout });
+    await retryAssertion(
+      async () => {
+        const topicCountElement = this.page.getByTestId('shadowlink-topic-count');
+        const text = await topicCountElement.textContent();
+        const count = Number.parseInt(text || '0', 10);
+        expect(count).toBe(expectedCount);
+      },
+      { timeout }
+    );
   }
 
   async verifyTopicExists(topicName: string) {
@@ -295,32 +304,35 @@ export class ShadowlinkPage {
     timeout = 90_000
   ) {
     // Poll metrics values with periodic refresh button clicks
-    await expect(async () => {
-      // Try to click refresh button on replicated topics card to trigger refetch
-      const replicatedCard = this.page.getByTestId('shadow-link-metric-replicated');
-      await replicatedCard.hover({ timeout: 500 });
-      const refreshBtn = replicatedCard.locator('button:has(svg.lucide-refresh-cw)');
-      await refreshBtn.click({ force: true, timeout: 500 });
+    await retryAssertion(
+      async () => {
+        // Try to click refresh button on replicated topics card to trigger refetch
+        const replicatedCard = this.page.getByTestId('shadow-link-metric-replicated');
+        await replicatedCard.hover({ timeout: 500 });
+        const refreshBtn = replicatedCard.locator('button:has(svg.lucide-refresh-cw)');
+        await refreshBtn.click({ force: true, timeout: 500 });
 
-      // Check the values
-      if (expectedMetrics.totalTopics !== undefined) {
-        const totalElement = this.page.getByTestId('metric-value-replicated');
-        const actualValue = await totalElement.textContent();
-        expect(actualValue).toBe(expectedMetrics.totalTopics.toString());
-      }
+        // Check the values
+        if (expectedMetrics.totalTopics !== undefined) {
+          const totalElement = this.page.getByTestId('metric-value-replicated');
+          const actualValue = await totalElement.textContent();
+          expect(actualValue).toBe(expectedMetrics.totalTopics.toString());
+        }
 
-      if (expectedMetrics.failedOverTopics !== undefined) {
-        const failedOverElement = this.page.getByTestId('metric-value-failedover');
-        const actualValue = await failedOverElement.textContent();
-        expect(actualValue).toBe(expectedMetrics.failedOverTopics.toString());
-      }
+        if (expectedMetrics.failedOverTopics !== undefined) {
+          const failedOverElement = this.page.getByTestId('metric-value-failedover');
+          const actualValue = await failedOverElement.textContent();
+          expect(actualValue).toBe(expectedMetrics.failedOverTopics.toString());
+        }
 
-      if (expectedMetrics.errorTopics !== undefined) {
-        const errorElement = this.page.getByTestId('metric-value-error');
-        const actualValue = await errorElement.textContent();
-        expect(actualValue).toBe(expectedMetrics.errorTopics.toString());
-      }
-    }).toPass({ timeout, intervals: [3000] });
+        if (expectedMetrics.errorTopics !== undefined) {
+          const errorElement = this.page.getByTestId('metric-value-error');
+          const actualValue = await errorElement.textContent();
+          expect(actualValue).toBe(expectedMetrics.errorTopics.toString());
+        }
+      },
+      { timeout, intervals: [3000] }
+    );
   }
 
   /**
@@ -621,7 +633,9 @@ export class ShadowlinkPage {
 
       console.log('✓ Cleanup complete');
     } catch (error) {
-      console.log(`  Warning: Could not clean up destination topics: ${error.message}`);
+      console.log(
+        `  Warning: Could not clean up destination topics: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { applyDisplayWindow } from './live-window';
+import { describe, expect, test } from 'bun:test';
 
 describe('applyDisplayWindow', () => {
   test('returns the same array reference when within the cap', () => {

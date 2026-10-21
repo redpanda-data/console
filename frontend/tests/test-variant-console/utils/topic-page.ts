@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, step } from '../../shared/e2e';
 
 /**
  * Page Object Model for Topic pages
@@ -249,7 +249,7 @@ export class TopicPage {
    * Includes verification that the topic appears in the list
    */
   async createTopic(topicName: string) {
-    return await test.step('Create topic', async () => {
+    return await step('Create topic', async () => {
       await this.goToTopicsList();
       await this.clickCreateTopicButton();
       await this.fillTopicName(topicName);
@@ -264,7 +264,7 @@ export class TopicPage {
    * Includes verification that the topic is removed from the list
    */
   async deleteTopic(topicName: string) {
-    return await test.step('Delete topic', async () => {
+    return await step('Delete topic', async () => {
       await this.goToTopicsList();
       await this.verifyTopicInList(topicName); // Verify topic exists
       await this.page.getByTestId(`topic-actions-trigger-${topicName}`).click();
@@ -285,7 +285,7 @@ export class TopicPage {
    * Includes verification that the message appears in the topic
    */
   async produceMessage(topicName: string, message: string) {
-    return await test.step('Produce message', async () => {
+    return await step('Produce message', async () => {
       await this.goToProduceRecord(topicName);
       await this.fillValueEditor(message);
       await this.clickProduceButton();

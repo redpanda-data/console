@@ -5,8 +5,8 @@ These tests exercise real CSS view-transition animation and hit testing without 
 From `frontend`:
 
 ```sh
-bunx playwright install chromium
-bunx playwright test --config tests/browser/playwright.config.ts
+bun run install:chromium
+bun run test:browser
 ```
 
 The loading-boundary cases use the production stylesheet, hold the editor snapshot animations active, and check that background controls remain clickable. Reduced-motion mode must create no animations.

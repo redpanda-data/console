@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
-
 import { getEvenlySpacedTimeTicks } from './time-range';
+import { describe, expect, it } from 'bun:test';
 
 describe('getEvenlySpacedTimeTicks', () => {
   it('spans the full window inclusive of both endpoints', () => {

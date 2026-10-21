@@ -1,5 +1,8 @@
 # Testcontainers E2E Test Setup
 
+Rstest runs the suites; Playwright supplies native browser automation.
+See [commands and runner categories](README.md).
+
 ## Architecture
 
 The E2E test environment runs the Go backend in a Docker container using testcontainers. The backend serves both the API and frontend static files, providing a production-like deployment environment.
@@ -50,7 +53,7 @@ All containers run on a shared Docker network created by testcontainers:
 ## Files
 
 ### Dockerfile
-**`tests/config/Dockerfile.backend`** - Multi-stage Docker build (supports both OSS and Enterprise):
+**`tests/shared/Dockerfile.backend`** - Multi-stage Docker build (supports both OSS and Enterprise):
 1. **Builder stage**:
    - Uses `golang:alpine` with `GOTOOLCHAIN=auto` to support Go 1.25.1+
    - Compiles the Go backend binary (`console-api`)
@@ -65,7 +68,7 @@ All containers run on a shared Docker network created by testcontainers:
 
 ### Configuration
 
-**`tests/config/console.config.yaml`** - OSS backend configuration:
+**`tests/test-variant-console/config/console.config.yaml`** - OSS backend configuration:
 - `serveFrontend: true` - Backend serves compiled frontend assets
 - `server.listenPort: 3000` - Single port for API and frontend
 - Internal Docker network addresses (container-to-container):
@@ -75,7 +78,7 @@ All containers run on a shared Docker network created by testcontainers:
   - `kafkaConnect.clusters[].url: http://connect:8083`
 - SASL authentication: `e2euser:very-secret` (SCRAM-SHA-256)
 
-**`tests/config/console.enterprise.config.yaml`** - Enterprise backend configuration:
+**`tests/test-variant-console-enterprise/config/console.config.yaml`** - Enterprise backend configuration:
 - Same as OSS config, plus:
   - `authentication.basic.enabled: true` - Basic auth for enterprise features
   - No `licenseFilepath`: Console asks the Redpanda cluster for its license and runs on the built-in 30-day trial every fresh cluster starts with
@@ -142,9 +145,12 @@ Run E2E tests (setup and teardown are automatic):
 
 ```bash
 bun run build                 # Build frontend first (required!)
-bun run e2e-test              # Run all OSS tests
-bun run e2e-test:ui           # Run with Playwright UI
-bun run e2e-test-enterprise   # Run enterprise tests (requires console-enterprise repo)
+bun run e2e-test:variant console             # OSS + Redpanda
+bun run e2e-test:variant kafka               # OSS + Kafka
+bun run e2e-test:variant kafka-connect       # OSS + Kafka Connect
+bun run e2e-test:variant console-enterprise  # Requires ENTERPRISE_BACKEND_DIR
+bun run e2e-test                            # All four variants
+bun run e2e-test:variant console --watch     # Rstest watch mode
 ```
 
 ### First Run

@@ -4,14 +4,15 @@ import { loadEnv } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
-import { defineProject } from '@rstest/core';
+import { defineConfig } from '@rstest/core';
 
+import coverageConfig from './coverage.config.json' with { type: 'json' };
 import { fromHere, sharedAliases, sharedCoverage } from './test.shared';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 const RAW_QUERY = /raw/;
 
-export default defineProject({
+export default defineConfig({
   name: 'integration',
   globals: true,
   passWithNoTests: false,
@@ -23,7 +24,7 @@ export default defineProject({
     type: 'threads',
     maxWorkers: '50%',
   },
-  include: ['src/**/*.test.tsx', 'tests/**/*.integration.test.ts'],
+  include: ['src/**/*.test.tsx', 'src/**/*.integration.test.ts', 'tests/**/*.integration.test.ts'],
   exclude: ['src/**/*.federation.test.tsx'],
   setupFiles: './rstest.setup.ts',
   testTimeout: 30_000,
@@ -63,5 +64,6 @@ export default defineProject({
   coverage: {
     ...sharedCoverage,
     reportsDirectory: 'coverage-integration',
+    thresholds: coverageConfig.thresholds,
   },
 });

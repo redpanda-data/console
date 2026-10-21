@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import {
   ALL_CONTEXT_ID,
   buildQualifiedReferences,
@@ -25,6 +23,7 @@ import {
   subjectSchemaContext,
   topicSchemaContext,
 } from './schema-context-utils';
+import { describe, expect, test } from 'bun:test';
 
 describe('parseSubjectContext', () => {
   test('extracts context and display name from prefixed subject', () => {

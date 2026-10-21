@@ -1,5 +1,5 @@
-import type { Download, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
+import type { Download, Page } from '../../shared/e2e';
+import { expect, step } from '../../shared/e2e';
 
 /**
  * Page Object Model for Debug Bundle pages
@@ -198,7 +198,7 @@ export class DebugBundlePage {
   }
 
   async generateBasicBundle() {
-    return await test.step('Generate basic debug bundle', async () => {
+    return await step('Generate basic debug bundle', async () => {
       await this.goto();
       await this.generate({ confirmOverwrite: true });
       await expect(this.page.getByText(/generating/i)).toBeVisible({ timeout: 10_000 });
@@ -212,7 +212,7 @@ export class DebugBundlePage {
     metricsIntervalSeconds?: number;
     enableTLS?: boolean;
   }) {
-    return await test.step('Generate advanced debug bundle', async () => {
+    return await step('Generate advanced debug bundle', async () => {
       await this.goto();
       await this.fillAdvancedForm(options);
 
@@ -225,7 +225,7 @@ export class DebugBundlePage {
   }
 
   async cancelGeneration() {
-    return await test.step('Cancel debug bundle generation', async () => {
+    return await step('Cancel debug bundle generation', async () => {
       const stopButton = this.page.getByTestId('debug-bundle-stop-button');
       await expect(stopButton).toBeVisible();
       await stopButton.click();
@@ -271,7 +271,7 @@ export class DebugBundlePage {
   }
 
   async deleteBundle() {
-    return await test.step('Delete debug bundle', async () => {
+    return await step('Delete debug bundle', async () => {
       const deleteButton = this.page
         .getByRole('button', { name: /delete/i })
         .or(this.page.locator('button[aria-label*="delete"]'));

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../shared/e2e';
 
 const OVERVIEW_URL = /\/overview/;
 const STAT_LABEL = '[data-slot="stat-label"]';

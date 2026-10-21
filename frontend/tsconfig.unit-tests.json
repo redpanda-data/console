@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun", "node", "@rstest/core/globals"],
+    "incremental": false
+  },
+  "include": ["src", "rstest.setup.ts", "tests/**/*.test.ts"],
+  "exclude": [
+    "node_modules",
+    "**/*.test.tsx",
+    "**/*.integration.test.ts",
+    "src/utils/interpreter/**",
+    "src/protogen",
+    "src/components/redpanda-ui/components/auto-form/**",
+    "src/components/redpanda-ui/style/theme-check/**"
+  ]
+}

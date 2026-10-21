@@ -6,9 +6,8 @@
  * different error envelope; this guards the migrated toast + UI state.
  */
 
-import { expect, test } from '@playwright/test';
-
 import { mockConnectError, rpcUrl } from '../../shared/connect-mock';
+import { appURL, expect, test } from '../../shared/e2e';
 import { SecurityPage } from '../utils/security-page';
 
 const USER_SERVICE = 'redpanda.api.dataplane.v1.UserService';
@@ -21,7 +20,7 @@ test.describe('User deletion - error paths', () => {
     // Seed a real user via happy path so there's a row to attempt deleting.
     await securityPage.createUser(username);
     await page.goto('/security/users');
-    await expect(page).toHaveURL('/security/users');
+    await expect(page).toHaveURL(appURL('/security/users'));
 
     // Now intercept DeleteUser so the attempt fails deterministically.
     await mockConnectError({
@@ -32,14 +31,14 @@ test.describe('User deletion - error paths', () => {
     });
 
     await page.getByRole('link', { name: username, exact: true }).click();
-    await expect(page).toHaveURL(`/security/users/${username}/details`);
+    await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));
 
     await page.getByRole('button', { name: 'Delete user' }).click();
     await page.getByTestId('txt-confirmation-delete').fill(username);
     await page.getByRole('button', { name: 'Delete' }).click();
 
     // Structural: must not navigate to list on failed delete.
-    await expect(page).toHaveURL(`/security/users/${username}/details`);
+    await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));
 
     // Toast copy: formatToastErrorMessageGRPC composes "Failed to delete user: <rawMessage>".
     // Asserted before the list-reload below — sonner toasts do not survive page navigation.

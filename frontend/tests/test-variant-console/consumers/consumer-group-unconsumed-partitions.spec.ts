@@ -1,6 +1,5 @@
-import type { Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
-
+import type { Page } from '../../shared/e2e';
+import { expect, step, test } from '../../shared/e2e';
 import { execRpk, getRedpandaContainerId } from '../../shared/rpk.utils';
 
 /**
@@ -99,13 +98,13 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
   });
 
   test('shows all 3 partitions with correct Group Offset and Lag values', async ({ page }) => {
-    await test.step('Navigate to consumer group details page', async () => {
+    await step('Navigate to consumer group details page', async () => {
       await page.goto(`/groups/${GROUP_NAME}`);
       // Wait for the group name heading to appear
       await expect(page.getByText(GROUP_NAME).first()).toBeVisible();
     });
 
-    await test.step('Ensure the topic accordion is expanded', async () => {
+    await step('Ensure the topic accordion is expanded', async () => {
       // With a single topic the accordion auto-expands, but click if collapsed
       const accordionButton = page.getByRole('button', { name: new RegExp(TOPIC_NAME) });
       await expect(accordionButton).toBeVisible();
@@ -119,13 +118,13 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
       await expect(page.getByRole('table').first()).toBeVisible();
     });
 
-    await test.step('All 3 partitions are visible in the table', async () => {
+    await step('All 3 partitions are visible in the table', async () => {
       for (const partitionId of [0, 1, 2]) {
         await expect(rowByPartition(page, partitionId)).toBeVisible();
       }
     });
 
-    await test.step('Partition 0 shows a numeric Group Offset (committed)', async () => {
+    await step('Partition 0 shows a numeric Group Offset (committed)', async () => {
       const row = rowByPartition(page, 0);
       const groupOffsetCell = row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`);
       const text = await groupOffsetCell.textContent();
@@ -133,23 +132,23 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
       expect(Number(text?.trim())).toBeGreaterThanOrEqual(0);
     });
 
-    await test.step('Partition 1 shows "—" for Group Offset (offset deleted)', async () => {
+    await step('Partition 1 shows "—" for Group Offset (offset deleted)', async () => {
       const row = rowByPartition(page, 1);
       await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—');
       await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—');
     });
 
-    await test.step('Partition 2 shows "—" for Group Offset (never consumed)', async () => {
+    await step('Partition 2 shows "—" for Group Offset (never consumed)', async () => {
       const row = rowByPartition(page, 2);
       await expect(row.locator(`td:nth-child(${COL.GROUP_OFFSET + 1})`)).toHaveText('—');
       await expect(row.locator(`td:nth-child(${COL.LAG + 1})`)).toHaveText('—');
     });
 
-    await test.step('Edit button on partition 1 (offset deleted) is disabled with tooltip', async () => {
+    await step('Edit button on partition 1 (offset deleted) is disabled with tooltip', async () => {
       await expectNoCommittedOffsetTooltip(page, 1);
     });
 
-    await test.step('Edit button on partition 2 (never consumed) is disabled with tooltip', async () => {
+    await step('Edit button on partition 2 (never consumed) is disabled with tooltip', async () => {
       await expectNoCommittedOffsetTooltip(page, 2);
     });
   });

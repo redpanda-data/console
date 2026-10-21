@@ -9,10 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
-
 import { getGroundTruthComponent, groundTruthComponents, groundTruthConfigSchema } from './__fixtures__/ground-truth';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
+import { describe, expect, test } from 'bun:test';
 import type { RawFieldSpec } from '../types/schema';
 
 const enriched = enrichComponentsWithConfigSchema(groundTruthComponents, groundTruthConfigSchema);
@@ -25,6 +24,9 @@ function getField(componentType: string, componentName: string, path: string): R
     if (!current) {
       throw new Error(`field not found: ${componentType}:${componentName} ${path}`);
     }
+  }
+  if (!current) {
+    throw new Error(`field not found: ${componentType}:${componentName} ${path}`);
   }
   return current;
 }

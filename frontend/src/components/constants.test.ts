@@ -1,6 +1,5 @@
-import { describe, expect, it } from '@rstest/core';
-
 import { isCloudManagedTagKey, isSystemTag } from './constants';
+import { describe, expect, it } from 'bun:test';
 
 describe('isCloudManagedTagKey', () => {
   it('returns true for cloud-managed tag keys', () => {

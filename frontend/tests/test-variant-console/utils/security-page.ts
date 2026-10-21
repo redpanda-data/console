@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
-import { type Page, test } from '@playwright/test';
+import { type Page, step } from '../../shared/e2e';
 
 /**
  * Page Object Model for Security pages
@@ -59,7 +59,7 @@ export class SecurityPage {
    * Creates a user with the given username through the UI
    */
   async createUser(username: string) {
-    return await test.step('Create user', async () => {
+    return await step('Create user', async () => {
       await this.goToUsersList();
       await this.clickCreateUserButton();
       await this.fillUsername(username);
@@ -74,7 +74,7 @@ export class SecurityPage {
    * Deletes a user with the given username through the UI
    */
   async deleteUser(username: string) {
-    return await test.step('Delete user', async () => {
+    return await step('Delete user', async () => {
       await this.goToUserDetails(username);
       await this.clickDeleteButton();
       await this.confirmUserDeletion(username);
