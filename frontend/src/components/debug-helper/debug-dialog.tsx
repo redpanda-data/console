@@ -75,6 +75,8 @@ import {
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
+import { PIPELINE_END_RUNS, PipelineRunsCell } from '../pages/rp-connect/pipeline/pipeline-end-chip';
+import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
 
@@ -84,7 +86,10 @@ const TAG_TONE: Record<ConnectConfigFixture['tags'][number], BadgeProps['tone']>
   complex: 'warning',
   'edge-case': 'brand',
   invalid: 'destructive',
+  stops: 'primary',
 };
+
+const RUNS_LABEL = new Map(PIPELINE_END_RUNS.map((option) => [option.value, option.label]));
 
 type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
 
@@ -170,7 +175,7 @@ function DebugSection({
   );
 }
 
-function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
+function ConfigFixtureRow({ fixture, end }: { fixture: ConnectConfigFixture; end: PipelineEndStatus }) {
   const [previewing, setPreviewing] = useState(false);
   const lineCount = useMemo(() => fixture.yaml.split('\n').length, [fixture.yaml]);
 
@@ -188,6 +193,7 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
             <Badge size="sm" tone="default" variant="outline">
               {lineCount} lines
             </Badge>
+            <PipelineRunsCell status={end} />
           </ItemTitle>
           <ItemDescription>{fixture.description}</ItemDescription>
         </ItemContent>
@@ -214,6 +220,12 @@ function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
 
 function ConnectConfigsPanel() {
   const [filter, setFilter] = useState('');
+  // How each fixture ends, as the pipelines list's Runs column reads it.
+  const ends = useMemo(
+    () => new Map(CONNECT_CONFIG_FIXTURES.map((f) => [f.id, summarizePipelineEndYaml(f.yaml).status])),
+    []
+  );
+  const endOf = (f: ConnectConfigFixture): PipelineEndStatus => ends.get(f.id) ?? 'none';
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
     if (!q) {
@@ -221,15 +233,18 @@ function ConnectConfigsPanel() {
     }
     return CONNECT_CONFIG_FIXTURES.filter(
       (f) =>
-        f.name.toLowerCase().includes(q) || f.description.toLowerCase().includes(q) || f.tags.some((t) => t.includes(q))
+        f.name.toLowerCase().includes(q) ||
+        f.description.toLowerCase().includes(q) ||
+        f.tags.some((t) => t.includes(q)) ||
+        (RUNS_LABEL.get(ends.get(f.id) ?? 'none') ?? '').toLowerCase().includes(q)
     );
-  }, [filter]);
+  }, [filter, ends]);
 
   return (
     <div className="flex flex-col gap-2.5">
       <Input
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter by name, tag, or description…"
+        placeholder="Filter by name, tag, description, or how it runs…"
         value={filter}
       />
       {filtered.length === 0 ? (
@@ -237,7 +252,7 @@ function ConnectConfigsPanel() {
       ) : (
         <div className="flex flex-col gap-1.5">
           {filtered.map((fixture) => (
-            <ConfigFixtureRow fixture={fixture} key={fixture.id} />
+            <ConfigFixtureRow end={endOf(fixture)} fixture={fixture} key={fixture.id} />
           ))}
         </div>
       )}
