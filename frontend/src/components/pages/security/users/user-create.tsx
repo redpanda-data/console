@@ -38,6 +38,8 @@ import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 
 const UserCreatePage = () => {
   const [formState, setFormState] = useState({
@@ -52,6 +54,8 @@ const UserCreatePage = () => {
 
   const { mutateAsync: createUserMutate } = useCreateUserMutation();
   const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
+  /** The box rejects role membership but not the user, so roles picked before it landed aren't sent. */
+  const rolesBoxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
 
   const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
   const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
@@ -91,7 +95,7 @@ const UserCreatePage = () => {
       return false;
     }
 
-    const roleAddPromises = selectedRoles.map((r) =>
+    const roleAddPromises = (rolesBoxed ? [] : selectedRoles).map((r) =>
       updateMembership(
         create(UpdateRoleMembershipRequestSchema, {
           roleName: r,
@@ -104,7 +108,7 @@ const UserCreatePage = () => {
     setIsSubmitting(false);
     setStep('CREATE_USER_CONFIRMATION');
     return true;
-  }, [username, password, mechanism, selectedRoles, createUserMutate, updateMembership]);
+  }, [username, password, mechanism, selectedRoles, rolesBoxed, createUserMutate, updateMembership]);
 
   const navigate = useNavigate();
   const onCancel = () => navigate({ to: '/security/users' });
@@ -452,9 +456,15 @@ export const StateRoleSelector = ({ roles, setRoles }: { roles: string[]; setRol
   const {
     data: { roles: allRoles },
   } = useListRolesQuery();
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
   const availableRoles = (allRoles ?? [])
     .filter((r: { name: string }) => !roles.includes(r.name))
     .map((r: { name: string }) => r.name);
+
+  /** Users stay writable while boxed, role membership doesn't: the user can still be saved without roles. */
+  if (boxed) {
+    return <ShadowBoxedAlert action="editRoles" testId="user-roles-shadow-boxed-alert" />;
+  }
 
   return (
     <div className="w-[280px]">

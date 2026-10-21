@@ -31,6 +31,7 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -315,6 +316,8 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
+  const { reasonFor } = useShadowBoxGuard();
+  const boxedReason = reasonFor('editTopicConfig');
 
   // The sections render in their own scroll container; clicking a sidebar category
   // scrolls to its section *within this panel* (not by filtering, and without
@@ -505,6 +508,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                 <div className="divide-y rounded-lg border">
                   {s.rows.map((entry) => (
                     <ConfigRow
+                      boxedReason={boxedReason}
                       entry={entry}
                       hasEditPermissions={hasEditPermissions}
                       key={entry.name}
@@ -524,9 +528,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
 const ConfigRow: FC<{
   entry: ConfigEntryExtended;
   hasEditPermissions: boolean;
+  boxedReason?: string;
   onEditEntry: (entry: ConfigEntryExtended) => void;
-}> = ({ entry, hasEditPermissions, onEditEntry }) => {
-  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions);
+}> = ({ entry, hasEditPermissions, boxedReason, onEditEntry }) => {
+  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions, boxedReason);
   const modified = isConfigModified(entry);
   const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
   const defaultSynonym = getDefaultConfigSynonym(entry);
@@ -608,7 +613,8 @@ export default ConfigurationEditor;
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
-  hasEditPermissions: boolean
+  hasEditPermissions: boolean,
+  boxedReason?: string
 ): { canEdit: boolean; reason?: string } {
   if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
@@ -625,11 +631,13 @@ function isTopicConfigEdittable(
       'min.insync.replicas',
     ];
 
-    if (edittableEntries.includes(entry.name)) {
-      return { canEdit: true };
+    if (!edittableEntries.includes(entry.name)) {
+      return { canEdit: false, reason: 'This configuration is not editable on Serverless clusters' };
     }
+  }
 
-    return { canEdit: false, reason: 'This configuration is not editable on Serverless clusters' };
+  if (boxedReason) {
+    return { canEdit: false, reason: boxedReason };
   }
 
   return { canEdit: true };

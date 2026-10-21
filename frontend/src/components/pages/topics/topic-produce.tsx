@@ -47,6 +47,9 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../ui/disabled-reason-tooltip';
 import { subjectSchemaContext } from '../schemas/schema-context-utils';
 
 type EncodingOption = {
@@ -202,6 +205,8 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       },
     },
   });
+
+  const produceReason = useShadowBoxGuard().reasonFor('produce');
 
   const keyPayloadOptions = useWatch({ control, name: 'key' });
   const valuePayloadOptions = useWatch({ control, name: 'value' });
@@ -388,6 +393,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   return (
     <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+      <ShadowBoxedAlert action="produce" testId="produce-shadow-boxed-alert" />
       <div className="flex flex-row gap-4">
         <Controller
           control={control}
@@ -656,9 +662,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
-          Produce
-        </Button>
+        <DisabledReasonTooltip reason={produceReason}>
+          <Button data-testid="produce-button" disabled={Boolean(produceReason)} isLoading={isSubmitting} type="submit">
+            Produce
+          </Button>
+        </DisabledReasonTooltip>
         <Button
           nativeButton={false}
           render={

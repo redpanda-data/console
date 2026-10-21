@@ -55,6 +55,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Select,
@@ -67,7 +75,9 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LockIcon } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 
@@ -311,6 +321,46 @@ const AddFilterMenuItem: FC<{
         <TooltipContent side="right">{disabledReason}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+};
+
+/** A read the box rejects isn't an outage, so it gets an explanation rather than an error. */
+const BoxedReadState = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <Empty className="py-14" data-testid="messages-boxed">
+    <EmptyHeader>
+      <EmptyMedia variant="icon">
+        <LockIcon />
+      </EmptyMedia>
+      <EmptyTitle>{BOXED_READS_TITLE}</EmptyTitle>
+      <EmptyDescription>{BOXED_READS_DESCRIPTION}</EmptyDescription>
+      <EmptyDescription className="font-mono text-body-sm">{message}</EmptyDescription>
+    </EmptyHeader>
+    <EmptyContent>
+      <Button onClick={onRetry} size="sm" variant="outline">
+        Retry
+      </Button>
+    </EmptyContent>
+  </Empty>
+);
+
+const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
+  const boxed = useShadowBoxGuard().isBoxedRead(error.message);
+  if (boxed) {
+    return <BoxedReadState message={error.message} onRetry={onRetry} />;
+  }
+  return (
+    <Alert icon={<ErrorIcon />} variant="destructive">
+      <AlertTitle>Backend Error</AlertTitle>
+      <AlertDescription>
+        <div>Check and modify the request before resubmitting.</div>
+        <div className="mt-4">
+          <div className="codeBox">{error.message}</div>
+        </div>
+        <Button className="mt-4" onClick={onRetry}>
+          Retry Search
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 };
 
@@ -1724,18 +1774,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = (props) => {
       ) : null}
       {/* Message Table (or error display) */}
       {fetchError ? (
-        <Alert icon={<ErrorIcon />} variant="destructive">
-          <AlertTitle>Backend Error</AlertTitle>
-          <AlertDescription>
-            <div>Check and modify the request before resubmitting.</div>
-            <div className="mt-4">
-              <div className="codeBox">{fetchError.message}</div>
-            </div>
-            <Button className="mt-4" onClick={() => executeMessageSearch()}>
-              Retry Search
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <MessageSearchErrorAlert error={fetchError} onRetry={() => executeMessageSearch()} />
       ) : (
         <>
           <div data-testid="messages-table">

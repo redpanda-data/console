@@ -9,7 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
+
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ fenced: false, readsBlocked: false, reasonFor: () => undefined }),
+}));
 
 import DeleteRecordsModal from './delete-records-modal';
 import type { Topic } from '../../../../state/rest-interfaces';

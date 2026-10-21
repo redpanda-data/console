@@ -23,8 +23,14 @@ export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefi
 /**
  * Checks if deletion is enabled for a topic
  */
-export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicAction[] | undefined): boolean {
-  return !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
+export function isDeleteEnabled(
+  isCompacted: boolean,
+  allowedActions: TopicAction[] | undefined,
+  boxedReason?: string
+): boolean {
+  return (
+    !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords) && !boxedReason
+  );
 }
 
 /**
@@ -32,7 +38,8 @@ export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicActio
  */
 export function getDeleteErrorText(
   isCompacted: boolean,
-  allowedActions: TopicAction[] | undefined
+  allowedActions: TopicAction[] | undefined,
+  boxedReason?: string
 ): string | undefined {
   if (isCompacted) {
     return "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
@@ -43,6 +50,7 @@ export function getDeleteErrorText(
   if (!isSupported(Feature.DeleteRecords)) {
     return "The cluster doesn't support deleting records.";
   }
+  return boxedReason;
 }
 
 /**

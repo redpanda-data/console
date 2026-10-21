@@ -77,6 +77,16 @@ function mapControlplaneClientOptions(
         },
       },
     };
+  } else {
+    const { plainConfig } = extractRawAuthConfigs(authProto);
+    if (plainConfig) {
+      authConfig = {
+        authentication: {
+          case: 'plainConfiguration',
+          value: { username: plainConfig.username ?? '', password: plainConfig.password ?? '' },
+        },
+      };
+    }
   }
 
   return {

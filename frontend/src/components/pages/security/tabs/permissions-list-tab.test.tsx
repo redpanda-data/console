@@ -178,6 +178,10 @@ rs.mock('../hooks/use-principal-permissions', () => ({
   }),
 }));
 
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ fenced: false, readsBlocked: false, reasonFor: () => undefined }),
+}));
+
 import { PermissionsListTab } from './permissions-list-tab';
 
 describe('Permissions List - delete dropdown for different principal types', () => {

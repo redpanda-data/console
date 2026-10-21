@@ -37,6 +37,8 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
@@ -112,6 +114,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     });
 
     const createTopicMutation = useCreateTopicMutation();
+    const createTopicBoxedReason = useShadowBoxGuard().reasonFor('createTopic');
 
     const isPending = createTopicMutation.isPending;
 
@@ -196,6 +199,9 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
               data,
             };
           }
+          if (createTopicBoxedReason) {
+            return { success: false, message: createTopicBoxedReason, error: createTopicBoxedReason };
+          }
 
           const configs = [
             create(CreateTopicRequest_Topic_ConfigSchema, {
@@ -252,7 +258,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
           };
         }
       },
-      [existingTopicSelected, createTopicMutation, queryClient]
+      [existingTopicSelected, createTopicMutation, queryClient, createTopicBoxedReason]
     );
 
     const handleTopicSelectionTypeChange = useCallback(
@@ -296,6 +302,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
     const formBody = (
       <Form {...form}>
         <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
+          {topicSelectionType === CreatableSelectionOptions.CREATE ? <ShadowBoxedAlert action="createTopic" /> : null}
           <div className="flex flex-col gap-2">
             <FormLabel>Topic name</FormLabel>
             <FormDescription>{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</FormDescription>

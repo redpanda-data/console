@@ -57,6 +57,8 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
 const RESOURCE_TYPE_LABELS: Record<string, string> = {
@@ -105,6 +107,8 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
   const { mutateAsync: deleteAcl, isPending: isDeleting } = useDeleteAclMutation();
   const { mutateAsync: createACL, isPending: isGranting } = useCreateACLMutation();
   const schemaRegistryACLApi = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
+  const { reasonFor } = useShadowBoxGuard();
+  const editAclsReason = reasonFor('editAcls');
   const list = acls ?? [];
 
   const grantAllResources = GRANT_ALL_RESOURCES.filter((r) => !r.requiresSchemaRegistry || schemaRegistryACLApi);
@@ -300,18 +304,33 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           actions={
             <div className="flex items-center gap-2">
               {someSelected && (
-                <Button disabled={isDeleting} onClick={deleteSelected} variant="destructive">
-                  Delete selected ({selected.size})
-                </Button>
+                <DisabledReasonTooltip reason={editAclsReason}>
+                  <Button
+                    disabled={isDeleting || Boolean(editAclsReason)}
+                    onClick={deleteSelected}
+                    variant="destructive"
+                  >
+                    Delete selected ({selected.size})
+                  </Button>
+                </DisabledReasonTooltip>
               )}
               {principal && (
-                <Button onClick={() => setGrantAllOpen(true)} variant="outline">
-                  Allow all operations
-                </Button>
+                <DisabledReasonTooltip reason={editAclsReason}>
+                  <Button disabled={Boolean(editAclsReason)} onClick={() => setGrantAllOpen(true)} variant="outline">
+                    Allow all operations
+                  </Button>
+                </DisabledReasonTooltip>
               )}
-              <Button onClick={() => setDialogOpen(true)} testId="add-acl-button" variant="outline">
-                + Add ACL
-              </Button>
+              <DisabledReasonTooltip reason={editAclsReason}>
+                <Button
+                  disabled={Boolean(editAclsReason)}
+                  onClick={() => setDialogOpen(true)}
+                  testId="add-acl-button"
+                  variant="outline"
+                >
+                  + Add ACL
+                </Button>
+              </DisabledReasonTooltip>
             </div>
           }
         >

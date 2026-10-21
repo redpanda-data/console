@@ -76,6 +76,11 @@ function mapDataplaneAuthConfig(
       },
     };
   }
+
+  if (authConfig.authentication.case === 'plainConfiguration') {
+    const { username, password } = authConfig.authentication.value;
+    return { authentication: { case: 'plainConfiguration', value: { username, password } } };
+  }
 }
 
 /**
