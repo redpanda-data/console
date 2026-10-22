@@ -9,65 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { ConnectError } from '@connectrpc/connect';
-import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
-import type { FilterFn, SortingState } from '@tanstack/react-table';
-import type { ComponentName } from 'assets/connectors/component-logo-map';
-import { getUserTagEntries } from 'components/constants';
-import { Badge } from 'components/redpanda-ui/components/badge';
-import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
+import { useNavigate } from '@tanstack/react-router';
+import type { SortingState } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
-  type DataTableColumnDef,
-  DataTableColumnHeader,
   DataTableFacetedFilter,
-  type DataTableFeatures,
   DataTablePagination,
   isRowActivationClick,
   useDataTable,
 } from 'components/redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from 'components/redpanda-ui/components/dropdown-menu';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
-import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { Link, List, ListItem } from 'components/redpanda-ui/components/typography';
-import { cn } from 'components/redpanda-ui/lib/utils';
-import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
+import { Link } from 'components/redpanda-ui/components/typography';
 import { FadePresence } from 'components/ui/fade-presence';
-import {
-  PIPELINE_STATE_LABELS,
-  PIPELINE_STATE_SORT_PRIORITY,
-  PIPELINE_STATE_STATUS_VARIANT,
-  STARTABLE_STATES,
-  STOPPABLE_STATES,
-} from 'components/ui/pipeline/constants';
-import { AlertCircle, Box, MoreHorizontal, Search, X } from 'lucide-react';
-import {
-  DeletePipelineRequestSchema,
-  StartPipelineRequestSchema,
-  StopPipelineRequestSchema,
-} from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import {
-  type MouseEvent,
-  memo,
-  type ReactElement,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { AlertCircle, Search, X } from 'lucide-react';
+import type { Pipeline as APIPipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
@@ -76,121 +35,23 @@ import {
   useStartPipelineMutation,
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import { appGlobal } from 'state/app-global';
-import {
-  autosaveTargetKey,
-  rpcnEditorAutosave,
-  selectAutosaveEntry,
-  useRpcnEditorAutosaveStore,
-} from 'state/rpcn-editor-autosave';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { parseConfigComponentsCached } from './config-components-cache';
-import { DeleteDraftDialog } from './delete-draft-dialog';
-import { DRAFT_BADGE_TOOLTIP, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { connectorOption, createColumns } from './list-columns';
+import { tagFilterValue, toPipelineRow } from './list-row';
+import { PipelineListSkeleton } from './list-skeleton';
 import {
-  aggregateConnectors,
   countPipelinesPerTab,
-  matchesNameOrId,
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
   pipelineListEmptyText,
   stateFilterValues,
 } from './list-utils';
-import { PIPELINE_END_RUNS, PipelineRunsCell } from './pipeline-end-chip';
-import { areSchedulesEnabled, PipelineScheduleLine } from './pipeline-schedule';
-import { useStartDraftConfirm } from './start-draft-dialog';
+import { PIPELINE_END_RUNS } from './pipeline-end-chip';
 import { TabKafkaConnect } from '../../connect/overview';
-import { ConnectorLogo } from '../onboarding/connector-logo';
-import { cpuToTasks } from '../tasks';
-import type { PipelineEndStatus } from '../utils/input-end-behavior';
-
-type TagPair = { key: string; value: string };
-
-type Pipeline = {
-  id: string;
-  name: string;
-  description: string;
-  state: Pipeline_State;
-  inputs: string[];
-  outputs: string[];
-  tags: TagPair[];
-  isDraft: boolean;
-  /** Epoch ms of the last edit. */
-  editedAt: number | null;
-  /** Empty on a deployed row: only a draft opens the start confirmation, which names these. */
-  configYaml: string;
-  computeUnits: number;
-  /** Whether it stops on its own — what a schedule will need. */
-  end: PipelineEndStatus;
-};
-
-const transformAPIPipeline = (apiPipeline: APIPipeline): Pipeline => {
-  const { inputs, outputs, end } = parseConfigComponentsCached(apiPipeline.configYaml);
-  const tags = getUserTagEntries(apiPipeline.tags);
-  const draft = isDraft(apiPipeline);
-  return {
-    id: apiPipeline.id,
-    name: apiPipeline.displayName,
-    description: apiPipeline.description,
-    state: apiPipeline.state,
-    inputs,
-    outputs,
-    tags,
-    isDraft: draft,
-    editedAt: timestampToMillis(apiPipeline.updateTime),
-    configYaml: draft ? apiPipeline.configYaml : '',
-    computeUnits: draft ? (cpuToTasks(apiPipeline.resources?.cpuShares) ?? 0) : 0,
-    end,
-  };
-};
-
-const EmptyCell = () => <span className="text-muted-foreground">—</span>;
-
-// One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
-const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;
-
-const ConnectorBadges = ({ names }: { names: string[] }) => {
-  const connectors = useMemo(() => aggregateConnectors(names), [names]);
-  if (connectors.length === 0) {
-    return <EmptyCell />;
-  }
-  return (
-    <BadgeGroup
-      maxVisible={2}
-      renderOverflowContent={(overflow) => (
-        <List>
-          {connectors.slice(-overflow.length).map((c) => (
-            <ListItem key={c.name}>{c.count > 1 ? `${c.name} ×${c.count}` : c.name}</ListItem>
-          ))}
-        </List>
-      )}
-    >
-      {connectors.map((c) => (
-        <Badge key={c.name} tone="default" variant="subtle">
-          <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
-          {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
-          <span>
-            {c.name}
-            {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
-          </span>
-        </Badge>
-      ))}
-    </BadgeGroup>
-  );
-};
-
-// A row matches when its value is one of the selected ones (status, how it runs). autoRemove as the
-// built-in array filters do: an empty selection means "no filter", not "match nothing".
-const inSelectionFilterFn: FilterFn<DataTableFeatures, Pipeline> = (row, columnId, filterValue: string[]) =>
-  filterValue.includes(row.getValue<string>(columnId));
-inSelectionFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
-
-const sortPriority = (row: Pipeline): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
 const PAGE_SIZE = 20;
 
@@ -223,409 +84,6 @@ const ListStatusAnnouncements = ({
   </>
 );
 
-const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
-  {
-    head: 'w-24',
-    cell: (
-      <div className="flex flex-col gap-1">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-3 w-60" />
-      </div>
-    ),
-  },
-  { head: 'w-16', cell: <Skeleton className="h-6 w-20" /> },
-  {
-    head: 'w-20',
-    cell: (
-      <div className="flex gap-1">
-        <Skeleton className="h-6 w-16" />
-        <Skeleton className="h-6 w-16" />
-      </div>
-    ),
-  },
-  { head: 'w-16', cell: <Skeleton className="h-6 w-20" /> },
-  { head: 'w-16', cell: <Skeleton className="h-6 w-16" /> },
-  { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
-];
-
-const SKELETON_ROW_COUNT = 5;
-
-const PipelineListSkeleton = () => (
-  <div className="flex flex-col gap-4">
-    <div className="flex items-center justify-between gap-4">
-      <Skeleton className="h-8 w-[200px]" />
-      <Skeleton className="h-8 w-20" />
-    </div>
-    <div className="flex items-center gap-2">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-8 w-20" />
-      <Skeleton className="h-8 w-20" />
-      <Skeleton className="h-8 w-20" />
-    </div>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {SKELETON_COLUMNS.map((column, columnIndex) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-            <TableHead key={columnIndex}>
-              <Skeleton className={cn('h-4', column.head)} />
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-          <TableRow key={rowIndex}>
-            {SKELETON_COLUMNS.map((column, columnIndex) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-              <TableCell key={columnIndex}>{column.cell}</TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-    {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
-    <div className="flex items-center justify-end gap-6 px-2">
-      <Skeleton className="h-8 w-36" />
-      <Skeleton className="h-8 w-24" />
-      <Skeleton className="h-8 w-32" />
-    </div>
-  </div>
-);
-
-type ActionsCellProps = {
-  pipeline: Pipeline;
-  navigate: ReturnType<typeof useNavigate>;
-  deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
-  startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
-  stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
-  isDeletingPipeline: boolean;
-};
-
-const ActionsCell = memo(
-  ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
-    const isDraftRow = pipeline.isDraft;
-    const canStart = !isDraftRow && (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
-    const canStop = !isDraftRow && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
-    const isStarting = pipeline.state === Pipeline_State.STARTING;
-    const isStopping = pipeline.state === Pipeline_State.STOPPING;
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const { requestStart, isStartingDraft, confirmDialog } = useStartDraftConfirm({
-      id: pipeline.id,
-      configYaml: pipeline.configYaml,
-      computeUnits: pipeline.computeUnits,
-    });
-    // The dialog says so when this browser also holds unsaved edits for the draft.
-    const hasUnsavedChanges = useRpcnEditorAutosaveStore(
-      (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
-    );
-
-    const handleStart = () => {
-      const startRequest = create(StartPipelineRequestSchema, {
-        request: { id: pipeline.id },
-      });
-      startMutation(startRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline starting');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'start',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
-
-    const handleStop = () => {
-      const stopRequest = create(StopPipelineRequestSchema, {
-        request: { id: pipeline.id },
-      });
-      stopMutation(stopRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline stopping');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'stop',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
-
-    const handleDelete = (id: string) => {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id },
-      });
-
-      deleteMutation(deleteRequest, {
-        onSuccess: () => {
-          rpcnEditorAutosave.clear(autosaveTargetKey(id));
-          toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'delete',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
-
-    return (
-      <div className="flex min-w-[68px] justify-end" data-actions-column>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button className="size-8" size="icon" variant="ghost">
-                <MoreHorizontal />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/rp-connect/$pipelineId/edit',
-                  params: { pipelineId: encodeURIComponent(pipeline.id) },
-                })
-              }
-            >
-              {isDraftRow ? 'Continue editing' : 'Edit'}
-            </DropdownMenuItem>
-            {isDraftRow ? (
-              <DropdownMenuItem disabled={isStartingDraft} onClick={requestStart}>
-                Start
-              </DropdownMenuItem>
-            ) : null}
-            {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
-            {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
-            {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
-            {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
-            <DropdownMenuSeparator />
-            <DeleteResourceMenuItem
-              isDeleting={isDeletingPipeline}
-              onSelect={() => setIsDeleteDialogOpen(true)}
-              text={isDraftRow ? 'Delete draft' : undefined}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {isDraftRow ? confirmDialog : null}
-        {isDraftRow ? (
-          <DeleteDraftDialog
-            draftName={pipeline.name}
-            hasUnsavedChanges={hasUnsavedChanges}
-            isDeleting={isDeletingPipeline}
-            onConfirm={() => handleDelete(pipeline.id)}
-            onOpenChange={setIsDeleteDialogOpen}
-            open={isDeleteDialogOpen}
-          />
-        ) : (
-          <DeleteResourceAlertDialog
-            isDeleting={isDeletingPipeline}
-            onDelete={handleDelete}
-            onOpenChange={setIsDeleteDialogOpen}
-            open={isDeleteDialogOpen}
-            resourceId={pipeline.id}
-            resourceName={pipeline.name}
-            resourceType="Pipeline"
-          />
-        )}
-      </div>
-    );
-  }
-);
-
-ActionsCell.displayName = 'ActionsCell';
-
-type CreateColumnsOptions = {
-  navigate: ReturnType<typeof useNavigate>;
-  deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
-  startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
-  stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
-  isDeletingPipeline: boolean;
-};
-
-// Facet options are rebuilt on every drain page and poll tick, and a fresh component type per render
-// remounts every logo in the open popover.
-const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
-
-const connectorIcon = (name: string) => {
-  const cached = connectorIcons.get(name);
-  if (cached) {
-    return cached;
-  }
-  const Icon = (props: { className?: string }) => (
-    <ConnectorLogo fallback={Box} name={name as ComponentName} {...props} />
-  );
-  connectorIcons.set(name, Icon);
-  return Icon;
-};
-
-const connectorOption = (name: string) => ({
-  value: name,
-  label: name,
-  icon: connectorIcon(name),
-});
-
-const createColumns = ({
-  navigate,
-  deleteMutation,
-  startMutation,
-  stopMutation,
-  isDeletingPipeline,
-}: CreateColumnsOptions): DataTableColumnDef<Pipeline>[] => [
-  {
-    accessorKey: 'name',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
-    filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
-    cell: ({ row }) => {
-      const { id, isDraft: isDraftRow, editedAt } = row.original;
-      const name = row.getValue('name') as string;
-      return (
-        <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
-          {/* Rows navigate on click, so the link underlines on hover only. */}
-          <Link
-            as={TanStackRouterLink}
-            className="block truncate text-body-lg text-primary no-underline hover:underline"
-            params={{ pipelineId: encodeURIComponent(id) }}
-            title={name}
-            to="/rp-connect/$pipelineId"
-          >
-            {name}
-          </Link>
-          {isDraftRow && editedAt ? (
-            <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
-          ) : null}
-          {!isDraftRow && id !== name ? (
-            // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
-            <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
-              {id}
-            </span>
-          ) : null}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: 'inputs',
-    header: 'Input',
-    filterFn: 'arrIncludesSome',
-    // Without this, faceting keys on the array itself and the per-option counts never resolve.
-    // Deduplicated per row, or two `redpanda` inputs would count 2 against a single row.
-    getUniqueValues: (row) => [...new Set(row.inputs)],
-    cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
-  },
-  {
-    accessorKey: 'outputs',
-    header: 'Output',
-    filterFn: 'arrIncludesSome',
-    getUniqueValues: (row) => [...new Set(row.outputs)],
-    cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs') as string[]} />,
-  },
-  {
-    id: 'end',
-    accessorFn: (row) => row.end,
-    header: 'Runs',
-    filterFn: inSelectionFilterFn,
-    cell: ({ row }) =>
-      areSchedulesEnabled() ? (
-        <div className="flex flex-col items-start gap-0.5">
-          <PipelineRunsCell status={row.original.end} />
-          <PipelineScheduleLine end={{ status: row.original.end }} pipelineId={row.original.id} />
-        </div>
-      ) : (
-        <PipelineRunsCell status={row.original.end} />
-      ),
-  },
-  {
-    id: 'tags',
-    accessorFn: (row) => row.tags.map(tagFilterValue),
-    header: 'Tags',
-    filterFn: 'arrIncludesSome',
-    getUniqueValues: (row) => row.tags.map(tagFilterValue),
-    cell: ({ row }) => {
-      const tags = row.original.tags;
-      if (tags.length === 0) {
-        return <EmptyCell />;
-      }
-      return (
-        <BadgeGroup
-          maxVisible={2}
-          renderOverflowContent={(overflow) => (
-            <List>
-              {tags.slice(-overflow.length).map((t) => (
-                <ListItem key={t.key}>
-                  {t.key}: {t.value}
-                </ListItem>
-              ))}
-            </List>
-          )}
-          tone="default"
-          variant="outline"
-        >
-          {tags.map((t) => (
-            <Badge key={t.key} tone="default" variant="outline">
-              {t.key}: {t.value}
-            </Badge>
-          ))}
-        </BadgeGroup>
-      );
-    },
-  },
-  {
-    id: 'state',
-    accessorFn: (row) => String(row.state),
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    filterFn: inSelectionFilterFn,
-    // Unknown states sort last; drafts tie-break on recency.
-    sortFn: (rowA, rowB) => {
-      const byState = sortPriority(rowA.original) - sortPriority(rowB.original);
-      if (byState !== 0 || !(rowA.original.isDraft && rowB.original.isDraft)) {
-        return byState;
-      }
-      return (rowB.original.editedAt ?? 0) - (rowA.original.editedAt ?? 0);
-    },
-    // Label from the state, not the variant: COMPLETED and RUNNING share `success`, whose default
-    // copy is "Running".
-    cell: ({ row }) => (
-      <StatusBadge
-        size="sm"
-        title={row.original.isDraft ? DRAFT_BADGE_TOOLTIP : undefined}
-        variant={PIPELINE_STATE_STATUS_VARIANT[row.original.state] ?? 'disabled'}
-      >
-        {PIPELINE_STATE_LABELS[row.original.state] ?? 'Unknown'}
-      </StatusBadge>
-    ),
-  },
-  {
-    id: 'actions',
-    enableHiding: false,
-    cell: ({ row }) => (
-      <ActionsCell
-        deleteMutation={deleteMutation}
-        isDeletingPipeline={isDeletingPipeline}
-        navigate={navigate}
-        pipeline={row.original}
-        startMutation={startMutation}
-        stopMutation={stopMutation}
-      />
-    ),
-  },
-];
-
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
@@ -656,7 +114,7 @@ const PipelineListPageContent = () => {
         .filter(
           (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
         )
-        .map(transformAPIPipeline),
+        .map(toPipelineRow),
     [pipelinesData]
   );
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
