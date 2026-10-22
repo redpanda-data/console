@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { useNavigate } from '@tanstack/react-router';
-import type { SortingState } from '@tanstack/react-table';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { functionalUpdate } from '@tanstack/react-table';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTableFacetedFilter,
@@ -26,7 +26,7 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { FadePresence } from 'components/ui/fade-presence';
 import { AlertCircle, Search, X } from 'lucide-react';
 import type { Pipeline as APIPipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import {
   useDeletePipelineMutation,
@@ -43,13 +43,21 @@ import { isModifiedClick } from 'utils/mouse-events';
 
 import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-columns';
 import { soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
+import {
+  columnFiltersFromSearch,
+  facetSearchFromFilters,
+  nextPipelineListSearch,
+  type PipelineListSearch,
+  readPipelineListSearch,
+  sortingFromSearch,
+  sortSearchFromSorting,
+} from './list-search';
 import { PipelineListSkeleton } from './list-skeleton';
 import {
   countPipelinesPerTab,
   PIPELINE_STATE_TABS,
   type PipelineStateTabId,
   pipelineListEmptyText,
-  stateFilterValues,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
 import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
@@ -89,11 +97,34 @@ const ListStatusAnnouncements = ({
   </>
 );
 
+type SearchPatch = Partial<Record<keyof PipelineListSearch, unknown>>;
+
+// The list's view lives in the URL. Every change replaces the entry rather than pushing one, and any
+// change but a page move goes back to page 1.
+function usePipelineListSearch() {
+  const navigate = useNavigate();
+  const rawSearch = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
+  const search = useMemo(() => readPipelineListSearch(rawSearch), [rawSearch]);
+  const update = useCallback(
+    (patch: SearchPatch, { keepPage = false }: { keepPage?: boolean } = {}) => {
+      const next = nextPipelineListSearch(rawSearch, keepPage ? patch : { ...patch, page: undefined });
+      if (JSON.stringify(next) !== JSON.stringify(nextPipelineListSearch(rawSearch, {}))) {
+        navigate({ to: '.', search: next, replace: true });
+      }
+    },
+    [navigate, rawSearch]
+  );
+  return [search, update] as const;
+}
+
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
-  // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
+  const [listSearch, updateListSearch] = usePipelineListSearch();
+  const sorting = useMemo(() => sortingFromSearch(listSearch), [listSearch]);
+  const columnFilters = useMemo(() => columnFiltersFromSearch(listSearch), [listSearch]);
+  const pagination = useMemo(() => ({ pageIndex: (listSearch.page ?? 1) - 1, pageSize: PAGE_SIZE }), [listSearch.page]);
+  const activeTab: PipelineStateTabId = listSearch.tab ?? 'all';
 
   const {
     data: pipelinesData,
@@ -184,39 +215,47 @@ const PipelineListPageContent = () => {
     enableHiding: false,
     // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
-    onSortingChange: setSorting,
-    // autoResetPageIndex would yank the user to page 1 on every drained page; the layout effects below
-    // reset on filter/sort changes instead.
+    // The URL holds the view; a sort or filter change goes back to page 1 as it's written.
+    state: { sorting, columnFilters, pagination },
+    onSortingChange: (updater) => updateListSearch(sortSearchFromSorting(functionalUpdate(updater, sorting))),
+    onColumnFiltersChange: (updater) =>
+      updateListSearch(facetSearchFromFilters(functionalUpdate(updater, columnFilters))),
+    onPaginationChange: (updater) =>
+      updateListSearch({ page: functionalUpdate(updater, pagination).pageIndex + 1 }, { keepPage: true }),
+    // Pages stream in behind the first; the page only resets when the view changes.
     autoResetPageIndex: false,
-    state: {
-      sorting,
-    },
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: PAGE_SIZE,
-      },
-    },
   });
 
+  // A page past the end (a stale link, or rows that went away) moves to the last one, once every
+  // page has loaded: while they stream in, a linked page may not exist yet.
   const pageCount = table.getPageCount();
   useLayoutEffect(() => {
-    const pageIndex = table.state.pagination.pageIndex;
-    if (pageIndex > 0 && pageIndex >= pageCount) {
-      table.setPageIndex(Math.max(pageCount - 1, 0));
+    if (!isLoading && pagination.pageIndex > 0 && pagination.pageIndex >= pageCount) {
+      updateListSearch({ page: Math.max(pageCount, 1) }, { keepPage: true });
     }
-  }, [pageCount, table]);
+  }, [isLoading, pageCount, pagination.pageIndex, updateListSearch]);
 
-  const { columnFilters } = table.state;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: columnFilters and sorting are the change-triggers — editing either jumps back to page 1. `table` is a new object every render, so depending on it would undo every page move.
-  useLayoutEffect(() => {
-    if (table.state.pagination.pageIndex !== 0) {
-      table.setPageIndex(0);
+  // The search box types ahead of the URL, which takes it after a pause.
+  const [searchText, setSearchText] = useState(listSearch.q ?? '');
+  const writtenQuery = useRef(listSearch.q ?? '');
+  useEffect(() => {
+    // Follows the URL when it changes some other way (back, a link, Clear filters).
+    const urlQuery = listSearch.q ?? '';
+    if (urlQuery !== writtenQuery.current) {
+      writtenQuery.current = urlQuery;
+      setSearchText(urlQuery);
     }
-  }, [columnFilters, sorting]);
-
-  const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
-  const [search, setSearch] = useState('');
+  }, [listSearch.q]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const next = searchText.trim() ? searchText : '';
+      if (next !== writtenQuery.current) {
+        writtenQuery.current = next;
+        updateListSearch({ q: next });
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchText, updateListSearch]);
 
   // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
@@ -227,14 +266,11 @@ const PipelineListPageContent = () => {
 
   const handleTabChange = useCallback(
     (tabId: PipelineStateTabId) => {
-      if (tabId === activeTab) {
-        return;
+      if (tabId !== activeTab) {
+        updateListSearch({ tab: tabId });
       }
-      setActiveTab(tabId);
-      const tab = PIPELINE_STATE_TABS.find((t) => t.id === tabId);
-      table.getColumn('state')?.setFilterValue(tab ? stateFilterValues(tab) : undefined);
     },
-    [table, activeTab]
+    [activeTab, updateListSearch]
   );
 
   const visibleTabs = useMemo(
@@ -249,28 +285,14 @@ const PipelineListPageContent = () => {
     }
   }, [isLoading, activeTab, draftCount, handleTabChange]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const column = table.getColumn('name');
-      const next = search.trim() ? search : undefined;
-      // setFilterValue(undefined) on an unfiltered column still makes a new columnFilters array, which
-      // trips the page-reset effect — so skip no-op writes, including the post-mount tick.
-      if (column && column.getFilterValue() !== next) {
-        column.setFilterValue(next);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [search, table]);
-
-  // Status tabs are views, not filters. Read `search` directly, not its column filter: that lands
-  // 200ms later, and Clear filters must be clickable as soon as the user has typed.
-  const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
+  // Status tabs are views, not filters. Read the search box, not the URL: that lands 200ms later, and
+  // Clear filters must be clickable as soon as the user has typed.
+  const hasActiveFilters = searchText.trim() !== '' || columnFilters.some((f) => f.id !== 'state' && f.id !== 'name');
   const clearFilters = useCallback(() => {
-    setSearch('');
-    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end', 'schedule']) {
-      table.getColumn(columnId)?.setFilterValue(undefined);
-    }
-  }, [table]);
+    setSearchText('');
+    writtenQuery.current = '';
+    updateListSearch({ q: undefined, ...facetSearchFromFilters([]) });
+  }, [updateListSearch]);
 
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
@@ -352,9 +374,9 @@ const PipelineListPageContent = () => {
         <Input
           aria-label="Search pipelines by name or ID"
           className="w-64"
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => setSearchText(e.target.value)}
           placeholder="Search by name or ID..."
-          value={search}
+          value={searchText}
         >
           <InputStart>
             <Search className="h-4 w-4 text-muted-foreground" />

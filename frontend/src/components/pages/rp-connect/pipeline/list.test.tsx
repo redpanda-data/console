@@ -731,3 +731,33 @@ describe('PipelineListPage schedules', () => {
     expect(await screen.findByRole('dialog', { name: /Schedule runs/ })).toBeInTheDocument();
   });
 });
+
+describe('PipelineListPage view in the URL', () => {
+  it('restores a linked view: its tab, search and facets', async () => {
+    renderWithFileRoutes(<PipelineListPage />, {
+      transport: buildTransport(),
+      initialLocation: `/?tab=running&q=orders&input=${encodeURIComponent(JSON.stringify(['redpanda']))}`,
+    });
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['orders-enrichment']));
+    expect(tab('Running')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('orders');
+    expect(screen.getByRole('button', { name: CLEAR_FILTERS_RE })).toBeInTheDocument();
+  });
+
+  it('writes tab, search and filter changes to the URL, and drops them once cleared', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await user.click(tab('Stopped'));
+    expect(router.state.location.search).toMatchObject({ tab: 'stopped' });
+
+    await user.click(tab('All'));
+    await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'night');
+    await waitFor(() => expect(router.state.location.search).toEqual({ q: 'night' }));
+
+    await user.click(screen.getByRole('button', { name: CLEAR_FILTERS_RE }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('');
+  });
+});
