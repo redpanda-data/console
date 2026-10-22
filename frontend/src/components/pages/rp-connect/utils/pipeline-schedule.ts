@@ -311,18 +311,24 @@ export function nextRuns(schedule: PipelineSchedule, from: number, count = 1): n
 export const maxRuntimeMinutes = (schedule: PipelineSchedule): number | undefined =>
   schedule.limitRuntime ? schedule.maxRuntime * (schedule.maxRuntimeUnit === 'hours' ? 60 : 1) : undefined;
 
-// How far the zone's clock moves for daylight saving, in minutes (0 without DST).
+// How far the zone's clock moves for daylight saving, in minutes (0 without DST). Sampled twice a month,
+// as some zones change for a few weeks only (Morocco during Ramadan).
 function dstShiftMinutes(timeZone: string, now: number = Date.now()): number {
   const year = new Date(now).getUTCFullYear();
-  const winter = offsetAt(Date.UTC(year, 0, 1), timeZone);
-  const summer = offsetAt(Date.UTC(year, 6, 1), timeZone);
-  return Math.abs(winter - summer) / MINUTE_MS;
+  const offsets = Array.from({ length: 24 }, (_, i) =>
+    offsetAt(Date.UTC(year, Math.floor(i / 2), i % 2 === 0 ? 1 : 15), timeZone)
+  );
+  return (Math.max(...offsets) - Math.min(...offsets)) / MINUTE_MS;
 }
 
-/** The shortest gap between two runs, in minutes; runs a day or more apart are closer on a short DST day. */
+/**
+ * The shortest gap between two runs, in minutes. Runs step by the zone's clock, so across a
+ * spring-forward change the run in the skipped span moves on by the shift while the next stays put.
+ */
 export function shortestGapMinutes(schedule: PipelineSchedule): number {
   const gap = calendarGapMinutes(schedule);
-  return gap >= 1440 ? gap - dstShiftMinutes(schedule.timeZone) : gap;
+  const rest = dstShiftMinutes(schedule.timeZone) % gap;
+  return rest === 0 ? gap : gap - rest;
 }
 
 function calendarGapMinutes(schedule: PipelineSchedule): number {

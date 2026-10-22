@@ -243,4 +243,36 @@ describe('overlap', () => {
     );
     expect(shortestGapMinutes(schedule({ cadence: 'daily', timeZone: 'UTC' }))).toBe(1440);
   });
+
+  test('a sub-day interval is shorter across a spring-forward change too', () => {
+    const everyTwoHours = schedule({ cadence: 'custom', every: 2, unit: 'hours', timeZone: 'America/New_York' });
+    // 01:00 EST, then 03:00 EDT: one hour apart.
+    expect(shortestGapMinutes(everyTwoHours)).toBe(60);
+    expect(
+      runtimeOverlapsNextRun({ ...everyTwoHours, limitRuntime: true, maxRuntime: 90, maxRuntimeUnit: 'minutes' })
+    ).toBe(true);
+    // An interval no longer than the shift is pushed past the skipped hour, so it keeps its length.
+    expect(shortestGapMinutes(schedule({ cadence: 'hourly', time: '00:15', timeZone: 'America/New_York' }))).toBe(60);
+  });
+
+  test('the shortest gap is the one the runs really have', () => {
+    const minGap = (s: PipelineSchedule, from: string) => {
+      const runs = nextRuns(s, at(from), 400);
+      return Math.min(...runs.slice(1).map((run, i) => (run - runs[i]) / 60_000));
+    };
+    for (const every of [25, 35, 45, 50]) {
+      const custom = schedule({
+        cadence: 'custom',
+        every,
+        unit: 'minutes',
+        startDate: '2026-03-01',
+        timeZone: 'America/New_York',
+      });
+      // Across 2026-03-08's spring-forward change.
+      expect(shortestGapMinutes(custom)).toBe(minGap(custom, '2026-03-07T00:00:00Z'));
+    }
+    // Morocco moves its clocks for Ramadan only, which a January/July sample misses.
+    const casablanca = schedule({ cadence: 'daily', timeZone: 'Africa/Casablanca' });
+    expect(shortestGapMinutes(casablanca)).toBe(1380);
+  });
 });

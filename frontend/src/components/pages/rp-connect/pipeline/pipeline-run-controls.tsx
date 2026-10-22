@@ -24,6 +24,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { PIPELINE_STATE_LABELS, PIPELINE_STATE_STATUS_VARIANT } from 'components/ui/pipeline/constants';
 import { Play } from 'lucide-react';
 import {
@@ -69,6 +70,9 @@ function runActionForState(state?: Pipeline_State): RunAction | null {
 }
 
 const START_LABEL = 'Start pipeline';
+// A scheduled pipeline's Start is one extra run; its schedule carries on.
+const RUN_NOW_LABEL = 'Run now';
+const RUN_NOW_HINT = 'Starts one run now. The schedule stays as it is.';
 
 const STOP_COPY = {
   action: 'Stop pipeline',
@@ -87,20 +91,20 @@ const CANCEL_START_COPY = {
 type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
 
 // Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
-function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
+function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, scheduled: boolean) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
-      onSuccess: () => toast.success('Pipeline starting'),
+      onSuccess: () => toast.success(scheduled ? 'Run starting' : 'Pipeline starting'),
       onError: (err) =>
         toast.error(
           formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
         ),
     });
-  }, [pipelineId, startMutation]);
+  }, [pipelineId, startMutation, scheduled]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
@@ -171,28 +175,40 @@ function PipelineStopControl({
 export function PipelineRunButton({
   pipelineId,
   pipelineState,
+  scheduled = false,
 }: {
   pipelineId: string;
   pipelineState?: Pipeline_State;
+  /** With a schedule, starting it is a single run. */
+  scheduled?: boolean;
 }) {
   const action = runActionForState(pipelineState);
   const isCancellingStart = action === 'cancel-start';
-  const run = usePipelineRunActions(pipelineId, isCancellingStart);
+  const run = usePipelineRunActions(pipelineId, isCancellingStart, scheduled);
 
   if (action === null) {
     return null;
   }
 
+  const startLabel = scheduled ? RUN_NOW_LABEL : START_LABEL;
   if (action === 'start') {
-    return (
+    const button = (
       <Button
         disabled={run.isStartPending}
         icon={run.isStartPending ? <Spinner /> : <Play />}
         onClick={run.handleStart}
         testId="pipeline-start"
       >
-        {START_LABEL}
+        {startLabel}
       </Button>
+    );
+    return scheduled ? (
+      <Tooltip>
+        <TooltipTrigger render={<span className="inline-flex" />}>{button}</TooltipTrigger>
+        <TooltipContent>{RUN_NOW_HINT}</TooltipContent>
+      </Tooltip>
+    ) : (
+      button
     );
   }
 
@@ -202,7 +218,7 @@ export function PipelineRunButton({
       <ElementTooltip content="Wait for the pipeline to finish stopping.">
         <span className="inline-flex cursor-not-allowed">
           <Button disabled icon={<Play />} testId="pipeline-start">
-            {START_LABEL}
+            {startLabel}
           </Button>
         </span>
       </ElementTooltip>

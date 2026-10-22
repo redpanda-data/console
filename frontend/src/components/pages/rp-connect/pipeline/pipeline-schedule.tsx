@@ -125,11 +125,11 @@ function subscribeClock(listener: () => void): () => void {
 }
 
 /** The current time, refreshed often enough for an "in 5m" label. */
-function useClock(): number {
+export function useClock(): number {
   return useSyncExternalStore(subscribeClock, () => clockNow);
 }
 
-const untilLabel = (at: number, now: number) =>
+export const untilLabel = (at: number, now: number) =>
   at - now < 60_000 ? 'in under a minute' : `in ${prettyMilliseconds(at - now, { compact: true })}`;
 
 const ON_HOLD_REASON: Record<Exclude<PipelineEndStatus, 'finite'>, string> = {
@@ -252,7 +252,11 @@ export function PipelineScheduleLine({ pipelineId, end }: { pipelineId: string; 
   return schedule ? <ScheduleLineContent end={end} schedule={schedule} /> : null;
 }
 
-const LINE_LABEL: Record<ScheduleState, string> = { active: 'Scheduled', paused: 'Paused', 'on-hold': 'On hold' };
+export const LINE_LABEL: Record<ScheduleState, string> = {
+  active: 'Scheduled',
+  paused: 'Paused',
+  'on-hold': 'On hold',
+};
 
 function ScheduleLineContent({ schedule, end }: { schedule: PipelineSchedule; end: PipelineEndSummary }) {
   const now = useClock();
@@ -785,22 +789,30 @@ function RuntimeField({ form }: { form: ScheduleForm }) {
 
 const RUN_PREVIEW_COUNT = 3;
 
+// The runs the schedule makes, listed even while it's off or on hold, so its times can be checked first.
 function RunPreviewLines({ schedule, now, ready }: { schedule: PipelineSchedule; now: number; ready: boolean }) {
+  let status: ReactNode = null;
   if (!schedule.enabled) {
-    return <span className="text-body-sm text-muted-foreground">Paused: no runs until the schedule is turned on.</span>;
+    status = <span className="text-body-sm text-muted-foreground">Off: it runs at these times once turned on.</span>;
+  } else if (!ready) {
+    status = <span className="text-body-sm text-warning">On hold: no runs until the pipeline stops on its own.</span>;
   }
-  if (!ready) {
-    return <span className="text-body-sm text-warning">On hold: no runs until the pipeline stops on its own.</span>;
-  }
+  const active = schedule.enabled && ready;
   return (
-    <ul aria-label="Next runs" className="flex flex-col gap-0.5 text-body-sm">
-      {nextRuns(schedule, now, RUN_PREVIEW_COUNT).map((run, i) => (
-        <li className="flex justify-between gap-3" key={run}>
-          <span>{formatRunTime(run, schedule.timeZone)}</span>
-          {i === 0 ? <span className="text-muted-foreground">{untilLabel(run, now)}</span> : null}
-        </li>
-      ))}
-    </ul>
+    <>
+      {status}
+      <ul
+        aria-label="Next runs"
+        className={cn('flex flex-col gap-0.5 text-body-sm', !active && 'text-muted-foreground')}
+      >
+        {nextRuns(schedule, now, RUN_PREVIEW_COUNT).map((run, i) => (
+          <li className="flex justify-between gap-3" key={run}>
+            <span>{formatRunTime(run, schedule.timeZone)}</span>
+            {i === 0 && active ? <span className="text-muted-foreground">{untilLabel(run, now)}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -843,7 +855,9 @@ function RunPreview({ form, ready }: { form: ScheduleForm; ready: boolean }) {
 
 function enabledHint(ready: boolean, enabled: boolean): string {
   if (ready) {
-    return 'Turn off to pause runs and keep these settings.';
+    return enabled
+      ? 'Turn off to pause runs and keep these settings.'
+      : 'Turn on to run the pipeline on this schedule.';
   }
   return enabled
     ? 'Runs are on hold. Turn this off to save changes, or add a stop condition first.'
@@ -883,7 +897,8 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
   const ready = end?.status === 'finite';
   const form = useForm<PipelineSchedule>({
     resolver: zodResolver(pipelineScheduleSchema),
-    defaultValues: existing ?? { ...defaultSchedule(), enabled: ready },
+    // A new schedule starts switched off.
+    defaultValues: existing ?? defaultSchedule(),
   });
   const cadence = useWatch({ control: form.control, name: 'cadence' });
   const enabled = useWatch({ control: form.control, name: 'enabled' });
@@ -1002,11 +1017,11 @@ export function usePipelineScheduleControl({
   configYaml: string;
   fixHint: ReactNode;
   hasUnsavedChanges?: boolean;
-}): { button: ReactNode; meta: ReactNode; dialog: ReactNode } {
+}): { button: ReactNode; meta: ReactNode; dialog: ReactNode; scheduled: boolean } {
   const [open, setOpen] = useState(false);
   const schedule = usePipelineSchedule(pipelineId);
   if (!areSchedulesEnabled()) {
-    return { button: null, meta: null, dialog: null };
+    return { button: null, meta: null, dialog: null, scheduled: false };
   }
   const button = pipelineId ? (
     <Button
@@ -1031,6 +1046,7 @@ export function usePipelineScheduleControl({
   );
   return {
     button,
+    scheduled: schedule !== undefined,
     // Null without a schedule, so the meta row draws no separator for it.
     meta: schedule ? (
       <PipelineScheduleMeta configYaml={configYaml} onOpen={() => setOpen(true)} pipelineId={pipelineId} />
