@@ -2,6 +2,17 @@
 
 ## Master / Unreleased
 
+## v3.13.0 / 2026-10-22
+- [IMPROVEMENT] Resolve schema IDs in the topic's Schema Registry context (`redpanda.schema.registry.context`) when viewing, producing, and inspecting records, and add a schema context selector to the message viewer for registries that use contexts.
+- [IMPROVEMENT] Refresh the SQL Studio catalog tree automatically after `CREATE`, `DROP`, `ALTER`, or `RENAME` statements, and add a manual refresh button to the catalog panel.
+- [IMPROVEMENT] Speed up initial page loads by loading the Monaco editor and Markdown renderer only when they are needed.
+- [IMPROVEMENT] Adopt React 19.3 transitions and update the UI registry components for smoother navigation and consistent styling.
+- [BUGFIX] Fix the topic page crashing when opened on the Partitions tab before its partitions finished loading.
+- [BUGFIX] Stop the Produce Record button from navigating straight back to the topic when a non-default max results or start offset is set.
+- [BUGFIX] Fix the topic list showing a false empty state for stale pages, keep long topic names and controls readable on narrow layouts, and reject invalid Kafka topic names before sending requests.
+- [SECURITY] Update Go to 1.26.10 to distrust compromised eMudhra intermediate CA keys (CVE-2026-111943).
+- [SECURITY] Update `dompurify` to 3.4.16.
+
 ## v3.12.0 / 2026-09-16
 - [IMPROVEMENT] Add a new topic messages page behind the `enableNewTopicMessagesPage` flag, with a free-text filter bar that highlights recognised filters as pills, an inline timestamp picker in the read-scope popover, keyboard navigation, and support for `>=` and `<=` operators in filter tokens.
 - [IMPROVEMENT] Migrate the remaining frontend surfaces — topics, security ACLs, Redpanda Connect, Kafka Connect, reassign partitions, transforms, overview, brokers, login, admin, debug bundle, and license — to the shared UI registry components for consistent styling.
