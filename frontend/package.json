@@ -48,7 +48,7 @@
     "theme:check": "bun src/components/redpanda-ui/style/theme-check/cli.mts --overrides src/globals.css",
     "type:check": "tsrs --noEmit --incremental -p tsconfig.base.json",
     "type:check:file": "tsrs --noEmit -p tsconfig.base.json",
-    "type:check:tests": "tsc --noEmit -p tsconfig.tests.json && tsc --noEmit -p tsconfig.unit-tests.json",
+    "type:check:tests": "tsrs --noEmit -p tsconfig.tests.json && tsrs --noEmit -p tsconfig.unit-tests.json",
     "type:check:tsc": "tsc --noEmit --incremental -p tsconfig.base.json",
     "ultracite": "ultracite"
   },

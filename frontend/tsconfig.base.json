@@ -2,8 +2,8 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "useDefineForClassFields": true,
-    "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2026",
+    "lib": ["dom", "dom.iterable", "es2026"],
     "types": ["@rstest/core/globals", "node"],
     "emitDecoratorMetadata": true,
     "allowJs": true,
