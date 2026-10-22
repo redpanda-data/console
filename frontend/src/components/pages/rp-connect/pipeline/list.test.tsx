@@ -117,6 +117,7 @@ const DRAFT_FIXTURE: Fixture = {
 
 // Two pages, so the test exercises the drain the list renders behind.
 const buildTransport = (opts?: {
+  pipelines?: Fixture[];
   withDraft?: boolean;
   extraDrafts?: Fixture[];
   startPipelineMock?: ReturnType<typeof rs.fn>;
@@ -127,9 +128,10 @@ const buildTransport = (opts?: {
     rpc(listPipelines, (req) => {
       opts?.onRequest?.(req);
       const pageToken = req.request?.pageToken ?? '';
+      const pipelines = opts?.pipelines ?? FIXTURES;
       const drafts = opts?.withDraft ? [DRAFT_FIXTURE, ...(opts.extraDrafts ?? [])] : [];
-      const first = [...drafts, ...FIXTURES.slice(0, 2)];
-      const page = pageToken === '' ? first : FIXTURES.slice(2);
+      const first = [...drafts, ...pipelines.slice(0, 2)];
+      const page = pageToken === '' ? first : pipelines.slice(2);
       return create(ListPipelinesResponseSchema, {
         response: create(DataPlaneListPipelinesResponseSchema, {
           pipelines: page.map((f) =>
@@ -329,6 +331,88 @@ describe('PipelineListPage', () => {
     await user.click(description);
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/rp-connect/aaa111');
+    });
+  });
+
+  describe('pagination', () => {
+    // 35 rows over pages of 20. The default status sort pins the error row to page 1 and the
+    // stopped row to page 2.
+    const MANY_PIPELINES: Fixture[] = [
+      { id: 'err000', displayName: 'first-error', state: Pipeline_State.ERROR, inputs: ['generate'], outputs: ['s3'] },
+      ...Array.from({ length: 33 }, (_, i) => ({
+        id: `run${String(i).padStart(3, '0')}`,
+        displayName: `running-${String(i).padStart(2, '0')}`,
+        state: Pipeline_State.RUNNING,
+        inputs: ['generate'],
+        outputs: ['s3'],
+      })),
+      {
+        id: 'stp000',
+        displayName: 'last-stopped',
+        state: Pipeline_State.STOPPED,
+        inputs: ['generate'],
+        outputs: ['s3'],
+      },
+    ];
+
+    const renderManyPipelines = async () => {
+      renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ pipelines: MANY_PIPELINES }) });
+      expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+    };
+
+    const expectPage = async (page: 1 | 2) => {
+      await waitFor(() => {
+        expect(screen.getByText(`Page ${page} of 2`)).toBeInTheDocument();
+      });
+      expect(visibleLinkNames()).toHaveLength(page === 1 ? 20 : 15);
+      expect(visibleLinkNames().includes('first-error')).toBe(page === 1);
+      expect(visibleLinkNames().includes('last-stopped')).toBe(page === 2);
+    };
+
+    it('moves between pages from the footer controls', async () => {
+      const user = userEvent.setup();
+      await renderManyPipelines();
+      await expectPage(1);
+
+      await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+      await expectPage(2);
+
+      await user.click(screen.getByRole('button', { name: 'Go to first page' }));
+      await expectPage(1);
+
+      await user.click(screen.getByRole('button', { name: 'Go to last page' }));
+      await expectPage(2);
+
+      await user.click(screen.getByRole('button', { name: 'Go to previous page' }));
+      await expectPage(1);
+    });
+
+    it('goes back to page 1 when the filters change', async () => {
+      const user = userEvent.setup();
+      await renderManyPipelines();
+
+      await user.click(screen.getByRole('button', { name: 'Go to last page' }));
+      await expectPage(2);
+
+      // The 33 running rows still fill two pages, so landing on page 1 is the reset, not a clamp.
+      await user.click(tab('Running'));
+      await waitFor(() => {
+        expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+      });
+    });
+
+    it('goes back to page 1 when the sort changes', async () => {
+      const user = userEvent.setup();
+      await renderManyPipelines();
+
+      await user.click(screen.getByRole('button', { name: 'Go to last page' }));
+      await expectPage(2);
+
+      await user.click(screen.getByRole('button', { name: 'Pipeline' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Asc' }));
+      await waitFor(() => {
+        expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+      });
     });
   });
 
