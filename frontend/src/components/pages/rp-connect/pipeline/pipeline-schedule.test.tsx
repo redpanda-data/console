@@ -68,10 +68,13 @@ describe('PipelineScheduleDialog', () => {
     const readiness = screen.getByTestId('schedule-readiness');
     expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
     expect(within(readiness).getByText('sql_select')).toBeInTheDocument();
-    expect(screen.getByTestId('schedule-enabled')).toHaveAttribute('aria-checked', 'true');
+    // A new schedule starts switched off.
+    const toggle = screen.getByTestId('schedule-enabled');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
     expect(screen.getByText('Preview')).toBeInTheDocument();
     expect(within(screen.getByRole('list', { name: 'Next runs' })).getAllByRole('listitem')).toHaveLength(3);
 
+    await user.click(toggle);
     await user.click(screen.getByTestId('schedule-save'));
 
     expect(storedSchedule()).toMatchObject({ enabled: true, cadence: 'daily', time: '02:00' });

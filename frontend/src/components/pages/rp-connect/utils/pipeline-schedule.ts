@@ -319,10 +319,14 @@ function dstShiftMinutes(timeZone: string, now: number = Date.now()): number {
   return Math.abs(winter - summer) / MINUTE_MS;
 }
 
-/** The shortest gap between two runs, in minutes; runs a day or more apart are closer on a short DST day. */
+/**
+ * The shortest gap between two runs, in minutes. Runs step by the zone's clock, so a gap longer than
+ * the DST shift is that much shorter across a spring-forward change.
+ */
 export function shortestGapMinutes(schedule: PipelineSchedule): number {
   const gap = calendarGapMinutes(schedule);
-  return gap >= 1440 ? gap - dstShiftMinutes(schedule.timeZone) : gap;
+  const shift = dstShiftMinutes(schedule.timeZone);
+  return gap > shift ? gap - shift : gap;
 }
 
 function calendarGapMinutes(schedule: PipelineSchedule): number {

@@ -243,4 +243,15 @@ describe('overlap', () => {
     );
     expect(shortestGapMinutes(schedule({ cadence: 'daily', timeZone: 'UTC' }))).toBe(1440);
   });
+
+  test('a sub-day interval is shorter across a spring-forward change too', () => {
+    const everyTwoHours = schedule({ cadence: 'custom', every: 2, unit: 'hours', timeZone: 'America/New_York' });
+    // 01:00 EST, then 03:00 EDT: one hour apart.
+    expect(shortestGapMinutes(everyTwoHours)).toBe(60);
+    expect(
+      runtimeOverlapsNextRun({ ...everyTwoHours, limitRuntime: true, maxRuntime: 90, maxRuntimeUnit: 'minutes' })
+    ).toBe(true);
+    // An interval no longer than the shift is pushed past the skipped hour, so it keeps its length.
+    expect(shortestGapMinutes(schedule({ cadence: 'hourly', time: '00:15', timeZone: 'America/New_York' }))).toBe(60);
+  });
 });

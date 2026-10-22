@@ -112,6 +112,7 @@ import {
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineRunsPanel } from './pipeline-runs-panel';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import {
@@ -864,6 +865,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     // Natural height on purpose: this lane scrolls with the page, so logs pagination sits right below
     // the table.
     <div className="flex flex-col p-6">
+      <PipelineRunsPanel configYaml={pipeline.configYaml} pipelineId={pipeline.id} />
       {showThroughput ? (
         <>
           <PipelineThroughputCard pipelineId={pipeline.id} />

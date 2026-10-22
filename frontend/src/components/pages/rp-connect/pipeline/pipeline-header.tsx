@@ -369,7 +369,7 @@ export function PipelineViewHeader({
           {viewingDraft ? (
             <StartDraftControl pipeline={pipeline} units={units} />
           ) : (
-            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />
+            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} scheduled={schedule.scheduled} />
           )}
         </div>
       </div>
