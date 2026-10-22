@@ -1,6 +1,10 @@
 # Changelog
 
 ## Master / Unreleased
+- [BUGFIX] Fix the Redpanda Connect pipeline list snapping back to page 1, which stopped the Next and Last buttons from working once a cluster had more than one page of pipelines.
+
+## v3.13.1 / 2026-10-22
+- [CHANGE] No functional changes; `v3.13.1` points to the same commit as `v3.13.0`.
 
 ## v3.13.0 / 2026-10-22
 - [IMPROVEMENT] Resolve schema IDs in the topic's Schema Registry context (`redpanda.schema.registry.context`) when viewing, producing, and inspecting records, and add a schema context selector to the message viewer for registries that use contexts.
