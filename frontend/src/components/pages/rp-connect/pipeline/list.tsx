@@ -38,12 +38,13 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { appGlobal } from 'state/app-global';
+import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
 
-import { connectorOption, createColumns } from './list-columns';
-import { type PipelineRow, tagFilterValue, toPipelineRow } from './list-row';
+import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-columns';
+import { type PipelineRow, soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
 import { PipelineListSkeleton } from './list-skeleton';
 import {
   countPipelinesPerTab,
@@ -53,9 +54,13 @@ import {
   stateFilterValues,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
+import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
 import { TabKafkaConnect } from '../../connect/overview';
 
 const PAGE_SIZE = 20;
+
+// A browser timer that waits longer than about 24 days fires at once, so the schedule clock rechecks hourly.
+const MAX_SCHEDULE_CLOCK_WAIT_MS = 60 * 60 * 1000;
 
 // Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
 // flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
@@ -97,6 +102,28 @@ const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boo
     : `Couldn't refresh pipelines: ${error.message}`;
 };
 
+// With the schedule preview on, each row carries its schedule.
+const useScheduledRows = (baseRows: PipelineRow[]): PipelineRow[] => {
+  const schedulesEnabled = areSchedulesEnabled();
+  const schedules = useSchedulePreviewStore((s) => s.schedules);
+  const [scheduleClock, setScheduleClock] = useState(() => Date.now());
+  const pipelines = useMemo(
+    () => (schedulesEnabled ? withSchedules(baseRows, (id) => scheduleOf(schedules, id), scheduleClock) : baseRows),
+    [baseRows, schedulesEnabled, schedules, scheduleClock]
+  );
+  // Re-join once the soonest run is due, so its next run and the Schedule order move on.
+  const soonest = useMemo(() => soonestRun(pipelines), [pipelines]);
+  useEffect(() => {
+    if (soonest === undefined) {
+      return;
+    }
+    const wait = Math.min(Math.max(soonest - scheduleClock, 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
+    const timer = setTimeout(() => setScheduleClock(Date.now()), wait);
+    return () => clearTimeout(timer);
+  }, [soonest, scheduleClock]);
+  return pipelines;
+};
+
 const usePipelineListData = () => {
   const {
     data: pipelinesData,
@@ -113,7 +140,7 @@ const usePipelineListData = () => {
     };
   }, [invalidatePipelineQueries]);
 
-  const pipelines = useMemo(
+  const baseRows = useMemo(
     () =>
       (pipelinesData?.pipelines || [])
         .filter(
@@ -122,6 +149,7 @@ const usePipelineListData = () => {
         .map(toPipelineRow),
     [pipelinesData]
   );
+  const pipelines = useScheduledRows(baseRows);
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   return {
@@ -134,10 +162,12 @@ const usePipelineListData = () => {
     isInitialLoading: isLoading && pipelines.length === 0 && !error,
     isLoadingMorePages: isLoading && pipelines.length > 0 && !error,
     listErrorMessage: listErrorMessageFor(error, hasNextPage),
+    // A deployed row carries no config, so the schedule dialog reads it from the response.
+    configYamlOf: (id: string) => pipelinesData?.pipelines.find((p) => p?.id === id)?.configYaml ?? '',
   };
 };
 
-const usePipelineListColumns = () => {
+const usePipelineListColumns = (onEditSchedule?: (pipelineId: string) => void) => {
   const navigate = useNavigate();
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
   const { mutate: startMutation } = useStartPipelineMutation();
@@ -151,13 +181,14 @@ const usePipelineListColumns = () => {
         startMutation,
         stopMutation,
         isDeletingPipeline,
+        onEditSchedule,
       }),
-    [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
+    [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline, onEditSchedule]
   );
 };
 
-const usePipelinesTable = (pipelines: PipelineRow[]) => {
-  const columns = usePipelineListColumns();
+const usePipelinesTable = (pipelines: PipelineRow[], onEditSchedule?: (pipelineId: string) => void) => {
+  const columns = usePipelineListColumns(onEditSchedule);
   // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
   const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
@@ -267,7 +298,7 @@ const usePipelineNameSearch = (table: PipelinesTable) => {
 
   const clearFilters = useCallback(() => {
     setSearch('');
-    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end']) {
+    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end', 'schedule']) {
       table.getColumn(columnId)?.setFilterValue(undefined);
     }
   }, [table]);
@@ -358,6 +389,13 @@ const PipelineListToolbar = ({
       <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
       <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
       <DataTableFacetedFilter column={table.getColumn('end')} options={PIPELINE_END_RUNS} title="Runs" />
+      {areSchedulesEnabled() ? (
+        <DataTableFacetedFilter
+          column={table.getColumn('schedule')}
+          options={SCHEDULE_FILTER_OPTIONS}
+          title="Schedule"
+        />
+      ) : null}
       <FadePresence show={nameSearch.hasActiveFilters}>
         <Button onClick={nameSearch.clearFilters} size="sm" variant="ghost">
           <X /> Clear filters
@@ -441,9 +479,47 @@ const PipelineListTable = ({
   );
 };
 
+// One schedule dialog for the whole list, opened from a row's menu.
+const ListScheduleDialog = ({
+  pipelineId,
+  configYaml,
+  onClose,
+}: {
+  pipelineId: string;
+  configYaml: string;
+  onClose: () => void;
+}) => {
+  const navigate = useNavigate();
+  const editPipeline = () => {
+    navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId: encodeURIComponent(pipelineId) } }).catch(
+      (error: unknown) => {
+        toast.error('Failed to open the pipeline editor', { description: String(error) });
+      }
+    );
+  };
+  return (
+    <PipelineScheduleDialog
+      configYaml={configYaml}
+      fixHint={
+        <Button className="self-start" onClick={editPipeline} size="sm" variant="outline">
+          Edit pipeline
+        </Button>
+      }
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      open
+      pipelineId={pipelineId}
+    />
+  );
+};
+
 const PipelineListPageContent = () => {
   const list = usePipelineListData();
-  const { table, columns } = usePipelinesTable(list.pipelines);
+  const [scheduleTarget, setScheduleTarget] = useState<string | null>(null);
+  const { table, columns } = usePipelinesTable(list.pipelines, areSchedulesEnabled() ? setScheduleTarget : undefined);
   const tabs = usePipelineStateTabs(table, list);
   const nameSearch = usePipelineNameSearch(table);
 
@@ -460,7 +536,6 @@ const PipelineListPageContent = () => {
     );
   }
 
-  const hasRows = table.getRowModel().rows.length > 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -487,7 +562,7 @@ const PipelineListPageContent = () => {
           table={table}
         />
       </div>
-      <FadePresence show={list.isLoadingMorePages && hasRows}>
+      <FadePresence show={list.isLoadingMorePages && table.getRowModel().rows.length > 0}>
         <div className="flex items-center gap-2 text-body text-muted-foreground">
           <Spinner /> Loading more pipelines...
         </div>
@@ -500,6 +575,13 @@ const PipelineListPageContent = () => {
       </FadePresence>
       <ListStatusAnnouncements isLoadingMorePages={list.isLoadingMorePages} listErrorMessage={list.listErrorMessage} />
       <DataTablePagination table={table} />
+      {scheduleTarget ? (
+        <ListScheduleDialog
+          configYaml={list.configYamlOf(scheduleTarget)}
+          onClose={() => setScheduleTarget(null)}
+          pipelineId={scheduleTarget}
+        />
+      ) : null}
     </div>
   );
 };

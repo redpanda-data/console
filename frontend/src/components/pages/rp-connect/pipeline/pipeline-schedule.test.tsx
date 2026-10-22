@@ -20,8 +20,8 @@ rs.mock('config', () => {
 });
 
 import {
+  PipelineScheduleCell,
   PipelineScheduleDialog,
-  PipelineScheduleLine,
   PipelineScheduleMeta,
   usePipelineScheduleControl,
 } from './pipeline-schedule';
@@ -259,16 +259,16 @@ describe('schedule status', () => {
     expect(screen.getByTestId('probe')).toHaveTextContent('meta');
   });
 
-  test('the list line reads paused, on hold or the next run', () => {
-    seed({ enabled: false });
-    const { rerender } = render(<PipelineScheduleLine end={{ status: 'finite' }} pipelineId={PIPELINE_ID} />);
+  test('the list cell reads paused, on hold or the next run', () => {
+    const schedule = { ...defaultSchedule('UTC'), enabled: false };
+    const { rerender } = render(<PipelineScheduleCell end={{ status: 'finite' }} schedule={schedule} />);
     expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent('Paused');
 
-    seed({ enabled: true });
-    rerender(<PipelineScheduleLine end={{ status: 'continuous' }} pipelineId={PIPELINE_ID} />);
+    const enabled = { ...schedule, enabled: true };
+    rerender(<PipelineScheduleCell end={{ status: 'continuous' }} schedule={enabled} />);
     expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent('On hold');
 
-    rerender(<PipelineScheduleLine end={{ status: 'finite' }} pipelineId={PIPELINE_ID} />);
+    rerender(<PipelineScheduleCell end={{ status: 'finite' }} schedule={enabled} />);
     expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent(NEXT_RUN);
   });
 });

@@ -89,5 +89,11 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/** The schedule saved for `pipelineId`, from the store's `schedules`. */
+export const scheduleOf = (
+  schedules: Record<string, PipelineSchedule>,
+  pipelineId: string
+): PipelineSchedule | undefined => schedules[scheduleKey(pipelineId)];
+
 export const usePipelineSchedule = (pipelineId: string | undefined): PipelineSchedule | undefined =>
   useSchedulePreviewStore((s) => (pipelineId ? s.schedules[scheduleKey(pipelineId)] : undefined));

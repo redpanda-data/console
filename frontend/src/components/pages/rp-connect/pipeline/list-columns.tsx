@@ -27,15 +27,15 @@ import {
   PIPELINE_STATE_SORT_PRIORITY,
   PIPELINE_STATE_STATUS_VARIANT,
 } from 'components/ui/pipeline/constants';
-import { Box } from 'lucide-react';
+import { Box, CalendarClock, CalendarMinus, CalendarOff, CalendarX2 } from 'lucide-react';
 import { type ComponentType, type SVGProps, useMemo } from 'react';
 
 import { DRAFT_BADGE_TOOLTIP, relativeAgeLabel } from './draft-copy';
 import { ActionsCell, type DeleteMutate, type StartMutate, type StopMutate } from './list-actions';
-import { type PipelineRow, tagFilterValue } from './list-row';
+import { compareSchedules, type PipelineRow, tagFilterValue } from './list-row';
 import { aggregateConnectors, matchesNameOrId } from './list-utils';
 import { PipelineRunsCell } from './pipeline-end-chip';
-import { areSchedulesEnabled, PipelineScheduleLine } from './pipeline-schedule';
+import { PipelineScheduleCell } from './pipeline-schedule';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
@@ -84,6 +84,30 @@ type CreateColumnsOptions = {
   startMutation: StartMutate;
   stopMutation: StopMutate;
   isDeletingPipeline: boolean;
+  /** Set with the schedule preview on: adds the Schedule column and its row actions. */
+  onEditSchedule?: (pipelineId: string) => void;
+};
+
+/** The Schedule filter's options, in the column's sort order. */
+export const SCHEDULE_FILTER_OPTIONS = [
+  { value: 'active', label: 'Scheduled', icon: CalendarClock },
+  { value: 'on-hold', label: 'On hold', icon: CalendarX2 },
+  { value: 'paused', label: 'Paused', icon: CalendarOff },
+  { value: 'none', label: 'Not scheduled', icon: CalendarMinus },
+];
+
+const scheduleColumn: DataTableColumnDef<PipelineRow> = {
+  id: 'schedule',
+  accessorFn: (row) => row.schedule?.state ?? 'none',
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Schedule" />,
+  filterFn: inSelectionFilterFn,
+  sortFn: (rowA, rowB) => compareSchedules(rowA.original, rowB.original),
+  cell: ({ row }) =>
+    row.original.schedule ? (
+      <PipelineScheduleCell end={{ status: row.original.end }} schedule={row.original.schedule.schedule} />
+    ) : (
+      <EmptyCell />
+    ),
 };
 
 type LogoComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -135,6 +159,7 @@ export const createColumns = ({
   startMutation,
   stopMutation,
   isDeletingPipeline,
+  onEditSchedule,
 }: CreateColumnsOptions): DataTableColumnDef<PipelineRow>[] => [
   {
     accessorKey: 'name',
@@ -163,16 +188,9 @@ export const createColumns = ({
     accessorFn: (row) => row.end,
     header: 'Runs',
     filterFn: inSelectionFilterFn,
-    cell: ({ row }) =>
-      areSchedulesEnabled() ? (
-        <div className="flex flex-col items-start gap-0.5">
-          <PipelineRunsCell status={row.original.end} />
-          <PipelineScheduleLine end={{ status: row.original.end }} pipelineId={row.original.id} />
-        </div>
-      ) : (
-        <PipelineRunsCell status={row.original.end} />
-      ),
+    cell: ({ row }) => <PipelineRunsCell status={row.original.end} />,
   },
+  ...(onEditSchedule ? [scheduleColumn] : []),
   {
     id: 'tags',
     accessorFn: (row) => row.tags.map(tagFilterValue),
@@ -241,6 +259,7 @@ export const createColumns = ({
         deleteMutation={deleteMutation}
         isDeletingPipeline={isDeletingPipeline}
         navigate={navigate}
+        onEditSchedule={onEditSchedule}
         pipeline={row.original}
         startMutation={startMutation}
         stopMutation={stopMutation}

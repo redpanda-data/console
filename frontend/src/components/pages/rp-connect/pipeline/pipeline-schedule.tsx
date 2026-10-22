@@ -76,6 +76,8 @@ import {
   runtimeOverlapsNextRun,
   SCHEDULE_CADENCES,
   type ScheduleCadence,
+  type ScheduleState,
+  scheduleState,
   WEEKDAY_ORDER,
   weekdayName,
 } from '../utils/pipeline-schedule';
@@ -86,16 +88,6 @@ export const SCHEDULE_PREVIEW_NOTE =
   'Preview: saved in this browser only. The pipeline won’t start on this schedule yet.';
 
 // ── Status ─────────────────────────────────────────────────────────────────
-
-/** `on-hold`: switched on, but the pipeline no longer stops on its own. */
-export type ScheduleState = 'active' | 'paused' | 'on-hold';
-
-export function scheduleState(schedule: PipelineSchedule, end: PipelineEndSummary): ScheduleState {
-  if (!schedule.enabled) {
-    return 'paused';
-  }
-  return end.status === 'finite' ? 'active' : 'on-hold';
-}
 
 const CLOCK_TICK_MS = 30_000;
 
@@ -148,7 +140,11 @@ type ScheduleCopy = {
   Icon: typeof CalendarClock;
 };
 
-function scheduleCopy(schedule: PipelineSchedule, end: PipelineEndSummary, now: number): ScheduleCopy {
+function scheduleCopy(
+  schedule: PipelineSchedule,
+  end: { status: PipelineEndStatus; behavior?: PipelineEndSummary['behavior'] },
+  now: number
+): ScheduleCopy {
   const state = scheduleState(schedule, end);
   if (state === 'paused') {
     return {
@@ -246,19 +242,20 @@ function ScheduleMetaContent({
   );
 }
 
-/** A list row's schedule, under its "Runs" cell. */
-export function PipelineScheduleLine({ pipelineId, end }: { pipelineId: string; end: PipelineEndSummary }) {
-  const schedule = usePipelineSchedule(pipelineId);
-  return schedule ? <ScheduleLineContent end={end} schedule={schedule} /> : null;
-}
-
 export const LINE_LABEL: Record<ScheduleState, string> = {
   active: 'Scheduled',
   paused: 'Paused',
   'on-hold': 'On hold',
 };
 
-function ScheduleLineContent({ schedule, end }: { schedule: PipelineSchedule; end: PipelineEndSummary }) {
+/** A list row's Schedule cell: the next run, or why there is none. */
+export function PipelineScheduleCell({
+  schedule,
+  end,
+}: {
+  schedule: PipelineSchedule;
+  end: { status: PipelineEndStatus };
+}) {
   const now = useClock();
   const state = scheduleState(schedule, end);
   const { detail, next, Icon } = scheduleCopy(schedule, end, now);

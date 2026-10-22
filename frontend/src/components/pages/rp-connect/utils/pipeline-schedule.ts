@@ -11,6 +11,8 @@
 
 import { z } from 'zod';
 
+import type { PipelineEndStatus } from './input-end-behavior';
+
 export const SCHEDULE_CADENCES = ['hourly', 'daily', 'weekdays', 'weekly', 'monthly', 'custom'] as const;
 export type ScheduleCadence = (typeof SCHEDULE_CADENCES)[number];
 
@@ -436,6 +438,17 @@ export function formatRunTime(instant: number, timeZone: string, locale?: string
 export function zonedToday(timeZone: string, now: number = Date.now()): string {
   const { year, month, day } = zonedParts(now, timeZone);
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** `on-hold`: switched on, but the pipeline no longer stops on its own. */
+export type ScheduleState = 'active' | 'paused' | 'on-hold';
+
+/** What a schedule does for a pipeline that ends as `end` says. */
+export function scheduleState(schedule: PipelineSchedule, end: { status: PipelineEndStatus }): ScheduleState {
+  if (!schedule.enabled) {
+    return 'paused';
+  }
+  return end.status === 'finite' ? 'active' : 'on-hold';
 }
 
 export function defaultSchedule(timeZone: string = browserTimeZone(), now: number = Date.now()): PipelineSchedule {
