@@ -42,11 +42,13 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
+import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import { describeSchedule } from '../utils/pipeline-schedule';
 
 type ActionsCellProps = {
   pipeline: PipelineRow;
@@ -55,10 +57,56 @@ type ActionsCellProps = {
   startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
   stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
   isDeletingPipeline: boolean;
+  /** Set with the schedule preview on. */
+  onEditSchedule?: (pipelineId: string) => void;
 };
 
+// Set or edit the schedule, and pause or resume it in place.
+function ScheduleMenuItems({
+  pipeline,
+  onEditSchedule,
+}: {
+  pipeline: PipelineRow;
+  onEditSchedule: (pipelineId: string) => void;
+}) {
+  const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
+  const schedule = pipeline.schedule?.schedule;
+  const setEnabled = (enabled: boolean) => {
+    if (!schedule) {
+      return;
+    }
+    saveSchedule(pipeline.id, { ...schedule, enabled });
+    toast.success(enabled ? 'Schedule resumed' : 'Schedule paused', {
+      description: enabled ? describeSchedule(schedule) : undefined,
+    });
+  };
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => onEditSchedule(pipeline.id)}>
+        {schedule ? 'Edit schedule' : 'Add schedule'}
+      </DropdownMenuItem>
+      {schedule?.enabled ? <DropdownMenuItem onClick={() => setEnabled(false)}>Pause schedule</DropdownMenuItem> : null}
+      {schedule && !schedule.enabled ? (
+        // Back on for a pipeline that doesn't stop on its own, it would only sit on hold.
+        <DropdownMenuItem disabled={pipeline.end !== 'finite'} onClick={() => setEnabled(true)}>
+          Resume schedule
+        </DropdownMenuItem>
+      ) : null}
+    </>
+  );
+}
+
 export const ActionsCell = memo(
-  ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
+  ({
+    pipeline,
+    navigate,
+    deleteMutation,
+    startMutation,
+    stopMutation,
+    isDeletingPipeline,
+    onEditSchedule,
+  }: ActionsCellProps) => {
     const isDraftRow = pipeline.isDraft;
     const canStart = !isDraftRow && (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
     const canStop = !isDraftRow && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
@@ -81,7 +129,7 @@ export const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          toast.success('Pipeline starting');
+          toast.success(pipeline.schedule ? 'Run starting' : 'Pipeline starting');
         },
         onError: (err) => {
           toast.error(
@@ -166,8 +214,12 @@ export const ActionsCell = memo(
             ) : null}
             {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
             {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
-            {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
+            {/* With a schedule, starting it is a single run; the schedule carries on. */}
+            {canStart ? (
+              <DropdownMenuItem onClick={handleStart}>{pipeline.schedule ? 'Run now' : 'Start'}</DropdownMenuItem>
+            ) : null}
             {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
+            {onEditSchedule ? <ScheduleMenuItems onEditSchedule={onEditSchedule} pipeline={pipeline} /> : null}
             <DropdownMenuSeparator />
             <DeleteResourceMenuItem
               isDeleting={isDeletingPipeline}

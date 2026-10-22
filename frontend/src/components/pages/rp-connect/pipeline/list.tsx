@@ -36,12 +36,13 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { appGlobal } from 'state/app-global';
+import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
 
-import { connectorOption, createColumns } from './list-columns';
-import { tagFilterValue, toPipelineRow } from './list-row';
+import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-columns';
+import { soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
 import { PipelineListSkeleton } from './list-skeleton';
 import {
   countPipelinesPerTab,
@@ -51,9 +52,13 @@ import {
   stateFilterValues,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
+import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
 import { TabKafkaConnect } from '../../connect/overview';
 
 const PAGE_SIZE = 20;
+
+// A browser timer that waits longer than about 24 days fires at once, so the schedule clock rechecks hourly.
+const MAX_SCHEDULE_CLOCK_WAIT_MS = 60 * 60 * 1000;
 
 // Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
 // flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
@@ -108,7 +113,7 @@ const PipelineListPageContent = () => {
     };
   }, [invalidatePipelineQueries]);
 
-  const pipelines = useMemo(
+  const baseRows = useMemo(
     () =>
       (pipelinesData?.pipelines || [])
         .filter(
@@ -117,7 +122,31 @@ const PipelineListPageContent = () => {
         .map(toPipelineRow),
     [pipelinesData]
   );
+  const schedulesEnabled = areSchedulesEnabled();
+  const schedules = useSchedulePreviewStore((s) => s.schedules);
+  const [scheduleClock, setScheduleClock] = useState(() => Date.now());
+  const pipelines = useMemo(
+    () => (schedulesEnabled ? withSchedules(baseRows, (id) => scheduleOf(schedules, id), scheduleClock) : baseRows),
+    [baseRows, schedulesEnabled, schedules, scheduleClock]
+  );
+  // Re-join once the soonest run is due, so its next run and the Schedule order move on.
+  const soonest = useMemo(() => soonestRun(pipelines), [pipelines]);
+  useEffect(() => {
+    if (soonest === undefined) {
+      return;
+    }
+    const wait = Math.min(Math.max(soonest - scheduleClock, 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
+    const timer = setTimeout(() => setScheduleClock(Date.now()), wait);
+    return () => clearTimeout(timer);
+  }, [soonest, scheduleClock]);
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
+
+  // One schedule dialog for the whole list, opened from a row's menu.
+  const [scheduleTarget, setScheduleTarget] = useState<string | null>(null);
+  const scheduleTargetYaml = useMemo(
+    () => (scheduleTarget ? (pipelinesData?.pipelines.find((p) => p?.id === scheduleTarget)?.configYaml ?? '') : ''),
+    [pipelinesData, scheduleTarget]
+  );
 
   const columns = useMemo(
     () =>
@@ -127,8 +156,9 @@ const PipelineListPageContent = () => {
         startMutation,
         stopMutation,
         isDeletingPipeline,
+        onEditSchedule: schedulesEnabled ? setScheduleTarget : undefined,
       }),
-    [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
+    [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline, schedulesEnabled]
   );
 
   const inputOptions = useMemo(
@@ -237,7 +267,7 @@ const PipelineListPageContent = () => {
   const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
   const clearFilters = useCallback(() => {
     setSearch('');
-    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end']) {
+    for (const columnId of ['name', 'inputs', 'outputs', 'tags', 'end', 'schedule']) {
       table.getColumn(columnId)?.setFilterValue(undefined);
     }
   }, [table]);
@@ -334,6 +364,13 @@ const PipelineListPageContent = () => {
         <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
         <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
         <DataTableFacetedFilter column={table.getColumn('end')} options={PIPELINE_END_RUNS} title="Runs" />
+        {schedulesEnabled ? (
+          <DataTableFacetedFilter
+            column={table.getColumn('schedule')}
+            options={SCHEDULE_FILTER_OPTIONS}
+            title="Schedule"
+          />
+        ) : null}
         <FadePresence show={hasActiveFilters}>
           <Button onClick={clearFilters} size="sm" variant="ghost">
             <X /> Clear filters
@@ -401,6 +438,33 @@ const PipelineListPageContent = () => {
       </FadePresence>
       <ListStatusAnnouncements isLoadingMorePages={isLoadingMorePages} listErrorMessage={listErrorMessage} />
       <DataTablePagination table={table} />
+      {scheduleTarget ? (
+        <PipelineScheduleDialog
+          configYaml={scheduleTargetYaml}
+          fixHint={
+            <Button
+              className="self-start"
+              onClick={() =>
+                navigate({
+                  to: '/rp-connect/$pipelineId/edit',
+                  params: { pipelineId: encodeURIComponent(scheduleTarget) },
+                })
+              }
+              size="sm"
+              variant="outline"
+            >
+              Edit pipeline
+            </Button>
+          }
+          onOpenChange={(open) => {
+            if (!open) {
+              setScheduleTarget(null);
+            }
+          }}
+          open
+          pipelineId={scheduleTarget}
+        />
+      ) : null}
     </div>
   );
 };

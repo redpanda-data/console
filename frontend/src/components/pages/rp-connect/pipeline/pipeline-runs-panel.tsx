@@ -22,12 +22,17 @@ import {
   LINE_LABEL,
   PipelineScheduleDialog,
   SCHEDULE_PREVIEW_NOTE,
-  scheduleState,
   untilLabel,
   useClock,
 } from './pipeline-schedule';
 import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
-import { describeSchedule, formatRunTime, nextRuns, type PipelineSchedule } from '../utils/pipeline-schedule';
+import {
+  describeSchedule,
+  formatRunTime,
+  nextRuns,
+  type PipelineSchedule,
+  scheduleState,
+} from '../utils/pipeline-schedule';
 
 const UPCOMING_COUNT = 5;
 
