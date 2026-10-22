@@ -2028,77 +2028,77 @@ output:
 export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'simple-generate-to-drop',
-    name: 'Simple — generate to drop',
+    name: 'Generate to drop',
     description: 'Smallest pipeline that validates everywhere (Cloud included).',
     yaml: generateToDrop,
     tags: ['simple'],
   },
   {
     id: 'simple-generate-to-redpanda-local',
-    name: 'Simple — generate to Redpanda (local Tilt)',
+    name: 'Generate to Redpanda (local Tilt)',
     description: 'cloudv2 Tilt — needs one Console secret (LOCAL_RP_PASSWORD). Setup steps in YAML comments.',
     yaml: generateToRedpandaLocal,
     tags: ['simple'],
   },
   {
     id: 'simple-generate-to-redpanda-cloud',
-    name: 'Simple — generate to Redpanda (Cloud)',
+    name: 'Generate to Redpanda (Cloud)',
     description: 'SCRAM-SHA-256 + TLS using ${secrets.X}. Canonical Cloud quickstart pattern.',
     yaml: generateToRedpanda,
     tags: ['simple'],
   },
   {
     id: 'simple-noisy-logs',
-    name: 'Simple — noisy INFO/WARN/ERROR logs',
+    name: 'Noisy INFO/WARN/ERROR logs',
     description: 'Emits 5 msg/sec at INFO + WARN + ERROR. (DEBUG/TRACE are dropped by Cloud.)',
     yaml: noisyLogs,
     tags: ['simple'],
   },
   {
     id: 'medium-http-to-redpanda',
-    name: 'Medium — HTTP to Redpanda',
+    name: 'HTTP to Redpanda',
     description: 'Webhook ingest, schema-registry decode with try/catch, write to Redpanda.',
     yaml: httpToRedpanda,
     tags: ['medium'],
   },
   {
     id: 'medium-postgres-cdc',
-    name: 'Medium — Postgres CDC to Redpanda',
+    name: 'Postgres CDC to Redpanda',
     description: 'Logical-replication CDC → Redpanda topic per table, keyed by primary key.',
     yaml: postgresCdcToRedpanda,
     tags: ['medium'],
   },
   {
     id: 'complex-enrichment-workflow',
-    name: 'Complex — workflow enrichment',
+    name: 'Workflow enrichment',
     description: 'Multi-branch parallel HTTP enrichment (cookbook-style). Redpanda → Redpanda.',
     yaml: enrichmentWorkflow,
     tags: ['complex'],
   },
   {
     id: 'complex-rag-ingest',
-    name: 'Complex — RAG ingest (embeddings → PGVector)',
+    name: 'RAG ingest (embeddings → PGVector)',
     description: 'Chunk → OpenAI embeddings → Postgres for retrieval-augmented generation.',
     yaml: ragEmbeddingPipeline,
     tags: ['complex'],
   },
   {
     id: 'complex-enterprise',
-    name: 'Complex — enterprise enrichment',
+    name: 'Enterprise enrichment',
     description: 'Redpanda → dedupe → branch enrich → filter → S3 + DLQ. Cache + rate limit resources.',
     yaml: enterpriseEnrichment,
     tags: ['complex'],
   },
   {
     id: 'complex-kitchen-sink',
-    name: 'Complex — kitchen sink',
+    name: 'Kitchen sink',
     description: 'Many component types (broker, workflow, parallel, retry, fan_out) for editor stress-testing.',
     yaml: allComponentsKitchenSink,
     tags: ['complex'],
   },
   {
     id: 'complex-heavy-branching',
-    name: 'Complex — heavy branching & routing',
+    name: 'Heavy branching & routing',
     description:
       'Broker fan-in, nested switch → branch → try/catch, for_each, parallel, cache/rate-limit refs, switch+fallback DLQ output. Built to exercise the visualizer.',
     yaml: heavyBranching,
@@ -2106,7 +2106,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'complex-omni-channel-platform',
-    name: 'Complex — omni-channel platform (mega)',
+    name: 'Omni-channel platform (mega)',
     description:
       '~800-line, maximally-branched commerce platform: broker fan-in of 5 sources, top-level switch routing per event type into nested switch/branch/try-catch/parallel/workflow/for_each/group_by, shared fraud + enrichment stages, and a large switch output with DLQ, per-region S3, pub/sub and fallbacks. Exercises every visualizer node/edge shape.',
     yaml: omniChannelPlatform,
@@ -2114,7 +2114,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-resource-indirection',
-    name: 'Edge — resource indirection (*_resources)',
+    name: 'Resource indirection (*_resources)',
     description:
       'input/output/processor declared as named *_resources and referenced via resource:. Exercises the visualizer’s reference linking and a reused processor resource.',
     yaml: resourceIndirection,
@@ -2122,7 +2122,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-secrets-heavy',
-    name: 'Edge — many secret references',
+    name: 'Many secret references',
     description:
       'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
     yaml: secretsHeavy,
@@ -2130,14 +2130,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-giant-config',
-    name: 'Edge — 60 processors (perf)',
+    name: '60 processors (perf)',
     description: 'Large pipeline to surface editor/render perf issues.',
     yaml: giantConfig,
     tags: ['edge-case'],
   },
   {
     id: 'stops-generate-count',
-    name: 'Stops — generate a fixed count',
+    name: 'Generate a fixed count',
     description:
       'Ends after 100 messages and stops itself. Validates everywhere; the quickest way to try the schedule preview.',
     yaml: generateFixedCount,
@@ -2145,35 +2145,35 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'stops-postgres-snapshot',
-    name: 'Stops — Postgres table snapshot',
+    name: 'Postgres table snapshot',
     description: 'sql_select reads every row, then stops: the nightly-export shape a schedule runs.',
     yaml: postgresSnapshot,
     tags: ['stops'],
   },
   {
     id: 'stops-topic-backfill',
-    name: 'Stops — topic backfill (limit + idle backstop)',
+    name: 'Topic backfill (limit + idle backstop)',
     description: 'read_until with counter() >= 10000 and a 1m idle timeout on a redpanda input.',
     yaml: topicBackfill,
     tags: ['stops'],
   },
   {
     id: 'stops-end-of-batch-check',
-    name: 'Stops — end-of-batch marker (check only)',
+    name: 'End-of-batch marker (check only)',
     description: 'Stops on a Bloblang check; the editor warns it can wait forever and suggests an idle backstop.',
     yaml: endOfBatchMarker,
     tags: ['stops'],
   },
   {
     id: 'stops-sequence-catch-up',
-    name: 'Stops — sequence: snapshot, then catch up',
+    name: 'Sequence: snapshot, then catch up',
     description: 'A table read, then a topic read until idle. Each sequence member carries its own stop.',
     yaml: snapshotThenCatchUp,
     tags: ['stops', 'medium'],
   },
   {
     id: 'stops-broker-one-endless',
-    name: 'Stops — broker with one endless member',
+    name: 'Broker with one endless member',
     description:
       'Two members end, one streams forever, so the broker runs continuously. Member rows add up on the broker.',
     yaml: brokerOneEndless,
@@ -2181,7 +2181,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'stops-broker-all-members',
-    name: 'Stops — broker where every member stops',
+    name: 'Broker where every member stops',
     description:
       'A limit with an idle backstop, an idle timeout, a generate count and a check with a backstop: it stops after the last one.',
     yaml: brokerAllMembersStop,
@@ -2189,14 +2189,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'stops-broker-own-condition',
-    name: 'Stops — stop condition around a whole broker',
+    name: 'Stop condition around a whole broker',
     description: 'read_until wraps the broker (50K msgs or 2m idle), and one member keeps an idle timeout of its own.',
     yaml: brokerOwnStopCondition,
     tags: ['stops', 'medium'],
   },
   {
     id: 'stops-broker-nested-groups',
-    name: 'Stops — broker with a nested sequence and broker',
+    name: 'Broker with a nested sequence and broker',
     description:
       'A sequence and a broker as members, each drawn as one card that sums up its own; a check-only member warns it can wait forever.',
     yaml: brokerNestedGroups,
@@ -2204,14 +2204,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'stops-broker-batching-period',
-    name: 'Stops — broker batching with a period',
+    name: 'Broker batching with a period',
     description: 'Broker-level batching flushes its last batch on the period, so the broker still stops.',
     yaml: brokerBatchingWithPeriod,
     tags: ['stops', 'medium'],
   },
   {
     id: 'edge-stop-condition-traps',
-    name: 'Edge — stop conditions that never fire',
+    name: 'Stop conditions that never fire',
     description:
       'restart_input + idle over a table, a 0s idle timeout, a never-true check, and a reconnecting HTTP stream.',
     yaml: stopConditionTraps,
@@ -2219,14 +2219,14 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-batching-without-period',
-    name: 'Edge — batching with no period',
+    name: 'Batching with no period',
     description: 'A finished input whose last partial batch waits forever: reads "May not stop", with the fix.',
     yaml: batchingWithoutPeriod,
     tags: ['stops', 'edge-case'],
   },
   {
     id: 'edge-read-only-stop-conditions',
-    name: 'Edge — read-only stop conditions',
+    name: 'Read-only stop conditions',
     description:
       'An aliased input, an aliased read_until and an env-var restart_input: each stop row explains why it is read-only.',
     yaml: readOnlyStopConditions,
@@ -2234,28 +2234,28 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'invalid-malformed-yaml',
-    name: 'Invalid — malformed YAML',
+    name: 'Malformed YAML',
     description: 'Broken syntax for testing editor error display.',
     yaml: malformedYaml,
     tags: ['invalid'],
   },
   {
     id: 'invalid-missing-required',
-    name: 'Invalid — missing required fields',
+    name: 'Missing required fields',
     description: 'Parses, but server-side validation should reject it.',
     yaml: missingRequiredFields,
     tags: ['invalid'],
   },
   {
     id: 'invalid-cloud-disabled-stdio',
-    name: 'Invalid — stdin/stdout (Cloud-disabled)',
+    name: 'stdin/stdout (Cloud-disabled)',
     description: 'Triggers "unable to infer component type" — components disabled in Cloud.',
     yaml: stdinStdoutDisabled,
     tags: ['invalid'],
   },
   {
     id: 'invalid-incomplete-stop-conditions',
-    name: 'Invalid — incomplete stop conditions',
+    name: 'Incomplete stop conditions',
     description:
       'read_until with nothing to stop on, a non-duration idle timeout, no input, and a trigger-less batch policy. Lint accepts them; Connect fails on them.',
     yaml: incompleteStopConditions,
