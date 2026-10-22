@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -63,7 +63,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -96,7 +96,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -155,7 +155,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -197,7 +197,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -245,7 +245,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: frontend/.bun-version
@@ -284,7 +284,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: frontend/.bun-version
@@ -326,7 +326,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version-file: frontend/.nvmrc
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: frontend/.bun-version
