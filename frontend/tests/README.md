@@ -1,9 +1,9 @@
 # Frontend tests
 
 Run tools from `frontend/` through the pinned package scripts. Install with
-`bun install --frozen-lockfile`, then `bun run install:chromium` before running tests
-(Linux also needs `--with-deps`). Bun is pinned in `.bun-version`; Node must satisfy
-`package.json` (Node 22.22 is used for the browser/E2E CI jobs).
+`bun install --frozen-lockfile`. Browser and E2E checks also require
+`bun run install:chromium` (Linux needs `--with-deps`). Bun is pinned in `.bun-version`;
+Node must satisfy `package.json`. CI selects Node from `.nvmrc`.
 
 ## Choose by behavior
 
@@ -30,9 +30,17 @@ isolated integration environment. Bun's DOM preload preserves its native network
 Conversely, testing a route loader against a QueryClient/transport is integration even
 without JSX. The shared registry test remains upstream-owned and runs unchanged.
 
-`bun run test` runs units, integrations, federation, browser and native-input canaries,
-and enforces the native integration coverage thresholds.
-Bundle and full-stack E2E require a built frontend and run as separate CI jobs.
+`bun run test` runs units, integrations and federation, preserving the original default
+workload. Browser, native-input canary, bundle and coverage checks remain explicit commands:
+
+```sh
+bun run test:browser
+bun run test:e2e:canary
+bun run build && bun run test:bundle
+bun run test:coverage
+```
+
+Bundle and full-stack E2E require a built frontend.
 Use `bun run test:unit:watch` or `bun run test:watch` for integration watch mode.
 Pass file paths to `bun run test:file:unit` or `bun run test:file:integration`.
 
@@ -52,16 +60,16 @@ Docker must be running. The final command runs every variant, including enterpri
 enterprise requires a separate checkout. It is not replaced with mocked browser tests.
 Setup uses `tests/shared/global-setup.mjs`, variant JSON/YAML, pinned `test-images.json`
 and the existing Testcontainers resource/cleanup helpers. Teardown also runs after
-failure. Local single-variant runs allocate free host ports; CI variants use separate
-runners. Console uses eight workers. The quota cases are collected by `quotas/quotas.spec.ts`
-and run sequentially within that file so pagination cannot race other quota mutations.
+failure. Local single-variant runs allocate free host ports; the all-variant command
+runs variants in parallel with separate port mappings. Console uses eight workers.
+The quota cases are collected by `quotas/quotas.spec.ts` and run sequentially within
+that file so pagination cannot race other quota mutations.
 Other variants retain their worker/retry limits.
 
-CI builds the OSS backend image once with `bun run e2e-build:oss`, then passes it to the
-E2E matrix as a same-run Docker image artifact. Each matrix job loads the image and sets
-`E2E_PREBUILT_IMAGE_TAG=console-backend:e2e-test`; setup still starts real services but
-does not rebuild the image. Local commands continue to build automatically when no
-prebuilt image is supplied.
+The all-variant command builds each required backend image once before starting tests.
+Individual variant commands build automatically when no prebuilt image is supplied.
+The existing downstream CI invokes `bun run e2e-test` for all four real-service variants;
+the OSS workflow does not repeat those variants in a second matrix.
 
 ```sh
 bun run e2e-test:variant console list --summary
@@ -123,17 +131,17 @@ are unchanged and enforced natively by Rstest. Bun's unit coverage remains in
 `coverage/lcov.info`; Rstest writes its summary, LCOV, HTML and Istanbul maps to
 `coverage-integration/`. No custom counter merge or report-copy scripts are needed.
 
-CI collects native coverage blobs from both existing integration shards and runs
-`bun run test:coverage:merge` after both succeed. The merge adds untested files once
-and enforces the combined thresholds, never thresholds on partial shards. Missing
-shard artifacts fail the producer job. CLI regressions compare merged counters with
-a full run, reject uncovered code, and prove Bun denominators cannot inflate gates.
+Coverage remains an explicit command, as before the migration; normal CI integration
+shards do not collect coverage or add a separate aggregation job. For an explicit
+sharded coverage run, native `bun run test:coverage:merge` combines blob reports and
+enforces the combined thresholds. CLI regressions compare merged counters with a full
+run, reject uncovered code, and prove Bun denominators cannot inflate gates.
 
 `bun run type:check:tests` checks browser/tooling and migrated Bun units through
 separate TypeScript projects. Generated/vendored exclusions remain unchanged.
 Bun units also write `.rstest/unit.xml`, so the unit job retains failure diagnostics.
 
-`frontend-verify.yml` keeps unit, integration shards and federation gates, and adds real
-browser/bundle/native-input and three OSS full-stack E2E variants. Enterprise remains
-on the existing downstream enterprise CI path. Browser jobs consume only the build
-artifact from their own workflow run, use read-only permissions and expose no secrets.
+`frontend-verify.yml` retains the original lint, type-check, build, unit/federation and
+two integration-shard workloads and runner sizes. It does not add browser/bundle,
+coverage or OSS E2E jobs. Full-stack E2E remains on the existing downstream CI path,
+which tests the dispatched OSS commit with the running application and services.

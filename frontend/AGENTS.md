@@ -16,7 +16,7 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 |---------|---------|
 | `bun start` | Dev server :3000 |
 | `bun run build` | Production build |
-| `bun run test` | Unit, integration, federation and browser checks |
+| `bun run test` | Unit, integration and federation checks |
 | `bun run test:unit` | `.test.ts` (Bun) |
 | `bun run test:integration` | `.test.tsx` (happy-dom) |
 | `bun run lint` | Biome/Ultracite linter |
