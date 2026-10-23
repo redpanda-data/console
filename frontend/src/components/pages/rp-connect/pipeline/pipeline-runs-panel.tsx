@@ -11,38 +11,41 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
 import { Separator } from 'components/redpanda-ui/components/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { CalendarClock } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { usePipelineSchedule } from 'state/rpcn-schedule-preview';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { CalendarClock, History } from 'lucide-react';
+import { type ReactNode, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
 import {
   areSchedulesEnabled,
-  LINE_LABEL,
   PipelineScheduleDialog,
   SCHEDULE_PREVIEW_NOTE,
   untilLabel,
   useClock,
 } from './pipeline-schedule';
+import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import {
+  browserTimeZone,
+  describeRuntime,
   describeSchedule,
-  formatRunTime,
+  maxRuntimeMinutes,
   nextRuns,
   type PipelineSchedule,
   scheduleState,
 } from '../utils/pipeline-schedule';
 
 const UPCOMING_COUNT = 5;
-
-// What a run record will carry once the scheduler keeps them (RFC REQ-2.3, 2.4).
-const HISTORY_COLUMNS = ['Started', 'Ended', 'Duration', 'Messages in', 'Messages out', 'Outcome'];
-
-const STATE_NOTE = {
-  paused: 'The schedule is paused, so no runs are coming up.',
-  'on-hold': 'Runs are on hold until the pipeline stops on its own again.',
-} as const;
 
 /** The Monitor lane's schedule: the runs coming up, and the history runs will be recorded in. */
 export function PipelineRunsPanel({ pipelineId, configYaml }: { pipelineId: string; configYaml: string }) {
@@ -52,6 +55,28 @@ export function PipelineRunsPanel({ pipelineId, configYaml }: { pipelineId: stri
   }
   return <RunsPanelContent configYaml={configYaml} pipelineId={pipelineId} schedule={schedule} />;
 }
+
+// The dashed placeholder the lane's other sections use while they have nothing to show.
+const RunsPlaceholder = ({
+  title,
+  description,
+  icon,
+  action,
+}: {
+  title: string;
+  description: string;
+  icon?: ReactNode;
+  action?: ReactNode;
+}) => (
+  <Empty className="gap-2 rounded-md border border-dashed p-4 md:p-6">
+    <EmptyHeader className="gap-1">
+      {icon ? <EmptyMedia variant="icon">{icon}</EmptyMedia> : null}
+      <EmptyTitle className="text-body">{title}</EmptyTitle>
+      <EmptyDescription className="text-body">{description}</EmptyDescription>
+    </EmptyHeader>
+    {action ? <EmptyContent>{action}</EmptyContent> : null}
+  </Empty>
+);
 
 function RunsPanelContent({
   pipelineId,
@@ -63,67 +88,101 @@ function RunsPanelContent({
   schedule: PipelineSchedule;
 }) {
   const [open, setOpen] = useState(false);
+  const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
   const end = useMemo(() => summarizePipelineEndYaml(configYaml), [configYaml]);
   const now = useClock();
   const state = scheduleState(schedule, end);
   const upcoming = state === 'active' ? nextRuns(schedule, now, UPCOMING_COUNT) : [];
+  const runtime = maxRuntimeMinutes(schedule);
+
+  const resume = () => {
+    saveSchedule(pipelineId, { ...schedule, enabled: true });
+    toast.success('Schedule resumed', { description: describeSchedule(schedule) });
+  };
+
+  let comingUp: ReactNode;
+  if (upcoming.length > 0) {
+    comingUp = (
+      <UpcomingRunTiles
+        label="Upcoming runs"
+        runs={upcoming}
+        soonLabel={untilLabel(upcoming[0], now)}
+        timeZone={schedule.timeZone}
+      />
+    );
+  } else if (state === 'paused') {
+    comingUp = (
+      <RunsPlaceholder
+        action={
+          end.status === 'finite' ? (
+            <Button onClick={resume} size="sm" variant="outline">
+              Resume schedule
+            </Button>
+          ) : null
+        }
+        description="No runs until the schedule is turned back on."
+        title="Paused"
+      />
+    );
+  } else {
+    comingUp = (
+      <RunsPlaceholder
+        description={
+          state === 'on-hold' ? 'No runs until the pipeline stops on its own again.' : 'No run is coming up.'
+        }
+        title={state === 'on-hold' ? 'On hold' : 'Nothing coming up'}
+      />
+    );
+  }
 
   return (
     <>
       <section className="flex flex-col gap-4" data-testid="pipeline-runs-panel">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h3 className="flex items-center gap-2 text-heading-md">
-              Runs
-              <Badge tone="informative" variant="outline">
-                Preview
-              </Badge>
-            </h3>
-            <span className="text-body-sm text-muted-foreground">
-              {describeSchedule(schedule)} · {LINE_LABEL[state]}
-            </span>
+            <div className="flex items-center gap-2">
+              <h3 className="text-heading-md">Runs</h3>
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <Badge tone="informative" variant="outline">
+                    Preview
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">{SCHEDULE_PREVIEW_NOTE}</TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground">
+              <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
+              {/* The tiles carry the zone's abbreviation; its name only matters when it isn't the viewer's. */}
+              {schedule.timeZone === browserTimeZone() ? null : (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{schedule.timeZone}</span>
+                </>
+              )}
+              {runtime ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>Stops after {describeRuntime(runtime)}</span>
+                </>
+              ) : null}
+            </div>
           </div>
-          <Button icon={<CalendarClock />} onClick={() => setOpen(true)} size="sm" variant="outline">
+          <Button icon={<CalendarClock />} onClick={() => setOpen(true)} size="sm" variant="ghost">
             Edit schedule
           </Button>
         </div>
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <div className="flex flex-col gap-2">
-            <h4 className="font-medium text-body">Coming up</h4>
-            {upcoming.length > 0 ? (
-              <ul aria-label="Upcoming runs" className="flex flex-col gap-1 text-body-sm">
-                {upcoming.map((run, i) => (
-                  <li className="flex justify-between gap-3" key={run}>
-                    <span>{formatRunTime(run, schedule.timeZone)}</span>
-                    {i === 0 ? <span className="text-muted-foreground">{untilLabel(run, now)}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-body-sm text-muted-foreground">
-                {state === 'active' ? 'No run is coming up.' : STATE_NOTE[state]}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <h4 className="font-medium text-body">History</h4>
-            <Table size="sm">
-              <TableHeader>
-                <TableRow>
-                  {HISTORY_COLUMNS.map((column) => (
-                    <TableHead key={column}>{column}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="h-20 text-center text-muted-foreground" colSpan={HISTORY_COLUMNS.length}>
-                    No runs recorded yet. {SCHEDULE_PREVIEW_NOTE}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+        <div className="flex flex-col gap-2">
+          <h4 className="font-medium text-body-sm text-muted-foreground">Upcoming</h4>
+          {comingUp}
+        </div>
+        <div className="flex flex-col gap-2">
+          <h4 className="font-medium text-body-sm text-muted-foreground">History</h4>
+          <RunsPlaceholder
+            description="Each run will show when it started and ended, how it went, and how many messages it moved."
+            icon={<History />}
+            title="No runs yet"
+          />
         </div>
       </section>
       <Separator className="my-8" variant="subtle" />

@@ -19,12 +19,7 @@ rs.mock('config', () => {
   return { ...actual, isFeatureFlagEnabled: (flag: string) => flag === 'enableRpcnPipelineSchedules' };
 });
 
-import {
-  PipelineScheduleCell,
-  PipelineScheduleDialog,
-  PipelineScheduleMeta,
-  usePipelineScheduleControl,
-} from './pipeline-schedule';
+import { PipelineScheduleCell, PipelineScheduleDialog, usePipelineScheduleControl } from './pipeline-schedule';
 import { defaultSchedule, type PipelineSchedule } from '../utils/pipeline-schedule';
 
 const FINITE = 'input:\n  sql_select:\n    table: orders\noutput:\n  drop: {}\n';
@@ -34,7 +29,7 @@ const BROKEN = 'input: [';
 const CONTINUOUS = 'input:\n  redpanda:\n    topics: [orders]\noutput:\n  drop: {}\n';
 
 const PIPELINE_ID = 'p1';
-const ACTIVE_META = /^Every hour at :15 · next run in /;
+const ACTIVE_PILL = /^Hourly at :15in /;
 const NEXT_RUN = /^Next in /;
 
 const storedSchedule = () => Object.values(useSchedulePreviewStore.getState().schedules)[0];
@@ -67,6 +62,10 @@ describe('PipelineScheduleDialog', () => {
 
     const readiness = screen.getByTestId('schedule-readiness');
     expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
+    // Nothing to fix, so the inputs fold away until asked for.
+    expect(readiness).toHaveTextContent('Its input stops by itself.');
+    expect(within(readiness).queryByText('sql_select')).not.toBeInTheDocument();
+    await user.click(within(readiness).getByRole('button', { name: 'Show inputs' }));
     expect(within(readiness).getByText('sql_select')).toBeInTheDocument();
     // A new schedule starts switched off.
     const toggle = screen.getByTestId('schedule-enabled');
@@ -100,12 +99,14 @@ describe('PipelineScheduleDialog', () => {
     );
   });
 
-  test('a broker with a stop condition of its own is listed itself, not its members', () => {
+  test('a broker with a stop condition of its own is listed itself, not its members', async () => {
+    const user = userEvent.setup();
     renderDialog(
       'input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      broker:\n        inputs:\n          - redpanda: { topics: [a] }\n          - redpanda: { topics: [b] }\noutput:\n  drop: {}\n'
     );
     const readiness = screen.getByTestId('schedule-readiness');
     expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
+    await user.click(within(readiness).getByRole('button', { name: 'Show inputs' }));
     expect(
       within(readiness)
         .getAllByRole('listitem')
@@ -210,53 +211,37 @@ describe('schedule preview store', () => {
 });
 
 describe('schedule status', () => {
-  const renderMeta = (configYaml: string) =>
-    render(<PipelineScheduleMeta configYaml={configYaml} onOpen={() => undefined} pipelineId={PIPELINE_ID} />);
+  function Control({ configYaml }: { configYaml: string }) {
+    const { button } = usePipelineScheduleControl({ pipelineId: PIPELINE_ID, configYaml, fixHint: null });
+    return <>{button}</>;
+  }
 
-  test('shows nothing without a schedule', () => {
-    renderMeta(FINITE);
-    expect(screen.queryByTestId('pipeline-schedule-meta')).not.toBeInTheDocument();
+  test('without a schedule, the header offers to add one', () => {
+    render(<Control configYaml={FINITE} />);
+    expect(screen.getByTestId('pipeline-schedule-button')).toHaveTextContent('Schedule');
+    expect(screen.queryByTestId('pipeline-schedule-pill')).not.toBeInTheDocument();
   });
 
-  test('an active schedule names its cadence and next run', () => {
+  test('with one, the header’s control is the schedule: its cadence, then its next run', () => {
     seed({ enabled: true, cadence: 'hourly', time: '00:15' });
-    renderMeta(FINITE);
-    expect(screen.getByTestId('pipeline-schedule-meta')).toHaveTextContent(ACTIVE_META);
+    render(<Control configYaml={FINITE} />);
+    expect(screen.queryByTestId('pipeline-schedule-button')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pipeline-schedule-pill')).toHaveTextContent(ACTIVE_PILL);
   });
 
   test('a schedule for a pipeline that no longer stops is on hold', () => {
     seed({ enabled: true });
-    renderMeta(CONTINUOUS);
-    expect(screen.getByTestId('pipeline-schedule-meta')).toHaveTextContent('Schedule on hold');
+    render(<Control configYaml={CONTINUOUS} />);
+    const pill = screen.getByTestId('pipeline-schedule-pill');
+    expect(pill).toHaveAttribute('data-state', 'on-hold');
+    expect(pill).toHaveTextContent('On hold');
   });
 
   test('a half-typed edit keeps the last answer instead of flashing on hold', () => {
     seed({ enabled: true, cadence: 'hourly', time: '00:15' });
-    const { rerender } = renderMeta(FINITE);
-    rerender(<PipelineScheduleMeta configYaml={BROKEN} onOpen={() => undefined} pipelineId={PIPELINE_ID} />);
-    expect(screen.getByTestId('pipeline-schedule-meta')).toHaveTextContent(ACTIVE_META);
-  });
-
-  test('the header gets no meta item, and so no separator, without a schedule', () => {
-    function Probe() {
-      const { meta, button } = usePipelineScheduleControl({
-        pipelineId: PIPELINE_ID,
-        configYaml: FINITE,
-        fixHint: null,
-      });
-      return (
-        <>
-          <span data-testid="probe">{meta === null ? 'no meta' : 'meta'}</span>
-          {button}
-        </>
-      );
-    }
-    const { rerender } = render(<Probe />);
-    expect(screen.getByTestId('probe')).toHaveTextContent('no meta');
-    expect(screen.getByTestId('pipeline-schedule-button')).toBeInTheDocument();
-    seed({ enabled: true });
-    rerender(<Probe />);
-    expect(screen.getByTestId('probe')).toHaveTextContent('meta');
+    const { rerender } = render(<Control configYaml={FINITE} />);
+    rerender(<Control configYaml={BROKEN} />);
+    expect(screen.getByTestId('pipeline-schedule-pill')).toHaveTextContent(ACTIVE_PILL);
   });
 
   test('the list cell reads paused, on hold or the next run', () => {
@@ -270,6 +255,18 @@ describe('schedule status', () => {
 
     rerender(<PipelineScheduleCell end={{ status: 'finite' }} schedule={enabled} />);
     expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent(NEXT_RUN);
+  });
+
+  test('the list cell’s second line shows the cadence: its weekdays, or what kind it is', () => {
+    const weekly = { ...defaultSchedule('UTC'), enabled: true, cadence: 'weekly' as const, weekdays: [1, 4, 6] };
+    const { rerender } = render(<PipelineScheduleCell end={{ status: 'finite' }} schedule={weekly} />);
+    expect(screen.getByRole('img', { name: 'On Monday, Thursday and Saturday' })).toBeInTheDocument();
+
+    rerender(
+      <PipelineScheduleCell end={{ status: 'finite' }} schedule={{ ...weekly, cadence: 'monthly', dayOfMonth: 15 }} />
+    );
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent('15th of the month');
   });
 });
 

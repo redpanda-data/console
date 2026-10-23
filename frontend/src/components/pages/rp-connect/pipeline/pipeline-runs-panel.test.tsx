@@ -10,6 +10,7 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import userEvent from '@testing-library/user-event';
 import { SCHEDULE_PREVIEW_STORAGE_KEY, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { render, screen, within } from 'test-utils';
 
@@ -19,7 +20,7 @@ rs.mock('config', () => {
 });
 
 import { PipelineRunsPanel } from './pipeline-runs-panel';
-import { defaultSchedule, describeSchedule, type PipelineSchedule } from '../utils/pipeline-schedule';
+import { defaultSchedule, type PipelineSchedule } from '../utils/pipeline-schedule';
 
 const FINITE = 'input:\n  sql_select:\n    table: orders\noutput:\n  drop: {}\n';
 const CONTINUOUS = 'input:\n  redpanda:\n    topics: [orders]\noutput:\n  drop: {}\n';
@@ -39,26 +40,30 @@ describe('PipelineRunsPanel', () => {
   });
 
   test('lists the runs coming up, and where their history will be', () => {
-    seed({ enabled: true });
+    seed({ enabled: true, cadence: 'weekly', weekdays: [1, 4] });
     render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
     const panel = screen.getByTestId('pipeline-runs-panel');
-    expect(panel).toHaveTextContent(`${describeSchedule(defaultSchedule('UTC'))} · Scheduled`);
-    expect(within(screen.getByRole('list', { name: 'Upcoming runs' })).getAllByRole('listitem')).toHaveLength(5);
-    for (const column of ['Started', 'Ended', 'Duration', 'Messages in', 'Messages out', 'Outcome']) {
-      expect(within(panel).getByRole('columnheader', { name: column })).toBeInTheDocument();
-    }
-    expect(within(panel).getByText(/No runs recorded yet\./)).toBeInTheDocument();
+    expect(within(panel).getByRole('img', { name: 'On Monday and Thursday' })).toBeInTheDocument();
+    const upcoming = within(screen.getByRole('list', { name: 'Upcoming runs' })).getAllByRole('listitem');
+    expect(upcoming).toHaveLength(5);
+    // Only the first says how soon it is.
+    expect(upcoming[0]).toHaveTextContent(/in /);
+    expect(upcoming[1]).not.toHaveTextContent(/in \d/);
+    expect(within(panel).getByText('No runs yet')).toBeInTheDocument();
   });
 
-  test('a paused or on-hold schedule has no runs coming up, and says why', () => {
+  test('a paused schedule can be resumed from the panel; one on hold says why it waits', async () => {
+    const user = userEvent.setup();
     seed({ enabled: false });
     const { unmount } = render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
-    expect(screen.getByText('The schedule is paused, so no runs are coming up.')).toBeInTheDocument();
+    expect(screen.getByText('No runs until the schedule is turned back on.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Resume schedule' }));
+    expect(Object.values(useSchedulePreviewStore.getState().schedules)[0]?.enabled).toBe(true);
     unmount();
 
-    seed({ enabled: true });
     render(<PipelineRunsPanel configYaml={CONTINUOUS} pipelineId="p1" />);
-    expect(screen.getByText('Runs are on hold until the pipeline stops on its own again.')).toBeInTheDocument();
+    expect(screen.getByText('No runs until the pipeline stops on its own again.')).toBeInTheDocument();
     expect(screen.queryByRole('list', { name: 'Upcoming runs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resume schedule' })).not.toBeInTheDocument();
   });
 });

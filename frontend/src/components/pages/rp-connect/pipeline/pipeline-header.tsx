@@ -326,7 +326,6 @@ export function PipelineViewHeader({
       node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
     },
     { key: 'end', node: endMeta },
-    { key: 'schedule', node: schedule.meta },
     {
       key: 'url',
       node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
@@ -494,7 +493,6 @@ export function PipelineEditHeader({
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
-    { key: 'schedule', node: schedule.meta },
     { key: 'url', node: url ? <CopyableMeta href={url} label="Endpoint" value={url} /> : null },
   ];
 

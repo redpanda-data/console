@@ -54,6 +54,7 @@ import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedul
 import { prettyMilliseconds } from 'utils/utils';
 
 import { inputEndRows } from './pipeline-end-chip';
+import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { RichText } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { type PipelineEndStatus, type PipelineEndSummary, readPipelineEnd } from '../utils/input-end-behavior';
@@ -194,21 +195,9 @@ function useSettledEnd(configYaml: string): PipelineEndSummary {
 }
 
 /** The schedule for a page header's meta row; opens the schedule dialog. */
-export function PipelineScheduleMeta({
-  pipelineId,
-  configYaml,
-  onOpen,
-}: {
-  pipelineId: string | undefined;
-  configYaml: string;
-  onOpen: () => void;
-}) {
-  const schedule = usePipelineSchedule(pipelineId);
-  return schedule ? <ScheduleMetaContent configYaml={configYaml} onOpen={onOpen} schedule={schedule} /> : null;
-}
-
+// The header's schedule control: what it does at a glance and when it next runs; opens the dialog.
 // Mounted only with a schedule, so an unscheduled pipeline neither ticks a clock nor re-parses its YAML.
-function ScheduleMetaContent({
+function SchedulePill({
   schedule,
   configYaml,
   onOpen,
@@ -219,21 +208,31 @@ function ScheduleMetaContent({
 }) {
   const end = useSettledEnd(configYaml);
   const now = useClock();
-  const { label, detail, tone, Icon } = scheduleCopy(schedule, end, now);
+  const state = scheduleState(schedule, end);
+  const { detail, next, Icon } = scheduleCopy(schedule, end, now);
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            className={cn('flex cursor-pointer items-center gap-1.5 hover:underline', tone)}
-            data-testid="pipeline-schedule-meta"
-            onClick={onOpen}
-            type="button"
-          />
-        }
-      >
-        <Icon className="size-3.5" />
-        {label}
+      <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
+        <Button
+          className={cn('gap-2', state === 'on-hold' && 'text-warning')}
+          data-state={state}
+          onClick={onOpen}
+          size="sm"
+          testId="pipeline-schedule-pill"
+          variant="outline"
+        >
+          <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
+          {/* The glance already reads as a schedule, so only a state that stops runs gets an icon. */}
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 border-l pl-2',
+              state === 'on-hold' ? 'border-warning/40' : 'text-muted-foreground'
+            )}
+          >
+            {next ? null : <Icon aria-hidden />}
+            {next ? untilLabel(next, now) : LINE_LABEL[state]}
+          </span>
+        </Button>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <ScheduleTooltipBody detail={detail} schedule={schedule} />
@@ -248,7 +247,7 @@ export const LINE_LABEL: Record<ScheduleState, string> = {
   'on-hold': 'On hold',
 };
 
-/** A list row's Schedule cell: the next run, or why there is none. */
+/** A list row's Schedule cell: the next run (or why there is none) over the schedule at a glance. */
 export function PipelineScheduleCell({
   schedule,
   end,
@@ -264,18 +263,27 @@ export function PipelineScheduleCell({
       <TooltipTrigger
         render={
           <button
-            className={cn(
-              'inline-flex cursor-default items-center gap-1.5 whitespace-nowrap text-body-sm',
-              state === 'on-hold' ? 'text-warning' : 'text-muted-foreground'
-            )}
+            className="flex cursor-default flex-col items-start gap-1 text-left"
             data-state={state}
             data-testid="pipeline-schedule-line"
             type="button"
           />
         }
       >
-        <Icon className="size-3.5" />
-        {next ? `Next ${untilLabel(next, now)}` : LINE_LABEL[state]}
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 whitespace-nowrap text-body-sm',
+            state === 'active' && 'text-foreground',
+            state === 'paused' && 'text-muted-foreground',
+            state === 'on-hold' && 'text-warning'
+          )}
+        >
+          <Icon aria-hidden className="size-3.5" />
+          {next ? `Next ${untilLabel(next, now)}` : LINE_LABEL[state]}
+        </span>
+        <span className="text-body-sm text-muted-foreground">
+          <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
+        </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <ScheduleTooltipBody detail={detail} schedule={schedule} />
@@ -357,6 +365,10 @@ function ScheduleReadiness({
   const ready = end?.status === 'finite';
   const rows = useMemo(() => (end ? readinessRows(configYaml, ready) : []), [configYaml, end, ready]);
   const copy = READINESS_COPY[end ? end.status : 'unparsed'];
+  // Ready needs no action, so its inputs fold away unless one carries a warning.
+  const hasCaveat = rows.some((row) => row.effective.caveat);
+  const [showInputs, setShowInputs] = useState(false);
+  const listed = !ready || hasCaveat || showInputs;
   return (
     <Alert
       icon={ready ? <CircleCheck /> : <CircleX />}
@@ -365,8 +377,23 @@ function ScheduleReadiness({
     >
       <AlertTitle>{copy.title}</AlertTitle>
       <AlertDescription className="flex flex-col gap-2">
-        <span>{copy.detail}</span>
-        {rows.length > 0 ? (
+        {ready && !hasCaveat ? (
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            {rows.length === 1 ? 'Its input stops by itself.' : `All ${rows.length} inputs stop by themselves.`}
+            <Button
+              aria-expanded={showInputs}
+              className="h-auto p-0"
+              onClick={() => setShowInputs((v) => !v)}
+              size="sm"
+              variant="link"
+            >
+              {showInputs ? 'Hide inputs' : 'Show inputs'}
+            </Button>
+          </span>
+        ) : (
+          <span>{copy.detail}</span>
+        )}
+        {listed && rows.length > 0 ? (
           <ul className="flex flex-col gap-1.5">
             {rows.map((row) => (
               <li className="flex items-start gap-2" key={row.id}>
@@ -795,20 +822,17 @@ function RunPreviewLines({ schedule, now, ready }: { schedule: PipelineSchedule;
     status = <span className="text-body-sm text-warning">On hold: no runs until the pipeline stops on its own.</span>;
   }
   const active = schedule.enabled && ready;
+  const runs = nextRuns(schedule, now, RUN_PREVIEW_COUNT);
   return (
     <>
       {status}
-      <ul
-        aria-label="Next runs"
-        className={cn('flex flex-col gap-0.5 text-body-sm', !active && 'text-muted-foreground')}
-      >
-        {nextRuns(schedule, now, RUN_PREVIEW_COUNT).map((run, i) => (
-          <li className="flex justify-between gap-3" key={run}>
-            <span>{formatRunTime(run, schedule.timeZone)}</span>
-            {i === 0 && active ? <span className="text-muted-foreground">{untilLabel(run, now)}</span> : null}
-          </li>
-        ))}
-      </ul>
+      <UpcomingRunTiles
+        dimmed={!active}
+        label="Next runs"
+        runs={runs}
+        soonLabel={runs[0] ? untilLabel(runs[0], now) : undefined}
+        timeZone={schedule.timeZone}
+      />
     </>
   );
 }
@@ -922,13 +946,16 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Schedule runs
-            <Badge tone="informative" variant="outline">
-              Preview
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger render={<span className="inline-flex" />}>
+                <Badge tone="informative" variant="outline">
+                  Preview
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">{SCHEDULE_PREVIEW_NOTE}</TooltipContent>
+            </Tooltip>
           </DialogTitle>
-          <DialogDescription>
-            Start this pipeline automatically. Each run ends when its inputs stop. {SCHEDULE_PREVIEW_NOTE}
-          </DialogDescription>
+          <DialogDescription>Start this pipeline automatically. Each run ends when its inputs stop.</DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-5">
           <ScheduleReadiness configYaml={configYaml} end={end} fixHint={fixHint} />
@@ -1014,40 +1041,44 @@ export function usePipelineScheduleControl({
   configYaml: string;
   fixHint: ReactNode;
   hasUnsavedChanges?: boolean;
-}): { button: ReactNode; meta: ReactNode; dialog: ReactNode; scheduled: boolean } {
+}): { button: ReactNode; dialog: ReactNode; scheduled: boolean } {
   const [open, setOpen] = useState(false);
   const schedule = usePipelineSchedule(pipelineId);
   if (!areSchedulesEnabled()) {
-    return { button: null, meta: null, dialog: null, scheduled: false };
+    return { button: null, dialog: null, scheduled: false };
   }
-  const button = pipelineId ? (
-    <Button
-      className="shrink-0"
-      icon={<CalendarClock />}
-      onClick={() => setOpen(true)}
-      size="sm"
-      testId="pipeline-schedule-button"
-      variant="outline"
-    >
-      Schedule
-    </Button>
-  ) : (
-    <Tooltip>
-      <TooltipTrigger render={<span className="shrink-0" />}>
-        <Button disabled icon={<CalendarClock />} size="sm" variant="outline">
-          Schedule
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Save the pipeline first, then set its schedule.</TooltipContent>
-    </Tooltip>
-  );
+  let button: ReactNode;
+  if (schedule) {
+    // With a schedule, the control is the schedule itself.
+    button = <SchedulePill configYaml={configYaml} onOpen={() => setOpen(true)} schedule={schedule} />;
+  } else if (pipelineId) {
+    button = (
+      <Button
+        className="shrink-0"
+        icon={<CalendarClock />}
+        onClick={() => setOpen(true)}
+        size="sm"
+        testId="pipeline-schedule-button"
+        variant="outline"
+      >
+        Schedule
+      </Button>
+    );
+  } else {
+    button = (
+      <Tooltip>
+        <TooltipTrigger render={<span className="shrink-0" />}>
+          <Button disabled icon={<CalendarClock />} size="sm" variant="outline">
+            Schedule
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Save the pipeline first, then set its schedule.</TooltipContent>
+      </Tooltip>
+    );
+  }
   return {
     button,
     scheduled: schedule !== undefined,
-    // Null without a schedule, so the meta row draws no separator for it.
-    meta: schedule ? (
-      <PipelineScheduleMeta configYaml={configYaml} onOpen={() => setOpen(true)} pipelineId={pipelineId} />
-    ) : null,
     dialog: pipelineId ? (
       <PipelineScheduleDialog
         configYaml={configYaml}

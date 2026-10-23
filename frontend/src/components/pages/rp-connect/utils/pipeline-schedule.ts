@@ -385,7 +385,8 @@ export function formatWallTime(time: string, locale?: string): string {
 const singular = (unit: string) => unit.replace(PLURAL_S, '');
 const plural = (n: number, unit: string) => `${n} ${n === 1 ? singular(unit) : unit}`;
 
-function listDays(days: number[]): string {
+/** Run days in a sentence, Monday first, e.g. "Monday, Thursday and Saturday". */
+export function describeWeekdays(days: number[]): string {
   const names = WEEKDAY_ORDER.filter((day) => days.includes(day)).map((day) => weekdayName(day));
   if (names.length <= 2) {
     return names.join(' and ');
@@ -404,7 +405,9 @@ export function describeSchedule(schedule: PipelineSchedule, locale?: string): s
     case 'weekdays':
       return `Weekdays at ${at}`;
     case 'weekly':
-      return schedule.weekdays.length === 7 ? `Every day at ${at}` : `Every ${listDays(schedule.weekdays)} at ${at}`;
+      return schedule.weekdays.length === 7
+        ? `Every day at ${at}`
+        : `Every ${describeWeekdays(schedule.weekdays)} at ${at}`;
     case 'monthly':
       return `Monthly on the ${ordinal(schedule.dayOfMonth)} at ${at}`;
     default:
@@ -412,10 +415,76 @@ export function describeSchedule(schedule: PipelineSchedule, locale?: string): s
         return `Every ${plural(schedule.every, schedule.unit)}`;
       }
       return schedule.every === 1
-        ? `Every ${singular(schedule.unit)} at ${at}`
-        : `Every ${plural(schedule.every, schedule.unit)} at ${at}`;
+        ? `Every ${singular(schedule.unit)}${intervalDay(schedule)} at ${at}`
+        : `Every ${plural(schedule.every, schedule.unit)}${intervalDay(schedule)} at ${at}`;
   }
 }
+
+// " on Monday" for an interval in weeks, which runs on its start date's weekday.
+function intervalDay(schedule: PipelineSchedule): string {
+  const start = schedule.unit === 'weeks' ? parseDate(schedule.startDate) : undefined;
+  return start ? ` on ${weekdayName(new Date(Date.UTC(start.year, start.month - 1, start.day)).getUTCDay())}` : '';
+}
+
+const WEEKDAYS_MON_FRI = [1, 2, 3, 4, 5];
+
+/** The weekdays a day-based cadence runs on, Monday first; undefined for hourly, monthly and intervals. */
+export function scheduleWeekdays(schedule: PipelineSchedule): number[] | undefined {
+  switch (schedule.cadence) {
+    case 'daily':
+      return [...WEEKDAY_ORDER];
+    case 'weekdays':
+      return WEEKDAYS_MON_FRI;
+    case 'weekly':
+      return WEEKDAY_ORDER.filter((day) => schedule.weekdays.includes(day));
+    default:
+      return;
+  }
+}
+
+/**
+ * The schedule at a glance, beside its weekday strip when it has one: just the time for a day-based
+ * cadence, otherwise the cadence, e.g. "Hourly at :15" or "1st of the month · 2:00 AM".
+ */
+export function scheduleGlanceText(schedule: PipelineSchedule, locale?: string): string {
+  const at = formatWallTime(schedule.time, locale);
+  switch (schedule.cadence) {
+    case 'hourly':
+      return `Hourly at :${schedule.time.slice(3)}`;
+    case 'monthly':
+      return `${ordinal(schedule.dayOfMonth)} of the month · ${at}`;
+    case 'custom': {
+      if (schedule.unit === 'minutes' || schedule.unit === 'hours') {
+        return `Every ${plural(schedule.every, schedule.unit)}`;
+      }
+      const every =
+        schedule.every === 1 ? `Every ${singular(schedule.unit)}` : `Every ${plural(schedule.every, schedule.unit)}`;
+      return `${every}${intervalDay(schedule)} · ${at}`;
+    }
+    default:
+      return at;
+  }
+}
+
+/** A run's start split for a day tile, in the schedule's zone: "Sat", "Oct 24", "2:00 AM", "PDT". */
+export function runTimeParts(
+  instant: number,
+  timeZone: string,
+  locale?: string
+): { weekday: string; date: string; time: string; zone: string } {
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { timeZone, weekday: 'short' }).format(instant),
+    date: new Intl.DateTimeFormat(locale, { timeZone, month: 'short', day: 'numeric' }).format(instant),
+    time: new Intl.DateTimeFormat(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(instant),
+    zone: zoneAbbreviation(instant, timeZone, locale),
+  };
+}
+
+/** A zone's short name at `instant`, e.g. "PDT" or "GMT+5:45". */
+export const zoneAbbreviation = (instant: number, timeZone: string, locale?: string): string =>
+  new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'short' })
+    .formatToParts(instant)
+    .find((p) => p.type === 'timeZoneName')?.value ?? '';
 
 export function describeRuntime(minutes: number): string {
   return minutes % 60 === 0 ? plural(minutes / 60, 'hours') : plural(minutes, 'minutes');

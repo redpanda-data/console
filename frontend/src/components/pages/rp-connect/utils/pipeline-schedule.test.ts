@@ -17,7 +17,10 @@ import {
   normalizeSchedule,
   type PipelineSchedule,
   pipelineScheduleSchema,
+  runTimeParts,
   runtimeOverlapsNextRun,
+  scheduleGlanceText,
+  scheduleWeekdays,
   shortestGapMinutes,
   zonedTimeToInstant,
 } from './pipeline-schedule';
@@ -214,7 +217,8 @@ describe('describeSchedule', () => {
     expect(say({ cadence: 'weekly', weekdays: [0, 1, 5] })).toBe('Every Monday, Friday and Sunday at 2:00 AM');
     expect(say({ cadence: 'monthly', dayOfMonth: 22 })).toBe('Monthly on the 22nd at 2:00 AM');
     expect(say({ cadence: 'hourly', time: '00:15' })).toBe('Every hour at :15');
-    expect(say({ cadence: 'custom', every: 2, unit: 'weeks' })).toBe('Every 2 weeks at 2:00 AM');
+    // An interval in weeks runs on its start date's weekday (2026-10-19 is a Monday).
+    expect(say({ cadence: 'custom', every: 2, unit: 'weeks' })).toBe('Every 2 weeks on Monday at 2:00 AM');
     expect(say({ cadence: 'custom', every: 1, unit: 'days' })).toBe('Every day at 2:00 AM');
     expect(say({ cadence: 'custom', every: 30, unit: 'minutes' })).toBe('Every 30 minutes');
   });
@@ -274,5 +278,37 @@ describe('overlap', () => {
     // Morocco moves its clocks for Ramadan only, which a January/July sample misses.
     const casablanca = schedule({ cadence: 'daily', timeZone: 'Africa/Casablanca' });
     expect(shortestGapMinutes(casablanca)).toBe(1380);
+  });
+});
+
+describe('at a glance', () => {
+  test('a day-based cadence gives its weekdays, Monday first, and its time', () => {
+    expect(scheduleWeekdays(schedule({ cadence: 'daily' }))).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(scheduleWeekdays(schedule({ cadence: 'weekdays' }))).toEqual([1, 2, 3, 4, 5]);
+    expect(scheduleWeekdays(schedule({ cadence: 'weekly', weekdays: [6, 1, 4] }))).toEqual([1, 4, 6]);
+    expect(scheduleGlanceText(schedule({ cadence: 'weekly', weekdays: [1], time: '14:30' }), 'en-US')).toBe('2:30 PM');
+  });
+
+  test('any other cadence names itself instead', () => {
+    expect(scheduleWeekdays(schedule({ cadence: 'hourly' }))).toBeUndefined();
+    expect(scheduleGlanceText(schedule({ cadence: 'hourly', time: '00:15' }), 'en-US')).toBe('Hourly at :15');
+    expect(scheduleGlanceText(schedule({ cadence: 'monthly', dayOfMonth: 1 }), 'en-US')).toBe(
+      '1st of the month · 2:00 AM'
+    );
+    expect(scheduleGlanceText(schedule({ cadence: 'custom', every: 30, unit: 'minutes' }), 'en-US')).toBe(
+      'Every 30 minutes'
+    );
+    expect(scheduleGlanceText(schedule({ cadence: 'custom', every: 2, unit: 'weeks' }), 'en-US')).toBe(
+      'Every 2 weeks on Monday · 2:00 AM'
+    );
+  });
+
+  test('a run splits into its day, date, time and zone, in the schedule’s zone', () => {
+    expect(runTimeParts(at('2026-10-24T09:00:00Z'), 'America/Vancouver', 'en-US')).toEqual({
+      weekday: 'Sat',
+      date: 'Oct 24',
+      time: '2:00 AM',
+      zone: 'PDT',
+    });
   });
 });
