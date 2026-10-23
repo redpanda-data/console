@@ -11,6 +11,7 @@
 
 import { useRouterState } from '@tanstack/react-router';
 import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -69,6 +70,7 @@ import {
   getOverrides as getFlagOverrides,
   setOverride as setFlagOverride,
 } from './feature-flag-overrides';
+import { sampleRuns } from './sample-runs';
 import {
   clearVisualDebuggers,
   getEnabledVisualDebuggers,
@@ -81,7 +83,6 @@ import { FEATURE_FLAGS } from '../constants';
 import { PIPELINE_END_RUNS, PipelineRunsCell } from '../pages/rp-connect/pipeline/pipeline-end-chip';
 import { RunOutcomeStrip } from '../pages/rp-connect/pipeline/run-history';
 import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
-import { sampleRuns } from '../pages/rp-connect/utils/pipeline-runs';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
 
@@ -226,86 +227,94 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
   const { fixture, group, end, lineCount, secrets } = entry;
 
   return (
-    <Collapsible className="border-b last:border-0" onOpenChange={setExpanded} open={expanded}>
-      <div className="flex items-start gap-2 px-3 py-1.5 hover:bg-muted/40">
-        <CollapsibleTrigger
-          aria-label={`${expanded ? 'Hide' : 'Show'} the YAML for ${fixture.name}`}
-          className="flex min-w-0 flex-1 cursor-pointer items-start gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {expanded ? (
-            <ChevronDown className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
-          )}
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate font-medium text-body-sm">{fixture.name}</span>
-              {fixture.tags
-                .filter((tag) => tag !== group)
-                .map((tag) => (
-                  <Badge className="shrink-0" key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
-                    {tag}
-                  </Badge>
-                ))}
+    <div className="border-b last:border-0">
+      <Collapsible onOpenChange={setExpanded} open={expanded}>
+        <div className="flex items-start gap-2 px-3 py-1.5 hover:bg-muted/40">
+          <CollapsibleTrigger
+            aria-label={`${expanded ? 'Hide' : 'Show'} the YAML for ${fixture.name}`}
+            render={
+              <button
+                className="flex min-w-0 flex-1 cursor-pointer items-start gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="button"
+              />
+            }
+          >
+            <TonedIcon className="mt-1 h-3 w-3 shrink-0" icon={expanded ? ChevronDown : ChevronRight} tone="muted" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-body-sm font-medium">{fixture.name}</span>
+                {fixture.tags
+                  .filter((tag) => tag !== group)
+                  .map((tag) => (
+                    <Badge className="shrink-0" key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
+                      {tag}
+                    </Badge>
+                  ))}
+              </span>
+              <span className={cn('text-body-sm text-muted-foreground', !expanded && 'line-clamp-2')}>
+                {fixture.description}
+                {secrets.length > 0 ? (
+                  <span className="whitespace-nowrap text-muted-foreground/70">
+                    {' · '}
+                    {pluralizeWithNumber(secrets.length, 'secret')}
+                  </span>
+                ) : null}
+              </span>
             </span>
-            <span className={cn('text-body-sm text-muted-foreground', !expanded && 'line-clamp-2')}>
-              {fixture.description}
-              {secrets.length > 0 ? (
-                <span className="whitespace-nowrap text-muted-foreground/70">
-                  {' · '}
-                  {pluralizeWithNumber(secrets.length, 'secret')}
-                </span>
-              ) : null}
-            </span>
+          </CollapsibleTrigger>
+          <span className="w-28 shrink-0 pt-0.5">
+            <PipelineRunsCell status={end} />
           </span>
-        </CollapsibleTrigger>
-        <span className="w-28 shrink-0 pt-0.5">
-          <PipelineRunsCell status={end} />
-        </span>
-        <CopyButton
-          aria-label={`Copy the YAML for ${fixture.name}`}
-          className="shrink-0"
-          content={fixture.yaml}
-          size="icon-xs"
-          title="Copy YAML"
-          variant="ghost"
-        />
-      </div>
-      <CollapsibleContent>
-        <div className="flex flex-col gap-1.5 pr-3 pb-2.5 pl-7.5">
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body-sm text-muted-foreground">
-            {pluralizeWithNumber(lineCount, 'line')} ·
-            {secrets.length > 0 ? (
-              <>
-                {' '}
-                needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
-                {secrets.map((name) => (
-                  <InlineCode className="py-0 font-medium text-body-sm leading-normal" key={name}>
-                    {name}
-                  </InlineCode>
-                ))}
-              </>
-            ) : (
-              ' needs no secrets'
-            )}
-          </div>
-          <SimpleCodeBlock
-            allowCopy={false}
-            className="my-0"
-            code={fixture.yaml}
-            language="yaml"
-            maxHeight="sm"
-            size="sm"
-            width="full"
-          />
+          <ElementTooltip content="Copy YAML">
+            <CopyButton
+              aria-label={`Copy the YAML for ${fixture.name}`}
+              className="shrink-0"
+              content={fixture.yaml}
+              size="icon-xs"
+              variant="ghost"
+            />
+          </ElementTooltip>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+        <CollapsibleContent>
+          <div className="flex flex-col gap-1.5 pr-3 pb-2.5 pl-7.5">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body-sm text-muted-foreground">
+              {pluralizeWithNumber(lineCount, 'line')} ·
+              {secrets.length > 0 ? (
+                <>
+                  {' '}
+                  needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
+                  {/* InlineCode's chip at the row's text size and line height */}
+                  {secrets.map((name) => (
+                    <code
+                      className="relative rounded bg-surface-subtle px-[0.3rem] font-mono text-body-sm leading-normal font-medium"
+                      key={name}
+                    >
+                      {name}
+                    </code>
+                  ))}
+                </>
+              ) : (
+                ' needs no secrets'
+              )}
+            </div>
+            <SimpleCodeBlock
+              allowCopy={false}
+              className="my-0"
+              code={fixture.yaml}
+              language="yaml"
+              maxHeight="sm"
+              size="sm"
+              width="full"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   );
 }
 
 // The pipeline a pipeline page shows, to fill the run history tools in with.
-const PIPELINE_PATH_RE = /\/rp-connect\/([^/]+)/;
+const PIPELINE_PATH_RE = /\/rp-connect\/(?!(?:create|secrets)(?:\/|$))([^/]+)/;
 
 function RunHistoryPanel() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -321,13 +330,15 @@ function RunHistoryPanel() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="debug-run-history-pipeline">Pipeline ID</Label>
-        <Input
-          className="max-w-sm font-mono"
-          id="debug-run-history-pipeline"
-          onChange={(e) => setPipelineId(e.target.value)}
-          placeholder="e.g. d4f2…"
-          value={pipelineId}
-        />
+        <div className="font-mono">
+          <Input
+            className="max-w-sm"
+            id="debug-run-history-pipeline"
+            onChange={(e) => setPipelineId(e.target.value)}
+            placeholder="e.g. d4f2…"
+            value={pipelineId}
+          />
+        </div>
         <span className="text-body-sm text-muted-foreground">
           {fromPage ? 'From the pipeline you’re viewing. ' : null}
           History shows on the Monitor tab of a pipeline that stops on its own, or has a schedule.
@@ -419,12 +430,12 @@ function ConnectConfigsPanel() {
           size="sm"
           value={[shown]}
         >
-          <ToggleGroupItem className="text-body-sm" value="all">
-            All
+          <ToggleGroupItem value="all">
+            <span className="text-body-sm">All</span>
           </ToggleGroupItem>
           {FIXTURE_GROUPS.map((g) => (
-            <ToggleGroupItem className="text-body-sm" key={g.tag} value={g.tag}>
-              {g.chip}
+            <ToggleGroupItem key={g.tag} value={g.tag}>
+              <span className="text-body-sm">{g.chip}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -435,7 +446,7 @@ function ConnectConfigsPanel() {
         sections.map((section) => (
           <section aria-label={section.label} className="overflow-hidden rounded-md border" key={section.tag}>
             <div className="flex items-baseline gap-2 border-b bg-muted/30 px-3 py-1.5">
-              <span className="shrink-0 font-medium text-body-sm">{section.label}</span>
+              <span className="shrink-0 text-body-sm font-medium">{section.label}</span>
               <Badge className="shrink-0" size="sm" tone="default" variant="outline">
                 {section.entries.length}
               </Badge>

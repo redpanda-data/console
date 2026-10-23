@@ -104,10 +104,12 @@ function usePipelineRunActions(
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   const handleStart = useCallback(() => {
+    // A run starts when it's asked for, so the page's data from before then can't end it.
+    const startedAt = Date.now();
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
         if (recordsRuns) {
-          startManualRun(pipelineId);
+          startManualRun(pipelineId, { now: startedAt });
         }
         toast.success(scheduled ? 'Run starting' : 'Pipeline starting');
       },
@@ -185,6 +187,46 @@ function PipelineStopControl({
   );
 }
 
+// Start, or Run now with a schedule; while the pipeline settles, disabled with the reason.
+function PipelineStartControl({
+  scheduled,
+  settling,
+  isPending,
+  onStart,
+}: {
+  scheduled: boolean;
+  settling: boolean;
+  isPending: boolean;
+  onStart: () => void;
+}) {
+  const label = scheduled ? RUN_NOW_LABEL : START_LABEL;
+  if (settling) {
+    return (
+      // A disabled button takes no pointer events, so the reason hangs on a wrapper.
+      <ElementTooltip content="Wait for the pipeline to finish stopping.">
+        <span className="inline-flex cursor-not-allowed">
+          <Button disabled icon={<Play />} testId="pipeline-start">
+            {label}
+          </Button>
+        </span>
+      </ElementTooltip>
+    );
+  }
+  const button = (
+    <Button disabled={isPending} icon={isPending ? <Spinner /> : <Play />} onClick={onStart} testId="pipeline-start">
+      {label}
+    </Button>
+  );
+  return scheduled ? (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex" />}>{button}</TooltipTrigger>
+      <TooltipContent>{RUN_NOW_HINT}</TooltipContent>
+    </Tooltip>
+  ) : (
+    button
+  );
+}
+
 export function PipelineRunButton({
   pipelineId,
   pipelineState,
@@ -195,7 +237,7 @@ export function PipelineRunButton({
   pipelineState?: Pipeline_State;
   /** With a schedule, starting it is a single run. */
   scheduled?: boolean;
-  /** Starting it records a run: it stops on its own, or has a schedule. */
+  /** Starting it records a run: it stops on its own. */
   recordsRuns?: boolean;
 }) {
   const action = runActionForState(pipelineState);
@@ -206,38 +248,14 @@ export function PipelineRunButton({
     return null;
   }
 
-  const startLabel = scheduled ? RUN_NOW_LABEL : START_LABEL;
-  if (action === 'start') {
-    const button = (
-      <Button
-        disabled={run.isStartPending}
-        icon={run.isStartPending ? <Spinner /> : <Play />}
-        onClick={run.handleStart}
-        testId="pipeline-start"
-      >
-        {startLabel}
-      </Button>
-    );
-    return scheduled ? (
-      <Tooltip>
-        <TooltipTrigger render={<span className="inline-flex" />}>{button}</TooltipTrigger>
-        <TooltipContent>{RUN_NOW_HINT}</TooltipContent>
-      </Tooltip>
-    ) : (
-      button
-    );
-  }
-
-  if (action === 'settling') {
+  if (action === 'start' || action === 'settling') {
     return (
-      // A disabled button takes no pointer events, so the reason hangs on a wrapper.
-      <ElementTooltip content="Wait for the pipeline to finish stopping.">
-        <span className="inline-flex cursor-not-allowed">
-          <Button disabled icon={<Play />} testId="pipeline-start">
-            {startLabel}
-          </Button>
-        </span>
-      </ElementTooltip>
+      <PipelineStartControl
+        isPending={run.isStartPending}
+        onStart={run.handleStart}
+        scheduled={scheduled}
+        settling={action === 'settling'}
+      />
     );
   }
 

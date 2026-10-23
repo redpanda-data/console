@@ -57,7 +57,6 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
-import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { z } from 'zod';
 import { useShallow } from 'zustand/react/shallow';
@@ -96,6 +95,7 @@ import {
 } from './use-pipeline-editor-store';
 import { usePipelineLint } from './use-pipeline-lint';
 import { usePipelineSave } from './use-pipeline-save';
+import { useRunObserver, useWatchingRun } from './use-run-observer';
 import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
 import { takeStartLintHints } from './use-start-draft';
@@ -884,16 +884,21 @@ function useDraftSupport(mode: PipelineMode, pipeline: Pipeline | undefined) {
 
 /** The loaded pipeline, the component catalog and config schema, and what saving it may do. */
 function usePipelineServerData(mode: PipelineMode, pipelineId: string | undefined) {
-  // A run this browser started is watched until it ends; the query otherwise polls only while the
-  // pipeline starts or stops.
-  const watchingRun = useRunHistoryStore((s) =>
-    pipelineId ? runsOf(s.runs, pipelineId).some((run) => run.outcome === 'running' && !run.simulated) : false
-  );
-  const { data: pipelineResponse } = useGetPipelineQuery(
+  // A run this browser started is watched until it ends, for up to an hour; the query otherwise polls
+  // only while the pipeline starts or stops.
+  const watchingRun = useWatchingRun(pipelineId);
+  const { data: pipelineResponse, dataUpdatedAt } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId, refetchInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined }
+    {
+      enabled: mode !== 'create' && !!pipelineId,
+      steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+      // A hidden tab still sees the run end, within the browser's timer throttling.
+      refetchIntervalInBackground: watchingRun,
+    }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
+  // Ends a run this browser started once the pipeline is seen to stop, in either mode.
+  useRunObserver(pipeline?.id, pipeline?.state, dataUpdatedAt);
   const { components, componentList } = useEnrichedComponents();
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {

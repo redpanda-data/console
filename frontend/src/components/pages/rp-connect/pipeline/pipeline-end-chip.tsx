@@ -10,13 +10,15 @@
  */
 
 import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertTriangle, Box, ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { type ComponentType, useState } from 'react';
 
-import { claimEscape, RichText, StopKindIcon, stopSummary } from './stop-condition';
+import { RichText, StopKindIcon } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type {
   InputEndBehavior,
@@ -24,7 +26,8 @@ import type {
   PipelineEndStatus,
   PipelineEndSummary,
 } from '../utils/input-end-behavior';
-import type { PipelineFlowNode, StopSlot } from '../utils/pipeline-flow-parser';
+import type { InputEndRow } from '../utils/pipeline-flow-parser';
+import { stopSummary } from '../utils/read-until';
 
 const STATUS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; detail: string }> = {
   finite: {
@@ -37,8 +40,8 @@ const STATUS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; d
     detail: 'Add a stop condition so the pipeline can finish by itself.',
   },
   invalid: {
-    label: 'Stop condition incomplete',
-    detail: 'Fix it so the pipeline can start and finish.',
+    label: 'Needs fixing',
+    detail: 'An input is set up in a way Connect can’t start or finish.',
   },
   unknown: {
     label: 'May not stop on its own',
@@ -68,34 +71,6 @@ const ROW_TONE: Record<InputEndKind, string> = {
   unknown: 'text-muted-foreground',
 };
 
-export type InputEndRow = {
-  id: string;
-  name: string;
-  labelText?: string;
-  /** Broker/sequence members are indented under their group. */
-  nested: boolean;
-  slot: StopSlot;
-  effective: InputEndBehavior;
-};
-
-/** The pipeline's inputs that can take a stop condition, in canvas order. */
-export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
-  const rows: InputEndRow[] = [];
-  for (const node of nodes) {
-    if (node.section === 'input' && node.stopSlot && node.endBehavior) {
-      rows.push({
-        id: node.id,
-        name: node.label,
-        labelText: node.labelText,
-        nested: node.parentId !== 'section-input',
-        slot: node.stopSlot,
-        effective: node.endBehavior,
-      });
-    }
-  }
-  return rows;
-}
-
 /**
  * Whether the whole pipeline ends by itself (its top-level input does), as a canvas chip that opens a
  * per-input breakdown; picking an input selects it on the canvas.
@@ -123,7 +98,7 @@ export function PipelineEndChip({
           <button
             aria-label={`How this pipeline ends: ${copy.label}`}
             className={cn(
-              'flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 font-medium text-body-sm shadow-sm backdrop-blur-sm transition-colors hover:bg-muted',
+              'flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors hover:bg-muted',
               CHIP_TONE[status]
             )}
             data-status={status}
@@ -132,13 +107,18 @@ export function PipelineEndChip({
           />
         }
       >
-        <StopKindIcon className={cn('size-3.5', status === 'finite' && 'fill-current')} kind={STATUS_KIND[status]} />
+        {/* The fill sits on a wrapper; the glyph draws in the chip's colour. */}
+        <span className={cn('inline-flex', status === 'finite' && '[&_svg]:fill-current')}>
+          <StopKindIcon className="size-3.5" kind={STATUS_KIND[status]} />
+        </span>
         {copy.label}
-        <ChevronDown className={cn('size-3.5 opacity-60 transition-transform', open && 'rotate-180')} />
+        <span className={cn('inline-flex opacity-60 transition-transform', open && 'rotate-180')}>
+          <ChevronDown className="size-3.5" />
+        </span>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0" onKeyDown={claimEscape} side="bottom">
-        <div className="flex flex-col gap-1 border-border border-b px-4 py-3">
-          <span className="font-semibold text-body">How this pipeline ends</span>
+      <PopoverContent align="start" className="w-80" side="bottom">
+        <div className="flex flex-col gap-1 border-b border-border pb-3">
+          <span className="text-body font-semibold">How this pipeline ends</span>
           <span className="text-body-sm text-muted-foreground">
             {status === 'finite' || !behavior ? copy.detail : <RichText text={`${behavior.reason} ${copy.detail}`} />}
           </span>
@@ -151,47 +131,52 @@ export function PipelineEndChip({
             </span>
           ) : null}
         </div>
-        <ul aria-label="Inputs" className="flex max-h-72 flex-col overflow-y-auto p-1">
+        <ul aria-label="Inputs" className="-mx-2 flex max-h-72 flex-col overflow-y-auto pt-2">
           {rows.map((row) => {
             const { short, long } = stopSummary(row.slot, row.effective);
             return (
               <li key={row.id}>
-                <button
-                  className={cn(
-                    'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
-                    row.nested && 'pl-6'
-                  )}
-                  onClick={() => {
-                    setOpen(false);
-                    onSelectInput(row.id);
-                  }}
-                  title={long}
-                  type="button"
-                >
-                  <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate font-medium text-body-sm">{row.labelText ?? row.name}</span>
-                    {row.labelText ? (
-                      <span className="truncate font-mono text-2xs text-muted-foreground">{row.name}</span>
-                    ) : null}
-                  </span>
-                  <span
+                <ElementTooltip content={long}>
+                  <button
                     className={cn(
-                      'flex shrink-0 items-center gap-1 font-medium text-body-sm',
-                      ROW_TONE[row.effective.kind]
+                      'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
+                      row.nested && 'pl-6'
                     )}
+                    onClick={() => {
+                      setOpen(false);
+                      onSelectInput(row.id);
+                    }}
+                    type="button"
                   >
-                    <StopKindIcon
-                      className={cn('size-3.5', row.effective.kind === 'condition' && 'fill-current')}
-                      kind={row.effective.kind}
-                    />
-                    {short}
-                    {row.effective.caveat ? (
-                      <AlertTriangle aria-label="Might keep running" className="size-3.5 text-warning" />
-                    ) : null}
-                  </span>
-                  <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
-                </button>
+                    <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate text-body-sm font-medium">{row.labelText ?? row.name}</span>
+                      {row.labelText ? (
+                        <span className="truncate font-mono text-2xs text-muted-foreground">{row.name}</span>
+                      ) : null}
+                    </span>
+                    <span
+                      className={cn(
+                        'flex shrink-0 items-center gap-1 text-body-sm font-medium',
+                        ROW_TONE[row.effective.kind]
+                      )}
+                    >
+                      <span className={cn('inline-flex', row.effective.kind === 'condition' && '[&_svg]:fill-current')}>
+                        <StopKindIcon className="size-3.5" kind={row.effective.kind} />
+                      </span>
+                      {short}
+                      {row.effective.caveat ? (
+                        <TonedIcon
+                          aria-label="Might keep running"
+                          className="size-3.5"
+                          icon={AlertTriangle}
+                          tone="warning"
+                        />
+                      ) : null}
+                    </span>
+                    <TonedIcon className="size-3.5 shrink-0" icon={ChevronRight} tone="muted" />
+                  </button>
+                </ElementTooltip>
               </li>
             );
           })}
@@ -210,15 +195,21 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
   const reason = summary.behavior?.reason;
   return (
     <Tooltip>
-      <TooltipTrigger render={<span className="flex items-center gap-1.5" data-testid="pipeline-end-meta" />}>
-        <StopKindIcon
+      {/* A button, so the reason is in reach of the keyboard too. */}
+      <TooltipTrigger
+        render={
+          <button className="flex cursor-default items-center gap-1.5" data-testid="pipeline-end-meta" type="button" />
+        }
+      >
+        <span
           className={cn(
-            'size-3.5',
-            summary.status === 'finite' && 'fill-current text-success',
+            'inline-flex',
+            summary.status === 'finite' && 'text-success [&_svg]:fill-current',
             summary.status === 'invalid' && 'text-destructive'
           )}
-          kind={STATUS_KIND[summary.status]}
-        />
+        >
+          <StopKindIcon className="size-3.5" kind={STATUS_KIND[summary.status]} />
+        </span>
         {copy.label}
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
@@ -237,22 +228,32 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
 const RUNS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; tone: string }> = {
   finite: { label: 'Until done', tone: 'text-success' },
   continuous: { label: 'Continuously', tone: 'text-muted-foreground' },
-  invalid: { label: 'Stop incomplete', tone: 'text-destructive' },
-  unknown: { label: 'Unknown', tone: 'text-muted-foreground' },
+  invalid: { label: 'Needs fixing', tone: 'text-destructive' },
+  unknown: { label: 'May not stop', tone: 'text-muted-foreground' },
 };
 
-const runsIcon = (status: Exclude<PipelineEndStatus, 'none'>) => {
-  const RunsIcon = ({ className }: { className?: string }) => (
-    <StopKindIcon
-      className={cn(className, RUNS_COPY[status].tone, status === 'finite' && 'fill-current')}
-      kind={STATUS_KIND[status]}
-    />
-  );
-  return RunsIcon;
+type RunsStatus = Exclude<PipelineEndStatus, 'none'>;
+type OptionIconProps = { className?: string };
+
+// The facet list's sizing goes on the wrapper, where the status's tone wins over its icon colour.
+const RunsIcon = ({ status, className }: OptionIconProps & { status: RunsStatus }) => (
+  <span className={cn('inline-flex', className, RUNS_COPY[status].tone, status === 'finite' && '[&_svg]:fill-current')}>
+    <StopKindIcon className="size-full" kind={STATUS_KIND[status]} />
+  </span>
+);
+
+// A stable component per option, so the facet list doesn't remount its icons.
+const RUNS_ICON: Record<RunsStatus, ComponentType<OptionIconProps>> = {
+  finite: ({ className }) => <RunsIcon className={className} status="finite" />,
+  continuous: ({ className }) => <RunsIcon className={className} status="continuous" />,
+  invalid: ({ className }) => <RunsIcon className={className} status="invalid" />,
+  unknown: ({ className }) => <RunsIcon className={className} status="unknown" />,
 };
 
-const NoInputIcon = ({ className }: { className?: string }) => (
-  <Box className={cn(className, 'text-muted-foreground')} />
+const NoInputIcon = ({ className }: OptionIconProps) => (
+  <span className={cn('inline-flex', className, 'text-muted-foreground')}>
+    <Box className="size-full" />
+  </span>
 );
 
 /** The list's "Runs" filter options, in the order they read; `none` is a config with no input to judge. */
@@ -260,7 +261,7 @@ export const PIPELINE_END_RUNS = [
   ...(['finite', 'continuous', 'invalid', 'unknown'] as const).map((status) => ({
     value: status as PipelineEndStatus,
     label: RUNS_COPY[status].label,
-    icon: runsIcon(status),
+    icon: RUNS_ICON[status],
   })),
   { value: 'none' as PipelineEndStatus, label: 'No input', icon: NoInputIcon },
 ];
@@ -277,13 +278,15 @@ export function PipelineRunsCell({ status }: { status: PipelineEndStatus }) {
       <TooltipTrigger
         render={
           <button
-            className={cn('inline-flex cursor-default items-center gap-1.5 whitespace-nowrap text-body-sm', tone)}
+            className={cn('inline-flex cursor-default items-center gap-1.5 text-body-sm whitespace-nowrap', tone)}
             data-status={status}
             type="button"
           />
         }
       >
-        <StopKindIcon className={cn('size-3.5', status === 'finite' && 'fill-current')} kind={STATUS_KIND[status]} />
+        <span className={cn('inline-flex', status === 'finite' && '[&_svg]:fill-current')}>
+          <StopKindIcon className="size-3.5" kind={STATUS_KIND[status]} />
+        </span>
         {label}
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">

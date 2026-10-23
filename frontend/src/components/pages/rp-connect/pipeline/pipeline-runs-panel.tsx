@@ -25,9 +25,9 @@ import { CalendarClock, History } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePipelineRuns } from 'state/rpcn-run-history-preview';
-import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
-import { areSchedulesEnabled, PipelineScheduleDialog, untilLabel, useClock } from './pipeline-schedule';
+import { PipelineScheduleDialog, useClock } from './pipeline-schedule';
 import { RunHistoryTable, RunOutcomeStrip } from './run-history';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
@@ -39,6 +39,7 @@ import {
   nextRuns,
   type PipelineSchedule,
   scheduleState,
+  untilLabel,
 } from '../utils/pipeline-schedule';
 
 const UPCOMING_COUNT = 5;
@@ -60,7 +61,7 @@ export function PipelineRunsPanel({ pipelineId, configYaml }: { pipelineId: stri
   return <RunsPanelContent configYaml={configYaml} end={end} pipelineId={pipelineId} schedule={schedule} />;
 }
 
-// The dashed placeholder the lane's other sections use while they have nothing to show.
+// The placeholder the lane's other sections use while they have nothing to show.
 const RunsPlaceholder = ({
   title,
   description,
@@ -72,11 +73,11 @@ const RunsPlaceholder = ({
   icon?: ReactNode;
   action?: ReactNode;
 }) => (
-  <Empty className="gap-2 rounded-md border border-dashed p-4 md:p-6">
-    <EmptyHeader className="gap-1">
+  <Empty>
+    <EmptyHeader>
       {icon ? <EmptyMedia variant="icon">{icon}</EmptyMedia> : null}
-      <EmptyTitle className="text-body">{title}</EmptyTitle>
-      <EmptyDescription className="text-body">{description}</EmptyDescription>
+      <EmptyTitle>{title}</EmptyTitle>
+      <EmptyDescription>{description}</EmptyDescription>
     </EmptyHeader>
     {action ? <EmptyContent>{action}</EmptyContent> : null}
   </Empty>
@@ -144,7 +145,7 @@ function ScheduledRuns({
             </Button>
           ) : null
         }
-        description="No runs until the schedule is turned back on."
+        description="No runs until the schedule is turned on."
         title="Paused"
       />
     );
@@ -201,17 +202,17 @@ function RunsPanelContent({
         </div>
         {schedule ? (
           <div className="flex flex-col gap-2">
-            <h4 className="font-medium text-body-sm text-muted-foreground">Scheduled runs</h4>
+            <h4 className="text-body-sm font-medium text-muted-foreground">Scheduled runs</h4>
             <ScheduledRuns end={end} now={now} pipelineId={pipelineId} schedule={schedule} />
           </div>
         ) : null}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <h4 className="font-medium text-body-sm text-muted-foreground">History</h4>
+            <h4 className="text-body-sm font-medium text-muted-foreground">History</h4>
             {runs.length > 0 ? <RunOutcomeStrip runs={runs} /> : null}
           </div>
           {runs.length > 0 ? (
-            <RunHistoryTable now={now} runs={runs} timeZone={schedule?.timeZone ?? browserTimeZone()} />
+            <RunHistoryTable now={now} runs={runs} />
           ) : (
             <RunsPlaceholder
               description="Each run you start is listed with when it started, how long it took and how it ended."
@@ -222,15 +223,14 @@ function RunsPanelContent({
         </div>
       </section>
       <Separator className="my-8" variant="subtle" />
-      {schedule ? (
-        <PipelineScheduleDialog
-          configYaml={configYaml}
-          fixHint="Edit the pipeline to give each input a stop condition."
-          onOpenChange={setOpen}
-          open={open}
-          pipelineId={pipelineId}
-        />
-      ) : null}
+      {/* Outside the schedule's gate, so removing it still animates the dialog out. */}
+      <PipelineScheduleDialog
+        configYaml={configYaml}
+        fixHint="Edit the pipeline to give each input a stop condition."
+        onOpenChange={setOpen}
+        open={open}
+        pipelineId={pipelineId}
+      />
     </>
   );
 }

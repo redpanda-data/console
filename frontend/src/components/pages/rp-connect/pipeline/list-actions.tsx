@@ -49,27 +49,32 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { describeSchedule } from '../utils/pipeline-schedule';
 
 export type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'];
 
-export type StartMutate = ReturnType<typeof useStartPipelineMutation>['mutate'];
+// Async: rows share one mutation, and `mutate` drops the callbacks of a call another replaces.
+export type StartMutate = ReturnType<typeof useStartPipelineMutation>['mutateAsync'];
 
-export type StopMutate = ReturnType<typeof useStopPipelineMutation>['mutate'];
+export type StopMutate = ReturnType<typeof useStopPipelineMutation>['mutateAsync'];
+
+// A schedule's one extra run, for a pipeline whose runs end.
+const runsNow = (pipeline: PipelineRow) => pipeline.schedule !== undefined && pipeline.end === 'finite';
 
 const startPipeline = (startMutation: StartMutate, pipeline: PipelineRow) => {
   const startRequest = create(StartPipelineRequestSchema, {
     request: { id: pipeline.id },
   });
-  startMutation(startRequest, {
-    onSuccess: () => {
-      // Runs are recorded for a pipeline that stops on its own, or has a schedule.
-      if (pipeline.end === 'finite' || pipeline.schedule) {
-        useRunHistoryStore.getState().startManualRun(pipeline.id);
+  const startedAt = Date.now();
+  startMutation(startRequest)
+    .then(() => {
+      if (startRecordsRun(pipeline.end)) {
+        useRunHistoryStore.getState().startManualRun(pipeline.id, { now: startedAt });
       }
-      toast.success(pipeline.schedule ? 'Run starting' : 'Pipeline starting');
-    },
-    onError: (err) => {
+      toast.success(runsNow(pipeline) ? 'Run starting' : 'Pipeline starting');
+    })
+    .catch((err) => {
       toast.error(
         formatToastErrorMessageGRPC({
           error: ConnectError.from(err),
@@ -77,20 +82,19 @@ const startPipeline = (startMutation: StartMutate, pipeline: PipelineRow) => {
           entity: 'pipeline',
         })
       );
-    },
-  });
+    });
 };
 
 const stopPipeline = (stopMutation: StopMutate, id: string) => {
   const stopRequest = create(StopPipelineRequestSchema, {
     request: { id },
   });
-  stopMutation(stopRequest, {
-    onSuccess: () => {
+  stopMutation(stopRequest)
+    .then(() => {
       useRunHistoryStore.getState().requestStop(id);
       toast.success('Pipeline stopping');
-    },
-    onError: (err) => {
+    })
+    .catch((err) => {
       toast.error(
         formatToastErrorMessageGRPC({
           error: ConnectError.from(err),
@@ -98,8 +102,7 @@ const stopPipeline = (stopMutation: StopMutate, id: string) => {
           entity: 'pipeline',
         })
       );
-    },
-  });
+    });
 };
 
 const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: boolean) => {
@@ -110,6 +113,8 @@ const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: bo
   deleteMutation(deleteRequest, {
     onSuccess: () => {
       rpcnEditorAutosave.clear(autosaveTargetKey(id));
+      useSchedulePreviewStore.getState().removeSchedule(id);
+      useRunHistoryStore.getState().replaceRuns(id, []);
       toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
     },
     onError: (err) => {
@@ -161,11 +166,9 @@ function ScheduleMenuItems({
         {schedule ? 'Edit schedule' : 'Add schedule'}
       </DropdownMenuItem>
       {schedule?.enabled ? <DropdownMenuItem onClick={() => setEnabled(false)}>Pause schedule</DropdownMenuItem> : null}
-      {schedule && !schedule.enabled ? (
-        // Back on for a pipeline that doesn't stop on its own, it would only sit on hold.
-        <DropdownMenuItem disabled={pipeline.end !== 'finite'} onClick={() => setEnabled(true)}>
-          Resume schedule
-        </DropdownMenuItem>
+      {/* Back on for a pipeline that doesn't stop on its own, it would only sit on hold; Edit says why. */}
+      {schedule && !schedule.enabled && pipeline.end === 'finite' ? (
+        <DropdownMenuItem onClick={() => setEnabled(true)}>Resume schedule</DropdownMenuItem>
       ) : null}
     </>
   );
@@ -233,7 +236,7 @@ export const ActionsCell = memo(
             {/* With a schedule, starting it is a single run; the schedule carries on. */}
             {canStart ? (
               <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline)}>
-                {pipeline.schedule ? 'Run now' : 'Start'}
+                {runsNow(pipeline) ? 'Run now' : 'Start'}
               </DropdownMenuItem>
             ) : null}
             {canStop ? (

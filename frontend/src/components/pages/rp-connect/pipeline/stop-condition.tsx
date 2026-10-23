@@ -10,6 +10,8 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
@@ -39,112 +41,26 @@ import {
 } from 'lucide-react';
 import { type KeyboardEvent, type ReactElement, type ReactNode, type SyntheticEvent, useId, useState } from 'react';
 import { type Control, useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
+import { toast } from 'sonner';
 
+import {
+  backstopHint,
+  DEFAULT_IDLE,
+  draftFromStopForm,
+  offersRestart,
+  type StopFormState,
+  type StopMode,
+  stopFormSchema,
+  stopFormState,
+} from './stop-form';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import type { InputEndBehavior, InputEndKind } from '../utils/input-end-behavior';
+import { FLOW_STOP_ROW_H } from '../utils/pipeline-flow-layout';
 import type { StopSlot } from '../utils/pipeline-flow-parser';
-import {
-  describeStopCondition,
-  isValidIdleTimeout,
-  parseMessageLimit,
-  type StopConditionDraft,
-  stopShortLabel,
-} from '../utils/read-until';
-import { isStopConditionSet, READ_UNTIL, type StopCondition } from '../utils/yaml';
+import { CODE_SPAN_RE, type StopConditionDraft, stopRowText, stopSummary, withCaveat } from '../utils/read-until';
+import { isStopConditionSet, READ_UNTIL } from '../utils/yaml';
 
-// ── Form model ─────────────────────────────────────────────────────────────
-
-const STOP_MODES = ['none', 'count', 'idle', 'check'] as const;
-
-export type StopMode = (typeof STOP_MODES)[number];
-
-const DEFAULT_LIMIT = '1000';
-const DEFAULT_IDLE = '30s';
 const IDLE_PRESETS = ['10s', '30s', '1m', '5m'] as const;
-const POSITIVE_INT_RE = /^\d+$/;
-
-const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }): boolean =>
-  s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
-
-/** The editor's form. Each field is checked only when the chosen mode reads it. */
-export const stopFormSchema = z
-  .object({
-    mode: z.enum(STOP_MODES),
-    limit: z.string(),
-    idle: z.string(),
-    check: z.string(),
-    /** With a count/check: also stop once idle. */
-    alsoIdle: z.boolean(),
-    restart: z.boolean(),
-  })
-  .superRefine((s, ctx) => {
-    const issue = (path: 'limit' | 'idle' | 'check', message: string) =>
-      ctx.addIssue({ code: 'custom', path: [path], message });
-    const limit = s.limit.trim();
-    if (
-      s.mode === 'count' &&
-      !(POSITIVE_INT_RE.test(limit) && Number(limit) > 0 && Number.isSafeInteger(Number(limit)))
-    ) {
-      issue('limit', 'Enter a whole number greater than 0.');
-    }
-    if (s.mode === 'check' && s.check.trim() === '') {
-      issue('check', 'Enter a Bloblang condition.');
-    }
-    if (usesIdle(s) && !isValidIdleTimeout(s.idle)) {
-      issue('idle', 'Enter a duration such as 30s, 5m or 1h.');
-    }
-  });
-
-export type StopFormState = z.infer<typeof stopFormSchema>;
-
-/** The editor's starting state for a slot's current condition. */
-export function stopFormState(condition?: StopCondition): StopFormState {
-  const state: StopFormState = {
-    mode: 'none',
-    limit: DEFAULT_LIMIT,
-    idle: condition?.idleTimeout ?? DEFAULT_IDLE,
-    check: '',
-    alsoIdle: false,
-    restart: Boolean(condition?.restartInput),
-  };
-  if (!isStopConditionSet(condition)) {
-    return state;
-  }
-  const limit = parseMessageLimit(condition.check);
-  if (limit) {
-    return { ...state, mode: 'count', limit: String(limit.limit), alsoIdle: Boolean(condition.idleTimeout) };
-  }
-  if (condition.check) {
-    return { ...state, mode: 'check', check: condition.check, alsoIdle: Boolean(condition.idleTimeout) };
-  }
-  return { ...state, mode: 'idle' };
-}
-
-/**
- * Whether the form offers `restart_input`: with a count or check, for an input that can finish before
- * it's met (with an idle timeout alone, a re-read input never goes idle). One the YAML already sets
- * stays on offer, so applying never drops it unseen.
- */
-export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition): boolean {
-  return Boolean(condition?.restartInput) || ((mode === 'count' || mode === 'check') && own.kind !== 'continuous');
-}
-
-/** What the form asks for; null keeps the input running with no stop condition. */
-export function draftFromStopForm(s: StopFormState, restartOffered = true): StopConditionDraft | null {
-  if (s.mode === 'none') {
-    return null;
-  }
-  const idleTimeout = usesIdle(s) ? s.idle.trim() : undefined;
-  const restartInput = (restartOffered && s.restart) || undefined;
-  if (s.mode === 'idle') {
-    return { idleTimeout, restartInput };
-  }
-  if (s.mode === 'count') {
-    return { messageLimit: Number(s.limit.trim()), idleTimeout, restartInput };
-  }
-  return { check: s.check.trim(), idleTimeout, restartInput };
-}
 
 // ── Presentation ───────────────────────────────────────────────────────────
 
@@ -181,27 +97,13 @@ const TONE_CLASS: Record<EndTone, string> = {
     'border-destructive/50 bg-[color-mix(in_srgb,var(--color-destructive)_10%,var(--color-card))] text-destructive',
 };
 
-const CODE_SPAN_RE = /`([^`]+)`/g;
-const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
-
-const withCaveat = (text: string, behavior: InputEndBehavior) =>
-  behavior.caveat ? `${text} ${behavior.caveat}` : text;
-
-/** An input's one-line end label, plus the plain-text sentence for its tooltip. */
-export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { short: string; long: string } {
-  const short = stopShortLabel(slot, effective);
-  const note =
-    effective.kind === 'continuous' && !isStopConditionSet(slot.condition) ? ' No stop condition is set.' : '';
-  return { short, long: plain(`${withCaveat(effective.reason, effective)}${note}`) };
-}
-
 // Behavior text marks config keys as `code`.
 export const RichText = ({ text }: { text: string }) => (
   <>
     {text.split(CODE_SPAN_RE).map((part, i) =>
       i % 2 === 1 ? (
         // biome-ignore lint/suspicious/noArrayIndexKey: parts of a fixed string; a code span's text can repeat.
-        <code className="rounded bg-muted px-1 font-mono text-[0.95em]" key={`${i}-${part}`}>
+        <code className="rounded bg-muted px-1 font-mono" key={`${i}-${part}`}>
           {part}
         </code>
       ) : (
@@ -225,43 +127,57 @@ type StopConditionEditorProps = {
   onClose: () => void;
 };
 
+const keepArrowKeys = (e: KeyboardEvent) => {
+  if (e.key.startsWith('Arrow')) {
+    e.stopPropagation();
+  }
+};
+
 const ModeOption = ({
-  id,
   value,
   selected,
   title,
   description,
   children,
 }: {
-  id: string;
   value: StopMode;
   selected: boolean;
   title: string;
   description?: ReactNode;
   children?: ReactNode;
-}) => (
-  <div className={cn('rounded-md px-2.5 py-2 transition-colors', selected ? 'bg-muted/70' : 'hover:bg-muted/40')}>
-    <Label className="cursor-pointer items-start gap-2.5">
-      <RadioGroupItem
-        aria-describedby={description ? `${id}-description` : undefined}
-        aria-label={title}
-        className="mt-0.5"
-        value={value}
-      />
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="font-medium text-body leading-tight">{title}</span>
-        {description ? (
-          <span className="font-normal text-body-sm text-muted-foreground" id={`${id}-description`}>
-            {description}
-          </span>
-        ) : null}
-      </span>
-    </Label>
-    {selected && children ? <div className="flex flex-col gap-2 pt-2 pl-7.5">{children}</div> : null}
-  </div>
-);
-
-const FieldMessage = () => <FormMessage className="text-body-sm" role="alert" />;
+}) => {
+  const id = useId();
+  return (
+    <div className={cn('rounded-md px-2.5 py-2 transition-colors', selected ? 'bg-muted/70' : 'hover:bg-muted/40')}>
+      <Label className="cursor-pointer items-start" htmlFor={id}>
+        {/* mr-0.5 widens the label's gap to line the text up with the fields below. */}
+        <RadioGroupItem
+          aria-describedby={description ? `${id}-description` : undefined}
+          aria-label={title}
+          className="mt-0.5 mr-0.5"
+          id={id}
+          value={value}
+        />
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-body leading-tight font-medium">{title}</span>
+          {description ? (
+            <span className="text-body-sm font-normal text-muted-foreground" id={`${id}-description`}>
+              {description}
+            </span>
+          ) : null}
+        </span>
+      </Label>
+      {selected && children ? (
+        // Arrow keys in these fields move the caret or focus, not the radio group's choice.
+        // biome-ignore lint/a11y/noStaticElementInteractions: it only stops arrow keys bubbling up.
+        // biome-ignore lint/a11y/noNoninteractiveElementInteractions: it only stops arrow keys bubbling up.
+        <div className="flex flex-col gap-2 pt-2 pl-7.5" onKeyDown={keepArrowKeys}>
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 type FormPartProps = { control: Control<StopFormState> };
 
@@ -272,22 +188,15 @@ const IdleField = ({ control }: FormPartProps) => (
     name="idle"
     render={({ field }) => (
       <FormItem spacing="tight">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 font-mono">
           <FormControl
             render={
-              <Input
-                aria-label="Idle timeout"
-                className="w-20 font-mono"
-                placeholder={DEFAULT_IDLE}
-                size="sm"
-                {...field}
-              />
+              <Input aria-label="Idle timeout" className="w-20" placeholder={DEFAULT_IDLE} size="sm" {...field} />
             }
           />
           {IDLE_PRESETS.map((preset) => (
             <Button
               aria-pressed={field.value.trim() === preset}
-              className="font-mono"
               key={preset}
               onClick={() => field.onChange(preset)}
               size="xs"
@@ -298,7 +207,7 @@ const IdleField = ({ control }: FormPartProps) => (
             </Button>
           ))}
         </div>
-        <FieldMessage />
+        <FormMessage role="alert" />
       </FormItem>
     )}
   />
@@ -321,50 +230,25 @@ function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; 
   return { title: 'No stop condition', description: own.reason };
 }
 
-// The header line under the title: what happens today.
-function currentBehavior(slot: StopSlot, effective: InputEndBehavior): string {
+// What happens today; `editing` adds the nudge to the form below.
+function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false): string {
   if (slot.locked) {
-    return slot.locked;
+    // A wrapper with no input says so in its lock.
+    return effective.kind === 'invalid' ? slot.locked : `${withCaveat(effective.reason, effective)} ${slot.locked}`;
   }
   if (effective.kind === 'invalid') {
     // A broken input inside isn't fixed by this slot's own condition.
-    return slot.ownEnd.kind === 'invalid'
+    return slot.ownEnd.kind === 'invalid' || !editing
       ? effective.reason
       : `${effective.reason} Choose how it should stop below, or keep it running.`;
   }
   // A condition that never acts (a zero timeout, a re-read input) says what happens instead.
   if (effective.kind !== 'condition' && isStopConditionSet(slot.condition)) {
-    return withCaveat(`${effective.reason} Choose how it should stop below.`, effective);
+    return withCaveat(editing ? `${effective.reason} Choose how it should stop below.` : effective.reason, effective);
   }
   const own = slot.ownEnd;
   const text = !slot.condition && own.finiteHint ? `${effective.reason} ${own.finiteHint}` : effective.reason;
   return withCaveat(text, effective);
-}
-
-// What can still leave the input running with the condition as chosen.
-function backstopHint(
-  s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>,
-  own: InputEndBehavior
-): string | undefined {
-  const rereads = s.restart && own.kind !== 'continuous';
-  if (s.mode === 'idle') {
-    return rereads
-      ? 'The input is read again each time it finishes, so it never goes idle and never stops.'
-      : undefined;
-  }
-  if (!(s.mode === 'count' || s.mode === 'check')) {
-    return;
-  }
-  if (rereads) {
-    return 'If no message ever meets the condition, the input is read again and again and never stops.';
-  }
-  if (s.alsoIdle || own.kind !== 'continuous') {
-    return;
-  }
-  const limit = s.limit.trim();
-  const shortfall =
-    s.mode === 'count' && POSITIVE_INT_RE.test(limit) ? `If fewer than ${limit} messages arrive` : 'If none arrives';
-  return `${shortfall}, it keeps running. Also stop when idle as a backstop.`;
 }
 
 const WarningLine = ({ text }: { text: string }) => (
@@ -373,13 +257,6 @@ const WarningLine = ({ text }: { text: string }) => (
     {text}
   </span>
 );
-
-// Escape closes only this popover; the canvas's Escape-to-deselect skips handled events.
-export function claimEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-  }
-}
 
 // Enter in the check adds a line; Cmd/Ctrl+Enter applies, as Enter does in the other fields.
 function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -409,12 +286,10 @@ const RestartToggle = ({ control }: FormPartProps) => (
           }
         />
         <div className="flex flex-col">
-          <FormLabel className="cursor-pointer font-normal text-body-sm">
-            Read the input again if it finishes first
+          <FormLabel className="cursor-pointer">
+            <span className="text-body-sm font-normal">Read the input again if it finishes first</span>
           </FormLabel>
-          <FormDescription className="text-muted-foreground">
-            Keeps re-reading it until the condition is met.
-          </FormDescription>
+          <FormDescription>Keeps re-reading it until the condition is met.</FormDescription>
         </div>
       </FormItem>
     )}
@@ -438,7 +313,9 @@ const StopExtras = ({
           <FormControl
             render={<Checkbox checked={field.value} onCheckedChange={(checked) => field.onChange(checked === true)} />}
           />
-          <FormLabel className="cursor-pointer font-normal text-body-sm">Also stop when idle</FormLabel>
+          <FormLabel className="cursor-pointer">
+            <span className="text-body-sm font-normal">Also stop when idle</span>
+          </FormLabel>
         </FormItem>
       )}
     />
@@ -463,11 +340,11 @@ const DocsLink = () => {
   ) : null;
 };
 
-const StopEditorFooter = ({ isGroup, onCancel }: { isGroup?: boolean; onCancel: () => void }) => (
-  <div className="flex flex-col gap-3 border-border border-t px-4 py-3">
+const StopEditorFooter = ({ ownsEnd, onCancel }: { ownsEnd?: boolean; onCancel: () => void }) => (
+  <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
     <p className="flex gap-2 text-body-sm text-muted-foreground">
       <PowerOff className="mt-0.5 size-3.5 shrink-0" />
-      {isGroup
+      {ownsEnd
         ? 'This stops all of its inputs at once, whatever their own stop conditions. Once the pipeline’s inputs have stopped, it stops itself and uses no compute.'
         : 'Once every input has stopped, the pipeline stops itself and uses no compute until it’s started again.'}
     </p>
@@ -497,10 +374,10 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
   });
   const { control } = form;
   const [mode, alsoIdle, restart, limit] = useWatch({ control, name: ['mode', 'alsoIdle', 'restart', 'limit'] });
-  const idPrefix = useId();
   const none = noneOption(slot.ownEnd, isGroup);
   const restartOffered = offersRestart(mode, slot.ownEnd, slot.condition);
-  const hint = backstopHint({ mode, alsoIdle, restart, limit }, slot.ownEnd);
+  const hint = backstopHint({ mode, alsoIdle, restart: restart && restartOffered, limit }, slot.ownEnd);
+  const { batches } = slot.ownEnd;
   const extras = <StopExtras alsoIdle={alsoIdle} control={control} hint={hint} restartOffered={restartOffered} />;
   const apply = form.handleSubmit((values) => {
     onApply(draftFromStopForm(values, offersRestart(values.mode, slot.ownEnd, slot.condition)));
@@ -514,7 +391,10 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
         onSubmit={(e) => {
           // React bubbles the submit out of the portal — keep it off any enclosing form.
           e.stopPropagation();
-          apply(e);
+          // Invalid fields report inline; this catches an apply or close handler that throws.
+          apply(e).catch((error: unknown) => {
+            toast.error('Failed to apply the stop condition', { description: String(error) });
+          });
         }}
       >
         <FormField
@@ -524,104 +404,102 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
             <FormItem>
               <FormControl
                 render={
-                  <RadioGroup
-                    aria-label="Stop condition"
-                    className="gap-0.5 p-1.5"
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <ModeOption
-                      description={<RichText text={none.description} />}
-                      id={`${idPrefix}-none`}
-                      selected={mode === 'none'}
-                      title={none.title}
-                      value="none"
-                    />
-                    <ModeOption
-                      id={`${idPrefix}-count`}
-                      selected={mode === 'count'}
-                      title="After a number of messages"
-                      value="count"
-                    >
-                      <FormField
-                        control={control}
-                        name="limit"
-                        render={({ field: limitField }) => (
-                          <FormItem spacing="tight">
-                            <div className="flex items-center gap-2">
-                              <FormControl
-                                render={
-                                  <Input
-                                    aria-label="Message limit"
-                                    className="w-28"
-                                    inputMode="numeric"
-                                    size="sm"
-                                    {...limitField}
-                                  />
-                                }
-                              />
-                              <span className="text-body-sm text-muted-foreground">messages</span>
-                            </div>
-                            <FieldMessage />
-                            <FormDescription className="text-muted-foreground">
-                              An input that batches counts each batch once.
-                            </FormDescription>
-                          </FormItem>
-                        )}
+                  <RadioGroup aria-label="Stop condition" onValueChange={field.onChange} value={field.value}>
+                    {/* Sets the options' padding and spacing; the group's own gap acts on this one child. */}
+                    <div className="grid gap-0.5 p-1.5">
+                      <ModeOption
+                        description={<RichText text={none.description} />}
+                        selected={mode === 'none'}
+                        title={none.title}
+                        value="none"
                       />
-                      {extras}
-                    </ModeOption>
-                    <ModeOption
-                      description="No new message arrives for a while — counted from startup, too."
-                      id={`${idPrefix}-idle-mode`}
-                      selected={mode === 'idle'}
-                      title="When it goes idle"
-                      value="idle"
-                    >
-                      <IdleField control={control} />
-                      {restartOffered ? <RestartToggle control={control} /> : null}
-                      {hint ? <WarningLine text={hint} /> : null}
-                    </ModeOption>
-                    <ModeOption
-                      id={`${idPrefix}-check`}
-                      selected={mode === 'check'}
-                      title="When a message matches"
-                      value="check"
-                    >
-                      <FormField
-                        control={control}
-                        name="check"
-                        render={({ field: checkField }) => (
-                          <FormItem spacing="tight">
-                            {/* Multi-line: a check can span lines (`let` statements, comments). */}
-                            <FormControl
-                              render={
-                                <Textarea
-                                  aria-label="Bloblang condition"
-                                  className="font-mono"
-                                  onKeyDown={submitOnModEnter}
-                                  placeholder='this.status == "done"'
-                                  size="sm"
-                                  {...checkField}
+                      <ModeOption
+                        selected={mode === 'count'}
+                        title={batches ? 'After a number of batches' : 'After a number of messages'}
+                        value="count"
+                      >
+                        <FormField
+                          control={control}
+                          name="limit"
+                          render={({ field: limitField }) => (
+                            <FormItem spacing="tight">
+                              <div className="flex items-center gap-2">
+                                <FormControl
+                                  render={
+                                    <Input
+                                      aria-label="Message limit"
+                                      className="w-28"
+                                      inputMode="numeric"
+                                      size="sm"
+                                      {...limitField}
+                                    />
+                                  }
                                 />
-                              }
-                            />
-                            <FieldMessage />
-                            <FormDescription className="text-muted-foreground">
-                              A Bloblang query; the matching message is the last one read.
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
-                      {extras}
-                    </ModeOption>
+                                <span className="text-body-sm text-muted-foreground">
+                                  {batches ? 'batches' : 'messages'}
+                                </span>
+                              </div>
+                              <FormMessage role="alert" />
+                              <FormDescription>
+                                {batches
+                                  ? 'This input reads in batches, and each counts once, so it can read many more messages.'
+                                  : 'An input that batches counts each batch once.'}
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                        {extras}
+                      </ModeOption>
+                      <ModeOption
+                        description="No new message arrives for a while — counted from startup, too."
+                        selected={mode === 'idle'}
+                        title="When it goes idle"
+                        value="idle"
+                      >
+                        <IdleField control={control} />
+                        {restartOffered ? <RestartToggle control={control} /> : null}
+                        {hint ? <WarningLine text={hint} /> : null}
+                      </ModeOption>
+                      <ModeOption selected={mode === 'check'} title="When a message matches" value="check">
+                        <FormField
+                          control={control}
+                          name="check"
+                          render={({ field: checkField }) => (
+                            <FormItem spacing="tight">
+                              {/* Multi-line: a check can span lines (`let` statements, comments). */}
+                              {/* The field inherits its mono font from here. */}
+                              <div className="font-mono">
+                                <FormControl
+                                  render={
+                                    <Textarea
+                                      aria-label="Bloblang condition"
+                                      onKeyDown={submitOnModEnter}
+                                      placeholder='this.status == "done"'
+                                      size="sm"
+                                      {...checkField}
+                                    />
+                                  }
+                                />
+                              </div>
+                              <FormMessage role="alert" />
+                              <FormDescription>
+                                {batches
+                                  ? 'A Bloblang query on the first message of each batch this input reads; the matching batch is the last one read.'
+                                  : 'A Bloblang query; the matching message is the last one read.'}
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                        {extras}
+                      </ModeOption>
+                    </div>
                   </RadioGroup>
                 }
               />
             </FormItem>
           )}
         />
-        <StopEditorFooter isGroup={isGroup} onCancel={onClose} />
+        <StopEditorFooter onCancel={onClose} ownsEnd={isGroup && mode !== 'none'} />
       </form>
     </Form>
   );
@@ -636,24 +514,25 @@ export function StopConditionEditor({
   onApply,
   onClose,
 }: StopConditionEditorProps) {
+  const editing = Boolean(onApply) && !(readOnly || slot.locked);
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-1 border-border border-b px-4 py-3">
-        <span className="font-semibold text-body">
-          {readOnly || slot.locked ? 'When ' : 'When should '}
+      <div className="flex flex-col gap-1 border-b border-border px-4 py-3">
+        <span className="text-body font-semibold">
+          {editing ? 'When should ' : 'When '}
           <span className="font-mono">{name}</span>
-          {readOnly || slot.locked ? ' stops' : ' stop?'}
+          {editing ? ' stop?' : ' stops'}
         </span>
         <span className="text-body-sm text-muted-foreground">
-          <RichText text={currentBehavior(slot, effective)} />
+          <RichText text={currentBehavior(slot, effective, editing)} />
         </span>
       </div>
-      {readOnly || !onApply || slot.locked ? (
+      {editing && onApply ? (
+        <StopEditorForm isGroup={isGroup} onApply={onApply} onClose={onClose} slot={slot} />
+      ) : (
         <div className="px-4 py-3">
           <DocsLink />
         </div>
-      ) : (
-        <StopEditorForm isGroup={isGroup} onApply={onApply} onClose={onClose} slot={slot} />
       )}
     </div>
   );
@@ -662,33 +541,49 @@ export function StopConditionEditor({
 type StopConditionPopoverProps = Omit<StopConditionEditorProps, 'onClose'> & {
   /** The trigger element (rendered via Base UI `render`). */
   trigger: ReactElement;
+  /** A tooltip on the trigger. */
+  tooltip?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
   align?: 'start' | 'center' | 'end';
 };
 
 /** A trigger that opens the stop-condition editor (or, read-only, its explanation) in a popover. */
-export function StopConditionPopover({
+function StopConditionPopover({
   trigger,
+  tooltip,
   side = 'bottom',
   align = 'start',
   ...editor
 }: StopConditionPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [opens, setOpens] = useState(0);
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger render={trigger} />
+    <Popover
+      onOpenChange={(next) => {
+        if (next) {
+          setOpens((n) => n + 1);
+        }
+        setOpen(next);
+      }}
+      open={open}
+    >
+      <ElementTooltip content={tooltip}>
+        <PopoverTrigger render={trigger} />
+      </ElementTooltip>
       <PopoverContent
         align={align}
         aria-label={`Stop condition for ${editor.name}`}
-        className="w-[22rem] p-0"
+        className="w-[22rem]"
         onClick={stopReactBubble}
-        onKeyDown={claimEscape}
         onPointerDown={stopReactBubble}
         side={side}
         sideOffset={6}
       >
-        {/* Mounted per open, so a cancelled edit never lingers into the next one. */}
-        {open ? <StopConditionEditor {...editor} onClose={() => setOpen(false)} /> : null}
+        {/* The editor's sections run edge to edge, over the popover's padding. */}
+        <div className="-m-4">
+          {/* Keyed per open, so a cancelled edit never lingers into the next one. */}
+          <StopConditionEditor {...editor} key={opens} onClose={() => setOpen(false)} />
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -702,82 +597,6 @@ type StopRowProps = {
   effective: InputEndBehavior;
   onApply?: (draft: StopConditionDraft | null) => void;
 };
-
-// "its input never stops", "none of its 3 inputs stop", "2 of 3 inputs never stop".
-function continuousShare(n: number, total: number): string {
-  if (total === 1) {
-    return 'its input never stops';
-  }
-  if (n === total) {
-    return `none of its ${total} inputs stop`;
-  }
-  return `${n} of ${total} inputs never ${n === 1 ? 'stops' : 'stop'}`;
-}
-
-// "its input", "all 3 inputs", "1 of 3 inputs".
-function whichMembers(n: number, total: number): string {
-  if (total === 1) {
-    return 'its input';
-  }
-  return n === total ? `all ${total} inputs` : `${n} of ${total} inputs`;
-}
-
-// A broker/sequence: what its members add up to.
-function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: string; text: string } {
-  const m = effective.members;
-  switch (effective.kind) {
-    case 'natural':
-      return { eyebrow: 'Stops', text: name === 'sequence' ? 'after its last input stops' : 'once all inputs stop' };
-    case 'continuous':
-      return { eyebrow: 'Continuous', text: m ? continuousShare(m.continuous, m.total) : plain(effective.reason) };
-    case 'invalid':
-      return {
-        eyebrow: 'Fix stop',
-        text: m ? `${whichMembers(m.invalid, m.total)} incomplete` : plain(effective.reason),
-      };
-    default:
-      return {
-        eyebrow: 'Stops?',
-        text: m ? `${whichMembers(m.unknown, m.total)} may not stop` : plain(effective.reason),
-      };
-  }
-}
-
-// A single input, short enough for its card: how it ends without a condition, or why that one doesn't act.
-function inputEndText(
-  slot: StopSlot,
-  effective: InputEndBehavior,
-  editable: boolean
-): { eyebrow: string; text: string } {
-  const wrapped = slot.condition !== undefined;
-  switch (effective.kind) {
-    case 'natural':
-      return { eyebrow: 'Stops', text: 'when its data runs out' };
-    case 'continuous':
-      if (wrapped) {
-        return { eyebrow: 'Continuous', text: 'condition never fires' };
-      }
-      return { eyebrow: 'Continuous', text: editable ? 'set a stop condition' : 'no stop condition' };
-    case 'invalid':
-      return { eyebrow: 'Fix stop', text: wrapped ? 'condition incomplete' : plain(effective.reason) };
-    default:
-      return { eyebrow: 'Stops?', text: 'may not stop on its own' };
-  }
-}
-
-/** A stop row's eyebrow + text: the stop condition while it's what ends the input, otherwise how it ends. */
-export function stopRowText(
-  name: string,
-  slot: StopSlot,
-  effective: InputEndBehavior,
-  { isGroup = false, editable = false }: { isGroup?: boolean; editable?: boolean } = {}
-): { eyebrow: string; text: string } {
-  if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
-    const summary = describeStopCondition(slot.condition);
-    return { eyebrow: 'Stops', text: isGroup ? summary.long : summary.compact };
-  }
-  return isGroup ? groupEndText(name, effective) : inputEndText(slot, effective, editable);
-}
 
 /**
  * An input's end as a full-width row at the foot of its card, or of its broker/sequence marker: when it
@@ -798,12 +617,13 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
       readOnly={!editable}
       side="bottom"
       slot={slot}
+      tooltip={sentence}
       trigger={
         <button
           aria-label={`${eyebrow} ${text}: ${editable ? 'edit the stop condition' : 'stop condition'} for ${name}`}
           className={cn(
             // -mt-px folds its top rule into the header's when nothing sits between them.
-            'nodrag nopan -mt-px flex h-[30px] w-full cursor-pointer items-center gap-1.5 border-border/60 border-t px-3 text-left text-body-sm transition-colors hover:bg-muted/50',
+            'nodrag nopan -mt-px flex w-full cursor-pointer items-center gap-1.5 border-t border-border/60 px-3 text-left text-body-sm transition-colors hover:bg-muted/50',
             tone === 'open' && 'text-muted-foreground',
             tone === 'invalid' && 'text-destructive'
           )}
@@ -811,19 +631,18 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           data-testid="stop-row"
           // A quick action: opening it must not also select the card it sits on.
           onClick={stopReactBubble}
-          title={sentence}
+          style={{ height: FLOW_STOP_ROW_H }}
           type="button"
         >
-          <Icon
-            className={cn(
-              'size-3.5 shrink-0',
-              (tone === 'set' || tone === 'natural') && 'text-success',
-              tone === 'set' && 'fill-current'
-            )}
+          <TonedIcon
+            className="size-3.5 shrink-0"
+            fill={tone === 'set' ? 'currentColor' : 'none'}
+            icon={Icon}
+            tone={tone === 'set' || tone === 'natural' ? 'success' : 'default'}
           />
-          <span className="shrink-0 font-semibold text-2xs uppercase tracking-wide opacity-80">{eyebrow}</span>
+          <span className="shrink-0 text-2xs font-semibold tracking-wide uppercase opacity-80">{eyebrow}</span>
           {/* Keyed on the text so a changed condition fades in rather than switching silently. */}
-          <span className="fade-in min-w-0 flex-1 animate-in truncate duration-200" key={text}>
+          <span className="min-w-0 flex-1 animate-in truncate duration-200 fade-in" key={text}>
             {text}
           </span>
         </button>
@@ -844,11 +663,11 @@ export function StopConditionSection({
 }: StopRowProps & { isGroup?: boolean }) {
   const tone = endTone(effective.kind);
   const Icon = TONE_ICON[tone];
-  const set = isStopConditionSet(slot.condition);
+  const set = slot.condition !== undefined;
   const sentence = currentBehavior(slot, effective);
   return (
     <div
-      className="flex shrink-0 items-start gap-2.5 border-border border-b px-4 py-3"
+      className="flex shrink-0 items-start gap-2.5 border-b border-border px-4 py-3"
       data-testid="stop-condition-section"
     >
       <span
@@ -858,10 +677,10 @@ export function StopConditionSection({
           tone === 'open' && 'border-solid'
         )}
       >
-        <Icon className={cn('size-3.5', tone === 'set' && 'fill-current')} />
+        <Icon className="size-3.5" fill={tone === 'set' ? 'currentColor' : 'none'} />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="font-semibold text-2xs text-muted-foreground uppercase tracking-wide">Stop condition</span>
+        <span className="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Stop condition</span>
         <span className="text-body-sm">
           <RichText text={sentence} />
         </span>

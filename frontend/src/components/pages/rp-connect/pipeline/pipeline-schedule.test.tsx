@@ -12,14 +12,19 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { SCHEDULE_PREVIEW_STORAGE_KEY, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
-import { render, screen, within } from 'test-utils';
+import { render, screen, waitFor, within } from 'test-utils';
 
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
   return { ...actual, isFeatureFlagEnabled: (flag: string) => flag === 'enableRpcnPipelineSchedules' };
 });
 
-import { PipelineScheduleCell, PipelineScheduleDialog, usePipelineScheduleControl } from './pipeline-schedule';
+import {
+  PipelineScheduleCell,
+  PipelineScheduleDialog,
+  useClock,
+  usePipelineScheduleControl,
+} from './pipeline-schedule';
 import { defaultSchedule, type PipelineSchedule } from '../utils/pipeline-schedule';
 
 const FINITE = 'input:\n  sql_select:\n    table: orders\noutput:\n  drop: {}\n';
@@ -39,7 +44,8 @@ function seed(overrides: Partial<PipelineSchedule>) {
 }
 
 function renderDialog(configYaml: string) {
-  return render(
+  const user = userEvent.setup();
+  render(
     <PipelineScheduleDialog
       configYaml={configYaml}
       fixHint={<span>Add one on the canvas.</span>}
@@ -48,6 +54,26 @@ function renderDialog(configYaml: string) {
       pipelineId={PIPELINE_ID}
     />
   );
+  return user;
+}
+
+function Control({ configYaml }: { configYaml: string }) {
+  const { button } = usePipelineScheduleControl({ pipelineId: PIPELINE_ID, configYaml, fixHint: null });
+  return <>{button}</>;
+}
+
+function ControlWithDialog() {
+  const { button, dialog } = usePipelineScheduleControl({
+    pipelineId: PIPELINE_ID,
+    configYaml: FINITE,
+    fixHint: null,
+  });
+  return (
+    <>
+      {button}
+      {dialog}
+    </>
+  );
 }
 
 beforeEach(() => {
@@ -55,10 +81,9 @@ beforeEach(() => {
   useSchedulePreviewStore.setState({ schedules: {} });
 });
 
-describe('PipelineScheduleDialog', () => {
-  test('a pipeline that stops on its own can be scheduled', async () => {
-    const user = userEvent.setup();
-    renderDialog(FINITE);
+describe('the PipelineScheduleDialog readiness', () => {
+  test('a pipeline that stops on its own folds its inputs away until asked for', async () => {
+    const user = renderDialog(FINITE);
 
     const readiness = screen.getByTestId('schedule-readiness');
     expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
@@ -67,17 +92,6 @@ describe('PipelineScheduleDialog', () => {
     expect(within(readiness).queryByText('sql_select')).not.toBeInTheDocument();
     await user.click(within(readiness).getByRole('button', { name: 'Show inputs' }));
     expect(within(readiness).getByText('sql_select')).toBeInTheDocument();
-    // A new schedule starts switched off.
-    const toggle = screen.getByTestId('schedule-enabled');
-    expect(toggle).toHaveAttribute('aria-checked', 'false');
-    expect(screen.getByText('Preview')).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Next runs' })).getAllByRole('listitem')).toHaveLength(3);
-
-    await user.click(toggle);
-    await user.click(screen.getByTestId('schedule-save'));
-
-    expect(storedSchedule()).toMatchObject({ enabled: true, cadence: 'daily', time: '02:00' });
-    expect(JSON.parse(window.localStorage.getItem(SCHEDULE_PREVIEW_STORAGE_KEY) ?? '{}')).not.toEqual({});
   });
 
   test('a pipeline that never stops is refused, naming the input to fix', () => {
@@ -100,8 +114,7 @@ describe('PipelineScheduleDialog', () => {
   });
 
   test('a broker with a stop condition of its own is listed itself, not its members', async () => {
-    const user = userEvent.setup();
-    renderDialog(
+    const user = renderDialog(
       'input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      broker:\n        inputs:\n          - redpanda: { topics: [a] }\n          - redpanda: { topics: [b] }\noutput:\n  drop: {}\n'
     );
     const readiness = screen.getByTestId('schedule-readiness');
@@ -123,10 +136,59 @@ describe('PipelineScheduleDialog', () => {
     expect(within(readiness).getByText('batched')).toBeInTheDocument();
   });
 
+  test('a broker whose own batching may not end is named, with its fix', () => {
+    renderDialog(
+      'input:\n  broker:\n    inputs:\n      - sql_select: { table: orders }\n      - sql_select: { table: refunds }\n    batching: { count: 10 }\noutput:\n  drop: {}\n'
+    );
+    const items = within(screen.getByTestId('schedule-readiness')).getAllByRole('listitem');
+    expect(items.map((item) => item.textContent)).toEqual([
+      'broker — Its batching has no period, so once its input ends, a last partial batch can wait forever. Set batching.period (such as 1s) so the last batch is sent.',
+    ]);
+  });
+
+  test('a broken input is named even where its group’s stop condition decides the end', () => {
+    renderDialog(
+      'input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      broker:\n        inputs:\n          - read_until: { input: { redpanda: { topics: [a] } } }\n          - redpanda: { topics: [b] }\noutput:\n  drop: {}\n'
+    );
+    const items = within(screen.getByTestId('schedule-readiness')).getAllByRole('listitem');
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent('redpanda — Its stop condition needs a check or an idle timeout.');
+  });
+
+  test('a YAML that doesn’t parse asks for a fix, not an input', () => {
+    renderDialog(BROKEN);
+    expect(within(screen.getByTestId('schedule-readiness')).getByText('Fix the YAML first')).toBeInTheDocument();
+  });
+
+  test('an input that might wait forever is ready, with a warning', () => {
+    renderDialog(CHECK_ONLY);
+    const readiness = screen.getByTestId('schedule-readiness');
+    expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
+    // redpanda reads in batches, and Connect counts each once.
+    expect(readiness).toHaveTextContent('If fewer than 1000 batches arrive, it keeps running.');
+  });
+});
+
+describe('the PipelineScheduleDialog saving', () => {
+  test('a pipeline that stops on its own can be scheduled', async () => {
+    const user = renderDialog(FINITE);
+
+    // A new schedule starts switched off.
+    const toggle = screen.getByTestId('schedule-enabled');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByText('Preview')).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Next runs' })).getAllByRole('listitem')).toHaveLength(3);
+
+    await user.click(toggle);
+    await user.click(screen.getByTestId('schedule-save'));
+
+    expect(storedSchedule()).toMatchObject({ enabled: true, cadence: 'daily', time: '02:00' });
+    expect(JSON.parse(window.localStorage.getItem(SCHEDULE_PREVIEW_STORAGE_KEY) ?? '{}')).not.toEqual({});
+  });
+
   test('a schedule left on for a pipeline that no longer stops cannot be saved until paused', async () => {
-    const user = userEvent.setup();
     seed({ enabled: true });
-    renderDialog(CONTINUOUS);
+    const user = renderDialog(CONTINUOUS);
 
     const save = screen.getByTestId('schedule-save');
     expect(save).toBeDisabled();
@@ -139,9 +201,8 @@ describe('PipelineScheduleDialog', () => {
   });
 
   test('runs closer than 15 minutes apart are rejected', async () => {
-    const user = userEvent.setup();
     seed({ enabled: true, cadence: 'custom', every: 30, unit: 'minutes' });
-    renderDialog(FINITE);
+    const user = renderDialog(FINITE);
 
     const every = screen.getByTestId('schedule-every');
     await user.clear(every);
@@ -153,7 +214,6 @@ describe('PipelineScheduleDialog', () => {
   });
 
   test('fields the cadence hides never block saving, and are stored clean', async () => {
-    const user = userEvent.setup();
     useSchedulePreviewStore.setState({
       schedules: {
         [`default/${PIPELINE_ID}`]: {
@@ -164,28 +224,15 @@ describe('PipelineScheduleDialog', () => {
         },
       },
     });
-    renderDialog(FINITE);
+    const user = renderDialog(FINITE);
 
     await user.click(screen.getByTestId('schedule-save'));
     expect(storedSchedule()).toMatchObject({ cadence: 'daily', every: 2, maxRuntime: 1 });
   });
 
-  test('YAML that doesn’t parse asks for a fix, not an input', () => {
-    renderDialog(BROKEN);
-    expect(within(screen.getByTestId('schedule-readiness')).getByText('Fix the YAML first')).toBeInTheDocument();
-  });
-
-  test('an input that might wait forever is ready, with a warning', () => {
-    renderDialog(CHECK_ONLY);
-    const readiness = screen.getByTestId('schedule-readiness');
-    expect(within(readiness).getByText('Each run ends on its own')).toBeInTheDocument();
-    expect(readiness).toHaveTextContent('If fewer than 1000 messages arrive, it keeps running.');
-  });
-
   test('a saved schedule can be removed', async () => {
-    const user = userEvent.setup();
     seed({ enabled: true });
-    renderDialog(FINITE);
+    const user = renderDialog(FINITE);
 
     await user.click(screen.getByTestId('schedule-remove'));
     expect(storedSchedule()).toBeUndefined();
@@ -211,11 +258,6 @@ describe('schedule preview store', () => {
 });
 
 describe('schedule status', () => {
-  function Control({ configYaml }: { configYaml: string }) {
-    const { button } = usePipelineScheduleControl({ pipelineId: PIPELINE_ID, configYaml, fixHint: null });
-    return <>{button}</>;
-  }
-
   test('without a schedule, the header offers to add one', () => {
     render(<Control configYaml={FINITE} />);
     expect(screen.getByTestId('pipeline-schedule-button')).toHaveTextContent('Schedule');
@@ -235,6 +277,14 @@ describe('schedule status', () => {
     const pill = screen.getByTestId('pipeline-schedule-pill');
     expect(pill).toHaveAttribute('data-state', 'on-hold');
     expect(pill).toHaveTextContent('On hold');
+  });
+
+  test('saving the first schedule hands focus to the pill that replaces the button', async () => {
+    const user = userEvent.setup();
+    render(<ControlWithDialog />);
+    await user.click(screen.getByTestId('pipeline-schedule-button'));
+    await user.click(await screen.findByTestId('schedule-save'));
+    await waitFor(() => expect(screen.getByTestId('pipeline-schedule-pill')).toHaveFocus());
   });
 
   test('a half-typed edit keeps the last answer instead of flashing on hold', () => {
@@ -267,6 +317,30 @@ describe('schedule status', () => {
     );
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByTestId('pipeline-schedule-line')).toHaveTextContent('15th of the month');
+  });
+});
+
+// Notes the time each render reads.
+const ClockProbe = ({ seen }: { seen: number[] }) => {
+  seen.push(useClock());
+  return null;
+};
+
+describe('the schedule clock', () => {
+  beforeEach(() => {
+    rs.useFakeTimers();
+    return () => {
+      rs.useRealTimers();
+    };
+  });
+
+  // Nothing ticks the clock while no label is shown.
+  test('a label shown after a while with none on the page starts from the time now', () => {
+    render(<ClockProbe seen={[]} />).unmount();
+    rs.setSystemTime(Date.now() + 3 * 60 * 60_000);
+    const seen: number[] = [];
+    render(<ClockProbe seen={seen} />);
+    expect(seen[0]).toBe(Date.now());
   });
 });
 

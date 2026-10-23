@@ -25,9 +25,23 @@ const openConfigs = async () => {
   return user;
 };
 
+const FILTER_CONFIGS_RE = /filter configs/i;
+const NEEDS_SECRETS_RE = /needs the secrets/;
+
 const sectionNames = () => screen.getAllByRole('region').map((s) => s.getAttribute('aria-label'));
 
-describe('DebugDialog — Connect configs', () => {
+const openRunHistory = async () => {
+  window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+  useRunHistoryStore.setState({ runs: {} });
+  const user = userEvent.setup();
+  // The panel fills the id in from the route, so it needs a router.
+  renderWithFileRoutes(<DebugDialog onOpenChange={() => undefined} open />);
+  await user.click(screen.getByRole('button', { name: 'Run history' }));
+  const id = await screen.findByLabelText('Pipeline ID');
+  return { user, id };
+};
+
+describe('the DebugDialog — Connect configs', () => {
   test('lists the configs under a heading per group', async () => {
     await openConfigs();
     expect(sectionNames()).toEqual(['Simple', 'Medium', 'Complex', 'Edge cases', 'Stop conditions', 'Invalid']);
@@ -43,7 +57,7 @@ describe('DebugDialog — Connect configs', () => {
     expect(sectionNames()).toEqual(['Stop conditions']);
 
     await user.click(screen.getByRole('button', { name: 'All' }));
-    await user.type(screen.getByRole('textbox', { name: /filter configs/i }), 'RESTART_INPUT');
+    await user.type(screen.getByRole('textbox', { name: FILTER_CONFIGS_RE }), 'RESTART_INPUT');
     expect(sectionNames()).toEqual(['Stop conditions']);
     expect(screen.getByText('Read-only stop conditions')).toBeInTheDocument();
   });
@@ -51,7 +65,7 @@ describe('DebugDialog — Connect configs', () => {
   test('shows a config’s YAML and the secrets it needs when expanded', async () => {
     const user = await openConfigs();
     await user.click(screen.getByRole('button', { name: 'Show the YAML for Topic backfill (limit + idle backstop)' }));
-    expect(screen.getByText(/needs the secrets/)).toBeInTheDocument();
+    expect(screen.getByText(NEEDS_SECRETS_RE)).toBeInTheDocument();
     expect(screen.getByText('KAFKA_USER')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Hide the YAML for Topic backfill (limit + idle backstop)' })
@@ -59,15 +73,9 @@ describe('DebugDialog — Connect configs', () => {
   });
 });
 
-describe('DebugDialog — Run history', () => {
+describe('the DebugDialog — Run history', () => {
   test('fills a pipeline’s history with sample runs, and clears it', async () => {
-    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
-    useRunHistoryStore.setState({ runs: {} });
-    const user = userEvent.setup();
-    // The panel fills the id in from the route, so it needs a router.
-    renderWithFileRoutes(<DebugDialog onOpenChange={() => undefined} open />);
-    await user.click(screen.getByRole('button', { name: 'Run history' }));
-    const id = await screen.findByLabelText('Pipeline ID');
+    const { user, id } = await openRunHistory();
     await user.type(id, 'p1');
 
     await user.click(screen.getByRole('button', { name: 'Fill with sample runs' }));

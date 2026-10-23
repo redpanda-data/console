@@ -51,12 +51,14 @@ export function useStartDraft() {
   const { mutateAsync, isPending } = useStartPipelineMutation();
 
   const startDraft = useCallback(
-    async (pipelineId: string): Promise<void> => {
+    async (pipelineId: string): Promise<boolean> => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
+        return true;
       } catch (err) {
         reportStartDraftError(err, pipelineId, navigate);
+        return false;
       }
     },
     [mutateAsync, navigate]

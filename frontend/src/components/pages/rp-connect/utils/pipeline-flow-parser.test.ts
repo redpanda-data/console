@@ -1670,7 +1670,9 @@ output:
     });
 
     test('an input that contains itself through an alias still renders', () => {
-      const { nodes, error } = parsePipelineFlowTree('input: &a\n  broker:\n    inputs:\n      - kafka: {}\n      - *a\n');
+      const { nodes, error } = parsePipelineFlowTree(
+        'input: &a\n  broker:\n    inputs:\n      - kafka: {}\n      - *a\n'
+      );
       expect(error).toBeUndefined();
       expect(nodes.find((n) => n.id === 'input-broker')?.endBehavior?.kind).toBe('invalid');
     });
@@ -1837,7 +1839,8 @@ output:
       topics: ['orders'],
       editTarget: { kind: 'path', path: ['input', 'read_until', 'input'], componentType: 'input' },
       stopSlot: { path: ['input'], condition: { check: 'counter() >= 100' }, ownEnd: { kind: 'continuous' } },
-      endBehavior: { kind: 'condition', reason: 'Stops after 100 messages.' },
+      // redpanda reads in batches, and Connect counts each once.
+      endBehavior: { kind: 'condition', reason: 'Stops after 100 batches.', batches: true },
     });
   });
 

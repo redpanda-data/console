@@ -39,48 +39,70 @@ const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
 ];
 
+// After Output, as the table orders them: Runs, then Schedule with the schedule preview on.
+const RUNS_COLUMN = { head: 'w-12', cell: <Skeleton className="h-4 w-20" /> };
+const SCHEDULE_COLUMN = {
+  head: 'w-16',
+  cell: (
+    <div className="flex flex-col gap-1">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-3 w-28" />
+    </div>
+  ),
+};
+
 const SKELETON_ROW_COUNT = 5;
 
-export const PipelineListSkeleton = () => (
-  <div className="flex flex-col gap-4">
-    <div className="flex items-center justify-between gap-4">
-      <Skeleton className="h-8 w-[200px]" />
-      <Skeleton className="h-8 w-20" />
-    </div>
-    <div className="flex items-center gap-2">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-8 w-20" />
-      <Skeleton className="h-8 w-20" />
-      <Skeleton className="h-8 w-20" />
-    </div>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {SKELETON_COLUMNS.map((column, columnIndex) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-            <TableHead key={columnIndex}>
-              <Skeleton className={cn('h-4', column.head)} />
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
+export const PipelineListSkeleton = ({ schedules = false }: { schedules?: boolean }) => {
+  const columns = [
+    ...SKELETON_COLUMNS.slice(0, 3),
+    RUNS_COLUMN,
+    ...(schedules ? [SCHEDULE_COLUMN] : []),
+    ...SKELETON_COLUMNS.slice(3),
+  ];
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-8 w-[200px]" />
+        <Skeleton className="h-8 w-20" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-64" />
+        {/* Input, Output, Tags, Runs and Schedule. */}
+        {Array.from({ length: schedules ? 5 : 4 }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-          <TableRow key={rowIndex}>
-            {SKELETON_COLUMNS.map((column, columnIndex) => (
+          <Skeleton className="h-8 w-20" key={i} />
+        ))}
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map((column, columnIndex) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
-              <TableCell key={columnIndex}>{column.cell}</TableCell>
+              <TableHead key={columnIndex}>
+                <Skeleton className={cn('h-4', column.head)} />
+              </TableHead>
             ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-    {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
-    <div className="flex items-center justify-end gap-6 px-2">
-      <Skeleton className="h-8 w-36" />
-      <Skeleton className="h-8 w-24" />
-      <Skeleton className="h-8 w-32" />
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
+            <TableRow key={rowIndex}>
+              {columns.map((column, columnIndex) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
+                <TableCell key={columnIndex}>{column.cell}</TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
+      <div className="flex items-center justify-end gap-6 px-2">
+        <Skeleton className="h-8 w-36" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-32" />
+      </div>
     </div>
-  </div>
-);
+  );
+};

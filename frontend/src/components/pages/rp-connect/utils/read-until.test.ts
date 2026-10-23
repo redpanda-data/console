@@ -11,6 +11,8 @@
 
 import { parseDocument, parse as parseYaml } from 'yaml';
 
+import type { InputEndBehavior } from './input-end-behavior';
+import type { StopSlot } from './pipeline-flow-parser';
 import {
   describeDuration,
   describeStopCondition,
@@ -23,6 +25,7 @@ import {
   resolveStopCondition,
   sameStopCondition,
   setStopCondition,
+  stopRowText,
   stopShortLabel,
   stopSlotLock,
 } from './read-until';
@@ -162,13 +165,78 @@ describe('stopShortLabel', () => {
     ownEnd: { kind: 'continuous' as const, reason: '' },
   });
 
+  test('names only the parts of the condition that act', () => {
+    // Re-read with restart_input, the input never goes idle, so only the limit ends it.
+    const effective = { kind: 'condition' as const, reason: '', stopsOn: { check: 'counter() >= 1000' } };
+    expect(stopShortLabel(slot({ check: 'counter() >= 1000', idleTimeout: '30s' }), effective)).toBe('1K msgs');
+  });
+
   test('names the condition only while it is what ends the input', () => {
     expect(stopShortLabel(slot({ idleTimeout: '30s' }), { kind: 'condition', reason: '' })).toBe('Idle 30s');
-    expect(stopShortLabel(slot({ idleTimeout: 'soon' }), { kind: 'invalid', reason: '' })).toBe('Fix stop');
+    expect(stopShortLabel(slot({ idleTimeout: 'soon' }), { kind: 'invalid', reason: '' })).toBe('Needs fixing');
     expect(stopShortLabel(slot({ idleTimeout: '0s' }), { kind: 'continuous', reason: '' })).toBe('Continuous');
     expect(
       stopShortLabel({ path: ['input'], ownEnd: { kind: 'unknown', reason: '' } }, { kind: 'unknown', reason: '' })
     ).toBe('May not stop');
+  });
+});
+
+describe('stopRowText', () => {
+  const continuous: InputEndBehavior = {
+    kind: 'continuous',
+    reason: 'Keeps consuming new messages until the pipeline is stopped.',
+  };
+  const natural: InputEndBehavior = { kind: 'natural', reason: 'Reads every object in the bucket, then stops.' };
+  const openSlot: StopSlot = { path: ['input'], ownEnd: continuous };
+
+  test('a broker row counts the members that keep it running', () => {
+    const members = { total: 3, continuous: 1, unknown: 0, invalid: 0 };
+    const group = { isGroup: true };
+    expect(stopRowText('broker', openSlot, { ...continuous, members }, group)).toEqual({
+      eyebrow: 'Continuous',
+      text: '1 of 3 inputs never stops',
+    });
+    expect(stopRowText('broker', openSlot, { ...continuous, members: { ...members, continuous: 3 } }, group).text).toBe(
+      'none of its 3 inputs stop'
+    );
+    expect(stopRowText('sequence', openSlot, { ...natural, members }, group).text).toBe('after its last input stops');
+    const stopped = { kind: 'condition' as const, reason: 'Stops after 5 seconds without new messages.' };
+    expect(
+      stopRowText('broker', { path: ['input'], condition: { idleTimeout: '5s' }, ownEnd: natural }, stopped, group)
+    ).toEqual({ eyebrow: 'Stops', text: 'after 5s idle' });
+  });
+
+  test('a broker whose own batching may not stop says so, not its members', () => {
+    const members = { total: 2, continuous: 0, unknown: 0, invalid: 0 };
+    const batching: InputEndBehavior = { kind: 'unknown', reason: 'Its `batching` has no `period`.', members };
+    expect(stopRowText('broker', openSlot, batching, { isGroup: true })).toEqual({
+      eyebrow: 'Stops?',
+      text: 'Its batching has no period.',
+    });
+  });
+
+  test('an input card’s row is short enough for the card', () => {
+    const stopped = { kind: 'condition' as const, reason: '' };
+    const limited: StopSlot = {
+      path: ['input'],
+      condition: { check: 'counter() >= 1000', idleTimeout: '1m' },
+      ownEnd: continuous,
+    };
+    expect(stopRowText('kafka', limited, stopped)).toEqual({ eyebrow: 'Stops', text: 'after 1K msgs or 1m idle' });
+    expect(stopRowText('aws_s3', { path: ['input'], ownEnd: natural }, natural).text).toBe('when its data runs out');
+  });
+
+  test('an input card’s row invites a condition when it can take one, and says why one doesn’t act', () => {
+    expect(stopRowText('kafka', openSlot, continuous, { editable: true }).text).toBe('set a stop condition');
+    expect(stopRowText('kafka', openSlot, continuous).text).toBe('no stop condition');
+    const zero: StopSlot = { path: ['input'], condition: { idleTimeout: '0s' }, ownEnd: continuous };
+    expect(stopRowText('kafka', zero, continuous).text).toBe('condition never fires');
+    const empty: StopSlot = { path: ['input'], condition: {}, ownEnd: continuous };
+    expect(stopRowText('kafka', empty, { kind: 'invalid', reason: 'x' })).toEqual({
+      eyebrow: 'Fix',
+      text: 'condition incomplete',
+    });
+    expect(stopRowText('plugin', openSlot, { kind: 'unknown', reason: 'x' }).text).toBe('may not stop on its own');
   });
 });
 
@@ -209,8 +277,7 @@ read_until:
   });
 });
 
-describe('setStopCondition', () => {
-  const plain = `# Orders from Redpanda
+const plain = `# Orders from Redpanda
 input:
   label: orders_in
   redpanda:
@@ -222,6 +289,7 @@ output:
   drop: {}
 `;
 
+describe('setStopCondition wrapping', () => {
   test('wraps the input with its label and processors, comments included', () => {
     const next = setStopCondition(plain, ['input'], { idleTimeout: '30s' });
     expect(next).toBe(`# Orders from Redpanda
@@ -238,27 +306,6 @@ input:
 output:
   drop: {}
 `);
-  });
-
-  test('unwrapping keeps the input’s own label over one on the wrapper', () => {
-    const both =
-      'input:\n  label: outer\n  read_until:\n    idle_timeout: 5s\n    input:\n      label: inner\n      kafka: {}\n';
-    expect(parseYaml(setStopCondition(both, ['input'], null) as string)).toEqual({
-      input: { label: 'inner', kafka: {} },
-    });
-  });
-
-  test('unwrapping keeps a comment heading the wrapped input', () => {
-    const commented =
-      'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      # reads the orders topic\n      kafka: {}\n';
-    expect(setStopCondition(commented, ['input'], null)).toContain('# reads the orders topic');
-  });
-
-  test('clearing the condition restores the original input', () => {
-    const wrapped = setStopCondition(plain, ['input'], { check: 'counter() >= 10' }) as string;
-    const unwrapped = setStopCondition(wrapped, ['input'], null) as string;
-    expect(parseYaml(unwrapped)).toEqual(parseYaml(plain));
-    expect(unwrapped).toContain('# the main topic');
   });
 
   test('edits an existing wrapper in place', () => {
@@ -316,23 +363,6 @@ output:
     );
   });
 
-  test('unwrapping merges slot processors after the input’s own', () => {
-    const wrapped = `input:
-  read_until:
-    idle_timeout: 5s
-    input:
-      generate: { mapping: root = 1 }
-      processors: [{ log: { message: inner } }]
-  processors: [{ log: { message: outer } }]
-`;
-    expect(parseYaml(setStopCondition(wrapped, ['input'], null) as string)).toEqual({
-      input: {
-        generate: { mapping: 'root = 1' },
-        processors: [{ log: { message: 'inner' } }, { log: { message: 'outer' } }],
-      },
-    });
-  });
-
   test('an anchored member keeps meaning the bare input for its aliases, wrapped or not', () => {
     const anchored =
       'input:\n  broker:\n    inputs:\n      - &m\n        generate: { mapping: root = 1 }\n      - *m\n';
@@ -349,6 +379,54 @@ output:
     });
     const unwrapped = setStopCondition(wrapped, ['input', 'broker', 'inputs', 0], null) as string;
     expect(parseYaml(unwrapped)).toEqual(parseYaml(anchored));
+  });
+
+  test('a multi-line check round-trips', () => {
+    const check = 'let n = this.n\n$n > 3';
+    const wrapped = setStopCondition(plain, ['input'], { check }) as string;
+    expect(readStopCondition(parseYaml(wrapped).input.read_until)).toEqual({ check });
+    const edited = setStopCondition(wrapped, ['input'], { check: `${check}\n# done` }) as string;
+    expect(readStopCondition(parseYaml(edited).input.read_until)).toEqual({ check: `${check}\n# done` });
+  });
+});
+
+describe('setStopCondition unwrapping', () => {
+  test('unwrapping keeps the input’s own label over one on the wrapper', () => {
+    const both =
+      'input:\n  label: outer\n  read_until:\n    idle_timeout: 5s\n    input:\n      label: inner\n      kafka: {}\n';
+    expect(parseYaml(setStopCondition(both, ['input'], null) as string)).toEqual({
+      input: { label: 'inner', kafka: {} },
+    });
+  });
+
+  test('unwrapping keeps a comment heading the wrapped input', () => {
+    const commented =
+      'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      # reads the orders topic\n      kafka: {}\n';
+    expect(setStopCondition(commented, ['input'], null)).toContain('# reads the orders topic');
+  });
+
+  test('clearing the condition restores the original input', () => {
+    const wrapped = setStopCondition(plain, ['input'], { check: 'counter() >= 10' }) as string;
+    const unwrapped = setStopCondition(wrapped, ['input'], null) as string;
+    expect(parseYaml(unwrapped)).toEqual(parseYaml(plain));
+    expect(unwrapped).toContain('# the main topic');
+  });
+
+  test('unwrapping merges slot processors after the input’s own', () => {
+    const wrapped = `input:
+  read_until:
+    idle_timeout: 5s
+    input:
+      generate: { mapping: root = 1 }
+      processors: [{ log: { message: inner } }]
+  processors: [{ log: { message: outer } }]
+`;
+    expect(parseYaml(setStopCondition(wrapped, ['input'], null) as string)).toEqual({
+      input: {
+        generate: { mapping: 'root = 1' },
+        processors: [{ log: { message: 'inner' } }, { log: { message: 'outer' } }],
+      },
+    });
   });
 
   test('comments on the wrapper’s own keys survive unwrapping', () => {
@@ -380,6 +458,13 @@ output:
 `);
   });
 
+  test('a condition with nothing to stop on clears instead of writing an invalid wrapper', () => {
+    const wrapped = setStopCondition(plain, ['input'], { idleTimeout: '5s' }) as string;
+    expect(parseYaml(setStopCondition(wrapped, ['input'], { restartInput: true }) as string)).toEqual(parseYaml(plain));
+  });
+});
+
+describe('setStopCondition no-ops and refusals', () => {
   test('refuses an unwrap that would change behaviour', () => {
     const clash = `input:
   read_until:
@@ -392,23 +477,24 @@ output:
     expect(setStopCondition(clash, ['input'], null)).toBeNull();
   });
 
+  test('refuses an unwrap beside a merge key, whose keys the moved ones could shadow', () => {
+    const merged = `base: &base
+  processors: [{ log: { message: shared } }]
+input:
+  <<: *base
+  read_until:
+    idle_timeout: 5s
+    input:
+      generate: { mapping: root = 1 }
+      processors: [{ log: { message: inner } }]
+`;
+    expect(setStopCondition(merged, ['input'], null)).toBeNull();
+  });
+
   test('a no-op clear returns the YAML untouched; a missing slot or bad YAML refuses', () => {
     expect(setStopCondition(plain, ['input'], null)).toBe(plain);
     expect(setStopCondition(plain, ['input', 'broker', 'inputs', 3], { idleTimeout: '5s' })).toBeNull();
     expect(setStopCondition('input: [unclosed', ['input'], { idleTimeout: '5s' })).toBeNull();
-  });
-
-  test('a condition with nothing to stop on clears instead of writing an invalid wrapper', () => {
-    const wrapped = setStopCondition(plain, ['input'], { idleTimeout: '5s' }) as string;
-    expect(parseYaml(setStopCondition(wrapped, ['input'], { restartInput: true }) as string)).toEqual(parseYaml(plain));
-  });
-
-  test('a multi-line check round-trips', () => {
-    const check = 'let n = this.n\n$n > 3';
-    const wrapped = setStopCondition(plain, ['input'], { check }) as string;
-    expect(readStopCondition(parseYaml(wrapped).input.read_until)).toEqual({ check });
-    const edited = setStopCondition(wrapped, ['input'], { check: `${check}\n# done` }) as string;
-    expect(readStopCondition(parseYaml(edited).input.read_until)).toEqual({ check: `${check}\n# done` });
   });
 
   test('refuses an unwrap that would merge processors into or out of an anchored list', () => {

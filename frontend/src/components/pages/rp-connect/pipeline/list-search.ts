@@ -20,6 +20,8 @@ import { PIPELINE_STATE_TABS, type PipelineStateTabId, stateFilterValues } from 
 const TAB_IDS = PIPELINE_STATE_TABS.map((tab) => tab.id) as [PipelineStateTabId, ...PipelineStateTabId[]];
 const SORTABLE_COLUMNS = ['state', 'name', 'schedule'] as const;
 const values = z.array(z.string()).optional().catch(undefined);
+export const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
 
 export const pipelineListSearchSchema = z.object({
   tab: z.enum(TAB_IDS).optional().catch(undefined),
@@ -33,6 +35,8 @@ export const pipelineListSearchSchema = z.object({
   desc: z.boolean().optional().catch(undefined),
   /** 1-based. */
   page: z.number().int().positive().optional().catch(undefined),
+  /** Rows per page. */
+  size: z.number().int().positive().max(MAX_PAGE_SIZE).optional().catch(undefined),
 });
 
 export type PipelineListSearch = z.infer<typeof pipelineListSearchSchema>;
@@ -41,6 +45,12 @@ export type PipelineListSearch = z.infer<typeof pipelineListSearchSchema>;
 export function readPipelineListSearch(search: unknown): PipelineListSearch {
   const parsed = pipelineListSearchSchema.safeParse(search ?? {});
   return parsed.success ? parsed.data : {};
+}
+
+/** `search` without the Schedule column's sort and filter, for when the column isn't shown. */
+export function withoutScheduleView(search: PipelineListSearch): PipelineListSearch {
+  const { schedule: _, ...rest } = search;
+  return rest.sort === 'schedule' ? { ...rest, sort: undefined, desc: undefined } : rest;
 }
 
 // Facet columns and the search keys that hold them.
@@ -67,6 +77,11 @@ export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFilte
   if (search.q?.trim()) {
     filters.push({ id: 'name', value: search.q });
   }
+  return [...filters, ...facetFilters(search)];
+}
+
+function facetFilters(search: PipelineListSearch): ColumnFiltersState {
+  const filters: ColumnFiltersState = [];
   for (const [columnId, key] of Object.entries(FILTER_KEYS)) {
     const selected = search[key];
     if (selected?.length) {
@@ -116,7 +131,11 @@ export function nextPipelineListSearch(
   const next: Record<string, unknown> = { ...search, ...patch };
   for (const [key, value] of Object.entries(next)) {
     const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
-    if (empty || (key === 'tab' && value === 'all') || (key === 'page' && value === 1)) {
+    const isDefault =
+      (key === 'tab' && value === 'all') ||
+      (key === 'page' && value === 1) ||
+      (key === 'size' && value === DEFAULT_PAGE_SIZE);
+    if (empty || isDefault) {
       delete next[key];
     }
   }

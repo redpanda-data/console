@@ -13,7 +13,7 @@ import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/ap
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { editor } from 'monaco-editor';
@@ -60,6 +60,8 @@ import {
 import * as React from 'react';
 import { toast } from 'sonner';
 import { rpcnEditorAutosave, useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
 import {
@@ -70,6 +72,7 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
+import { defaultSchedule } from '../utils/pipeline-schedule';
 
 const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
 rs.mock('../utils/use-pipeline-mode', () => ({
@@ -496,6 +499,16 @@ const createdPipelineResponse = (id: string, state: Pipeline_State = Pipeline_St
   create(ConsoleCreatePipelineResponseSchema, {
     response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id, state }) }),
   });
+
+const SAVE_TIME = Date.UTC(2026, 0, 15, 12);
+
+// Freezes `Date` at `time` until the test ends.
+const pinSystemTime = (time: number) => {
+  rs.setSystemTime(time);
+  onTestFinished(() => {
+    rs.useRealTimers();
+  });
+};
 
 const pipelineResponse = (overrides: Partial<{ state: Pipeline_State; configYaml: string; updateTime: unknown }>) =>
   create(ConsoleGetPipelineResponseSchema, {
@@ -1592,6 +1605,7 @@ describe('pipelinePage saving and recovering work', () => {
     beforeEach(() => {
       localStorage.clear();
       useRpcnEditorAutosaveStore.getState().refresh();
+      useRunHistoryStore.setState({ runs: {} });
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
     });
 
@@ -1976,6 +1990,31 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
         expect(startPipelineMock.mock.calls[0][0].request.id).toBe('test-pipeline');
+        // stdin stops on its own, so the start is a run.
+        await waitFor(() =>
+          expect(runsOf(useRunHistoryStore.getState().runs, 'test-pipeline')[0]).toMatchObject({
+            outcome: 'running',
+            trigger: 'manual',
+          })
+        );
+      });
+
+      it('marks the run going as stopped from here when saving stops the pipeline', async () => {
+        pinSystemTime(SAVE_TIME);
+        const user = userEvent.setup();
+        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
+        useRunHistoryStore.getState().startManualRun('test-pipeline', { now: SAVE_TIME - 60_000 });
+        const stopPipelineMock = rs.fn().mockReturnValue(create(ConsoleStopPipelineResponseSchema, {}));
+
+        render(<PipelinePage />, { transport: createTransport({ stopPipelineMock }) });
+
+        await user.click(await screen.findByTestId('save-pipeline-options'));
+        await user.click(await screen.findByRole('menuitem', { name: 'Save and stop' }));
+
+        await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
+        await waitFor(() =>
+          expect(runsOf(useRunHistoryStore.getState().runs, 'test-pipeline')[0]?.stopRequested).toBe(true)
+        );
       });
     });
 
@@ -2452,6 +2491,19 @@ describe('pipelinePage saving and recovering work', () => {
       await user.click(await screen.findByTestId('confirm-delete-draft'));
 
       await waitFor(() => expect(useRpcnEditorAutosaveStore.getState().entries).toHaveLength(0));
+    });
+
+    // They live in this browser only, so nothing else would clear them.
+    it('drops a deleted draft’s schedule and runs', async () => {
+      useSchedulePreviewStore.getState().saveSchedule('test-pipeline', defaultSchedule('UTC'));
+      useRunHistoryStore.getState().startManualRun('test-pipeline', { now: Date.UTC(2026, 0, 15, 12) });
+      const { user } = renderPipelinePage('edit', { getPipelineMock: rs.fn().mockReturnValue(draftPipeline()) });
+
+      await user.click(await screen.findByTestId('delete-draft'));
+      await user.click(await screen.findByTestId('confirm-delete-draft'));
+
+      await waitFor(() => expect(runsOf(useRunHistoryStore.getState().runs, 'test-pipeline')).toEqual([]));
+      expect(scheduleOf(useSchedulePreviewStore.getState().schedules, 'test-pipeline')).toBeUndefined();
     });
 
     // Deleting is a departure the user has already confirmed, so a second dialog would offer to save

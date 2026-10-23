@@ -41,6 +41,8 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -73,7 +75,9 @@ import {
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
 import { extractLintHintsFromError } from '../errors';
 import { cpuToTasks, tasksToCPU } from '../tasks';
+import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import { navigateToConnectClusters } from '../utils/navigation';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { usesServiceAccountLogin } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -130,6 +134,10 @@ type SaveAttempt = {
   skipNavigation: boolean;
   submittedSettings: PipelineFormValues;
   write: PipelineWrite;
+  /** Starting it records a run: it stops on its own. */
+  recordsRun: boolean;
+  /** A run starts when it's asked for, so the page's data from before then can't end it. */
+  requestedAt: number;
 };
 
 type StopOutcome = { stopped: boolean; stopFailed: boolean };
@@ -281,6 +289,8 @@ function saveAttempt(
       draft: run === 'draft',
       serviceAccount: flow.attachedServiceAccount,
     },
+    recordsRun: startRecordsRun(summarizePipelineEndYaml(yamlContent).status),
+    requestedAt: Date.now(),
   };
 }
 
@@ -344,6 +354,13 @@ function leaveAfterCreate(
   });
 }
 
+// CreatePipeline starts it, so a deploy is a run.
+function recordDeployRun(attempt: SaveAttempt, newPipelineId: string | undefined) {
+  if (newPipelineId && attempt.recordsRun && !(attempt.isDraftSave || attempt.run === 'stopped')) {
+    useRunHistoryStore.getState().startManualRun(newPipelineId, { now: attempt.requestedAt });
+  }
+}
+
 async function requestCreate(flow: SaveFlow, write: PipelineWrite) {
   const response = await flow.createPipeline(buildCreateRequest(write));
   flow.setErrorLintHints({});
@@ -354,6 +371,7 @@ async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt): Promise<bo
   const createdPipeline = await requestCreate(flow, attempt.write);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, createdPipeline);
   const stopOutcome = await stopCreatedPipeline(flow, attempt, createdPipeline?.id, draftWasIgnored);
+  recordDeployRun(attempt, createdPipeline?.id);
   flow.clearWizardStore();
   flow.markSaved(
     attempt.write.yamlContent,
@@ -387,17 +405,26 @@ function reportRunFailure(flow: SaveFlow, run: SaveRunIntent, runError: ConnectE
  * UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first. Resolves
  * to false when the start or stop failed, which the saved configuration survives.
  */
-async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string): Promise<boolean> {
+async function applyRunIntent(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string): Promise<boolean> {
   try {
-    if (run === 'start') {
+    if (attempt.run === 'start') {
+      const startedAt = Date.now();
       await flow.startPipeline(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
-    } else if (run === 'stopped') {
+      recordStartedRun(attempt, pipelineId, startedAt);
+    } else if (attempt.run === 'stopped') {
       await flow.stopPipeline(create(StopPipelineRequestSchema, { request: { id: pipelineId } }));
+      useRunHistoryStore.getState().requestStop(pipelineId);
     }
     return true;
   } catch (runErr) {
-    reportRunFailure(flow, run, ConnectError.from(runErr));
+    reportRunFailure(flow, attempt.run, ConnectError.from(runErr));
     return false;
+  }
+}
+
+function recordStartedRun(attempt: SaveAttempt, pipelineId: string, startedAt: number) {
+  if (attempt.recordsRun) {
+    useRunHistoryStore.getState().startManualRun(pipelineId, { now: startedAt });
   }
 }
 
@@ -428,7 +455,7 @@ async function requestUpdate(flow: SaveFlow, write: PipelineWrite, pipelineId: s
 async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string): Promise<boolean> {
   const updatedPipeline = await requestUpdate(flow, attempt.write, pipelineId);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, updatedPipeline);
-  const runSucceeded = await applyRunIntent(flow, attempt.run, pipelineId);
+  const runSucceeded = await applyRunIntent(flow, attempt, pipelineId);
   flow.markSaved(
     attempt.write.yamlContent,
     attempt.submittedSettings,
@@ -629,6 +656,8 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
+          useSchedulePreviewStore.getState().removeSchedule(id);
+          useRunHistoryStore.getState().replaceRuns(id, []);
           toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
           onBeforeGuardedNavigate?.();
           navigateToConnectClusters(navigate);

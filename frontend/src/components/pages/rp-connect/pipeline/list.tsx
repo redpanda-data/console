@@ -47,8 +47,7 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { appGlobal } from 'state/app-global';
-import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
-import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { areSchedulesEnabled, scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
@@ -57,12 +56,14 @@ import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-
 import { type PipelineRow, soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
 import {
   columnFiltersFromSearch,
+  DEFAULT_PAGE_SIZE,
   facetSearchFromFilters,
   nextPipelineListSearch,
   type PipelineListSearch,
   readPipelineListSearch,
   sortingFromSearch,
   sortSearchFromSorting,
+  withoutScheduleView,
 } from './list-search';
 import { PipelineListSkeleton } from './list-skeleton';
 import {
@@ -72,14 +73,16 @@ import {
   pipelineListEmptyText,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
-import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
-import { runObservation } from './use-run-observer';
+import { PipelineScheduleDialog } from './pipeline-schedule';
+import { useRunsObserver } from './use-run-observer';
 import { TabKafkaConnect } from '../../connect/overview';
-
-const PAGE_SIZE = 20;
 
 // A browser timer that waits longer than about 24 days fires at once, so the schedule clock rechecks hourly.
 const MAX_SCHEDULE_CLOCK_WAIT_MS = 60 * 60 * 1000;
+
+// How often the list checks on a run this browser started; slower than a pipeline's page, as it refetches
+// every page.
+const RUN_WATCH_INTERVAL_MS = 10_000;
 
 // Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
 // flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
@@ -121,50 +124,65 @@ const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boo
     : `Couldn't refresh pipelines: ${error.message}`;
 };
 
-// With the schedule preview on, each row carries its schedule.
+// With the schedule preview on, each row carries its schedule, re-joined once the soonest run is due
+// so its next run and the Schedule order move on.
 const useScheduledRows = (baseRows: PipelineRow[]): PipelineRow[] => {
   const schedulesEnabled = areSchedulesEnabled();
   const schedules = useSchedulePreviewStore((s) => s.schedules);
-  const [scheduleClock, setScheduleClock] = useState(() => Date.now());
+  // Bumped once the soonest run is due; each join reads the time itself, so a schedule saved since is
+  // judged from now.
+  const [tick, setTick] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `tick` re-joins once the soonest run is due.
   const pipelines = useMemo(
-    () => (schedulesEnabled ? withSchedules(baseRows, (id) => scheduleOf(schedules, id), scheduleClock) : baseRows),
-    [baseRows, schedulesEnabled, schedules, scheduleClock]
+    () => (schedulesEnabled ? withSchedules(baseRows, (id) => scheduleOf(schedules, id), Date.now()) : baseRows),
+    [baseRows, schedulesEnabled, schedules, tick]
   );
-  // Re-join once the soonest run is due, so its next run and the Schedule order move on.
-  const soonest = useMemo(() => soonestRun(pipelines), [pipelines]);
+  // Re-armed by every join, so a capped wait that passes with the soonest run unchanged waits again.
   useEffect(() => {
+    const soonest = soonestRun(pipelines);
     if (soonest === undefined) {
       return;
     }
-    const wait = Math.min(Math.max(soonest - scheduleClock, 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
-    const timer = setTimeout(() => setScheduleClock(Date.now()), wait);
+    const wait = Math.min(Math.max(soonest - Date.now(), 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
+    const timer = setTimeout(() => setTick((n) => n + 1), wait);
     return () => clearTimeout(timer);
-  }, [soonest, scheduleClock]);
+  }, [pipelines]);
   return pipelines;
 };
 
-// Ends runs this browser started once the list sees their pipelines stop.
-const useListRunObserver = (rows: PipelineRow[]) => {
-  const runHistory = useRunHistoryStore((s) => s.runs);
-  const observeRun = useRunHistoryStore((s) => s.observe);
-  useEffect(() => {
-    for (const row of rows) {
-      if (runsOf(runHistory, row.id).some((run) => run.outcome === 'running' && !run.simulated)) {
-        observeRun(row.id, runObservation(row.state), { now: Date.now(), updatedAt: row.editedAt ?? undefined });
-      }
-    }
-  }, [rows, runHistory, observeRun]);
+// The listed pipelines' query and rows. It polls while a pipeline starts or stops, and while a listed
+// pipeline has a run this browser started, until the list sees that run end or an hour passes.
+const useListedPipelines = () => {
+  // Follows the rows below.
+  const [watchingRun, setWatchingRun] = useState(false);
+  const query = useListPipelinesQuery(LIST_WITH_DRAFTS, {
+    enableSmartPolling: true,
+    steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+    // A hidden tab still sees the run end, within the browser's timer throttling.
+    refetchIntervalInBackground: watchingRun,
+  });
+  const baseRows = useMemo(
+    () =>
+      (query.data?.pipelines || [])
+        .filter(
+          (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
+        )
+        .map(toPipelineRow),
+    [query.data]
+  );
+  // Ends runs this browser started once the list sees their pipelines stop.
+  const listsOpenRun = useRunsObserver(baseRows, query.dataUpdatedAt);
+  if (listsOpenRun !== watchingRun) {
+    setWatchingRun(listsOpenRun);
+  }
+  return { query, baseRows };
 };
 
 const usePipelineListData = () => {
   const {
-    data: pipelinesData,
-    isLoading,
-    error,
-    hasNextPage,
-  } = useListPipelinesQuery(LIST_WITH_DRAFTS, {
-    enableSmartPolling: true,
-  });
+    query: { data: pipelinesData, isLoading, error, hasNextPage },
+    baseRows,
+  } = useListedPipelines();
   const invalidatePipelineQueries = useInvalidatePipelineQueries();
   useEffect(() => {
     appGlobal.onRefresh = () => {
@@ -172,17 +190,7 @@ const usePipelineListData = () => {
     };
   }, [invalidatePipelineQueries]);
 
-  const baseRows = useMemo(
-    () =>
-      (pipelinesData?.pipelines || [])
-        .filter(
-          (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
-        )
-        .map(toPipelineRow),
-    [pipelinesData]
-  );
   const pipelines = useScheduledRows(baseRows);
-  useListRunObserver(baseRows);
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   return {
@@ -203,8 +211,8 @@ const usePipelineListData = () => {
 const usePipelineListColumns = (onEditSchedule?: (pipelineId: string) => void) => {
   const navigate = useNavigate();
   const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
-  const { mutate: startMutation } = useStartPipelineMutation();
-  const { mutate: stopMutation } = useStopPipelineMutation();
+  const { mutateAsync: startMutation } = useStartPipelineMutation();
+  const { mutateAsync: stopMutation } = useStopPipelineMutation();
 
   return useMemo(
     () =>
@@ -227,16 +235,31 @@ const reportSearchUpdateFailure = (error: unknown) => {
 };
 
 // The list's view lives in the URL. Every change replaces the entry rather than pushing one, and any
-// change but a page move goes back to page 1.
+// change but a page move goes back to page 1. It reads the settled location: while a navigation away is
+// pending, `location` is already the next page's.
 const usePipelineListSearch = () => {
   const navigate = useNavigate();
-  const rawSearch = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
-  const search = useMemo(() => readPipelineListSearch(rawSearch), [rawSearch]);
+  const rawSearch = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).search }) as Record<
+    string,
+    unknown
+  >;
+  const schedulesEnabled = areSchedulesEnabled();
+  // A schedule sort or filter left in a link does nothing without the Schedule column.
+  const search = useMemo(() => {
+    const read = readPipelineListSearch(rawSearch);
+    return schedulesEnabled ? read : withoutScheduleView(read);
+  }, [rawSearch, schedulesEnabled]);
   const update = useCallback(
     (patch: SearchPatch, { keepPage = false }: { keepPage?: boolean } = {}) => {
-      const next = nextPipelineListSearch(rawSearch, keepPage ? patch : { ...patch, page: undefined });
+      const full = keepPage ? patch : { ...patch, page: undefined };
+      const next = nextPipelineListSearch(rawSearch, full);
       if (JSON.stringify(next) !== JSON.stringify(nextPipelineListSearch(rawSearch, {}))) {
-        navigate({ to: '.', search: next, replace: true }).catch(reportSearchUpdateFailure);
+        // Built on the latest search, so two writes before the first settles both land.
+        navigate({
+          to: '.',
+          search: (prev: Record<string, unknown>) => nextPipelineListSearch(prev, full),
+          replace: true,
+        }).catch(reportSearchUpdateFailure);
       }
     },
     [navigate, rawSearch]
@@ -256,7 +279,10 @@ const usePipelinesTable = (
   const columns = usePipelineListColumns(onEditSchedule);
   const sorting = useMemo(() => sortingFromSearch(search), [search]);
   const columnFilters = useMemo(() => columnFiltersFromSearch(search), [search]);
-  const pagination = useMemo(() => ({ pageIndex: (search.page ?? 1) - 1, pageSize: PAGE_SIZE }), [search.page]);
+  const pagination = useMemo(
+    () => ({ pageIndex: (search.page ?? 1) - 1, pageSize: search.size ?? DEFAULT_PAGE_SIZE }),
+    [search.page, search.size]
+  );
 
   const table = useDataTable({
     data: pipelines,
@@ -272,8 +298,10 @@ const usePipelinesTable = (
     state: { sorting, columnFilters, pagination },
     onSortingChange: (updater) => update(sortSearchFromSorting(functionalUpdate(updater, sorting))),
     onColumnFiltersChange: (updater) => update(facetSearchFromFilters(functionalUpdate(updater, columnFilters))),
-    onPaginationChange: (updater) =>
-      update({ page: functionalUpdate(updater, pagination).pageIndex + 1 }, { keepPage: true }),
+    onPaginationChange: (updater) => {
+      const next = functionalUpdate(updater, pagination);
+      update({ page: next.pageIndex + 1, size: next.pageSize }, { keepPage: true });
+    },
     // Pages stream in behind the first; the page only resets when the view changes.
     autoResetPageIndex: false,
   });
@@ -587,7 +615,7 @@ const PipelineListPageContent = () => {
   const nameSearch = usePipelineNameSearch(table, listSearch);
 
   if (list.isInitialLoading) {
-    return <PipelineListSkeleton />;
+    return <PipelineListSkeleton schedules={areSchedulesEnabled()} />;
   }
 
   if (list.error && list.pipelines.length === 0) {
@@ -700,8 +728,8 @@ export const PipelineListPage = () => {
         </TabsList>
         <TabsContents>
           <div className="p-6">
-            {/* keepMounted: panels unmount by default, dropping search/facets/page on a trip to the
-                Kafka Connect tab and back. */}
+            {/* keepMounted: a trip to the Kafka Connect tab and back keeps the list as it was, rather than
+                rebuilding it. */}
             <TabsContent keepMounted value="redpanda-connect">
               <RedpandaConnectContent />
             </TabsContent>

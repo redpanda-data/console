@@ -11,13 +11,15 @@
 
 import { z } from 'zod';
 
+import type { PipelineEndStatus } from './input-end-behavior';
+
 // A pipeline's runs, shaped as the scheduling API sketches them (start, end, outcome, trigger, message
 // counts). Until a server records runs, the preview keeps the ones this browser starts and sees end.
 
 export const RUN_OUTCOMES = ['running', 'completed', 'failed', 'timed-out', 'stopped', 'skipped'] as const;
 export type RunOutcome = (typeof RUN_OUTCOMES)[number];
 
-export const RUN_TRIGGERS = ['schedule', 'manual'] as const;
+const RUN_TRIGGERS = ['schedule', 'manual'] as const;
 export type RunTrigger = (typeof RUN_TRIGGERS)[number];
 
 export const pipelineRunSchema = z.object({
@@ -53,29 +55,44 @@ export function runDurationMs(run: PipelineRun, now: number): number | undefined
 /** What the pipeline's state says about an open run. */
 export type RunObservation = 'active' | 'stopped' | 'error' | 'other';
 
+// How long a run can go unseen before a stopped state means it ended out of sight, at a time unknown.
+const UNSEEN_RUN_MS = 2 * 60_000;
+
 /**
- * An open run updated by what the pipeline's state shows: marked active once it's seen starting or
- * running, and ended once it's seen stopped (completed, or stopped if asked to) or errored. A stopped
- * state counts only after the run was seen active, or once the pipeline changed after the run began
- * (`updatedAt`); before that it may be the state from before the start. The end is when the pipeline
- * last changed, or `now` if it hasn't since the run began. The same run comes back when nothing changes.
+ * An open run updated by what the pipeline's state showed when fetched at `fetchedAt`: marked active once
+ * it's seen starting or running, and ended once it's seen stopped (completed, or stopped if asked to) or
+ * errored. Data fetched before the start is ignored. Before the run is seen active, a stopped state may
+ * still be the one from before its start, so it ends the run only after a grace period. The end time is
+ * the sighting only when the run was seen active (`lastActiveAt`) shortly before. The same run comes back
+ * when nothing changes.
  */
 export function observeRun(
   run: PipelineRun,
   seen: RunObservation,
-  { now, updatedAt }: { now: number; updatedAt?: number }
+  fetchedAt: number,
+  lastActiveAt?: number
 ): PipelineRun {
-  if (run.outcome !== 'running' || run.simulated) {
+  if (run.outcome !== 'running' || run.simulated || fetchedAt < run.startTime) {
     return run;
   }
   if (seen === 'active') {
     return run.seenActive ? run : { ...run, seenActive: true };
   }
-  const changedSince = updatedAt !== undefined && updatedAt > run.startTime;
-  if (seen === 'other' || !(run.seenActive || changedSince)) {
+  if (seen === 'other' || !(run.seenActive || fetchedAt - run.startTime > UNSEEN_RUN_MS)) {
     return run;
   }
-  const end = changedSince ? updatedAt : Math.max(now, run.startTime);
+  return endedRun(run, seen, fetchedAt, lastActiveAt);
+}
+
+function endedRun(
+  run: PipelineRun,
+  seen: 'stopped' | 'error',
+  fetchedAt: number,
+  lastActiveAt: number | undefined
+): PipelineRun {
+  const seenLately =
+    lastActiveAt !== undefined && lastActiveAt >= run.startTime && fetchedAt - lastActiveAt <= UNSEEN_RUN_MS;
+  const end = seenLately ? fetchedAt : undefined;
   if (seen === 'error') {
     return { ...run, outcome: 'failed', endTime: end, note: 'The pipeline stopped with an error. Its logs say why.' };
   }
@@ -84,85 +101,52 @@ export function observeRun(
     : { ...run, outcome: 'completed', endTime: end };
 }
 
+// A run that a new start ends: stopped if it was seen active (it was asked to stop), else failed if the
+// pipeline errored since it began, and dropped otherwise, as nothing showed it ran.
+const supersededRun = (run: PipelineRun, now: number, lastErrorAt: number | undefined): PipelineRun[] => {
+  if (run.seenActive) {
+    return [endedRun(run, 'stopped', now, undefined)];
+  }
+  return lastErrorAt !== undefined && lastErrorAt >= run.startTime
+    ? [endedRun(run, 'error', lastErrorAt, undefined)]
+    : [];
+};
+
+/**
+ * `runs` with a manual run started at `now` first, unless a real run going was seen active and not asked
+ * to stop. Any other run going is over, as the pipeline started again; `lastErrorAt`, when the pipeline
+ * was last seen errored, says whether one not seen active failed.
+ */
+export function withStartedRun(
+  runs: PipelineRun[],
+  { now, simulated }: { now: number; simulated?: boolean },
+  lastErrorAt?: number
+): PipelineRun[] {
+  const open = runs.find((run) => run.outcome === 'running' && !run.simulated);
+  // A simulated run never ends a real one.
+  if (open && (simulated || (open.seenActive && !open.stopRequested))) {
+    return runs;
+  }
+  const earlier = runs.flatMap((run) => (run === open ? supersededRun(run, now, lastErrorAt) : [run]));
+  return [{ id: `manual-${now}`, startTime: now, outcome: 'running', trigger: 'manual', simulated }, ...earlier];
+}
+
+/** Whether a real run is going: one this browser started and is watching for its end. */
+export const hasOpenRun = (runs: PipelineRun[]): boolean =>
+  runs.some((run) => run.outcome === 'running' && !run.simulated);
+
+// How long a page polls for a run's end; a longer run is ended by the page's next fetch.
+const RUN_WATCH_MS = 60 * 60_000;
+
+/** Whether a real run going started recently enough to poll for its end. */
+export const isWatchingRun = (runs: PipelineRun[], now: number): boolean =>
+  runs.some((run) => run.outcome === 'running' && !run.simulated && now - run.startTime < RUN_WATCH_MS);
+
+/** Whether starting a pipeline records a run: only one that stops on its own has a run that ends. */
+export const startRecordsRun = (end: PipelineEndStatus): boolean => end === 'finite';
+
 /** How many of the runs that ended completed. */
 export function runTally(runs: PipelineRun[]): { completed: number; ended: number } {
   const ended = runs.filter((run) => run.outcome !== 'running');
   return { completed: ended.filter((run) => run.outcome === 'completed').length, ended: ended.length };
-}
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-type SampleRun = Omit<PipelineRun, 'id' | 'startTime' | 'endTime'> & { ago: number; lasted?: number };
-
-// One of each state the history shows, newest first, at fixed offsets from now.
-const SAMPLE_RUNS: SampleRun[] = [
-  { ago: 12 * MINUTE, outcome: 'running', trigger: 'schedule', messagesIn: 4210, messagesOut: 4180 },
-  {
-    ago: 1 * DAY,
-    lasted: 14 * MINUTE + 32_000,
-    outcome: 'completed',
-    trigger: 'schedule',
-    messagesIn: 12_480,
-    messagesOut: 12_480,
-  },
-  {
-    ago: 1 * DAY + 5 * HOUR,
-    lasted: 3 * MINUTE + 4000,
-    outcome: 'completed',
-    trigger: 'manual',
-    messagesIn: 2310,
-    messagesOut: 2310,
-  },
-  { ago: 2 * DAY, outcome: 'skipped', trigger: 'schedule', note: 'The previous run was still going.' },
-  {
-    ago: 3 * DAY,
-    lasted: 4 * HOUR,
-    outcome: 'timed-out',
-    trigger: 'schedule',
-    messagesIn: 2_104_000,
-    messagesOut: 2_098_500,
-    note: 'Stopped at its 4 hour limit.',
-  },
-  {
-    ago: 4 * DAY,
-    lasted: 2 * MINUTE + 10_000,
-    outcome: 'failed',
-    trigger: 'schedule',
-    messagesIn: 340,
-    messagesOut: 0,
-    note: 'output redpanda: SASL authentication failed',
-  },
-  {
-    ago: 5 * DAY,
-    lasted: 8 * MINUTE,
-    outcome: 'stopped',
-    trigger: 'manual',
-    messagesIn: 980,
-    messagesOut: 975,
-    note: 'Stopped from Console.',
-  },
-  {
-    ago: 6 * DAY,
-    lasted: 13 * MINUTE + 51_000,
-    outcome: 'completed',
-    trigger: 'schedule',
-    messagesIn: 11_920,
-    messagesOut: 11_920,
-  },
-];
-
-/** A history with a run in every state, for trying the history out before a server records runs. */
-export function sampleRuns(now: number): PipelineRun[] {
-  return SAMPLE_RUNS.map(({ ago, lasted, ...run }) => {
-    const startTime = now - ago;
-    return {
-      ...run,
-      id: `sample-${ago}`,
-      startTime,
-      endTime: lasted === undefined ? undefined : startTime + lasted,
-      simulated: true,
-    };
-  });
 }

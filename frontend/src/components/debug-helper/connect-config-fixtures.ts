@@ -1870,7 +1870,7 @@ output:
 
 const brokerBatchingWithPeriod = `# Batching on the broker itself. Every member ends and the policy has a period,
 # so the last partial batch is flushed and the pipeline stops. Remove the period
-# and it reads "Unknown": the last batch would wait forever to fill.
+# and it reads "May not stop": the last batch would wait forever to fill.
 input:
   broker:
     batching:
@@ -1993,7 +1993,7 @@ output:
 
 const incompleteStopConditions = `# Stop conditions Connect's lint accepts but that fail once the pipeline runs.
 # The editor reports each in the Problems panel and on the input's stop row; the
-# pipeline reads "Stop condition incomplete".
+# pipeline reads "Needs fixing".
 input:
   broker:
     inputs:

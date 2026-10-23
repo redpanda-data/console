@@ -45,20 +45,22 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { isFeatureFlagEnabled } from 'config';
 import { AlertTriangle, Box, CalendarClock, CalendarOff, CalendarX2, CircleCheck, CircleX, Info } from 'lucide-react';
-import { type ReactNode, useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
-import { prettyMilliseconds } from 'utils/utils';
+import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
-import { inputEndRows } from './pipeline-end-chip';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { RichText } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { type PipelineEndStatus, type PipelineEndSummary, readPipelineEnd } from '../utils/input-end-behavior';
-import { type PipelineFlowNode, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import {
+  type InputEndRow,
+  inputEndRows,
+  type PipelineFlowNode,
+  parsePipelineFlowTree,
+} from '../utils/pipeline-flow-parser';
 import {
   browserTimeZone,
   defaultSchedule,
@@ -79,14 +81,12 @@ import {
   type ScheduleCadence,
   type ScheduleState,
   scheduleState,
+  untilLabel,
   WEEKDAY_ORDER,
   weekdayName,
 } from '../utils/pipeline-schedule';
 
-export const areSchedulesEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineSchedules');
-
-export const SCHEDULE_PREVIEW_NOTE =
-  'Preview: saved in this browser only. The pipeline won’t start on this schedule yet.';
+const SCHEDULE_PREVIEW_NOTE = 'Preview: saved in this browser only. The pipeline won’t start on this schedule yet.';
 
 // ── Status ─────────────────────────────────────────────────────────────────
 
@@ -117,27 +117,30 @@ function subscribeClock(listener: () => void): () => void {
   };
 }
 
-/** The current time, refreshed often enough for an "in 5m" label. */
-export function useClock(): number {
-  return useSyncExternalStore(subscribeClock, () => clockNow);
+// Nothing ticks the clock while no label is shown, so the first read after a while catches it up.
+function clockSnapshot(): number {
+  if (Math.abs(Date.now() - clockNow) >= CLOCK_TICK_MS) {
+    clockNow = Date.now();
+  }
+  return clockNow;
 }
 
-export const untilLabel = (at: number, now: number) =>
-  at - now < 60_000 ? 'in under a minute' : `in ${prettyMilliseconds(at - now, { compact: true })}`;
+/** The current time, refreshed often enough for an "in 5m" label. */
+export function useClock(): number {
+  return useSyncExternalStore(subscribeClock, clockSnapshot);
+}
 
 const ON_HOLD_REASON: Record<Exclude<PipelineEndStatus, 'finite'>, string> = {
   continuous: 'The pipeline doesn’t stop on its own.',
-  invalid: 'A stop condition is incomplete.',
+  invalid: 'An input needs fixing.',
   unknown: 'The pipeline may not stop on its own.',
   none: 'The pipeline has no input.',
 };
 
 type ScheduleCopy = {
-  label: string;
   /** What the schedule does now, after its description. */
   detail: string;
   next?: number;
-  tone: string;
   Icon: typeof CalendarClock;
 };
 
@@ -148,29 +151,19 @@ function scheduleCopy(
 ): ScheduleCopy {
   const state = scheduleState(schedule, end);
   if (state === 'paused') {
-    return {
-      label: 'Schedule paused',
-      detail: 'No runs until the schedule is turned back on.',
-      tone: 'text-muted-foreground',
-      Icon: CalendarOff,
-    };
+    return { detail: 'No runs until the schedule is turned on.', Icon: CalendarOff };
   }
   if (state === 'on-hold') {
     const reason = end.behavior?.reason ?? ON_HOLD_REASON[end.status as Exclude<PipelineEndStatus, 'finite'>];
     return {
-      label: 'Schedule on hold',
       detail: `${reason} Scheduled runs are on hold until the pipeline stops on its own again.`,
-      tone: 'text-warning',
       Icon: CalendarX2,
     };
   }
-  const description = describeSchedule(schedule);
   const [next] = nextRuns(schedule, now);
   return {
-    label: next ? `${description} · next run ${untilLabel(next, now)}` : description,
     detail: next ? `Next run ${formatRunTime(next, schedule.timeZone)}.` : 'No run is coming up.',
     next,
-    tone: 'text-foreground',
     Icon: CalendarClock,
   };
 }
@@ -182,19 +175,18 @@ const ScheduleTooltipBody = ({ schedule, detail }: { schedule: PipelineSchedule;
   </>
 );
 
+const UNPARSED_END: PipelineEndSummary = { status: 'none' };
+
 // The last parseable YAML's answer, so a half-typed edit doesn't flip the schedule's status.
 function useSettledEnd(configYaml: string): PipelineEndSummary {
   const end = useMemo(() => readPipelineEnd(configYaml), [configYaml]);
-  const [lastParsed, setLastParsed] = useState<PipelineEndSummary>({ status: 'none' });
-  useEffect(() => {
-    if (end) {
-      setLastParsed(end);
-    }
-  }, [end]);
-  return end ?? lastParsed;
+  const [lastParsed, setLastParsed] = useState(end);
+  if (end && end !== lastParsed) {
+    setLastParsed(end);
+  }
+  return end ?? lastParsed ?? UNPARSED_END;
 }
 
-/** The schedule for a page header's meta row; opens the schedule dialog. */
 // The header's schedule control: what it does at a glance and when it next runs; opens the dialog.
 // Mounted only with a schedule, so an unscheduled pipeline neither ticks a clock nor re-parses its YAML.
 function SchedulePill({
@@ -210,27 +202,32 @@ function SchedulePill({
   const now = useClock();
   const state = scheduleState(schedule, end);
   const { detail, next, Icon } = scheduleCopy(schedule, end, now);
+  const nextLabel = next ? `next run ${untilLabel(next, now)}` : LINE_LABEL[state].toLowerCase();
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
         <Button
-          className={cn('gap-2', state === 'on-hold' && 'text-warning')}
+          aria-haspopup="dialog"
+          aria-label={`Schedule: ${describeSchedule(schedule)}, ${nextLabel}`}
           data-state={state}
           onClick={onOpen}
           size="sm"
           testId="pipeline-schedule-pill"
           variant="outline"
         >
-          <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
-          {/* The glance already reads as a schedule, so only a state that stops runs gets an icon. */}
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 border-l pl-2',
-              state === 'on-hold' ? 'border-warning/40' : 'text-muted-foreground'
-            )}
-          >
-            {next ? null : <Icon aria-hidden />}
-            {next ? untilLabel(next, now) : LINE_LABEL[state]}
+          {/* Carries the on-hold ink; `contents` leaves the button's layout alone. */}
+          <span className={cn('contents', state === 'on-hold' && 'text-warning')}>
+            <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
+            {/* The glance already reads as a schedule, so only a state that stops runs gets an icon. */}
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 border-l pl-2',
+                state === 'on-hold' ? 'border-warning/40' : 'text-muted-foreground'
+              )}
+            >
+              {next ? null : <Icon aria-hidden />}
+              {next ? untilLabel(next, now) : LINE_LABEL[state]}
+            </span>
           </span>
         </Button>
       </TooltipTrigger>
@@ -241,7 +238,7 @@ function SchedulePill({
   );
 }
 
-export const LINE_LABEL: Record<ScheduleState, string> = {
+const LINE_LABEL: Record<ScheduleState, string> = {
   active: 'Scheduled',
   paused: 'Paused',
   'on-hold': 'On hold',
@@ -272,7 +269,7 @@ export function PipelineScheduleCell({
       >
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 whitespace-nowrap text-body-sm',
+            'inline-flex items-center gap-1.5 text-body-sm whitespace-nowrap',
             state === 'active' && 'text-foreground',
             state === 'paused' && 'text-muted-foreground',
             state === 'on-hold' && 'text-warning'
@@ -306,7 +303,7 @@ const READINESS_COPY: Record<Readiness, { title: string; detail: string }> = {
     detail: 'A scheduled run has to end by itself, and these inputs keep it running:',
   },
   invalid: {
-    title: 'A stop condition is incomplete',
+    title: 'An input needs fixing',
     detail: 'The pipeline can’t start until it’s fixed:',
   },
   unknown: {
@@ -324,23 +321,35 @@ const READINESS_COPY: Record<Readiness, { title: string; detail: string }> = {
 };
 
 const BLOCKING_KINDS = new Set(['continuous', 'invalid', 'unknown']);
+const TRAILING_COLON_RE = /:$/;
+
+const ownsEnd = (node: PipelineFlowNode | undefined) =>
+  node?.kind === 'group' && node.stopSlot?.condition !== undefined;
 
 // The inputs a run's end turns on. A broker/sequence with a stop condition of its own ends by it, so its
-// members don't count; one without is explained by its members.
+// members don't count; one without is explained by its members. Not ready, it's the inputs that block:
+// each one unless an input inside it is what blocks, and a broken one whatever stops it.
 function readinessRows(configYaml: string, ready: boolean) {
   const { nodes } = parsePipelineFlowTree(configYaml);
   const byId = new Map(nodes.map((node) => [node.id, node]));
-  const ownsEnd = (node: PipelineFlowNode | undefined) =>
-    node?.kind === 'group' && node.stopSlot?.condition !== undefined;
   const decided = (node: PipelineFlowNode | undefined): boolean => {
     const parent = node?.parentId ? byId.get(node.parentId) : undefined;
     return parent !== undefined && (ownsEnd(parent) || decided(parent));
   };
-  const rows = inputEndRows(nodes).filter((row) => {
-    const node = byId.get(row.id);
-    return (node?.kind !== 'group' || ownsEnd(node)) && !decided(node);
-  });
-  return ready ? rows : rows.filter((row) => BLOCKING_KINDS.has(row.effective.kind));
+  const rows = inputEndRows(nodes);
+  if (ready) {
+    return rows.filter((row) => {
+      const node = byId.get(row.id);
+      return (node?.kind !== 'group' || ownsEnd(node)) && !decided(node);
+    });
+  }
+  const blocking = rows.filter(
+    (row) => BLOCKING_KINDS.has(row.effective.kind) && (row.effective.kind === 'invalid' || !decided(byId.get(row.id)))
+  );
+  const blockingIds = new Set(blocking.map((row) => row.id));
+  const blockedWithin = (id: string): boolean =>
+    nodes.some((node) => node.parentId === id && (blockingIds.has(node.id) || blockedWithin(node.id)));
+  return blocking.filter((row) => !blockedWithin(row.id));
 }
 
 const CaveatLine = ({ text }: { text: string }) => (
@@ -351,6 +360,48 @@ const CaveatLine = ({ text }: { text: string }) => (
     </span>
   </span>
 );
+
+// An input and how it ends; `showHint` adds how to make it stop.
+const ReadinessInput = ({ row, showHint }: { row: InputEndRow; showHint: boolean }) => (
+  <li className="flex items-start gap-2">
+    <ConnectorLogo className="mt-0.5 size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
+    <span className="flex min-w-0 flex-col">
+      <span>
+        <span className="font-medium">{row.labelText ?? row.name}</span>
+        <span className="text-muted-foreground">
+          {' — '}
+          <RichText text={row.effective.reason} />
+          {showHint && row.effective.finiteHint ? (
+            <>
+              {' '}
+              <RichText text={row.effective.finiteHint} />
+            </>
+          ) : null}
+        </span>
+      </span>
+      {row.effective.caveat ? <CaveatLine text={row.effective.caveat} /> : null}
+    </span>
+  </li>
+);
+
+const FoldedInputsLine = ({ count, shown, onToggle }: { count: number; shown: boolean; onToggle: () => void }) => (
+  <span className="flex flex-wrap items-baseline gap-x-2">
+    {count === 1 ? 'Its input stops by itself.' : `All ${count} inputs stop by themselves.`}
+    {/* The negative margin sets the link's text flush with the sentence. */}
+    <Button aria-expanded={shown} className="-mx-3 h-auto" onClick={onToggle} size="sm" variant="link">
+      {shown ? 'Hide inputs' : 'Show inputs'}
+    </Button>
+  </span>
+);
+
+// The alert's words. With no input to list, the pipeline's own end explains it.
+function readinessText(end: PipelineEndSummary | undefined, rowCount: number) {
+  const copy = READINESS_COPY[end ? end.status : 'unparsed'];
+  const detail = rowCount > 0 ? copy.detail : copy.detail.replace(TRAILING_COLON_RE, '.');
+  const behavior = end && end.status !== 'finite' && end.status !== 'none' && rowCount === 0 ? end.behavior : undefined;
+  const reason = behavior ? [behavior.reason, behavior.finiteHint].filter(Boolean).join(' ') : undefined;
+  return { title: copy.title, detail, reason };
+}
 
 function ScheduleReadiness({
   configYaml,
@@ -364,64 +415,34 @@ function ScheduleReadiness({
 }) {
   const ready = end?.status === 'finite';
   const rows = useMemo(() => (end ? readinessRows(configYaml, ready) : []), [configYaml, end, ready]);
-  const copy = READINESS_COPY[end ? end.status : 'unparsed'];
+  const { title, detail, reason } = readinessText(end, rows.length);
   // Ready needs no action, so its inputs fold away unless one carries a warning.
-  const hasCaveat = rows.some((row) => row.effective.caveat);
+  const folded = ready && !rows.some((row) => row.effective.caveat);
   const [showInputs, setShowInputs] = useState(false);
-  const listed = !ready || hasCaveat || showInputs;
   return (
     <Alert
       icon={ready ? <CircleCheck /> : <CircleX />}
       testId="schedule-readiness"
       variant={ready ? 'success' : 'warning'}
     >
-      <AlertTitle>{copy.title}</AlertTitle>
-      <AlertDescription className="flex flex-col gap-2">
-        {ready && !hasCaveat ? (
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            {rows.length === 1 ? 'Its input stops by itself.' : `All ${rows.length} inputs stop by themselves.`}
-            <Button
-              aria-expanded={showInputs}
-              className="h-auto p-0"
-              onClick={() => setShowInputs((v) => !v)}
-              size="sm"
-              variant="link"
-            >
-              {showInputs ? 'Hide inputs' : 'Show inputs'}
-            </Button>
-          </span>
-        ) : (
-          <span>{copy.detail}</span>
-        )}
-        {listed && rows.length > 0 ? (
-          <ul className="flex flex-col gap-1.5">
-            {rows.map((row) => (
-              <li className="flex items-start gap-2" key={row.id}>
-                <ConnectorLogo className="mt-0.5 size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
-                <span className="flex min-w-0 flex-col">
-                  <span>
-                    <span className="font-medium">{row.labelText ?? row.name}</span>
-                    <span className="text-muted-foreground">
-                      {' — '}
-                      <RichText text={row.effective.reason} />
-                      {!ready && row.effective.finiteHint ? (
-                        <>
-                          {' '}
-                          <RichText text={row.effective.finiteHint} />
-                        </>
-                      ) : null}
-                    </span>
-                  </span>
-                  {row.effective.caveat ? <CaveatLine text={row.effective.caveat} /> : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {!ready && end && end.status !== 'none' && rows.length === 0 && end.behavior ? (
-          <RichText text={end.behavior.reason} />
-        ) : null}
-        {ready ? null : <div>{fixHint}</div>}
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>
+        <div className="flex flex-col gap-2">
+          {folded ? (
+            <FoldedInputsLine count={rows.length} onToggle={() => setShowInputs((v) => !v)} shown={showInputs} />
+          ) : (
+            <span>{detail}</span>
+          )}
+          {(!folded || showInputs) && rows.length > 0 ? (
+            <ul className="flex flex-col gap-1.5">
+              {rows.map((row) => (
+                <ReadinessInput key={row.id} row={row} showHint={!ready} />
+              ))}
+            </ul>
+          ) : null}
+          {reason ? <RichText text={reason} /> : null}
+          {ready ? null : <div>{fixHint}</div>}
+        </div>
       </AlertDescription>
     </Alert>
   );
@@ -533,14 +554,8 @@ function WeekdaysField({ form }: { form: ScheduleForm }) {
                 variant="outline"
               >
                 {WEEKDAY_ORDER.map((day) => (
-                  <ToggleGroupItem
-                    aria-label={weekdayName(day)}
-                    className="px-2.5"
-                    key={day}
-                    value={String(day)}
-                    variant="outline"
-                  >
-                    {weekdayName(day, 'short')}
+                  <ToggleGroupItem aria-label={weekdayName(day)} key={day} value={String(day)} variant="outline">
+                    <span className="px-1">{weekdayName(day, 'short')}</span>
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
@@ -763,7 +778,7 @@ function RuntimeField({ form }: { form: ScheduleForm }) {
           control={form.control}
           name="maxRuntime"
           render={({ field }) => (
-            <FormItem className="pl-12">
+            <FormItem className="ml-12">
               <div className="flex items-center gap-2">
                 <span className="text-body text-muted-foreground">Stop a run after</span>
                 <FormControl
@@ -817,7 +832,13 @@ const RUN_PREVIEW_COUNT = 3;
 function RunPreviewLines({ schedule, now, ready }: { schedule: PipelineSchedule; now: number; ready: boolean }) {
   let status: ReactNode = null;
   if (!schedule.enabled) {
-    status = <span className="text-body-sm text-muted-foreground">Off: it runs at these times once turned on.</span>;
+    status = (
+      <span className="text-body-sm text-muted-foreground">
+        {ready
+          ? 'Paused: it runs at these times once turned on.'
+          : 'Paused: it can run at these times once every input stops on its own.'}
+      </span>
+    );
   } else if (!ready) {
     status = <span className="text-body-sm text-warning">On hold: no runs until the pipeline stops on its own.</span>;
   }
@@ -851,12 +872,12 @@ function RunPreview({ form, ready }: { form: ScheduleForm; ready: boolean }) {
     >
       {schedule ? (
         <>
-          <span className="font-medium text-body">{describeSchedule(schedule)}</span>
+          <span className="text-body font-medium">{describeSchedule(schedule)}</span>
           <RunPreviewLines now={now} ready={ready} schedule={schedule} />
         </>
       ) : (
         <>
-          <span className="font-medium text-body">Next runs</span>
+          <span className="text-body font-medium">Next runs</span>
           <span className="text-body-sm text-muted-foreground">Finish the fields above to see when it runs.</span>
         </>
       )}
@@ -866,7 +887,7 @@ function RunPreview({ form, ready }: { form: ScheduleForm; ready: boolean }) {
           {limit ? `Runs stop after ${describeRuntime(limit)}. ` : null}
           If a run is still going when the next one is due, the next one is skipped.
           {schedule && runtimeOverlapsNextRun(schedule)
-            ? ' This limit is longer than the time between runs, so some may skip.'
+            ? ' This limit is at least as long as the time between runs, so some may skip.'
             : null}
         </span>
       </span>
@@ -896,34 +917,26 @@ type ScheduleDialogProps = {
   fixHint: ReactNode;
   /** The YAML judged has edits the running pipeline doesn't have yet. */
   hasUnsavedChanges?: boolean;
+  /** Where focus goes on close, when saving or removing swaps the control that opened it. */
+  finalFocus?: () => HTMLElement | boolean;
 };
 
 export function PipelineScheduleDialog(props: ScheduleDialogProps) {
-  const { open, onOpenChange } = props;
+  const { open, onOpenChange, finalFocus } = props;
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       {/* The popup unmounts once closed, so each open starts from the saved schedule. */}
-      <DialogContent size="lg" testId="pipeline-schedule-dialog">
+      <DialogContent finalFocus={finalFocus} size="lg" testId="pipeline-schedule-dialog">
         <ScheduleDialogBody {...props} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, hasUnsavedChanges }: ScheduleDialogProps) {
-  const existing = usePipelineSchedule(pipelineId);
+// Saving or removing the schedule closes the dialog.
+function useScheduleDialogActions(pipelineId: string, onOpenChange: (open: boolean) => void) {
   const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
   const removeSchedule = useSchedulePreviewStore((s) => s.removeSchedule);
-  const end = useMemo(() => readPipelineEnd(configYaml), [configYaml]);
-  const ready = end?.status === 'finite';
-  const form = useForm<PipelineSchedule>({
-    resolver: zodResolver(pipelineScheduleSchema),
-    // A new schedule starts switched off.
-    defaultValues: existing ?? defaultSchedule(),
-  });
-  const cadence = useWatch({ control: form.control, name: 'cadence' });
-  const enabled = useWatch({ control: form.control, name: 'enabled' });
-  const blocked = enabled && !ready;
 
   const onSubmit = (submitted: PipelineSchedule) => {
     const values = normalizeSchedule(submitted);
@@ -940,14 +953,31 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
     onOpenChange(false);
   };
 
+  return { onSubmit, onRemove };
+}
+
+function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, hasUnsavedChanges }: ScheduleDialogProps) {
+  const existing = usePipelineSchedule(pipelineId);
+  const { onSubmit, onRemove } = useScheduleDialogActions(pipelineId, onOpenChange);
+  const end = useMemo(() => readPipelineEnd(configYaml), [configYaml]);
+  const ready = end?.status === 'finite';
+  const form = useForm<PipelineSchedule>({
+    resolver: zodResolver(pipelineScheduleSchema),
+    // A new schedule starts switched off.
+    defaultValues: existing ?? defaultSchedule(),
+  });
+  const cadence = useWatch({ control: form.control, name: 'cadence' });
+  const enabled = useWatch({ control: form.control, name: 'enabled' });
+  const blocked = enabled && !ready;
+
   return (
     <Form {...form}>
       <form className="flex min-h-0 flex-col" noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center">
             Schedule runs
             <Tooltip>
-              <TooltipTrigger render={<span className="inline-flex" />}>
+              <TooltipTrigger render={<span className="ml-2 inline-flex" />}>
                 <Badge tone="informative" variant="outline">
                   Preview
                 </Badge>
@@ -957,56 +987,58 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
           </DialogTitle>
           <DialogDescription>Start this pipeline automatically. Each run ends when its inputs stop.</DialogDescription>
         </DialogHeader>
-        <DialogBody className="flex flex-col gap-5">
-          <ScheduleReadiness configYaml={configYaml} end={end} fixHint={fixHint} />
-          {hasUnsavedChanges ? (
-            <p className="-mt-3 text-body-sm text-muted-foreground">
-              {ready
-                ? 'Judged on your unsaved changes. Save the pipeline so scheduled runs use them.'
-                : 'Judged on your unsaved changes.'}
-            </p>
-          ) : null}
-          <FormField
-            control={form.control}
-            name="enabled"
-            render={({ field }) => (
-              <FormItem layout="horizontal-start">
-                <FormControl
-                  render={
-                    <Switch
-                      checked={field.value}
-                      disabled={!(ready || field.value)}
-                      onCheckedChange={field.onChange}
-                      testId="schedule-enabled"
-                    />
-                  }
-                />
-                <div className="flex flex-col gap-0.5">
-                  <FormLabel>Run on a schedule</FormLabel>
-                  <FormDescription>{enabledHint(ready, field.value)}</FormDescription>
-                </div>
-              </FormItem>
-            )}
-          />
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="w-64">
-                <CadenceField form={form} />
-              </div>
-              {cadence === 'custom' ? null : <TimeField cadence={cadence} form={form} />}
-              {cadence === 'monthly' ? <DayOfMonthField form={form} /> : null}
-            </div>
-            {cadence === 'weekly' ? <WeekdaysField form={form} /> : null}
-            {cadence === 'custom' ? (
-              <div className="flex flex-wrap items-start gap-3">
-                <IntervalFields form={form} />
-                <TimeField cadence={cadence} form={form} />
-              </div>
+        <DialogBody spacing="none">
+          <div className="flex flex-col gap-5">
+            <ScheduleReadiness configYaml={configYaml} end={end} fixHint={fixHint} />
+            {hasUnsavedChanges ? (
+              <p className="-mt-3 text-body-sm text-muted-foreground">
+                {ready
+                  ? 'Judged on your unsaved changes. Save the pipeline so scheduled runs use them.'
+                  : 'Judged on your unsaved changes.'}
+              </p>
             ) : null}
-            <TimeZoneField form={form} />
-            <RuntimeField form={form} />
+            <FormField
+              control={form.control}
+              name="enabled"
+              render={({ field }) => (
+                <FormItem layout="horizontal-start">
+                  <FormControl
+                    render={
+                      <Switch
+                        checked={field.value}
+                        disabled={!(ready || field.value)}
+                        onCheckedChange={field.onChange}
+                        testId="schedule-enabled"
+                      />
+                    }
+                  />
+                  <div className="flex flex-col gap-0.5">
+                    <FormLabel>Run on a schedule</FormLabel>
+                    <FormDescription>{enabledHint(ready, field.value)}</FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="w-64">
+                  <CadenceField form={form} />
+                </div>
+                {cadence === 'custom' ? null : <TimeField cadence={cadence} form={form} />}
+                {cadence === 'monthly' ? <DayOfMonthField form={form} /> : null}
+              </div>
+              {cadence === 'weekly' ? <WeekdaysField form={form} /> : null}
+              {cadence === 'custom' ? (
+                <div className="flex flex-wrap items-start gap-3">
+                  <IntervalFields form={form} />
+                  <TimeField cadence={cadence} form={form} />
+                </div>
+              ) : null}
+              <TimeZoneField form={form} />
+              <RuntimeField form={form} />
+            </div>
+            <RunPreview form={form} ready={ready} />
           </div>
-          <RunPreview form={form} ready={ready} />
         </DialogBody>
         <DialogFooter className="sm:justify-between">
           {existing ? (
@@ -1030,7 +1062,51 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
   );
 }
 
-/** A header's schedule button and the dialog it opens; `meta` opens the same dialog. */
+function ScheduleControlButton({
+  schedule,
+  pipelineId,
+  configYaml,
+  onOpen,
+}: {
+  schedule: PipelineSchedule | undefined;
+  pipelineId: string | undefined;
+  configYaml: string;
+  onOpen: () => void;
+}) {
+  if (schedule) {
+    // With a schedule, the control is the schedule itself.
+    return <SchedulePill configYaml={configYaml} onOpen={onOpen} schedule={schedule} />;
+  }
+  if (pipelineId) {
+    return (
+      <Button
+        className="shrink-0"
+        icon={<CalendarClock />}
+        onClick={onOpen}
+        size="sm"
+        testId="pipeline-schedule-button"
+        variant="outline"
+      >
+        Schedule
+      </Button>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="shrink-0" />}>
+        <Button disabled icon={<CalendarClock />} size="sm" variant="outline">
+          Schedule
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Save the pipeline first, then set its schedule.</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * A header's schedule control and the dialog it opens: the schedule itself once there is one, otherwise a
+ * Schedule button. `scheduled` says whether there is one.
+ */
 export function usePipelineScheduleControl({
   pipelineId,
   configYaml,
@@ -1044,44 +1120,27 @@ export function usePipelineScheduleControl({
 }): { button: ReactNode; dialog: ReactNode; scheduled: boolean } {
   const [open, setOpen] = useState(false);
   const schedule = usePipelineSchedule(pipelineId);
+  // Saving the first schedule swaps the button for the pill, and removing it swaps them back.
+  const controlRef = useRef<HTMLSpanElement>(null);
   if (!areSchedulesEnabled()) {
     return { button: null, dialog: null, scheduled: false };
   }
-  let button: ReactNode;
-  if (schedule) {
-    // With a schedule, the control is the schedule itself.
-    button = <SchedulePill configYaml={configYaml} onOpen={() => setOpen(true)} schedule={schedule} />;
-  } else if (pipelineId) {
-    button = (
-      <Button
-        className="shrink-0"
-        icon={<CalendarClock />}
-        onClick={() => setOpen(true)}
-        size="sm"
-        testId="pipeline-schedule-button"
-        variant="outline"
-      >
-        Schedule
-      </Button>
-    );
-  } else {
-    button = (
-      <Tooltip>
-        <TooltipTrigger render={<span className="shrink-0" />}>
-          <Button disabled icon={<CalendarClock />} size="sm" variant="outline">
-            Schedule
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Save the pipeline first, then set its schedule.</TooltipContent>
-      </Tooltip>
-    );
-  }
   return {
-    button,
+    button: (
+      <span className="contents" ref={controlRef}>
+        <ScheduleControlButton
+          configYaml={configYaml}
+          onOpen={() => setOpen(true)}
+          pipelineId={pipelineId}
+          schedule={schedule}
+        />
+      </span>
+    ),
     scheduled: schedule !== undefined,
     dialog: pipelineId ? (
       <PipelineScheduleDialog
         configYaml={configYaml}
+        finalFocus={() => controlRef.current?.querySelector('button') ?? true}
         fixHint={fixHint}
         hasUnsavedChanges={hasUnsavedChanges}
         onOpenChange={setOpen}

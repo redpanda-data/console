@@ -53,6 +53,8 @@ export const useGetPipelineQuery = (
     refetchInterval?: number | false | ((query: { state?: { data?: GetPipelineResponse } }) => number | false);
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
+    /** Also poll at this interval while the pipeline isn't starting or stopping (which polls faster). */
+    steadyPollInterval?: number;
   }
 ) => {
   const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
@@ -67,7 +69,7 @@ export const useGetPipelineQuery = (
         const state = query?.state?.data?.response?.pipeline?.state;
         // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
         const shouldPoll = state && transitionalStates.includes(state);
-        return shouldPoll ? SHORT_POLLING_INTERVAL : false;
+        return shouldPoll ? SHORT_POLLING_INTERVAL : (options?.steadyPollInterval ?? false);
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,
@@ -79,6 +81,9 @@ export const useListPipelinesQuery = (
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {
     /** Enable smart polling when pipelines are in transitional states (STARTING/STOPPING) */
     enableSmartPolling?: boolean;
+    /** With smart polling, also poll at this interval while no pipeline is starting or stopping. */
+    steadyPollInterval?: number;
+    refetchIntervalInBackground?: boolean;
   }
 ) => {
   // Stabilize request objects to prevent unnecessary re-renders
@@ -108,9 +113,10 @@ export const useListPipelinesQuery = (
           const hasTransitional = pages?.some((page) =>
             page?.response?.pipelines?.some((p) => transitionalStates.includes(p?.state))
           );
-          return hasTransitional ? SHORT_POLLING_INTERVAL : false;
+          return hasTransitional ? SHORT_POLLING_INTERVAL : (options.steadyPollInterval ?? false);
         }
       : false,
+    refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
       // Any token already requested, not just the last one: keyset tokens only move forward, so a

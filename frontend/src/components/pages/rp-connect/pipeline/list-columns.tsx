@@ -96,11 +96,19 @@ export const SCHEDULE_FILTER_OPTIONS = [
   { value: 'none', label: 'Not scheduled', icon: CalendarMinus },
 ];
 
+const scheduleKey = (row: PipelineRow) => row.schedule?.state ?? 'none';
+const scheduleFilterFn: FilterFn<DataTableFeatures, PipelineRow> = (row, _columnId, filterValue: string[]) =>
+  filterValue.includes(scheduleKey(row.original));
+scheduleFilterFn.autoRemove = inSelectionFilterFn.autoRemove;
+
 const scheduleColumn: DataTableColumnDef<PipelineRow> = {
   id: 'schedule',
-  accessorFn: (row) => row.schedule?.state ?? 'none',
+  // Undefined without a schedule, so those rows sort last either way; filtered and counted as 'none'.
+  accessorFn: (row) => row.schedule?.state,
+  getUniqueValues: (row) => [scheduleKey(row)],
+  sortUndefined: 'last',
   header: ({ column }) => <DataTableColumnHeader column={column} title="Schedule" />,
-  filterFn: inSelectionFilterFn,
+  filterFn: scheduleFilterFn,
   sortFn: (rowA, rowB) => compareSchedules(rowA.original, rowB.original),
   cell: ({ row }) =>
     row.original.schedule ? (
@@ -198,7 +206,7 @@ export const createColumns = ({
     filterFn: 'arrIncludesSome',
     getUniqueValues: (row) => row.tags.map(tagFilterValue),
     cell: ({ row }) => {
-      const tags = row.original.tags;
+      const { tags } = row.original;
       if (tags.length === 0) {
         return <EmptyCell />;
       }

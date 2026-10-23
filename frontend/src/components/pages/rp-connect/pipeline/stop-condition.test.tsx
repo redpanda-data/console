@@ -13,16 +13,7 @@ import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
 
-import {
-  draftFromStopForm,
-  offersRestart,
-  StopConditionEditor,
-  StopConditionSection,
-  type StopFormState,
-  stopFormSchema,
-  stopFormState,
-  stopRowText,
-} from './stop-condition';
+import { StopConditionEditor, StopConditionSection } from './stop-condition';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import type { StopSlot } from '../utils/pipeline-flow-parser';
 
@@ -34,90 +25,40 @@ const natural: InputEndBehavior = { kind: 'natural', reason: 'Reads every object
 const openSlot: StopSlot = { path: ['input'], ownEnd: continuous };
 const CHOOSE_BELOW_RE = /Choose how it should stop below/;
 
-// The fields the schema reports a problem on.
-const problemsIn = (state: StopFormState) => {
-  const result = stopFormSchema.safeParse(state);
-  return result.success ? [] : result.error.issues.map((issue) => issue.path[0]);
-};
+// The editor for a `redpanda` input with no stop condition.
+function renderOpenEditor() {
+  const user = userEvent.setup();
+  const onApply = rs.fn();
+  const onClose = rs.fn();
+  const { unmount } = render(
+    <StopConditionEditor effective={continuous} name="redpanda" onApply={onApply} onClose={onClose} slot={openSlot} />
+  );
+  return { user, onApply, onClose, unmount };
+}
 
-describe('stop form model', () => {
-  test('starts from the slot’s current condition', () => {
-    expect(stopFormState(undefined).mode).toBe('none');
-    expect(stopFormState({ check: 'counter() >= 50', idleTimeout: '5m' })).toMatchObject({
-      mode: 'count',
-      limit: '50',
-      alsoIdle: true,
-      idle: '5m',
-    });
-    expect(stopFormState({ check: 'this.done' })).toMatchObject({ mode: 'check', check: 'this.done', alsoIdle: false });
-    expect(stopFormState({ idleTimeout: '10s' })).toMatchObject({ mode: 'idle', idle: '10s' });
-  });
+async function replaceLimit(user: ReturnType<typeof userEvent.setup>, text: string) {
+  const limit = screen.getByRole('textbox', { name: 'Message limit' });
+  await user.clear(limit);
+  await user.type(limit, text);
+}
 
-  test('validates only what the chosen mode uses', () => {
-    const base = stopFormState(undefined);
-    expect(problemsIn({ ...base, mode: 'count', limit: '0' })).toEqual(['limit']);
-    expect(problemsIn({ ...base, mode: 'count', limit: '1.5' })).toEqual(['limit']);
-    expect(problemsIn({ ...base, mode: 'count', limit: '10' })).toEqual([]);
-    expect(problemsIn({ ...base, mode: 'check', check: '  ' })).toEqual(['check']);
-    expect(problemsIn({ ...base, mode: 'idle', idle: 'later' })).toEqual(['idle']);
-    // An idle value that isn't used doesn't block.
-    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later' })).toEqual([]);
-    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later', alsoIdle: true })).toEqual(['idle']);
-  });
+async function expectNoRestartWith(user: ReturnType<typeof userEvent.setup>, mode: string) {
+  await user.click(screen.getByRole('radio', { name: mode }));
+  expect(screen.queryByText('Read the input again if it finishes first')).not.toBeInTheDocument();
+}
 
-  test('turns the choice into a draft', () => {
-    const base = stopFormState(undefined);
-    expect(draftFromStopForm(base)).toBeNull();
-    expect(draftFromStopForm({ ...base, mode: 'count', limit: ' 25 ' })).toEqual({ messageLimit: 25 });
-    expect(
-      draftFromStopForm({ ...base, mode: 'check', check: 'this.x', alsoIdle: true, idle: '1m', restart: true })
-    ).toEqual({
-      check: 'this.x',
-      idleTimeout: '1m',
-      restartInput: true,
-    });
-    // Restart goes into the draft only while the form offers it.
-    expect(draftFromStopForm({ ...base, mode: 'idle', idle: '2m', restart: true }, false)).toEqual({
-      idleTimeout: '2m',
-    });
-    expect(draftFromStopForm({ ...base, mode: 'check', check: 'this.x', restart: true }, false)).toEqual({
-      check: 'this.x',
-    });
-  });
-
-  test('offers restart_input with a count or check for an input that can finish, or whenever the YAML sets it', () => {
-    // A re-read input never goes idle, so an idle timeout alone doesn't offer it.
-    expect(offersRestart('idle', natural)).toBe(false);
-    expect(offersRestart('check', natural)).toBe(true);
-    expect(offersRestart('count', continuous)).toBe(false);
-    const set = { idleTimeout: '30s', restartInput: true };
-    expect(offersRestart('idle', natural, set)).toBe(true);
-    // So applying the form as loaded writes back what the YAML has.
-    const state = stopFormState(set);
-    expect(draftFromStopForm(state, offersRestart(state.mode, natural, set))).toEqual(set);
-  });
-});
-
-describe('StopConditionEditor', () => {
+describe('the StopConditionEditor', () => {
   test('applies a message limit, and won’t apply an invalid one', async () => {
-    const user = userEvent.setup();
-    const onApply = rs.fn();
-    const onClose = rs.fn();
-    render(
-      <StopConditionEditor effective={continuous} name="redpanda" onApply={onApply} onClose={onClose} slot={openSlot} />
-    );
+    const { user, onApply, onClose } = renderOpenEditor();
 
     expect(screen.getByRole('radio', { name: 'Keep running' })).toBeChecked();
     await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
-    const limit = screen.getByRole('textbox', { name: 'Message limit' });
-    await user.clear(limit);
-    await user.type(limit, '0');
+    await replaceLimit(user, '0');
     await user.click(screen.getByRole('button', { name: 'Apply' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a whole number greater than 0.');
     expect(onApply).not.toHaveBeenCalled();
 
-    await user.clear(limit);
-    await user.type(limit, '500{enter}');
+    await replaceLimit(user, '500{enter}');
     expect(onApply).toHaveBeenCalledWith({ messageLimit: 500 });
     expect(onClose).toHaveBeenCalled();
   });
@@ -144,12 +85,8 @@ describe('StopConditionEditor', () => {
   });
 
   test('offers restarting only for an input that can finish by itself', async () => {
-    const user = userEvent.setup();
-    const { unmount } = render(
-      <StopConditionEditor effective={continuous} name="redpanda" onApply={rs.fn()} onClose={rs.fn()} slot={openSlot} />
-    );
-    await user.click(screen.getByRole('radio', { name: 'When a message matches' }));
-    expect(screen.queryByText('Read the input again if it finishes first')).not.toBeInTheDocument();
+    const { user, unmount } = renderOpenEditor();
+    await expectNoRestartWith(user, 'When a message matches');
     unmount();
 
     render(
@@ -162,8 +99,7 @@ describe('StopConditionEditor', () => {
       />
     );
     expect(screen.getByRole('radio', { name: 'When it runs out of data' })).toBeChecked();
-    await user.click(screen.getByRole('radio', { name: 'When it goes idle' }));
-    expect(screen.queryByText('Read the input again if it finishes first')).not.toBeInTheDocument();
+    await expectNoRestartWith(user, 'When it goes idle');
     await user.click(screen.getByRole('radio', { name: 'When a message matches' }));
     await user.click(screen.getByRole('checkbox', { name: 'Read the input again if it finishes first' }));
     expect(screen.getByTestId('stop-backstop-hint')).toHaveTextContent('read again and again and never stops');
@@ -249,6 +185,39 @@ describe('StopConditionEditor', () => {
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
 
+  test('arrow keys in a field move its caret, not the chosen mode', async () => {
+    const user = userEvent.setup();
+    render(
+      <StopConditionEditor effective={continuous} name="redpanda" onApply={rs.fn()} onClose={rs.fn()} slot={openSlot} />
+    );
+    await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
+    const limit = screen.getByRole('textbox', { name: 'Message limit' });
+    await user.click(limit);
+    // Past the end, as the radio group would otherwise take it.
+    await user.keyboard('{End}{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'After a number of messages' })).toBeChecked();
+    expect(limit).toHaveFocus();
+  });
+
+  test('a locked input says when it stops, then why it can’t be edited here', () => {
+    render(
+      <StopConditionEditor
+        effective={{ kind: 'condition', reason: 'Stops after 30 seconds without new messages.' }}
+        name="kafka_franz"
+        onClose={rs.fn()}
+        slot={{
+          ...openSlot,
+          condition: { idleTimeout: '30s' },
+          locked: 'Its `restart_input` is set from an env var. Change its stop condition in the YAML.',
+        }}
+      />
+    );
+    expect(screen.getByText('When', { exact: false })).toHaveTextContent('When kafka_franz stops');
+    expect(screen.getByText('Stops after 30 seconds without new messages.', { exact: false })).toHaveTextContent(
+      'Stops after 30 seconds without new messages. Its restart_input is set from an env var.'
+    );
+  });
+
   test('choosing to keep running clears the condition', async () => {
     const user = userEvent.setup();
     const onApply = rs.fn();
@@ -268,7 +237,7 @@ describe('StopConditionEditor', () => {
   });
 });
 
-describe('StopConditionSection', () => {
+describe('the StopConditionSection', () => {
   test('shows the current end with a Set action, and config keys as code', () => {
     render(
       <StopConditionSection
@@ -288,45 +257,5 @@ describe('StopConditionSection', () => {
       'Reads every object in the bucket, then stops.'
     );
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
-  });
-});
-
-describe('summaries', () => {
-  test('a broker row counts the members that keep it running', () => {
-    const members = { total: 3, continuous: 1, unknown: 0, invalid: 0 };
-    const group = { isGroup: true };
-    expect(stopRowText('broker', openSlot, { ...continuous, members }, group)).toEqual({
-      eyebrow: 'Continuous',
-      text: '1 of 3 inputs never stops',
-    });
-    expect(stopRowText('broker', openSlot, { ...continuous, members: { ...members, continuous: 3 } }, group).text).toBe(
-      'none of its 3 inputs stop'
-    );
-    expect(stopRowText('sequence', openSlot, { ...natural, members }, group).text).toBe('after its last input stops');
-    const stopped = { kind: 'condition' as const, reason: 'Stops after 5 seconds without new messages.' };
-    expect(
-      stopRowText('broker', { path: ['input'], condition: { idleTimeout: '5s' }, ownEnd: natural }, stopped, group)
-    ).toEqual({ eyebrow: 'Stops', text: 'after 5 seconds without new messages' });
-  });
-
-  test('an input card’s row is short enough for the card, and invites a condition when it can take one', () => {
-    const stopped = { kind: 'condition' as const, reason: '' };
-    const limited: StopSlot = {
-      path: ['input'],
-      condition: { check: 'counter() >= 1000', idleTimeout: '1m' },
-      ownEnd: continuous,
-    };
-    expect(stopRowText('kafka', limited, stopped)).toEqual({ eyebrow: 'Stops', text: 'after 1K msgs or 1m idle' });
-    expect(stopRowText('aws_s3', { path: ['input'], ownEnd: natural }, natural).text).toBe('when its data runs out');
-    expect(stopRowText('kafka', openSlot, continuous, { editable: true }).text).toBe('set a stop condition');
-    expect(stopRowText('kafka', openSlot, continuous).text).toBe('no stop condition');
-    const zero: StopSlot = { path: ['input'], condition: { idleTimeout: '0s' }, ownEnd: continuous };
-    expect(stopRowText('kafka', zero, continuous).text).toBe('condition never fires');
-    const empty: StopSlot = { path: ['input'], condition: {}, ownEnd: continuous };
-    expect(stopRowText('kafka', empty, { kind: 'invalid', reason: 'x' })).toEqual({
-      eyebrow: 'Fix stop',
-      text: 'condition incomplete',
-    });
-    expect(stopRowText('plugin', openSlot, { kind: 'unknown', reason: 'x' }).text).toBe('may not stop on its own');
   });
 });

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
@@ -18,7 +19,7 @@ import { useState } from 'react';
 import { prettyMilliseconds } from 'utils/utils';
 
 import { type PipelineRun, type RunOutcome, runDurationMs, runTally } from '../utils/pipeline-runs';
-import { runTimeParts } from '../utils/pipeline-schedule';
+import { browserTimeZone, runTimeParts } from '../utils/pipeline-schedule';
 
 const OUTCOME: Record<RunOutcome, { label: string; variant: StatusBadgeVariant; bar: string }> = {
   running: { label: 'Running', variant: 'informative', bar: 'animate-pulse bg-primary' },
@@ -39,7 +40,7 @@ const ago = (ms: number) => (ms < 60_000 ? 'just now' : `${prettyMilliseconds(ms
 /** The latest runs as ticks, oldest first, coloured by how each went. */
 export function RunOutcomeStrip({ runs }: { runs: PipelineRun[] }) {
   const latest = runs.slice(0, STRIP_RUNS).reverse();
-  const { completed, ended } = runTally(runs);
+  const { completed, ended } = runTally(latest);
   return (
     <span className="inline-flex items-center gap-2 text-body-sm text-muted-foreground">
       <span
@@ -56,12 +57,36 @@ export function RunOutcomeStrip({ runs }: { runs: PipelineRun[] }) {
   );
 }
 
+function RunDuration({ run, duration }: { run: PipelineRun; duration: number | undefined }) {
+  if (duration === undefined) {
+    return (
+      <ElementTooltip content={run.outcome === 'skipped' ? undefined : 'It ended while no page was watching it.'}>
+        <span className="text-muted-foreground">—</span>
+      </ElementTooltip>
+    );
+  }
+  if (run.outcome !== 'running') {
+    return prettyMilliseconds(duration, { unitCount: 2, secondsDecimalDigits: 0 });
+  }
+  // The clock ticks every 30s, so a run going shows whole minutes.
+  return duration < 60_000 ? (
+    <span className="text-muted-foreground">Just started</span>
+  ) : (
+    <>
+      {prettyMilliseconds(duration - (duration % 60_000), { unitCount: 2 })}
+      <span className="text-muted-foreground"> so far</span>
+    </>
+  );
+}
+
 /**
- * A pipeline's runs, newest first: when each started and what started it, how long it took and how it went.
- * Message counts get a column only once a run has them; only a server can count a real run's messages.
+ * A pipeline's runs, newest first, in the viewer's time zone: when each started and what started it, how
+ * long it took and how it went. Message counts get a column only once a run has them; only a server can
+ * count a real run's messages.
  */
-export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; timeZone: string; now: number }) {
+export function RunHistoryTable({ runs, now }: { runs: PipelineRun[]; now: number }) {
   const [showAll, setShowAll] = useState(false);
+  const timeZone = browserTimeZone();
   const shown = showAll ? runs : runs.slice(0, COLLAPSED_ROWS);
   const counted = runs.some((run) => run.messagesIn !== undefined || run.messagesOut !== undefined);
   return (
@@ -98,14 +123,7 @@ export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; 
                     </span>
                   </TableCell>
                   <TableCell className="align-top tabular-nums">
-                    {duration === undefined ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : (
-                      <>
-                        {prettyMilliseconds(duration, { unitCount: 2, secondsDecimalDigits: 0 })}
-                        {run.outcome === 'running' ? <span className="text-muted-foreground"> so far</span> : null}
-                      </>
-                    )}
+                    <RunDuration duration={duration} run={run} />
                   </TableCell>
                   {counted ? (
                     <TableCell className="align-top tabular-nums">
@@ -119,9 +137,9 @@ export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; 
                         {outcome.label}
                       </StatusBadge>
                       {run.note ? (
-                        <span className="max-w-64 truncate text-body-sm text-muted-foreground" title={run.note}>
-                          {run.note}
-                        </span>
+                        <ElementTooltip content={run.note}>
+                          <span className="max-w-64 truncate text-body-sm text-muted-foreground">{run.note}</span>
+                        </ElementTooltip>
                       ) : null}
                     </span>
                   </TableCell>

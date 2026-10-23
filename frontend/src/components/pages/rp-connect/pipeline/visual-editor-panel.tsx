@@ -37,7 +37,7 @@ import { pluralizeWithNumber } from 'utils/string';
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
-import { inputEndRows, PipelineEndChip } from './pipeline-end-chip';
+import { PipelineEndChip } from './pipeline-end-chip';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
@@ -50,7 +50,12 @@ import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema
 import { pipelineEndStatus } from '../utils/input-end-behavior';
 import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
 import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
-import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
+import {
+  inputEndRows,
+  type PipelineFlowNode,
+  parsePipelineFlowTree,
+  shouldOfferTemplate,
+} from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
 import {
   resolveStopCondition,
@@ -506,7 +511,17 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
     setSelectedNodeId(selected?.id ?? null);
   }, [selected, setSelectedNodeId]);
 
-  return { commitRef, yamlRef, commitPending, selected, setSelected, focus, selectNode, selectAndReveal, dropSelection };
+  return {
+    commitRef,
+    yamlRef,
+    commitPending,
+    selected,
+    setSelected,
+    focus,
+    selectNode,
+    selectAndReveal,
+    dropSelection,
+  };
 }
 
 type InspectorSelection = ReturnType<typeof useInspectorSelection>;
@@ -1396,7 +1411,10 @@ const DeleteNodeDialog = ({ deletion }: { deletion: PendingDelete }) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
-          <AlertDialogAction onClick={deletion.confirmDeleteNode} render={<Button variant="destructive">Remove</Button>} />
+          <AlertDialogAction
+            onClick={deletion.confirmDeleteNode}
+            render={<Button variant="destructive">Remove</Button>}
+          />
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

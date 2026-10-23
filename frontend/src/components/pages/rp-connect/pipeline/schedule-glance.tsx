@@ -36,7 +36,7 @@ function weekdaysLabel(days: number[]): string {
 }
 
 /** The days a schedule runs on, Monday first: each day's initial, filled on a run day. */
-export function WeekdayStrip({ days, muted = false }: { days: number[]; muted?: boolean }) {
+function WeekdayStrip({ days, muted = false }: { days: number[]; muted?: boolean }) {
   return (
     <span aria-label={weekdaysLabel(days)} className="inline-flex shrink-0 gap-px" role="img">
       {WEEKDAY_ORDER.map((day) => {
@@ -45,7 +45,7 @@ export function WeekdayStrip({ days, muted = false }: { days: number[]; muted?: 
           <span
             aria-hidden
             className={cn(
-              'flex size-4 items-center justify-center rounded-xs font-semibold text-2xs leading-none',
+              'flex size-4 items-center justify-center rounded-xs text-2xs leading-none font-semibold',
               on && !muted && 'bg-primary/15 text-primary',
               on && muted && 'bg-muted text-muted-foreground',
               !on && 'text-muted-foreground/40'
@@ -121,12 +121,12 @@ export function UpcomingRunTiles({
             )}
             key={run}
           >
-            <span className="font-medium text-2xs text-muted-foreground uppercase tracking-wide">{weekday}</span>
-            <span className="font-medium text-body">{date}</span>
+            <span className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">{weekday}</span>
+            <span className="text-body font-medium">{date}</span>
             <span className="text-body-sm text-muted-foreground">
               {time} {zone}
             </span>
-            {soon ? <span className="mt-0.5 font-medium text-body-sm text-primary">{soonLabel}</span> : null}
+            {soon ? <span className="mt-0.5 text-body-sm font-medium text-primary">{soonLabel}</span> : null}
           </li>
         );
       })}

@@ -22,6 +22,7 @@ import {
   buildChildrenMap,
   buildResourceRefResolver,
   CASE_CONTAINER_LABELS,
+  hasStopSlot,
   mainFlowSequence,
   type PipelineFlowNode,
   sectionChildren,
@@ -78,10 +79,7 @@ const FLOW_META_BLOCK_PAD = 12;
 // A switch case's routing-condition row beneath the header (only on cards carrying a `caseEditTarget`).
 const FLOW_CONDITION_ROW_H = 30;
 // An input's stop-condition row (StopRow), at the foot of its card or its broker/sequence marker.
-const FLOW_STOP_ROW_H = 30;
-
-const hasStopRow = (node: PipelineFlowNode): boolean =>
-  node.section === 'input' && Boolean(node.stopSlot && node.endBehavior);
+export const FLOW_STOP_ROW_H = 30;
 
 // Label badge and meta block are separately-padded rows; sum individually to track the rendered card.
 function labelAndMetaRowsHeight(node: PipelineFlowNode, dims: FlowDims): number {
@@ -99,7 +97,7 @@ function labelAndMetaRowsHeight(node: PipelineFlowNode, dims: FlowDims): number 
   if (metaRows > 0) {
     h += FLOW_META_BLOCK_PAD + metaRows * dims.metaRowH;
   }
-  if (hasStopRow(node)) {
+  if (hasStopSlot(node)) {
     h += FLOW_STOP_ROW_H;
   }
   return h;
@@ -282,7 +280,7 @@ function addGraphSplit(
     h:
       GRAPH_SPLIT_H +
       (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0) +
-      (hasStopRow(node) ? FLOW_STOP_ROW_H : 0) +
+      (hasStopSlot(node) ? FLOW_STOP_ROW_H : 0) +
       (footerAdd ? GRAPH_SPLIT_FOOTER_H : 0),
     childCount: ctx.childrenOf(node.id).length,
     ...(footerAdd ? { footerAdd } : {}),

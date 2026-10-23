@@ -141,3 +141,28 @@ describe('the PipelineRunButton', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
+
+describe('the PipelineRunButton’s run history', () => {
+  const STARTED = Date.UTC(2026, 0, 15, 12);
+
+  beforeEach(() => {
+    startMutate.mockReset();
+    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+    useRunHistoryStore.setState({ runs: {} });
+  });
+
+  // Before it's seen running, a stopped or errored state may be the one from before the start, so only
+  // starting it again shows that run is over.
+  test('a run that errored before it was seen running ends as failed when the pipeline is started again', async () => {
+    const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
+    useRunHistoryStore.getState().startManualRun('p1', { now: STARTED });
+    useRunHistoryStore.getState().observe('p1', 'error', STARTED + 20_000);
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.ERROR} recordsRuns />);
+    await user.click(screen.getByTestId('pipeline-start'));
+    expect(useRunHistoryStore.getState().runs['default/p1']).toEqual([
+      expect.objectContaining({ outcome: 'running' }),
+      expect.objectContaining({ outcome: 'failed' }),
+    ]);
+  });
+});

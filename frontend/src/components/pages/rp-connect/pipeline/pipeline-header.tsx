@@ -47,6 +47,7 @@ import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
@@ -62,9 +63,9 @@ import {
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { RichText } from './stop-condition';
-import { useRunObserver } from './use-run-observer';
 import { cpuToTasks } from '../tasks';
-import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -270,7 +271,50 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
   );
 };
 
-// Whether the pipeline stops on its own, for the meta row (null with no input to judge).
+// The facts under a pipeline's name: its id, size, topics and end, then its tags and description.
+function PipelineViewMeta({
+  pipeline,
+  units,
+  endSummary,
+}: {
+  pipeline: Pipeline;
+  units: number;
+  endSummary: PipelineEndSummary;
+}) {
+  const description = pipeline.description?.trim();
+  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
+  const topicCount = useMemo(
+    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
+    [pipeline.configYaml]
+  );
+  const editedAt = isDraft(pipeline) ? timestampToMillis(pipeline.updateTime) : null;
+  const items: MetaEntry[] = [
+    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
+    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
+    {
+      key: 'topics',
+      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
+    },
+    { key: 'end', node: endSummary.status === 'none' ? null : <PipelineEndMeta summary={endSummary} /> },
+    {
+      key: 'url',
+      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
+    },
+    { key: 'edited', node: editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <MetaStrip items={items} />
+      {tags.length > 0 ? (
+        <DetailLine label="Tags">
+          <TagBadges tags={tags} />
+        </DetailLine>
+      ) : null}
+      {description ? <DescriptionBlock clamp text={description} /> : null}
+    </div>
+  );
+}
+
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -288,14 +332,7 @@ export function PipelineViewHeader({
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
   const units = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
-  const description = pipeline.description?.trim();
-  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
-  const topicCount = useMemo(
-    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
-    [pipeline.configYaml]
-  );
   const endSummary = useMemo(() => summarizePipelineEndYaml(pipeline.configYaml ?? ''), [pipeline.configYaml]);
-  const endMeta = endSummary.status === 'none' ? null : <PipelineEndMeta summary={endSummary} />;
   const schedule = usePipelineScheduleControl({
     pipelineId: pipeline.id,
     configYaml: pipeline.configYaml,
@@ -303,7 +340,11 @@ export function PipelineViewHeader({
       <Button
         className="self-start"
         icon={<EditIcon />}
-        onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
+        onClick={() =>
+          navigate({ to: `/rp-connect/${pipeline.id}/edit` }).catch((error: unknown) => {
+            showToast({ status: 'error', title: 'Failed to open the pipeline editor', description: String(error) });
+          })
+        }
         size="sm"
         variant="outline"
       >
@@ -313,27 +354,8 @@ export function PipelineViewHeader({
   });
 
   const viewingDraft = isDraft(pipeline);
-  const editedAt = timestampToMillis(pipeline.updateTime);
-  // Ends a run this browser started once the pipeline is seen to stop.
-  useRunObserver(pipeline.id, pipeline.state, editedAt);
-
-  const items: MetaEntry[] = [
-    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
-    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
-    {
-      key: 'topics',
-      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
-    },
-    { key: 'end', node: endMeta },
-    {
-      key: 'url',
-      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
-    },
-    {
-      key: 'edited',
-      node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
-    },
-  ];
+  // A schedule's one extra run, for a pipeline whose runs end.
+  const runsNow = schedule.scheduled && endSummary.status === 'finite';
 
   return (
     <header className={headerClassName(expanded)}>
@@ -372,21 +394,13 @@ export function PipelineViewHeader({
             <PipelineRunButton
               pipelineId={pipeline.id}
               pipelineState={pipeline.state}
-              recordsRuns={endSummary.status === 'finite' || schedule.scheduled}
-              scheduled={schedule.scheduled}
+              recordsRuns={startRecordsRun(endSummary.status)}
+              scheduled={runsNow}
             />
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <MetaStrip items={items} />
-        {tags.length > 0 ? (
-          <DetailLine label="Tags">
-            <TagBadges tags={tags} />
-          </DetailLine>
-        ) : null}
-        {description ? <DescriptionBlock clamp text={description} /> : null}
-      </div>
+      <PipelineViewMeta endSummary={endSummary} pipeline={pipeline} units={units} />
       {schedule.dialog}
     </header>
   );
@@ -440,7 +454,7 @@ const SaveActions = ({
 };
 
 const EDIT_FIX_HINT_CANVAS =
-  'Close this and use the stop button beside each input on the canvas, or wrap it in `read_until` in the YAML.';
+  'Close this and use the stop row at the foot of each input card, or wrap the input in `read_until` in the YAML.';
 const EDIT_FIX_HINT_YAML = 'Wrap each one in `read_until` in the YAML, with a `check` or an `idle_timeout`.';
 
 export function PipelineEditHeader({

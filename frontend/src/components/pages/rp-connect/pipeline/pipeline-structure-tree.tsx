@@ -18,11 +18,12 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
-import { StopKindIcon, stopSummary } from './stop-condition';
+import { StopKindIcon } from './stop-condition';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { getNodeDocsUrl } from '../utils/connector-docs';
-import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { buildChildrenMap, hasStopSlot, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { stopSummary } from '../utils/read-until';
 
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
@@ -106,13 +107,10 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
   return null;
 };
 
-const hasStopMark = (node: PipelineFlowNode): boolean =>
-  node.section === 'input' && Boolean(node.stopSlot && node.endBehavior);
-
 // The id a row's StopMark describes it with (undefined for rows without one).
 function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
   const id = useId();
-  return hasStopMark(node) ? id : undefined;
+  return hasStopSlot(node) ? id : undefined;
 }
 
 // How an input ends — its stop condition, or on its own — as a small glyph with the full sentence
@@ -124,21 +122,21 @@ const StopMark = ({ node, descriptionId }: { node: PipelineFlowNode; description
   const { kind } = node.endBehavior;
   const ends = kind === 'condition' || kind === 'natural';
   const { long } = stopSummary(node.stopSlot, node.endBehavior);
+  // The tone and fill sit on the wrapper; the glyph draws in its currentColor.
   return (
     <ElementTooltip content={long}>
-      <span className="shrink-0">
+      <span
+        className={cn(
+          'shrink-0',
+          ends ? 'text-success' : 'text-muted-foreground',
+          kind === 'condition' && '[&_svg]:fill-current',
+          kind === 'invalid' && 'text-destructive'
+        )}
+      >
         <span className="sr-only" id={descriptionId}>
           {long}
         </span>
-        <StopKindIcon
-          className={cn(
-            'size-3.5',
-            ends ? 'text-success' : 'text-muted-foreground',
-            kind === 'condition' && 'fill-current',
-            kind === 'invalid' && 'text-destructive'
-          )}
-          kind={kind}
-        />
+        <StopKindIcon className="size-3.5" kind={kind} />
       </span>
     </ElementTooltip>
   );
