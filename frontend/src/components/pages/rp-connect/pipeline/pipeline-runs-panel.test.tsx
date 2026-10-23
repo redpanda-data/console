@@ -38,9 +38,29 @@ beforeEach(() => {
 });
 
 describe('PipelineRunsPanel', () => {
-  test('shows nothing for a pipeline without a schedule', () => {
-    render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
+  test('shows nothing for a pipeline that never stops and has no schedule', () => {
+    render(<PipelineRunsPanel configYaml={CONTINUOUS} pipelineId="p1" />);
     expect(screen.queryByTestId('pipeline-runs-panel')).not.toBeInTheDocument();
+  });
+
+  test('a pipeline that stops on its own shows its run history without a schedule', () => {
+    useRunHistoryStore.getState().replaceRuns('p1', [
+      {
+        id: 'a',
+        startTime: Date.now() - 120_000,
+        endTime: Date.now() - 10_000,
+        outcome: 'completed',
+        trigger: 'manual',
+      },
+    ]);
+    render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
+    expect(screen.getByTestId('pipeline-runs-panel')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Scheduled runs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit schedule' })).not.toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Run history' });
+    expect(within(table).getByText('Completed')).toBeInTheDocument();
+    // No run here has message counts, so there's no column for them.
+    expect(within(table).queryByRole('columnheader', { name: 'Messages' })).not.toBeInTheDocument();
   });
 
   test('lists the runs coming up, and where their history will be', () => {
@@ -94,6 +114,7 @@ describe('PipelineRunsPanel', () => {
     expect(rows[5]).toHaveTextContent('Failed');
     expect(rows[5]).toHaveTextContent('output redpanda: SASL authentication failed');
     expect(rows[2]).toHaveTextContent('Manual');
+    expect(rows[1]).toHaveTextContent('12.5K in · 12.5K out');
     expect(screen.queryByText('No runs yet')).not.toBeInTheDocument();
   });
 });

@@ -271,11 +271,6 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
 };
 
 // Whether the pipeline stops on its own, for the meta row (null with no input to judge).
-function usePipelineEndMeta(configYaml: string | undefined): ReactNode {
-  const summary = useMemo(() => summarizePipelineEndYaml(configYaml ?? ''), [configYaml]);
-  return summary.status === 'none' ? null : <PipelineEndMeta summary={summary} />;
-}
-
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -299,7 +294,8 @@ export function PipelineViewHeader({
     () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
     [pipeline.configYaml]
   );
-  const endMeta = usePipelineEndMeta(pipeline.configYaml);
+  const endSummary = useMemo(() => summarizePipelineEndYaml(pipeline.configYaml ?? ''), [pipeline.configYaml]);
+  const endMeta = endSummary.status === 'none' ? null : <PipelineEndMeta summary={endSummary} />;
   const schedule = usePipelineScheduleControl({
     pipelineId: pipeline.id,
     configYaml: pipeline.configYaml,
@@ -373,7 +369,12 @@ export function PipelineViewHeader({
           {viewingDraft ? (
             <StartDraftControl pipeline={pipeline} units={units} />
           ) : (
-            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} scheduled={schedule.scheduled} />
+            <PipelineRunButton
+              pipelineId={pipeline.id}
+              pipelineState={pipeline.state}
+              recordsRuns={endSummary.status === 'finite' || schedule.scheduled}
+              scheduled={schedule.scheduled}
+            />
           )}
         </div>
       </div>

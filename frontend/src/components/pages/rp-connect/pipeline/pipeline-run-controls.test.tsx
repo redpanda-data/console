@@ -37,7 +37,7 @@ describe('the PipelineStateBadge', () => {
 
 describe('the PipelineRunButton', () => {
   beforeEach(() => {
-    startMutate.mockClear();
+    startMutate.mockReset();
     stopMutate.mockClear();
     window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
     useRunHistoryStore.setState({ runs: {} });
@@ -71,7 +71,19 @@ describe('the PipelineRunButton', () => {
       outcome: 'running',
       trigger: 'manual',
     });
-    startMutate.mockReset();
+  });
+
+  test('a pipeline that stops on its own records its run, under its usual label', async () => {
+    const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} recordsRuns />);
+    const start = screen.getByTestId('pipeline-start');
+    expect(start).toHaveTextContent('Start pipeline');
+    await user.click(start);
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'running',
+      trigger: 'manual',
+    });
   });
 
   test.each([

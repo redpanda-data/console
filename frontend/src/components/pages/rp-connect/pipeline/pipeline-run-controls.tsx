@@ -92,7 +92,11 @@ const CANCEL_START_COPY = {
 type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
 
 // Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
-function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, scheduled: boolean) {
+function usePipelineRunActions(
+  pipelineId: string,
+  isCancellingStart: boolean,
+  { scheduled, recordsRuns }: { scheduled: boolean; recordsRuns: boolean }
+) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const startManualRun = useRunHistoryStore((s) => s.startManualRun);
@@ -102,8 +106,7 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, s
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
-        // A scheduled pipeline's runs are recorded; this one was started by hand.
-        if (scheduled) {
+        if (recordsRuns) {
           startManualRun(pipelineId);
         }
         toast.success(scheduled ? 'Run starting' : 'Pipeline starting');
@@ -113,7 +116,7 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, s
           formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
         ),
     });
-  }, [pipelineId, startMutation, scheduled, startManualRun]);
+  }, [pipelineId, startMutation, scheduled, recordsRuns, startManualRun]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
@@ -186,15 +189,18 @@ export function PipelineRunButton({
   pipelineId,
   pipelineState,
   scheduled = false,
+  recordsRuns = scheduled,
 }: {
   pipelineId: string;
   pipelineState?: Pipeline_State;
   /** With a schedule, starting it is a single run. */
   scheduled?: boolean;
+  /** Starting it records a run: it stops on its own, or has a schedule. */
+  recordsRuns?: boolean;
 }) {
   const action = runActionForState(pipelineState);
   const isCancellingStart = action === 'cancel-start';
-  const run = usePipelineRunActions(pipelineId, isCancellingStart, scheduled);
+  const run = usePipelineRunActions(pipelineId, isCancellingStart, { scheduled, recordsRuns });
 
   if (action === null) {
     return null;

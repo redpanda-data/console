@@ -330,7 +330,7 @@ function RunHistoryPanel() {
         />
         <span className="text-body-sm text-muted-foreground">
           {fromPage ? 'From the pipeline you’re viewing. ' : null}
-          History shows on the Monitor tab of a pipeline with a schedule.
+          History shows on the Monitor tab of a pipeline that stops on its own, or has a schedule.
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
