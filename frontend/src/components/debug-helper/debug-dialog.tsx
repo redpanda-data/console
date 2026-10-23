@@ -47,6 +47,7 @@ import {
   Eye,
   FileCode,
   Flag,
+  History,
   Info,
   RotateCw,
   Trash2,
@@ -56,6 +57,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { usePipelineRuns, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { pluralizeWithNumber } from 'utils/string';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
@@ -77,7 +79,9 @@ import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
 import { PIPELINE_END_RUNS, PipelineRunsCell } from '../pages/rp-connect/pipeline/pipeline-end-chip';
+import { RunOutcomeStrip } from '../pages/rp-connect/pipeline/run-history';
 import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
+import { sampleRuns } from '../pages/rp-connect/utils/pipeline-runs';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
 
@@ -297,6 +301,70 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
         </div>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+// The pipeline a pipeline page shows, to fill the run history tools in with.
+const PIPELINE_PATH_RE = /\/rp-connect\/([^/]+)/;
+
+function RunHistoryPanel() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const fromPage = PIPELINE_PATH_RE.exec(pathname)?.[1];
+  const [pipelineId, setPipelineId] = useState(() => (fromPage ? decodeURIComponent(fromPage) : ''));
+  const id = pipelineId.trim();
+  const runs = usePipelineRuns(id);
+  const replaceRuns = useRunHistoryStore((s) => s.replaceRuns);
+  const startManualRun = useRunHistoryStore((s) => s.startManualRun);
+  const running = runs[0]?.outcome === 'running';
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="debug-run-history-pipeline">Pipeline ID</Label>
+        <Input
+          className="max-w-sm font-mono"
+          id="debug-run-history-pipeline"
+          onChange={(e) => setPipelineId(e.target.value)}
+          placeholder="e.g. d4f2…"
+          value={pipelineId}
+        />
+        <span className="text-body-sm text-muted-foreground">
+          {fromPage ? 'From the pipeline you’re viewing. ' : null}
+          History shows on the Monitor tab of a pipeline with a schedule.
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          disabled={!id}
+          onClick={() => {
+            replaceRuns(id, sampleRuns(Date.now()));
+            toast.success('Sample runs added');
+          }}
+          size="sm"
+        >
+          Fill with sample runs
+        </Button>
+        <Button
+          disabled={!id || running}
+          onClick={() => startManualRun(id, { simulated: true })}
+          size="sm"
+          variant="outline"
+        >
+          Add a running run
+        </Button>
+        <Button disabled={runs.length === 0} onClick={() => replaceRuns(id, [])} size="sm" variant="destructive-ghost">
+          Clear history
+        </Button>
+      </div>
+      {runs.length > 0 ? (
+        <span className="flex flex-wrap items-center gap-3 text-body-sm text-muted-foreground">
+          {runs.length === 1 ? '1 run stored.' : `${runs.length} runs stored.`}
+          <RunOutcomeStrip runs={runs} />
+        </span>
+      ) : (
+        <span className="text-body-sm text-muted-foreground">No runs stored for this pipeline.</span>
+      )}
+    </div>
   );
 }
 
@@ -889,7 +957,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
+type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs' | 'runs';
 
 const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   overview: {
@@ -917,6 +985,11 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   env: {
     title: 'Environment',
     description: 'Build, route, and runtime snapshot. Copy it into bug reports.',
+  },
+  runs: {
+    title: 'Run history',
+    description:
+      'Fill a pipeline’s run history with sample runs in every state, to try the History on its Monitor tab before a server records runs. Kept in this browser only.',
   },
   configs: {
     title: 'Connect configs',
@@ -949,7 +1022,10 @@ const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: Re
   },
   {
     label: 'Connect',
-    items: [{ id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> }],
+    items: [
+      { id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'runs', label: 'Run history', icon: <History className="h-3.5 w-3.5 shrink-0" /> },
+    ],
   },
 ];
 
@@ -1049,6 +1125,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         return <EnvironmentPanel />;
       case 'configs':
         return <ConnectConfigsPanel />;
+      case 'runs':
+        return <RunHistoryPanel />;
       default:
         return null;
     }

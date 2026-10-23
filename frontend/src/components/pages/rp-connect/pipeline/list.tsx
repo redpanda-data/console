@@ -47,6 +47,7 @@ import {
 } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
 import { appGlobal } from 'state/app-global';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
@@ -72,6 +73,7 @@ import {
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
 import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
+import { runObservation } from './use-run-observer';
 import { TabKafkaConnect } from '../../connect/overview';
 
 const PAGE_SIZE = 20;
@@ -141,6 +143,19 @@ const useScheduledRows = (baseRows: PipelineRow[]): PipelineRow[] => {
   return pipelines;
 };
 
+// Ends runs this browser started once the list sees their pipelines stop.
+const useListRunObserver = (rows: PipelineRow[]) => {
+  const runHistory = useRunHistoryStore((s) => s.runs);
+  const observeRun = useRunHistoryStore((s) => s.observe);
+  useEffect(() => {
+    for (const row of rows) {
+      if (runsOf(runHistory, row.id).some((run) => run.outcome === 'running' && !run.simulated)) {
+        observeRun(row.id, runObservation(row.state), { now: Date.now(), updatedAt: row.editedAt ?? undefined });
+      }
+    }
+  }, [rows, runHistory, observeRun]);
+};
+
 const usePipelineListData = () => {
   const {
     data: pipelinesData,
@@ -167,6 +182,7 @@ const usePipelineListData = () => {
     [pipelinesData]
   );
   const pipelines = useScheduledRows(baseRows);
+  useListRunObserver(baseRows);
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   return {

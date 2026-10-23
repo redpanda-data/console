@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
+import { RUN_HISTORY_STORAGE_KEY, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { SCHEDULE_PREVIEW_STORAGE_KEY, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { render, screen, within } from 'test-utils';
 
@@ -20,6 +21,7 @@ rs.mock('config', () => {
 });
 
 import { PipelineRunsPanel } from './pipeline-runs-panel';
+import { sampleRuns } from '../utils/pipeline-runs';
 import { defaultSchedule, type PipelineSchedule } from '../utils/pipeline-schedule';
 
 const FINITE = 'input:\n  sql_select:\n    table: orders\noutput:\n  drop: {}\n';
@@ -30,7 +32,9 @@ const seed = (overrides: Partial<PipelineSchedule>) =>
 
 beforeEach(() => {
   window.localStorage.removeItem(SCHEDULE_PREVIEW_STORAGE_KEY);
+  window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
   useSchedulePreviewStore.setState({ schedules: {} });
+  useRunHistoryStore.setState({ runs: {} });
 });
 
 describe('PipelineRunsPanel', () => {
@@ -44,7 +48,7 @@ describe('PipelineRunsPanel', () => {
     render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
     const panel = screen.getByTestId('pipeline-runs-panel');
     expect(within(panel).getByRole('img', { name: 'On Monday and Thursday' })).toBeInTheDocument();
-    const upcoming = within(screen.getByRole('list', { name: 'Upcoming runs' })).getAllByRole('listitem');
+    const upcoming = within(screen.getByRole('list', { name: 'Scheduled runs' })).getAllByRole('listitem');
     expect(upcoming).toHaveLength(5);
     // Only the first says how soon it is.
     expect(upcoming[0]).toHaveTextContent(/in /);
@@ -63,7 +67,61 @@ describe('PipelineRunsPanel', () => {
 
     render(<PipelineRunsPanel configYaml={CONTINUOUS} pipelineId="p1" />);
     expect(screen.getByText('No runs until the pipeline stops on its own again.')).toBeInTheDocument();
-    expect(screen.queryByRole('list', { name: 'Upcoming runs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Scheduled runs' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Resume schedule' })).not.toBeInTheDocument();
+  });
+
+  test('the history lists each run with how it went, under a strip of the latest outcomes', () => {
+    seed({ enabled: true });
+    useRunHistoryStore.getState().replaceRuns('p1', sampleRuns(Date.now()));
+    render(<PipelineRunsPanel configYaml={FINITE} pipelineId="p1" />);
+
+    expect(screen.getByRole('img', { name: 'Last 8 runs: 3 of 7 that ended completed' })).toBeInTheDocument();
+    const rows = within(screen.getByRole('table', { name: 'Run history' }))
+      .getAllByRole('row')
+      .slice(1);
+    expect(rows.map((row) => row.getAttribute('data-outcome'))).toEqual([
+      'running',
+      'completed',
+      'completed',
+      'skipped',
+      'timed-out',
+      'failed',
+      'stopped',
+      'completed',
+    ]);
+    // A failed run says why where it's listed.
+    expect(rows[5]).toHaveTextContent('Failed');
+    expect(rows[5]).toHaveTextContent('output redpanda: SASL authentication failed');
+    expect(rows[2]).toHaveTextContent('Manual');
+    expect(screen.queryByText('No runs yet')).not.toBeInTheDocument();
+  });
+});
+
+describe('the run history preview', () => {
+  test('records a run started here, and ends it once its pipeline is seen to stop', () => {
+    const store = useRunHistoryStore.getState();
+    store.startManualRun('p1', { now: 1000 });
+    // A second start while one is going doesn't add another.
+    store.startManualRun('p1', { now: 2000 });
+    expect(useRunHistoryStore.getState().runs['default/p1']).toHaveLength(1);
+
+    store.observe('p1', 'active', { now: 3000 });
+    store.observe('p1', 'stopped', { now: 9000 });
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'completed',
+      trigger: 'manual',
+      startTime: 1000,
+      endTime: 9000,
+    });
+  });
+
+  test('a run stopped from here ends as stopped', () => {
+    const store = useRunHistoryStore.getState();
+    store.startManualRun('p1', { now: 1000 });
+    store.observe('p1', 'active', { now: 2000 });
+    store.requestStop('p1');
+    store.observe('p1', 'stopped', { now: 5000 });
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]?.outcome).toBe('stopped');
   });
 });

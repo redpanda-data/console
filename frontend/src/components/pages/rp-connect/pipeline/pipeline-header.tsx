@@ -62,6 +62,7 @@ import {
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { RichText } from './stop-condition';
+import { useRunObserver } from './use-run-observer';
 import { cpuToTasks } from '../tasks';
 import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import { extractAllTopics } from '../utils/yaml';
@@ -317,6 +318,8 @@ export function PipelineViewHeader({
 
   const viewingDraft = isDraft(pipeline);
   const editedAt = timestampToMillis(pipeline.updateTime);
+  // Ends a run this browser started once the pipeline is seen to stop.
+  useRunObserver(pipeline.id, pipeline.state, editedAt);
 
   const items: MetaEntry[] = [
     { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
