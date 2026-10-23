@@ -162,6 +162,7 @@ import {
   type RedpandaSetupResultLike,
   usesServiceAccountLogin,
 } from '../utils/yaml';
+import { withYamlDocumentation } from '../utils/yaml-editor-schema';
 
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
@@ -1242,7 +1243,10 @@ function PipelinePageContent() {
   const { components, componentList } = useEnrichedComponents();
 
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
-  const yamlEditorSchema = useMemo(() => parseYamlEditorSchema(schemaResponse?.configSchema), [schemaResponse]);
+  const yamlEditorSchema = useMemo(() => {
+    const schema = parseYamlEditorSchema(schemaResponse?.configSchema);
+    return schema ? withYamlDocumentation(schema, components) : undefined;
+  }, [schemaResponse, components]);
 
   // Lets a successful save navigate away without tripping the unsaved-changes guard.
   const markNavigationAllowed = useCallback(() => setAllowNavigation(true), [setAllowNavigation]);
