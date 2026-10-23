@@ -105,6 +105,41 @@ export type StopSlot = {
   locked?: string;
 };
 
+/** Whether a node (or a canvas card's data) is an input that takes a stop condition: it has a slot and a known end. */
+export function hasStopSlot<T extends { section?: string; stopSlot?: StopSlot; endBehavior?: InputEndBehavior }>(
+  node: T
+): node is T & { stopSlot: StopSlot; endBehavior: InputEndBehavior } {
+  return node.section === 'input' && node.stopSlot !== undefined && node.endBehavior !== undefined;
+}
+
+export type InputEndRow = {
+  id: string;
+  name: string;
+  labelText?: string;
+  /** Broker/sequence members are indented under their group. */
+  nested: boolean;
+  slot: StopSlot;
+  effective: InputEndBehavior;
+};
+
+/** The pipeline's inputs that can take a stop condition, in canvas order. */
+export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
+  const rows: InputEndRow[] = [];
+  for (const node of nodes) {
+    if (hasStopSlot(node)) {
+      rows.push({
+        id: node.id,
+        name: node.label,
+        labelText: node.labelText,
+        nested: node.parentId !== 'section-input',
+        slot: node.stopSlot,
+        effective: node.endBehavior,
+      });
+    }
+  }
+  return rows;
+}
+
 const CHILDLESS_WRAPPER = 'Its `read_until` has no input to read from yet. Add one in the YAML first.';
 
 // The stop slot of the input held by `slot`; `component` is that input with any `read_until` peeled off.

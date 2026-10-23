@@ -45,20 +45,22 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { isFeatureFlagEnabled } from 'config';
 import { AlertTriangle, Box, CalendarClock, CalendarOff, CalendarX2, CircleCheck, CircleX, Info } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react';
 import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
-import { prettyMilliseconds } from 'utils/utils';
+import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
-import { inputEndRows } from './pipeline-end-chip';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { RichText } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { type PipelineEndStatus, type PipelineEndSummary, readPipelineEnd } from '../utils/input-end-behavior';
-import { type PipelineFlowNode, parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
+import {
+  type InputEndRow,
+  inputEndRows,
+  type PipelineFlowNode,
+  parsePipelineFlowTree,
+} from '../utils/pipeline-flow-parser';
 import {
   browserTimeZone,
   defaultSchedule,
@@ -79,14 +81,12 @@ import {
   type ScheduleCadence,
   type ScheduleState,
   scheduleState,
+  untilLabel,
   WEEKDAY_ORDER,
   weekdayName,
 } from '../utils/pipeline-schedule';
 
-export const areSchedulesEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineSchedules');
-
-export const SCHEDULE_PREVIEW_NOTE =
-  'Preview: saved in this browser only. The pipeline won’t start on this schedule yet.';
+const SCHEDULE_PREVIEW_NOTE = 'Preview: saved in this browser only. The pipeline won’t start on this schedule yet.';
 
 // ── Status ─────────────────────────────────────────────────────────────────
 
@@ -121,9 +121,6 @@ function subscribeClock(listener: () => void): () => void {
 export function useClock(): number {
   return useSyncExternalStore(subscribeClock, () => clockNow);
 }
-
-export const untilLabel = (at: number, now: number) =>
-  at - now < 60_000 ? 'in under a minute' : `in ${prettyMilliseconds(at - now, { compact: true })}`;
 
 const ON_HOLD_REASON: Record<Exclude<PipelineEndStatus, 'finite'>, string> = {
   continuous: 'The pipeline doesn’t stop on its own.',
@@ -194,7 +191,6 @@ function useSettledEnd(configYaml: string): PipelineEndSummary {
   return end ?? lastParsed;
 }
 
-/** The schedule for a page header's meta row; opens the schedule dialog. */
 // The header's schedule control: what it does at a glance and when it next runs; opens the dialog.
 // Mounted only with a schedule, so an unscheduled pipeline neither ticks a clock nor re-parses its YAML.
 function SchedulePill({
@@ -241,7 +237,7 @@ function SchedulePill({
   );
 }
 
-export const LINE_LABEL: Record<ScheduleState, string> = {
+const LINE_LABEL: Record<ScheduleState, string> = {
   active: 'Scheduled',
   paused: 'Paused',
   'on-hold': 'On hold',
@@ -352,6 +348,38 @@ const CaveatLine = ({ text }: { text: string }) => (
   </span>
 );
 
+// An input and how it ends; `showHint` adds how to make it stop.
+const ReadinessInput = ({ row, showHint }: { row: InputEndRow; showHint: boolean }) => (
+  <li className="flex items-start gap-2">
+    <ConnectorLogo className="mt-0.5 size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
+    <span className="flex min-w-0 flex-col">
+      <span>
+        <span className="font-medium">{row.labelText ?? row.name}</span>
+        <span className="text-muted-foreground">
+          {' — '}
+          <RichText text={row.effective.reason} />
+          {showHint && row.effective.finiteHint ? (
+            <>
+              {' '}
+              <RichText text={row.effective.finiteHint} />
+            </>
+          ) : null}
+        </span>
+      </span>
+      {row.effective.caveat ? <CaveatLine text={row.effective.caveat} /> : null}
+    </span>
+  </li>
+);
+
+const FoldedInputsLine = ({ count, shown, onToggle }: { count: number; shown: boolean; onToggle: () => void }) => (
+  <span className="flex flex-wrap items-baseline gap-x-2">
+    {count === 1 ? 'Its input stops by itself.' : `All ${count} inputs stop by themselves.`}
+    <Button aria-expanded={shown} className="h-auto p-0" onClick={onToggle} size="sm" variant="link">
+      {shown ? 'Hide inputs' : 'Show inputs'}
+    </Button>
+  </span>
+);
+
 function ScheduleReadiness({
   configYaml,
   end,
@@ -366,9 +394,10 @@ function ScheduleReadiness({
   const rows = useMemo(() => (end ? readinessRows(configYaml, ready) : []), [configYaml, end, ready]);
   const copy = READINESS_COPY[end ? end.status : 'unparsed'];
   // Ready needs no action, so its inputs fold away unless one carries a warning.
-  const hasCaveat = rows.some((row) => row.effective.caveat);
+  const folded = ready && !rows.some((row) => row.effective.caveat);
   const [showInputs, setShowInputs] = useState(false);
-  const listed = !ready || hasCaveat || showInputs;
+  // With no input to list, the pipeline's own end explains it.
+  const reason = !ready && rows.length === 0 && end?.status !== 'none' ? end?.behavior?.reason : undefined;
   return (
     <Alert
       icon={ready ? <CircleCheck /> : <CircleX />}
@@ -377,50 +406,19 @@ function ScheduleReadiness({
     >
       <AlertTitle>{copy.title}</AlertTitle>
       <AlertDescription className="flex flex-col gap-2">
-        {ready && !hasCaveat ? (
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            {rows.length === 1 ? 'Its input stops by itself.' : `All ${rows.length} inputs stop by themselves.`}
-            <Button
-              aria-expanded={showInputs}
-              className="h-auto p-0"
-              onClick={() => setShowInputs((v) => !v)}
-              size="sm"
-              variant="link"
-            >
-              {showInputs ? 'Hide inputs' : 'Show inputs'}
-            </Button>
-          </span>
+        {folded ? (
+          <FoldedInputsLine count={rows.length} onToggle={() => setShowInputs((v) => !v)} shown={showInputs} />
         ) : (
           <span>{copy.detail}</span>
         )}
-        {listed && rows.length > 0 ? (
+        {(!folded || showInputs) && rows.length > 0 ? (
           <ul className="flex flex-col gap-1.5">
             {rows.map((row) => (
-              <li className="flex items-start gap-2" key={row.id}>
-                <ConnectorLogo className="mt-0.5 size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
-                <span className="flex min-w-0 flex-col">
-                  <span>
-                    <span className="font-medium">{row.labelText ?? row.name}</span>
-                    <span className="text-muted-foreground">
-                      {' — '}
-                      <RichText text={row.effective.reason} />
-                      {!ready && row.effective.finiteHint ? (
-                        <>
-                          {' '}
-                          <RichText text={row.effective.finiteHint} />
-                        </>
-                      ) : null}
-                    </span>
-                  </span>
-                  {row.effective.caveat ? <CaveatLine text={row.effective.caveat} /> : null}
-                </span>
-              </li>
+              <ReadinessInput key={row.id} row={row} showHint={!ready} />
             ))}
           </ul>
         ) : null}
-        {!ready && end && end.status !== 'none' && rows.length === 0 && end.behavior ? (
-          <RichText text={end.behavior.reason} />
-        ) : null}
+        {reason ? <RichText text={reason} /> : null}
         {ready ? null : <div>{fixHint}</div>}
       </AlertDescription>
     </Alert>
@@ -1033,7 +1031,10 @@ function ScheduleDialogBody({ onOpenChange, pipelineId, configYaml, fixHint, has
   );
 }
 
-/** A header's schedule button and the dialog it opens; `meta` opens the same dialog. */
+/**
+ * A header's schedule control and the dialog it opens: the schedule itself once there is one, otherwise a
+ * Schedule button. `scheduled` says whether there is one.
+ */
 export function usePipelineScheduleControl({
   pipelineId,
   configYaml,

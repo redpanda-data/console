@@ -27,6 +27,10 @@ import { defaultSchedule, type PipelineSchedule } from '../utils/pipeline-schedu
 const FINITE = 'input:\n  sql_select:\n    table: orders\noutput:\n  drop: {}\n';
 const CONTINUOUS = 'input:\n  redpanda:\n    topics: [orders]\noutput:\n  drop: {}\n';
 
+// The first tile says how soon its run is; the rest don't.
+const SOON_RE = /in /;
+const SOON_AMOUNT_RE = /in \d/;
+
 const seed = (overrides: Partial<PipelineSchedule>) =>
   useSchedulePreviewStore.getState().saveSchedule('p1', { ...defaultSchedule('UTC'), ...overrides });
 
@@ -70,9 +74,8 @@ describe('PipelineRunsPanel', () => {
     expect(within(panel).getByRole('img', { name: 'On Monday and Thursday' })).toBeInTheDocument();
     const upcoming = within(screen.getByRole('list', { name: 'Scheduled runs' })).getAllByRole('listitem');
     expect(upcoming).toHaveLength(5);
-    // Only the first says how soon it is.
-    expect(upcoming[0]).toHaveTextContent(/in /);
-    expect(upcoming[1]).not.toHaveTextContent(/in \d/);
+    expect(upcoming[0]).toHaveTextContent(SOON_RE);
+    expect(upcoming[1]).not.toHaveTextContent(SOON_AMOUNT_RE);
     expect(within(panel).getByText('No runs yet')).toBeInTheDocument();
   });
 
@@ -127,8 +130,8 @@ describe('the run history preview', () => {
     store.startManualRun('p1', { now: 2000 });
     expect(useRunHistoryStore.getState().runs['default/p1']).toHaveLength(1);
 
-    store.observe('p1', 'active', { now: 3000 });
-    store.observe('p1', 'stopped', { now: 9000 });
+    store.observe('p1', 'active', 3000);
+    store.observe('p1', 'stopped', 9000);
     expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
       outcome: 'completed',
       trigger: 'manual',
@@ -140,9 +143,9 @@ describe('the run history preview', () => {
   test('a run stopped from here ends as stopped', () => {
     const store = useRunHistoryStore.getState();
     store.startManualRun('p1', { now: 1000 });
-    store.observe('p1', 'active', { now: 2000 });
+    store.observe('p1', 'active', 2000);
     store.requestStop('p1');
-    store.observe('p1', 'stopped', { now: 5000 });
+    store.observe('p1', 'stopped', 5000);
     expect(useRunHistoryStore.getState().runs['default/p1']?.[0]?.outcome).toBe('stopped');
   });
 });

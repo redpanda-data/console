@@ -47,6 +47,8 @@ export type InputEndBehavior = {
   members?: MemberCounts;
   /** For an input that ends, what can still keep it running (a check no message meets, a cron wait). */
   caveat?: string;
+  /** For one its stop condition ends: the parts of the condition that act (an idle timeout may not). */
+  stopsOn?: StopCondition;
 };
 
 export type MemberCounts = { total: number; continuous: number; unknown: number; invalid: number };
@@ -438,20 +440,20 @@ const code = (text: string) => `\`${text}\``;
 
 // `resource: <label>` runs an `input_resources` entry; a chain of plain references is followed to its end.
 function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavior {
-  const chain: string[] = [];
+  const chain = new Set<string>();
   let current = label;
   let target: unknown;
   for (;;) {
     if (typeof current !== 'string') {
       return UNKNOWN;
     }
-    if (chain.includes(current)) {
+    if (chain.has(current)) {
       return {
         kind: 'unknown',
         reason: `Its input resources refer to each other in a loop (${[...chain, current].map(code).join(' → ')}).`,
       };
     }
-    chain.push(current);
+    chain.add(current);
     target = ctx.inputResources.get(current);
     if (target === undefined) {
       return { kind: 'unknown', reason: `There’s no input resource named ${code(current)}.` };
@@ -466,8 +468,9 @@ function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavio
     return UNKNOWN;
   }
   const resolved = classifySlot(target, { ...ctx, depth: ctx.depth + 1 });
-  const via = chain.length > 1 ? ` (through ${chain.slice(1).map(code).join(', ')})` : '';
-  return inherited(resolved, `Runs the input resource ${code(chain[0])}${via}. ${resolved.reason}`);
+  const [first, ...through] = chain;
+  const via = through.length > 0 ? ` (through ${through.map(code).join(', ')})` : '';
+  return inherited(resolved, `Runs the input resource ${code(first)}${via}. ${resolved.reason}`);
 }
 
 // Checks Connect can never pass.
@@ -587,7 +590,11 @@ function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBeh
     check: effects.checkEnds ? stop.check : undefined,
     idleTimeout: effects.idleEnds ? stop.idleTimeout : undefined,
   };
-  const behavior: InputEndBehavior = { kind: 'condition', reason: `Stops ${describeStopCondition(working).long}.` };
+  const behavior: InputEndBehavior = {
+    kind: 'condition',
+    reason: `Stops ${describeStopCondition(working).long}.`,
+    stopsOn: working,
+  };
   const caveat = caveatFor(stop, inner, effects);
   return caveat ? { ...behavior, caveat } : behavior;
 }
@@ -698,7 +705,9 @@ export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined
 export function readPipelineEnd(configYaml: string): PipelineEndSummary | undefined {
   try {
     return summarizePipelineEnd(parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null);
-  } catch {}
+  } catch {
+    // YAML that doesn't parse has no answer.
+  }
 }
 
 /** {@link readPipelineEnd}, with unparseable YAML answered as having no input (`none`). */

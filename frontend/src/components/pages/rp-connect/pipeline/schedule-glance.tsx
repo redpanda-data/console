@@ -27,7 +27,7 @@ import {
 // of weekdays for a day-based cadence, otherwise an icon for the kind of cadence.
 
 /** The days a schedule runs on, Monday first: each day's initial, filled on a run day. */
-export function WeekdayStrip({ days, muted = false }: { days: number[]; muted?: boolean }) {
+function WeekdayStrip({ days, muted = false }: { days: number[]; muted?: boolean }) {
   return (
     <span aria-label={`On ${describeWeekdays(days)}`} className="inline-flex shrink-0 gap-px" role="img">
       {WEEKDAY_ORDER.map((day) => {

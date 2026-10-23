@@ -49,6 +49,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { describeSchedule } from '../utils/pipeline-schedule';
 
 type ActionsCellProps = {
@@ -130,8 +131,7 @@ export const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          // Runs are recorded for a pipeline that stops on its own, or has a schedule.
-          if (pipeline.end === 'finite' || pipeline.schedule) {
+          if (startRecordsRun(pipeline.end, Boolean(pipeline.schedule))) {
             useRunHistoryStore.getState().startManualRun(pipeline.id);
           }
           toast.success(pipeline.schedule ? 'Run starting' : 'Pipeline starting');

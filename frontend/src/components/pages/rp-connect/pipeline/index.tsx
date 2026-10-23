@@ -154,6 +154,7 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
+import { hasOpenRun } from '../utils/pipeline-runs';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -1251,12 +1252,13 @@ function PipelinePageContent() {
 
   // A run this browser started is watched until it ends; the query otherwise polls only while the
   // pipeline starts or stops.
-  const watchingRun = useRunHistoryStore((s) =>
-    pipelineId ? runsOf(s.runs, pipelineId).some((run) => run.outcome === 'running' && !run.simulated) : false
-  );
+  const watchingRun = useRunHistoryStore((s) => (pipelineId ? hasOpenRun(runsOf(s.runs, pipelineId)) : false));
   const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId, refetchInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined }
+    {
+      enabled: mode !== 'create' && !!pipelineId,
+      steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+    }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 

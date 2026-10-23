@@ -17,11 +17,12 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
-import { StopKindIcon, stopSummary } from './stop-condition';
+import { StopKindIcon } from './stop-condition';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { getNodeDocsUrl } from '../utils/connector-docs';
-import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { buildChildrenMap, hasStopSlot, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { stopSummary } from '../utils/read-until';
 
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
@@ -97,13 +98,10 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
   return null;
 };
 
-const hasStopMark = (node: PipelineFlowNode): boolean =>
-  node.section === 'input' && Boolean(node.stopSlot && node.endBehavior);
-
 // The id a row's StopMark describes it with (undefined for rows without one).
 function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
   const id = useId();
-  return hasStopMark(node) ? id : undefined;
+  return hasStopSlot(node) ? id : undefined;
 }
 
 // How an input ends — its stop condition, or on its own — as a small glyph with the full sentence

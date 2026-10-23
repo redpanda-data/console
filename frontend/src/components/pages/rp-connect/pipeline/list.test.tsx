@@ -31,6 +31,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { SCHEDULE_PREVIEW_STORAGE_KEY, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
@@ -171,6 +172,9 @@ const rowFor = (displayName: string) => {
 const SEARCH_INPUT_RE = /search pipelines/i;
 const UNTIL_DONE_RE = /Until done/;
 const CLEAR_FILTERS_RE = /clear filters/i;
+const SCHEDULED_OPTION_RE = /^Scheduled/;
+const NEXT_RUN_RE = /^Next in /;
+const SCHEDULE_DIALOG_RE = /Schedule runs/;
 
 // Every row links to its pipeline, so the link text is the visible rows.
 const visibleLinkNames = () =>
@@ -579,6 +583,32 @@ describe('PipelineListPage', () => {
 
       await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
       expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+      // It never stops on its own, so the start isn't a run.
+      await waitFor(() => expect(screen.queryByTestId('confirm-start-draft')).not.toBeInTheDocument());
+      expect(runsOf(useRunHistoryStore.getState().runs, 'draft777')).toEqual([]);
+    });
+
+    it('records a run when the draft it starts stops on its own', async () => {
+      const user = userEvent.setup();
+      useRunHistoryStore.setState({ runs: {} });
+      renderWithFileRoutes(<PipelineListPage />, {
+        transport: buildTransport({
+          withDraft: true,
+          extraDrafts: [{ ...DRAFT_FIXTURE, id: 'draft888', displayName: 'one-off-export', inputs: ['sql_select'] }],
+        }),
+      });
+
+      await waitFor(() => expect(screen.getByText('one-off-export')).toBeInTheDocument());
+
+      await user.click(within(rowFor('one-off-export')).getByRole('button', { name: 'Open menu' }));
+      await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+      await user.click(await screen.findByTestId('confirm-start-draft'));
+
+      await waitFor(() =>
+        expect(runsOf(useRunHistoryStore.getState().runs, 'draft888')).toEqual([
+          expect.objectContaining({ outcome: 'running', trigger: 'manual' }),
+        ])
+      );
     });
 
     it('deletes a draft from its row, after a confirmation', async () => {
@@ -641,7 +671,6 @@ describe('PipelineListPage', () => {
 });
 
 describe('PipelineListPage schedules', () => {
-  const NEXT_RUN_RE = /^Next in /;
   const openMenu = async (user: ReturnType<typeof userEvent.setup>, displayName: string) => {
     await user.click(within(rowFor(displayName)).getByRole('button', { name: 'Open menu' }));
   };
@@ -679,7 +708,7 @@ describe('PipelineListPage schedules', () => {
       throw new Error('no Schedule filter');
     }
     await user.click(filter);
-    await user.click(await screen.findByRole('option', { name: /^Scheduled/ }));
+    await user.click(await screen.findByRole('option', { name: SCHEDULED_OPTION_RE }));
     await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
   });
 
@@ -728,7 +757,7 @@ describe('PipelineListPage schedules', () => {
 
     await openMenu(user, 'clickstream-sink');
     await user.click(await screen.findByRole('menuitem', { name: 'Add schedule' }));
-    expect(await screen.findByRole('dialog', { name: /Schedule runs/ })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: SCHEDULE_DIALOG_RE })).toBeInTheDocument();
   });
 });
 

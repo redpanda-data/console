@@ -9,7 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { observeRun, type PipelineRun, RUN_OUTCOMES, runDurationMs, runTally, sampleRuns } from './pipeline-runs';
+import {
+  hasOpenRun,
+  observeRun,
+  type PipelineRun,
+  RUN_OUTCOMES,
+  runDurationMs,
+  runTally,
+  sampleRuns,
+  startRecordsRun,
+} from './pipeline-runs';
 import { describe, expect, test } from 'bun:test';
 
 const START = Date.parse('2026-10-23T15:00:00Z');
@@ -18,27 +27,30 @@ const at = (minutes: number) => START + minutes * 60_000;
 
 describe('observeRun', () => {
   test('a run is marked active once its pipeline is seen starting or running', () => {
-    const active = observeRun(open, 'active', { now: at(1) });
+    const active = observeRun(open, 'active', at(1));
     expect(active.seenActive).toBe(true);
     // Nothing new to record, so the same run comes back.
-    expect(observeRun(active, 'active', { now: at(2) })).toBe(active);
+    expect(observeRun(active, 'active', at(2))).toBe(active);
   });
 
-  test('a stopped state ends it only once the run was seen active, or the pipeline changed since it began', () => {
-    // Before either, a stopped state may be the one from before the start.
-    expect(observeRun(open, 'stopped', { now: at(1), updatedAt: START - 60_000 })).toBe(open);
-    const active = observeRun(open, 'active', { now: at(1) });
-    expect(observeRun(active, 'stopped', { now: at(2) })).toMatchObject({ outcome: 'completed', endTime: at(2) });
-    expect(observeRun(open, 'stopped', { now: at(5), updatedAt: at(3) })).toMatchObject({
-      outcome: 'completed',
-      endTime: at(3),
-    });
+  test('a stopped state ends a run that was seen active, at the time it was seen', () => {
+    const active = observeRun(open, 'active', at(1));
+    expect(observeRun(active, 'stopped', at(2))).toMatchObject({ outcome: 'completed', endTime: at(2) });
+  });
+
+  test('before it is seen active, a stopped state ends it only after a grace period, with no end time', () => {
+    // Soon after the start, a stopped state may be the one from before it.
+    expect(observeRun(open, 'stopped', at(1))).toBe(open);
+    const ended = observeRun(open, 'stopped', at(3));
+    expect(ended).toMatchObject({ outcome: 'completed' });
+    expect(ended.endTime).toBeUndefined();
+    expect(runDurationMs(ended, at(4))).toBeUndefined();
   });
 
   test('it ends as stopped when stopped from this browser, and as failed on an error', () => {
-    const active = observeRun({ ...open, stopRequested: true }, 'active', { now: at(1) });
-    expect(observeRun(active, 'stopped', { now: at(2) }).outcome).toBe('stopped');
-    expect(observeRun(observeRun(open, 'active', { now: at(1) }), 'error', { now: at(2) })).toMatchObject({
+    const active = observeRun({ ...open, stopRequested: true }, 'active', at(1));
+    expect(observeRun(active, 'stopped', at(2)).outcome).toBe('stopped');
+    expect(observeRun(observeRun(open, 'active', at(1)), 'error', at(2))).toMatchObject({
       outcome: 'failed',
       endTime: at(2),
     });
@@ -46,9 +58,23 @@ describe('observeRun', () => {
 
   test('an ended or simulated run is left as it is', () => {
     const done: PipelineRun = { ...open, outcome: 'completed', endTime: at(1) };
-    expect(observeRun(done, 'error', { now: at(2) })).toBe(done);
+    expect(observeRun(done, 'error', at(2))).toBe(done);
     const simulated: PipelineRun = { ...open, simulated: true, seenActive: true };
-    expect(observeRun(simulated, 'stopped', { now: at(2), updatedAt: at(1) })).toBe(simulated);
+    expect(observeRun(simulated, 'stopped', at(5))).toBe(simulated);
+  });
+});
+
+describe('which runs are kept', () => {
+  test('a start records a run for a pipeline that stops on its own, or runs on a schedule', () => {
+    expect(startRecordsRun('finite')).toBe(true);
+    expect(startRecordsRun('continuous')).toBe(false);
+    expect(startRecordsRun('continuous', true)).toBe(true);
+  });
+
+  test('only a real run going is one to watch', () => {
+    expect(hasOpenRun([open])).toBe(true);
+    expect(hasOpenRun([{ ...open, simulated: true }])).toBe(false);
+    expect(hasOpenRun([{ ...open, outcome: 'completed' }])).toBe(false);
   });
 });
 

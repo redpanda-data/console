@@ -16,7 +16,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertTriangle, Box, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
-import { claimEscape, RichText, StopKindIcon, stopSummary } from './stop-condition';
+import { RichText, StopKindIcon } from './stop-condition';
+import { claimEscape } from './stop-form';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type {
   InputEndBehavior,
@@ -24,7 +25,8 @@ import type {
   PipelineEndStatus,
   PipelineEndSummary,
 } from '../utils/input-end-behavior';
-import type { PipelineFlowNode, StopSlot } from '../utils/pipeline-flow-parser';
+import type { InputEndRow } from '../utils/pipeline-flow-parser';
+import { stopSummary } from '../utils/read-until';
 
 const STATUS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; detail: string }> = {
   finite: {
@@ -67,34 +69,6 @@ const ROW_TONE: Record<InputEndKind, string> = {
   invalid: 'text-destructive',
   unknown: 'text-muted-foreground',
 };
-
-export type InputEndRow = {
-  id: string;
-  name: string;
-  labelText?: string;
-  /** Broker/sequence members are indented under their group. */
-  nested: boolean;
-  slot: StopSlot;
-  effective: InputEndBehavior;
-};
-
-/** The pipeline's inputs that can take a stop condition, in canvas order. */
-export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
-  const rows: InputEndRow[] = [];
-  for (const node of nodes) {
-    if (node.section === 'input' && node.stopSlot && node.endBehavior) {
-      rows.push({
-        id: node.id,
-        name: node.label,
-        labelText: node.labelText,
-        nested: node.parentId !== 'section-input',
-        slot: node.stopSlot,
-        effective: node.endBehavior,
-      });
-    }
-  }
-  return rows;
-}
 
 /**
  * Whether the whole pipeline ends by itself (its top-level input does), as a canvas chip that opens a

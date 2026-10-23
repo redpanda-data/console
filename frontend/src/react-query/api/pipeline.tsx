@@ -53,6 +53,8 @@ export const useGetPipelineQuery = (
     refetchInterval?: number | false | ((query: { state?: { data?: GetPipelineResponse } }) => number | false);
     refetchIntervalInBackground?: boolean;
     refetchOnWindowFocus?: 'always' | boolean;
+    /** Also poll at this interval while the pipeline isn't starting or stopping (which polls faster). */
+    steadyPollInterval?: number;
   }
 ) => {
   const getPipelineRequestDataPlane = create(GetPipelineRequestSchemaDataPlane, { id });
@@ -67,7 +69,7 @@ export const useGetPipelineQuery = (
         const state = query?.state?.data?.response?.pipeline?.state;
         // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
         const shouldPoll = state && transitionalStates.includes(state);
-        return shouldPoll ? SHORT_POLLING_INTERVAL : false;
+        return shouldPoll ? SHORT_POLLING_INTERVAL : (options?.steadyPollInterval ?? false);
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
     refetchOnWindowFocus: options?.refetchOnWindowFocus,

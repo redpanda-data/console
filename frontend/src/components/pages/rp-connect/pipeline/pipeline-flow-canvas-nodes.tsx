@@ -42,7 +42,7 @@ import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { type StopSlot, sectionLabel } from '../utils/pipeline-flow-parser';
+import { hasStopSlot, type StopSlot, sectionLabel } from '../utils/pipeline-flow-parser';
 import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml';
 
@@ -232,7 +232,7 @@ export type FlowCardData = {
 
 // An input's stop row, on cards and broker/sequence markers that can take a stop condition.
 const InputStopRow = ({ data, isGroup }: { data: FlowCardData; isGroup?: boolean }) =>
-  data.section === 'input' && data.stopSlot && data.endBehavior ? (
+  hasStopSlot(data) ? (
     <StopRow
       effective={data.endBehavior}
       isGroup={isGroup}

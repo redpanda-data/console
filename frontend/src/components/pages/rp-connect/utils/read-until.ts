@@ -258,10 +258,103 @@ const SHORT_BY_KIND: Record<Exclude<InputEndKind, 'condition'>, string> = {
  */
 export function stopShortLabel(slot: StopSlot, effective: InputEndBehavior): string {
   if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
-    const { short } = describeStopCondition(slot.condition);
+    const { short } = describeStopCondition(effective.stopsOn ?? slot.condition);
     return short.charAt(0).toUpperCase() + short.slice(1);
   }
   return SHORT_BY_KIND[effective.kind === 'condition' ? 'unknown' : effective.kind];
+}
+
+// ── Summaries ──────────────────────────────────────────────────────────────
+
+/** A `code` span in behavior text. */
+export const CODE_SPAN_RE = /`([^`]+)`/g;
+const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
+
+export const withCaveat = (text: string, behavior: InputEndBehavior) =>
+  behavior.caveat ? `${text} ${behavior.caveat}` : text;
+
+/** An input's one-line end label, plus the plain-text sentence for its tooltip. */
+export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { short: string; long: string } {
+  const short = stopShortLabel(slot, effective);
+  const note =
+    effective.kind === 'continuous' && !isStopConditionSet(slot.condition) ? ' No stop condition is set.' : '';
+  return { short, long: plain(`${withCaveat(effective.reason, effective)}${note}`) };
+}
+
+// "its input never stops", "none of its 3 inputs stop", "2 of 3 inputs never stop".
+function continuousShare(n: number, total: number): string {
+  if (total === 1) {
+    return 'its input never stops';
+  }
+  if (n === total) {
+    return `none of its ${total} inputs stop`;
+  }
+  return `${n} of ${total} inputs never ${n === 1 ? 'stops' : 'stop'}`;
+}
+
+// "its input", "all 3 inputs", "1 of 3 inputs".
+function whichMembers(n: number, total: number): string {
+  if (total === 1) {
+    return 'its input';
+  }
+  return n === total ? `all ${total} inputs` : `${n} of ${total} inputs`;
+}
+
+// A broker/sequence: what its members add up to.
+function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: string; text: string } {
+  const m = effective.members;
+  switch (effective.kind) {
+    case 'natural':
+      return { eyebrow: 'Stops', text: name === 'sequence' ? 'after its last input stops' : 'once all inputs stop' };
+    case 'continuous':
+      return { eyebrow: 'Continuous', text: m ? continuousShare(m.continuous, m.total) : plain(effective.reason) };
+    case 'invalid':
+      return {
+        eyebrow: 'Fix stop',
+        text: m ? `${whichMembers(m.invalid, m.total)} incomplete` : plain(effective.reason),
+      };
+    default:
+      return {
+        eyebrow: 'Stops?',
+        text: m ? `${whichMembers(m.unknown, m.total)} may not stop` : plain(effective.reason),
+      };
+  }
+}
+
+// A single input, short enough for its card: how it ends without a condition, or why that one doesn't act.
+function inputEndText(
+  slot: StopSlot,
+  effective: InputEndBehavior,
+  editable: boolean
+): { eyebrow: string; text: string } {
+  const wrapped = slot.condition !== undefined;
+  switch (effective.kind) {
+    case 'natural':
+      return { eyebrow: 'Stops', text: 'when its data runs out' };
+    case 'continuous':
+      if (wrapped) {
+        return { eyebrow: 'Continuous', text: 'condition never fires' };
+      }
+      return { eyebrow: 'Continuous', text: editable ? 'set a stop condition' : 'no stop condition' };
+    case 'invalid':
+      return { eyebrow: 'Fix stop', text: wrapped ? 'condition incomplete' : plain(effective.reason) };
+    default:
+      return { eyebrow: 'Stops?', text: 'may not stop on its own' };
+  }
+}
+
+/** A stop row's eyebrow + text: the stop condition while it's what ends the input, otherwise how it ends. */
+export function stopRowText(
+  name: string,
+  slot: StopSlot,
+  effective: InputEndBehavior,
+  { isGroup = false, editable = false }: { isGroup?: boolean; editable?: boolean } = {}
+): { eyebrow: string; text: string } {
+  if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
+    const summary = describeStopCondition(effective.stopsOn ?? slot.condition);
+    return { eyebrow: 'Stops', text: isGroup ? summary.long : summary.compact };
+  }
+  return isGroup ? groupEndText(name, effective) : inputEndText(slot, effective, editable);
 }
 
 // ── YAML mutation ──────────────────────────────────────────────────────────

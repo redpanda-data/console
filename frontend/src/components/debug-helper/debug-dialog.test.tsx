@@ -25,6 +25,9 @@ const openConfigs = async () => {
   return user;
 };
 
+const FILTER_CONFIGS_RE = /filter configs/i;
+const NEEDS_SECRETS_RE = /needs the secrets/;
+
 const sectionNames = () => screen.getAllByRole('region').map((s) => s.getAttribute('aria-label'));
 
 describe('DebugDialog — Connect configs', () => {
@@ -43,7 +46,7 @@ describe('DebugDialog — Connect configs', () => {
     expect(sectionNames()).toEqual(['Stop conditions']);
 
     await user.click(screen.getByRole('button', { name: 'All' }));
-    await user.type(screen.getByRole('textbox', { name: /filter configs/i }), 'RESTART_INPUT');
+    await user.type(screen.getByRole('textbox', { name: FILTER_CONFIGS_RE }), 'RESTART_INPUT');
     expect(sectionNames()).toEqual(['Stop conditions']);
     expect(screen.getByText('Read-only stop conditions')).toBeInTheDocument();
   });
@@ -51,7 +54,7 @@ describe('DebugDialog — Connect configs', () => {
   test('shows a config’s YAML and the secrets it needs when expanded', async () => {
     const user = await openConfigs();
     await user.click(screen.getByRole('button', { name: 'Show the YAML for Topic backfill (limit + idle backstop)' }));
-    expect(screen.getByText(/needs the secrets/)).toBeInTheDocument();
+    expect(screen.getByText(NEEDS_SECRETS_RE)).toBeInTheDocument();
     expect(screen.getByText('KAFKA_USER')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Hide the YAML for Topic backfill (limit + idle backstop)' })

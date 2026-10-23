@@ -207,7 +207,7 @@ export const createColumns = ({
     filterFn: 'arrIncludesSome',
     getUniqueValues: (row) => row.tags.map(tagFilterValue),
     cell: ({ row }) => {
-      const tags = row.original.tags;
+      const { tags } = row.original;
       if (tags.length === 0) {
         return <EmptyCell />;
       }

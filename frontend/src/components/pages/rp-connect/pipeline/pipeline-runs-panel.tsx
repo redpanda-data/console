@@ -25,9 +25,9 @@ import { CalendarClock, History } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePipelineRuns } from 'state/rpcn-run-history-preview';
-import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
-import { areSchedulesEnabled, PipelineScheduleDialog, untilLabel, useClock } from './pipeline-schedule';
+import { PipelineScheduleDialog, useClock } from './pipeline-schedule';
 import { RunHistoryTable, RunOutcomeStrip } from './run-history';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
@@ -39,6 +39,7 @@ import {
   nextRuns,
   type PipelineSchedule,
   scheduleState,
+  untilLabel,
 } from '../utils/pipeline-schedule';
 
 const UPCOMING_COUNT = 5;

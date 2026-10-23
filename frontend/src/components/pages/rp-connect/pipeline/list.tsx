@@ -36,14 +36,13 @@ import {
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
 import { appGlobal } from 'state/app-global';
-import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
-import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { areSchedulesEnabled, scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
 
 import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-columns';
-import { soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
+import { type PipelineRow, soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
 import {
   columnFiltersFromSearch,
   facetSearchFromFilters,
@@ -61,8 +60,8 @@ import {
   pipelineListEmptyText,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
-import { areSchedulesEnabled, PipelineScheduleDialog } from './pipeline-schedule';
-import { runObservation } from './use-run-observer';
+import { PipelineScheduleDialog } from './pipeline-schedule';
+import { useRunsObserver } from './use-run-observer';
 import { TabKafkaConnect } from '../../connect/overview';
 
 const PAGE_SIZE = 20;
@@ -119,6 +118,101 @@ function usePipelineListSearch() {
   return [search, update] as const;
 }
 
+// isLoading stays true until every page is drained, so the list renders page one and streams the rest
+// in behind it. A mid-drain error halts the drain for good, so it replaces the spinner.
+function listLoadState({
+  isLoading,
+  error,
+  hasNextPage,
+  loaded,
+}: {
+  isLoading: boolean;
+  error: { message: string } | null;
+  hasNextPage: boolean | undefined;
+  loaded: number;
+}) {
+  let phase: 'loading' | 'failed' | 'ready' = 'ready';
+  if (loaded === 0 && error) {
+    phase = 'failed';
+  } else if (loaded === 0 && isLoading) {
+    phase = 'loading';
+  }
+  // Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
+  let listErrorMessage: string | null = null;
+  if (error) {
+    listErrorMessage = hasNextPage
+      ? `Failed to load all pipelines: ${error.message}`
+      : `Couldn't refresh pipelines: ${error.message}`;
+  }
+  return { phase, isLoadingMorePages: isLoading && loaded > 0 && !error, listErrorMessage };
+}
+
+// Whether a click on a row opens its pipeline.
+function opensRow(event: MouseEvent<HTMLTableRowElement>): boolean {
+  // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
+  if (isModifiedClick(event)) {
+    return false;
+  }
+  // Registry guard, same one DataTable's rows use: drops clicks on a control in the row, and
+  // portaled children (open menus, the delete-confirm backdrop) that bubble outside the <tr>.
+  if (!isRowActivationClick(event.target, event.currentTarget)) {
+    return false;
+  }
+  // A mouseup that ends a text selection (copying the id) isn't navigation intent.
+  return !window.getSelection()?.toString();
+}
+
+// Joins each row's schedule, and re-joins once the soonest run is due so its next run and the Schedule
+// order move on.
+function useScheduledRows(rows: PipelineRow[], enabled: boolean): PipelineRow[] {
+  const schedules = useSchedulePreviewStore((s) => s.schedules);
+  const [clock, setClock] = useState(() => Date.now());
+  const scheduled = useMemo(
+    () => (enabled ? withSchedules(rows, (id) => scheduleOf(schedules, id), clock) : rows),
+    [rows, enabled, schedules, clock]
+  );
+  const soonest = useMemo(() => soonestRun(scheduled), [scheduled]);
+  useEffect(() => {
+    if (soonest === undefined) {
+      return;
+    }
+    const wait = Math.min(Math.max(soonest - clock, 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
+    const timer = setTimeout(() => setClock(Date.now()), wait);
+    return () => clearTimeout(timer);
+  }, [soonest, clock]);
+  return scheduled;
+}
+
+// The search box's text. It types ahead of the URL's `q`, which takes it after a pause.
+function useSearchText() {
+  const [{ q: query }, updateListSearch] = usePipelineListSearch();
+  const [searchText, setSearchText] = useState(query ?? '');
+  const writtenQuery = useRef(query ?? '');
+  useEffect(() => {
+    // Follows the URL when it changes some other way (back, a link, Clear filters).
+    const urlQuery = query ?? '';
+    if (urlQuery !== writtenQuery.current) {
+      writtenQuery.current = urlQuery;
+      setSearchText(urlQuery);
+    }
+  }, [query]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const next = searchText.trim() ? searchText : '';
+      if (next !== writtenQuery.current) {
+        writtenQuery.current = next;
+        updateListSearch({ q: next });
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchText, updateListSearch]);
+  const clearSearch = useCallback(() => {
+    setSearchText('');
+    writtenQuery.current = '';
+  }, []);
+  return [searchText, setSearchText, clearSearch] as const;
+}
+
 const PipelineListPageContent = () => {
   const navigate = useNavigate();
   const resetRpcnWizardStore = useResetRpcnWizardStore();
@@ -156,34 +250,11 @@ const PipelineListPageContent = () => {
     [pipelinesData]
   );
   const schedulesEnabled = areSchedulesEnabled();
-  const schedules = useSchedulePreviewStore((s) => s.schedules);
-  const [scheduleClock, setScheduleClock] = useState(() => Date.now());
-  const pipelines = useMemo(
-    () => (schedulesEnabled ? withSchedules(baseRows, (id) => scheduleOf(schedules, id), scheduleClock) : baseRows),
-    [baseRows, schedulesEnabled, schedules, scheduleClock]
-  );
-  // Re-join once the soonest run is due, so its next run and the Schedule order move on.
-  const soonest = useMemo(() => soonestRun(pipelines), [pipelines]);
-  useEffect(() => {
-    if (soonest === undefined) {
-      return;
-    }
-    const wait = Math.min(Math.max(soonest - scheduleClock, 0) + 1000, MAX_SCHEDULE_CLOCK_WAIT_MS);
-    const timer = setTimeout(() => setScheduleClock(Date.now()), wait);
-    return () => clearTimeout(timer);
-  }, [soonest, scheduleClock]);
+  const pipelines = useScheduledRows(baseRows, schedulesEnabled);
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   // Ends runs this browser started once the list sees their pipelines stop.
-  const runHistory = useRunHistoryStore((s) => s.runs);
-  const observeRun = useRunHistoryStore((s) => s.observe);
-  useEffect(() => {
-    for (const row of baseRows) {
-      if (runsOf(runHistory, row.id).some((run) => run.outcome === 'running' && !run.simulated)) {
-        observeRun(row.id, runObservation(row.state), { now: Date.now(), updatedAt: row.editedAt ?? undefined });
-      }
-    }
-  }, [baseRows, runHistory, observeRun]);
+  useRunsObserver(baseRows);
 
   // One schedule dialog for the whole list, opened from a row's menu.
   const [scheduleTarget, setScheduleTarget] = useState<string | null>(null);
@@ -248,27 +319,7 @@ const PipelineListPageContent = () => {
     }
   }, [isLoading, pageCount, pagination.pageIndex, updateListSearch]);
 
-  // The search box types ahead of the URL, which takes it after a pause.
-  const [searchText, setSearchText] = useState(listSearch.q ?? '');
-  const writtenQuery = useRef(listSearch.q ?? '');
-  useEffect(() => {
-    // Follows the URL when it changes some other way (back, a link, Clear filters).
-    const urlQuery = listSearch.q ?? '';
-    if (urlQuery !== writtenQuery.current) {
-      writtenQuery.current = urlQuery;
-      setSearchText(urlQuery);
-    }
-  }, [listSearch.q]);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const next = searchText.trim() ? searchText : '';
-      if (next !== writtenQuery.current) {
-        writtenQuery.current = next;
-        updateListSearch({ q: next });
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [searchText, updateListSearch]);
+  const [searchText, setSearchText, clearSearch] = useSearchText();
 
   // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
@@ -302,27 +353,15 @@ const PipelineListPageContent = () => {
   // Clear filters must be clickable as soon as the user has typed.
   const hasActiveFilters = searchText.trim() !== '' || columnFilters.some((f) => f.id !== 'state' && f.id !== 'name');
   const clearFilters = useCallback(() => {
-    setSearchText('');
-    writtenQuery.current = '';
+    clearSearch();
     updateListSearch({ q: undefined, ...facetSearchFromFilters([]) });
-  }, [updateListSearch]);
+  }, [clearSearch, updateListSearch]);
 
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
-      // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
-      if (isModifiedClick(event)) {
-        return;
+      if (opensRow(event)) {
+        navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
       }
-      // Registry guard, same one DataTable's rows use: drops clicks on a control in the row, and
-      // portaled children (open menus, the delete-confirm backdrop) that bubble outside the <tr>.
-      if (!isRowActivationClick(event.target, event.currentTarget)) {
-        return;
-      }
-      // A mouseup that ends a text selection (copying the id) isn't navigation intent.
-      if (window.getSelection()?.toString()) {
-        return;
-      }
-      navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
     },
     [navigate]
   );
@@ -332,16 +371,18 @@ const PipelineListPageContent = () => {
     navigate({ to: '/rp-connect/create', search: { serverless: undefined } });
   }, [resetRpcnWizardStore, navigate]);
 
-  // isLoading stays true until every page is drained, so render page one and stream the rest in behind
-  // it. A mid-drain error halts the drain for good, so it replaces the spinner.
-  const isInitialLoading = isLoading && pipelines.length === 0 && !error;
-  const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
+  const { phase, isLoadingMorePages, listErrorMessage } = listLoadState({
+    isLoading,
+    error,
+    hasNextPage,
+    loaded: pipelines.length,
+  });
 
-  if (isInitialLoading) {
+  if (phase === 'loading') {
     return <PipelineListSkeleton />;
   }
 
-  if (error && pipelines.length === 0) {
+  if (error && phase === 'failed') {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-destructive">
         <AlertCircle className="h-4 w-4" />
@@ -351,14 +392,6 @@ const PipelineListPageContent = () => {
   }
 
   const rows = table.getRowModel().rows;
-
-  // Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
-  let listErrorMessage: string | null = null;
-  if (error) {
-    listErrorMessage = hasNextPage
-      ? `Failed to load all pipelines: ${error.message}`
-      : `Couldn't refresh pipelines: ${error.message}`;
-  }
 
   return (
     <div className="flex flex-col gap-4">

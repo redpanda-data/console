@@ -21,9 +21,12 @@ import {
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 
 import { START_DRAFT_CONFIRM_IRREVERSIBLE, START_DRAFT_CONFIRM_TITLE, startDraftConfirmBody } from './draft-copy';
 import { useStartDraft } from './use-start-draft';
+import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { extractAllTopics } from '../utils/yaml';
 
 function StartDraftDialog({
@@ -97,7 +100,10 @@ export function useStartDraftConfirm({
         configYaml={configYaml}
         isStarting={isStartingDraft}
         onConfirm={async () => {
-          await startDraft(id);
+          // Its first start is a run like any later one.
+          if ((await startDraft(id)) && startRecordsRun(summarizePipelineEndYaml(configYaml).status)) {
+            useRunHistoryStore.getState().startManualRun(id);
+          }
           setIsOpen(false);
         }}
         onOpenChange={setIsOpen}

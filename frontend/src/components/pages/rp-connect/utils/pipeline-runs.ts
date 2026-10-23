@@ -11,13 +11,15 @@
 
 import { z } from 'zod';
 
+import type { PipelineEndStatus } from './input-end-behavior';
+
 // A pipeline's runs, shaped as the scheduling API sketches them (start, end, outcome, trigger, message
 // counts). Until a server records runs, the preview keeps the ones this browser starts and sees end.
 
 export const RUN_OUTCOMES = ['running', 'completed', 'failed', 'timed-out', 'stopped', 'skipped'] as const;
 export type RunOutcome = (typeof RUN_OUTCOMES)[number];
 
-export const RUN_TRIGGERS = ['schedule', 'manual'] as const;
+const RUN_TRIGGERS = ['schedule', 'manual'] as const;
 export type RunTrigger = (typeof RUN_TRIGGERS)[number];
 
 export const pipelineRunSchema = z.object({
@@ -53,29 +55,26 @@ export function runDurationMs(run: PipelineRun, now: number): number | undefined
 /** What the pipeline's state says about an open run. */
 export type RunObservation = 'active' | 'stopped' | 'error' | 'other';
 
+// How long a run can go unseen before a stopped state means it ran and ended out of sight.
+const UNSEEN_RUN_GRACE_MS = 2 * 60_000;
+
 /**
- * An open run updated by what the pipeline's state shows: marked active once it's seen starting or
- * running, and ended once it's seen stopped (completed, or stopped if asked to) or errored. A stopped
- * state counts only after the run was seen active, or once the pipeline changed after the run began
- * (`updatedAt`); before that it may be the state from before the start. The end is when the pipeline
- * last changed, or `now` if it hasn't since the run began. The same run comes back when nothing changes.
+ * An open run updated by what the pipeline's state shows at `now`: marked active once it's seen starting
+ * or running, and ended once it's seen stopped (completed, or stopped if asked to) or errored. Before the
+ * run is seen active, a stopped state may be the one from before its start, so it ends the run only after
+ * a grace period, with its end unknown. The same run comes back when nothing changes.
  */
-export function observeRun(
-  run: PipelineRun,
-  seen: RunObservation,
-  { now, updatedAt }: { now: number; updatedAt?: number }
-): PipelineRun {
+export function observeRun(run: PipelineRun, seen: RunObservation, now: number): PipelineRun {
   if (run.outcome !== 'running' || run.simulated) {
     return run;
   }
   if (seen === 'active') {
     return run.seenActive ? run : { ...run, seenActive: true };
   }
-  const changedSince = updatedAt !== undefined && updatedAt > run.startTime;
-  if (seen === 'other' || !(run.seenActive || changedSince)) {
+  if (seen === 'other' || !(run.seenActive || now - run.startTime > UNSEEN_RUN_GRACE_MS)) {
     return run;
   }
-  const end = changedSince ? updatedAt : Math.max(now, run.startTime);
+  const end = run.seenActive ? Math.max(now, run.startTime) : undefined;
   if (seen === 'error') {
     return { ...run, outcome: 'failed', endTime: end, note: 'The pipeline stopped with an error. Its logs say why.' };
   }
@@ -83,6 +82,13 @@ export function observeRun(
     ? { ...run, outcome: 'stopped', endTime: end, note: 'Stopped from Console.' }
     : { ...run, outcome: 'completed', endTime: end };
 }
+
+/** Whether a real run is going: one this browser started and is watching for its end. */
+export const hasOpenRun = (runs: PipelineRun[]): boolean =>
+  runs.some((run) => run.outcome === 'running' && !run.simulated);
+
+/** Whether starting a pipeline records a run: it stops on its own, or runs on a schedule. */
+export const startRecordsRun = (end: PipelineEndStatus, scheduled = false): boolean => end === 'finite' || scheduled;
 
 /** How many of the runs that ended completed. */
 export function runTally(runs: PipelineRun[]): { completed: number; ended: number } {

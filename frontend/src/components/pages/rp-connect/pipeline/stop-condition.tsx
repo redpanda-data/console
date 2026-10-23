@@ -39,112 +39,25 @@ import {
 } from 'lucide-react';
 import { type KeyboardEvent, type ReactElement, type ReactNode, type SyntheticEvent, useId, useState } from 'react';
 import { type Control, useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
 
+import {
+  backstopHint,
+  claimEscape,
+  DEFAULT_IDLE,
+  draftFromStopForm,
+  offersRestart,
+  type StopFormState,
+  type StopMode,
+  stopFormSchema,
+  stopFormState,
+} from './stop-form';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import type { InputEndBehavior, InputEndKind } from '../utils/input-end-behavior';
 import type { StopSlot } from '../utils/pipeline-flow-parser';
-import {
-  describeStopCondition,
-  isValidIdleTimeout,
-  parseMessageLimit,
-  type StopConditionDraft,
-  stopShortLabel,
-} from '../utils/read-until';
-import { isStopConditionSet, READ_UNTIL, type StopCondition } from '../utils/yaml';
+import { CODE_SPAN_RE, type StopConditionDraft, stopRowText, stopSummary, withCaveat } from '../utils/read-until';
+import { isStopConditionSet, READ_UNTIL } from '../utils/yaml';
 
-// ── Form model ─────────────────────────────────────────────────────────────
-
-const STOP_MODES = ['none', 'count', 'idle', 'check'] as const;
-
-export type StopMode = (typeof STOP_MODES)[number];
-
-const DEFAULT_LIMIT = '1000';
-const DEFAULT_IDLE = '30s';
 const IDLE_PRESETS = ['10s', '30s', '1m', '5m'] as const;
-const POSITIVE_INT_RE = /^\d+$/;
-
-const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }): boolean =>
-  s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
-
-/** The editor's form. Each field is checked only when the chosen mode reads it. */
-export const stopFormSchema = z
-  .object({
-    mode: z.enum(STOP_MODES),
-    limit: z.string(),
-    idle: z.string(),
-    check: z.string(),
-    /** With a count/check: also stop once idle. */
-    alsoIdle: z.boolean(),
-    restart: z.boolean(),
-  })
-  .superRefine((s, ctx) => {
-    const issue = (path: 'limit' | 'idle' | 'check', message: string) =>
-      ctx.addIssue({ code: 'custom', path: [path], message });
-    const limit = s.limit.trim();
-    if (
-      s.mode === 'count' &&
-      !(POSITIVE_INT_RE.test(limit) && Number(limit) > 0 && Number.isSafeInteger(Number(limit)))
-    ) {
-      issue('limit', 'Enter a whole number greater than 0.');
-    }
-    if (s.mode === 'check' && s.check.trim() === '') {
-      issue('check', 'Enter a Bloblang condition.');
-    }
-    if (usesIdle(s) && !isValidIdleTimeout(s.idle)) {
-      issue('idle', 'Enter a duration such as 30s, 5m or 1h.');
-    }
-  });
-
-export type StopFormState = z.infer<typeof stopFormSchema>;
-
-/** The editor's starting state for a slot's current condition. */
-export function stopFormState(condition?: StopCondition): StopFormState {
-  const state: StopFormState = {
-    mode: 'none',
-    limit: DEFAULT_LIMIT,
-    idle: condition?.idleTimeout ?? DEFAULT_IDLE,
-    check: '',
-    alsoIdle: false,
-    restart: Boolean(condition?.restartInput),
-  };
-  if (!isStopConditionSet(condition)) {
-    return state;
-  }
-  const limit = parseMessageLimit(condition.check);
-  if (limit) {
-    return { ...state, mode: 'count', limit: String(limit.limit), alsoIdle: Boolean(condition.idleTimeout) };
-  }
-  if (condition.check) {
-    return { ...state, mode: 'check', check: condition.check, alsoIdle: Boolean(condition.idleTimeout) };
-  }
-  return { ...state, mode: 'idle' };
-}
-
-/**
- * Whether the form offers `restart_input`: with a count or check, for an input that can finish before
- * it's met (with an idle timeout alone, a re-read input never goes idle). One the YAML already sets
- * stays on offer, so applying never drops it unseen.
- */
-export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition): boolean {
-  return Boolean(condition?.restartInput) || ((mode === 'count' || mode === 'check') && own.kind !== 'continuous');
-}
-
-/** What the form asks for; null keeps the input running with no stop condition. */
-export function draftFromStopForm(s: StopFormState, restartOffered = true): StopConditionDraft | null {
-  if (s.mode === 'none') {
-    return null;
-  }
-  const idleTimeout = usesIdle(s) ? s.idle.trim() : undefined;
-  const restartInput = (restartOffered && s.restart) || undefined;
-  if (s.mode === 'idle') {
-    return { idleTimeout, restartInput };
-  }
-  if (s.mode === 'count') {
-    return { messageLimit: Number(s.limit.trim()), idleTimeout, restartInput };
-  }
-  return { check: s.check.trim(), idleTimeout, restartInput };
-}
 
 // ── Presentation ───────────────────────────────────────────────────────────
 
@@ -180,20 +93,6 @@ const TONE_CLASS: Record<EndTone, string> = {
   invalid:
     'border-destructive/50 bg-[color-mix(in_srgb,var(--color-destructive)_10%,var(--color-card))] text-destructive',
 };
-
-const CODE_SPAN_RE = /`([^`]+)`/g;
-const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
-
-const withCaveat = (text: string, behavior: InputEndBehavior) =>
-  behavior.caveat ? `${text} ${behavior.caveat}` : text;
-
-/** An input's one-line end label, plus the plain-text sentence for its tooltip. */
-export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { short: string; long: string } {
-  const short = stopShortLabel(slot, effective);
-  const note =
-    effective.kind === 'continuous' && !isStopConditionSet(slot.condition) ? ' No stop condition is set.' : '';
-  return { short, long: plain(`${withCaveat(effective.reason, effective)}${note}`) };
-}
 
 // Behavior text marks config keys as `code`.
 export const RichText = ({ text }: { text: string }) => (
@@ -341,45 +240,12 @@ function currentBehavior(slot: StopSlot, effective: InputEndBehavior): string {
   return withCaveat(text, effective);
 }
 
-// What can still leave the input running with the condition as chosen.
-function backstopHint(
-  s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>,
-  own: InputEndBehavior
-): string | undefined {
-  const rereads = s.restart && own.kind !== 'continuous';
-  if (s.mode === 'idle') {
-    return rereads
-      ? 'The input is read again each time it finishes, so it never goes idle and never stops.'
-      : undefined;
-  }
-  if (!(s.mode === 'count' || s.mode === 'check')) {
-    return;
-  }
-  if (rereads) {
-    return 'If no message ever meets the condition, the input is read again and again and never stops.';
-  }
-  if (s.alsoIdle || own.kind !== 'continuous') {
-    return;
-  }
-  const limit = s.limit.trim();
-  const shortfall =
-    s.mode === 'count' && POSITIVE_INT_RE.test(limit) ? `If fewer than ${limit} messages arrive` : 'If none arrives';
-  return `${shortfall}, it keeps running. Also stop when idle as a backstop.`;
-}
-
 const WarningLine = ({ text }: { text: string }) => (
   <span className="flex items-start gap-1 text-body-sm text-warning" data-testid="stop-backstop-hint">
     <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
     {text}
   </span>
 );
-
-// Escape closes only this popover; the canvas's Escape-to-deselect skips handled events.
-export function claimEscape(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-  }
-}
 
 // Enter in the check adds a line; Cmd/Ctrl+Enter applies, as Enter does in the other fields.
 function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -667,12 +533,7 @@ type StopConditionPopoverProps = Omit<StopConditionEditorProps, 'onClose'> & {
 };
 
 /** A trigger that opens the stop-condition editor (or, read-only, its explanation) in a popover. */
-export function StopConditionPopover({
-  trigger,
-  side = 'bottom',
-  align = 'start',
-  ...editor
-}: StopConditionPopoverProps) {
+function StopConditionPopover({ trigger, side = 'bottom', align = 'start', ...editor }: StopConditionPopoverProps) {
   const [open, setOpen] = useState(false);
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -702,82 +563,6 @@ type StopRowProps = {
   effective: InputEndBehavior;
   onApply?: (draft: StopConditionDraft | null) => void;
 };
-
-// "its input never stops", "none of its 3 inputs stop", "2 of 3 inputs never stop".
-function continuousShare(n: number, total: number): string {
-  if (total === 1) {
-    return 'its input never stops';
-  }
-  if (n === total) {
-    return `none of its ${total} inputs stop`;
-  }
-  return `${n} of ${total} inputs never ${n === 1 ? 'stops' : 'stop'}`;
-}
-
-// "its input", "all 3 inputs", "1 of 3 inputs".
-function whichMembers(n: number, total: number): string {
-  if (total === 1) {
-    return 'its input';
-  }
-  return n === total ? `all ${total} inputs` : `${n} of ${total} inputs`;
-}
-
-// A broker/sequence: what its members add up to.
-function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: string; text: string } {
-  const m = effective.members;
-  switch (effective.kind) {
-    case 'natural':
-      return { eyebrow: 'Stops', text: name === 'sequence' ? 'after its last input stops' : 'once all inputs stop' };
-    case 'continuous':
-      return { eyebrow: 'Continuous', text: m ? continuousShare(m.continuous, m.total) : plain(effective.reason) };
-    case 'invalid':
-      return {
-        eyebrow: 'Fix stop',
-        text: m ? `${whichMembers(m.invalid, m.total)} incomplete` : plain(effective.reason),
-      };
-    default:
-      return {
-        eyebrow: 'Stops?',
-        text: m ? `${whichMembers(m.unknown, m.total)} may not stop` : plain(effective.reason),
-      };
-  }
-}
-
-// A single input, short enough for its card: how it ends without a condition, or why that one doesn't act.
-function inputEndText(
-  slot: StopSlot,
-  effective: InputEndBehavior,
-  editable: boolean
-): { eyebrow: string; text: string } {
-  const wrapped = slot.condition !== undefined;
-  switch (effective.kind) {
-    case 'natural':
-      return { eyebrow: 'Stops', text: 'when its data runs out' };
-    case 'continuous':
-      if (wrapped) {
-        return { eyebrow: 'Continuous', text: 'condition never fires' };
-      }
-      return { eyebrow: 'Continuous', text: editable ? 'set a stop condition' : 'no stop condition' };
-    case 'invalid':
-      return { eyebrow: 'Fix stop', text: wrapped ? 'condition incomplete' : plain(effective.reason) };
-    default:
-      return { eyebrow: 'Stops?', text: 'may not stop on its own' };
-  }
-}
-
-/** A stop row's eyebrow + text: the stop condition while it's what ends the input, otherwise how it ends. */
-export function stopRowText(
-  name: string,
-  slot: StopSlot,
-  effective: InputEndBehavior,
-  { isGroup = false, editable = false }: { isGroup?: boolean; editable?: boolean } = {}
-): { eyebrow: string; text: string } {
-  if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
-    const summary = describeStopCondition(slot.condition);
-    return { eyebrow: 'Stops', text: isGroup ? summary.long : summary.compact };
-  }
-  return isGroup ? groupEndText(name, effective) : inputEndText(slot, effective, editable);
-}
 
 /**
  * An input's end as a full-width row at the foot of its card, or of its broker/sequence marker: when it

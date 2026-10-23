@@ -314,6 +314,16 @@ broker:
     expect(kindOf('aws_dynamodb_cdc: { tables: [a], snapshot_mode: "${MODE}" }')).toBe('unknown');
   });
 
+  test('a stop condition records the parts that act', () => {
+    const rereads = classifyInputSlot(
+      parseYaml(
+        '{ read_until: { check: "counter() >= 1000", idle_timeout: 30s, restart_input: true, input: { generate: { count: 10, mapping: "root = 1" } } } }'
+      )
+    );
+    expect(rereads).toMatchObject({ kind: 'condition', stopsOn: { check: 'counter() >= 1000' } });
+    expect(rereads.stopsOn?.idleTimeout).toBeUndefined();
+  });
+
   test('a slot’s processors are not its component', () => {
     expect(kindOf('{ processors: [], sql_select: {} }')).toBe('natural');
     expect(kindOf('{ processors: [], read_until: { idle_timeout: 5s, input: { kafka: {} } } }')).toBe('condition');

@@ -38,10 +38,11 @@ export function useStartDraft() {
   const { mutateAsync, isPending } = useStartPipelineMutation();
 
   const startDraft = useCallback(
-    async (pipelineId: string): Promise<void> => {
+    async (pipelineId: string): Promise<boolean> => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
+        return true;
       } catch (err) {
         const error = ConnectError.from(err);
         if (isInvalidConfigError(error)) {
@@ -49,9 +50,10 @@ export function useStartDraft() {
           pendingStartLintHints.set(pipelineId, hints);
           toast.error(startBlockedMessage(Object.keys(hints).length));
           navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } });
-          return;
+          return false;
         }
         toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
+        return false;
       }
     },
     [mutateAsync, navigate]

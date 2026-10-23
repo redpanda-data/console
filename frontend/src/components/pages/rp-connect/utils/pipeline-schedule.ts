@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { prettyMilliseconds } from 'utils/utils';
 import { z } from 'zod';
 
 import type { PipelineEndStatus } from './input-end-behavior';
@@ -23,11 +24,11 @@ export const RUNTIME_UNITS = ['minutes', 'hours'] as const;
 export type RuntimeUnit = (typeof RUNTIME_UNITS)[number];
 
 /** Runs closer together than this belong in a pipeline that runs continuously. */
-export const MIN_INTERVAL_MINUTES = 15;
+const MIN_INTERVAL_MINUTES = 15;
 /** A year: anything rarer is a one-off, not a schedule. */
-export const MAX_INTERVAL_MINUTES = 525_600;
+const MAX_INTERVAL_MINUTES = 525_600;
 /** 30 days. */
-export const MAX_RUNTIME_MINUTES = 43_200;
+const MAX_RUNTIME_MINUTES = 43_200;
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
@@ -37,13 +38,21 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const PLURAL_S = /s$/;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+// Known per zone: every next-run calculation validates its schedule, and a formatter is costly to build.
+const timeZoneValidity = new Map<string, boolean>();
+
 export const isValidTimeZone = (timeZone: string): boolean => {
-  try {
-    // Throws a RangeError for a zone it doesn't know.
-    return Boolean(new Intl.DateTimeFormat('en-US', { timeZone }));
-  } catch {
-    return false;
+  let valid = timeZoneValidity.get(timeZone);
+  if (valid === undefined) {
+    try {
+      // Throws a RangeError for a zone it doesn't know.
+      valid = Boolean(new Intl.DateTimeFormat('en-US', { timeZone }));
+    } catch {
+      valid = false;
+    }
+    timeZoneValidity.set(timeZone, valid);
   }
+  return valid;
 };
 
 // An empty number field holds NaN; fields the cadence doesn't use are only checked when it does.
@@ -373,7 +382,7 @@ export function ordinal(n: number): string {
 }
 
 /** A `HH:MM` wall time in the reader's locale, e.g. "2:00 AM" or "02:00". */
-export function formatWallTime(time: string, locale?: string): string {
+function formatWallTime(time: string, locale?: string): string {
   const { hour, minute } = parseTime(time);
   return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(
     Date.UTC(2000, 0, 1, hour, minute)
@@ -385,7 +394,8 @@ const plural = (n: number, unit: string) => `${n} ${n === 1 ? singular(unit) : u
 
 /** Run days in a sentence, Monday first, e.g. "Monday, Thursday and Saturday". */
 export function describeWeekdays(days: number[]): string {
-  const names = WEEKDAY_ORDER.filter((day) => days.includes(day)).map((day) => weekdayName(day));
+  const chosen = new Set(days);
+  const names = WEEKDAY_ORDER.filter((day) => chosen.has(day)).map((day) => weekdayName(day));
   if (names.length <= 2) {
     return names.join(' and ');
   }
@@ -478,6 +488,10 @@ export function describeRuntime(minutes: number): string {
   return minutes % 60 === 0 ? plural(minutes / 60, 'hours') : plural(minutes, 'minutes');
 }
 
+/** How long until `at`, e.g. "in 5h 20m". */
+export const untilLabel = (at: number, now: number) =>
+  at - now < 60_000 ? 'in under a minute' : `in ${prettyMilliseconds(at - now, { compact: true })}`;
+
 /** A run's start in the schedule's zone, e.g. "Tue, Oct 20, 2:00 AM BST". */
 export function formatRunTime(instant: number, timeZone: string, locale?: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -492,7 +506,7 @@ export function formatRunTime(instant: number, timeZone: string, locale?: string
 }
 
 /** Today's date in a zone, `YYYY-MM-DD`. */
-export function zonedToday(timeZone: string, now: number = Date.now()): string {
+function zonedToday(timeZone: string, now: number = Date.now()): string {
   const { year, month, day } = zonedParts(now, timeZone);
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
