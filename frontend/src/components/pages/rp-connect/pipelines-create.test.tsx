@@ -10,6 +10,8 @@ import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 // The compute-units field clamps on blur: clamping per keystroke makes it unclearable.
 const COMPUTE_UNITS_LABEL = /Compute units/;
 
+rs.mock('../../misc/pipelines-yaml-editor', () => ({ default: () => null }));
+
 afterEach(() => {
   pipelinesApi.pipelines = undefined;
   rpcnSecretManagerApi.secrets = undefined;

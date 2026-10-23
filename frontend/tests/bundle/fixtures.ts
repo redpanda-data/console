@@ -89,6 +89,7 @@ const responses: Record<string, unknown> = {
   GetIdentity: {},
   ListShadowLinks: {},
   ListPipelines: { response: { pipelines: [] } },
+  ListComponents: { components: {} },
   ListSecrets: { response: { secrets: [] } },
   GetPipelinesBySecrets: { response: { pipelinesForSecret: [] } },
 };

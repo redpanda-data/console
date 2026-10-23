@@ -13,9 +13,12 @@ import type { EditorProps, Monaco } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { lazy, useCallback, useEffect, useState } from 'react';
+import { lazy, useEffect, useState } from 'react';
+import { useListComponentsQuery } from 'react-query/api/connect';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
+import { parseSchema } from '../pages/rp-connect/utils/schema';
+import { withYamlDocumentation } from '../pages/rp-connect/utils/yaml-editor-schema';
 import { annotateAnyOfTitles } from '../ui/yaml/yaml-editor';
 
 annotateAnyOfTitles(benthosSchema);
@@ -61,27 +64,28 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-export const monacoYamlOptions = {
-  enableSchemaRequest: false,
-  format: { enable: true },
-  completion: true,
-  validate: true,
-  schemas: [
-    {
-      // If YAML file is opened matching this glob
-      fileMatch: ['**/*.yaml'],
-      // The following schema will be applied
-      schema: {
-        type: 'object',
-        definitions: benthosSchema.definitions,
-        properties: benthosSchema.properties,
-      },
+const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
+  ({
+    enableSchemaRequest: false,
+    format: { enable: true },
+    completion: true,
+    validate: true,
+    schemas: [
+      {
+        // If YAML file is opened matching this glob
+        fileMatch: ['**/*.yaml'],
+        // The following schema will be applied
+        schema: {
+          type: 'object',
+          definitions: schema.definitions,
+          properties: schema.properties,
+        },
 
-      // And the URI will be linked to as the source.
-      uri: 'https://github.com/redpanda-data/console/blob/master/frontend/src/assets/rp-connect-schema.json',
-    },
-  ],
-} as MonacoYamlOptions;
+        // And the URI will be linked to as the source.
+        uri: 'https://github.com/redpanda-data/console/blob/master/frontend/src/assets/rp-connect-schema.json',
+      },
+    ],
+  }) as MonacoYamlOptions;
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
@@ -89,6 +93,17 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+  const { data: componentResponse } = useListComponentsQuery();
+  const componentList = componentResponse?.components;
+
+  useEffect(
+    function updateYamlDocumentation() {
+      if (yaml && componentList) {
+        yaml.update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, parseSchema(componentList))));
+      }
+    },
+    [yaml, componentList]
+  );
 
   useEffect(() => {
     return () => {
@@ -99,10 +114,10 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
     };
   }, [yaml]);
 
-  const setMonacoOptions = useCallback((monaco: Monaco) => {
-    const yamlConfig = configureMonacoYaml(monaco, monacoYamlOptions);
+  const setMonacoOptions = (monaco: Monaco) => {
+    const yamlConfig = configureMonacoYaml(monaco, buildMonacoYamlOptions(benthosSchema));
     setYaml(yamlConfig);
-  }, []);
+  };
 
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
