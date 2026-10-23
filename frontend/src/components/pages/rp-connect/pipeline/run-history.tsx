@@ -56,10 +56,14 @@ export function RunOutcomeStrip({ runs }: { runs: PipelineRun[] }) {
   );
 }
 
-/** A pipeline's runs, newest first: when each started, what started it, how long it took and how it went. */
+/**
+ * A pipeline's runs, newest first: when each started and what started it, how long it took and how it went.
+ * Message counts get a column only once a run has them; only a server can count a real run's messages.
+ */
 export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; timeZone: string; now: number }) {
   const [showAll, setShowAll] = useState(false);
   const shown = showAll ? runs : runs.slice(0, COLLAPSED_ROWS);
+  const counted = runs.some((run) => run.messagesIn !== undefined || run.messagesOut !== undefined);
   return (
     <div className="flex flex-col gap-2">
       <div className="overflow-hidden rounded-md border">
@@ -67,10 +71,8 @@ export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; 
           <TableHeader>
             <TableRow>
               <TableHead>Started</TableHead>
-              <TableHead>Trigger</TableHead>
               <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Messages in</TableHead>
-              <TableHead className="text-right">Messages out</TableHead>
+              {counted ? <TableHead>Messages</TableHead> : null}
               <TableHead>Outcome</TableHead>
             </TableRow>
           </TableHeader>
@@ -87,13 +89,12 @@ export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; 
                       <span>
                         {date}, {time}
                       </span>
-                      <span className="text-body-sm text-muted-foreground">{ago(now - run.startTime)}</span>
-                    </span>
-                  </TableCell>
-                  <TableCell className="align-top text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <TriggerIcon aria-hidden className="size-3.5" />
-                      {run.trigger === 'schedule' ? 'Scheduled' : 'Manual'}
+                      <span className="inline-flex items-center gap-1.5 text-body-sm text-muted-foreground">
+                        {ago(now - run.startTime)}
+                        <span aria-hidden>·</span>
+                        <TriggerIcon aria-hidden className="size-3" />
+                        {run.trigger === 'schedule' ? 'Scheduled' : 'Manual'}
+                      </span>
                     </span>
                   </TableCell>
                   <TableCell className="align-top tabular-nums">
@@ -106,8 +107,12 @@ export function RunHistoryTable({ runs, timeZone, now }: { runs: PipelineRun[]; 
                       </>
                     )}
                   </TableCell>
-                  <TableCell className="text-right align-top tabular-nums">{count(run.messagesIn)}</TableCell>
-                  <TableCell className="text-right align-top tabular-nums">{count(run.messagesOut)}</TableCell>
+                  {counted ? (
+                    <TableCell className="align-top tabular-nums">
+                      {count(run.messagesIn)} in <span className="text-muted-foreground">·</span>{' '}
+                      {count(run.messagesOut)} out
+                    </TableCell>
+                  ) : null}
                   <TableCell className="align-top">
                     <span className="flex flex-col items-start gap-0.5">
                       <StatusBadge pulsing={run.outcome === 'running'} size="sm" variant={outcome.variant}>

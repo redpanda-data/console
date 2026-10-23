@@ -130,8 +130,8 @@ export const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
-          // A scheduled pipeline's runs are recorded; this one was started by hand.
-          if (pipeline.schedule) {
+          // Runs are recorded for a pipeline that stops on its own, or has a schedule.
+          if (pipeline.end === 'finite' || pipeline.schedule) {
             useRunHistoryStore.getState().startManualRun(pipeline.id);
           }
           toast.success(pipeline.schedule ? 'Run starting' : 'Pipeline starting');

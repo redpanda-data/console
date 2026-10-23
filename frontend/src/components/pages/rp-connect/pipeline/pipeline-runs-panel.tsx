@@ -27,16 +27,10 @@ import { toast } from 'sonner';
 import { usePipelineRuns } from 'state/rpcn-run-history-preview';
 import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
-import {
-  areSchedulesEnabled,
-  PipelineScheduleDialog,
-  SCHEDULE_PREVIEW_NOTE,
-  untilLabel,
-  useClock,
-} from './pipeline-schedule';
+import { areSchedulesEnabled, PipelineScheduleDialog, untilLabel, useClock } from './pipeline-schedule';
 import { RunHistoryTable, RunOutcomeStrip } from './run-history';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
-import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import {
   browserTimeZone,
   describeRuntime,
@@ -49,13 +43,21 @@ import {
 
 const UPCOMING_COUNT = 5;
 
-/** The Monitor lane's schedule: the runs coming up, and the history runs will be recorded in. */
+const RUNS_PREVIEW_NOTE =
+  'Preview: lists the runs started from this browser. Runs started anywhere else appear once Redpanda records them.';
+
+/**
+ * The Monitor lane's runs, for a pipeline that ends (it stops on its own, or runs on a schedule): its
+ * history and, with a schedule, the runs coming up.
+ */
 export function PipelineRunsPanel({ pipelineId, configYaml }: { pipelineId: string; configYaml: string }) {
-  const schedule = usePipelineSchedule(pipelineId);
-  if (!(areSchedulesEnabled() && schedule)) {
+  const stored = usePipelineSchedule(pipelineId);
+  const schedule = areSchedulesEnabled() ? stored : undefined;
+  const end = useMemo(() => summarizePipelineEndYaml(configYaml), [configYaml]);
+  if (!(schedule || end.status === 'finite')) {
     return null;
   }
-  return <RunsPanelContent configYaml={configYaml} pipelineId={pipelineId} schedule={schedule} />;
+  return <RunsPanelContent configYaml={configYaml} end={end} pipelineId={pipelineId} schedule={schedule} />;
 }
 
 // The dashed placeholder the lane's other sections use while they have nothing to show.
@@ -80,32 +82,46 @@ const RunsPlaceholder = ({
   </Empty>
 );
 
-function RunsPanelContent({
+// The cadence under the panel's title.
+function ScheduleSummaryLine({ schedule, active }: { schedule: PipelineSchedule; active: boolean }) {
+  const runtime = maxRuntimeMinutes(schedule);
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground">
+      <ScheduleGlance muted={!active} schedule={schedule} />
+      {/* The tiles carry the zone's abbreviation; its name only matters when it isn't the viewer's. */}
+      {schedule.timeZone === browserTimeZone() ? null : (
+        <>
+          <span aria-hidden>·</span>
+          <span>{schedule.timeZone}</span>
+        </>
+      )}
+      {runtime ? (
+        <>
+          <span aria-hidden>·</span>
+          <span>Stops after {describeRuntime(runtime)}</span>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+// The runs a schedule makes next, or why it makes none.
+function ScheduledRuns({
   pipelineId,
-  configYaml,
   schedule,
+  end,
+  now,
 }: {
   pipelineId: string;
-  configYaml: string;
   schedule: PipelineSchedule;
+  end: PipelineEndSummary;
+  now: number;
 }) {
-  const [open, setOpen] = useState(false);
   const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
-  const runs = usePipelineRuns(pipelineId);
-  const end = useMemo(() => summarizePipelineEndYaml(configYaml), [configYaml]);
-  const now = useClock();
   const state = scheduleState(schedule, end);
   const upcoming = state === 'active' ? nextRuns(schedule, now, UPCOMING_COUNT) : [];
-  const runtime = maxRuntimeMinutes(schedule);
-
-  const resume = () => {
-    saveSchedule(pipelineId, { ...schedule, enabled: true });
-    toast.success('Schedule resumed', { description: describeSchedule(schedule) });
-  };
-
-  let comingUp: ReactNode;
   if (upcoming.length > 0) {
-    comingUp = (
+    return (
       <UpcomingRunTiles
         label="Scheduled runs"
         runs={upcoming}
@@ -113,8 +129,13 @@ function RunsPanelContent({
         timeZone={schedule.timeZone}
       />
     );
-  } else if (state === 'paused') {
-    comingUp = (
+  }
+  if (state === 'paused') {
+    const resume = () => {
+      saveSchedule(pipelineId, { ...schedule, enabled: true });
+      toast.success('Schedule resumed', { description: describeSchedule(schedule) });
+    };
+    return (
       <RunsPlaceholder
         action={
           end.status === 'finite' ? (
@@ -127,16 +148,30 @@ function RunsPanelContent({
         title="Paused"
       />
     );
-  } else {
-    comingUp = (
-      <RunsPlaceholder
-        description={
-          state === 'on-hold' ? 'No runs until the pipeline stops on its own again.' : 'No run is coming up.'
-        }
-        title={state === 'on-hold' ? 'On hold' : 'Nothing coming up'}
-      />
-    );
   }
+  return (
+    <RunsPlaceholder
+      description={state === 'on-hold' ? 'No runs until the pipeline stops on its own again.' : 'No run is coming up.'}
+      title={state === 'on-hold' ? 'On hold' : 'Nothing coming up'}
+    />
+  );
+}
+
+function RunsPanelContent({
+  pipelineId,
+  configYaml,
+  end,
+  schedule,
+}: {
+  pipelineId: string;
+  configYaml: string;
+  end: PipelineEndSummary;
+  /** Set with the schedule preview on and a schedule saved. */
+  schedule?: PipelineSchedule;
+}) {
+  const [open, setOpen] = useState(false);
+  const runs = usePipelineRuns(pipelineId);
+  const now = useClock();
 
   return (
     <>
@@ -151,44 +186,35 @@ function RunsPanelContent({
                     Preview
                   </Badge>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs">{SCHEDULE_PREVIEW_NOTE}</TooltipContent>
+                <TooltipContent className="max-w-xs">{RUNS_PREVIEW_NOTE}</TooltipContent>
               </Tooltip>
             </div>
-            <div className="flex flex-wrap items-center gap-x-2 text-body-sm text-muted-foreground">
-              <ScheduleGlance muted={state !== 'active'} schedule={schedule} />
-              {/* The tiles carry the zone's abbreviation; its name only matters when it isn't the viewer's. */}
-              {schedule.timeZone === browserTimeZone() ? null : (
-                <>
-                  <span aria-hidden>·</span>
-                  <span>{schedule.timeZone}</span>
-                </>
-              )}
-              {runtime ? (
-                <>
-                  <span aria-hidden>·</span>
-                  <span>Stops after {describeRuntime(runtime)}</span>
-                </>
-              ) : null}
-            </div>
+            {schedule ? (
+              <ScheduleSummaryLine active={scheduleState(schedule, end) === 'active'} schedule={schedule} />
+            ) : null}
           </div>
-          <Button icon={<CalendarClock />} onClick={() => setOpen(true)} size="sm" variant="ghost">
-            Edit schedule
-          </Button>
+          {schedule ? (
+            <Button icon={<CalendarClock />} onClick={() => setOpen(true)} size="sm" variant="ghost">
+              Edit schedule
+            </Button>
+          ) : null}
         </div>
-        <div className="flex flex-col gap-2">
-          <h4 className="font-medium text-body-sm text-muted-foreground">Scheduled runs</h4>
-          {comingUp}
-        </div>
+        {schedule ? (
+          <div className="flex flex-col gap-2">
+            <h4 className="font-medium text-body-sm text-muted-foreground">Scheduled runs</h4>
+            <ScheduledRuns end={end} now={now} pipelineId={pipelineId} schedule={schedule} />
+          </div>
+        ) : null}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
             <h4 className="font-medium text-body-sm text-muted-foreground">History</h4>
             {runs.length > 0 ? <RunOutcomeStrip runs={runs} /> : null}
           </div>
           {runs.length > 0 ? (
-            <RunHistoryTable now={now} runs={runs} timeZone={schedule.timeZone} />
+            <RunHistoryTable now={now} runs={runs} timeZone={schedule?.timeZone ?? browserTimeZone()} />
           ) : (
             <RunsPlaceholder
-              description="Each run will show when it started and ended, how it went, and how many messages it moved."
+              description="Each run you start is listed with when it started, how long it took and how it ended."
               icon={<History />}
               title="No runs yet"
             />
@@ -196,13 +222,15 @@ function RunsPanelContent({
         </div>
       </section>
       <Separator className="my-8" variant="subtle" />
-      <PipelineScheduleDialog
-        configYaml={configYaml}
-        fixHint="Edit the pipeline to give each input a stop condition."
-        onOpenChange={setOpen}
-        open={open}
-        pipelineId={pipelineId}
-      />
+      {schedule ? (
+        <PipelineScheduleDialog
+          configYaml={configYaml}
+          fixHint="Edit the pipeline to give each input a stop condition."
+          onOpenChange={setOpen}
+          open={open}
+          pipelineId={pipelineId}
+        />
+      ) : null}
     </>
   );
 }

@@ -92,11 +92,14 @@ export function PipelineRunButton({
   pipelineId,
   pipelineState,
   scheduled = false,
+  recordsRuns = scheduled,
 }: {
   pipelineId: string;
   pipelineState?: Pipeline_State;
   /** With a schedule, starting it is a single run. */
   scheduled?: boolean;
+  /** Starting it records a run: it stops on its own, or has a schedule. */
+  recordsRuns?: boolean;
 }) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
@@ -110,8 +113,7 @@ export function PipelineRunButton({
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
-        // A scheduled pipeline's runs are recorded; this one was started by hand.
-        if (scheduled) {
+        if (recordsRuns) {
           startManualRun(pipelineId);
         }
         toast.success(scheduled ? 'Run starting' : 'Pipeline starting');
@@ -121,7 +123,7 @@ export function PipelineRunButton({
           formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
         ),
     });
-  }, [pipelineId, startMutation, scheduled, startManualRun]);
+  }, [pipelineId, startMutation, scheduled, recordsRuns, startManualRun]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
