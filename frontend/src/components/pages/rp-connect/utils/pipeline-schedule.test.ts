@@ -17,7 +17,10 @@ import {
   normalizeSchedule,
   type PipelineSchedule,
   pipelineScheduleSchema,
+  runTimeParts,
   runtimeOverlapsNextRun,
+  scheduleGlanceText,
+  scheduleWeekdays,
   shortestGapMinutes,
   zonedTimeToInstant,
 } from './pipeline-schedule';
@@ -253,5 +256,37 @@ describe('overlap', () => {
     ).toBe(true);
     // An interval no longer than the shift is pushed past the skipped hour, so it keeps its length.
     expect(shortestGapMinutes(schedule({ cadence: 'hourly', time: '00:15', timeZone: 'America/New_York' }))).toBe(60);
+  });
+});
+
+describe('at a glance', () => {
+  test('a day-based cadence gives its weekdays, Monday first, and its time', () => {
+    expect(scheduleWeekdays(schedule({ cadence: 'daily' }))).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(scheduleWeekdays(schedule({ cadence: 'weekdays' }))).toEqual([1, 2, 3, 4, 5]);
+    expect(scheduleWeekdays(schedule({ cadence: 'weekly', weekdays: [6, 1, 4] }))).toEqual([1, 4, 6]);
+    expect(scheduleGlanceText(schedule({ cadence: 'weekly', weekdays: [1], time: '14:30' }), 'en-US')).toBe('2:30 PM');
+  });
+
+  test('any other cadence names itself instead', () => {
+    expect(scheduleWeekdays(schedule({ cadence: 'hourly' }))).toBeUndefined();
+    expect(scheduleGlanceText(schedule({ cadence: 'hourly', time: '00:15' }), 'en-US')).toBe('Hourly at :15');
+    expect(scheduleGlanceText(schedule({ cadence: 'monthly', dayOfMonth: 1 }), 'en-US')).toBe(
+      '1st of the month · 2:00 AM'
+    );
+    expect(scheduleGlanceText(schedule({ cadence: 'custom', every: 30, unit: 'minutes' }), 'en-US')).toBe(
+      'Every 30 minutes'
+    );
+    expect(scheduleGlanceText(schedule({ cadence: 'custom', every: 2, unit: 'weeks' }), 'en-US')).toBe(
+      'Every 2 weeks · 2:00 AM'
+    );
+  });
+
+  test('a run splits into its day, date, time and zone, in the schedule’s zone', () => {
+    expect(runTimeParts(at('2026-10-24T09:00:00Z'), 'America/Vancouver', 'en-US')).toEqual({
+      weekday: 'Sat',
+      date: 'Oct 24',
+      time: '2:00 AM',
+      zone: 'PDT',
+    });
   });
 });

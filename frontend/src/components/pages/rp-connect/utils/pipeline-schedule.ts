@@ -383,7 +383,8 @@ export function formatWallTime(time: string, locale?: string): string {
 const singular = (unit: string) => unit.replace(PLURAL_S, '');
 const plural = (n: number, unit: string) => `${n} ${n === 1 ? singular(unit) : unit}`;
 
-function listDays(days: number[]): string {
+/** Run days in a sentence, Monday first, e.g. "Monday, Thursday and Saturday". */
+export function describeWeekdays(days: number[]): string {
   const names = WEEKDAY_ORDER.filter((day) => days.includes(day)).map((day) => weekdayName(day));
   if (names.length <= 2) {
     return names.join(' and ');
@@ -402,7 +403,9 @@ export function describeSchedule(schedule: PipelineSchedule, locale?: string): s
     case 'weekdays':
       return `Weekdays at ${at}`;
     case 'weekly':
-      return schedule.weekdays.length === 7 ? `Every day at ${at}` : `Every ${listDays(schedule.weekdays)} at ${at}`;
+      return schedule.weekdays.length === 7
+        ? `Every day at ${at}`
+        : `Every ${describeWeekdays(schedule.weekdays)} at ${at}`;
     case 'monthly':
       return `Monthly on the ${ordinal(schedule.dayOfMonth)} at ${at}`;
     default:
@@ -413,6 +416,62 @@ export function describeSchedule(schedule: PipelineSchedule, locale?: string): s
         ? `Every ${singular(schedule.unit)} at ${at}`
         : `Every ${plural(schedule.every, schedule.unit)} at ${at}`;
   }
+}
+
+const WEEKDAYS_MON_FRI = [1, 2, 3, 4, 5];
+
+/** The weekdays a day-based cadence runs on, Monday first; undefined for hourly, monthly and intervals. */
+export function scheduleWeekdays(schedule: PipelineSchedule): number[] | undefined {
+  switch (schedule.cadence) {
+    case 'daily':
+      return [...WEEKDAY_ORDER];
+    case 'weekdays':
+      return WEEKDAYS_MON_FRI;
+    case 'weekly':
+      return WEEKDAY_ORDER.filter((day) => schedule.weekdays.includes(day));
+    default:
+      return;
+  }
+}
+
+/**
+ * The schedule at a glance, beside its weekday strip when it has one: just the time for a day-based
+ * cadence, otherwise the cadence, e.g. "Hourly at :15" or "1st of the month · 2:00 AM".
+ */
+export function scheduleGlanceText(schedule: PipelineSchedule, locale?: string): string {
+  const at = formatWallTime(schedule.time, locale);
+  switch (schedule.cadence) {
+    case 'hourly':
+      return `Hourly at :${schedule.time.slice(3)}`;
+    case 'monthly':
+      return `${ordinal(schedule.dayOfMonth)} of the month · ${at}`;
+    case 'custom':
+      if (schedule.unit === 'minutes' || schedule.unit === 'hours') {
+        return `Every ${plural(schedule.every, schedule.unit)}`;
+      }
+      return schedule.every === 1
+        ? `Every ${singular(schedule.unit)} · ${at}`
+        : `Every ${plural(schedule.every, schedule.unit)} · ${at}`;
+    default:
+      return at;
+  }
+}
+
+/** A run's start split for a day tile, in the schedule's zone: "Sat", "Oct 24", "2:00 AM", "PDT". */
+export function runTimeParts(
+  instant: number,
+  timeZone: string,
+  locale?: string
+): { weekday: string; date: string; time: string; zone: string } {
+  const part = (options: Intl.DateTimeFormatOptions, type: Intl.DateTimeFormatPartTypes) =>
+    new Intl.DateTimeFormat(locale, { timeZone, ...options }).formatToParts(instant).find((p) => p.type === type)
+      ?.value ?? '';
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { timeZone, weekday: 'short' }).format(instant),
+    date: new Intl.DateTimeFormat(locale, { timeZone, month: 'short', day: 'numeric' }).format(instant),
+    time: new Intl.DateTimeFormat(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(instant),
+    zone: part({ timeZoneName: 'short' }, 'timeZoneName'),
+  };
 }
 
 export function describeRuntime(minutes: number): string {
