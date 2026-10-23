@@ -24,6 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 import { CalendarClock, History } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { usePipelineRuns } from 'state/rpcn-run-history-preview';
 import { usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 
 import {
@@ -33,6 +34,7 @@ import {
   untilLabel,
   useClock,
 } from './pipeline-schedule';
+import { RunHistoryTable, RunOutcomeStrip } from './run-history';
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import {
@@ -89,6 +91,7 @@ function RunsPanelContent({
 }) {
   const [open, setOpen] = useState(false);
   const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
+  const runs = usePipelineRuns(pipelineId);
   const end = useMemo(() => summarizePipelineEndYaml(configYaml), [configYaml]);
   const now = useClock();
   const state = scheduleState(schedule, end);
@@ -104,7 +107,7 @@ function RunsPanelContent({
   if (upcoming.length > 0) {
     comingUp = (
       <UpcomingRunTiles
-        label="Upcoming runs"
+        label="Scheduled runs"
         runs={upcoming}
         soonLabel={untilLabel(upcoming[0], now)}
         timeZone={schedule.timeZone}
@@ -173,16 +176,23 @@ function RunsPanelContent({
           </Button>
         </div>
         <div className="flex flex-col gap-2">
-          <h4 className="font-medium text-body-sm text-muted-foreground">Upcoming</h4>
+          <h4 className="font-medium text-body-sm text-muted-foreground">Scheduled runs</h4>
           {comingUp}
         </div>
         <div className="flex flex-col gap-2">
-          <h4 className="font-medium text-body-sm text-muted-foreground">History</h4>
-          <RunsPlaceholder
-            description="Each run will show when it started and ended, how it went, and how many messages it moved."
-            icon={<History />}
-            title="No runs yet"
-          />
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="font-medium text-body-sm text-muted-foreground">History</h4>
+            {runs.length > 0 ? <RunOutcomeStrip runs={runs} /> : null}
+          </div>
+          {runs.length > 0 ? (
+            <RunHistoryTable now={now} runs={runs} timeZone={schedule.timeZone} />
+          ) : (
+            <RunsPlaceholder
+              description="Each run will show when it started and ended, how it went, and how many messages it moved."
+              icon={<History />}
+              title="No runs yet"
+            />
+          )}
         </div>
       </section>
       <Separator className="my-8" variant="subtle" />

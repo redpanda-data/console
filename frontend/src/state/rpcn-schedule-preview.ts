@@ -17,7 +17,9 @@ import { create } from 'zustand';
 
 export const SCHEDULE_PREVIEW_STORAGE_KEY = 'rpcn-schedule-preview';
 
-const scheduleKey = (pipelineId: string): string => `${config.clusterId || 'default'}/${pipelineId}`;
+/** A pipeline's key in the browser's preview stores: its cluster, then its id. */
+export const pipelinePreviewKey = (pipelineId: string): string => `${config.clusterId || 'default'}/${pipelineId}`;
+const scheduleKey = pipelinePreviewKey;
 
 // The stored map as written, entries this version can't read included, so a save never drops them.
 // Undefined when storage can't be read at all.

@@ -34,6 +34,7 @@ import { type Pipeline_State, Pipeline_State as PipelineState } from 'protogen/r
 import { useCallback, useState } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
@@ -99,6 +100,8 @@ export function PipelineRunButton({
 }) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+  const startManualRun = useRunHistoryStore((s) => s.startManualRun);
+  const requestStop = useRunHistoryStore((s) => s.requestStop);
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   const action = runActionForState(pipelineState);
@@ -106,17 +109,24 @@ export function PipelineRunButton({
 
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
-      onSuccess: () => toast.success(scheduled ? 'Run starting' : 'Pipeline starting'),
+      onSuccess: () => {
+        // A scheduled pipeline's runs are recorded; this one was started by hand.
+        if (scheduled) {
+          startManualRun(pipelineId);
+        }
+        toast.success(scheduled ? 'Run starting' : 'Pipeline starting');
+      },
       onError: (err) =>
         toast.error(
           formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
         ),
     });
-  }, [pipelineId, startMutation, scheduled]);
+  }, [pipelineId, startMutation, scheduled, startManualRun]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
+        requestStop(pipelineId);
         toast.success(isCancellingStart ? 'Canceling pipeline start' : 'Pipeline stopping');
         setIsStopConfirmOpen(false);
       },
@@ -125,7 +135,7 @@ export function PipelineRunButton({
         setIsStopConfirmOpen(false);
       },
     });
-  }, [pipelineId, stopMutation, isCancellingStart]);
+  }, [pipelineId, stopMutation, isCancellingStart, requestStop]);
 
   if (action === null) {
     return null;

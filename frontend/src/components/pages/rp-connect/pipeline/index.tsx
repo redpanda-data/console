@@ -83,6 +83,7 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -164,6 +165,8 @@ import {
   usesServiceAccountLogin,
 } from '../utils/yaml';
 
+// How often the page checks on a run this browser started.
+const RUN_WATCH_INTERVAL_MS = 5000;
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
     return 'Add an input';
@@ -1246,9 +1249,14 @@ function PipelinePageContent() {
     [slashCommand, setCommandMenuFilter]
   );
 
+  // A run this browser started is watched until it ends; the query otherwise polls only while the
+  // pipeline starts or stops.
+  const watchingRun = useRunHistoryStore((s) =>
+    pipelineId ? runsOf(s.runs, pipelineId).some((run) => run.outcome === 'running' && !run.simulated) : false
+  );
   const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId }
+    { enabled: mode !== 'create' && !!pipelineId, refetchInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 

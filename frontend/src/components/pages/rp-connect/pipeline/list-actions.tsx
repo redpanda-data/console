@@ -42,6 +42,7 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -129,6 +130,10 @@ export const ActionsCell = memo(
       });
       startMutation(startRequest, {
         onSuccess: () => {
+          // A scheduled pipeline's runs are recorded; this one was started by hand.
+          if (pipeline.schedule) {
+            useRunHistoryStore.getState().startManualRun(pipeline.id);
+          }
           toast.success(pipeline.schedule ? 'Run starting' : 'Pipeline starting');
         },
         onError: (err) => {
@@ -149,6 +154,7 @@ export const ActionsCell = memo(
       });
       stopMutation(stopRequest, {
         onSuccess: () => {
+          useRunHistoryStore.getState().requestStop(pipeline.id);
           toast.success('Pipeline stopping');
         },
         onError: (err) => {

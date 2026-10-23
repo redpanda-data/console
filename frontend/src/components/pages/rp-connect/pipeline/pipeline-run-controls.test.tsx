@@ -12,6 +12,7 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { RUN_HISTORY_STORAGE_KEY, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { render, screen } from 'test-utils';
 
 import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
@@ -38,6 +39,8 @@ describe('PipelineRunButton', () => {
   beforeEach(() => {
     startMutate.mockClear();
     stopMutate.mockClear();
+    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+    useRunHistoryStore.setState({ runs: {} });
   });
 
   test('a stopped pipeline offers Start pipeline, which starts it without a confirmation', async () => {
@@ -53,6 +56,7 @@ describe('PipelineRunButton', () => {
 
   test('a scheduled pipeline offers Run now, a single run that leaves the schedule as it is', async () => {
     const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
     render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} scheduled />);
 
     const start = screen.getByTestId('pipeline-start');
@@ -62,6 +66,12 @@ describe('PipelineRunButton', () => {
 
     await user.click(start);
     expect(startMutate).toHaveBeenCalledTimes(1);
+    // The run is recorded, as started by hand.
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'running',
+      trigger: 'manual',
+    });
+    startMutate.mockReset();
   });
 
   test.each([

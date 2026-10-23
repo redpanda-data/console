@@ -11,7 +11,8 @@
 
 import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen, within } from 'test-utils';
+import { RUN_HISTORY_STORAGE_KEY, useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { render, renderWithFileRoutes, screen, within } from 'test-utils';
 
 import { DebugDialog } from './debug-dialog';
 
@@ -55,5 +56,26 @@ describe('DebugDialog — Connect configs', () => {
     expect(
       screen.getByRole('button', { name: 'Hide the YAML for Topic backfill (limit + idle backstop)' })
     ).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+describe('DebugDialog — Run history', () => {
+  test('fills a pipeline’s history with sample runs, and clears it', async () => {
+    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+    useRunHistoryStore.setState({ runs: {} });
+    const user = userEvent.setup();
+    // The panel fills the id in from the route, so it needs a router.
+    renderWithFileRoutes(<DebugDialog onOpenChange={() => undefined} open />);
+    await user.click(screen.getByRole('button', { name: 'Run history' }));
+    const id = await screen.findByLabelText('Pipeline ID');
+    await user.type(id, 'p1');
+
+    await user.click(screen.getByRole('button', { name: 'Fill with sample runs' }));
+    expect(useRunHistoryStore.getState().runs['default/p1']).toHaveLength(8);
+    expect(screen.getByText('8 runs stored.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Clear history' }));
+    expect(useRunHistoryStore.getState().runs['default/p1']).toBeUndefined();
+    expect(screen.getByText('No runs stored for this pipeline.')).toBeInTheDocument();
   });
 });
