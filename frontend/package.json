@@ -7,8 +7,11 @@
   "scripts": {
     "analyze": "RSDOCTOR=true bun run build",
     "analyze:agent": "rsdoctor-agent",
-    "build": "bun run theme:check && NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
-    "build-local-test": "REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
+    "build": "bun run theme:check && bun run build:app && bun run build:react19",
+    "build:app": "NODE_OPTIONS=--max_old_space_size=16384 rsbuild build",
+    "build:federation-test": "rsbuild build --config=rsbuild.config.federation-test.ts",
+    "build:react19": "NODE_OPTIONS=--max_old_space_size=16384 rsbuild build --config=rsbuild.config.react19.ts",
+    "build-local-test": "REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true bun run build:app",
     "doctor": "react-doctor . -y --blocking error --scope changed --base origin/master",
     "e2e-test": "node tests/scripts/run-all-variants.mjs",
     "e2e-test:dev": "node tests/scripts/run-variant.mjs console --watch",

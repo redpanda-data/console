@@ -14,7 +14,17 @@ import '../utils/array-extensions';
 // Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
-import { Component, type ErrorInfo, type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
@@ -242,7 +252,9 @@ function ConsoleAppInner({
   );
 }
 
-export const ConsoleApp = ConsoleAppInner;
+export function ConsoleApp(props: ConsoleAppProps) {
+  return <ConsoleAppInner key={props.clusterId} {...props} />;
+}
 
 export default ConsoleApp;
 
@@ -269,21 +281,13 @@ function FederatedInitialization({
 }
 
 function useFederatedTokenManager(getAccessToken: ConsoleAppProps['getAccessToken']) {
-  const [tokenManager] = useState(
-    () =>
-      new TokenManager(async () => {
-        const token = await getAccessToken();
-        setConfigJwt(token);
-        return token;
-      })
+  const [tokenManager] = useState(() => new TokenManager(getAccessToken, setConfigJwt));
+  useEffect(
+    function updateTokenProvider() {
+      tokenManager.setGetAccessToken(getAccessToken);
+    },
+    [getAccessToken, tokenManager]
   );
-  useEffect(() => {
-    tokenManager.setGetAccessToken(async () => {
-      const token = await getAccessToken();
-      setConfigJwt(token);
-      return token;
-    });
-  }, [getAccessToken, tokenManager]);
   return tokenManager;
 }
 
@@ -307,6 +311,19 @@ function useFederatedInitialization({
   const [failure, setFailure] = useState<{ attempt: number; error: Error } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const notifyInitializationError = useEffectEvent((error: Error) => onError?.(error, { componentStack: '' }));
+  const hostCallbacks = useRef({ onSidebarItemsChange, onBreadcrumbsChange });
+  useLayoutEffect(
+    function updateHostCallbacks() {
+      hostCallbacks.current = { onSidebarItemsChange, onBreadcrumbsChange };
+    },
+    [onSidebarItemsChange, onBreadcrumbsChange]
+  );
+  useEffect(
+    function disposeQueryClientOnUnmount() {
+      return () => queryClient.clear();
+    },
+    [queryClient]
+  );
   useEffect(() => {
     let setupTeardown: (() => void) | undefined;
     let cancelled = false;
@@ -320,12 +337,12 @@ function useFederatedInitialization({
 
       // Setup Console config with overrides
       setupTeardown = setup({
-        jwt: config.jwt,
         clusterId,
-        setSidebarItems: onSidebarItemsChange,
-        setBreadcrumbs: onBreadcrumbsChange,
+        setSidebarItems: (items) => hostCallbacks.current.onSidebarItemsChange?.(items),
+        setBreadcrumbs: (items) => hostCallbacks.current.onBreadcrumbsChange?.(items),
         featureFlags,
         ...configOverrides,
+        jwt: config.jwt,
       });
 
       setIsInitialized(true);
@@ -347,18 +364,8 @@ function useFederatedInitialization({
       uiSettingsTeardown();
       setupTeardown?.();
       tokenManager.reset();
-      queryClient.clear();
     };
-  }, [
-    tokenManager,
-    queryClient,
-    clusterId,
-    onSidebarItemsChange,
-    onBreadcrumbsChange,
-    featureFlags,
-    configOverrides,
-    attempt,
-  ]);
+  }, [tokenManager, clusterId, featureFlags, configOverrides, attempt]);
   const retry = () => {
     setAttempt((previous) => previous + 1);
   };

@@ -133,6 +133,8 @@ Open the HTML report locally to inspect compilation, dependencies, and bundle si
 including gzip and Brotli sizes. Monaco worker reports are stored alongside the main report
 in hidden subdirectories. Copy or delete the complete `build-stats/rsdoctor/` directory;
 moving individual files breaks compiler selection in the Agent CLI.
+The optional React 19 container has a separate report in
+`frontend/build-stats/rsdoctor-react19/`; it does not replace the main-app report.
 Reports are opt-in; normal builds do not generate them. Keep analysis reports local
 because they contain project paths and dependency information.
 

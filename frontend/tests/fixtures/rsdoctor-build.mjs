@@ -2,12 +2,12 @@ import { createRsbuild, loadConfig, rspack } from '@rsbuild/core';
 import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 
 import { writeFile } from 'node:fs/promises';
-import { isAbsolute, join } from 'node:path';
+import { basename, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const directory = process.argv[2];
 const frontendDirectory = fileURLToPath(new URL('../../', import.meta.url));
-const { content } = await loadConfig({ cwd: frontendDirectory });
+const { content } = await loadConfig({ cwd: frontendDirectory, path: process.argv[3] });
 const rsbuild = await createRsbuild({ config: content, cwd: frontendDirectory });
 const { origin } = await rsbuild.inspectConfig({ mode: 'production' });
 const bundlerConfig = origin.bundlerConfigs.find((config) => config.name === 'web');
@@ -23,7 +23,7 @@ for (const plugin of plugins) {
   if (!isAbsolute(plugin.options.output.reportDir)) {
     throw new Error('Console analysis report directory must not depend on the working directory');
   }
-  plugin.options.output.reportDir = join(directory, 'build-stats/rsdoctor');
+  plugin.options.output.reportDir = join(directory, 'build-stats', basename(plugin.options.output.reportDir));
 }
 
 await writeFile(join(directory, 'entry.js'), 'console.log("Rsdoctor report fixture");');
