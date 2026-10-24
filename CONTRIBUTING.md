@@ -110,8 +110,8 @@ tests are added to cover the new functionality. Tests can be run from command li
 
 **Frontend:**
 - Open a terminal tab and go to the /frontend directory
-- Run `bun run install:chromium` once before tests (Linux also needs `--with-deps`)
-- Run `bun run test` to run unit, integration, federation and browser checks
+- Run `bun run install:chromium` before browser or E2E checks (Linux also needs `--with-deps`)
+- Run `bun run test` to run unit, integration and federation checks
 - Run `bun run type:check && bun run lint && bun run test` before pushing
 
 Always invoke frontend tooling through `bun run <script>`. `test:unit` uses Bun; integration,
