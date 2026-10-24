@@ -28,11 +28,9 @@ const incrementErrorIndex = (property: Property) => {
   property.currentErrorIndex += 1;
 };
 
-export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
-  // A TopicInput is rendered per property group, so a fixed id would collide.
-  const regexCheckboxId = useId();
-  const propsMap = useMemo(() => new Map(p.properties.map((prop) => [prop.name, prop])), [p.properties]);
-  const topicsRegex = p.properties.find((x) => x.name === 'topics.regex');
+function useTopicSelection(properties: Property[]) {
+  const propsMap = useMemo(() => new Map(properties.map((prop) => [prop.name, prop])), [properties]);
+  const topicsRegex = properties.find((x) => x.name === 'topics.regex');
   const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
 
   const [selected, setSelected] = useState(initialSelection);
@@ -41,6 +39,38 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
     api.refreshTopics();
   }, []);
 
+  return { propsMap, selected, setSelected };
+}
+
+function propertyErrorDisplay(property: Property) {
+  const showErrors = property.errors.length > 0;
+  const errors = showErrors ? property.errors : property.lastErrors;
+
+  return {
+    showErrors,
+    errorToShow: showErrors ? errors[property.currentErrorIndex % errors.length] : undefined,
+    cycleError: showErrors
+      ? () => {
+          incrementErrorIndex(property);
+        }
+      : undefined,
+  };
+}
+
+function topicChoices(property: Property) {
+  const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
+  // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
+  // before the topic list resolves) is only removable if its value is among the options.
+  const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
+
+  return { selectedTopics, topicOptions };
+}
+
+export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
+  // A TopicInput is rendered per property group, so a fixed id would collide.
+  const regexCheckboxId = useId();
+  const { propsMap, selected, setSelected } = useTopicSelection(p.properties);
+
   const property = propsMap.get(selected);
   const isRegex = selected === 'topics.regex';
 
@@ -48,19 +78,8 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
     return null;
   }
 
-  const showErrors = property.errors.length > 0;
-  const errors = showErrors ? property.errors : property.lastErrors;
-  const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
-  const cycleError = showErrors
-    ? () => {
-        incrementErrorIndex(property);
-      }
-    : undefined;
-
-  const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
-  // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
-  // before the topic list resolves) is only removable if its value is among the options.
-  const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
+  const { showErrors, errorToShow, cycleError } = propertyErrorDisplay(property);
+  const { selectedTopics, topicOptions } = topicChoices(property);
 
   return (
     <div className="grid grid-cols-1 gap-10">

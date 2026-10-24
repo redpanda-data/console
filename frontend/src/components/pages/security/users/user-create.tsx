@@ -9,26 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
-import { InfoIcon, LoaderCircleIcon, RotateCwIcon } from 'lucide-react';
-import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
-import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { InfoIcon, RotateCwIcon } from 'lucide-react';
+import { useLayoutEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
 
-import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
-import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { useListRolesQuery } from '../../../../react-query/api/security';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
-import {
-  PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
-  SASL_MECHANISMS,
-  type SaslMechanism,
-  validatePassword,
-  validateUsername,
-} from '../../../../utils/user';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SASL_MECHANISMS, type SaslMechanism } from '../../../../utils/user';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
@@ -37,35 +26,14 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '../../../redpan
 import { Input } from '../../../redpanda-ui/components/input';
 import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
+import { Spinner } from '../../../redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { useCreateUserForm } from '../hooks/use-create-user-form';
 
 const UserCreatePage = () => {
-  const [formState, setFormState] = useState({
-    username: '',
-    password: generatePassword(30, false),
-    mechanism: 'SCRAM-SHA-256' as SaslMechanism,
-    generateWithSpecialChars: false,
-    selectedRoles: [] as string[],
-  });
   const [step, setStep] = useState<'CREATE_USER' | 'CREATE_USER_CONFIRMATION'>('CREATE_USER');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { mutateAsync: createUserMutate } = useCreateUserMutation();
-  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
-
-  const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
-  const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
-  const setPassword = (v: string) => setFormState((prev) => ({ ...prev, password: v }));
-  const setMechanism = (v: SaslMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
-  const setGenerateWithSpecialChars = (v: boolean) =>
-    setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
-  const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
-
-  const { data: usersData } = useListUsersQuery();
-  const users = usersData?.users?.map((u) => u.name) ?? [];
-
-  const isValidUsername = validateUsername(username);
-  const isValidPassword = validatePassword(password);
+  const { state, isSubmitting, createUser } = useCreateUserForm(() => setStep('CREATE_USER_CONFIRMATION'));
+  const navigate = useNavigate();
 
   useLayoutEffect(() => {
     setPageHeader('Users', [
@@ -74,62 +42,11 @@ const UserCreatePage = () => {
     ]);
   }, []);
 
-  const onCreateUser = useCallback(async (): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await createUserMutate({
-        user: create(CreateUserRequest_UserSchema, {
-          name: username,
-          password,
-          mechanism: getSASLMechanism(mechanism),
-        }),
-      });
-    } catch {
-      // Toast is shown by useCreateUserMutation's onError handler.
-      // mutateAsync re-throws after onError, so we catch to prevent unhandled rejection.
-      setIsSubmitting(false);
-      return false;
-    }
-
-    const roleAddPromises = selectedRoles.map((r) =>
-      updateMembership(
-        create(UpdateRoleMembershipRequestSchema, {
-          roleName: r,
-          add: [{ principal: username }],
-        })
-      )
-    );
-
-    await Promise.allSettled(roleAddPromises);
-    setIsSubmitting(false);
-    setStep('CREATE_USER_CONFIRMATION');
-    return true;
-  }, [username, password, mechanism, selectedRoles, createUserMutate, updateMembership]);
-
-  const navigate = useNavigate();
   const onCancel = () => navigate({ to: '/security/users' });
-  const onGoToUserDetails = () => navigate({ to: `/security/users/${username}/details` });
-
-  const state = {
-    username,
-    setUsername,
-    password,
-    setPassword,
-    mechanism,
-    setMechanism,
-    generateWithSpecialChars,
-    setGenerateWithSpecialChars,
-    isCreating: isSubmitting,
-    isValidUsername,
-    isValidPassword,
-    selectedRoles,
-    setSelectedRoles,
-    users,
-  };
 
   return (
     <div>
-      <h2 className="pt-4 pb-3 font-semibold text-heading-lg">Create user</h2>
+      <h2 className="pt-4 pb-3 text-heading-lg font-semibold">Create user</h2>
       <div>
         {step === 'CREATE_USER' ? (
           <>
@@ -137,11 +54,11 @@ const UserCreatePage = () => {
             <div className="mt-8 flex gap-4">
               <CreateUserButton
                 isSubmitting={isSubmitting}
-                isValidPassword={isValidPassword}
-                isValidUsername={isValidUsername}
-                onClick={onCreateUser}
-                userExists={users.includes(username)}
-                usernameEmpty={!username}
+                isValidPassword={state.isValidPassword}
+                isValidUsername={state.isValidUsername}
+                onClick={createUser}
+                userExists={state.users.includes(state.username)}
+                usernameEmpty={!state.username}
               />
               <Button disabled={isSubmitting} onClick={onCancel} testId="create-user-cancel" variant="link">
                 Cancel
@@ -151,10 +68,10 @@ const UserCreatePage = () => {
         ) : (
           <CreateUserConfirmationModal
             closeModal={onCancel}
-            mechanism={mechanism}
-            onGoToUserDetails={onGoToUserDetails}
-            password={password}
-            username={username}
+            mechanism={state.mechanism}
+            onGoToUserDetails={() => navigate({ to: `/security/users/${state.username}/details` })}
+            password={state.password}
+            username={state.username}
           />
         )}
       </div>
@@ -173,6 +90,25 @@ type CreateUserButtonProps = {
   onClick: () => void;
 };
 
+const getCreateUserDisabledReason = ({
+  isSubmitting,
+  isValidUsername,
+  isValidPassword,
+  userExists,
+  usernameEmpty,
+}: Omit<CreateUserButtonProps, 'onClick'>) => {
+  if (isSubmitting) {
+    return null;
+  }
+  const reasons: [applies: boolean, reason: string][] = [
+    [usernameEmpty, 'Enter a username to continue'],
+    [userExists, 'This username already exists'],
+    [!isValidUsername, 'Fix the username to continue'],
+    [!isValidPassword, `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`],
+  ];
+  return reasons.find(([applies]) => applies)?.[1] ?? null;
+};
+
 export const CreateUserButton = ({
   isSubmitting,
   isValidUsername,
@@ -181,29 +117,18 @@ export const CreateUserButton = ({
   usernameEmpty,
   onClick,
 }: CreateUserButtonProps) => {
-  const disabledReason = (() => {
-    if (isSubmitting) {
-      return null;
-    }
-    if (usernameEmpty) {
-      return 'Enter a username to continue';
-    }
-    if (userExists) {
-      return 'This username already exists';
-    }
-    if (!isValidUsername) {
-      return 'Fix the username to continue';
-    }
-    if (!isValidPassword) {
-      return `Password must be ${PASSWORD_MIN_LENGTH}–${PASSWORD_MAX_LENGTH} characters`;
-    }
-    return null;
-  })();
+  const disabledReason = getCreateUserDisabledReason({
+    isSubmitting,
+    isValidUsername,
+    isValidPassword,
+    userExists,
+    usernameEmpty,
+  });
   const isDisabled = isSubmitting || !isValidUsername || !isValidPassword || userExists;
 
   const button = (
     <Button disabled={isDisabled} onClick={onClick} testId="create-user-submit">
-      {isSubmitting ? <LoaderCircleIcon className="animate-spin" size={16} /> : null}
+      {isSubmitting ? <Spinner aria-hidden="true" /> : null}
       {isSubmitting ? 'Creating...' : 'Create'}
     </Button>
   );
@@ -366,7 +291,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
       </div>
       {rolesApiEnabled && (
         <div className="mt-6">
-          <div className="mb-2 font-medium text-label">Assign roles</div>
+          <div className="mb-2 text-label font-medium">Assign roles</div>
           <StateRoleSelector roles={state.selectedRoles} setRoles={state.setSelectedRoles} />
         </div>
       )}
@@ -390,7 +315,7 @@ export const CreateUserConfirmationModal = ({
   onGoToUserDetails,
 }: CreateUserConfirmationModalProps) => (
   <>
-    <h1 className="mt-4 mb-8 font-semibold text-heading-xl" data-testid="user-created-successfully">
+    <h1 className="mt-4 mb-8 text-heading-xl font-semibold" data-testid="user-created-successfully">
       User created
     </h1>
 
@@ -432,7 +357,7 @@ export const CreateUserConfirmationModal = ({
     </div>
 
     <div className="mt-3 border-t pt-6">
-      <h2 className="mb-2 font-semibold text-body-lg">Assign new user permissions</h2>
+      <h2 className="mb-2 text-body-lg font-semibold">Assign new user permissions</h2>
       <p className="my-3 text-body text-muted-foreground">
         To grant access to clusters, assign a role to the user or create ACLs.
       </p>

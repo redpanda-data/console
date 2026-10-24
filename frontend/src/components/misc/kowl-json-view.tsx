@@ -83,17 +83,8 @@ export const KowlJsonView = (props: {
         return;
       }
 
-      const { width, height } = container.getBoundingClientRect();
-      if (width === 0 || height === 0) {
-        return;
-      }
-
-      const nextSize = {
-        width: Math.floor(width),
-        height: Math.floor(height),
-      };
-
-      if (nextSize.width === lastSizeRef.current.width && nextSize.height === lastSizeRef.current.height) {
+      const nextSize = getChangedEditorSize(container, lastSizeRef.current);
+      if (!nextSize) {
         return;
       }
 
@@ -149,3 +140,12 @@ export const KowlJsonView = (props: {
     </div>
   );
 };
+
+function getChangedEditorSize(container: HTMLElement, previousSize: { width: number; height: number }) {
+  const { width, height } = container.getBoundingClientRect();
+  if (width === 0 || height === 0) {
+    return null;
+  }
+  const nextSize = { width: Math.floor(width), height: Math.floor(height) };
+  return nextSize.width === previousSize.width && nextSize.height === previousSize.height ? null : nextSize;
+}

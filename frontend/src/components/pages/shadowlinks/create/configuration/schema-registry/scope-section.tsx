@@ -24,6 +24,7 @@ import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/ra
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { TagChipInput } from './tag-chip-input';
 import type { FormValues } from '../../model';
@@ -53,7 +54,10 @@ export const ScopeSection = () => {
   // The "at least one context or subject" error is anchored to contexts, so
   // revalidate it when either changes.
   const revalidateScope = () => {
-    trigger('schemaRegistry.contexts');
+    // trigger() rejects only if the resolver itself throws; report that instead of dropping it.
+    trigger('schemaRegistry.contexts').catch((error: unknown) => {
+      toast.error('Failed to validate the form', { description: String(error) });
+    });
   };
 
   return (
@@ -138,7 +142,6 @@ export const ScopeSection = () => {
             <FormLabel>Destination contexts</FormLabel>
             <FormControl>
               <RadioGroup
-                className="flex flex-col gap-3"
                 onValueChange={handleDestinationModeChange}
                 testId="sr-destination-mode-selection"
                 value={field.value}
@@ -146,7 +149,7 @@ export const ScopeSection = () => {
                 <div className="flex items-start gap-3">
                   <RadioGroupItem id="sr-dest-preserve" testId="sr-dest-preserve-radio" value="preserve" />
                   <div className="flex flex-col gap-1.5">
-                    <Label className="cursor-pointer font-medium" htmlFor="sr-dest-preserve">
+                    <Label className="cursor-pointer" htmlFor="sr-dest-preserve">
                       Preserve source context names
                     </Label>
                     <div className="text-body text-muted-foreground">
@@ -157,7 +160,7 @@ export const ScopeSection = () => {
                 <div className="flex items-start gap-3">
                   <RadioGroupItem id="sr-dest-map" testId="sr-dest-map-radio" value="map" />
                   <div className="flex flex-col gap-1.5">
-                    <Label className="cursor-pointer font-medium" htmlFor="sr-dest-map">
+                    <Label className="cursor-pointer" htmlFor="sr-dest-map">
                       Map source contexts to explicit destination contexts
                     </Label>
                     <div className="text-body text-muted-foreground">
@@ -181,12 +184,7 @@ export const ScopeSection = () => {
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="font-mono"
-                        placeholder=".prod"
-                        testId={`sr-mapping-${index}-source`}
-                      />
+                      <Input {...field} placeholder=".prod" testId={`sr-mapping-${index}-source`} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -199,12 +197,7 @@ export const ScopeSection = () => {
                 render={({ field }) => (
                   <FormItem className="flex-1">
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="font-mono"
-                        placeholder=".dr"
-                        testId={`sr-mapping-${index}-destination`}
-                      />
+                      <Input {...field} placeholder=".dr" testId={`sr-mapping-${index}-destination`} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

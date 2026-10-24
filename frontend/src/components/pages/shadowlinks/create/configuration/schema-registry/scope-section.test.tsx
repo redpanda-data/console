@@ -54,7 +54,31 @@ const TestWrapper = ({
   );
 };
 
-describe('ScopeSection', () => {
+/** Renders the section and records the latest form values on every change. */
+const renderTrackingFormValues = () => {
+  const user = userEvent.setup();
+  const latest: { values?: FormValues } = {};
+
+  render(
+    <TestWrapper
+      onFormChange={(values) => {
+        latest.values = values;
+      }}
+    />
+  );
+  return { user, latest };
+};
+
+const fillContextMapping = async (
+  user: ReturnType<typeof userEvent.setup>,
+  index: number,
+  { source, destination }: { source: string; destination: string }
+) => {
+  await user.type(screen.getByTestId(`sr-mapping-${index}-source`), source);
+  await user.type(screen.getByTestId(`sr-mapping-${index}-destination`), destination);
+};
+
+describe('the ScopeSection', () => {
   test('should hide context and subject inputs while the entire registry is in scope', () => {
     render(<TestWrapper />);
 
@@ -62,16 +86,7 @@ describe('ScopeSection', () => {
   });
 
   test('should collect contexts and subjects as chips', async () => {
-    const user = userEvent.setup();
-    let formValues: FormValues | undefined;
-
-    render(
-      <TestWrapper
-        onFormChange={(values) => {
-          formValues = values;
-        }}
-      />
-    );
+    const { user, latest } = renderTrackingFormValues();
 
     await user.click(screen.getByTestId('sr-scope-specify-tab'));
 
@@ -83,29 +98,20 @@ describe('ScopeSection', () => {
     await user.type(screen.getByTestId('sr-subjects-input-field'), ':.prod:orders-value{enter}');
 
     await waitFor(() => {
-      expect(formValues?.schemaRegistry?.contexts).toEqual(['.prod']);
-      expect(formValues?.schemaRegistry?.subjects).toEqual([':.prod:orders-value']);
+      expect(latest.values?.schemaRegistry?.contexts).toEqual(['.prod']);
+      expect(latest.values?.schemaRegistry?.subjects).toEqual([':.prod:orders-value']);
     });
 
     // Removing a chip updates form state
     const chip = screen.getByTestId('sr-contexts-input-chip-.prod');
     await user.click(within(chip).getByRole('button', { name: 'Remove tag' }));
     await waitFor(() => {
-      expect(formValues?.schemaRegistry?.contexts).toEqual([]);
+      expect(latest.values?.schemaRegistry?.contexts).toEqual([]);
     });
   });
 
   test('should manage context mapping rows when destinations are mapped', async () => {
-    const user = userEvent.setup();
-    let formValues: FormValues | undefined;
-
-    render(
-      <TestWrapper
-        onFormChange={(values) => {
-          formValues = values;
-        }}
-      />
-    );
+    const { user, latest } = renderTrackingFormValues();
 
     await user.click(screen.getByTestId('sr-dest-map-radio'));
 
@@ -114,8 +120,7 @@ describe('ScopeSection', () => {
       expect(screen.getByTestId('sr-mapping-0-source')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByTestId('sr-mapping-0-source'), '.prod');
-    await user.type(screen.getByTestId('sr-mapping-0-destination'), '.dr');
+    await fillContextMapping(user, 0, { source: '.prod', destination: '.dr' });
 
     await user.click(screen.getByTestId('sr-add-mapping-button'));
     await waitFor(() => {
@@ -125,14 +130,14 @@ describe('ScopeSection', () => {
     await user.click(screen.getByTestId('sr-mapping-1-remove'));
     await waitFor(() => {
       expect(screen.queryByTestId('sr-mapping-1-source')).not.toBeInTheDocument();
-      expect(formValues?.schemaRegistry?.contextMappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);
+      expect(latest.values?.schemaRegistry?.contextMappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);
     });
 
     // Switching back to preserve hides the rows but keeps them in form state
     await user.click(screen.getByTestId('sr-dest-preserve-radio'));
     await waitFor(() => {
       expect(screen.queryByTestId('sr-context-mappings')).not.toBeInTheDocument();
-      expect(formValues?.schemaRegistry?.destinationContextsMode).toBe('preserve');
+      expect(latest.values?.schemaRegistry?.destinationContextsMode).toBe('preserve');
     });
   });
 });

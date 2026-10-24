@@ -6,12 +6,12 @@ import { dirname, resolve } from 'node:path';
 
 // biome-ignore lint/performance/noBarrelFile: Tests use one fixture entrypoint with Playwright-aware assertions.
 export { expect } from '@rstest/playwright';
-export type { Download, Locator, Page, Route } from 'playwright';
+export type { BrowserContext, Download, Locator, Page, Request, Route } from 'playwright';
 
 export { retryAssertion, step } from './assertions';
 export { appURL } from './playwright-options';
 
-type TestArtifacts = {
+export type TestArtifacts = {
   outputPath: (name: string) => string;
   attach: (name: string, options: { path?: string; body?: string; contentType: string }) => Promise<void>;
 };

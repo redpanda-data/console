@@ -4,11 +4,12 @@ import { step } from '../../shared/e2e';
 // seed: tests/seed.spec.ts
 
 import { expect, test } from '../../shared/e2e';
+import { execRpk, produceToPartition } from '../../shared/rpk.utils';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('View and Filter Messages', () => {
+test.describe('view and Filter Messages', () => {
   test('should expand message to view details', async ({ page }) => {
-    const topicName = `expand-message-${Date.now()}`;
+    const topicName = `expand-message-${crypto.randomUUID()}`;
     const messageContent = 'Detailed message content';
 
     const topicPage = new TopicPage(page);
@@ -36,7 +37,7 @@ test.describe('View and Filter Messages', () => {
   });
 
   test('should search message content', async ({ page }) => {
-    const topicName = `search-messages-${Date.now()}`;
+    const topicName = `search-messages-${crypto.randomUUID()}`;
     const searchTerm = 'searchable-keyword';
     const message1 = `Message with ${searchTerm}`;
     const message2 = 'Message without keyword';
@@ -66,46 +67,42 @@ test.describe('View and Filter Messages', () => {
     await topicPage.deleteTopic(topicName);
   });
 
-  // biome-ignore lint/suspicious/noSkippedTests: Skip until we can control selects in a better way
-  test.skip('should filter messages by partition', async ({ page }) => {
-    const topicName = `filter-partition-${Date.now()}`;
+  test('should filter messages by partition', async ({ page }) => {
+    const topicName = `filter-partition-${crypto.randomUUID()}`;
+    await execRpk(`topic create ${topicName} --partitions 2`);
+    await produceToPartition(topicName, 0, 'message in partition 0');
+    await produceToPartition(topicName, 1, 'message in partition 1');
 
-    const topicPage = new TopicPage(page);
-    await topicPage.createTopic(topicName);
-    await topicPage.produceMessage(topicName, 'Message for partition filter');
-
-    await step('Apply partition filter', async () => {
+    await step('Read both partitions by default', async () => {
       await page.goto(`/topics/${topicName}`);
-
-      // Look for partition filter dropdown
-      const partitionFilter = page.locator('text=Partition').first();
-      if (await partitionFilter.isVisible()) {
-        await partitionFilter.click();
-
-        // Select partition 0 (or first available)
-        const partition0 = page.locator('text=0').first();
-        if (await partition0.isVisible()) {
-          await partition0.click();
-
-          // Messages should filter to selected partition
-          await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
-        }
-      }
+      await expect(page.getByText('message in partition 0')).toBeVisible();
+      await expect(page.getByText('message in partition 1')).toBeVisible();
     });
 
-    await topicPage.deleteTopic(topicName);
+    await step('Filter to partition 1', async () => {
+      await page.getByTestId('add-topic-filter').click();
+      await page.getByTestId('add-topic-filter-partition').click();
+      await page.getByTestId('partition-filter-dropdown').click();
+      await page.getByRole('option', { name: '1', exact: true }).click();
+
+      await expect(page.getByText('message in partition 1')).toBeVisible();
+      await expect(page.getByText('message in partition 0')).not.toBeVisible();
+    });
+
+    await execRpk(`topic delete ${topicName}`);
   });
 
   test('should filter messages by offset', async ({ page }) => {
-    const topicName = `filter-offset-${Date.now()}`;
+    const topicName = `filter-offset-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    // Produce multiple messages
-    for (let i = 0; i < 3; i++) {
-      await topicPage.produceMessage(topicName, `Message ${i}`);
-    }
+    // Produce multiple messages, chained through the same page so they land at offsets 0, 1 and 2 in order
+    await [0, 1, 2].reduce<Promise<unknown>>(
+      (previousProduce, i) => previousProduce.then(() => topicPage.produceMessage(topicName, `Message ${i}`)),
+      Promise.resolve()
+    );
 
     await step('Filter by start offset', async () => {
       await page.goto(`/topics/${topicName}`);
@@ -126,7 +123,7 @@ test.describe('View and Filter Messages', () => {
   });
 
   test('should clear all filters', async ({ page }) => {
-    const topicName = `clear-filters-${Date.now()}`;
+    const topicName = `clear-filters-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -156,7 +153,7 @@ test.describe('View and Filter Messages', () => {
   });
 
   test('should handle empty topic with no messages', async ({ page }) => {
-    const topicName = `empty-topic-${Date.now()}`;
+    const topicName = `empty-topic-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -178,7 +175,7 @@ test.describe('View and Filter Messages', () => {
   });
 
   test('should handle rapid filter changes gracefully', async ({ page }) => {
-    const topicName = `rapid-filter-${Date.now()}`;
+    const topicName = `rapid-filter-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -205,7 +202,7 @@ test.describe('View and Filter Messages', () => {
   });
 
   test('should preserve filters in URL parameters', async ({ page }) => {
-    const topicName = `url-filters-${Date.now()}`;
+    const topicName = `url-filters-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);

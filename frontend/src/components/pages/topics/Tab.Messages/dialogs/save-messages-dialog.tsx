@@ -30,6 +30,111 @@ import { base64FromUInt8Array } from '../../../../../utils/utils';
 // Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
+function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefined {
+  if (!p) {
+    return;
+  }
+
+  const cleanedPayload = {
+    payload: p.payload,
+    rawPayload: includeRawContent && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
+    encoding: p.encoding,
+    isPayloadNull: p.isPayloadNull,
+    schemaId: 0,
+    size: p.size,
+  } as Payload;
+
+  if (p.schemaId && p.schemaId !== 0) {
+    cleanedPayload.schemaId = p.schemaId;
+  }
+
+  return cleanedPayload;
+}
+
+function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<TopicMessage> {
+  return {
+    partitionID: src.partitionID,
+    offset: src.offset,
+    timestamp: src.timestamp,
+    compression: src.compression,
+    isTransactional: src.isTransactional,
+    headers: src.headers.map((h) => ({
+      key: h.key,
+      value: cleanPayload(h.value, includeRawContent) as Payload,
+    })),
+    key: cleanPayload(src.key, includeRawContent),
+    value: cleanPayload(src.value, includeRawContent),
+  };
+}
+
+function csvHeaders(firstMessage: TopicMessage): string[] {
+  const headers: string[] = [...COLUMN_ORDER];
+
+  // Add other common fields that might not be in COLUMN_ORDER
+  if (firstMessage.compression && !headers.includes('compression')) {
+    headers.push('compression');
+  }
+  if (firstMessage.isTransactional !== undefined && !headers.includes('isTransactional')) {
+    headers.push('isTransactional');
+  }
+
+  return headers;
+}
+
+// Commas inside a payload would split the cell, so they become semicolons.
+function csvPayloadCell(payload: Payload | undefined): string {
+  if (!payload) {
+    return '';
+  }
+  const content = payload.payload || '';
+  return typeof content === 'object' ? JSON.stringify(content).replace(/,/g, ';') : String(content).replace(/,/g, ';');
+}
+
+function csvCell(message: TopicMessage, header: string): string | number | boolean {
+  if (header === 'key') {
+    return csvPayloadCell(message.key);
+  }
+  if (header === 'value') {
+    return csvPayloadCell(message.value);
+  }
+  if (header === 'keySize') {
+    return message.key?.size || '';
+  }
+  if (header === 'valueSize') {
+    return message.value?.size || '';
+  }
+  // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
+  const messageValue = (message as Record<string, unknown>)[header];
+  return messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : '';
+}
+
+function convertToCSV(messagesToConvert: TopicMessage[]): string {
+  if (messagesToConvert.length === 0) {
+    return '';
+  }
+
+  const headers = csvHeaders(messagesToConvert[0]);
+
+  // Add the headers
+  const csvRows: string[] = [headers.join(',')];
+
+  // Add the data, with fields in the same order as headers
+  for (const message of messagesToConvert) {
+    csvRows.push(headers.map((header) => csvCell(message, header)).join(','));
+  }
+
+  return csvRows.join('\n');
+}
+
+function downloadFile(content: string, type: string, fileName: string) {
+  const link = document.createElement('a');
+  const file = new Blob([content], { type });
+  link.href = URL.createObjectURL(file);
+  link.download = fileName;
+  document.body.appendChild(link); // required in firefox
+  link.click();
+}
+
 export const SaveMessagesDialog = ({
   messages,
   onClose,
@@ -45,144 +150,17 @@ export const SaveMessagesDialog = ({
   const count = messages?.length ?? 0;
   const title = count > 1 ? 'Save Messages' : 'Save Message';
 
-  const cleanPayload = (p: Payload): Payload | undefined => {
-    if (!p) {
-      return;
-    }
-
-    const cleanedPayload = {
-      payload: p.payload,
-      rawPayload: includeRawContent && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
-      encoding: p.encoding,
-      isPayloadNull: p.isPayloadNull,
-      schemaId: 0,
-      size: p.size,
-    } as Payload;
-
-    if (p.schemaId && p.schemaId !== 0) {
-      cleanedPayload.schemaId = p.schemaId;
-    }
-
-    return cleanedPayload;
-  };
-
-  const cleanMessages = (messagesToClean: TopicMessage[]): unknown[] => {
-    const ar: unknown[] = [];
-
-    for (const src of messagesToClean) {
-      const msg = {} as Partial<typeof src>;
-
-      msg.partitionID = src.partitionID;
-      msg.offset = src.offset;
-      msg.timestamp = src.timestamp;
-      msg.compression = src.compression;
-      msg.isTransactional = src.isTransactional;
-
-      msg.headers = src.headers.map((h) => ({
-        key: h.key,
-        value: cleanPayload(h.value) as Payload,
-      }));
-
-      msg.key = cleanPayload(src.key);
-      msg.value = cleanPayload(src.value);
-
-      ar.push(msg);
-    }
-
-    return ar;
-  };
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 40, refactor later
-  const convertToCSV = (messagesToConvert: TopicMessage[]): string => {
-    if (messagesToConvert.length === 0) {
-      return '';
-    }
-
-    const headers: string[] = [...COLUMN_ORDER];
-
-    // Add other common fields that might not be in COLUMN_ORDER
-    if (messagesToConvert[0].compression && !headers.includes('compression')) {
-      headers.push('compression');
-    }
-    if (messagesToConvert[0].isTransactional !== undefined && !headers.includes('isTransactional')) {
-      headers.push('isTransactional');
-    }
-
-    const csvRows: string[] = [];
-
-    // Add the headers
-    csvRows.push(headers.join(','));
-
-    // Add the data
-    for (const message of messagesToConvert) {
-      const values: (string | number | boolean)[] = [];
-
-      // Add fields in the same order as headers
-      for (const header of headers) {
-        if (header === 'key') {
-          if (message.key) {
-            const keyValue = message.key.payload || '';
-            values.push(
-              typeof keyValue === 'object'
-                ? JSON.stringify(keyValue).replace(/,/g, ';')
-                : String(keyValue).replace(/,/g, ';')
-            );
-          } else {
-            values.push('');
-          }
-        } else if (header === 'value') {
-          if (message.value) {
-            const valuePayload = message.value.payload || '';
-            values.push(
-              typeof valuePayload === 'object'
-                ? JSON.stringify(valuePayload).replace(/,/g, ';')
-                : String(valuePayload).replace(/,/g, ';')
-            );
-          } else {
-            values.push('');
-          }
-        } else if (header === 'keySize') {
-          values.push(message.key?.size || '');
-        } else if (header === 'valueSize') {
-          values.push(message.value?.size || '');
-        } else {
-          // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
-          const messageValue = (message as Record<string, unknown>)[header];
-          values.push(
-            messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : ''
-          );
-        }
-      }
-
-      csvRows.push(values.join(','));
-    }
-
-    return csvRows.join('\n');
-  };
-
   const saveMessages = () => {
     if (!messages) {
       return;
     }
 
-    const cleaned = cleanMessages(messages);
+    const cleaned = messages.map((src) => cleanMessage(src, includeRawContent));
 
     if (format === 'json') {
-      const json = toJson(cleaned, 4);
-      const link = document.createElement('a');
-      const file = new Blob([json], { type: 'application/json' });
-      link.href = URL.createObjectURL(file);
-      link.download = 'messages.json';
-      document.body.appendChild(link); // required in firefox
-      link.click();
+      downloadFile(toJson(cleaned, 4), 'application/json', 'messages.json');
     } else if (format === 'csv') {
-      const csvContent = convertToCSV(cleaned as TopicMessage[]);
-      const link = document.createElement('a');
-      const file = new Blob([csvContent], { type: 'text/csv' });
-      link.href = URL.createObjectURL(file);
-      link.download = 'messages.csv';
-      document.body.appendChild(link); // required in firefox
-      link.click();
+      downloadFile(convertToCSV(cleaned as TopicMessage[]), 'text/csv', 'messages.csv');
     }
 
     onClose();

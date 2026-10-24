@@ -54,7 +54,7 @@ const mockAcls: AclDetail[] = [
   },
 ];
 
-describe('UserAclsCard', () => {
+describe('the UserAclsCard', () => {
   test('should render empty state when no ACLs provided', () => {
     renderWithFileRoutes(<UserAclsCard acls={[]} />);
 

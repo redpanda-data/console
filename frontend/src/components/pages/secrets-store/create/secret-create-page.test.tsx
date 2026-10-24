@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -40,26 +40,62 @@ import { SecretCreatePage } from './secret-create-page';
 
 const CREATE_SECRET_BUTTON_REGEX = /create secret/i;
 
-describe('SecretCreatePage', () => {
+function renderCreatePage() {
+  const listSecretsMock = rs.fn().mockReturnValue(
+    create(ListSecretsResponseSchema, {
+      response: create(ListSecretsResponseSchemaDataPlane, {
+        secrets: [],
+      }),
+    })
+  );
+
+  const createSecretMock = rs.fn().mockResolvedValue({});
+
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(listSecrets, listSecretsMock);
+    rpc(createSecret, createSecretMock);
+  });
+
+  renderWithFileRoutes(<SecretCreatePage />, { transport });
+
+  return { createSecretMock };
+}
+
+/** Opens the scopes multi-select, picks both options by label, then closes the dropdown. */
+async function selectScopes(user: UserEvent, firstLabel: string, secondLabel: string) {
+  // Open the scopes multi-select using the testId
+  const scopesButton = screen.getByTestId('secret-scopes-select');
+  await user.click(scopesButton);
+
+  // Wait for dropdown to open
+  await waitFor(() => {
+    const firstOptionElements = screen.getAllByText(firstLabel);
+    expect(firstOptionElements.length).toBeGreaterThan(0);
+    expect(firstOptionElements[0]).toBeVisible();
+  });
+
+  // Click on the first matching option in the dropdown for each label
+  await user.click(screen.getAllByText(firstLabel)[0]);
+  await user.click(screen.getAllByText(secondLabel)[0]);
+
+  // Close the dropdown
+  await user.keyboard('{Escape}');
+}
+
+async function submitWhenEnabled(user: UserEvent) {
+  const submitButton = screen.getByRole('button', { name: CREATE_SECRET_BUTTON_REGEX });
+  await waitFor(() => {
+    expect(submitButton).toBeEnabled();
+  });
+
+  await user.click(submitButton);
+}
+
+describe('the SecretCreatePage', () => {
   test('should create a new secret with all required fields', async () => {
     const user = userEvent.setup();
 
-    const listSecretsMock = rs.fn().mockReturnValue(
-      create(ListSecretsResponseSchema, {
-        response: create(ListSecretsResponseSchemaDataPlane, {
-          secrets: [],
-        }),
-      })
-    );
-
-    const createSecretMock = rs.fn().mockResolvedValue({});
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listSecrets, listSecretsMock);
-      rpc(createSecret, createSecretMock);
-    });
-
-    renderWithFileRoutes(<SecretCreatePage />, { transport });
+    const { createSecretMock } = renderCreatePage();
 
     // Verify the page loaded. The page title itself is rendered by the app chrome (layout/header.tsx)
     // from uiState.pageTitle, which this harness does not mount, so assert on the page's own copy.
@@ -73,35 +109,11 @@ describe('SecretCreatePage', () => {
     const valueInput = screen.getByPlaceholderText('Enter secret value');
     await user.type(valueInput, 'super-secret-value');
 
-    // Open the scopes multi-select using the testId
-    const scopesButton = screen.getByTestId('secret-scopes-select');
-    await user.click(scopesButton);
-
-    // Wait for dropdown to open and select AI Gateway
-    await waitFor(() => {
-      const aiGatewayElements = screen.getAllByText('AI Gateway');
-      expect(aiGatewayElements.length).toBeGreaterThan(0);
-      expect(aiGatewayElements[0]).toBeVisible();
-    });
-
-    // Click on the first AI Gateway option in the dropdown
-    const aiGatewayOption = screen.getAllByText('AI Gateway')[0];
-    await user.click(aiGatewayOption);
-
-    // Also select MCP Server
-    const mcpServerOption = screen.getAllByText('MCP Server')[0];
-    await user.click(mcpServerOption);
-
-    // Close the dropdown
-    await user.keyboard('{Escape}');
+    // Select AI Gateway and MCP Server
+    await selectScopes(user, 'AI Gateway', 'MCP Server');
 
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: CREATE_SECRET_BUTTON_REGEX });
-    await waitFor(() => {
-      expect(submitButton).toBeEnabled();
-    });
-
-    await user.click(submitButton);
+    await submitWhenEnabled(user);
 
     // Verify the create mutation was called
     await waitFor(() => {

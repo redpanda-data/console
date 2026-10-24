@@ -12,9 +12,15 @@
 import type React from 'react';
 
 import { MessageSchema } from './message-schema';
-import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import { numberToThousandsString } from '../../../../../utils/tsx-utils';
 import { prettyBytes, titleCase } from '../../../../../utils/utils';
+
+// For example `Avro (12 / 1.2 kB)`, where 12 is the schema ID when there is one.
+function describeValue(value: Payload): string {
+  const schemaPrefix = value.schemaId > 0 ? `${value.schemaId} / ` : '';
+  return `${titleCase(value.encoding)} (${schemaPrefix}${prettyBytes(value.size)})`;
+}
 
 export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }) => {
   const msg = props.msg;
@@ -22,9 +28,7 @@ export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }
     Partition: msg.partitionID,
     Offset: numberToThousandsString(msg.offset),
     Key: msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-    Value: msg.value.isPayloadNull
-      ? 'Null'
-      : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
+    Value: msg.value.isPayloadNull ? 'Null' : describeValue(msg.value),
     Headers: msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
     Compression: msg.compression,
     Transactional: msg.isTransactional ? 'true' : 'false',
@@ -38,7 +42,7 @@ export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }
     <div className="my-6 flex gap-10">
       {Object.entries(data).map(([k, v]) => (
         <div className="flex flex-col gap-[0.4em]" key={k}>
-          <div className="font-semibold text-body-lg">{k}</div>
+          <div className="text-body-lg font-semibold">{k}</div>
           <div className="text-body">{v}</div>
         </div>
       ))}

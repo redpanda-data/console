@@ -22,6 +22,57 @@ import { api } from 'state/backend-api';
 export default function NurturePanel() {
   const embedded = isEmbedded();
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
+  const { content, isLoading, hasError, modelName } = useNurtureContent(embedded, platform);
+
+  // Early return for embedded mode - Builder.io content not needed
+  if (embedded) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <NurtureItemSkeleton />
+        <NurtureItemSkeleton />
+      </>
+    );
+  }
+
+  if (hasError || !(content || isPreviewing())) {
+    return <p className="text-body">No updates available</p>;
+  }
+
+  return (
+    <>
+      <Content
+        apiKey={BUILDER_API_KEY}
+        content={content}
+        customComponents={builderCustomComponents}
+        enrich={false}
+        model={modelName}
+      />
+    </>
+  );
+}
+
+const NurtureItemSkeleton = () => (
+  <div className="flex items-start">
+    {/* Left thumbnail placeholder */}
+    <Skeleton className="mr-4 h-20 w-[120px]" />
+
+    {/* Right content */}
+    <div className="flex-1">
+      {/* Heading */}
+      <Skeleton className="mb-2 h-4 w-[60%]" />
+
+      {/* Paragraph */}
+      <Skeleton className="mb-1 h-3 w-[90%]" />
+      <Skeleton className="h-3 w-[75%]" />
+    </div>
+  </div>
+);
+
+function useNurtureContent(embedded: boolean, platform: string) {
   const MODEL_NAME = `console-nurture-panel-${platform}`;
 
   const [fetchState, setFetchState] = useState<{
@@ -29,8 +80,6 @@ export default function NurturePanel() {
     isLoading: boolean;
     hasError: boolean;
   }>({ content: null, isLoading: !embedded, hasError: false });
-
-  const { content, isLoading, hasError } = fetchState;
 
   useEffect(() => {
     if (embedded) {
@@ -52,55 +101,5 @@ export default function NurturePanel() {
         setFetchState((prev) => ({ ...prev, isLoading: false, hasError: true }));
       });
   }, [platform, MODEL_NAME, embedded]);
-
-  // Early return for embedded mode - Builder.io content not needed
-  if (embedded) {
-    return null;
-  }
-
-  const shouldRenderBuilderContent = content || isPreviewing();
-
-  if (isLoading) {
-    return (
-      <>
-        <NurtureItemSkeleton />
-        <NurtureItemSkeleton />
-      </>
-    );
-  }
-
-  if (hasError || !(content || isPreviewing())) {
-    return <p className="text-body">No updates available</p>;
-  }
-
-  return (
-    <>
-      {shouldRenderBuilderContent ? (
-        <Content
-          apiKey={BUILDER_API_KEY}
-          content={content}
-          customComponents={builderCustomComponents}
-          enrich={false}
-          model={MODEL_NAME}
-        />
-      ) : null}
-    </>
-  );
+  return { ...fetchState, modelName: MODEL_NAME };
 }
-
-const NurtureItemSkeleton = () => (
-  <div className="flex items-start">
-    {/* Left thumbnail placeholder */}
-    <Skeleton className="mr-4 h-20 w-[120px]" />
-
-    {/* Right content */}
-    <div className="flex-1">
-      {/* Heading */}
-      <Skeleton className="mb-2 h-4 w-[60%]" />
-
-      {/* Paragraph */}
-      <Skeleton className="mb-1 h-3 w-[90%]" />
-      <Skeleton className="h-3 w-[75%]" />
-    </div>
-  </div>
-);

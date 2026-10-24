@@ -11,6 +11,7 @@
 
 import { useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import {
@@ -19,13 +20,14 @@ import {
   useDataTable,
 } from 'components/redpanda-ui/components/data-table';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Info, Loader2, RefreshCw, X } from 'lucide-react';
+import { Info, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
 
@@ -48,8 +50,32 @@ const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength
   <TableRow>
     <TableCell className="h-16 text-center" colSpan={columnsLength}>
       <div className="flex items-center justify-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Spinner />
         <div className="text-body text-muted-foreground">{message}</div>
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+// Replaces further rows when the next page fails; automatic loading stays off until the user retries.
+const NextPageErrorRow = ({
+  columnsLength,
+  error,
+  onRetry,
+}: {
+  columnsLength: number;
+  error: string;
+  onRetry: () => void;
+}) => (
+  <TableRow>
+    <TableCell className="h-16 text-center" colSpan={columnsLength}>
+      <div className="flex items-center justify-center gap-2">
+        <span className="text-body text-destructive" role="alert">
+          Failed to load more topics: {error}
+        </span>
+        <Button onClick={onRetry} size="sm" type="button" variant="outline">
+          Retry
+        </Button>
       </div>
     </TableCell>
   </TableRow>
@@ -63,6 +89,8 @@ const VirtualizedRows = ({
   isFetchingNextPage,
   isFetching,
   columnsLength,
+  nextPageError,
+  onRetryNextPage,
 }: {
   table: DataTableInstance<ShadowTopic>;
   virtualRows: ReturnType<ReturnType<typeof useVirtualizer>['getVirtualItems']>;
@@ -70,6 +98,8 @@ const VirtualizedRows = ({
   isFetchingNextPage?: boolean;
   isFetching?: boolean;
   columnsLength: number;
+  nextPageError: string | null;
+  onRetryNextPage: () => void;
 }) => {
   if (virtualRows.length > 0) {
     return (
@@ -85,6 +115,9 @@ const VirtualizedRows = ({
           );
         })}
         {Boolean(isFetchingNextPage) && <LoadingRow columnsLength={columnsLength} message="Loading more topics..." />}
+        {nextPageError !== null && (
+          <NextPageErrorRow columnsLength={columnsLength} error={nextPageError} onRetry={onRetryNextPage} />
+        )}
       </>
     );
   }
@@ -100,6 +133,65 @@ const VirtualizedRows = ({
       </TableCell>
     </TableRow>
   );
+};
+
+type VirtualTopicRowsOptions = {
+  rowCount: number;
+  scrollElementRef: React.RefObject<HTMLDivElement | null>;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  getNextTopicPage?: () => Promise<void>;
+};
+
+/**
+ * Virtualizes the topic rows and fetches the next page once the last row scrolls into view. A failed
+ * page is kept as `nextPageError` and blocks further automatic fetches until it is cleared.
+ */
+const useVirtualTopicRows = ({
+  rowCount,
+  scrollElementRef,
+  hasNextPage,
+  isFetchingNextPage,
+  getNextTopicPage,
+}: VirtualTopicRowsOptions) => {
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 50,
+    overscan: 10,
+  });
+
+  // Without this, a failing page is requested again on every render that flips isFetchingNextPage.
+  const [nextPageError, setNextPageError] = useState<string | null>(null);
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  // Auto-fetch next page when scrolling near bottom
+  useEffect(() => {
+    const [lastItem] = [...virtualRows].reverse();
+
+    if (!lastItem) {
+      return;
+    }
+
+    // When last visible item is near the end, fetch more
+    const canFetch = hasNextPage && !isFetchingNextPage && nextPageError === null;
+    if (lastItem.index >= rowCount - 1 && canFetch && getNextTopicPage) {
+      getNextTopicPage().catch((error: unknown) => {
+        setNextPageError(error instanceof Error ? error.message : String(error));
+      });
+    }
+  }, [hasNextPage, getNextTopicPage, isFetchingNextPage, nextPageError, rowCount, virtualRows]);
+
+  return {
+    virtualRows,
+    paddingTop: virtualRows.length > 0 ? virtualRows[0].start : 0,
+    paddingBottom: virtualRows.length > 0 ? totalSize - (virtualRows.at(-1)?.end ?? 0) : 0,
+    nextPageError,
+    // Clearing the error re-arms the effect above, which fetches the page again.
+    clearNextPageError: () => setNextPageError(null),
+  };
 };
 
 export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
@@ -123,7 +215,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
         columnHelper.accessor('topicName', {
           header: 'Name',
           size: 300,
-          cell: (info) => <div className="font-medium text-body">{info.getValue()}</div>,
+          cell: (info) => <div className="text-body font-medium">{info.getValue()}</div>,
         }),
         columnHelper.accessor('totalLag', {
           header: () => (
@@ -132,7 +224,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               <Tooltip>
                 <TooltipTrigger
                   data-testid="max-offset-lag-info-icon"
-                  render={<Info className="h-4 w-4 text-muted-foreground" />}
+                  render={<TonedIcon className="h-4 w-4" icon={Info} tone="muted" />}
                 />
                 <TooltipContent>
                   <p>Maximum offset difference between source and replica topic partitions</p>
@@ -183,34 +275,18 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   });
 
   const { rows } = table.getRowModel();
-
-  // Initialize virtualizer
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 50,
-    overscan: 10,
+  const { virtualRows, paddingTop, paddingBottom, nextPageError, clearNextPageError } = useVirtualTopicRows({
+    rowCount: rows.length,
+    scrollElementRef: tableContainerRef,
+    hasNextPage,
+    isFetchingNextPage,
+    getNextTopicPage,
   });
-
-  const virtualRows = rowVirtualizer.getVirtualItems();
-  const totalSize = rowVirtualizer.getTotalSize();
-
-  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
-  const paddingBottom = virtualRows.length > 0 ? totalSize - (virtualRows.at(-1)?.end ?? 0) : 0;
-
-  // Auto-fetch next page when scrolling near bottom
-  useEffect(() => {
-    const [lastItem] = [...virtualRows].reverse();
-
-    if (!lastItem) {
-      return;
-    }
-
-    // When last visible item is near the end, fetch more
-    if (lastItem.index >= rows.length - 1 && hasNextPage && !isFetchingNextPage && getNextTopicPage) {
-      getNextTopicPage();
-    }
-  }, [hasNextPage, getNextTopicPage, isFetchingNextPage, rows.length, virtualRows]);
+  // A failed page belongs to the previous filter's query, so a new filter starts without it.
+  const changeTopicNameFilter = (value: string) => {
+    clearNextPageError();
+    onTopicNameFilterChange?.(value);
+  };
 
   return (
     <TooltipProvider>
@@ -220,26 +296,21 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           <CardAction>
             <div className="mb-4 flex items-center gap-2">
               {Boolean(isFetching) && (
-                <Button size="icon" variant="ghost">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </Button>
+                <span className="flex size-9 items-center justify-center">
+                  <Spinner className="size-5" />
+                </span>
               )}
               <div className="relative max-w-xs flex-1">
                 <Input
                   data-testid="filter-topics-input"
-                  onChange={(e) => onTopicNameFilterChange?.(e.target.value)}
+                  onChange={(e) => changeTopicNameFilter(e.target.value)}
                   placeholder="Filter topics by name..."
                   type="text"
                   value={topicNameFilter || ''}
                 />
               </div>
               {Boolean(topicNameFilter) && (
-                <Button
-                  aria-label="Clear filter"
-                  onClick={() => onTopicNameFilterChange?.('')}
-                  size="sm"
-                  variant="ghost"
-                >
+                <Button aria-label="Clear filter" onClick={() => changeTopicNameFilter('')} size="sm" variant="ghost">
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -292,7 +363,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               </TableHeader>
             </Table>
             <div className="max-h-[600px] overflow-y-auto" ref={tableContainerRef}>
-              <Table className="border-t-0" style={{ tableLayout: 'fixed', width: '100%' }}>
+              <Table style={{ tableLayout: 'fixed', width: '100%' }}>
                 <colgroup>
                   {table.getAllColumns().map((column) => (
                     <col key={column.id} style={{ width: `${column.getSize()}px` }} />
@@ -308,6 +379,8 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                     columnsLength={columns.length}
                     isFetching={isFetching}
                     isFetchingNextPage={isFetchingNextPage}
+                    nextPageError={nextPageError}
+                    onRetryNextPage={clearNextPageError}
                     rows={rows}
                     table={table}
                     virtualRows={virtualRows}

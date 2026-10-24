@@ -8,7 +8,7 @@ import { expect, test } from '../../shared/e2e';
  * static getting-started content, so it is reachable in every variant and guards the
  * pieces a re-skin can break — the tab strip, the code blocks, and the hint callout.
  */
-test.describe('Transforms setup', () => {
+test.describe('transforms setup', () => {
   test('renders the getting-started content', async ({ page }) => {
     await page.goto('/transforms-setup');
 

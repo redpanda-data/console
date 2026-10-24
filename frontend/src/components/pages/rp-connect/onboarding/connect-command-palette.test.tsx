@@ -35,7 +35,7 @@ const renderPalette = (props: Partial<Parameters<typeof ConnectCommandPalette>[0
     />
   );
 
-describe('ConnectCommandPalette', () => {
+describe('the ConnectCommandPalette', () => {
   beforeEach(() => {
     window.localStorage.clear();
   });

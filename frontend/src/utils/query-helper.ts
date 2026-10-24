@@ -60,18 +60,18 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
     }
 
     // TanStack Router uses searchStr for the raw search string
-    const searchStr = location.searchStr ?? '';
-    const currentObj = queryToObj(searchStr);
+    const currentObj = queryToObj(location.searchStr ?? '');
     editFunction(currentObj);
 
-    const newQuery = objToQuery(currentObj);
-
-    if (searchStr !== newQuery) {
-      const path = location.pathname;
-      appGlobal.historyReplace(`${path}${newQuery}`);
-    }
+    replaceChangedQuery(location.pathname, location.searchStr ?? '', objToQuery(currentObj));
   } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Failed to update query:', error);
+  }
+}
+
+function replaceChangedQuery(pathname: string, currentQuery: string, nextQuery: string): void {
+  if (currentQuery !== nextQuery) {
+    appGlobal.historyReplace(`${pathname}${nextQuery}`);
   }
 }

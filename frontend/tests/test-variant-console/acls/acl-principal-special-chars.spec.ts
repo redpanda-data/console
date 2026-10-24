@@ -17,7 +17,7 @@
 
 import { test } from '../../shared/e2e';
 
-test.describe('ACL principal URL encoding', () => {
+test.describe('aCL principal URL encoding', () => {
   test.skip('principalName containing ":" round-trips through create → list → detail', async () => {
     // TODO(UX-1215): un-skip once colon-in-principalName behavior is defined by product
     // and the ACL list rendering matches. The connect-mock infrastructure and UI create

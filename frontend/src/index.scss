@@ -1471,25 +1471,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
         height: 28px;
       }
 
-      // Normal
-      .ghostInput:not(:focus-within) {
-        // The border colour is a Tailwind class on the element; unlayered !important would lose to it.
-        background-color: transparent;
-
-        transition: border-color 350ms ease-out, background-color 100ms ease-out;
-      }
-
-      // Hover
-      .ghostInput:hover:not(:focus-within) {
-        cursor: pointer;
-        border-radius: 2px;
-      }
-
-      // Active
-      .ghostInput {
-        transition: border-color 80ms ease-out, background-color 80ms ease-out;
-      }
-
       .deleteButton {
         display: inline-flex;
         align-self: stretch;

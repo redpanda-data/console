@@ -66,17 +66,15 @@ type ThroughputContentProps = {
   onRetry: () => void;
 };
 
-// h-40 matches the chart so the section doesn't jump between states. Empty's own padding and title
-// scale are built for full-page empties, and would crowd the text out of a box this size.
 const ThroughputPlaceholder: FC<{ title: string; description: string; action?: ReactNode }> = ({
   title,
   description,
   action,
 }) => (
-  <Empty className="h-40 gap-2 rounded-md border border-dashed p-4 md:p-4">
-    <EmptyHeader className="gap-1">
-      <EmptyTitle className="text-body">{title}</EmptyTitle>
-      <EmptyDescription className="text-body">{description}</EmptyDescription>
+  <Empty className="min-h-40">
+    <EmptyHeader>
+      <EmptyTitle>{title}</EmptyTitle>
+      <EmptyDescription>{description}</EmptyDescription>
     </EmptyHeader>
     {action ? <EmptyContent>{action}</EmptyContent> : null}
   </Empty>
@@ -181,60 +179,49 @@ type PipelineThroughputCardProps = {
   pipelineId: string;
 };
 
-export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipelineId }) => {
-  const id = useId();
-  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const {
-    data: queriesData,
-    isLoading: isLoadingQueries,
-    isError: isErrorQueries,
-    refetch: refetchQueries,
-  } = useListQueries({
+// Which throughput queries the observability catalog serves; a range query only runs for a served one.
+function useThroughputQueryCatalog() {
+  const { data, isLoading, isError, refetch } = useListQueries({
     filter: {
       tags: {
         component: 'redpanda-connect',
       },
     },
   });
+  const hasInputQuery = data?.queries?.some((q) => q.name === 'connect_input_received') ?? false;
+  const hasOutputQuery = data?.queries?.some((q) => q.name === 'connect_output_sent') ?? false;
+  return { hasInputQuery, hasOutputQuery, isLoading, isError, refetch };
+}
 
-  const hasInputQuery = queriesData?.queries?.some((q) => q.name === 'connect_input_received') ?? false;
-  const hasOutputQuery = queriesData?.queries?.some((q) => q.name === 'connect_output_sent') ?? false;
+function usePipelineRangeQuery(
+  queryName: string,
+  pipelineId: string,
+  timeRange: { start: Date; end: Date },
+  enabled: boolean
+) {
+  return useExecuteRangeQuery(
+    {
+      queryName,
+      params: {
+        start: timestampFromMs(timeRange.start.getTime()),
+        end: timestampFromMs(timeRange.end.getTime()),
+        filters: { pipeline_id: pipelineId },
+      },
+    },
+    { enabled }
+  );
+}
+
+function usePipelineThroughput(pipelineId: string, selectedTimeRange: TimeRange) {
+  const [refreshKey, setRefreshKey] = useState(0);
+  const catalog = useThroughputQueryCatalog();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey triggers recalculation on refresh
   const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange, refreshKey]);
-  const timeParams = {
-    start: timestampFromMs(timeRange.start.getTime()),
-    end: timestampFromMs(timeRange.end.getTime()),
-  };
+  const ingress = usePipelineRangeQuery('connect_input_received', pipelineId, timeRange, catalog.hasInputQuery);
+  const egress = usePipelineRangeQuery('connect_output_sent', pipelineId, timeRange, catalog.hasOutputQuery);
 
-  const {
-    data: ingressData,
-    isError: isErrorIngress,
-    isPending: isPendingIngress,
-    isFetching: isFetchingIngress,
-  } = useExecuteRangeQuery(
-    {
-      queryName: 'connect_input_received',
-      params: { ...timeParams, filters: { pipeline_id: pipelineId } },
-    },
-    { enabled: hasInputQuery }
-  );
-
-  const {
-    data: egressData,
-    isError: isErrorEgress,
-    isPending: isPendingEgress,
-    isFetching: isFetchingEgress,
-  } = useExecuteRangeQuery(
-    {
-      queryName: 'connect_output_sent',
-      params: { ...timeParams, filters: { pipeline_id: pipelineId } },
-    },
-    { enabled: hasOutputQuery }
-  );
-
+  const { refetch: refetchQueries } = catalog;
   const handleRefresh = useCallback(() => {
     // The query-catalog key carries no timestamps, so a refreshKey bump alone never retries a failed
     // ListQueries.
@@ -243,19 +230,31 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
   }, [refetchQueries]);
 
   const chartData = useMemo(
-    () => mergeTimeSeries(ingressData?.results ?? [], egressData?.results ?? []),
-    [ingressData, egressData]
+    () => mergeTimeSeries(ingress.data?.results ?? [], egress.data?.results ?? []),
+    [ingress.data, egress.data]
   );
 
-  // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
-  const isLoading = isLoadingQueries || (hasInputQuery && isPendingIngress) || (hasOutputQuery && isPendingEgress);
-  // A failed catalog lookup is the error state, not "no data yet": the range queries never run.
-  const isError = isErrorQueries || isErrorIngress || isErrorEgress;
-  const isFetching = isFetchingIngress || isFetchingEgress;
-  const hasData = chartData.length > 0;
+  return {
+    chartData,
+    // Anchor the axis to the full selected window, not just the data extent.
+    domain: [timeRange.start.getTime(), timeRange.end.getTime()] satisfies [number, number],
+    // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
+    isLoading:
+      catalog.isLoading || (catalog.hasInputQuery && ingress.isPending) || (catalog.hasOutputQuery && egress.isPending),
+    // A failed catalog lookup is the error state, not "no data yet": the range queries never run.
+    isError: catalog.isError || ingress.isError || egress.isError,
+    isFetching: ingress.isFetching || egress.isFetching,
+    refresh: handleRefresh,
+  };
+}
 
-  // Anchor the axis to the full selected window, not just the data extent.
-  const domain: [number, number] = [timeRange.start.getTime(), timeRange.end.getTime()];
+export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipelineId }) => {
+  const id = useId();
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
+  const { chartData, domain, isLoading, isError, isFetching, refresh } = usePipelineThroughput(
+    pipelineId,
+    selectedTimeRange
+  );
 
   return (
     <section className="flex flex-col gap-3">
@@ -278,17 +277,17 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
               ))}
             </SelectContent>
           </Select>
-          <RefreshButton loading={isFetching} onClick={handleRefresh} />
+          <RefreshButton loading={isFetching} onClick={refresh} />
         </div>
       </div>
       <ThroughputContent
         chartData={chartData}
         domain={domain}
-        hasData={hasData}
+        hasData={chartData.length > 0}
         id={id}
         isError={isError}
         isLoading={isLoading}
-        onRetry={handleRefresh}
+        onRetry={refresh}
       />
     </section>
   );

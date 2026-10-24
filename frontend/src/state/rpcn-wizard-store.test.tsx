@@ -24,193 +24,207 @@ import {
 } from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
 
-describe('RPCN Wizard Store', () => {
+function renderStoresWithReset() {
+  const wizardResult = renderHook(() => useRpcnWizardStore()).result;
+  const topicResult = renderHook(() => useRpcnWizardStore()).result;
+  const userResult = renderHook(() => useRpcnWizardStore()).result;
+  const { result: resetResult } = renderHook(() => useResetRpcnWizardStore());
+  return { wizardResult, topicResult, userResult, resetResult };
+}
+
+describe('the RPCN Wizard Store', () => {
   beforeEach(() => {
     sessionStorage.clear();
   });
 
   describe('connection data & persistence', () => {
-    test('should initialize with empty state', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
+    describe('wizard data', () => {
+      test('should initialize with empty state', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-      expect(result.current.input).toBeUndefined();
-      expect(result.current.output).toBeUndefined();
-    });
-
-    test('should set wizard data', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      const wizardData: Partial<OnboardingWizardFormData> = {
-        input: {
-          connectionName: 'redpanda',
-          connectionType: 'input',
-        },
-      };
-
-      act(() => {
-        result.current.setWizardData(wizardData);
+        expect(result.current.input).toBeUndefined();
+        expect(result.current.output).toBeUndefined();
       });
 
-      expect(result.current.input).toEqual(wizardData.input);
-    });
+      test('should set wizard data', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-    test('should merge wizard data on multiple sets', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
+        const wizardData: Partial<OnboardingWizardFormData> = {
+          input: {
+            connectionName: 'redpanda',
+            connectionType: 'input',
+          },
+        };
 
-      act(() => {
-        result.current.setWizardData({
-          input: { connectionName: 'redpanda', connectionType: 'input' },
-        });
-      });
-
-      act(() => {
-        result.current.setWizardData({
-          output: { connectionName: 'kafka_franz', connectionType: 'output' },
-        });
-      });
-
-      expect(result.current.input).toEqual({ connectionName: 'redpanda', connectionType: 'input' });
-      expect(result.current.output).toEqual({ connectionName: 'kafka_franz', connectionType: 'output' });
-    });
-
-    test('should reset wizard data completely', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      act(() => {
-        result.current.setWizardData({
-          input: { connectionName: 'redpanda', connectionType: 'input' },
-          output: { connectionName: 'kafka_franz', connectionType: 'output' },
-        });
-      });
-
-      expect(result.current.input).toBeDefined();
-      expect(result.current.output).toBeDefined();
-
-      act(() => {
-        result.current.reset();
-      });
-
-      expect(result.current.input).toBeUndefined();
-      expect(result.current.output).toBeUndefined();
-    });
-
-    test('should preserve action methods after reset', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      act(() => {
-        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
-      });
-
-      act(() => {
-        result.current.reset();
-      });
-
-      // Actions should still work after reset
-      expect(() => {
         act(() => {
-          result.current.setWizardData({ input: { connectionName: 'new', connectionType: 'input' } });
+          result.current.setWizardData(wizardData);
         });
-      }).not.toThrow();
 
-      expect(result.current.input).toEqual({ connectionName: 'new', connectionType: 'input' });
+        expect(result.current.input).toEqual(wizardData.input);
+      });
+
+      test('should merge wizard data on multiple sets', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
+
+        act(() => {
+          result.current.setWizardData({
+            input: { connectionName: 'redpanda', connectionType: 'input' },
+          });
+        });
+
+        act(() => {
+          result.current.setWizardData({
+            output: { connectionName: 'kafka_franz', connectionType: 'output' },
+          });
+        });
+
+        expect(result.current.input).toEqual({ connectionName: 'redpanda', connectionType: 'input' });
+        expect(result.current.output).toEqual({ connectionName: 'kafka_franz', connectionType: 'output' });
+      });
+
+      test('should reset wizard data completely', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
+
+        act(() => {
+          result.current.setWizardData({
+            input: { connectionName: 'redpanda', connectionType: 'input' },
+            output: { connectionName: 'kafka_franz', connectionType: 'output' },
+          });
+        });
+
+        expect(result.current.input).toBeDefined();
+        expect(result.current.output).toBeDefined();
+
+        act(() => {
+          result.current.reset();
+        });
+
+        expect(result.current.input).toBeUndefined();
+        expect(result.current.output).toBeUndefined();
+      });
+
+      test('should preserve action methods after reset', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
+
+        act(() => {
+          result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        });
+
+        act(() => {
+          result.current.reset();
+        });
+
+        // Actions should still work after reset
+        expect(() => {
+          act(() => {
+            result.current.setWizardData({ input: { connectionName: 'new', connectionType: 'input' } });
+          });
+        }).not.toThrow();
+
+        expect(result.current.input).toEqual({ connectionName: 'new', connectionType: 'input' });
+      });
     });
 
-    test('should persist wizard data to sessionStorage', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
+    describe('session storage', () => {
+      test('should persist wizard data to sessionStorage', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-      const wizardData: Partial<OnboardingWizardFormData> = {
-        input: { connectionName: 'redpanda', connectionType: 'input' },
-      };
+        const wizardData: Partial<OnboardingWizardFormData> = {
+          input: { connectionName: 'redpanda', connectionType: 'input' },
+        };
 
-      act(() => {
-        result.current.setWizardData(wizardData);
+        act(() => {
+          result.current.setWizardData(wizardData);
+        });
+
+        const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+        expect(stored).toBeTruthy();
+        if (stored) {
+          expect(JSON.parse(stored)).toMatchObject(wizardData);
+        }
       });
 
-      const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-      expect(stored).toBeTruthy();
-      if (stored) {
-        expect(JSON.parse(stored)).toMatchObject(wizardData);
-      }
+      test('should clear sessionStorage on reset', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
+
+        act(() => {
+          result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        });
+
+        expect(sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY)).toBeTruthy();
+
+        act(() => {
+          result.current.reset();
+        });
+
+        // Persist middleware should clear storage on reset
+        const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+        const parsed = stored ? JSON.parse(stored) : {};
+        expect(parsed.input).toBeUndefined();
+        expect(parsed.output).toBeUndefined();
+      });
+
+      test('should NOT persist hasHydrated to sessionStorage', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
+
+        act(() => {
+          result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+          result.current.setHasHydrated(true);
+        });
+
+        const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+        expect(stored).toBeTruthy();
+
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          expect(parsed.input).toBeDefined();
+          expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
+        }
+      });
     });
 
-    test('should clear sessionStorage on reset', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
+    describe('hydration flag', () => {
+      test('should initialize with hasHydrated as false', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-      act(() => {
-        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        expect(result.current.hasHydrated).toBe(false);
       });
 
-      expect(sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY)).toBeTruthy();
+      test('should reset hasHydrated to false on reset', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-      act(() => {
-        result.current.reset();
+        // Simulate hydration complete
+        act(() => {
+          result.current.setHasHydrated(true);
+        });
+
+        expect(result.current.hasHydrated).toBe(true);
+
+        // Add some data
+        act(() => {
+          result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
+        });
+
+        // Reset should clear data AND reset hydration flag
+        act(() => {
+          result.current.reset();
+        });
+
+        expect(result.current.input).toBeUndefined();
+        expect(result.current.hasHydrated).toBe(false);
       });
 
-      // Persist middleware should clear storage on reset
-      const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-      const parsed = stored ? JSON.parse(stored) : {};
-      expect(parsed.input).toBeUndefined();
-      expect(parsed.output).toBeUndefined();
-    });
+      test('should allow setting hasHydrated', () => {
+        const { result } = renderHook(() => useRpcnWizardStore());
 
-    test('should initialize with hasHydrated as false', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
+        expect(result.current.hasHydrated).toBe(false);
 
-      expect(result.current.hasHydrated).toBe(false);
-    });
+        act(() => {
+          result.current.setHasHydrated(true);
+        });
 
-    test('should reset hasHydrated to false on reset', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      // Simulate hydration complete
-      act(() => {
-        result.current.setHasHydrated(true);
+        expect(result.current.hasHydrated).toBe(true);
       });
-
-      expect(result.current.hasHydrated).toBe(true);
-
-      // Add some data
-      act(() => {
-        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
-      });
-
-      // Reset should clear data AND reset hydration flag
-      act(() => {
-        result.current.reset();
-      });
-
-      expect(result.current.input).toBeUndefined();
-      expect(result.current.hasHydrated).toBe(false);
-    });
-
-    test('should NOT persist hasHydrated to sessionStorage', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      act(() => {
-        result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
-        result.current.setHasHydrated(true);
-      });
-
-      const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-      expect(stored).toBeTruthy();
-
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        expect(parsed.input).toBeDefined();
-        expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
-      }
-    });
-
-    test('should allow setting hasHydrated', () => {
-      const { result } = renderHook(() => useRpcnWizardStore());
-
-      expect(result.current.hasHydrated).toBe(false);
-
-      act(() => {
-        result.current.setHasHydrated(true);
-      });
-
-      expect(result.current.hasHydrated).toBe(true);
     });
   });
 
@@ -361,10 +375,7 @@ describe('RPCN Wizard Store', () => {
 
   describe('useResetRpcnWizardStore', () => {
     test('should reset all three stores', () => {
-      const wizardResult = renderHook(() => useRpcnWizardStore()).result;
-      const topicResult = renderHook(() => useRpcnWizardStore()).result;
-      const userResult = renderHook(() => useRpcnWizardStore()).result;
-      const { result: resetResult } = renderHook(() => useResetRpcnWizardStore());
+      const { wizardResult, topicResult, userResult, resetResult } = renderStoresWithReset();
 
       // Set data in all stores
       act(() => {

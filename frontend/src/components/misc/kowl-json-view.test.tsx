@@ -9,17 +9,7 @@ const { editorLayoutSpy, editorPropsSpy } = rs.hoisted(() => ({
 }));
 
 rs.mock('./kowl-editor', () => {
-  const MockKowlEditor = (props: any) => {
-    editorPropsSpy(props);
-
-    React.useEffect(() => {
-      props.onMount?.({
-        layout: editorLayoutSpy,
-      });
-    }, [props.onMount]);
-
-    return <div data-testid="mock-kowl-editor">{props.value}</div>;
-  };
+  const MockKowlEditor = MockMockKowlEditor;
 
   return {
     __esModule: true,
@@ -27,7 +17,7 @@ rs.mock('./kowl-editor', () => {
   };
 });
 
-describe('KowlJsonView', () => {
+describe('the KowlJsonView', () => {
   let originalResizeObserver: typeof ResizeObserver | undefined;
   let resizeCallback: ResizeObserverCallback | undefined;
   let currentSize = { width: 640, height: 384 };
@@ -168,3 +158,13 @@ describe('KowlJsonView', () => {
     });
   });
 });
+
+function MockMockKowlEditor(props: any) {
+  editorPropsSpy(props);
+  React.useEffect(() => {
+    props.onMount?.({
+      layout: editorLayoutSpy,
+    });
+  }, [props.onMount]);
+  return <div data-testid="mock-kowl-editor">{props.value}</div>;
+}

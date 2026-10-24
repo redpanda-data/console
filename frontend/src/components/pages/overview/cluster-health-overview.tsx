@@ -8,6 +8,7 @@ import { api } from '../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { titleCase } from '../../../utils/utils';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
+import { TonedIcon } from '../shared/toned-icon';
 
 const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
   [UnhealthyReason.UNSPECIFIED]: 'Unknown reason',
@@ -49,7 +50,7 @@ const ClusterHealthOverview = () => {
             <div className="font-bold">Unreachable brokers</div>
             <div className="flex gap-1">
               {api.clusterHealth?.offlineBrokerIds && api.clusterHealth?.offlineBrokerIds.length > 0 && (
-                <ErrorIcon className="text-destructive" size={18} />
+                <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />
               )}
               <div>{api.clusterHealth?.offlineBrokerIds.length}</div>
             </div>
@@ -61,7 +62,7 @@ const ClusterHealthOverview = () => {
               <div className="font-bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</div>
               <div className="flex gap-2">
                 <div className="flex gap-1">
-                  <ErrorIcon className="text-destructive" size={18} />{' '}
+                  <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />{' '}
                   <div>{api.clusterHealth?.leaderlessPartitionsCount}</div>
                 </div>{' '}
                 <Link search={{} as never} to="/topics">
@@ -79,7 +80,7 @@ const ClusterHealthOverview = () => {
               </div>
               <div className="flex gap-2">
                 <div className="flex gap-1">
-                  <WarningIcon className="text-warning" size={18} />{' '}
+                  <TonedIcon icon={WarningIcon} size={18} tone="warning" />{' '}
                   <div>{api.clusterHealth?.underReplicatedPartitionsCount}</div>
                 </div>{' '}
                 <Link search={{} as never} to="/topics">
@@ -98,7 +99,7 @@ const ClusterHealthOverview = () => {
                     `$jobId` needs a segment. */}
                 {api.isDebugBundleInProgress && api.debugBundleStatus?.jobId ? (
                   <Link
-                    className={cn(buttonVariants({ variant: 'link' }), 'h-auto px-0')}
+                    className={cn(buttonVariants({ variant: 'link' }), 'h-auto')}
                     params={{ jobId: api.debugBundleStatus.jobId }}
                     to="/debug-bundle/progress/$jobId"
                   >
@@ -109,7 +110,7 @@ const ClusterHealthOverview = () => {
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Link className={cn(buttonVariants({ variant: 'link' }), 'h-auto px-0')} to="/debug-bundle">
+                  <Link className={cn(buttonVariants({ variant: 'link' }), 'h-auto')} to="/debug-bundle">
                     Generate new
                   </Link>
                 )}

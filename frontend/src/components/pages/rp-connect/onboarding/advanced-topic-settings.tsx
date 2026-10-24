@@ -53,19 +53,22 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={isExistingTopic || disabled}
         name="replicationFactor"
         render={({ field }) => (
-          <FormItem className={isExistingTopic ? '' : 'opacity-70'}>
-            <FormLabel>Replication factor</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                onChange={createNumberChangeHandler(field.onChange)}
-                readOnly
-                showStepControls
-                type="number"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          // Dimmed while creating a topic: the replication factor is read-only there.
+          <div className={isExistingTopic ? undefined : 'opacity-70'}>
+            <FormItem>
+              <FormLabel>Replication factor</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  onChange={createNumberChangeHandler(field.onChange)}
+                  readOnly
+                  showStepControls
+                  type="number"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </div>
         )}
       />
 
@@ -152,7 +155,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
               <FormItem>
                 <FormControl>
                   <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-32 bg-surface-strong" disabled={field.disabled}>
+                    <SelectTrigger className="w-32" disabled={field.disabled}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

@@ -54,12 +54,11 @@ export function trimSlidingWindow({
     return { messages, windowStartPage, virtualStartIndex, trimCount: 0 };
   }
 
-  const excess = messages.length - maxWindowSize;
   const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPage);
 
   // Never trim the page the user is currently viewing or the one before it
   const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
-  const pagesToTrim = Math.min(Math.floor(excess / pageSize), maxPagesToTrim);
+  const pagesToTrim = Math.min(Math.floor((messages.length - maxWindowSize) / pageSize), maxPagesToTrim);
   const trimCount = pagesToTrim * pageSize;
 
   if (trimCount === 0) {

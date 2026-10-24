@@ -22,47 +22,10 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
     return null;
   }
 
-  const selectedPartitions: { topic: string; partitions: Partition[] }[] = [];
-  for (const [topic, partitions] of topicPartitions) {
-    if (partitions === null) {
-      continue;
-    }
-    if (!props.partitionSelection[topic]) {
-      continue;
-    }
-    const relevantPartitions = partitions.filter((p) => props.partitionSelection[topic].includes(p.id));
-    selectedPartitions.push({ topic, partitions: relevantPartitions });
-  }
+  const selectedPartitions = selectedTopicPartitions(topicPartitions, props.partitionSelection);
+  const involvedBrokers = clusterInfo === null ? null : brokersInvolvedIn(selectedPartitions, clusterInfo.brokers);
 
-  let involvedBrokers: Broker[] | null = null;
-  if (clusterInfo !== null) {
-    const brokerIds = new Set<number>();
-    for (const t of selectedPartitions) {
-      for (const p of t.partitions) {
-        brokerIds.add(p.leader);
-        for (const id of p.replicas) {
-          brokerIds.add(id);
-        }
-      }
-    }
-    involvedBrokers = clusterInfo.brokers.filter((b) => brokerIds.has(b.brokerId));
-  }
-
-  const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);
-  const partitionCountLeaders = allSelectedPartitions.length;
-  const totalPartitionsCount = allSelectedPartitions.sum((t) => t.replicas.length);
-
-  const data = [
-    { title: 'Leader Partitions', value: partitionCountLeaders },
-    { title: 'Total Partitions', value: totalPartitionsCount },
-    { title: 'Involved Topics', value: selectedPartitions.length },
-    { title: 'Involved Brokers', value: involvedBrokers?.length ?? '...' },
-    { title: 'Involved Racks', value: involvedBrokers?.map((b) => b.rack).distinct().length ?? '...' },
-    {
-      title: 'Size',
-      value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
-    },
-  ];
+  const data = selectionStatistics(selectedPartitions, involvedBrokers);
 
   return (
     <div style={{ margin: props.margin }}>
@@ -86,4 +49,58 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
       </div>
     </div>
   );
+}
+
+type SelectedTopicPartitions = { topic: string; partitions: Partition[] };
+
+/** The figures shown for the selection; broker and rack counts stay '...' until the brokers are known. */
+function selectionStatistics(selectedPartitions: SelectedTopicPartitions[], involvedBrokers: Broker[] | null) {
+  const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);
+  const partitionCountLeaders = allSelectedPartitions.length;
+  const totalPartitionsCount = allSelectedPartitions.sum((t) => t.replicas.length);
+
+  return [
+    { title: 'Leader Partitions', value: partitionCountLeaders },
+    { title: 'Total Partitions', value: totalPartitionsCount },
+    { title: 'Involved Topics', value: selectedPartitions.length },
+    { title: 'Involved Brokers', value: involvedBrokers?.length ?? '...' },
+    { title: 'Involved Racks', value: involvedBrokers?.map((b) => b.rack).distinct().length ?? '...' },
+    {
+      title: 'Size',
+      value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
+    },
+  ];
+}
+
+/** The selected partitions of every loaded topic that has a selection. */
+function selectedTopicPartitions(
+  topicPartitions: Map<string, Partition[] | null>,
+  partitionSelection: PartitionSelection
+): SelectedTopicPartitions[] {
+  const selectedPartitions: SelectedTopicPartitions[] = [];
+  for (const [topic, partitions] of topicPartitions) {
+    if (partitions === null) {
+      continue;
+    }
+    if (!partitionSelection[topic]) {
+      continue;
+    }
+    const relevantPartitions = partitions.filter((p) => partitionSelection[topic].includes(p.id));
+    selectedPartitions.push({ topic, partitions: relevantPartitions });
+  }
+  return selectedPartitions;
+}
+
+/** The brokers leading or hosting a replica of any selected partition. */
+function brokersInvolvedIn(selectedPartitions: SelectedTopicPartitions[], brokers: Broker[]): Broker[] {
+  const brokerIds = new Set<number>();
+  for (const t of selectedPartitions) {
+    for (const p of t.partitions) {
+      brokerIds.add(p.leader);
+      for (const id of p.replicas) {
+        brokerIds.add(id);
+      }
+    }
+  }
+  return brokers.filter((b) => brokerIds.has(b.brokerId));
 }

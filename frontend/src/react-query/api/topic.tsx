@@ -191,7 +191,7 @@ export const useUpdateTopicConfigMutation = () => {
     },
     onSuccess: (data) => {
       // Invalidate the specific topic config to refetch fresh data
-      queryClient.invalidateQueries({
+      return queryClient.invalidateQueries({
         queryKey: ['topicConfig', data.topicName],
       });
     },

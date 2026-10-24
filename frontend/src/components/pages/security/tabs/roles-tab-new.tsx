@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
-import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
@@ -22,34 +21,20 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from 'components/redpanda-ui/components/empty';
-import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
-import { parseAsString, useQueryStates } from 'nuqs';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { useState } from 'react';
+import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
-import { useStore } from 'zustand';
 
 import ErrorResult from '../../../../components/misc/error-result';
-import { useDeleteRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
-import { rolesApi, useApiStoreHook, useRolesStore } from '../../../../state/backend-api';
-import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { setPageHeader } from '../../../../state/ui-state';
+import { useDeleteRoleMutation } from '../../../../react-query/api/security';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -58,17 +43,15 @@ import {
   DataTableColumnHeader,
   DataTablePagination,
   type DataTableRow,
-  useDataTable,
 } from '../../../redpanda-ui/components/data-table';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
+import { type RoleEntry, useCreateRoleAvailability, useRoleListData } from '../hooks/use-role-list-data';
+import { useNameColumnFilter, useSecurityListTable } from '../hooks/use-security-list-table';
+import { useSecurityPageHeader } from '../hooks/use-security-page-header';
 import { DescriptionWithHelp } from '../shared/description-with-help';
+import { SecurityEmptyState } from '../shared/security-empty-state';
+import { SecurityListTable } from '../shared/security-list-table';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
-
-type RoleEntry = {
-  name: string;
-  members: unknown[];
-};
 
 const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValue: string) => {
   if (!filterValue) {
@@ -81,181 +64,52 @@ const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValu
   }
 };
 
+const ROLE_SKELETON_WIDTHS = { name: 'md', assignedPrincipals: 'sm' } as const;
+
+const roleColumns: DataTableColumnDef<RoleEntry>[] = [
+  {
+    accessorKey: 'name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
+    cell: ({ row: { original: entry } }) => (
+      <Link
+        data-testid={`role-list-item-${entry.name}`}
+        params={{ roleName: encodeURIComponent(entry.name) }}
+        search={{ host: undefined }}
+        to="/security/roles/$roleName/details"
+      >
+        {entry.name}
+      </Link>
+    ),
+    filterFn: nameFilterFn,
+  },
+  {
+    id: 'assignedPrincipals',
+    header: 'Assigned principals',
+    enableSorting: false,
+    cell: ({ row: { original: entry } }) => entry.members.length,
+  },
+  {
+    id: 'menu',
+    header: '',
+    enableSorting: false,
+    meta: columnMeta({ align: 'right' as const }),
+    cell: ({ row: { original: entry } }) => <RoleActions memberCount={entry.members.length} roleName={entry.name} />,
+  },
+];
+
 export const RolesTabNew: FC = () => {
-  useLayoutEffect(() => {
-    setPageHeader('Security', [
-      { title: 'Security', linkTo: '/security/users' },
-      { title: 'Roles', linkTo: '/security/roles' },
-    ]);
-  }, []);
-
-  useEffect(() => {
-    rolesApi.refreshRoleMembers().catch(() => {});
-  }, []);
-  const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
-  const userData = useApiStoreHook((s) => s.userData);
-  const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
+  useSecurityPageHeader('roles');
+  const createRole = useCreateRoleAvailability();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const { roles, isLoading, isError, error } = useRoleListData();
+  const columnFilters = useNameColumnFilter();
+  const table = useSecurityListTable(roles, roleColumns, columnFilters);
 
-  const [urlFilterParams, setUrlFilterParams] = useQueryStates({
-    name: parseAsString,
-  });
-
-  const columnFilters: ColumnFiltersState = urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : [];
-
-  const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
-    const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-    const nameFilter = next.find((f) => f.id === 'name');
-    setUrlFilterParams({ name: (nameFilter?.value as string) || null });
-  };
-
-  const { data: rolesData, isLoading: rolesLoading, isError: rolesIsError, error: rolesError } = useListRolesQuery();
-  const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
-
-  const rolesWithMembers: RoleEntry[] = (rolesData?.roles ?? []).map((r) => ({
-    name: r.name,
-    members: roleMembers.get(r.name) ?? [],
-  }));
-
-  const pagination: PaginationState = { pageIndex, pageSize };
-
-  const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    const next = typeof updater === 'function' ? updater(pagination) : updater;
-    setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
-  };
-
-  const columns: DataTableColumnDef<RoleEntry>[] = [
-    {
-      accessorKey: 'name',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
-      cell: ({ row: { original: entry } }) => (
-        <Link
-          className="text-inherit no-underline hover:no-underline"
-          data-testid={`role-list-item-${entry.name}`}
-          params={{ roleName: encodeURIComponent(entry.name) }}
-          search={{ host: undefined }}
-          to="/security/roles/$roleName/details"
-        >
-          {entry.name}
-        </Link>
-      ),
-      filterFn: nameFilterFn,
-    },
-    {
-      id: 'assignedPrincipals',
-      header: 'Assigned principals',
-      enableSorting: false,
-      cell: ({ row: { original: entry } }) => entry.members.length,
-    },
-    {
-      id: 'menu',
-      header: '',
-      enableSorting: false,
-      meta: columnMeta({ align: 'right' as const }),
-      cell: ({ row: { original: entry } }) => (
-        <RoleActions
-          memberCount={entry.members.length}
-          onDelete={async () => {
-            await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName: entry.name, deleteAcls: true }));
-          }}
-          roleName={entry.name}
-        />
-      ),
-    },
-  ];
-
-  const table = useDataTable({
-    data: rolesWithMembers,
-    columns,
-    enableHiding: false,
-    enableRowSelection: false,
-    state: { sorting, pagination, columnFilters },
-    onSortingChange: setSorting,
-    onPaginationChange: handlePaginationChange,
-    onColumnFiltersChange: handleColumnFiltersChange,
-    autoResetPageIndex: false,
-  });
-
-  if (rolesIsError) {
-    return <ErrorResult error={rolesError} />;
+  if (isError) {
+    return <ErrorResult error={error} />;
   }
 
-  const createRoleDisabled = userData?.canCreateRoles === false || !featureRolesApi;
-  const createRoleTooltip = [
-    userData?.canCreateRoles === false &&
-      'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',
-    !featureRolesApi && 'This feature is not enabled.',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const renderBody = () => {
-    if (rolesLoading) {
-      return [0, 1, 2].map((i) => (
-        <TableRow key={i}>
-          <TableCell>
-            <Skeleton variant="text" width="md" />
-          </TableCell>
-          <TableCell>
-            <Skeleton variant="text" width="sm" />
-          </TableCell>
-          <TableCell />
-        </TableRow>
-      ));
-    }
-    if (table.getRowModel().rows.length) {
-      return table.getRowModel().rows.map((row) => (
-        <TableRow key={row.id}>
-          {row.getVisibleCells().map((cell) => (
-            <TableCell align={readColumnMeta(cell.column.columnDef.meta).align} key={cell.id}>
-              {<table.FlexRender cell={cell} />}
-            </TableCell>
-          ))}
-        </TableRow>
-      ));
-    }
-    const isFiltered = columnFilters.length > 0;
-    return (
-      <TableRow className="hover:bg-transparent">
-        <TableCell colSpan={columns.length}>
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ShieldCheckIcon />
-              </EmptyMedia>
-              <EmptyTitle>{isFiltered ? 'No roles match your search' : 'No roles yet'}</EmptyTitle>
-              <EmptyDescription>
-                {isFiltered
-                  ? 'Try adjusting your filters.'
-                  : 'Roles are groups of ACLs that can be assigned to principals. Create one to start managing access control.'}
-              </EmptyDescription>
-            </EmptyHeader>
-            {!isFiltered && (
-              <EmptyContent>
-                <div className="flex items-center gap-3">
-                  <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
-                    Create role
-                  </Button>
-                  <Button
-                    render={
-                      <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
-                        Read the docs →
-                      </a>
-                    }
-                    variant="link"
-                  />
-                </div>
-              </EmptyContent>
-            )}
-          </Empty>
-        </TableCell>
-      </TableRow>
-    );
-  };
+  const isFiltered = columnFilters.columnFilters.length > 0;
 
   return (
     <>
@@ -283,14 +137,14 @@ export const RolesTabNew: FC = () => {
                 render={
                   <Button
                     data-testid="create-role-button"
-                    disabled={createRoleDisabled}
+                    disabled={createRole.disabled}
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     Create role
                   </Button>
                 }
               />
-              {createRoleTooltip && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+              {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
             </Tooltip>
           }
         >
@@ -302,20 +156,30 @@ export const RolesTabNew: FC = () => {
         </ListLayoutFilters>
 
         <ListLayoutContent>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead align={readColumnMeta(header.column.columnDef.meta).align} key={header.id}>
-                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>{renderBody()}</TableBody>
-          </Table>
+          <SecurityListTable
+            emptyState={
+              <SecurityEmptyState
+                action={
+                  isFiltered ? undefined : (
+                    <Button disabled={createRole.disabled} onClick={() => setCreateDialogOpen(true)}>
+                      Create role
+                    </Button>
+                  )
+                }
+                description={
+                  isFiltered
+                    ? 'Try adjusting your filters.'
+                    : 'Roles are groups of ACLs that can be assigned to principals. Create one to start managing access control.'
+                }
+                docsHref={docsLinks.selfManaged.rbac}
+                icon={<ShieldCheckIcon />}
+                title={isFiltered ? 'No roles match your search' : 'No roles yet'}
+              />
+            }
+            isLoading={isLoading}
+            skeletonWidths={ROLE_SKELETON_WIDTHS}
+            table={table}
+          />
         </ListLayoutContent>
 
         <DataTablePagination table={table} />
@@ -325,16 +189,12 @@ export const RolesTabNew: FC = () => {
   );
 };
 
-const RoleActions = ({
-  roleName,
-  memberCount,
-  onDelete,
-}: {
-  roleName: string;
-  memberCount: number;
-  onDelete: () => Promise<void>;
-}) => {
+const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount: number }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
+  const onDelete = async () => {
+    await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName, deleteAcls: true }));
+  };
 
   return (
     <>

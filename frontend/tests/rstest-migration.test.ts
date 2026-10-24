@@ -35,6 +35,13 @@ function findVitestUsages(files: URL[]): string[] {
 
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
 
+// Exact pins, no ranges, because pre-1.0 Rstest minors break; coverage-v8 must match core.
+function expectExactRstestPins(devDependencies: PackageJson['devDependencies']) {
+  expect(devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
+  expect(devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
+  expect(devDependencies?.['@rstest/coverage-v8']).toBe(devDependencies?.['@rstest/core']);
+}
+
 describe('test runner policy', () => {
   test('runs units with Bun and integration and federation tests with Rstest', () => {
     const frontendWorkflow = readFileSync(
@@ -47,10 +54,7 @@ describe('test runner policy', () => {
     expect(packageJson.scripts?.['test:federation']).toContain('rstest');
     expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
     expect(packageJson.scripts?.['test:coverage']).toContain('test:unit --coverage');
-    // Exact pins, no ranges, because pre-1.0 Rstest minors break; coverage-v8 must match core.
-    expect(packageJson.devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
-    expect(packageJson.devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
-    expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe(packageJson.devDependencies?.['@rstest/core']);
+    expectExactRstestPins(packageJson.devDependencies);
     expect(frontendWorkflow).toContain('bun run test:federation');
     expect(version).toMatch(/^1\./);
   });

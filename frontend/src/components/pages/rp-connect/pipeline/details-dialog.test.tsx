@@ -40,7 +40,7 @@ function createPipeline(overrides: Record<string, unknown> = {}) {
   });
 }
 
-describe('DetailsDialog', () => {
+describe('the DetailsDialog', () => {
   beforeEach(() => {
     rs.useFakeTimers();
   });
@@ -50,92 +50,98 @@ describe('DetailsDialog', () => {
     rs.useRealTimers();
   });
 
-  it('renders pipeline ID with copy button', () => {
-    renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.getByText('pipeline-123')).toBeInTheDocument();
-  });
-
-  it('renders description', () => {
-    renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.getByText('A test pipeline')).toBeInTheDocument();
-  });
-
-  it('renders compute units', () => {
-    renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.getByText('3')).toBeInTheDocument();
-  });
-
-  it('renders URL with copy button', () => {
-    renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.getByText('https://pipeline.example.com/pipeline-123')).toBeInTheDocument();
-  });
-
-  it('renders service account when present', () => {
-    renderDetailsDialog({
-      pipeline: createPipeline({
-        serviceAccount: { clientId: 'sa-client-id', clientSecret: '' },
-      }),
+  describe('general section', () => {
+    it('renders pipeline ID with copy button', () => {
+      renderDetailsDialog({ pipeline: createPipeline() });
+      expect(screen.getByText('pipeline-123')).toBeInTheDocument();
     });
-    expect(screen.getByText('sa-client-id')).toBeInTheDocument();
-  });
 
-  it('renders user-visible tags in References card as key: value badges', () => {
-    renderDetailsDialog({
-      pipeline: createPipeline({
-        tags: { env: 'production', team: 'platform' },
-      }),
+    it('renders description', () => {
+      renderDetailsDialog({ pipeline: createPipeline() });
+      expect(screen.getByText('A test pipeline')).toBeInTheDocument();
     });
-    expect(screen.getByText('env: production')).toBeInTheDocument();
-    expect(screen.getByText('team: platform')).toBeInTheDocument();
-  });
 
-  it('hides system tags (__-prefixed)', () => {
-    renderDetailsDialog({
-      pipeline: createPipeline({
-        tags: {
-          __redpanda_cloud_pipeline_type: 'pipeline',
-          env: 'staging',
-        },
-      }),
+    it('renders compute units', () => {
+      renderDetailsDialog({ pipeline: createPipeline() });
+      expect(screen.getByText('3')).toBeInTheDocument();
     });
-    expect(screen.getByText('env: staging')).toBeInTheDocument();
-    expect(screen.queryByText('__redpanda_cloud_pipeline_type')).not.toBeInTheDocument();
-  });
 
-  it('renders secrets in References card', () => {
-    renderDetailsDialog({
-      pipeline: createPipeline({
-        configYaml: [
-          'input:',
-          '  stdin: {}',
-          'output:',
-          '  stdout:',
-          // biome-ignore lint/suspicious/noTemplateCurlyInString: secret template syntax
-          '    password: "${secrets.my_secret.password}"',
-        ].join('\n'),
-      }),
+    it('renders URL with copy button', () => {
+      renderDetailsDialog({ pipeline: createPipeline() });
+      expect(screen.getByText('https://pipeline.example.com/pipeline-123')).toBeInTheDocument();
     });
-    expect(screen.getByText('my_secret')).toBeInTheDocument();
-  });
 
-  it('renders topics in References card', () => {
-    renderDetailsDialog({
-      pipeline: createPipeline({
-        configYaml: 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: ["my-topic"]\noutput:\n  stdout: {}',
-      }),
+    it('renders service account when present', () => {
+      renderDetailsDialog({
+        pipeline: createPipeline({
+          serviceAccount: { clientId: 'sa-client-id', clientSecret: '' },
+        }),
+      });
+      expect(screen.getByText('sa-client-id')).toBeInTheDocument();
     });
-    expect(screen.getByText('my-topic')).toBeInTheDocument();
   });
 
-  it('renders the Danger Zone section when onRequestDelete is provided', () => {
-    renderDetailsDialog({ onRequestDelete: rs.fn(), pipeline: createPipeline() });
-    expect(screen.getByText('Danger zone')).toBeInTheDocument();
-    expect(screen.getByText('Delete pipeline')).toBeInTheDocument();
+  describe('references section', () => {
+    it('renders user-visible tags in References card as key: value badges', () => {
+      renderDetailsDialog({
+        pipeline: createPipeline({
+          tags: { env: 'production', team: 'platform' },
+        }),
+      });
+      expect(screen.getByText('env: production')).toBeInTheDocument();
+      expect(screen.getByText('team: platform')).toBeInTheDocument();
+    });
+
+    it('hides system tags (__-prefixed)', () => {
+      renderDetailsDialog({
+        pipeline: createPipeline({
+          tags: {
+            __redpanda_cloud_pipeline_type: 'pipeline',
+            env: 'staging',
+          },
+        }),
+      });
+      expect(screen.getByText('env: staging')).toBeInTheDocument();
+      expect(screen.queryByText('__redpanda_cloud_pipeline_type')).not.toBeInTheDocument();
+    });
+
+    it('renders secrets in References card', () => {
+      renderDetailsDialog({
+        pipeline: createPipeline({
+          configYaml: [
+            'input:',
+            '  stdin: {}',
+            'output:',
+            '  stdout:',
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: secret template syntax
+            '    password: "${secrets.my_secret.password}"',
+          ].join('\n'),
+        }),
+      });
+      expect(screen.getByText('my_secret')).toBeInTheDocument();
+    });
+
+    it('renders topics in References card', () => {
+      renderDetailsDialog({
+        pipeline: createPipeline({
+          configYaml: 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: ["my-topic"]\noutput:\n  stdout: {}',
+        }),
+      });
+      expect(screen.getByText('my-topic')).toBeInTheDocument();
+    });
   });
 
-  it('does not render the Danger Zone section when onRequestDelete is undefined', () => {
-    renderDetailsDialog({ pipeline: createPipeline() });
-    expect(screen.queryByText('Danger zone')).not.toBeInTheDocument();
-    expect(screen.queryByText('Delete pipeline')).not.toBeInTheDocument();
+  describe('danger zone', () => {
+    it('renders the Danger Zone section when onRequestDelete is provided', () => {
+      renderDetailsDialog({ onRequestDelete: rs.fn(), pipeline: createPipeline() });
+      expect(screen.getByText('Danger zone')).toBeInTheDocument();
+      expect(screen.getByText('Delete pipeline')).toBeInTheDocument();
+    });
+
+    it('does not render the Danger Zone section when onRequestDelete is undefined', () => {
+      renderDetailsDialog({ pipeline: createPipeline() });
+      expect(screen.queryByText('Danger zone')).not.toBeInTheDocument();
+      expect(screen.queryByText('Delete pipeline')).not.toBeInTheDocument();
+    });
   });
 });

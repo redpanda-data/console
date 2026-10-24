@@ -12,6 +12,36 @@ function collectRejected(results, errors) {
   }
 }
 
+async function collectFailure(operation, errors) {
+  try {
+    await operation();
+  } catch (error) {
+    errors.push(error);
+  }
+}
+
+function throwIfAnyFailed(errors, message) {
+  if (errors.length > 0) {
+    throw new AggregateError(errors, message);
+  }
+}
+
+function uniqueSlotValues(state, suffix) {
+  return [...new Set(CONTAINER_SLOTS.map((slot) => state[`${slot}${suffix}`]).filter(Boolean))];
+}
+
+function stopContainer(container) {
+  return container.stop({
+    timeout: 10_000,
+    remove: true,
+    removeVolumes: true,
+  });
+}
+
+function removeTempPath(path) {
+  return rm(path, { force: true, recursive: true });
+}
+
 export function createEnvironmentState(initial = {}) {
   return {
     networkId: '',
@@ -49,43 +79,27 @@ export function serializeEnvironmentState(state) {
 
 export async function cleanupStartedResources(state) {
   const errors = [];
-  const containers = [...new Set(CONTAINER_SLOTS.map((slot) => state[`${slot}Container`]).filter(Boolean))];
+  const containers = uniqueSlotValues(state, 'Container');
 
-  const stopResults = await Promise.allSettled(
-    containers.map((container) =>
-      container.stop({
-        timeout: 10_000,
-        remove: true,
-        removeVolumes: true,
-      })
-    )
-  );
+  const stopResults = await Promise.allSettled(containers.map((container) => stopContainer(container)));
   collectRejected(stopResults, errors);
 
   if (state.network) {
-    try {
-      await state.network.stop();
-    } catch (error) {
-      errors.push(error);
-    }
+    await collectFailure(() => state.network.stop(), errors);
   }
 
-  const tempResults = await Promise.allSettled(
-    (state.tempPaths ?? []).map((path) => rm(path, { force: true, recursive: true }))
-  );
+  const tempResults = await Promise.allSettled((state.tempPaths ?? []).map((path) => removeTempPath(path)));
   collectRejected(tempResults, errors);
 
-  if (errors.length > 0) {
-    throw new AggregateError(errors, 'Failed to clean up Playwright test environment');
-  }
+  throwIfAnyFailed(errors, 'Failed to clean up Playwright test environment');
 }
 
 export async function cleanupSerializedResources(
   state,
-  { removeContainer, removeNetwork, removePath = (path) => rm(path, { force: true, recursive: true }) }
+  { removeContainer, removeNetwork, removePath = removeTempPath }
 ) {
   const errors = [];
-  const containerIds = [...new Set(CONTAINER_SLOTS.map((slot) => state[`${slot}Id`]).filter(Boolean))];
+  const containerIds = uniqueSlotValues(state, 'Id');
 
   const [containerResults, tempResults] = await Promise.all([
     Promise.allSettled(containerIds.map((id) => removeContainer(id))),
@@ -95,14 +109,8 @@ export async function cleanupSerializedResources(
   collectRejected(tempResults, errors);
 
   if (state.networkId) {
-    try {
-      await removeNetwork(state.networkId);
-    } catch (error) {
-      errors.push(error);
-    }
+    await collectFailure(() => removeNetwork(state.networkId), errors);
   }
 
-  if (errors.length > 0) {
-    throw new AggregateError(errors, 'Failed to clean up serialized Playwright test environment');
-  }
+  throwIfAnyFailed(errors, 'Failed to clean up serialized Playwright test environment');
 }

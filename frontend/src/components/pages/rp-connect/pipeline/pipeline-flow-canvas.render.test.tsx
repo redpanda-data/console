@@ -17,7 +17,7 @@ import { render, screen } from 'test-utils';
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
-const JOIN_TITLE_RE = /branches reconverge/i;
+const JOIN_NAME_RE = /branches reconverge/i;
 
 // React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
 class ResizeObserverMock {
@@ -93,7 +93,23 @@ const VALID_PIPELINE_YAML = `input:
 output:
   drop: {}`;
 
-describe('PipelineFlowCanvas — placeholder cards', () => {
+// A pipeline whose single switch fans out to `caseCount` cases.
+function tallSwitchYaml(caseCount: number): string {
+  const cases = Array.from(
+    { length: caseCount },
+    (_, i) => `      - check: this.x == ${i}\n        processors:\n          - mapping: 'root.y = ${i}'`
+  ).join('\n');
+  return `input:\n  generate:\n    mapping: 'root = {}'\npipeline:\n  processors:\n    - switch:\n${cases}\noutput:\n  drop: {}`;
+}
+
+// Fill pieces render into React Flow's viewport portal, tagged data-region-fill (the border is a
+// single SVG path, excluded here).
+function regionFillPieces(container: HTMLElement): HTMLElement[] {
+  const portal = container.querySelector('.react-flow__viewport-portal');
+  return portal ? Array.from(portal.querySelectorAll<HTMLElement>('[data-region-fill]')) : [];
+}
+
+describe('the PipelineFlowCanvas — placeholder cards', () => {
   it('renders a non-interactive "No output configured" note in read-only mode', async () => {
     // No edit callbacks → viewer mode; a disabled "Add output" would read as broken permissions.
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} />);
@@ -107,7 +123,7 @@ describe('PipelineFlowCanvas — placeholder cards', () => {
   });
 });
 
-describe('PipelineFlowCanvas — invalid YAML from the start', () => {
+describe('the PipelineFlowCanvas — invalid YAML from the start', () => {
   it('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
     // Unparseable from the first render: no last-good graph to fall back to, so the banner must
     // stay up (no close button).
@@ -117,7 +133,7 @@ describe('PipelineFlowCanvas — invalid YAML from the start', () => {
   });
 });
 
-describe('PipelineFlowCanvas — resilient parse', () => {
+describe('the PipelineFlowCanvas — resilient parse', () => {
   it('holds the last valid layout (flagged stale) when an edit leaves valid YAML that no longer describes a pipeline', async () => {
     const { rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
     // Baseline: a real pipeline renders (input generate → drop output), not the empty placeholders.
@@ -142,7 +158,7 @@ describe('PipelineFlowCanvas — resilient parse', () => {
   });
 });
 
-describe('PipelineFlowCanvas — control-flow render', () => {
+describe('the PipelineFlowCanvas — control-flow render', () => {
   it('renders the Dagre split → merge DAG without crashing', async () => {
     render(<PipelineFlowCanvas configYaml={CONTROL_FLOW_YAML} />);
 
@@ -161,7 +177,7 @@ describe('PipelineFlowCanvas — control-flow render', () => {
     expect(screen.getByText('on error')).toBeInTheDocument();
 
     // Branches reconverge at explicit join nodes (branch + switch + try/catch).
-    expect(screen.getAllByTitle(JOIN_TITLE_RE).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', { name: JOIN_NAME_RE }).length).toBeGreaterThan(0);
     // Edge labels (the case conditions) render via EdgeLabelRenderer, which Happy DOM doesn't lay out;
     // asserted in the parser unit test instead.
   });
@@ -170,21 +186,12 @@ describe('PipelineFlowCanvas — control-flow render', () => {
   // exceeds the browser's max paintable size and silently stops painting. Fix: stacked, size-capped
   // pieces so the background always renders.
   it('caps every scope-region fill piece so a tall area still renders its background', async () => {
-    const cases = Array.from(
-      { length: 60 },
-      (_, i) => `      - check: this.x == ${i}\n        processors:\n          - mapping: 'root.y = ${i}'`
-    ).join('\n');
-    const yaml = `input:\n  generate:\n    mapping: 'root = {}'\npipeline:\n  processors:\n    - switch:\n${cases}\noutput:\n  drop: {}`;
-
-    const { container } = render(<PipelineFlowCanvas configYaml={yaml} />);
+    const { container } = render(<PipelineFlowCanvas configYaml={tallSwitchYaml(60)} />);
     // The switch marker also surfaces as a faint scope-region label, so there are several matches.
     await screen.findAllByText('switch');
 
-    // Fill pieces render into React Flow's viewport portal, tagged data-region-fill (the border is a
-    // single SVG path, excluded here).
-    const portal = container.querySelector('.react-flow__viewport-portal');
-    const pieces = portal ? Array.from(portal.querySelectorAll('[data-region-fill]')) : [];
-    const heights = pieces.map((el) => Number.parseFloat((el as HTMLElement).style.height));
+    const pieces = regionFillPieces(container);
+    const heights = pieces.map((el) => Number.parseFloat(el.style.height));
 
     expect(pieces.length).toBeGreaterThan(0);
     // No piece exceeds the cap — this is what keeps the fill paintable.
@@ -213,7 +220,26 @@ function SetFlowState({
   return null;
 }
 
-describe('PipelineMiniMap — viewport outside the pan extent', () => {
+type AttrBox = { x: number; y: number; w: number; h: number };
+
+// An svg element's numeric geometry attributes (absent ones read as 0).
+function attrBox(el: Element): AttrBox {
+  return {
+    x: Number(el.getAttribute('x')),
+    y: Number(el.getAttribute('y')),
+    w: Number(el.getAttribute('width')),
+    h: Number(el.getAttribute('height')),
+  };
+}
+
+function expectBoxWithin(box: AttrBox, width: number, height: number) {
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.w).toBeLessThanOrEqual(width);
+  expect(box.y + box.h).toBeLessThanOrEqual(height);
+}
+
+describe('the PipelineMiniMap — viewport outside the pan extent', () => {
   it('keeps the viewport rect fully inside the svg when the transform sticks out of the extent', () => {
     // An insert re-runs Dagre and moves `translateExtent`, but RF doesn't re-clamp the current
     // transform — so the live viewport can sit partly outside the extent until the next pan.
@@ -239,14 +265,6 @@ describe('PipelineMiniMap — viewport outside the pan extent', () => {
     if (!view) {
       throw new Error('viewport rect not rendered');
     }
-    const x = Number(view.getAttribute('x'));
-    const y = Number(view.getAttribute('y'));
-    const w = Number(view.getAttribute('width'));
-    const h = Number(view.getAttribute('height'));
-
-    expect(x).toBeGreaterThanOrEqual(0);
-    expect(y).toBeGreaterThanOrEqual(0);
-    expect(x + w).toBeLessThanOrEqual(svgWidth);
-    expect(y + h).toBeLessThanOrEqual(svgHeight);
+    expectBoxWithin(attrBox(view), svgWidth, svgHeight);
   });
 });

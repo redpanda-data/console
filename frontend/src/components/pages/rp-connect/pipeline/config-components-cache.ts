@@ -28,17 +28,21 @@ export function parseConfigComponentsCached(configYaml: string): ReturnType<type
     return cached;
   }
   if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
-    // Oldest half (Map preserves insertion order) — clearing all would reparse everything next refresh.
-    let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
-    for (const key of configComponentsCache.keys()) {
-      configComponentsCache.delete(key);
-      surplus -= 1;
-      if (surplus <= 0) {
-        break;
-      }
-    }
+    evictOldestHalf();
   }
   const parsed = parseConfigComponents(configYaml);
   configComponentsCache.set(configYaml, parsed);
   return parsed;
+}
+
+/** Drops the oldest half (Map preserves insertion order) — clearing all would reparse everything next refresh. */
+function evictOldestHalf() {
+  let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
+  for (const key of configComponentsCache.keys()) {
+    configComponentsCache.delete(key);
+    surplus -= 1;
+    if (surplus <= 0) {
+      break;
+    }
+  }
 }

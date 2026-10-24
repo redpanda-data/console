@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ConnectError } from '@connectrpc/connect';
+import { ConnectError } from '@connectrpc/connect';
 import { useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
@@ -205,10 +205,13 @@ const LoginPage = () => {
   const setLoginError = useUIStateStore((s) => s.setLoginError);
 
   useEffect(() => {
-    authenticationApiClient.refreshAuthenticationMethods().then(({ methods: m, error }) => {
-      setMethods(m);
-      setMethodsError(error);
-    });
+    authenticationApiClient
+      .refreshAuthenticationMethods()
+      .then(({ methods: m, error }) => {
+        setMethods(m);
+        setMethodsError(error);
+      })
+      .catch((error: unknown) => setMethodsError(ConnectError.from(error)));
   }, []);
 
   return (
@@ -243,7 +246,7 @@ const LoginPage = () => {
       <div className="min-w-[400px] flex-[8]">
         <div className="mx-auto mt-[50px] w-full max-w-[350px] px-4">
           {/* The wordmark is currentColor; the mark keeps its brand red. */}
-          <RedpandaLogo className="h-8 w-auto text-foreground" />
+          <RedpandaLogo className="h-8 w-auto" color="var(--color-foreground)" />
           <div className="h-10" />
           <h1 className="text-heading-xl">Log in</h1>
           {searchParams.has('error_code') && (
@@ -278,12 +281,9 @@ const LoginPage = () => {
               }
               if (authComponent) {
                 if (index > 0) {
-                  // The label chip masks the rule with bg-background; this page sits on bg-page.
                   acc.push(
                     <div className="py-3" key={`divider-${method}`}>
-                      <FieldSeparator className="uppercase [&>[data-slot=field-separator-content]]:bg-page">
-                        OR
-                      </FieldSeparator>
+                      <FieldSeparator>OR</FieldSeparator>
                     </div>
                   );
                 }

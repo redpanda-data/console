@@ -24,7 +24,7 @@ const mockRoles = [
   },
 ];
 
-describe('UserRolesCard', () => {
+describe('the UserRolesCard', () => {
   test('should render empty state when no roles provided', () => {
     renderWithFileRoutes(<UserRolesCard roles={[]} />);
 

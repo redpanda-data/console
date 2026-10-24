@@ -13,47 +13,31 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { KeyRoundIcon, Trash2Icon } from 'lucide-react';
-import type { UpdateRoleMembershipResponse } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
-import { SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import { UserAclsCardNew } from './user-acls-card-new';
 import { ChangePasswordModal } from './user-edit-modals';
 import { UserRolesCardNew } from './user-roles-card-new';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRolesQuery } from '../../../../react-query/api/security';
-import { invalidateUsersCache, useDeleteUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
+import { invalidateUsersCache, useDeleteUserMutation } from '../../../../react-query/api/user';
 import { appGlobal } from '../../../../state/app-global';
-import { api, rolesApi } from '../../../../state/backend-api';
-import { AclRequestDefault } from '../../../../state/rest-interfaces';
+import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { setPageHeader } from '../../../../state/ui-state';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
+import { useRefreshUserAccessData, useScramUserDetails } from '../hooks/use-user-details';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
+import { removeUserFromAllRoles } from '../shared/role-membership';
 
 type UserDetailsPageProps = {
   userName: string;
 };
 
-const formatMechanism = (mechanism?: SASLMechanism): string | null => {
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) {
-    return 'SCRAM-SHA-256';
-  }
-  if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_512) {
-    return 'SCRAM-SHA-512';
-  }
-  return null;
-};
-
 export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const { data: usersData, isLoading: isUsersLoading } = useListUsersQuery();
-  const users = usersData?.users?.map((u) => u.name) ?? [];
-  const currentUser = usersData?.users?.find((u) => u.name === userName);
-  const mechanismLabel = formatMechanism(currentUser?.mechanism);
-
+  const { isLoading: isUsersLoading, isServiceAccount, mechanismLabel } = useScramUserDetails(userName);
   const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
 
   useLayoutEffect(() => {
@@ -68,27 +52,11 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
     );
   }, [userName]);
 
-  useEffect(() => {
-    const refreshData = async () => {
-      if (api.userData !== null && api.userData !== undefined && !api.userData.canListAcls) {
-        return;
-      }
-      await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), rolesApi.refreshRoles()]);
-      await rolesApi.refreshRoleMembers();
-    };
-
-    // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-    refreshData().catch(console.error);
-    appGlobal.onRefresh = () =>
-      // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-      refreshData().catch(console.error);
-  }, [userName]);
+  useRefreshUserAccessData();
 
   if (isUsersLoading) {
     return DefaultSkeleton;
   }
-
-  const isServiceAccount = users.includes(userName);
 
   const onConfirmDelete = async () => {
     try {
@@ -96,14 +64,7 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
     } catch {
       return;
     }
-
-    const promises: Promise<UpdateRoleMembershipResponse>[] = [];
-    for (const [roleName, members] of rolesApi.roleMembers) {
-      if (members.any((m) => m.name === userName)) {
-        promises.push(rolesApi.updateRoleMembership(roleName, [], [{ name: userName, principalType: 'User' }]));
-      }
-    }
-    await Promise.allSettled(promises);
+    await removeUserFromAllRoles(userName);
     await Promise.allSettled([invalidateUsersCache(), rolesApi.refreshRoleMembers()]);
     appGlobal.historyPush('/security/users/');
   };

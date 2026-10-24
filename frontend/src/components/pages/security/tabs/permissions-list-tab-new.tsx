@@ -9,56 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { Link } from '@tanstack/react-router';
+import { Link as TanStackLink } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from 'components/redpanda-ui/components/empty';
+import { Empty, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import {
   ListLayout,
   ListLayoutContent,
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  KeyRoundIcon,
-  ShieldIcon,
-  Trash2Icon,
-  UserIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, Trash2Icon, UserIcon, UsersIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
-import {
-  ACL_Operation,
-  ACL_PermissionType,
-  ACL_ResourcePatternType,
-  ACL_ResourceType,
-  DeleteACLsRequestSchema,
-} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import type { FC } from 'react';
-import { useLayoutEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { pluralizeWithNumber } from 'utils/string';
 
 import ErrorResult from '../../../../components/misc/error-result';
-import { useDeleteAclMutation } from '../../../../react-query/api/acl';
-import { useDeleteUserMutation, useInvalidateUsersCache } from '../../../../react-query/api/user';
-import { api } from '../../../../state/backend-api';
-import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { setPageHeader } from '../../../../state/ui-state';
-import { Code as CodeEl } from '../../../../utils/tsx-utils';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -78,31 +47,26 @@ import {
 } from '../../../redpanda-ui/components/dropdown-menu';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { type PrincipalPermissionGroup, usePrincipalPermissions } from '../hooks/use-principal-permissions';
+import { Link } from '../../../redpanda-ui/components/typography';
+import { useExpandedRows } from '../hooks/use-expanded-rows';
+import { usePendingAction } from '../hooks/use-pending-action';
+import { usePrincipalDeletion } from '../hooks/use-principal-deletion';
+import {
+  type FlatAclEntry,
+  type PrincipalPermissionGroup,
+  usePrincipalPermissions,
+} from '../hooks/use-principal-permissions';
+import { useSecurityPageHeader } from '../hooks/use-security-page-header';
+import { AclPermissionRow, RoleAclGroupRow } from '../shared/acl-permission-rows';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { DeleteUserConfirmModal } from '../shared/delete-user-confirm-modal';
 import { DescriptionWithHelp } from '../shared/description-with-help';
+import { SecurityEmptyState } from '../shared/security-empty-state';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
-const AclTableRow: FC<{
-  resourceType: string;
-  resourceName: string;
-  operation: string;
-  permissionType: 'Allow' | 'Deny';
-  host: string;
-  editHref?: string;
-}> = ({ resourceType, resourceName, operation, permissionType, host, editHref }) => (
-  <TableRow>
-    <TableCell>
-      <Badge tone="default" variant="outline">
-        {resourceType}
-      </Badge>
-    </TableCell>
-    <TableCell className="font-mono">{resourceName}</TableCell>
-    <TableCell>{operation}</TableCell>
-    <TableCell className={permissionType === 'Allow' ? 'text-success' : 'text-destructive'}>{permissionType}</TableCell>
-    <TableCell className="text-muted-foreground">{host}</TableCell>
+const AclTableRow = ({ editHref, ...acl }: FlatAclEntry & { editHref?: string }) => (
+  <AclPermissionRow {...acl}>
     <TableCell align="right">
       {editHref && (
         <a className="text-muted-foreground hover:text-foreground" href={editHref}>
@@ -110,32 +74,36 @@ const AclTableRow: FC<{
         </a>
       )}
     </TableCell>
-  </TableRow>
+  </AclPermissionRow>
 );
+
+const getAclSummaryText = ({ directAclCount, inheritedAclCount }: PrincipalPermissionGroup) => {
+  if (directAclCount > 0 && inheritedAclCount > 0) {
+    return `${pluralizeWithNumber(directAclCount, 'direct ACL')}, ${pluralizeWithNumber(inheritedAclCount, 'ACL')} via roles`;
+  }
+  if (inheritedAclCount > 0) {
+    return `${pluralizeWithNumber(inheritedAclCount, 'ACL')} via roles`;
+  }
+  return directAclCount > 0 ? pluralizeWithNumber(directAclCount, 'direct ACL') : 'No ACLs';
+};
 
 type PrincipalRowProps = {
   group: PrincipalPermissionGroup;
   isExpanded: boolean;
   onToggle: () => void;
-  onDelete: (deleteUser: boolean, deleteAcls: boolean) => void;
+  onDelete: (deleteUser: boolean, deleteAcls: boolean) => Promise<void>;
   canDeleteUser: boolean;
 };
 
 const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDelete, canDeleteUser }) => {
   const [pendingDelete, setPendingDelete] = useState<'user-and-acls' | 'user-only' | 'acls-only' | null>(null);
+  const aclsDelete = usePendingAction();
+  const closeAclsDialog = () => {
+    setPendingDelete(null);
+    aclsDelete.clearError();
+  };
 
-  const summaryText = (() => {
-    if (group.directAclCount > 0 && group.inheritedAclCount > 0) {
-      return `${pluralizeWithNumber(group.directAclCount, 'direct ACL')}, ${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} via roles`;
-    }
-    if (group.inheritedAclCount > 0) {
-      return `${pluralizeWithNumber(group.inheritedAclCount, 'ACL')} via roles`;
-    }
-    if (group.directAclCount > 0) {
-      return pluralizeWithNumber(group.directAclCount, 'direct ACL');
-    }
-    return 'No ACLs';
-  })();
+  const summaryText = getAclSummaryText(group);
 
   const hasAcls = group.directAclCount + group.inheritedAclCount > 0;
   const PrincipalIcon = group.principalType === 'Group' ? UsersIcon : UserIcon;
@@ -145,10 +113,10 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
       <DeleteUserConfirmModal
         onConfirm={async () => {
           if (pendingDelete === 'user-and-acls') {
-            onDelete(true, true);
+            await onDelete(true, true);
           }
           if (pendingDelete === 'user-only') {
-            onDelete(true, false);
+            await onDelete(true, false);
           }
         }}
         onOpenChange={(open) => {
@@ -162,7 +130,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
-            setPendingDelete(null);
+            closeAclsDialog();
           }
         }}
         open={pendingDelete === 'acls-only'}
@@ -174,15 +142,23 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
           <DialogBody>
             All ACLs assigned directly to <strong>{group.principalName}</strong> will be permanently deleted. This
             action cannot be undone.
+            {aclsDelete.errorMessage !== null && (
+              <p className="text-body text-destructive" role="alert">
+                Could not complete the deletion: {aclsDelete.errorMessage}
+              </p>
+            )}
           </DialogBody>
           <DialogFooter>
-            <Button onClick={() => setPendingDelete(null)} variant="outline">
+            <Button onClick={closeAclsDialog} variant="outline">
               Cancel
             </Button>
             <Button
+              disabled={aclsDelete.isPending}
               onClick={() => {
-                onDelete(false, true);
-                setPendingDelete(null);
+                aclsDelete.run(async () => {
+                  await onDelete(false, true);
+                  setPendingDelete(null);
+                });
               }}
               variant="destructive"
             >
@@ -202,17 +178,14 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                 role="button"
                 tabIndex={0}
               >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-
-                <PrincipalIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="flex shrink-0 items-center gap-3 text-muted-foreground">
+                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  <PrincipalIcon className="h-4 w-4" />
+                </span>
 
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-mono font-semibold text-body">{group.principalName}</span>
+                    <span className="truncate font-mono text-body font-semibold">{group.principalName}</span>
                     {group.principalType === 'Group' && (
                       <Badge tone="default" variant="subtle">
                         Group
@@ -232,8 +205,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                 >
                   {group.principalType === 'User' && (
                     <Link
-                      className="inline-flex items-center justify-center p-1 text-muted-foreground hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`View user ${group.principalName}`}
+                      as={TanStackLink}
+                      onClick={(e: { stopPropagation: () => void }) => e.stopPropagation()}
                       params={{ userName: group.principalName }}
                       to="/security/users/$userName/details"
                     >
@@ -322,14 +296,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                   </TableBody>
                   {group.roleAclGroups.map((rg) => (
                     <TableBody key={rg.roleName}>
-                      <TableRow>
-                        <TableCell className="bg-muted/40 py-1.5 text-body-sm text-muted-foreground" colSpan={6}>
-                          <div className="flex items-center gap-1.5">
-                            <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
-                            <span className="font-medium uppercase tracking-wide">Via Role: {rg.roleName}</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <RoleAclGroupRow colSpan={6} roleName={rg.roleName} />
                       {rg.acls.map((acl, i) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: no stable key
                         <AclTableRow key={i} {...acl} />
@@ -339,7 +306,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                 </Table>
               </div>
             ) : (
-              <Empty className="rounded-none border-x-0 border-b-0 border-dashed py-6">
+              <Empty>
                 <EmptyHeader>
                   <EmptyTitle>No ACLs assigned</EmptyTitle>
                 </EmptyHeader>
@@ -352,104 +319,104 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
   );
 };
 
-export const PermissionsListTabNew: FC = () => {
-  useLayoutEffect(() => {
-    setPageHeader('Security', [
-      { title: 'Security', linkTo: '/security/users' },
-      { title: 'Permissions', linkTo: '/security/permissions' },
-    ]);
-  }, []);
+const includesIgnoringCase = (value: string, lowerCaseQuery: string) => value.toLowerCase().includes(lowerCaseQuery);
+
+const principalMatchesSearch = (group: PrincipalPermissionGroup, query: string): boolean => {
+  if (!query) {
+    return true;
+  }
+  const q = query.toLowerCase();
+  return (
+    includesIgnoringCase(group.principalName, q) ||
+    includesIgnoringCase(group.principal, q) ||
+    group.directAcls.some((a) => includesIgnoringCase(a.resourceName, q)) ||
+    group.roleAclGroups.some(
+      (rg) => includesIgnoringCase(rg.roleName, q) || rg.acls.some((a) => includesIgnoringCase(a.resourceName, q))
+    )
+  );
+};
+
+const PrincipalRowsSkeleton = () => (
+  <div className="rounded-md border">
+    {[0, 1, 2].map((i) => (
+      <div className="flex items-center gap-3 border-b px-3 py-3 last:border-b-0" key={i}>
+        <Skeleton className="h-4 w-4 shrink-0" variant="rounded" />
+        <Skeleton variant="text" width="md" />
+        <Skeleton variant="text" width="sm" />
+      </div>
+    ))}
+  </div>
+);
+
+const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCreateAcl: () => void }) => {
+  if (searchQuery) {
+    return <div className="py-8 text-center text-body text-muted-foreground">No principals match your search.</div>;
+  }
+  return (
+    <div className="rounded-md border">
+      <SecurityEmptyState
+        action={<Button onClick={onCreateAcl}>Create ACL</Button>}
+        description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
+        docsHref={docsLinks.selfManaged.acl}
+        icon={<KeyRoundIcon />}
+        title="No permissions yet"
+      />
+    </div>
+  );
+};
+
+type PrincipalListProps = {
+  groups: PrincipalPermissionGroup[];
+  isLoading: boolean;
+  searchQuery: string;
+  onCreateAcl: () => void;
+  rows: ReturnType<typeof useExpandedRows>;
+};
+
+const PrincipalList = ({ groups, isLoading, searchQuery, onCreateAcl, rows }: PrincipalListProps) => {
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
-  const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [createAclOpen, setCreateAclOpen] = useState(false);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
-  const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
-  const { mutateAsync: deleteUserMutation } = useDeleteUserMutation();
-  const invalidateUsersCache = useInvalidateUsersCache();
+  const deletePrincipal = usePrincipalDeletion((err) => setAclFailed({ err }));
 
-  const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
-    usePrincipalPermissions();
-
-  const toggleExpanded = (principal: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(principal)) {
-        next.delete(principal);
-      } else {
-        next.add(principal);
-      }
-      return next;
-    });
-  };
-
-  const deleteACLsForPrincipal = async (principalName: string, principalType: 'User' | 'Group' = 'User') => {
-    const deleteRequest = create(DeleteACLsRequestSchema, {
-      filter: {
-        principal: `${principalType}:${principalName}`,
-        resourceType: ACL_ResourceType.ANY,
-        resourceName: undefined,
-        host: undefined,
-        operation: ACL_Operation.ANY,
-        permissionType: ACL_PermissionType.ANY,
-        resourcePatternType: ACL_ResourcePatternType.ANY,
-      },
-    });
-    await deleteACLMutation(deleteRequest);
-    toast.success(
-      <span>
-        Deleted ACLs for <CodeEl>{principalName}</CodeEl>
-      </span>
+  const renderContent = () => {
+    if (isLoading) {
+      return <PrincipalRowsSkeleton />;
+    }
+    if (groups.length === 0) {
+      return <NoPrincipals onCreateAcl={onCreateAcl} searchQuery={searchQuery} />;
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        {groups.map((group) => (
+          <PrincipalRow
+            canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
+            group={group}
+            isExpanded={rows.isExpanded(group.principal)}
+            key={group.principal}
+            onDelete={(deleteUser, deleteAcls) => deletePrincipal(group, deleteUser, deleteAcls)}
+            onToggle={() => rows.toggle(group.principal)}
+          />
+        ))}
+      </div>
     );
   };
 
-  const onDelete = async (group: PrincipalPermissionGroup, deleteUser: boolean, deleteAcls: boolean) => {
-    if (deleteAcls) {
-      try {
-        await deleteACLsForPrincipal(group.principalName, group.principalType);
-      } catch (err: unknown) {
-        setAclFailed({ err });
-      }
-    }
-    if (deleteUser) {
-      try {
-        await deleteUserMutation({ name: group.principalName });
-        toast.success(
-          <span>
-            Deleted user <CodeEl>{group.principalName}</CodeEl>
-          </span>
-        );
-      } catch (err: unknown) {
-        setAclFailed({ err });
-      }
-    }
-    await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsersCache()]);
-  };
+  return (
+    <>
+      {aclFailed !== null && <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />}
+      <ListLayoutContent>{renderContent()}</ListLayoutContent>
+    </>
+  );
+};
 
-  const matchesSearch = (group: PrincipalPermissionGroup, query: string): boolean => {
-    if (!query) {
-      return true;
-    }
-    const q = query.toLowerCase();
-    if (group.principalName.toLowerCase().includes(q)) {
-      return true;
-    }
-    if (group.principal.toLowerCase().includes(q)) {
-      return true;
-    }
-    if (group.directAcls.some((a) => a.resourceName.toLowerCase().includes(q))) {
-      return true;
-    }
-    if (group.roleAclGroups.some((rg) => rg.roleName.toLowerCase().includes(q))) {
-      return true;
-    }
-    if (group.roleAclGroups.some((rg) => rg.acls.some((a) => a.resourceName.toLowerCase().includes(q)))) {
-      return true;
-    }
-    return false;
-  };
-
-  const filteredGroups = principalGroups.filter((g) => matchesSearch(g, searchQuery));
+export const PermissionsListTabNew: FC = () => {
+  useSecurityPageHeader('permissions');
+  const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
+  const [createAclOpen, setCreateAclOpen] = useState(false);
+  // Held above the error returns so a failed refetch does not collapse expanded principals.
+  const rows = useExpandedRows();
+  const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
+    usePrincipalPermissions();
 
   if (isUsersError && usersError) {
     return (
@@ -463,71 +430,6 @@ export const PermissionsListTabNew: FC = () => {
   if (isAclsError && aclsError) {
     return <ErrorResult error={aclsError} />;
   }
-
-  const renderContent = () => {
-    if (isAclsLoading) {
-      return (
-        <div className="rounded-md border">
-          {[0, 1, 2].map((i) => (
-            <div className="flex items-center gap-3 border-b px-3 py-3 last:border-b-0" key={i}>
-              <Skeleton className="h-4 w-4 shrink-0" variant="rounded" />
-              <Skeleton variant="text" width="md" />
-              <Skeleton variant="text" width="sm" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-    if (filteredGroups.length === 0) {
-      if (searchQuery) {
-        return <div className="py-8 text-center text-body text-muted-foreground">No principals match your search.</div>;
-      }
-      return (
-        <div className="rounded-md border">
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <KeyRoundIcon />
-              </EmptyMedia>
-              <EmptyTitle>No permissions yet</EmptyTitle>
-              <EmptyDescription>
-                A unified view of all principal permissions across your cluster. Create an ACL to get started.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <div className="flex items-center gap-3">
-                <Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>
-                <Button
-                  render={
-                    <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
-                      Read the docs →
-                    </a>
-                  }
-                  variant="link"
-                />
-              </div>
-            </EmptyContent>
-          </Empty>
-        </div>
-      );
-    }
-    return (
-      <div className="flex flex-col gap-3">
-        {filteredGroups.map((group) => (
-          <PrincipalRow
-            canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
-            group={group}
-            isExpanded={expanded.has(group.principal)}
-            key={group.principal}
-            onDelete={(deleteUser, deleteAcls) => {
-              onDelete(group, deleteUser, deleteAcls).catch(() => {});
-            }}
-            onToggle={() => toggleExpanded(group.principal)}
-          />
-        ))}
-      </div>
-    );
-  };
 
   return (
     <>
@@ -553,9 +455,13 @@ export const PermissionsListTabNew: FC = () => {
           />
         </ListLayoutFilters>
 
-        {aclFailed !== null && <AlertDeleteFailed aclFailed={aclFailed} onClose={() => setAclFailed(null)} />}
-
-        <ListLayoutContent>{renderContent()}</ListLayoutContent>
+        <PrincipalList
+          groups={principalGroups.filter((g) => principalMatchesSearch(g, searchQuery))}
+          isLoading={isAclsLoading}
+          onCreateAcl={() => setCreateAclOpen(true)}
+          rows={rows}
+          searchQuery={searchQuery}
+        />
       </ListLayout>
 
       <AddAclDialog onOpenChange={setCreateAclOpen} open={createAclOpen} />

@@ -16,7 +16,16 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  Fragment,
+  type RefObject,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -38,7 +47,7 @@ import {
 import type { TopicMessage } from '../../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
-import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
+import { DefaultSkeleton, quickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
@@ -159,7 +168,7 @@ const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
 ];
 
 const OverviewTab = (p: { transform: TransformMetadata }) => {
-  let overallStatus = <></>;
+  let overallStatus: React.ReactNode;
   if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
     overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
   } else {
@@ -173,7 +182,7 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
   return (
     <>
       <div className="my-6">
-        {QuickTable(
+        {quickTable(
           [
             { key: 'Status', value: overallStatus },
             { key: 'Input topic', value: p.transform.inputTopicName },
@@ -212,31 +221,39 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
   );
 };
 
-const LogsTab = (p: { transform: TransformMetadata }) => {
-  const topicName = '_redpanda.transform_logs';
-  const topic = api.topics?.first((x) => x.topicName === topicName);
+const TRANSFORM_LOGS_TOPIC = '_redpanda.transform_logs';
 
-  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
-    messages: [],
-    isComplete: false,
+type TransformLogState = { messages: TopicMessage[]; isComplete: boolean };
+
+const EMPTY_TRANSFORM_LOGS: TransformLogState = { messages: [], isComplete: false };
+
+// Stops the running log search and starts a fresh one for `transformName`.
+function restartTransformLogSearch(
+  searchRef: RefObject<MessageSearch | null>,
+  transformName: string,
+  setLogState: Dispatch<SetStateAction<TransformLogState>>
+) {
+  searchRef.current?.stopSearch();
+  const search = createMessageSearch();
+  searchRef.current = search;
+  executeMessageSearch(search, TRANSFORM_LOGS_TOPIC, transformName).finally(() => {
+    setLogState({ messages: [...search.messages], isComplete: true });
   });
-  const { messages, isComplete } = logState;
-  const [logsQuickSearch, setLogsQuickSearch] = useState('');
+}
+
+// Streams the transform's log messages, restarting for another transform; `refresh` restarts the search.
+const useTransformLogs = (transformName: string) => {
+  const [logState, setLogState] = useState<TransformLogState>(EMPTY_TRANSFORM_LOGS);
   const searchRef = useRef<MessageSearch | null>(null);
-  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
-    searchRef.current?.stopSearch();
-    const search = createMessageSearch();
-    searchRef.current = search;
-    queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
-    executeMessageSearch(search, topicName, p.transform.name).finally(() => {
-      setLogState({ messages: [...search.messages], isComplete: true });
-    });
+    queueMicrotask(() => setLogState(EMPTY_TRANSFORM_LOGS));
+    restartTransformLogSearch(searchRef, transformName, setLogState);
     return () => {
-      search.stopSearch();
+      // `refresh` may have replaced the search this run started, so stop whichever is current.
+      searchRef.current?.stopSearch();
     };
-  }, [refreshCount]);
+  }, [transformName]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -280,6 +297,21 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
   };
+
+  const refresh = () => {
+    setLogState(EMPTY_TRANSFORM_LOGS);
+    restartTransformLogSearch(searchRef, transformName, setLogState);
+  };
+  const loadLargeMessageOf = (msg: TopicMessage) =>
+    loadLargeMessage(searchRef.current?.searchRequest?.topicName ?? '', msg.partitionID, msg.offset);
+
+  return { ...logState, refresh, loadLargeMessageOf };
+};
+
+const LogsTab = (p: { transform: TransformMetadata }) => {
+  const topic = api.topics?.first((x) => x.topicName === TRANSFORM_LOGS_TOPIC);
+  const { messages, isComplete, refresh, loadLargeMessageOf } = useTransformLogs(p.transform.name);
+  const [logsQuickSearch, setLogsQuickSearch] = useState('');
 
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
@@ -354,7 +386,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
             placeholder="Search..."
             value={logsQuickSearch}
           />
-          <Button className="ml-auto" onClick={() => setRefreshCount((c) => c + 1)} variant="outline">
+          <Button className="ml-auto" onClick={refresh} variant="outline">
             Refresh logs
           </Button>
         </div>
@@ -370,16 +402,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
           // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
           //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
-            <ExpandedMessage
-              loadLargeMessage={() =>
-                loadLargeMessage(
-                  searchRef.current?.searchRequest?.topicName ?? '',
-                  original.partitionID,
-                  original.offset
-                )
-              }
-              msg={original}
-            />
+            <ExpandedMessage loadLargeMessage={() => loadLargeMessageOf(original)} msg={original} />
           )}
           tableOptions={LOGS_TABLE_OPTIONS}
         />

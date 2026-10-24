@@ -9,60 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
+import { clsx } from 'clsx';
 import type { CSSProperties } from 'react';
 
 import { numberToThousandsString } from '../../utils/tsx-utils';
 
 export function ShortNum(p: { value: number; tooltip?: boolean; className?: string; style?: CSSProperties }) {
-  let { value, tooltip, className } = p;
-  const style = p.style;
+  const { value, tooltip, className, style } = p;
   if (value === null) {
     return '';
   }
-
-  if (tooltip === null) {
-    tooltip = false;
-  }
-  const originalValue = value;
-
-  const million = 1000 * 1000;
-
-  let decimals: number;
-  let unit = '';
-  if (value >= million) {
-    // 1000000
-    unit = 'M';
-    value /= million;
-    decimals = 2;
-  } else if (value >= 1000) {
-    // 1000
-    unit = 'k';
-    value /= 1000;
-    decimals = 1;
-  } else {
-    // 0-999
-    decimals = 1;
-  }
-
-  // If, after down-scaling the number, it is still >=1k we need to add thousands separators
-  // const needsThoudandsSeparators = value >= 1000;
-
-  // Convert to fixed decimal string for rounding,
-  // then drop trailing zeroes by converting to number and back to string
-  const valString = Number(value.toFixed(decimals)).toLocaleString();
-  const str = unit ? valString + unit : valString;
+  const str = formatShortNumber(value);
 
   if (tooltip) {
-    if (className) {
-      className += ' tooltip';
-    } else {
-      className = 'tooltip';
-    }
-
     return (
-      <div className={className} style={style}>
+      <div className={clsx(className, 'tooltip')} style={style}>
         {str}
-        <span className="tooltiptext">{numberToThousandsString(originalValue)}</span>
+        <span className="tooltiptext">{numberToThousandsString(value)}</span>
       </div>
     );
   }
@@ -71,4 +34,13 @@ export function ShortNum(p: { value: number; tooltip?: boolean; className?: stri
       {str}
     </span>
   );
+}
+
+function formatShortNumber(value: number): string {
+  const million = 1_000_000;
+  const unit = value >= million ? 'M' : value >= 1000 ? 'k' : '';
+  const scaled = unit === 'M' ? value / million : unit === 'k' ? value / 1000 : value;
+  const decimals = unit === 'M' ? 2 : 1;
+  // Round first, then drop trailing zeroes and apply locale separators.
+  return Number(scaled.toFixed(decimals)).toLocaleString() + unit;
 }

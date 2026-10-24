@@ -12,50 +12,69 @@
 import { WarningIcon } from 'components/icons';
 import type { ReactNode } from 'react';
 
-import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { highlightControlChars } from './highlight-control-chars';
+import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
+import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
-import { uiState } from '../../../../../state/ui-state';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
-import { getControlCharacterName } from '../helpers';
-import { getPreviewTags } from '../preview-settings';
 
-function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
-  const elements: ReactNode[] = [];
-  let sequentialChars = '';
-  let numChars = 0;
-
-  for (const char of str) {
-    const code = char.charCodeAt(0);
-    if (code < 32) {
-      if (sequentialChars.length > 0) {
-        elements.push(sequentialChars);
-        sequentialChars = '';
-      }
-      elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>);
-      if (code === 10) {
-        elements.push(<br />);
-      }
-    } else {
-      sequentialChars += char;
-    }
-
-    if (maxLength !== undefined) {
-      numChars += 1;
-      if (numChars >= maxLength) {
-        break;
-      }
-    }
-  }
-
-  if (sequentialChars.length > 0) {
-    elements.push(sequentialChars);
-  }
-
-  return elements;
+function isPrimitivePayload(payload: unknown): boolean {
+  return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+// Only 'object' is left after binary, control-character text, and primitives.
+// Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
+function isObjectKey(key: Payload): boolean {
+  return !(key.encoding === 'binary' || key.encoding === 'utf8WithControlChars' || isPrimitivePayload(key.payload));
+}
+
+function getKeyPreviewText(msg: TopicMessage): ReactNode {
+  const key = msg.key;
+  if (key.encoding === 'binary') {
+    return cullText(msg.keyBinHexPreview as string, 44);
+  }
+  if (key.encoding === 'utf8WithControlChars') {
+    return highlightControlChars(key.payload as string);
+  }
+  if (isPrimitivePayload(key.payload)) {
+    return cullText(key.payload as string, 44);
+  }
+  // Normal display (json, no filters). Reuse the cached JSON string.
+  return cullText(msg.keyJson, 44);
+}
+
+function renderKeyPreview(
+  msg: TopicMessage,
+  previewFields: () => PreviewTagV2[],
+  previewDisplayMode: PreviewDisplayMode | undefined
+): ReactNode {
+  const key = msg.key;
+  if (key.isPayloadNull) {
+    return <EmptyBadge mode="null" />;
+  }
+  if (key.payload === null || (typeof key.payload === 'string' && key.payload.length === 0)) {
+    return <EmptyBadge mode="empty" />;
+  }
+
+  // Preview tags replace the whole cell for an object key.
+  const tagsPreview = isObjectKey(key) ? renderPreviewTags(key.payload, previewFields, previewDisplayMode) : null;
+  if (tagsPreview) {
+    return tagsPreview;
+  }
+
+  return (
+    <div className="flex flex-col">
+      <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
+        <code style={{ fontSize: '95%' }}>{getKeyPreviewText(msg)}</code>
+      </span>
+      <span className="text-muted-foreground">
+        {key.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(key.size)}
+      </span>
+    </div>
+  );
+}
+
 export const MessageKeyPreview = ({
   msg,
   previewFields,
@@ -63,7 +82,7 @@ export const MessageKeyPreview = ({
 }: {
   msg: TopicMessage;
   previewFields: () => PreviewTagV2[];
-  previewDisplayMode?: 'single' | 'wrap' | 'rows';
+  previewDisplayMode?: PreviewDisplayMode;
 }) => {
   const key = msg.key;
 
@@ -77,53 +96,8 @@ export const MessageKeyPreview = ({
     );
   }
 
-  const isPrimitive =
-    typeof key.payload === 'string' || typeof key.payload === 'number' || typeof key.payload === 'boolean';
   try {
-    if (key.isPayloadNull) {
-      return <EmptyBadge mode="null" />;
-    }
-    if (key.payload === null || (typeof key.payload === 'string' && key.payload.length === 0)) {
-      return <EmptyBadge mode="empty" />;
-    }
-
-    let text: ReactNode = <></>;
-
-    if (key.encoding === 'binary') {
-      text = cullText(msg.keyBinHexPreview as string, 44);
-    } else if (key.encoding === 'utf8WithControlChars') {
-      text = highlightControlChars(key.payload as string);
-    } else if (isPrimitive) {
-      text = cullText(key.payload as string, 44);
-    } else {
-      // Only thing left is 'object'
-      // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-      const previewTags = previewFields().filter((t) => t.searchInMessageValue);
-      if (previewTags.length > 0) {
-        const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
-        const tags = getPreviewTags(key.payload as Record<string, unknown>, previewTags, caseSensitive);
-        const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
-        text = (
-          <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-            <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
-          </span>
-        );
-        return text;
-      }
-      // Normal display (json, no filters). Reuse the cached JSON string.
-      text = cullText(msg.keyJson, 44);
-    }
-
-    return (
-      <div className="flex flex-col">
-        <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
-          <code style={{ fontSize: '95%' }}>{text}</code>
-        </span>
-        <span className="text-muted-foreground">
-          {key.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(key.size)}
-        </span>
-      </div>
-    );
+    return renderKeyPreview(msg, previewFields, previewDisplayMode);
   } catch (e) {
     return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
   }

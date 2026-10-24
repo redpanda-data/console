@@ -29,7 +29,7 @@ import type {
   GetAclOverviewResponse,
 } from '../../../../state/rest-interfaces';
 
-describe('AclList', () => {
+describe('the AclList', () => {
   test('renders an empty table when no data is present', () => {
     const store = {
       isAuthorizerEnabled: true,

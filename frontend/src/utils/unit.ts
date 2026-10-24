@@ -90,14 +90,7 @@ function formatNumber(value: number): { formatted: string; scale: string } {
     return { formatted: `${sign}${(abs / 1000).toFixed(1)}`, scale: 'K' };
   }
 
-  // Small numbers
-  if (abs < 10) {
-    return { formatted: `${sign}${abs.toFixed(2)}`, scale: '' };
-  }
-  if (abs < 100) {
-    return { formatted: `${sign}${abs.toFixed(1)}`, scale: '' };
-  }
-  return { formatted: `${sign}${abs.toFixed(0)}`, scale: '' };
+  return { formatted: `${sign}${abs.toFixed(abs < 10 ? 2 : abs < 100 ? 1 : 0)}`, scale: '' };
 }
 
 /**

@@ -171,6 +171,19 @@ type ChangeRolesModalProps = {
   setIsOpen: (isOpen: boolean) => void;
 };
 
+const getRoleChanges = (originalRoles: string[], selectedRoles: string[]) => ({
+  addedRoles: selectedRoles.except(originalRoles),
+  removedRoles: originalRoles.except(selectedRoles),
+});
+
+// Removals first, then additions.
+const toMembershipUpdates = (userName: string, addedRoles: string[], removedRoles: string[]) => [
+  ...removedRoles.map((r) =>
+    create(UpdateRoleMembershipRequestSchema, { roleName: r, remove: [{ principal: userName }] })
+  ),
+  ...addedRoles.map((r) => create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: userName }] })),
+];
+
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
@@ -189,19 +202,12 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
       return;
     }
 
-    const formattedSelectedRoles = selectedRoles ?? [];
-    const addedRoles = formattedSelectedRoles.except(originalRoles);
-    const removedRoles = originalRoles.except(formattedSelectedRoles);
-    const promises: Promise<UpdateRoleMembershipResponse>[] = [
-      ...removedRoles.map((r) =>
-        updateRoleMembership(
-          create(UpdateRoleMembershipRequestSchema, { roleName: r, remove: [{ principal: userName }] })
-        )
-      ),
-      ...addedRoles.map((r) =>
-        updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: userName }] }))
-      ),
-    ];
+    const { addedRoles, removedRoles } = getRoleChanges(originalRoles, selectedRoles ?? []);
+    const promises: Promise<UpdateRoleMembershipResponse>[] = toMembershipUpdates(
+      userName,
+      addedRoles,
+      removedRoles
+    ).map((request) => updateRoleMembership(request));
 
     try {
       await Promise.allSettled(promises);

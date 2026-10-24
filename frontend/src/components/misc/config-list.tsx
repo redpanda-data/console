@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import clsx from 'clsx';
 import { EyeOffIcon, InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DataTable, type DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
@@ -65,7 +66,7 @@ export function ConfigList({
             <TooltipTrigger
               render={
                 <div>
-                  <EyeOffIcon className="text-brand" />
+                  <EyeOffIcon color="var(--color-brand)" />
                 </div>
               }
             />
@@ -85,7 +86,9 @@ export function ConfigList({
       header: 'Value',
       accessorKey: 'value',
       cell: ({ row: { original: record } }) => (
-        <div className={`break-all ${styles.value}`}>{formatConfigValue(record.name, record.value, valueDisplay)}</div>
+        <div className={clsx('break-all', styles.value)}>
+          {formatConfigValue(record.name, record.value, valueDisplay)}
+        </div>
       ),
     },
   ];

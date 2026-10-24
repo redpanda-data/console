@@ -16,6 +16,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 
+import { ElementTooltip } from './element-tooltip';
+
 type SearchInputProps = {
   value: string;
   onChange: (value: string) => void;
@@ -117,18 +119,19 @@ export function SearchInput({
       </InputStart>
       {/* Always mounted: InputEnd never resets the padding it measured. Click-through while empty. */}
       <InputEnd className={cn(!isEmpty && 'pointer-events-auto')}>
-        <Button
-          aria-label="Clear search"
-          className={cn(isEmpty && 'invisible')}
-          data-testid="search-field-reset-icon"
-          disabled={isEmpty}
-          onClick={clear}
-          size="icon-xs"
-          title="Clear (Esc)"
-          variant="ghost"
-        >
-          <CloseIcon />
-        </Button>
+        <ElementTooltip content="Clear (Esc)">
+          <Button
+            aria-label="Clear search"
+            className={cn(isEmpty && 'invisible')}
+            data-testid="search-field-reset-icon"
+            disabled={isEmpty}
+            onClick={clear}
+            size="icon-xs"
+            variant="ghost"
+          >
+            <CloseIcon />
+          </Button>
+        </ElementTooltip>
       </InputEnd>
     </Input>
   );

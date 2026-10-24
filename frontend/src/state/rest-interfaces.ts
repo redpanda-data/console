@@ -28,7 +28,7 @@ export type ApiError = {
 };
 
 export function isApiError(obj: unknown): obj is ApiError {
-  if (
+  return (
     obj !== null &&
     obj !== undefined &&
     typeof obj === 'object' &&
@@ -36,11 +36,7 @@ export function isApiError(obj: unknown): obj is ApiError {
     typeof (obj as { statusCode: unknown }).statusCode === 'number' &&
     'message' in obj &&
     typeof (obj as { message: unknown }).message === 'string'
-  ) {
-    return true;
-  }
-
-  return false;
+  );
 }
 
 export class WrappedApiError extends Error {

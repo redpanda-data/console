@@ -30,7 +30,7 @@ import { showToast, updateToast } from 'utils/toast.utils';
 import { BandwidthSlider } from './bandwidth-slider';
 import { api } from '../../../../state/backend-api';
 import type { ConfigEntry } from '../../../../state/rest-interfaces';
-import { QuickTable } from '../../../../utils/tsx-utils';
+import { quickTable } from '../../../../utils/tsx-utils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { BrokerList } from '../../../misc/broker-list';
 import type { ReassignmentState } from '../logic/reassignment-tracker';
@@ -198,32 +198,7 @@ export const ThrottleDialog: FC<{
       return;
     }
 
-    const shouldSet = value !== null && value > 0;
-    try {
-      if (shouldSet) {
-        await api.setReplicationThrottleRate(allBrokers, value);
-      } else {
-        await api.resetReplicationThrottleRate(allBrokers);
-      }
-
-      setTimeout(() => {
-        // need to update actual value after changing
-        api.refreshCluster(true);
-      });
-
-      updateToast(toastRef.current, {
-        status: 'success',
-        description: 'Setting throttle rate... done',
-        duration: 2000,
-      });
-    } catch (err) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(`error in applyBandwidthThrottle: ${err}`);
-      updateToast(toastRef.current, {
-        status: 'error',
-        description: 'Setting throttle rate... error',
-      });
-    }
+    await changeThrottleRate(toastRef.current, allBrokers, value);
 
     onClose();
   };
@@ -338,6 +313,55 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     }
 
     const state = this.props.state;
+    this.trackVisibility(state);
+    const visible = this.props.state !== null;
+
+    const topicConfig = this.topicConfigOrRefresh(state.topicName);
+
+    return (
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            this.props.onClose();
+          }
+        }}
+        open={visible}
+      >
+        {/* Nearest rung to the old 48rem minimum. */}
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            {topicConfig ? (
+              this.renderDetails(state)
+            ) : (
+              <div className="mt-5">
+                <SkeletonText lines={5} width="full" />
+              </div>
+            )}
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={this.props.onClose} variant="ghost">
+              Close
+            </Button>
+            <Button
+              disabled={!topicConfig}
+              onClick={() => {
+                this.applyBandwidthThrottle();
+                this.props.onClose();
+              }}
+              variant="primary"
+            >
+              Apply &amp; Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  trackVisibility(state: ReassignmentState) {
     if (this.lastState !== state) {
       this.lastState = state;
     }
@@ -353,24 +377,29 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       });
     }
     this.wasVisible = visible;
+  }
 
-    const topicConfig = api.topicConfig.get(state.topicName);
+  topicConfigOrRefresh(topicName: string) {
+    const topicConfig = api.topicConfig.get(topicName);
     if (!topicConfig) {
       setTimeout(() => {
-        api.refreshTopicConfig(state.topicName);
+        api.refreshTopicConfig(topicName);
       });
     }
+    return topicConfig;
+  }
 
+  renderDetails(state: ReassignmentState) {
     const replicas = state.partitions.flatMap((p) => p.replicas).distinct();
     const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
     const removingReplicas = state.partitions.flatMap((p) => p.removingReplicas).distinct();
 
-    const modalContent = topicConfig ? (
+    return (
       <div className="flex flex-col gap-12">
         {/* Info */}
         <div className="flex flex-col gap-4">
           <div>
-            {QuickTable([
+            {quickTable([
               ['Replicas', replicas],
               ['Adding', addingReplicas],
               ['Removing', removingReplicas],
@@ -401,44 +430,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         {/* Cancel */}
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
       </div>
-    ) : (
-      <div className="mt-5">
-        <SkeletonText lines={5} width="full" />
-      </div>
-    );
-
-    return (
-      <Dialog
-        onOpenChange={(open) => {
-          if (!open) {
-            this.props.onClose();
-          }
-        }}
-        open={visible}
-      >
-        {/* Nearest rung to the old 48rem minimum. */}
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>{modalContent}</DialogBody>
-          <DialogFooter>
-            <Button onClick={this.props.onClose} variant="ghost">
-              Close
-            </Button>
-            <Button
-              disabled={!topicConfig}
-              onClick={() => {
-                this.applyBandwidthThrottle();
-                this.props.onClose();
-              }}
-              variant="primary"
-            >
-              Apply &amp; Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     );
   }
 
@@ -453,66 +444,19 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     }
 
     // partitionId:brokerId, ...
-    const leaderThrottleValue = config.configEntries.first((e) => e.name === 'leader.replication.throttled.replicas');
-    const leaderThrottleEntries = leaderThrottleValue?.value
-      ?.split(',')
-      .map((e) => {
-        const ar = e.split(':');
-        if (ar.length !== 2) {
-          return null;
-        }
-        return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
-      })
-      .filterNull();
-
-    if (leaderThrottleEntries) {
-      // Go through all partitions that are being reassigned
-      for (const p of this.lastState.partitions) {
-        const sourceBrokers = p.replicas;
-
-        // ...and check if this broker-partition combo is being throttled
-        const hasThrottle = leaderThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && sourceBrokers.includes(e.brokerId)
-        );
-
-        if (hasThrottle) {
-          return true;
-        }
-      }
-    }
-
-    // partitionId:brokerId, ...
-    const followerThrottleValue = config.configEntries.first(
-      (e) => e.name === 'follower.replication.throttled.replicas'
+    const leaderThrottleEntries = parseThrottledReplicas(
+      config.configEntries.first((e) => e.name === 'leader.replication.throttled.replicas')?.value
     );
-    const followerThrottleEntries = followerThrottleValue?.value
-      ?.split(',')
-      .map((e) => {
-        const ar = e.split(':');
-        if (ar.length !== 2) {
-          return null;
-        }
-        return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
-      })
-      .filterNull();
+    const followerThrottleEntries = parseThrottledReplicas(
+      config.configEntries.first((e) => e.name === 'follower.replication.throttled.replicas')?.value
+    );
 
-    if (followerThrottleEntries) {
-      // Go through all partitions that are being reassigned
-      for (const p of this.lastState.partitions) {
-        const targetBrokers = p.addingReplicas;
-
-        // ...and check if this broker-partition combo is being throttled
-        const hasThrottle = followerThrottleEntries.any(
-          (e) => e.partitionId === p.partitionId && targetBrokers.includes(e.brokerId)
-        );
-
-        if (hasThrottle) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    // Go through all partitions that are being reassigned, and check if a broker-partition combo is being throttled:
+    // leader throttles apply to the source brokers, follower throttles to the brokers being added.
+    return (
+      anyPartitionThrottled(leaderThrottleEntries, this.lastState.partitions, (p) => p.replicas) ||
+      anyPartitionThrottled(followerThrottleEntries, this.lastState.partitions, (p) => p.addingReplicas)
+    );
   }
 
   applyBandwidthThrottle() {
@@ -524,39 +468,10 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     }
 
     if (this.state.shouldThrottle) {
-      const leaderReplicas: { partitionId: number; brokerId: number }[] = [];
-      const followerReplicas: { partitionId: number; brokerId: number }[] = [];
-      for (const p of state.partitions) {
-        const partitionId = p.partitionId;
-        const brokersOld = p.replicas;
-        const brokersNew = p.addingReplicas;
-
-        if (brokersOld === null || brokersNew === null) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.warn(
-            "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
-            { state }
-          );
-          continue;
-        }
-
-        // leader throttling is applied to all sources (all brokers that have a replica of this partition)
-        for (const sourceBroker of brokersOld) {
-          leaderReplicas.push({ partitionId, brokerId: sourceBroker });
-        }
-
-        // follower throttling is applied only to target brokers that do not yet have a copy
-        const newBrokers = brokersNew.except(brokersOld);
-        for (const targetBroker of newBrokers) {
-          followerReplicas.push({ partitionId, brokerId: targetBroker });
-        }
-      }
-
       api.setThrottledReplicas([
         {
           topicName: state.topicName,
-          leaderReplicas,
-          followerReplicas,
+          ...throttledReplicasOf(state),
         },
       ]);
     } else {
@@ -572,45 +487,135 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       return;
     }
 
-    const partitions = state.partitions.map((p) => p.partitionId);
+    if (await cancelReassignmentWithToast(state)) {
+      this.props.onClose();
+    }
+  }
+}
 
-    const toastRef = showToast({
-      status: 'loading',
-      description: `Cancelling reassignment of '${state.topicName}'...`,
+/** Sets the throttle rate on every broker, or resets it when `value` is not positive, reporting the outcome in the toast. */
+async function changeThrottleRate(toastId: string, brokerIds: number[], value: number | null) {
+  const shouldSet = value !== null && value > 0;
+  try {
+    if (shouldSet) {
+      await api.setReplicationThrottleRate(brokerIds, value);
+    } else {
+      await api.resetReplicationThrottleRate(brokerIds);
+    }
+
+    setTimeout(() => {
+      // need to update actual value after changing
+      api.refreshCluster(true);
     });
 
-    try {
-      const cancelRequest = {
-        topics: [
-          {
-            topicName: state.topicName,
-            partitions: partitions.map((p) => ({
-              partitionId: p,
-              replicas: null, // cancel
-            })),
-          },
-        ],
-      };
-      const response = await api.startPartitionReassignment(cancelRequest);
+    updateToast(toastId, {
+      status: 'success',
+      description: 'Setting throttle rate... done',
+      duration: 2000,
+    });
+  } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error(`error in applyBandwidthThrottle: ${err}`);
+    updateToast(toastId, {
+      status: 'error',
+      description: 'Setting throttle rate... error',
+    });
+  }
+}
 
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('cancel reassignment result', { request: cancelRequest, response });
+type ThrottledReplica = { partitionId: number; brokerId: number };
 
-      updateToast(toastRef, {
-        status: 'success',
-        description: `Cancelling reassignment of '${state.topicName}': Done`,
-        duration: 1000,
-      });
-      this.props.onClose();
-    } catch (err) {
+/** Parses a `partitionId:brokerId, ...` throttle config value, skipping malformed entries. */
+function parseThrottledReplicas(value: string | null | undefined): ThrottledReplica[] | undefined {
+  return value
+    ?.split(',')
+    .map((e) => {
+      const ar = e.split(':');
+      if (ar.length !== 2) {
+        return null;
+      }
+      return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
+    })
+    .filterNull();
+}
+
+function anyPartitionThrottled(
+  entries: ThrottledReplica[] | undefined,
+  partitions: ReassignmentState['partitions'],
+  brokersOf: (p: ReassignmentState['partitions'][number]) => number[]
+): boolean {
+  if (!entries) {
+    return false;
+  }
+  return partitions.some((p) => {
+    const brokers = new Set(brokersOf(p));
+    return entries.any((e) => e.partitionId === p.partitionId && brokers.has(e.brokerId));
+  });
+}
+
+function throttledReplicasOf(state: ReassignmentState) {
+  const leaderReplicas: ThrottledReplica[] = [];
+  const followerReplicas: ThrottledReplica[] = [];
+  for (const { partitionId, replicas: brokersOld, addingReplicas: brokersNew } of state.partitions) {
+    if (brokersOld === null || brokersNew === null) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(`cancel reassignment: ${String(err)}`);
-      updateToast(toastRef, {
-        status: 'error',
-        description: `Cancelling reassignment of '${state.topicName}': Error`,
-        duration: 1000,
-      });
+      console.warn(
+        "active reassignments, traffic limit: skipping partition because old or new brokers can't be found",
+        { state }
+      );
+      continue;
     }
+
+    // leader throttling is applied to all sources (all brokers that have a replica of this partition)
+    leaderReplicas.push(...brokersOld.map((sourceBroker) => ({ partitionId, brokerId: sourceBroker })));
+
+    // follower throttling is applied only to target brokers that do not yet have a copy
+    followerReplicas.push(
+      ...brokersNew.except(brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
+    );
+  }
+  return { leaderReplicas, followerReplicas };
+}
+
+/** Cancels every partition reassignment of the topic, reporting progress in a toast. Returns whether it worked. */
+async function cancelReassignmentWithToast(state: ReassignmentState): Promise<boolean> {
+  const toastRef = showToast({
+    status: 'loading',
+    description: `Cancelling reassignment of '${state.topicName}'...`,
+  });
+
+  try {
+    const cancelRequest = {
+      topics: [
+        {
+          topicName: state.topicName,
+          partitions: state.partitions.map((p) => ({
+            partitionId: p.partitionId,
+            replicas: null, // cancel
+          })),
+        },
+      ],
+    };
+    const response = await api.startPartitionReassignment(cancelRequest);
+
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.log('cancel reassignment result', { request: cancelRequest, response });
+
+    updateToast(toastRef, {
+      status: 'success',
+      description: `Cancelling reassignment of '${state.topicName}': Done`,
+      duration: 1000,
+    });
+    return true;
+  } catch (err) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error(`cancel reassignment: ${String(err)}`);
+    updateToast(toastRef, {
+      status: 'error',
+      description: `Cancelling reassignment of '${state.topicName}': Error`,
+      duration: 1000,
+    });
+    return false;
   }
 }
 
@@ -634,9 +639,7 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
 
     if (state.progressPercent === null) {
       // Starting
-      progressBar = (
-        <ProgressBar left="Starting..." percent={0} right={prettyBytesOrNA(state.totalTransferSize)} state="active" />
-      );
+      progressBar = <ProgressBar left="Starting..." percent={0} right={prettyBytesOrNA(state.totalTransferSize)} />;
     } else if (state.progressPercent < 100) {
       // Progressing
       progressBar = (
@@ -653,14 +656,11 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
               </span>
             </>
           }
-          state="active"
         />
       );
     } else {
       // Completed
-      progressBar = (
-        <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} state="success" />
-      );
+      progressBar = <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} />;
     }
 
     return <div style={{ marginBottom: '-6px' }}>{progressBar}</div>;
@@ -694,24 +694,11 @@ export class BrokersCol extends Component<{ state: ReassignmentState }> {
   }
 }
 
-const ProgressBar = (p: {
-  percent: number;
-  state: 'active' | 'success';
-  left?: React.ReactNode;
-  right?: React.ReactNode;
-}) => {
-  const { percent, state, left, right } = p;
+const ProgressBar = (p: { percent: number; left?: React.ReactNode; right?: React.ReactNode }) => {
+  const { percent, left, right } = p;
   return (
     <>
-      {/* The indicator paints bg-primary by default; the tone goes through the slot class. */}
-      <Progress
-        className={
-          state === 'success'
-            ? '[&_[data-slot=progress-indicator]]:bg-success'
-            : '[&_[data-slot=progress-indicator]]:bg-brand'
-        }
-        value={percent}
-      />
+      <Progress value={percent} />
       <div
         style={{
           display: 'flex',

@@ -8,7 +8,7 @@ const SORT_ASC = /Asc/;
 
 // Sorting is reachable only through `DataTableColumnHeader`, and nothing fails if it is missing,
 // so this asserts it is present. A fresh cluster has no ACLs, so it checks the chrome, not rows.
-test.describe('Security ACLs tab', () => {
+test.describe('security ACLs tab', () => {
   test('renders the filter, the table and reachable sorting', async ({ page }) => {
     await page.goto('/security/acls');
 

@@ -9,18 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
-import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
-import { CreateUserRequest_UserSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import { useCallback, useState } from 'react';
-import { generatePassword } from 'utils/password';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { CreateUserButton, CreateUserConfirmationModal, CreateUserModal } from './user-create';
-import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
-import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
-import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
 import {
   Dialog,
   DialogBody,
@@ -29,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../../redpanda-ui/components/dialog';
+import { useCreateUserForm } from '../hooks/use-create-user-form';
 
 type CreateUserDialogProps = {
   open: boolean;
@@ -36,85 +31,18 @@ type CreateUserDialogProps = {
 };
 
 export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) => {
-  const [formState, setFormState] = useState({
-    username: '',
-    password: generatePassword(30, false),
-    mechanism: 'SCRAM-SHA-256' as SaslMechanism,
-    generateWithSpecialChars: false,
-    selectedRoles: [] as string[],
-  });
   const [step, setStep] = useState<'form' | 'confirmation'>('form');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { state, isSubmitting, createUser } = useCreateUserForm(() => setStep('confirmation'));
   const navigate = useNavigate();
-  const { mutateAsync: createUserMutate } = useCreateUserMutation();
-  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
-  const { data: usersData } = useListUsersQuery();
-  const users = usersData?.users?.map((u) => u.name) ?? [];
+  const { username, mechanism, password, users } = state;
 
-  const { username, password, mechanism, generateWithSpecialChars, selectedRoles } = formState;
-  const setUsername = (v: string) => setFormState((prev) => ({ ...prev, username: v }));
-  const setPassword = (v: string) => setFormState((prev) => ({ ...prev, password: v }));
-  const setMechanism = (v: SaslMechanism) => setFormState((prev) => ({ ...prev, mechanism: v }));
-  const setGenerateWithSpecialChars = (v: boolean) =>
-    setFormState((prev) => ({ ...prev, generateWithSpecialChars: v }));
-  const setSelectedRoles = (v: string[]) => setFormState((prev) => ({ ...prev, selectedRoles: v }));
-
-  const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
-
-  const onCreateUser = useCallback(async (): Promise<boolean> => {
-    setIsSubmitting(true);
-    try {
-      await createUserMutate({
-        user: create(CreateUserRequest_UserSchema, {
-          name: username,
-          password,
-          mechanism: getSASLMechanism(mechanism),
-        }),
-      });
-    } catch {
-      setIsSubmitting(false);
-      return false;
-    }
-
-    await Promise.allSettled(
-      selectedRoles.map((r) =>
-        updateMembership(
-          create(UpdateRoleMembershipRequestSchema, {
-            roleName: r,
-            add: [{ principal: username }],
-          })
-        )
-      )
-    );
-
-    setIsSubmitting(false);
-    setStep('confirmation');
-    return true;
-  }, [username, password, mechanism, selectedRoles, createUserMutate, updateMembership]);
+  const handleClose = () => onOpenChange(false);
 
   const onGoToUserDetails = () => {
     handleClose();
-    navigate({ to: `/security/users/${username}/details` });
-  };
-
-  const state = {
-    username,
-    setUsername,
-    password,
-    setPassword,
-    mechanism,
-    setMechanism,
-    generateWithSpecialChars,
-    setGenerateWithSpecialChars,
-    isCreating: isSubmitting,
-    isValidUsername: validateUsername(username),
-    isValidPassword: validatePassword(password),
-    users,
-    selectedRoles,
-    setSelectedRoles,
+    navigate({ to: `/security/users/${username}/details` }).catch((error: unknown) => {
+      toast.error('Failed to navigate', { description: String(error) });
+    });
   };
 
   return (
@@ -147,7 +75,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
               isSubmitting={isSubmitting}
               isValidPassword={state.isValidPassword}
               isValidUsername={state.isValidUsername}
-              onClick={onCreateUser}
+              onClick={createUser}
               userExists={users.includes(username)}
               usernameEmpty={!username}
             />

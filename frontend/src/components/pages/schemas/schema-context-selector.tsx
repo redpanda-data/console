@@ -25,6 +25,7 @@ import type { FC } from 'react';
 import { useState } from 'react';
 
 import { type DerivedContext, pluralize } from './schema-context-utils';
+import { TonedIcon } from '../shared/toned-icon';
 
 type SchemaContextSelectorProps = {
   contexts: DerivedContext[];
@@ -48,20 +49,20 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
       <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger
           render={
-            <Button className="h-7 px-2 font-normal" data-testid="schema-context-selector" size="sm" variant="outline">
+            <Button className="h-7" data-testid="schema-context-selector" size="sm" variant="outline">
               <span className="max-w-40 truncate">{selectedLabel}</span>
-              <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+              <TonedIcon className="size-3.5 shrink-0" icon={ChevronsUpDownIcon} tone="muted" />
             </Button>
           }
         />
-        <PopoverContent align="start" className="w-[280px] p-0">
+        <PopoverContent align="start" className="w-[280px]">
           <Command size="full" variant="minimal">
             <CommandInput placeholder="Search contexts..." />
             <CommandList>
               <CommandEmpty>No contexts found.</CommandEmpty>
               {contexts.map((ctx) => (
                 <CommandItem
-                  className="flex items-start gap-2 py-2"
+                  className="flex items-start"
                   key={ctx.id}
                   onSelect={() => {
                     onContextChange(ctx.id);
@@ -69,9 +70,11 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
                   }}
                   value={ctx.label}
                 >
-                  <CheckIcon
-                    className={cn('mt-0.5 size-4 shrink-0', selectedContext === ctx.id ? 'opacity-100' : 'opacity-0')}
-                  />
+                  <span
+                    className={cn('mt-0.5 flex shrink-0', selectedContext === ctx.id ? 'opacity-100' : 'opacity-0')}
+                  >
+                    <CheckIcon className="size-4" />
+                  </span>
                   <div className="flex flex-col">
                     <span className="text-body">{ctx.label}</span>
                     <span className="text-body-sm text-muted-foreground">{pluralize(ctx.subjectCount, 'subject')}</span>
@@ -86,7 +89,7 @@ export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
         <TooltipTrigger
           render={
             <span className="inline-flex cursor-help">
-              <InfoIcon className="size-4 text-muted-foreground" />
+              <TonedIcon className="size-4" icon={InfoIcon} tone="muted" />
             </span>
           }
         />

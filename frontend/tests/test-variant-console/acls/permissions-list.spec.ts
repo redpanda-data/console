@@ -58,8 +58,8 @@ async function openDeleteDropdown(page: Page, principalName: string) {
   await actions.getByRole('button').click();
 }
 
-test.describe('Permissions List - delete dropdown', () => {
-  test('SCRAM user with ACLs: all three delete options are visible', async ({ page }) => {
+test.describe('permissions List - delete dropdown', () => {
+  test('sCRAM user with ACLs: all three delete options are visible', async ({ page }) => {
     const username = generateUsername();
 
     await step('Create SCRAM user with ACLs', async () => {
@@ -76,7 +76,7 @@ test.describe('Permissions List - delete dropdown', () => {
     });
   });
 
-  test('Delete (User and ACLs) removes user and ACLs', async ({ page }) => {
+  test('delete (User and ACLs) removes user and ACLs', async ({ page }) => {
     const username = generateUsername();
 
     await step('Create SCRAM user with ACLs', async () => {
@@ -106,9 +106,9 @@ test.describe('Permissions List - delete dropdown', () => {
       await page.getByPlaceholder('Filter by name (regexp)...').fill(username);
       await expect(page.getByRole('link', { name: username, exact: true })).not.toBeVisible({ timeout: 5000 });
     });
-  }, 120_000);
+  });
 
-  test('Delete (ACLs only) removes ACLs but SCRAM user remains', async ({ page }) => {
+  test('delete (ACLs only) removes ACLs but SCRAM user remains', async ({ page }) => {
     const username = generateUsername();
 
     await step('Create SCRAM user with ACLs', async () => {
@@ -134,5 +134,5 @@ test.describe('Permissions List - delete dropdown', () => {
       await row.click();
       await expect(row.getByText('No ACLs assigned')).toBeVisible({ timeout: 5000 });
     });
-  }, 120_000);
+  });
 });

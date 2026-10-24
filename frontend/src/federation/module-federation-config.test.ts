@@ -12,7 +12,7 @@
 import { describe, expect, test } from 'bun:test';
 import { moduleFederationConfig } from '../../module-federation.config';
 
-describe('Console Module Federation config', () => {
+describe('the Console Module Federation config', () => {
   test('keeps the federation name and embedded.js filename for Cloud UI', () => {
     expect(moduleFederationConfig.name).toBe('rp_console');
     expect(moduleFederationConfig.filename).toBe('embedded.js');

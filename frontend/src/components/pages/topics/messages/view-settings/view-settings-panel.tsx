@@ -51,7 +51,12 @@ const DeserializerSelect = ({
   disabled?: boolean;
 }) => (
   <Select disabled={disabled} onValueChange={(v) => onChange(Number(v) as PayloadEncoding)} value={String(value)}>
-    <SelectTrigger className="w-full" testId={id} title={disabled ? 'Stop live tail to change this' : undefined}>
+    <SelectTrigger
+      className="w-full"
+      id={id}
+      testId={id}
+      title={disabled ? 'Stop live tail to change this' : undefined}
+    >
       <SelectValue>
         {(v: unknown) => PAYLOAD_ENCODING_PAIRS.find((p) => String(p.value) === String(v))?.label}
       </SelectValue>
@@ -133,12 +138,12 @@ export const ViewSettingsPanel = ({
       case 'timestamp':
         return (
           <div className="flex flex-col gap-1.5">
-            <Label className="text-caption uppercase tracking-wide">Display format</Label>
+            <Label htmlFor="view-settings-ts-format">Display format</Label>
             <Select
               onValueChange={(v) => setTopicSettings(topicName, { previewTimestamps: v as TimestampDisplayFormat })}
               value={tsFormat}
             >
-              <SelectTrigger className="w-full" testId="view-settings-ts-format">
+              <SelectTrigger className="w-full" id="view-settings-ts-format" testId="view-settings-ts-format">
                 <SelectValue>{(v: unknown) => TS_FORMATS.find((f) => f.value === v)?.label}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -154,14 +159,14 @@ export const ViewSettingsPanel = ({
       case 'key':
         return (
           <div className="flex flex-col gap-1.5">
-            <Label className="text-caption uppercase tracking-wide">Deserializer</Label>
+            <Label htmlFor="view-settings-key-deser">Deserializer</Label>
             <DeserializerSelect
               disabled={liveTail}
               id="view-settings-key-deser"
               onChange={onKeyDeserializerChange}
               value={keyDeserializer}
             />
-            <p className="text-body-sm text-muted-foreground leading-relaxed">
+            <p className="text-body-sm leading-relaxed text-muted-foreground">
               How key bytes are decoded for display. <span className="font-mono">Automatic</span> detects the format.
             </p>
           </div>
@@ -170,7 +175,7 @@ export const ViewSettingsPanel = ({
         return (
           <div className="flex flex-col gap-3.5">
             <div className="flex flex-col gap-1.5">
-              <Label className="text-caption uppercase tracking-wide">Deserializer</Label>
+              <Label htmlFor="view-settings-value-deser">Deserializer</Label>
               <DeserializerSelect
                 disabled={liveTail}
                 id="view-settings-value-deser"
@@ -180,7 +185,7 @@ export const ViewSettingsPanel = ({
             </div>
             {schemaContextsSupported && (
               <div className="flex flex-col gap-1.5">
-                <Label className="text-caption uppercase tracking-wide">Schema context</Label>
+                <Label htmlFor="view-settings-schema-context">Schema context</Label>
                 <TopicSchemaContextSelect
                   disabled={liveTail}
                   id="view-settings-schema-context"
@@ -188,7 +193,7 @@ export const ViewSettingsPanel = ({
                   title={liveTail ? 'Stop live tail to change this' : undefined}
                   value={schemaContext}
                 />
-                <p className="text-body-sm text-muted-foreground leading-relaxed">
+                <p className="text-body-sm leading-relaxed text-muted-foreground">
                   Schema Registry context to resolve schema IDs in. <span className="font-mono">Automatic</span> follows
                   the topic's redpanda.schema.registry.context config.
                 </p>
@@ -206,7 +211,7 @@ export const ViewSettingsPanel = ({
     <div className="flex h-full min-h-0 flex-col bg-card" data-testid="view-settings-panel">
       <div className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
-          <div className="font-semibold text-label">View settings</div>
+          <div className="text-label font-semibold">View settings</div>
           <div className="text-body-sm text-muted-foreground">Changes apply to the table instantly</div>
         </div>
         <Button onClick={onClose} size="icon-sm" testId="view-settings-close" variant="ghost">
@@ -216,7 +221,7 @@ export const ViewSettingsPanel = ({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="border-b px-4 py-3.5">
-          <div className="mb-2 font-semibold text-label">Row density</div>
+          <div className="mb-2 text-label font-semibold">Row density</div>
           <ToggleGroup
             className="w-full"
             onValueChange={(next: string[]) => {
@@ -234,19 +239,19 @@ export const ViewSettingsPanel = ({
               Detailed
             </ToggleGroupItem>
           </ToggleGroup>
-          <p className="mt-2 text-body-sm text-muted-foreground leading-relaxed">
+          <p className="mt-2 text-body-sm leading-relaxed text-muted-foreground">
             Detailed shows the decoder badge and byte size inline. Compact hides them for a denser table.
           </p>
         </div>
 
         <div className="px-4 py-3.5">
           <div className="mb-1 flex items-baseline justify-between">
-            <div className="font-semibold text-label">Columns</div>
+            <div className="text-label font-semibold">Columns</div>
             <span className="text-body-sm text-muted-foreground">
               {columns.filter((c) => c.visible).length} of {columns.length}
             </span>
           </div>
-          <p className="mb-2.5 text-body-sm text-muted-foreground leading-relaxed">
+          <p className="mb-2.5 text-body-sm leading-relaxed text-muted-foreground">
             Drag to reorder · toggle to show or hide. Configurable columns expose their decoder and display options.
           </p>
           <ColumnList

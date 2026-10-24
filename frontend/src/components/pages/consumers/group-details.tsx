@@ -44,6 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../redpanda-ui/comp
 import { ConsumerGroupStateCell } from '../../ui/consumer-group/consumer-group-state-cell';
 import { DisabledReasonButton } from '../../ui/disabled-reason-button';
 import { PageComponent, type PageInitHelper } from '../page';
+import { TonedIcon } from '../shared/toned-icon';
 import AclList from '../topics/Tab.Acl/acl-list';
 
 type GroupTab = 'topics' | 'acl';
@@ -113,82 +114,189 @@ class GroupDetails extends PageComponent<GroupDetailsProps> {
   }
 }
 
-const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
-  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
-  const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
-  const [editState, setEditState] = useState<{
-    offsets: GroupOffset[] | null;
-    topic: string | null;
-    partition: number | null;
-  }>({ offsets: null, topic: null, partition: null });
-  const edittingOffsets = editState.offsets;
-  const editedTopic = editState.topic;
-  const editedPartition = editState.partition;
-  const setEdittingOffsets = (v: GroupOffset[] | null) => setEditState((prev) => ({ ...prev, offsets: v }));
+type EditOffsetsState = {
+  offsets: GroupOffset[] | null;
+  topic: string | null;
+  partition: number | null;
+};
+
+/** Which offsets the edit modal is open for, and the topic/partition it starts on. */
+const useEditOffsetsState = () => {
+  const [editState, setEditState] = useState<EditOffsetsState>({ offsets: null, topic: null, partition: null });
+  const setEditingOffsets = (v: GroupOffset[] | null) => setEditState((prev) => ({ ...prev, offsets: v }));
   const setEditedTopic = (v: string | null) => setEditState((prev) => ({ ...prev, topic: v }));
   const setEditedPartition = (v: number | null) => setEditState((prev) => ({ ...prev, partition: v }));
+
+  return {
+    editingOffsets: editState.offsets,
+    editedTopic: editState.topic,
+    editedPartition: editState.partition,
+    setEditingOffsets,
+    setEditedTopic,
+    setEditedPartition,
+  };
+};
+
+/** Which offsets the delete modal is open for, and whether it deletes a group, topic or partition. */
+const useDeleteOffsetsState = () => {
   const [deletingState, setDeletingState] = useState<{ mode: GroupDeletingMode; offsets: GroupOffset[] | null }>({
     mode: 'group',
     offsets: null,
   });
-  const deletingMode = deletingState.mode;
-  const deletingOffsets = deletingState.offsets;
   const setDeletingMode = (v: GroupDeletingMode) => setDeletingState((prev) => ({ ...prev, mode: v }));
   const setDeletingOffsets = (v: GroupOffset[] | null) => setDeletingState((prev) => ({ ...prev, offsets: v }));
+
+  return {
+    deletingMode: deletingState.mode,
+    deletingOffsets: deletingState.offsets,
+    setDeletingMode,
+    setDeletingOffsets,
+  };
+};
+
+/** Every committed partition offset of the group, as the modals expect them. */
+const toGroupOffsets = (group: GroupDescription): GroupOffset[] =>
+  group.topicOffsets.flatMap((x) =>
+    x.partitionOffsets.map(
+      (p) =>
+        ({
+          topicName: x.topic,
+          partitionId: p.partitionId,
+          offset: p.groupOffset,
+        }) as GroupOffset
+    )
+  );
+
+const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
+  const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds?.length ?? 0);
+
+  return (
+    // The small card carries px-6 py-4; max-w-none lifts its width cap. Its single child makes the gap moot.
+    <Card className="max-w-none" size="sm" variant="standard">
+      <CardContent>
+        {/* The stats sit in a row, so they need a flex child rather than CardContent's vertical stack. */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
+          <Stat label="Assigned Partitions" mono value={totalPartitions} />
+          <Stat label="Protocol" value={group.protocol || '—'} />
+          <Stat label="Protocol Type" value={group.protocolType || '—'} />
+          <Stat
+            label="Coordinator ID"
+            mono
+            value={
+              <span className="inline-flex items-center gap-1">
+                {group.coordinatorId}
+                <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
+              </span>
+            }
+          />
+          <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+type GroupDetailsTabsProps = Omit<GroupDetailsProps, 'groupId'> & {
+  group: GroupDescription;
+  onEditOffsets: (offsets: GroupOffset[]) => void;
+  onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
+};
+
+const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDeleteOffsets }: GroupDetailsTabsProps) => {
   const [quickSearch, setQuickSearch] = useState(search?.q ?? '');
   const showWithLagOnly = search?.withLag ?? false;
   const activeTab: GroupTab = search?.tab ?? 'topics';
   const withLagCheckboxId = useId();
+  const consumerGroupAcl = useApiStoreHook((s) => s.consumerGroupAcls.get(group.groupId));
 
-  const groupId2 = decodeURIComponent(groupId);
-  const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
-  const group = useApiStoreHook((s) => s.consumerGroups.get(groupId2));
-  const consumerGroupAcl = useApiStoreHook((s) => s.consumerGroupAcls.get(group?.groupId ?? ''));
+  return (
+    <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
+      <TabsList className="w-fit" variant="underline">
+        <TabsTrigger value="topics" variant="underline">
+          Topics
+        </TabsTrigger>
+        <TabsTrigger value="acl" variant="underline">
+          ACL
+        </TabsTrigger>
+      </TabsList>
 
-  if (consumerGroupsSize === 0) {
-    return DefaultSkeleton;
-  }
+      <TabsContent className="mt-4" value="topics">
+        <div className="mb-6 flex items-center gap-4">
+          <Input
+            containerClassName="w-[300px]"
+            onChange={(e) => {
+              setQuickSearch(e.target.value);
+              onSearchChange({ q: e.target.value });
+            }}
+            placeholder="Filter by member"
+            size="sm"
+            value={quickSearch}
+          >
+            <InputStart>
+              <TonedIcon className="size-4" icon={Search} tone="muted" />
+            </InputStart>
+            {quickSearch !== '' && (
+              <InputEnd className="pointer-events-auto">
+                <Button
+                  aria-label="Clear member filter"
+                  onClick={() => {
+                    setQuickSearch('');
+                    onSearchChange({ q: '' });
+                  }}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <X />
+                </Button>
+              </InputEnd>
+            )}
+          </Input>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={showWithLagOnly}
+              id={withLagCheckboxId}
+              onCheckedChange={(checked) => onSearchChange({ withLag: checked === true })}
+            />
+            <Label htmlFor={withLagCheckboxId}>Only show topics with lag</Label>
+          </div>
+        </div>
 
-  if (!group) {
-    return DefaultSkeleton;
-  }
+        <GroupByTopics
+          group={group}
+          onDeleteOffsets={onDeleteOffsets}
+          onEditOffsets={onEditOffsets}
+          onlyShowPartitionsWithLag={showWithLagOnly}
+          quickSearch={quickSearch}
+        />
+      </TabsContent>
 
-  const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds?.length ?? 0);
+      <TabsContent className="mt-4" value="acl">
+        <AclList acl={consumerGroupAcl} />
+      </TabsContent>
+    </Tabs>
+  );
+};
+
+const GroupDetailsContent = ({
+  group,
+  search,
+  onSearchChange,
+}: Omit<GroupDetailsProps, 'groupId'> & { group: GroupDescription }) => {
+  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
+  const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
+  const { editingOffsets, editedTopic, editedPartition, setEditingOffsets, setEditedTopic, setEditedPartition } =
+    useEditOffsetsState();
+  const { deletingMode, deletingOffsets, setDeletingMode, setDeletingOffsets } = useDeleteOffsetsState();
 
   const editGroup = () => {
-    const groupOffsets = group?.topicOffsets.flatMap((x) =>
-      x.partitionOffsets.map(
-        (p) =>
-          ({
-            topicName: x.topic,
-            partitionId: p.partitionId,
-            offset: p.groupOffset,
-          }) as GroupOffset
-      )
-    );
-    if (!groupOffsets) {
-      return;
-    }
     setEditedTopic(null);
     setEditedPartition(null);
-    setEdittingOffsets(groupOffsets);
+    setEditingOffsets(toGroupOffsets(group));
   };
 
   const deleteGroup = () => {
-    const groupOffsets = group?.topicOffsets.flatMap((x) =>
-      x.partitionOffsets.map(
-        (p) =>
-          ({
-            topicName: x.topic,
-            partitionId: p.partitionId,
-            offset: p.groupOffset,
-          }) as GroupOffset
-      )
-    );
-    if (!groupOffsets) {
-      return;
-    }
-    setDeletingOffsets(groupOffsets);
+    setDeletingOffsets(toGroupOffsets(group));
     setDeletingMode('group');
   };
 
@@ -214,102 +322,27 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       </div>
 
       {/* Statistics Card */}
-      <Card className="gap-0 px-6 py-4" size="full" variant="standard">
-        <CardContent className="flex flex-wrap items-start justify-between gap-4">
-          <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
-          <Stat label="Assigned Partitions" mono value={totalPartitions} />
-          <Stat label="Protocol" value={group.protocol || '—'} />
-          <Stat label="Protocol Type" value={group.protocolType || '—'} />
-          <Stat
-            label="Coordinator ID"
-            mono
-            value={
-              <span className="inline-flex items-center gap-1">
-                {group.coordinatorId}
-                <CopyButton className="size-5" content={`${group.coordinatorId}`} size="icon" variant="ghost" />
-              </span>
-            }
-          />
-          <Stat label="Total Lag" mono value={numberToThousandsString(group.lagSum)} />
-        </CardContent>
-      </Card>
+      <GroupStatisticsCard group={group} />
 
       {/* Main Card */}
-      <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
-        <TabsList className="w-fit" variant="underline">
-          <TabsTrigger value="topics" variant="underline">
-            Topics
-          </TabsTrigger>
-          <TabsTrigger value="acl" variant="underline">
-            ACL
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent className="mt-4" value="topics">
-          <div className="mb-6 flex items-center gap-4">
-            <Input
-              containerClassName="w-[300px]"
-              onChange={(e) => {
-                setQuickSearch(e.target.value);
-                onSearchChange({ q: e.target.value });
-              }}
-              placeholder="Filter by member"
-              size="sm"
-              value={quickSearch}
-            >
-              <InputStart>
-                <Search className="size-4 text-muted-foreground" />
-              </InputStart>
-              {quickSearch !== '' && (
-                <InputEnd className="pointer-events-auto">
-                  <Button
-                    aria-label="Clear member filter"
-                    onClick={() => {
-                      setQuickSearch('');
-                      onSearchChange({ q: '' });
-                    }}
-                    size="icon-xs"
-                    variant="ghost"
-                  >
-                    <X />
-                  </Button>
-                </InputEnd>
-              )}
-            </Input>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={showWithLagOnly}
-                id={withLagCheckboxId}
-                onCheckedChange={(checked) => onSearchChange({ withLag: checked === true })}
-              />
-              <Label htmlFor={withLagCheckboxId}>Only show topics with lag</Label>
-            </div>
-          </div>
-
-          <GroupByTopics
-            group={group}
-            onDeleteOffsets={(offsets, mode) => {
-              setDeletingMode(mode);
-              setDeletingOffsets(offsets);
-            }}
-            onEditOffsets={(g) => {
-              editGroup();
-              setEditedTopic(g[0].topicName);
-              if (g.length === 1) {
-                setEditedPartition(g[0].partitionId);
-              } else {
-                setEditedPartition(null);
-              }
-            }}
-            onlyShowPartitionsWithLag={showWithLagOnly}
-            quickSearch={quickSearch}
-          />
-        </TabsContent>
-
-        <TabsContent className="mt-4" value="acl">
-          <AclList acl={consumerGroupAcl} />
-        </TabsContent>
-      </Tabs>
+      <GroupDetailsTabs
+        group={group}
+        onDeleteOffsets={(offsets, mode) => {
+          setDeletingMode(mode);
+          setDeletingOffsets(offsets);
+        }}
+        onEditOffsets={(g) => {
+          editGroup();
+          setEditedTopic(g[0].topicName);
+          if (g.length === 1) {
+            setEditedPartition(g[0].partitionId);
+          } else {
+            setEditedPartition(null);
+          }
+        }}
+        onSearchChange={onSearchChange}
+        search={search}
+      />
 
       {/* Modals */}
       <EditOffsetsModal
@@ -317,9 +350,9 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
         initialPartition={editedPartition}
         initialTopic={editedTopic}
         key={`${editedTopic ?? ''}-${editedPartition ?? ''}`}
-        offsets={edittingOffsets}
+        offsets={editingOffsets}
         onClose={() => {
-          setEdittingOffsets(null);
+          setEditingOffsets(null);
         }}
       />
       <DeleteOffsetsModal
@@ -333,6 +366,22 @@ const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps
       />
     </PageContent>
   );
+};
+
+const GroupDetailsMain = ({ groupId, search, onSearchChange }: GroupDetailsProps) => {
+  const groupId2 = decodeURIComponent(groupId);
+  const consumerGroupsSize = useApiStoreHook((s) => s.consumerGroups.size);
+  const group = useApiStoreHook((s) => s.consumerGroups.get(groupId2));
+
+  if (consumerGroupsSize === 0) {
+    return DefaultSkeleton;
+  }
+
+  if (!group) {
+    return DefaultSkeleton;
+  }
+
+  return <GroupDetailsContent group={group} onSearchChange={onSearchChange} search={search} />;
 };
 
 type PartitionRow = {
@@ -498,23 +547,13 @@ const PartitionTable = ({
   );
 };
 
-const GroupByTopics = (groupProps: {
-  group: GroupDescription;
-  onlyShowPartitionsWithLag: boolean;
-  quickSearch: string;
-  onEditOffsets: (offsets: GroupOffset[]) => void;
-  onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
-}) => {
-  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
-  const featureDeleteGroupOffsets = useSupportedFeaturesStore((s) => s.deleteGroupOffsets);
-  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
-
-  const topicLags = groupProps.group.topicOffsets;
-  const allAssignments = groupProps.group.members.flatMap((m) =>
+/** One row per committed partition offset, joined with the member the partition is assigned to. */
+const toPartitionRows = (group: GroupDescription): PartitionRow[] => {
+  const allAssignments = group.members.flatMap((m) =>
     m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds ?? [] }))
   );
 
-  const lagsFlat: PartitionRow[] = topicLags.flatMap((topicLag) =>
+  return group.topicOffsets.flatMap((topicLag) =>
     topicLag.partitionOffsets.map((partLag) => {
       const assignedMember = allAssignments.find(
         (e) => e.topicName === topicLag.topic && e.partitions.includes(partLag.partitionId)
@@ -534,19 +573,27 @@ const GroupByTopics = (groupProps: {
       };
     })
   );
+};
 
-  const lagGroupsByTopic = lagsFlat
+/** Rows whose member matches the quick search (unassigned rows always pass), grouped by topic in name order. */
+const groupPartitionRowsByTopic = (rows: PartitionRow[], quickSearchRegExp: RegExp) =>
+  rows
     .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
     .groupInto((e) => e.topicName)
     .sort((a, b) => a.key.localeCompare(b.key))
     .map((x) => ({ topicName: x.key, partitions: x.items }));
 
-  const topicEntries = lagGroupsByTopic
+/** Per-topic totals; with `onlyShowPartitionsWithLag`, topics left without partitions are dropped. */
+const toTopicEntries = (
+  lagGroupsByTopic: ReturnType<typeof groupPartitionRowsByTopic>,
+  onlyShowPartitionsWithLag: boolean
+) =>
+  lagGroupsByTopic
     .map((g) => {
       const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
       const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
-      const partitions = groupProps.onlyShowPartitionsWithLag
+      const partitions = onlyShowPartitionsWithLag
         ? g.partitions.filter((e) => e.isUnconsumed || (e.lag !== null && e.lag !== 0))
         : g.partitions;
 
@@ -560,9 +607,23 @@ const GroupByTopics = (groupProps: {
     })
     .filterNull();
 
+const GroupByTopics = (groupProps: {
+  group: GroupDescription;
+  onlyShowPartitionsWithLag: boolean;
+  quickSearch: string;
+  onEditOffsets: (offsets: GroupOffset[]) => void;
+  onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
+}) => {
+  const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
+  const featureDeleteGroupOffsets = useSupportedFeaturesStore((s) => s.deleteGroupOffsets);
+  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
+
+  const lagGroupsByTopic = groupPartitionRowsByTopic(toPartitionRows(groupProps.group), quickSearchRegExp);
+  const topicEntries = toTopicEntries(lagGroupsByTopic, groupProps.onlyShowPartitionsWithLag);
+
   if (topicEntries.length === 0) {
     return (
-      <div className="rounded-lg border border-border border-solid bg-card py-8">
+      <div className="rounded-lg border border-solid border-border bg-card py-8">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -587,16 +648,16 @@ const GroupByTopics = (groupProps: {
     <Accordion defaultValue={defaultOpen} variant="contained">
       {topicEntries.map((entry) => (
         <AccordionItem key={entry.topicName} value={entry.topicName}>
-          <AccordionTrigger className="px-4 py-3">
+          <AccordionTrigger>
             <div className="flex flex-col gap-1 text-start">
-              <span className="font-semibold text-heading-md">{entry.topicName}</span>
-              <div className="flex items-center gap-4 font-normal text-body text-muted-foreground">
+              <span className="text-heading-md font-semibold">{entry.topicName}</span>
+              <div className="flex items-center gap-4 text-body font-normal text-muted-foreground">
                 <span>Lag: {numberToThousandsString(entry.totalLagAll)}</span>
                 <span>Assigned partitions: {entry.partitionsAssigned}</span>
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
+          <AccordionContent>
             {/* Topic-level actions live in the content (not nested inside the trigger button). */}
             <div className="mb-3 flex items-center justify-end gap-1">
               <DisabledReasonButton

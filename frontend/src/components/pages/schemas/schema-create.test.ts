@@ -12,8 +12,8 @@
 import { describe, expect, test } from 'bun:test';
 import type { SchemaRegistryCreateSchema } from '../../../state/rest-interfaces';
 
-describe('Schema Create - Normalize Parameter', () => {
-  test('SchemaRegistryCreateSchema interface should support params.normalize boolean', () => {
+describe('the Schema Create - Normalize Parameter', () => {
+  test('the SchemaRegistryCreateSchema interface should support params.normalize boolean', () => {
     // Test that the interface accepts normalize: true
     const requestWithNormalizeTrue: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test", "fields": []}',
@@ -27,7 +27,7 @@ describe('Schema Create - Normalize Parameter', () => {
     expect(requestWithNormalizeTrue.params?.normalize).toBe(true);
   });
 
-  test('SchemaRegistryCreateSchema should accept normalize: false', () => {
+  test('the SchemaRegistryCreateSchema should accept normalize: false', () => {
     const requestWithNormalizeFalse: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test", "fields": []}',
       schemaType: 'AVRO',
@@ -40,7 +40,7 @@ describe('Schema Create - Normalize Parameter', () => {
     expect(requestWithNormalizeFalse.params?.normalize).toBe(false);
   });
 
-  test('SchemaRegistryCreateSchema should allow params to be omitted', () => {
+  test('the SchemaRegistryCreateSchema should allow params to be omitted', () => {
     const requestWithoutParams: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test", "fields": []}',
       schemaType: 'AVRO',
@@ -50,7 +50,7 @@ describe('Schema Create - Normalize Parameter', () => {
     expect(requestWithoutParams.params).toBeUndefined();
   });
 
-  test('SchemaRegistryCreateSchema should serialize correctly with normalize parameter', () => {
+  test('the SchemaRegistryCreateSchema should serialize correctly with normalize parameter', () => {
     const request: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "car", "fields": [{"name": "model", "type": "string"}]}',
       schemaType: 'PROTOBUF',
@@ -74,7 +74,7 @@ describe('Schema Create - Normalize Parameter', () => {
     });
   });
 
-  test('JSON.stringify should include params with normalize in the request body', () => {
+  test('the JSON.stringify should include params with normalize in the request body', () => {
     const request: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test"}',
       schemaType: 'AVRO',
@@ -89,7 +89,7 @@ describe('Schema Create - Normalize Parameter', () => {
     expect(json).toContain('"params"');
   });
 
-  test('JSON.stringify should omit params when not provided', () => {
+  test('the JSON.stringify should omit params when not provided', () => {
     const request: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test"}',
       schemaType: 'AVRO',

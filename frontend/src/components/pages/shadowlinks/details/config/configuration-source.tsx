@@ -25,6 +25,17 @@ import type React from 'react';
 import { TlsCertificatesConfig } from './tls-certificates-config';
 import type { UnifiedShadowLink } from '../../model';
 
+const getScramMechanismLabel = (mechanism: number | undefined): string => {
+  switch (mechanism) {
+    case ScramMechanism.SCRAM_SHA_256:
+      return 'SCRAM-SHA-256';
+    case ScramMechanism.SCRAM_SHA_512:
+      return 'SCRAM-SHA-512';
+    default:
+      return '-';
+  }
+};
+
 export type ConfigurationSourceProps = {
   shadowLink: UnifiedShadowLink;
 };
@@ -56,12 +67,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
   // Determine authentication status
   const isAuthEnabled = Boolean(scramConfig);
 
-  let scramMechanismLabel = '-';
-  if (scramConfig?.scramMechanism === ScramMechanism.SCRAM_SHA_256) {
-    scramMechanismLabel = 'SCRAM-SHA-256';
-  } else if (scramConfig?.scramMechanism === ScramMechanism.SCRAM_SHA_512) {
-    scramMechanismLabel = 'SCRAM-SHA-512';
-  }
+  const scramMechanismLabel = getScramMechanismLabel(scramConfig?.scramMechanism);
 
   return (
     <div className="flex flex-col gap-6">
@@ -94,12 +100,12 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               <div className="flex flex-col items-end gap-1" data-testid="bootstrap-servers-value">
                 {clientOptions?.bootstrapServers && clientOptions.bootstrapServers.length > 0 ? (
                   clientOptions.bootstrapServers.map((server) => (
-                    <div className="font-medium text-body" key={server}>
+                    <div className="text-body font-medium" key={server}>
                       {server}
                     </div>
                   ))
                 ) : (
-                  <div className="font-medium text-body">-</div>
+                  <div className="text-body font-medium">-</div>
                 )}
               </div>
             </div>
@@ -160,14 +166,14 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
 
       {/* Advanced Options Section */}
       <Card size="full" testId="advanced-options-card">
-        <CardContent className="p-0">
+        <CardContent>
           <Accordion>
             <AccordionItem value="advanced">
-              <AccordionTrigger className="py-4" testId="advanced-options-trigger">
+              <AccordionTrigger testId="advanced-options-trigger">
                 <h3 className="text-heading-md">Advanced options</h3>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pb-4" testId="advanced-options-content">
-                <div>
+              <AccordionContent testId="advanced-options-content">
+                <div className="px-6">
                   <ConfigField
                     label="Connection timeout (ms)"
                     testId="connection-timeout"

@@ -31,32 +31,24 @@ import {
 } from '../../redpanda-ui/components/data-table';
 import { Popover, PopoverContent, PopoverTrigger } from '../../redpanda-ui/components/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
+import { TonedIcon } from '../shared/toned-icon';
 
 type TopicPartitionsProps = { topic: Topic };
 
 const EMPTY_PARTITIONS: Partition[] = [];
 
-export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
-  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
-  const clusterHealth = useApiStoreHook((s) => s.clusterHealth);
+function findPartitionIds(
+  entries: { topicName: string; partitionIds: number[] }[] | undefined,
+  topicName: string
+): number[] | undefined {
+  return (entries ?? []).find((entry) => entry.topicName === topicName)?.partitionIds;
+}
 
-  // All hooks stay above the early returns so the hook order is stable while partitions load.
-  const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
-    keyPrefix: 'partition',
-    settings: uiSettings.topicPartitionsList,
-    rowCount: Array.isArray(partitions) ? partitions.length : 0,
-    enabled: Array.isArray(partitions),
-  });
-
-  const leaderlessPartitions = (clusterHealth?.leaderlessPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName
-  )?.partitionIds;
-
-  const underReplicatedPartitions = (clusterHealth?.underReplicatedPartitions ?? []).find(
-    ({ topicName }) => topicName === topic.topicName
-  )?.partitionIds;
-
-  const columns: DataTableColumnDef<Partition>[] = [
+function buildPartitionColumns(
+  leaderlessPartitions: number[] | undefined,
+  underReplicatedPartitions: number[] | undefined
+): DataTableColumnDef<Partition>[] {
+  return [
     {
       accessorKey: 'id',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Partition ID" />,
@@ -101,6 +93,22 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
       cell: ({ row: { original: partition } }) => <BrokerList partition={partition} />,
     },
   ];
+}
+
+function usePartitionsTable(topicName: string, partitions: Partition[] | null | undefined) {
+  const clusterHealth = useApiStoreHook((s) => s.clusterHealth);
+
+  const { sorting, pagination, onSortingChange, onPaginationChange } = useUrlTableState({
+    keyPrefix: 'partition',
+    settings: uiSettings.topicPartitionsList,
+    rowCount: Array.isArray(partitions) ? partitions.length : 0,
+    enabled: Array.isArray(partitions),
+  });
+
+  const columns = buildPartitionColumns(
+    findPartitionIds(clusterHealth?.leaderlessPartitions, topicName),
+    findPartitionIds(clusterHealth?.underReplicatedPartitions, topicName)
+  );
 
   const table = useDataTable({
     data: Array.isArray(partitions) ? partitions : EMPTY_PARTITIONS,
@@ -112,6 +120,15 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
     onPaginationChange,
     autoResetPageIndex: false,
   });
+
+  return { table, columnCount: columns.length };
+}
+
+export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
+  const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
+
+  // All hooks stay above the early returns so the hook order is stable while partitions load.
+  const { table, columnCount } = usePartitionsTable(topic.topicName, partitions);
 
   if (partitions === undefined) {
     return DefaultSkeleton;
@@ -142,7 +159,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
         <TableBody>
           {table.getRowModel().rows.length === 0 ? (
             <TableRow>
-              <TableCell className="text-center" colSpan={columns.length}>
+              <TableCell className="text-center" colSpan={columnCount}>
                 No data found
               </TableCell>
             </TableRow>
@@ -172,13 +189,13 @@ const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
       <PopoverTrigger
         render={
           <Button aria-label="Show partition error details" size="icon-sm" type="button" variant="ghost">
-            <AlertTriangle className="text-warning" />
+            <TonedIcon icon={AlertTriangle} tone="warning" />
           </Button>
         }
       />
       <PopoverContent align="start" className="max-w-[500px]" side="right">
         <p className="mb-2 font-medium">Partition Error</p>
-        <div className="flex flex-col gap-2 whitespace-pre-wrap text-body">
+        <div className="flex flex-col gap-2 text-body whitespace-pre-wrap">
           {Boolean(partition.partitionError) && <p>{partition.partitionError}</p>}
           {Boolean(partition.waterMarksError) && <p>{partition.waterMarksError}</p>}
         </div>

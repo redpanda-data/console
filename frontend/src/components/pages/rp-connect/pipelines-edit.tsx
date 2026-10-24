@@ -11,10 +11,10 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
-import { LoaderIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import {
   type Pipeline,
@@ -67,28 +67,20 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
 export default RpConnectPipelinesEdit;
 
-const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pipeline; pipelineId: string }) => {
-  const [formState, setFormState] = useState({
-    displayName: pipeline.displayName,
-    description: pipeline.description,
-    tasks: cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS,
-    editorContent: pipeline.configYaml,
-  });
-  const { displayName, description, tasks, editorContent } = formState;
-  const setDisplayName = (v: string) => setFormState((prev) => ({ ...prev, displayName: v }));
-  const setDescription = (v: string) => setFormState((prev) => ({ ...prev, description: v }));
-  const setTasks = (v: number) => setFormState((prev) => ({ ...prev, tasks: v }));
-  // The field holds what was typed; `tasks` stays clamped.
-  const [tasksDraft, setTasksDraft] = useState(String(tasks));
-  const setEditorContent = (v: string) => setFormState((prev) => ({ ...prev, editorContent: v }));
+type PipelineUpdateInput = {
+  displayName: string;
+  description: string;
+  tasks: number;
+  editorContent: string;
+};
+
+/** Saves the edits, keeping the pipeline's tags and service account, then returns to its page. */
+const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
   const [isUpdating, setIsUpdating] = useState(false);
-  const tags = pipeline.tags;
+  const { tags } = pipeline;
   const [serviceAccount] = useState<Pipeline_ServiceAccount | undefined>(pipeline.serviceAccount);
 
-  const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
-  const isNameEmpty = !displayName;
-
-  const updatePipeline = () => {
+  const updatePipeline = ({ displayName, description, tasks, editorContent }: PipelineUpdateInput) => {
     setIsUpdating(true);
 
     pipelinesApi
@@ -138,6 +130,26 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       });
   };
 
+  return { isUpdating, updatePipeline };
+};
+
+const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pipeline; pipelineId: string }) => {
+  const [formState, setFormState] = useState<PipelineUpdateInput>({
+    displayName: pipeline.displayName,
+    description: pipeline.description,
+    tasks: cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS,
+    editorContent: pipeline.configYaml,
+  });
+  const { displayName, description, tasks, editorContent } = formState;
+  const setField = <K extends keyof PipelineUpdateInput>(key: K, value: PipelineUpdateInput[K]) =>
+    setFormState((prev) => ({ ...prev, [key]: value }));
+  // The field holds what was typed; `tasks` stays clamped.
+  const [tasksDraft, setTasksDraft] = useState(String(tasks));
+  const { isUpdating, updatePipeline } = useUpdatePipeline(pipeline, pipelineId);
+
+  const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
+  const isNameEmpty = !displayName;
+
   return (
     <PageContent>
       <div className="my-2">
@@ -166,7 +178,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           className="w-[500px]"
           id="pipelineName"
           onChange={(x) => {
-            setDisplayName(x.target.value);
+            setField('displayName', x.target.value);
           }}
           pattern="[a-zA-Z0-9_\-]+"
           placeholder="Enter a config name..."
@@ -183,7 +195,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           className="w-[500px]"
           id="pipelineDescription"
           onChange={(x) => {
-            setDescription(x.target.value);
+            setField('description', x.target.value);
           }}
           testId="pipelineDescription"
           value={description}
@@ -203,7 +215,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           onChange={(e) => {
             // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
             setTasksDraft(e.target.value);
-            setTasks(clampTasks(e.target.value));
+            setField('tasks', clampTasks(e.target.value));
           }}
           showStepControls
           type="number"
@@ -218,7 +230,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       <div className="mt-4">
         <PipelineEditor
           onChange={(x) => {
-            setEditorContent(x);
+            setField('editorContent', x);
           }}
           secrets={secrets}
           yaml={editorContent}
@@ -227,10 +239,10 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
 
       <div className="flex items-center gap-4">
         {/* `isLoading` hides the label, so the pending text is a child. */}
-        <Button disabled={isNameEmpty || isUpdating} onClick={updatePipeline} variant="primary">
+        <Button disabled={isNameEmpty || isUpdating} onClick={() => updatePipeline(formState)} variant="primary">
           {isUpdating ? (
             <>
-              <LoaderIcon className="size-4 animate-spin" />
+              <Spinner />
               Updating...
             </>
           ) : (

@@ -12,6 +12,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -20,6 +21,7 @@ import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import type { AclDetail } from '../shared/acl-model';
 import { getRuleDataTestId } from '../shared/acl-model';
+import { ExpandedDetailRow } from '../shared/expanded-detail-row';
 import { OperationsBadge } from '../shared/operations-badge';
 
 type Role = {
@@ -49,7 +51,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const rowKey = role.principalName;
 
   return [
-    <TableRow className="hover:bg-surface-subtle" key={`role-${rowKey}`}>
+    <TableRow key={`role-${rowKey}`}>
       <TableCell testId={`role-name-${rowKey}`}>{role.principalName}</TableCell>
       <TableCell align="right">
         <div className="flex items-center justify-end gap-2">
@@ -63,6 +65,8 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
                 to: '/security/roles/$roleName/details',
                 params: { roleName: role.principalName },
                 search: { host: undefined },
+              }).catch((error: unknown) => {
+                toast.error('Failed to navigate', { description: String(error) });
               });
             }}
             size="sm"
@@ -85,29 +89,27 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
       </TableRow>
     ),
     !isLoading && isExpanded && acls && acls.length > 0 && (
-      <TableRow key={`role-${rowKey}-expanded`}>
-        <TableCell className="bg-surface-subtle p-6" colSpan={2}>
-          <div className="space-y-4">
-            <div className="font-semibold text-body text-foreground">
-              ACL Rules ({acls.reduce((sum: number, acl: AclDetail) => sum + acl.rules.length, 0)})
-            </div>
-            {acls.map((acl: AclDetail) => (
-              <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
-                <div className="mb-2 text-body-sm text-subtle">Host: {acl.sharedConfig.host}</div>
-                {acl.rules.map((rule) => (
-                  <div
-                    className="rounded-lg border border-border bg-card p-4"
-                    data-testid={`rule-${getRuleDataTestId(rule)}`}
-                    key={rule.id}
-                  >
-                    <OperationsBadge rule={rule} />
-                  </div>
-                ))}
-              </div>
-            ))}
+      <ExpandedDetailRow colSpan={2} key={`role-${rowKey}-expanded`}>
+        <div className="space-y-4">
+          <div className="text-body font-semibold text-foreground">
+            ACL Rules ({acls.reduce((sum: number, acl: AclDetail) => sum + acl.rules.length, 0)})
           </div>
-        </TableCell>
-      </TableRow>
+          {acls.map((acl: AclDetail) => (
+            <div key={`${acl.sharedConfig.principal}-${acl.sharedConfig.host}`}>
+              <div className="mb-2 text-body-sm text-subtle">Host: {acl.sharedConfig.host}</div>
+              {acl.rules.map((rule) => (
+                <div
+                  className="rounded-lg border border-border bg-card p-4"
+                  data-testid={`rule-${getRuleDataTestId(rule)}`}
+                  key={rule.id}
+                >
+                  <OperationsBadge rule={rule} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </ExpandedDetailRow>
     ),
   ];
 };

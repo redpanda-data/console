@@ -32,6 +32,19 @@ export function takeStartLintHints(pipelineId: string): Record<string, LintHint>
   return hints;
 }
 
+// A lint refusal stashes its hints and opens the editor, where they are actionable; anything else is a toast.
+function reportStartDraftError(err: unknown, pipelineId: string, navigate: ReturnType<typeof useNavigate>): void {
+  const error = ConnectError.from(err);
+  if (isInvalidConfigError(error)) {
+    const hints = extractLintHintsFromError(error);
+    pendingStartLintHints.set(pipelineId, hints);
+    toast.error(startBlockedMessage(Object.keys(hints).length));
+    navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } });
+    return;
+  }
+  toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
+}
+
 /** Starting a draft validates it; a lint refusal opens the editor, where the hints are actionable. */
 export function useStartDraft() {
   const navigate = useNavigate();
@@ -43,15 +56,7 @@ export function useStartDraft() {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
       } catch (err) {
-        const error = ConnectError.from(err);
-        if (isInvalidConfigError(error)) {
-          const hints = extractLintHintsFromError(error);
-          pendingStartLintHints.set(pipelineId, hints);
-          toast.error(startBlockedMessage(Object.keys(hints).length));
-          navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } });
-          return;
-        }
-        toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
+        reportStartDraftError(err, pipelineId, navigate);
       }
     },
     [mutateAsync, navigate]

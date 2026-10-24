@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import clsx from 'clsx';
+
 import {
   formatLabel,
   getIdFromRule,
@@ -35,7 +37,7 @@ const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) =>
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${colorClasses}`}
+      className={clsx('inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium', colorClasses)}
       data-testid={testId}
     >
       {children}
@@ -43,39 +45,39 @@ const PermissionBadge = ({ isAllow, children, testId }: PermissionBadgeProps) =>
   );
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+const getRuleResourceText = (rule: Rule) => {
+  if (rule.resourceType === 'cluster' || rule.resourceType === 'schemaRegistry') {
+    return getResourceName(rule.resourceType);
+  }
+  if (rule.selectorType === 'any') {
+    return `All ${getPluralResourceName(rule.resourceType)}`;
+  }
+  const matchType = rule.selectorType === 'literal' ? 'matching' : 'starting with';
+  return `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
+};
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** Whether every operation the resource type supports is set, and all to the same permission. */
+const getUniformPermission = (rule: Rule, operations: { value: OperationType }[]) => {
+  const coversAllOperations =
+    operations.length > 0 &&
+    Object.entries(getOperationsForResourceType(rule.resourceType)).length === operations.length;
+  return {
+    allAllow: coversAllOperations && operations.every((op) => op.value === 'allow'),
+    allDeny: coversAllOperations && operations.every((op) => op.value === 'deny'),
+  };
+};
+
 export const OperationsBadge = ({ rule, showResourceDescription = true }: OperationsBadgesProps) => {
   const enabledOperations = Object.entries(rule.operations).map(([op, value]: [string, OperationType]) => ({
     name: formatLabel(op),
     originName: op,
     value,
   }));
-
-  // Check if all operations have the same permission
-  const availableRules = Object.entries(getOperationsForResourceType(rule.resourceType)).length;
-  const allAllow =
-    enabledOperations.length > 0 &&
-    availableRules === enabledOperations.length &&
-    enabledOperations.every((op) => op.value === 'allow');
-  const allDeny =
-    enabledOperations.length > 0 &&
-    availableRules === enabledOperations.length &&
-    enabledOperations.every((op) => op.value === 'deny');
+  const { allAllow, allDeny } = getUniformPermission(rule, enabledOperations);
   const showSummary = allAllow || allDeny;
-
-  // Generate resource description text
-  let resourceText = '';
-  if (showResourceDescription) {
-    if (rule.resourceType === 'cluster' || rule.resourceType === 'schemaRegistry') {
-      resourceText = getResourceName(rule.resourceType);
-    } else if (rule.selectorType === 'any') {
-      resourceText = `All ${getPluralResourceName(rule.resourceType)}`;
-    } else {
-      const matchType = rule.selectorType === 'literal' ? 'matching' : 'starting with';
-      resourceText = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
-    }
-    resourceText = resourceText.charAt(0).toUpperCase() + resourceText.slice(1);
-  }
+  const resourceText = showResourceDescription ? capitalize(getRuleResourceText(rule)) : '';
 
   return (
     <div className="space-y-3">

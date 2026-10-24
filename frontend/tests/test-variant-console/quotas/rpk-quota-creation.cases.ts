@@ -5,11 +5,11 @@ import { QuotaPage } from '../utils/quota-page';
 
 // E2E tests for quota management via RPK
 
-test.describe('Quotas - RPK Integration', () => {
+test.describe('quotas - RPK Integration', () => {
   test('should create quota via RPK and verify it appears in Console UI', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `rpk-test-client-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `rpk-test-client-${suffix}`;
 
     await step('Create quota using RPK', async () => {
       await createClientIdQuota({
@@ -40,8 +40,8 @@ test.describe('Quotas - RPK Integration', () => {
 
   test('should update existing quota via RPK and see changes in UI', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `rpk-test-update-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `rpk-test-update-${suffix}`;
 
     await step('Create initial quota using RPK', async () => {
       await createClientIdQuota({
@@ -78,10 +78,10 @@ test.describe('Quotas - RPK Integration', () => {
 
   test('should handle multiple quotas created via RPK', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClient1 = `rpk-multi-client1-${timestamp}`;
-    const quotaClient2 = `rpk-multi-client2-${timestamp}`;
-    const quotaUser1 = `rpk-multi-user1-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClient1 = `rpk-multi-client1-${suffix}`;
+    const quotaClient2 = `rpk-multi-client2-${suffix}`;
+    const quotaUser1 = `rpk-multi-user1-${suffix}`;
 
     await step('Create multiple quotas using RPK', async () => {
       await createClientIdQuota({

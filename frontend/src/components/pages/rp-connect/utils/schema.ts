@@ -152,28 +152,45 @@ export const schemaToConfig = (
     componentName: componentSpec.name,
   });
 
+  const config =
+    componentSpec.name === 'redpanda_common'
+      ? redpandaCommonConfig(componentSpec, connectionConfig)
+      : componentSectionConfig(componentSpec, connectionConfig);
+  return { config, spec: componentSpec };
+};
+
+// redpanda_common carries its SASL in a top-level `redpanda:` block beside the component.
+function redpandaCommonConfig(
+  componentSpec: ConnectComponentSpec,
+  connectionConfig: unknown
+): Partial<ConnectConfigObject> {
   const config: Partial<ConnectConfigObject> = {};
+  const redpandaBlockConfig = generateRedpandaTopLevelConfig();
 
-  if (componentSpec.name === 'redpanda_common') {
-    const redpandaBlockConfig = generateRedpandaTopLevelConfig();
-
-    if (Object.keys(redpandaBlockConfig).length > 0) {
-      config.redpanda = redpandaBlockConfig;
-    }
-
-    switch (componentSpec.type) {
-      case 'input':
-      case 'output':
-        config[typeToYamlConfigKey[componentSpec.type]] = {
-          [componentSpec.name]: connectionConfig,
-        };
-        break;
-      default:
-        break;
-    }
-
-    return { config, spec: componentSpec };
+  if (Object.keys(redpandaBlockConfig).length > 0) {
+    config.redpanda = redpandaBlockConfig;
   }
+
+  switch (componentSpec.type) {
+    case 'input':
+    case 'output':
+      config[typeToYamlConfigKey[componentSpec.type]] = {
+        [componentSpec.name]: connectionConfig,
+      };
+      break;
+    default:
+      break;
+  }
+
+  return config;
+}
+
+/** The snippet that places a component's config under its section of the Connect YAML schema. */
+function componentSectionConfig(
+  componentSpec: ConnectComponentSpec,
+  connectionConfig: unknown
+): Partial<ConnectConfigObject> {
+  const config: Partial<ConnectConfigObject> = {};
 
   switch (componentSpec.type) {
     case 'input':
@@ -213,17 +230,14 @@ export const schemaToConfig = (
 
     case 'scanner':
       // Scanners are embedded in inputs, so return the config directly.
-      return {
-        config: { [componentSpec.name]: connectionConfig },
-        spec: componentSpec,
-      };
+      return { [componentSpec.name]: connectionConfig };
 
     default:
       break;
   }
 
-  return { config, spec: componentSpec };
-};
+  return config;
+}
 
 function populateWizardFields(
   spec: RawFieldSpec,
@@ -246,20 +260,23 @@ function populateWizardFields(
   }
 
   // Only inject user/password secret refs in SASL context, to avoid leaking into TLS client_certs.
-  const isSaslContext = parentName?.toLowerCase() === 'sasl';
   if (
     componentName &&
     REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
     userData?.username &&
-    isSaslContext
+    parentName?.toLowerCase() === 'sasl'
   ) {
-    if (isUserField(spec.name)) {
-      return getSecretSyntax(userSecretIds(userData.username).username);
-    }
+    return saslSecretRef(spec.name, userData.username);
+  }
+}
 
-    if (isPasswordField(spec.name)) {
-      return getSecretSyntax(userSecretIds(userData.username).password);
-    }
+function saslSecretRef(fieldName: string, username: string): string | undefined {
+  if (isUserField(fieldName)) {
+    return getSecretSyntax(userSecretIds(username).username);
+  }
+
+  if (isPasswordField(fieldName)) {
+    return getSecretSyntax(userSecretIds(username).password);
   }
 }
 
@@ -320,11 +337,7 @@ function shouldShowField(params: {
     return !!userData?.username;
   }
 
-  if (spec.advanced && !showAdvancedFields) {
-    return false;
-  }
-
-  return true;
+  return !(spec.advanced && !showAdvancedFields);
 }
 
 function generateObjectValue(
@@ -392,14 +405,19 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
   }
   // Backend serializes [] / {} defaults as JSON strings for structured kinds.
   if (kind === 'array' || kind === 'map' || kind === '2darray') {
-    try {
-      const parsed = JSON.parse(defaultValue);
-      if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
-        return parsed;
-      }
-    } catch {
-      // Not valid JSON, fall through to return as string
+    return parseStructuredDefault(defaultValue);
+  }
+  return defaultValue;
+}
+
+function parseStructuredDefault(defaultValue: string): unknown {
+  try {
+    const parsed = JSON.parse(defaultValue);
+    if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
+      return parsed;
     }
+  } catch {
+    // Not valid JSON, fall through to return as string
   }
   return defaultValue;
 }
@@ -424,23 +442,7 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (spec.requiredBySchema !== undefined) {
     return spec.requiredBySchema;
   }
-  if (spec.optional === true) {
-    return false;
-  }
-  // Non-scalar under an optional ancestor: a collection default ([]/{}) was likely lost in proto.
-  // Scalars are still evaluated normally.
-  if (ancestorOptional && spec.kind !== 'scalar') {
-    return false;
-  }
-  if (spec.defaultValue) {
-    return false;
-  }
-  // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
-  if (spec.type !== 'string') {
-    return false;
-  }
-  // Advanced non-scalar fields typically had defaults that were lost in serialization.
-  if (spec.kind !== 'scalar' && spec.advanced) {
+  if (spec.optional === true || spec.defaultValue || mayHaveLostDefault(spec, ancestorOptional)) {
     return false;
   }
   if (!spec.children?.length) {
@@ -448,6 +450,19 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   }
   // Object: required if any child is required.
   return spec.children.some((c) => checkRequired(c));
+}
+
+// Without `requiredBySchema`, an empty default may be one the proto failed to carry.
+function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
+  return (
+    // Non-scalar under an optional ancestor: a collection default ([]/{}) was likely lost in proto.
+    // Scalars are still evaluated normally.
+    (Boolean(ancestorOptional) && spec.kind !== 'scalar') ||
+    // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
+    spec.type !== 'string' ||
+    // Advanced non-scalar fields typically had defaults that were lost in serialization.
+    (spec.kind !== 'scalar' && Boolean(spec.advanced))
+  );
 }
 
 const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
@@ -543,92 +558,101 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
   }
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex field generation logic with many conditions
-export function generateDefaultValue(spec: RawFieldSpec, options?: GenerateDefaultValueOptions): unknown {
-  const { showAdvancedFields, componentName, parentName, ancestorOptional } = options || {};
+export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}): unknown {
+  const { showAdvancedFields, componentName, parentName } = options;
 
   // For Redpanda secret components, auto-population wins over optional/advanced flags.
-  if (isRedpandaComponent(componentName)) {
-    const wizardValue = populateWizardFields(spec, componentName, parentName);
-    if (wizardValue !== undefined) {
-      return wizardValue;
-    }
-
-    const contextualValue = populateContextualVariables(spec, componentName, parentName);
-    if (contextualValue !== undefined) {
-      return contextualValue;
-    }
-
-    const connectionDefault = populateConnectionDefaults(spec, componentName, parentName);
-    if (connectionDefault !== undefined) {
-      return connectionDefault;
-    }
+  const populated = isRedpandaComponent(componentName)
+    ? populateRedpandaValue(spec, componentName, parentName)
+    : undefined;
+  if (populated !== undefined) {
+    return populated;
   }
 
-  const shouldShow = shouldShowField({
-    spec,
-    showAdvancedFields: !!showAdvancedFields,
-    componentName,
-  });
-
-  if (!shouldShow) {
+  if (!shouldShowField({ spec, showAdvancedFields: !!showAdvancedFields, componentName })) {
     return;
   }
 
+  return generateShownFieldValue(spec, options);
+}
+
+function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string): unknown {
+  return (
+    populateWizardFields(spec, componentName, parentName) ??
+    populateContextualVariables(spec, componentName, parentName) ??
+    populateConnectionDefaults(spec, componentName, parentName)
+  );
+}
+
+// Comments the field and returns the placeholder the YAML output turns into that comment.
+function markRequired(spec: RawFieldSpec): string {
+  spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
+  return SENTINEL_REQUIRED_FIELD;
+}
+
+function generateShownFieldValue(
+  spec: RawFieldSpec,
+  { showAdvancedFields, componentName, ancestorOptional }: GenerateDefaultValueOptions
+): unknown {
   const required = checkRequired(spec, ancestorOptional);
 
   // Objects build structure from children, so they never use the required sentinel.
   if (required && spec.type !== 'object') {
-    spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
-    return SENTINEL_REQUIRED_FIELD;
+    return markRequired(spec);
   }
 
   // A non-empty defaultValue survived serialization — use it (structured kinds arrive as JSON).
-  if (spec.defaultValue) {
-    const converted = convertDefaultValue(spec.defaultValue, spec.type, spec.kind);
-    if (converted !== undefined) {
-      return converted;
-    }
+  const converted = spec.defaultValue ? convertDefaultValue(spec.defaultValue, spec.type, spec.kind) : undefined;
+  if (converted !== undefined) {
+    return converted;
   }
 
   // SASL arrays for redpanda/kafka_franz components are generated even when optional/advanced so
   // wizard-collected credentials land in the config.
-  const isSaslArray = spec.kind === 'array' && spec.name?.toLowerCase() === 'sasl';
-  if (isSaslArray && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)) {
+  if (spec.kind === 'array' && spec.name?.toLowerCase() === 'sasl' && isRedpandaComponent(componentName)) {
     return generateObjectArrayValue(spec, showAdvancedFields, componentName);
   }
 
-  // Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
-  // unset on e.g. batching policies; treat that as scalar.
   if (spec.type === 'object') {
-    // The component root (name '') must always produce a type-correct value: inserting `switch`
-    // (root kind 'array') has to emit `[]`/`[{...}]`, and a field-less component like `drop` has
-    // to emit `{}` — returning undefined would drop the component key from the YAML entirely.
-    const isComponentRoot = !spec.name;
-    if (spec.kind === 'scalar' || spec.kind === '') {
-      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      if (obj && Object.keys(obj).length > 0) {
-        return obj;
-      }
-      return isComponentRoot ? {} : undefined;
-    }
-    // Collections of objects are only seeded when the field is required or at the component root.
-    if (!(required || isComponentRoot)) {
-      return;
-    }
-    if (spec.kind === 'array') {
-      return generateObjectArrayValue(spec, showAdvancedFields, componentName) ?? [];
-    }
-    if (spec.kind === '2darray') {
-      const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-      return obj && Object.keys(obj).length > 0 ? [[obj]] : [[]];
-    }
-    if (spec.kind === 'map') {
-      return {};
-    }
+    return generateObjectStructure(spec, required, showAdvancedFields, componentName);
   }
 
   // Everything else is a non-required field whose default didn't survive serialization (the proto
   // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
   // flips semantics (e.g. auto_replay_nacks defaults to true; a generated `false` overrides it).
+}
+
+// Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
+// unset on e.g. batching policies; treat that as scalar.
+function generateObjectStructure(
+  spec: RawFieldSpec,
+  required: boolean,
+  showAdvancedFields: boolean | undefined,
+  componentName: string | undefined
+): unknown {
+  // The component root (name '') must always produce a type-correct value: inserting `switch`
+  // (root kind 'array') has to emit `[]`/`[{...}]`, and a field-less component like `drop` has
+  // to emit `{}` — returning undefined would drop the component key from the YAML entirely.
+  const isComponentRoot = !spec.name;
+  if (spec.kind === 'scalar' || spec.kind === '') {
+    const obj = generateObjectValue(spec, showAdvancedFields, componentName);
+    if (obj && Object.keys(obj).length > 0) {
+      return obj;
+    }
+    return isComponentRoot ? {} : undefined;
+  }
+  // Collections of objects are only seeded when the field is required or at the component root.
+  if (!(required || isComponentRoot)) {
+    return;
+  }
+  switch (spec.kind) {
+    case 'array':
+      return generateObjectArrayValue(spec, showAdvancedFields, componentName) ?? [];
+    case '2darray':
+      return [generateObjectArrayValue(spec, showAdvancedFields, componentName) ?? []];
+    case 'map':
+      return {};
+    default:
+      return;
+  }
 }

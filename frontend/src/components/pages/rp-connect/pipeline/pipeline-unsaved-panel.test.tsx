@@ -15,7 +15,7 @@ import { render, screen } from 'test-utils';
 
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 
-describe('PipelineUnsavedPanel', () => {
+describe('the PipelineUnsavedPanel', () => {
   test('renders nothing when there are no unsaved nodes', () => {
     render(<PipelineUnsavedPanel nodes={[]} onSelect={rs.fn()} />);
     expect(screen.queryByTestId('pipeline-unsaved-chip')).not.toBeInTheDocument();

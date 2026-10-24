@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { GetSecretRequestSchema, GetSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { getSecret, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
@@ -57,32 +57,68 @@ import { SecretEditPage } from './secret-edit-page';
 
 const UPDATE_SECRET_BUTTON_REGEX = /update secret/i;
 
-describe('SecretEditPage', () => {
+function renderEditPage() {
+  const existingSecret = create(SecretSchema, {
+    id: 'TEST_SECRET',
+    scopes: [Scope.AI_GATEWAY],
+    labels: { env: 'production' },
+  });
+
+  const getSecretMock = rs.fn().mockReturnValue(
+    create(GetSecretResponseSchema, {
+      response: create(GetSecretResponseSchemaDataPlane, {
+        secret: existingSecret,
+      }),
+    })
+  );
+
+  const updateSecretMock = rs.fn().mockResolvedValue({});
+
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(getSecret, getSecretMock);
+    rpc(updateSecret, updateSecretMock);
+  });
+
+  renderWithFileRoutes(<SecretEditPage />, { transport });
+
+  return { getSecretMock, updateSecretMock };
+}
+
+/** Opens the scopes multi-select, picks both options by label, then closes the dropdown. */
+async function selectScopes(user: UserEvent, firstLabel: string, secondLabel: string) {
+  // Open the scopes multi-select using the testId
+  const scopesButton = screen.getByTestId('secret-scopes-select');
+  await user.click(scopesButton);
+
+  // Wait for dropdown to open
+  await waitFor(() => {
+    const firstOptionElements = screen.getAllByText(firstLabel);
+    expect(firstOptionElements.length).toBeGreaterThan(0);
+    expect(firstOptionElements[0]).toBeVisible();
+  });
+
+  // Click on the first matching option in the dropdown for each label
+  await user.click(screen.getAllByText(firstLabel)[0]);
+  await user.click(screen.getAllByText(secondLabel)[0]);
+
+  // Close the dropdown
+  await user.keyboard('{Escape}');
+}
+
+async function submitWhenEnabled(user: UserEvent) {
+  const submitButton = screen.getByRole('button', { name: UPDATE_SECRET_BUTTON_REGEX });
+  await waitFor(() => {
+    expect(submitButton).toBeEnabled();
+  });
+
+  await user.click(submitButton);
+}
+
+describe('the SecretEditPage', () => {
   test('should update an existing secret', async () => {
     const user = userEvent.setup();
 
-    const existingSecret = create(SecretSchema, {
-      id: 'TEST_SECRET',
-      scopes: [Scope.AI_GATEWAY],
-      labels: { env: 'production' },
-    });
-
-    const getSecretMock = rs.fn().mockReturnValue(
-      create(GetSecretResponseSchema, {
-        response: create(GetSecretResponseSchemaDataPlane, {
-          secret: existingSecret,
-        }),
-      })
-    );
-
-    const updateSecretMock = rs.fn().mockResolvedValue({});
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getSecret, getSecretMock);
-      rpc(updateSecret, updateSecretMock);
-    });
-
-    renderWithFileRoutes(<SecretEditPage />, { transport });
+    const { getSecretMock, updateSecretMock } = renderEditPage();
 
     // Wait for secret to load
     await waitFor(() => {
@@ -102,35 +138,11 @@ describe('SecretEditPage', () => {
       expect(idInput).toBeDisabled();
     });
 
-    // Open the scopes multi-select using the testId
-    const scopesButton = screen.getByTestId('secret-scopes-select');
-    await user.click(scopesButton);
-
-    // Wait for dropdown to open
-    await waitFor(() => {
-      const mcpServerElements = screen.getAllByText('MCP Server');
-      expect(mcpServerElements.length).toBeGreaterThan(0);
-      expect(mcpServerElements[0]).toBeVisible();
-    });
-
-    // Add MCP Server scope
-    const mcpServerOption = screen.getAllByText('MCP Server')[0];
-    await user.click(mcpServerOption);
-
-    // Add Redpanda Connect scope
-    const redpandaConnectOption = screen.getAllByText('Redpanda Connect')[0];
-    await user.click(redpandaConnectOption);
-
-    // Close the dropdown
-    await user.keyboard('{Escape}');
+    // Add MCP Server and Redpanda Connect scopes
+    await selectScopes(user, 'MCP Server', 'Redpanda Connect');
 
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: UPDATE_SECRET_BUTTON_REGEX });
-    await waitFor(() => {
-      expect(submitButton).toBeEnabled();
-    });
-
-    await user.click(submitButton);
+    await submitWhenEnabled(user);
 
     // Verify the update mutation was called
     await waitFor(() => {

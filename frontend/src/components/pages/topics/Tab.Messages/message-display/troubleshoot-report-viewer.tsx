@@ -30,7 +30,7 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
     <div className="my-4">
       <h4 className="text-heading-xl">Deserialization Troubleshoot Report</h4>
       <Alert className="mt-4" icon={<AlertTriangle />} variant="destructive">
-        <AlertTitle className="flex items-center font-normal [&]:line-clamp-none">
+        <AlertTitle className="flex items-center">
           Errors were encountered when deserializing this message
           <button
             className="cursor-pointer border-none bg-transparent pl-2 font-medium text-primary underline underline-offset-4"

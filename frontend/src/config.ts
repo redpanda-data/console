@@ -234,23 +234,6 @@ const setConfig = ({
     },
   });
 
-  /* DATAPLANE CLIENTS */
-  const licenseGrpcClient = createClient(LicenseService, dataplaneTransport);
-  const consoleGrpcClient = createClient(ConsoleService, dataplaneTransport);
-  const debugBundleGrpcClient = createClient(DebugBundleService, dataplaneTransport);
-  const securityGrpcClient = createClient(SecurityService, dataplaneTransport);
-  const pipelinesGrpcClient = createClient(PipelineService, dataplaneTransport);
-  const secretGrpcClient = createClient(SecretService, dataplaneTransport);
-  const authenticationGrpcClient = createClient(AuthenticationService, dataplaneTransport);
-  const transformClient = createClient(TransformService, dataplaneTransport);
-  const clusterStatusGrpcClient = createClient(ClusterStatusService, dataplaneTransport);
-  const userGrpcClient = createClient(UserService, dataplaneTransport);
-
-  /* CONTROLPLANE CLIENTS */
-  const serviceAccountClient = createClient(ServiceAccountService, controlplaneTransport);
-  const roleBindingClient = createClient(RoleBindingService, controlplaneTransport);
-  const shadowLinkClient = createClient(ShadowLinkService, controlplaneTransport);
-
   Object.assign(config, {
     jwt,
     dataplaneTransport,
@@ -260,19 +243,19 @@ const setConfig = ({
     controlplaneUrl: config.controlplaneUrl,
     fetch: createAuthInjectingFetch(fetch ?? window.fetch.bind(window)),
     assetsPath: assetsUrl ?? getBasePath(),
-    authenticationClient: authenticationGrpcClient,
-    licenseClient: licenseGrpcClient,
-    consoleClient: consoleGrpcClient,
-    debugBundleClient: debugBundleGrpcClient,
-    securityClient: securityGrpcClient,
-    pipelinesClient: pipelinesGrpcClient,
-    transformsClient: transformClient,
-    rpcnSecretsClient: secretGrpcClient,
-    clusterStatusClient: clusterStatusGrpcClient,
-    userClient: userGrpcClient,
-    serviceAccountClient,
-    roleBindingClient,
-    shadowLinkClient,
+    authenticationClient: createClient(AuthenticationService, dataplaneTransport),
+    licenseClient: createClient(LicenseService, dataplaneTransport),
+    consoleClient: createClient(ConsoleService, dataplaneTransport),
+    debugBundleClient: createClient(DebugBundleService, dataplaneTransport),
+    securityClient: createClient(SecurityService, dataplaneTransport),
+    pipelinesClient: createClient(PipelineService, dataplaneTransport),
+    transformsClient: createClient(TransformService, dataplaneTransport),
+    rpcnSecretsClient: createClient(SecretService, dataplaneTransport),
+    clusterStatusClient: createClient(ClusterStatusService, dataplaneTransport),
+    userClient: createClient(UserService, dataplaneTransport),
+    serviceAccountClient: createClient(ServiceAccountService, controlplaneTransport),
+    roleBindingClient: createClient(RoleBindingService, controlplaneTransport),
+    shadowLinkClient: createClient(ShadowLinkService, controlplaneTransport),
     featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });

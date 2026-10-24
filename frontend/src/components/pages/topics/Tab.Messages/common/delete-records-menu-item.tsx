@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import type { TopicAction } from '../../../../../state/rest-interfaces';
 import { getDeleteErrorText, isDeleteEnabled } from '../helpers';
 
-export function DeleteRecordsMenuItem(
+export function deleteRecordsMenuItem(
   isCompacted: boolean,
   allowedActions: TopicAction[] | undefined,
   onClick: () => void

@@ -17,23 +17,18 @@ const ROLE_LABEL = /^Role$/i;
 /** Exact-match on a stat label, scoped so sidebar items with the same text cannot collide. */
 const exactly = (label: string) => new RegExp(`^${label}$`, 'i');
 
-test.describe('Overview', () => {
+test.describe('overview', () => {
   test('renders the cluster statistics', async ({ page }) => {
     await page.goto('/overview');
 
     const statLabels = page.locator(STAT_LABEL);
     await expect(statLabels.first()).toBeVisible();
 
-    for (const label of [
-      'Cluster Status',
-      'Cluster Storage Size',
-      'Cluster Version',
-      'Brokers Online',
-      'Topics',
-      'Replicas',
-    ]) {
-      await expect(statLabels.filter({ hasText: exactly(label) })).toHaveCount(1);
-    }
+    await Promise.all(
+      ['Cluster Status', 'Cluster Storage Size', 'Cluster Version', 'Brokers Online', 'Topics', 'Replicas'].map(
+        (label) => expect(statLabels.filter({ hasText: exactly(label) })).toHaveCount(1)
+      )
+    );
   });
 
   test('lists the brokers with a link into each one', async ({ page }) => {
@@ -61,12 +56,16 @@ test.describe('Overview', () => {
     await expect(detailsSection.getByRole('heading', { name: 'Cluster Details' })).toBeVisible();
 
     // The three detail blocks, by their uppercase section labels.
-    for (const block of ['Services', 'Storage', 'Security']) {
-      await expect(detailsSection.getByRole('heading', { name: block, exact: true })).toHaveCount(1);
-    }
+    await Promise.all(
+      ['Services', 'Storage', 'Security'].map((block) =>
+        expect(detailsSection.getByRole('heading', { name: block, exact: true })).toHaveCount(1)
+      )
+    );
 
-    for (const row of ['Kafka Connect', 'Schema Registry', 'Total Bytes', 'Service Accounts', 'ACLs', 'Licensing']) {
-      await expect(detailsSection.getByRole('heading', { name: row, exact: true })).toHaveCount(1);
-    }
+    await Promise.all(
+      ['Kafka Connect', 'Schema Registry', 'Total Bytes', 'Service Accounts', 'ACLs', 'Licensing'].map((row) =>
+        expect(detailsSection.getByRole('heading', { name: row, exact: true })).toHaveCount(1)
+      )
+    );
   });
 });

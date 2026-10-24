@@ -28,7 +28,7 @@ export const TlsConfiguration = () => {
         control={control}
         name="useTls"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center gap-3">
+          <FormItem layout="horizontal">
             <FormLabel>Enable TLS</FormLabel>
             <FormControl>
               <Switch checked={field.value} onCheckedChange={field.onChange} testId="tls-toggle" />

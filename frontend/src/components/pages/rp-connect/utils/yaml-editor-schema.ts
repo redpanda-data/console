@@ -40,28 +40,32 @@ function addFieldDescriptions(node: SchemaNode, fields: readonly RawFieldSpec[])
   }
 }
 
+function schemaNodes(nodes: readonly (SchemaNode | boolean)[] | undefined): SchemaNode[] {
+  return (nodes ?? []).filter((node): node is SchemaNode => Boolean(node) && typeof node === 'object');
+}
+
+function addComponentDescriptions(
+  option: SchemaNode,
+  type: string,
+  componentIndex: ReadonlyMap<string, ConnectComponentSpec>
+) {
+  for (const [name, node] of Object.entries(option.properties ?? {})) {
+    const component = componentIndex.get(`${type}:${name}`);
+    if (!(component && node) || typeof node !== 'object') {
+      continue;
+    }
+    addDescription(node, component.summary);
+    addFieldDescriptions(unwrapField(node), component.config?.children ?? []);
+  }
+}
+
 export function withYamlDocumentation<T extends SchemaNode>(schema: T, components: readonly ConnectComponentSpec[]): T {
   const documented = structuredClone(schema);
   const componentIndex = new Map(components.map((component) => [`${component.type}:${component.name}`, component]));
 
   for (const [type, definition] of Object.entries(documented.definitions ?? {})) {
-    for (const branch of definition?.allOf ?? []) {
-      if (!branch || typeof branch !== 'object') {
-        continue;
-      }
-      for (const option of branch.anyOf ?? []) {
-        if (!option || typeof option !== 'object') {
-          continue;
-        }
-        for (const [name, node] of Object.entries(option.properties ?? {})) {
-          const component = componentIndex.get(`${type}:${name}`);
-          if (!(component && node) || typeof node !== 'object') {
-            continue;
-          }
-          addDescription(node, component.summary);
-          addFieldDescriptions(unwrapField(node), component.config?.children ?? []);
-        }
-      }
+    for (const option of schemaNodes(definition?.allOf).flatMap((branch) => schemaNodes(branch.anyOf))) {
+      addComponentDescriptions(option, type, componentIndex);
     }
   }
   return documented;

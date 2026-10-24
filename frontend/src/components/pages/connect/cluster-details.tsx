@@ -168,7 +168,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
             search={{} as never}
             to="/connect-clusters/$clusterName/$connector"
           >
-            <span className="whitespace-break-spaces break-words">{original.name}</span>
+            <span className="wrap-break-word whitespace-break-spaces">{original.name}</span>
           </Link>
         ),
       },

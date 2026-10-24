@@ -32,10 +32,10 @@ import {
   getResourceNameValue,
   OperationTypeNotSet,
 } from './acl-model';
+import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
-import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import {
@@ -57,6 +57,7 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { useRowSelection } from '../hooks/use-row-selection';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
 const RESOURCE_TYPE_LABELS: Record<string, string> = {
@@ -98,91 +99,71 @@ type AclsCardProps = {
   isLoading?: boolean;
 };
 
-export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [grantAllOpen, setGrantAllOpen] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const { mutateAsync: deleteAcl, isPending: isDeleting } = useDeleteAclMutation();
+const toAclRows = (list: AclDetail[]): AclRow[] =>
+  list
+    .flatMap((detail) =>
+      detail.rules.flatMap((rule) =>
+        Object.entries(rule.operations)
+          .filter(([, perm]) => perm !== OperationTypeNotSet)
+          .map(([op, perm]) => ({
+            resourceType: RESOURCE_TYPE_LABELS[rule.resourceType] ?? rule.resourceType,
+            resourceName: getResourceNameValue(rule),
+            operation: op.charAt(0) + op.slice(1).toLowerCase(),
+            permissionType: (perm === 'allow' ? 'Allow' : 'Deny') as 'Allow' | 'Deny',
+            host: detail.sharedConfig.host,
+            rawResourceType: getGRPCResourceType(rule.resourceType),
+            rawPatternType:
+              rule.selectorType === 'any'
+                ? ACL_ResourcePatternType.LITERAL
+                : getGRPCResourcePatternType(rule.selectorType),
+            rawOperation: getGRPCOperationType(op),
+            rawPermissionType: getGRPCPermissionType(perm),
+            rawPrincipal: detail.sharedConfig.principal,
+          }))
+      )
+    )
+    .map((row, index) => ({ ...row, id: String(index) }));
+
+const deleteRequestFor = (row: AclRow) =>
+  create(DeleteACLsRequestSchema, {
+    filter: {
+      principal: row.rawPrincipal,
+      resourceType: row.rawResourceType,
+      resourceName: row.resourceName,
+      host: row.host,
+      operation: row.rawOperation,
+      permissionType: row.rawPermissionType,
+      resourcePatternType: row.rawPatternType,
+    },
+  });
+
+const toastGrantAllResults = (results: PromiseSettledResult<unknown>[]) => {
+  const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failed.length === 0) {
+    toast.success('ACLs created');
+    return;
+  }
+  const someCreated = failed.length < results.length;
+  for (const f of failed) {
+    const description = formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' });
+    if (someCreated) {
+      toast.warning('Some ACLs were created, but there were errors', { description });
+    } else {
+      toast.error(description);
+    }
+  }
+};
+
+type GrantAllPermissionsDialogProps = {
+  principal: string | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+const GrantAllPermissionsDialog = ({ principal, open, onOpenChange }: GrantAllPermissionsDialogProps) => {
   const { mutateAsync: createACL, isPending: isGranting } = useCreateACLMutation();
   const schemaRegistryACLApi = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
-  const list = acls ?? [];
-
   const grantAllResources = GRANT_ALL_RESOURCES.filter((r) => !r.requiresSchemaRegistry || schemaRegistryACLApi);
-
-  let rowCounter = 0;
-  const rows: AclRow[] = list.flatMap((detail) =>
-    detail.rules.flatMap((rule) =>
-      Object.entries(rule.operations)
-        .filter(([, perm]) => perm !== OperationTypeNotSet)
-        .map(([op, perm]) => ({
-          id: String(rowCounter++),
-          resourceType: RESOURCE_TYPE_LABELS[rule.resourceType] ?? rule.resourceType,
-          resourceName: getResourceNameValue(rule),
-          operation: op.charAt(0) + op.slice(1).toLowerCase(),
-          permissionType: (perm === 'allow' ? 'Allow' : 'Deny') as 'Allow' | 'Deny',
-          host: detail.sharedConfig.host,
-          rawResourceType: getGRPCResourceType(rule.resourceType),
-          rawPatternType:
-            rule.selectorType === 'any'
-              ? ACL_ResourcePatternType.LITERAL
-              : getGRPCResourcePatternType(rule.selectorType),
-          rawOperation: getGRPCOperationType(op),
-          rawPermissionType: getGRPCPermissionType(perm),
-          rawPrincipal: detail.sharedConfig.principal,
-        }))
-    )
-  );
-
-  const allSelected = rows.length > 0 && selected.size === rows.length;
-  const someSelected = selected.size > 0;
-
-  const toggleAll = () => {
-    if (someSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(rows.map((r) => r.id)));
-    }
-  };
-
-  const toggleRow = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const deleteSelected = async () => {
-    const results = await Promise.allSettled(
-      rows
-        .filter((r) => selected.has(r.id))
-        .map((r) =>
-          deleteAcl(
-            create(DeleteACLsRequestSchema, {
-              filter: {
-                principal: r.rawPrincipal,
-                resourceType: r.rawResourceType,
-                resourceName: r.resourceName,
-                host: r.host,
-                operation: r.rawOperation,
-                permissionType: r.rawPermissionType,
-                resourcePatternType: r.rawPatternType,
-              },
-            })
-          )
-        )
-    );
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        toast.error(formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
-      }
-    }
-    setSelected(new Set());
-  };
 
   const confirmGrantAllPermissions = async () => {
     if (!principal) {
@@ -203,105 +184,165 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
         )
       )
     );
-    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-    const succeeded = results.length - failed.length;
-    if (failed.length > 0 && succeeded > 0) {
-      for (const f of failed) {
-        toast.warning('Some ACLs were created, but there were errors', {
-          description: formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' }),
-        });
-      }
-    } else if (failed.length > 0) {
-      for (const f of failed) {
-        toast.error(formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' }));
-      }
-    } else {
-      toast.success('ACLs created');
-    }
-    setGrantAllOpen(false);
+    toastGrantAllResults(results);
+    onOpenChange(false);
   };
 
-  const renderBody = () => {
-    if (isLoading) {
-      return [0, 1, 2].map((i) => (
-        <TableRow key={i}>
-          <TableCell />
-          <TableCell>
-            <Skeleton variant="text" width="sm" />
-          </TableCell>
-          <TableCell>
-            <Skeleton variant="text" width="md" />
-          </TableCell>
-          <TableCell>
-            <Skeleton variant="text" width="sm" />
-          </TableCell>
-          <TableCell>
-            <Skeleton variant="text" width="sm" />
-          </TableCell>
-          <TableCell>
-            <Skeleton variant="text" width="xs" />
-          </TableCell>
-        </TableRow>
-      ));
-    }
-    if (rows.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={6}>
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <KeyRoundIcon />
-                </EmptyMedia>
-                <EmptyTitle>No ACLs assigned</EmptyTitle>
-                <EmptyDescription>
-                  Add ACLs to define what operations this role can perform on cluster resources.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button
-                  render={
-                    <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
-                      Read the docs →
-                    </a>
-                  }
-                  variant="link"
-                />
-              </EmptyContent>
-            </Empty>
-          </TableCell>
-        </TableRow>
-      );
-    }
-    return rows.map((row) => (
-      <TableRow key={row.id}>
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Allow all operations</DialogTitle>
+          <DialogDescription>
+            The following ACLs will be created for <span className="font-mono font-medium">{principal}</span>:
+          </DialogDescription>
+        </DialogHeader>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Resource Type</TableHead>
+              <TableHead>Resource Name</TableHead>
+              <TableHead>Operation</TableHead>
+              <TableHead>Permission</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {grantAllResources.map((r) => (
+              <TableRow key={r.type}>
+                <TableCell>
+                  <span className="text-muted-foreground">{r.label}</span>
+                </TableCell>
+                <TableCell>
+                  <span className="font-mono">{r.name}</span>
+                </TableCell>
+                <TableCell>All</TableCell>
+                <TableCell>
+                  <PermissionTypeText permissionType="Allow" />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
+            Cancel
+          </Button>
+          <Button disabled={isGranting} onClick={confirmGrantAllPermissions} type="button">
+            Confirm
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const AclRowsSkeleton = () =>
+  [0, 1, 2].map((i) => (
+    <TableRow key={i}>
+      <TableCell />
+      <TableCell>
+        <Skeleton variant="text" width="sm" />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width="md" />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width="sm" />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width="sm" />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width="xs" />
+      </TableCell>
+    </TableRow>
+  ));
+
+const NoAclsRow = () => (
+  <TableRow>
+    <TableCell colSpan={6}>
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <KeyRoundIcon />
+          </EmptyMedia>
+          <EmptyTitle>No ACLs assigned</EmptyTitle>
+          <EmptyDescription>
+            Add ACLs to define what operations this role can perform on cluster resources.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button
+            render={
+              <a href={docsLinks.selfManaged.acl} rel="noopener noreferrer" target="_blank">
+                Read the docs →
+              </a>
+            }
+            variant="link"
+          />
+        </EmptyContent>
+      </Empty>
+    </TableCell>
+  </TableRow>
+);
+
+type AclRowsProps = {
+  isLoading?: boolean;
+  rows: AclRow[];
+  isSelected: (id: string) => boolean;
+  onToggle: (id: string) => void;
+};
+
+const AclRows = ({ isLoading, rows, isSelected, onToggle }: AclRowsProps) => {
+  if (isLoading) {
+    return <AclRowsSkeleton />;
+  }
+  if (rows.length === 0) {
+    return <NoAclsRow />;
+  }
+  return rows.map((row) => (
+    <AclPermissionRow
+      key={row.id}
+      {...row}
+      leading={
         <TableCell>
-          <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
+          <Checkbox checked={isSelected(row.id)} onCheckedChange={() => onToggle(row.id)} />
         </TableCell>
-        <TableCell>
-          <Badge tone="default" variant="outline">
-            {row.resourceType}
-          </Badge>
-        </TableCell>
-        <TableCell className="font-mono">{row.resourceName}</TableCell>
-        <TableCell>{row.operation}</TableCell>
-        <TableCell className={row.permissionType === 'Allow' ? 'text-success' : 'text-destructive'}>
-          {row.permissionType}
-        </TableCell>
-        <TableCell className="text-muted-foreground">{row.host}</TableCell>
-      </TableRow>
-    ));
+      }
+    />
+  ));
+};
+
+export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [grantAllOpen, setGrantAllOpen] = useState(false);
+  const { mutateAsync: deleteAcl, isPending: isDeleting } = useDeleteAclMutation();
+  const rows = toAclRows(acls ?? []);
+  const selection = useRowSelection(rows.map((r) => r.id));
+
+  const deleteSelected = async () => {
+    const results = await Promise.allSettled(
+      rows.filter((r) => selection.selected.has(r.id)).map((r) => deleteAcl(deleteRequestFor(r)))
+    );
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        toast.error(formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
+      }
+    }
+    selection.clear();
   };
 
   return (
     <>
-      <ListLayout className="my-4 min-h-0 gap-3 py-0">
+      <ListLayout className="my-4 min-h-0">
         <ListLayoutFilters
           actions={
             <div className="flex items-center gap-2">
-              {someSelected && (
+              {selection.someSelected && (
                 <Button disabled={isDeleting} onClick={deleteSelected} variant="destructive">
-                  Delete selected ({selected.size})
+                  Delete selected ({selection.selected.size})
                 </Button>
               )}
               {principal && (
@@ -323,8 +364,8 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
               <TableRow>
                 <TableHead>
                   <Checkbox
-                    checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                    onCheckedChange={toggleAll}
+                    checked={selection.allSelected ? true : selection.someSelected ? 'indeterminate' : false}
+                    onCheckedChange={selection.toggleAll}
                   />
                 </TableHead>
                 <TableHead>Resource Type</TableHead>
@@ -334,53 +375,21 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
                 <TableHead>Host</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>{renderBody()}</TableBody>
+            <TableBody>
+              <AclRows
+                isLoading={isLoading}
+                isSelected={(id) => selection.selected.has(id)}
+                onToggle={selection.toggleRow}
+                rows={rows}
+              />
+            </TableBody>
           </Table>
         </ListLayoutContent>
       </ListLayout>
 
       {principal && <AddAclDialog onOpenChange={setDialogOpen} open={dialogOpen} principal={principal} />}
 
-      <Dialog onOpenChange={setGrantAllOpen} open={grantAllOpen}>
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>Allow all operations</DialogTitle>
-            <DialogDescription>
-              The following ACLs will be created for <span className="font-medium font-mono">{principal}</span>:
-            </DialogDescription>
-          </DialogHeader>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Resource Type</TableHead>
-                <TableHead>Resource Name</TableHead>
-                <TableHead>Operation</TableHead>
-                <TableHead>Permission</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {grantAllResources.map((r) => (
-                <TableRow key={r.type}>
-                  <TableCell className="text-muted-foreground">{r.label}</TableCell>
-                  <TableCell className="font-mono">{r.name}</TableCell>
-                  <TableCell>All</TableCell>
-                  <TableCell className="text-success">Allow</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <DialogFooter>
-            <Button onClick={() => setGrantAllOpen(false)} type="button" variant="outline">
-              Cancel
-            </Button>
-            <Button disabled={isGranting} onClick={confirmGrantAllPermissions} type="button">
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GrantAllPermissionsDialog onOpenChange={setGrantAllOpen} open={grantAllOpen} principal={principal} />
     </>
   );
 };

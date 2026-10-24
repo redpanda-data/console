@@ -8,6 +8,15 @@ React 19 · Bun · Rsbuild
 - See [no-legacy](.claude/skills/code-standards/rules/no-legacy.md) for prohibited patterns
 - `src/protogen/` is generated — DO NOT EDIT
 
+## Async safety
+
+- Await or return work when the caller needs completion or errors. Detached effects,
+  timers, and event handlers must report failures through error UI, a handler, or logging.
+- Use `void` only when the callee handles its own failures; explain that ownership at
+  the call site. Never clear promise diagnostics with empty catches or type escapes.
+- Preserve dependent pagination, retries, and ordered mutations. Explain sequential
+  chains; parallelize only independent operations. Verify rejection and completion paths.
+
 ## Commands
 
 Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run tools directly.
@@ -21,6 +30,21 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 | `bun run test:integration` | `.test.tsx` (happy-dom) |
 | `bun run lint` | Biome/Ultracite linter |
 | `bun run type:check` | TypeScript |
+
+## Lint policy
+
+- Biome owns general linting and formatting. `bun run lint` / `lint:fix` also run
+  the focused [Console policy checks](lint-rules/README.md); `lint:policy` is read-only.
+- Pure helpers must not use hook names. Rename them instead of adding a dummy hook.
+- Tests await observable completion or drive a controlled clock, not arbitrary sleeps
+  or hand-written polling. Keep real browser timing coverage for native behavior.
+- Static skipped tests need a tracking issue and reason. Keep timeout/retry budgets
+  in suite configuration rather than raising them per test. Focused tests are forbidden.
+- Explain approved lint/type exceptions. `@ts-ignore` and `@ts-nocheck` are forbidden.
+- Use registry tooltips, not native `title` hints; retain independent accessible names
+  and legitimate embedded-content titles.
+- React Compiler currently uses opt-in annotation mode. Do not remove memoization or
+  change compiler directives merely to satisfy a lint check; prove compiler coverage first.
 
 ## Verify Changes
 

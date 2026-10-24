@@ -13,6 +13,7 @@ import { PlusIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Command,
+  CommandDialog,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -44,7 +45,14 @@ import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
 import { AddUserStep } from '../onboarding/add-user-step';
 import { getContextualVariableSyntax, getSecretSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from '../types/constants';
-import type { AddTopicFormData, BaseStepRef, UserStepRef } from '../types/wizard';
+import type {
+  AddTopicFormData,
+  BaseStepRef,
+  StepSubmissionResult,
+  UserStepRef,
+  UserStepSubmissionData,
+  UserStepSubmissionResult,
+} from '../types/wizard';
 import { extractAllTopics } from '../utils/yaml';
 
 /**
@@ -130,6 +138,11 @@ function useClickOutside(open: boolean, onClose: () => void) {
 
 type FilterValue = 'all' | 'variables' | 'secrets' | 'topics' | 'users';
 
+/** The create flow the menu hands off to; it closes itself first. */
+type SubDialog = 'secrets' | 'topic' | 'user';
+
+const CONTEXTUAL_VARIABLES = Object.values(REDPANDA_CONTEXTUAL_VARIABLES);
+
 type SharedProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -195,7 +208,7 @@ function CommandGroupHeading({ children, separator }: { children: React.ReactNod
   return (
     <>
       {separator ? <Separator /> : null}
-      <h5 className="pt-3 pb-3 pl-2 font-semibold text-body-sm text-muted-foreground uppercase tracking-caption-wide">
+      <h5 className="pt-3 pb-3 pl-2 text-body-sm font-semibold tracking-caption-wide text-muted-foreground uppercase">
         {children}
       </h5>
     </>
@@ -211,10 +224,7 @@ type CommandMenuContentProps = {
   activeFilter: FilterValue;
   onFilterChange: (filter: FilterValue) => void;
   onSelect: (text: string) => void;
-  onOpenSubDialog: (setOpen: (v: boolean) => void) => void;
-  setIsSecretsDialogOpen: (v: boolean) => void;
-  setIsTopicDialogOpen: (v: boolean) => void;
-  setIsUserDialogOpen: (v: boolean) => void;
+  onOpenSubDialog: (dialog: SubDialog) => void;
 };
 
 function CommandMenuContent({
@@ -227,9 +237,6 @@ function CommandMenuContent({
   onFilterChange,
   onSelect,
   onOpenSubDialog,
-  setIsSecretsDialogOpen,
-  setIsTopicDialogOpen,
-  setIsUserDialogOpen,
 }: CommandMenuContentProps) {
   const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
   // An empty category keeps its create button below but gets no heading.
@@ -241,7 +248,7 @@ function CommandMenuContent({
   return (
     <>
       {showCategoryFilter ? (
-        <div className="!border-input border-b bg-surface-recess px-2 py-1.5">
+        <div className="border-b !border-input bg-surface-recess px-2 py-1.5">
           <ToggleGroup
             attached={false}
             onValueChange={([v]) => {
@@ -303,19 +310,19 @@ function CommandMenuContent({
         ) : null}
       </CommandList>
       {(show('secrets') || show('topics') || show('users')) && (
-        <div className="!border-input flex flex-wrap gap-1 border-t bg-surface-recess px-2 py-1">
+        <div className="flex flex-wrap gap-1 border-t !border-input bg-surface-recess px-2 py-1">
           {show('secrets') && (
-            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsSecretsDialogOpen)} variant="ghost">
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog('secrets')} variant="ghost">
               Create secret
             </Button>
           )}
           {show('topics') && (
-            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsTopicDialogOpen)} variant="ghost">
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog('topic')} variant="ghost">
               Create topic
             </Button>
           )}
           {show('users') && (
-            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog(setIsUserDialogOpen)} variant="ghost">
+            <Button icon={<PlusIcon />} onClick={() => onOpenSubDialog('user')} variant="ghost">
               Create user
             </Button>
           )}
@@ -325,21 +332,10 @@ function CommandMenuContent({
   );
 }
 
-export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
-  const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '', initialFilter } = props;
-  const isPopover = props.variant === 'popover';
-
-  // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
-  const anchorStyle = useAnchorPosition(
-    isPopover ? editorInstance : null,
-    isPopover ? props.slashPosition : null,
-    open
-  );
-  const clickOutsideRef = useClickOutside(isPopover && open, () => onOpenChange(false));
-
-  // On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
+// On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
+function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutside>) {
   const abortFocusRef = useRef(false);
-  const popoverRef = useCallback(
+  return useCallback(
     (node: HTMLDivElement | null) => {
       clickOutsideRef.current = node;
       if (!node) {
@@ -366,18 +362,11 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     },
     [clickOutsideRef]
   );
+}
 
+// Reset filter when the menu opens (adjust state during render, no useEffect needed)
+function useFilterResetOnOpen(open: boolean, initialFilter: FilterValue | undefined) {
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
-  const [, setPendingSearch] = useState('');
-  const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
-  const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
-  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
-  const [isTopicSubmitting, setIsTopicSubmitting] = useState(false);
-  const [isUserSubmitting, setIsUserSubmitting] = useState(false);
-  const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
-  const userStepRef = useRef<UserStepRef>(null);
-
-  // Reset filter when dialog opens (adjust state during render, no useEffect needed)
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setActiveFilter(initialFilter ?? 'all');
@@ -385,7 +374,10 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   if (open !== prevOpen) {
     setPrevOpen(open);
   }
+  return [activeFilter, setActiveFilter] as const;
+}
 
+function useCommandMenuSecrets(open: boolean, yamlContent: string) {
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   const secrets = useMemo(
     () => (secretsResponse?.secrets ? secretsResponse.secrets.map((s) => s?.id || '').filter(Boolean) : []),
@@ -400,7 +392,10 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     const existingSet = new Set(secrets);
     return referenced.filter((name) => !existingSet.has(name));
   }, [yamlContent, secrets]);
+  return { secrets, missingSecrets };
+}
 
+function useCommandMenuTopics(open: boolean, yamlContent: string, hideInternal: boolean) {
   // Cap at 500 — the command menu is a quick-pick, not a full topic browser
   const { data: topicsResponse } = useListTopicsQuery({ pageSize: 500 }, { enabled: open });
   const clusterTopics = useMemo(
@@ -415,13 +410,15 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
   );
 
   const yamlTopics = useMemo(() => extractAllTopics(yamlContent), [yamlContent]);
-  const allTopics = useMemo(() => {
+  return useMemo(() => {
     const merged = new Set([...clusterTopics, ...yamlTopics]);
     return [...merged].sort();
   }, [clusterTopics, yamlTopics]);
+}
 
+function useCommandMenuUsers(open: boolean, hideInternal: boolean) {
   const { data: usersResponse } = useListUsersQuery(undefined, { enabled: open });
-  const users = useMemo(
+  return useMemo(
     () =>
       usersResponse?.users
         ? usersResponse.users
@@ -431,8 +428,265 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
         : [],
     [usersResponse, hideInternal]
   );
+}
 
-  const contextualVariables = useMemo(() => Object.values(REDPANDA_CONTEXTUAL_VARIABLES), []);
+// Escape closes the popover; Tab picks the highlighted item, like Enter.
+function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLDivElement>, close: () => void) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    close();
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const selected = (e.currentTarget as HTMLElement).querySelector('[cmdk-item][aria-selected="true"]');
+    if (selected) {
+      (selected as HTMLElement).click();
+    }
+  }
+}
+
+// Rendered outside Monaco's DOM via a portal for proper focus handling.
+function PipelineCommandPopover({
+  editorInstance,
+  slashPosition,
+  open,
+  onOpenChange,
+  children,
+}: {
+  editorInstance: editor.IStandaloneCodeEditor | null;
+  slashPosition: { lineNumber: number; column: number } | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
+  const anchorStyle = useAnchorPosition(editorInstance, slashPosition, open);
+  const clickOutsideRef = useClickOutside(open, () => onOpenChange(false));
+  const popoverRef = useCmdkInputAutoFocus(clickOutsideRef);
+
+  return open
+    ? createPortal(
+        <div ref={popoverRef} style={anchorStyle}>
+          <Command
+            className="w-[340px]"
+            loop
+            onKeyDown={(e) => handlePopoverKeyDown(e, () => onOpenChange(false))}
+            size="sm"
+            variant="elevated"
+            vimBindings={false}
+          >
+            <CommandInput placeholder="Filter..." />
+            {children}
+          </Command>
+        </div>,
+        document.body
+      )
+    : null;
+}
+
+function PipelineCommandDialog({
+  editorInstance,
+  open,
+  onOpenChange,
+  children,
+}: {
+  editorInstance: editor.IStandaloneCodeEditor | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (!nextOpen) {
+      requestAnimationFrame(() => {
+        editorInstance?.focus();
+      });
+    }
+  };
+
+  return (
+    <CommandDialog
+      // Full width of the dialog, rather than the palette's fixed minimum.
+      commandProps={{ size: 'full' }}
+      description="Insert a contextual variable, secret, topic, or user"
+      onOpenChange={handleOpenChange}
+      open={open}
+      title="Command Menu"
+    >
+      <CommandInput placeholder="Search variables, secrets, topics, users..." />
+      {children}
+    </CommandDialog>
+  );
+}
+
+type CreateSubDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Inserts the created resource's name. */
+  onCreated: (name: string) => void;
+};
+
+// The step reports its own copy: a success message, or the error to show.
+function settleTopicCreation(
+  result: StepSubmissionResult<AddTopicFormData>,
+  close: () => void,
+  onCreated: (name: string) => void
+) {
+  if (!result.success) {
+    if (result.error) {
+      toast.error(result.error);
+    }
+    return;
+  }
+  if (result.message) {
+    toast.success(result.message);
+  }
+  close();
+  if (result.data?.topicName) {
+    onCreated(result.data.topicName);
+  }
+}
+
+function CreateTopicDialog({ open, onOpenChange, onCreated }: CreateSubDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
+
+  const handleCreate = async () => {
+    const ref = topicStepRef.current;
+    if (!ref) {
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await ref.triggerSubmit();
+    settleTopicCreation(result, () => onOpenChange(false), onCreated);
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Create a topic</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
+        </DialogBody>
+        <DialogFooter>
+          <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} variant="ghost">
+            Cancel
+          </Button>
+          <Button disabled={isSubmitting} isLoading={isSubmitting} onClick={handleCreate} variant="primary">
+            Create
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const createdUsername = (data: UserStepSubmissionData | undefined) => (data && 'username' in data ? data.username : '');
+
+function settleUserCreation(result: UserStepSubmissionResult, close: () => void, onCreated: (name: string) => void) {
+  if (!result.success) {
+    return;
+  }
+  close();
+  const name = createdUsername(result.data);
+  if (name) {
+    onCreated(name);
+  }
+}
+
+function CreateUserDialog({ open, onOpenChange, onCreated }: CreateSubDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const userStepRef = useRef<UserStepRef>(null);
+
+  const handleCreate = async () => {
+    const ref = userStepRef.current;
+    if (!ref) {
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await ref.triggerSubmit();
+    settleUserCreation(result, () => onOpenChange(false), onCreated);
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent size="lg">
+        <DialogHeader>
+          <DialogTitle>Create a user</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
+        </DialogBody>
+        <DialogFooter>
+          <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} variant="ghost">
+            Cancel
+          </Button>
+          <Button className="min-w-[70px]" disabled={isSubmitting} onClick={handleCreate} variant="primary">
+            {isSubmitting ? <Spinner /> : 'Create'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CommandMenuSubDialogs({
+  subDialog,
+  onSubDialogChange,
+  secrets,
+  missingSecrets,
+  editorInstance,
+  onSelect,
+}: {
+  subDialog: SubDialog | null;
+  onSubDialogChange: (dialog: SubDialog | null) => void;
+  secrets: string[];
+  missingSecrets: string[];
+  editorInstance: editor.IStandaloneCodeEditor | null;
+  onSelect: (text: string) => void;
+}) {
+  const close = () => onSubDialogChange(null);
+  return (
+    <>
+      <AddSecretsDialog
+        existingSecrets={secrets}
+        isOpen={subDialog === 'secrets'}
+        missingSecrets={missingSecrets}
+        onClose={close}
+        onSecretsCreated={(secretNames) => {
+          close();
+          if (secretNames && secretNames.length > 0) {
+            onSelect(getSecretSyntax(secretNames[0]));
+          }
+        }}
+        onUpdateEditorContent={(oldName, newName) => replaceSecretInEditor(editorInstance, oldName, newName)}
+      />
+      <CreateTopicDialog
+        onCreated={onSelect}
+        onOpenChange={(next) => onSubDialogChange(next ? 'topic' : null)}
+        open={subDialog === 'topic'}
+      />
+      <CreateUserDialog
+        onCreated={onSelect}
+        onOpenChange={(next) => onSubDialogChange(next ? 'user' : null)}
+        open={subDialog === 'user'}
+      />
+    </>
+  );
+}
+
+export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
+  const { open, onOpenChange, editorInstance, hideInternal = true, yamlContent = '', initialFilter } = props;
+  const isPopover = props.variant === 'popover';
+  const [activeFilter, setActiveFilter] = useFilterResetOnOpen(open, initialFilter);
+  const [subDialog, setSubDialog] = useState<SubDialog | null>(null);
+  const { secrets, missingSecrets } = useCommandMenuSecrets(open, yamlContent);
+  const allTopics = useCommandMenuTopics(open, yamlContent, hideInternal);
+  const users = useCommandMenuUsers(open, hideInternal);
 
   const handleSelect = useCallback(
     (text: string) => {
@@ -451,208 +705,47 @@ export const PipelineCommandMenu = (props: PipelineCommandMenuProps) => {
     [isPopover, editorInstance, onOpenChange, props]
   );
 
-  const openSubDialog = (setOpen: (v: boolean) => void) => {
-    onOpenChange(false);
-    setPendingSearch('');
-    setOpen(true);
-  };
-
-  const handleUpdateEditorContent = useCallback(
-    (oldName: string, newName: string) => {
-      replaceSecretInEditor(editorInstance, oldName, newName);
-    },
-    [editorInstance]
+  const content = (
+    <CommandMenuContent
+      activeFilter={activeFilter}
+      allTopics={allTopics}
+      contextualVariables={CONTEXTUAL_VARIABLES}
+      onFilterChange={setActiveFilter}
+      onOpenSubDialog={(dialog) => {
+        onOpenChange(false);
+        setSubDialog(dialog);
+      }}
+      onSelect={handleSelect}
+      secrets={secrets}
+      showCategoryFilter={!isPopover}
+      users={users}
+    />
   );
 
-  const handleSecretsCreated = useCallback(
-    (secretNames?: string[]) => {
-      setIsSecretsDialogOpen(false);
-      if (secretNames && secretNames.length > 0) {
-        handleSelect(getSecretSyntax(secretNames[0]));
-      }
-    },
-    [handleSelect]
-  );
-
-  const handleCreateTopic = useCallback(async () => {
-    const ref = topicStepRef.current;
-    if (!ref) {
-      return;
-    }
-    setIsTopicSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success) {
-      if (result.message) {
-        toast.success(result.message);
-      }
-      setIsTopicDialogOpen(false);
-      if (result.data?.topicName) {
-        handleSelect(result.data.topicName);
-      }
-    } else if (result.error) {
-      toast.error(result.error);
-    }
-    setIsTopicSubmitting(false);
-  }, [handleSelect]);
-
-  const handleCreateUser = useCallback(async () => {
-    const ref = userStepRef.current;
-    if (!ref) {
-      return;
-    }
-    setIsUserSubmitting(true);
-    const result = await ref.triggerSubmit();
-    if (result.success) {
-      setIsUserDialogOpen(false);
-      const data = result.data;
-      const name = data && 'username' in data ? data.username : '';
-      if (name) {
-        handleSelect(name);
-      }
-    }
-    setIsUserSubmitting(false);
-  }, [handleSelect]);
-
-  const handleDialogOpenChange = (nextOpen: boolean) => {
-    onOpenChange(nextOpen);
-    if (!nextOpen) {
-      setPendingSearch('');
-      requestAnimationFrame(() => {
-        editorInstance?.focus();
-      });
-    }
-  };
-
-  const contentProps: CommandMenuContentProps = {
-    contextualVariables,
-    secrets,
-    allTopics,
-    users,
-    showCategoryFilter: !isPopover,
-    activeFilter,
-    onFilterChange: setActiveFilter,
-    onSelect: handleSelect,
-    onOpenSubDialog: openSubDialog,
-    setIsSecretsDialogOpen,
-    setIsTopicDialogOpen,
-    setIsUserDialogOpen,
-  };
-
-  const subDialogs = (
-    <>
-      <AddSecretsDialog
-        existingSecrets={secrets}
-        isOpen={isSecretsDialogOpen}
-        missingSecrets={missingSecrets}
-        onClose={() => setIsSecretsDialogOpen(false)}
-        onSecretsCreated={handleSecretsCreated}
-        onUpdateEditorContent={handleUpdateEditorContent}
-      />
-
-      <Dialog onOpenChange={setIsTopicDialogOpen} open={isTopicDialogOpen}>
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>Create a topic</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <AddTopicStep hideTitle inline ref={topicStepRef} selectionMode="new" />
-          </DialogBody>
-          <DialogFooter>
-            <Button disabled={isTopicSubmitting} onClick={() => setIsTopicDialogOpen(false)} variant="ghost">
-              Cancel
-            </Button>
-            <Button
-              disabled={isTopicSubmitting}
-              isLoading={isTopicSubmitting}
-              onClick={handleCreateTopic}
-              variant="primary"
-            >
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog onOpenChange={setIsUserDialogOpen} open={isUserDialogOpen}>
-        <DialogContent size="lg">
-          <DialogHeader>
-            <DialogTitle>Create a user</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <AddUserStep hideTitle inline ref={userStepRef} selectionMode="new" />
-          </DialogBody>
-          <DialogFooter>
-            <Button disabled={isUserSubmitting} onClick={() => setIsUserDialogOpen(false)} variant="ghost">
-              Cancel
-            </Button>
-            <Button className="min-w-[70px]" disabled={isUserSubmitting} onClick={handleCreateUser} variant="primary">
-              {isUserSubmitting ? <Spinner /> : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-
-  // Popover variant is rendered outside Monaco's DOM via a portal for proper focus handling.
-  if (isPopover) {
-    return (
-      <>
-        {open
-          ? createPortal(
-              <div ref={popoverRef} style={anchorStyle}>
-                <Command
-                  className="w-[340px] rounded-md bg-background"
-                  loop
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      e.preventDefault();
-                      onOpenChange(false);
-                    }
-                    if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const selected = (e.currentTarget as HTMLElement).querySelector(
-                        '[cmdk-item][aria-selected="true"]'
-                      );
-                      if (selected) {
-                        (selected as HTMLElement).click();
-                      }
-                    }
-                  }}
-                  size="sm"
-                  variant="elevated"
-                  vimBindings={false}
-                >
-                  <CommandInput placeholder="Filter..." />
-                  <CommandMenuContent {...contentProps} />
-                </Command>
-              </div>,
-              document.body
-            )
-          : null}
-        {subDialogs}
-      </>
-    );
-  }
-
-  // TODO: fix dialog close button in ui-registry, temporarily replicating Command Dialog here
   return (
     <>
-      <Dialog onOpenChange={handleDialogOpenChange} open={open}>
-        <DialogContent>
-          <DialogHeader className="sr-only">
-            <DialogTitle>Command Menu</DialogTitle>
-          </DialogHeader>
-          <Command
-            className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
-            variant="dialog"
-          >
-            <CommandInput placeholder="Search variables, secrets, topics, users..." />
-            <CommandMenuContent {...contentProps} />
-          </Command>
-        </DialogContent>
-      </Dialog>
-      {subDialogs}
+      {isPopover ? (
+        <PipelineCommandPopover
+          editorInstance={editorInstance}
+          onOpenChange={onOpenChange}
+          open={open}
+          slashPosition={props.slashPosition}
+        >
+          {content}
+        </PipelineCommandPopover>
+      ) : (
+        <PipelineCommandDialog editorInstance={editorInstance} onOpenChange={onOpenChange} open={open}>
+          {content}
+        </PipelineCommandDialog>
+      )}
+      <CommandMenuSubDialogs
+        editorInstance={editorInstance}
+        missingSecrets={missingSecrets}
+        onSelect={handleSelect}
+        onSubDialogChange={setSubDialog}
+        secrets={secrets}
+        subDialog={subDialog}
+      />
     </>
   );
 };

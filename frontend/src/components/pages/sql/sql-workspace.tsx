@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { Code } from '@connectrpc/connect';
+import { Code, type ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -22,11 +22,22 @@ import { Database } from 'lucide-react';
 import {
   CatalogType,
   ExecuteQueryRequestSchema,
+  type ExecuteQueryResponse,
   type Column as SqlColumn,
   type Row as SqlRow,
   type Value as SqlValue,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useExecuteInstantQuery } from 'react-query/api/observability';
 import {
   useExecuteQueryMutation,
@@ -42,7 +53,13 @@ import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported
 import { uiState } from 'state/ui-state';
 
 import { CatalogTree } from './catalog-tree';
-import { bridgeTopicForQuery, firstKeyword, isCatalogChangingKeyword, isWriteKeyword } from './sql';
+import {
+  blockedStatementError,
+  bridgeTopicForQuery,
+  firstKeyword,
+  isCatalogChangingKeyword,
+  isWriteKeyword,
+} from './sql';
 import { SqlEditor, type SqlEditorHandle } from './sql-editor';
 import { SqlResults } from './sql-results';
 import {
@@ -51,12 +68,14 @@ import {
   type CellValue,
   type ColumnDef,
   columnKindForPgType,
+  type FetchedTable,
   hintFromError,
   isArrayPgType,
   type QueryRun,
   type ResultRow,
   type SqlRole,
   type TableRef,
+  withFetchedTables,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
 
@@ -113,58 +132,39 @@ export type SqlWorkspaceProps = {
   sqlRole?: SqlRole;
 };
 
-export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
+// Bounce clusters that genuinely lack SQLService and own the studio page header.
+function useSqlStudioPage() {
   const navigate = useNavigate();
   // The route guard skips the redirect while endpoint compatibility is still
   // loading; once it resolves, bounce clusters that genuinely lack SQLService.
   const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
   useEffect(() => {
     if (endpointsLoaded && !isSupported(Feature.SQLService)) {
-      navigate({ to: '/', replace: true });
+      navigate({ to: '/', replace: true }).catch((error: unknown) => {
+        toast.error('Failed to leave the SQL page', { description: String(error) });
+      });
     }
   }, [endpointsLoaded, navigate]);
-
-  const [run, setRun] = useState<QueryRun>({ state: 'idle' });
-  // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
-  // is queried from the catalog tree; the lag itself comes from the
-  // ObservabilityService (below), so ExecuteQuery stays untouched.
-  const [bridgeTopic, setBridgeTopic] = useState<string | null>(null);
-  // Timestamp of the run that set bridgeTopic — stamped into the lag query so
-  // re-running the same query refetches (new key) instead of serving a cached
-  // snapshot, and reflects the lag at that query's time.
-  const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
-  const editorRef = useRef<SqlEditorHandle>(null);
-  // Per-instance monotonic run token: drops out-of-order responses without
-  // sharing state across concurrently-mounted SqlWorkspace instances.
-  const latestRunToken = useRef(0);
-  // Aborter for the in-flight editor run. Aborting the request cancels the
-  // query on the engine (the backend sends a wire-protocol CancelRequest when
-  // the caller disconnects), so this powers the Cancel button, supersession by
-  // a newer run, and unmount cleanup.
-  const abortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => abortRef.current?.abort(), []);
-  const {
-    expanded,
-    toggleExpanded,
-    ref: expandedModeRef,
-  } = useExpandedPageMode({
-    storageKey: 'rp-sql-studio-mode',
-  });
 
   // Pre-paint so the previous route's title doesn't flash in the app header.
   useLayoutEffect(() => {
     setStudioPageHeader();
   }, []);
+}
 
-  const { data: catalogsData, isLoading, isFetching: isFetchingCatalogs } = useListCatalogsQuery();
-  const executeQuery = useExecuteQueryMutation();
-  const invalidateSqlCatalog = useInvalidateSqlCatalog();
-
-  // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
-  // derive it from the SQL identity — admin unlocks write/DDL affordances like
-  // the "Add a topic" button. Falls back to viewer until the lookup resolves.
+// Caller's effective role: an explicit prop wins (tests/storybook), otherwise
+// derive it from the SQL identity — admin unlocks write/DDL affordances like
+// the "Add a topic" button. Falls back to viewer until the lookup resolves.
+function useSqlRole(sqlRoleProp: SqlRole | undefined): SqlRole {
   const { data: identity } = useGetSqlIdentityQuery();
-  const sqlRole: SqlRole = sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
+  return sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
+}
+
+// The catalog tree's view model, plus the Redpanda-catalog tables fetched up
+// front so the add-topic wizard, editor autocomplete and the bridge indicator
+// can resolve table refs.
+function useSqlCatalogs() {
+  const { data: catalogsData, isLoading, isFetching: isFetchingCatalogs } = useListCatalogsQuery();
 
   // Map proto catalogs to the tree view model. Tables/columns are filled in by
   // the catalog-tree agent via ListTables/DescribeTable.
@@ -179,6 +179,34 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     }));
   }, [catalogsData]);
 
+  const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
+  const { data: redpandaTablesData, isFetching: isFetchingTables } = useListTablesQuery({
+    catalog: redpandaCatalogName,
+  });
+
+  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
+  // autocomplete can resolve table references — the bare catalog list seeds
+  // namespaces with empty `tables`.
+  const completionCatalogs = useMemo<Catalog[]>(
+    () =>
+      catalogs.map((catalog) =>
+        catalog.name === redpandaCatalogName ? withFetchedTables(catalog, redpandaTablesData?.tables ?? []) : catalog
+      ),
+    [catalogs, redpandaCatalogName, redpandaTablesData]
+  );
+
+  return {
+    catalogs,
+    completionCatalogs,
+    isLoading,
+    isRefreshing: isFetchingCatalogs || isFetchingTables,
+    redpandaTables: redpandaTablesData?.tables,
+    hasTables: (redpandaTablesData?.tables?.length ?? 0) > 0,
+  };
+}
+
+// Bridge-query indicator for the queried topic.
+function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): BridgeInfo | undefined {
   // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
   // signal (`redpanda.iceberg.mode`), independent of any lag metric. A topic that
   // is tiered but hasn't started translating yet emits no lag series, so the badge
@@ -210,7 +238,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     },
     { enabled: Boolean(bridgeTopic) }
   );
-  const bridge = useMemo<BridgeInfo | undefined>(() => {
+  return useMemo<BridgeInfo | undefined>(() => {
     // Bridge-ness is the topic being Iceberg-tiered — not whether lag has shown up.
     // Lag defaults to 0 when its series is absent (e.g. translation hasn't started),
     // which the timeline reads as "fully caught up" and hides; the badge still shows.
@@ -223,49 +251,95 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     const commitLag = commit ?? 0;
     return { topic: bridgeTopic, translationLag, commitLag, totalLag: translationLag + commitLag };
   }, [bridgeTopic, bridgeTopicTiered, bridgeTxLag.data, bridgeCommitLag.data]);
+}
 
-  // Redpanda-catalog tables, fetched up front so both the add-topic wizard and
-  // editor autocomplete (and the bridge indicator below) can resolve table refs.
-  const redpandaCatalogName = useMemo(() => catalogs.find((c) => c.engine === 'redpanda')?.name ?? '', [catalogs]);
-  const { data: redpandaTablesData, isFetching: isFetchingTables } = useListTablesQuery({
-    catalog: redpandaCatalogName,
-  });
-  const hasTables = (redpandaTablesData?.tables?.length ?? 0) > 0;
+type ExecuteQueryMutation = ReturnType<typeof useExecuteQueryMutation>;
+type InvalidateSqlCatalog = ReturnType<typeof useInvalidateSqlCatalog>;
 
-  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
-  // autocomplete can resolve table references — the bare catalog list seeds
-  // namespaces with empty `tables`.
-  const completionCatalogs = useMemo<Catalog[]>(
-    () =>
-      catalogs.map((catalog) => {
-        if (catalog.name !== redpandaCatalogName) {
-          return catalog;
+function successRun(res: ExecuteQueryResponse, token: number, start: number): QueryRun {
+  const columns = res.columns.map(columnDefFromProto);
+  const rows = res.rows.map((row) => resultRowFromProto(row, columns));
+  return {
+    state: 'success',
+    token,
+    columns,
+    rows,
+    totalRows: rows.length,
+    elapsedMs: Math.round(performance.now() - start),
+    truncated: res.truncated,
+  };
+}
+
+function failedRun(error: ConnectError, token: number): QueryRun {
+  if (error.code === Code.Canceled) {
+    return { state: 'canceled', token };
+  }
+  return { state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) };
+}
+
+type ExecuteRunDeps = {
+  executeQuery: ExecuteQueryMutation;
+  invalidateSqlCatalog: InvalidateSqlCatalog;
+  latestRunToken: RefObject<number>;
+  abortRef: RefObject<AbortController | null>;
+  setRun: Dispatch<SetStateAction<QueryRun>>;
+};
+
+// Sends one editor statement; a response for a superseded run is dropped.
+function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
+  deps.setRun({ state: 'running', token });
+  const start = performance.now();
+  // Abort a still-running previous run: its response would be dropped by the
+  // token guard anyway, and aborting also stops it on the engine.
+  deps.abortRef.current?.abort();
+  const aborter = new AbortController();
+  deps.abortRef.current = aborter;
+  deps.executeQuery.mutate(
+    { request: create(ExecuteQueryRequestSchema, { statement: sql }), signal: aborter.signal },
+    {
+      onSuccess: (res) => {
+        // Refresh even when a newer run superseded this one: the DDL still ran.
+        if (isCatalogChangingKeyword(sql)) {
+          deps.invalidateSqlCatalog();
         }
-        const tablesByNamespace = new Map<string, TableRef[]>();
-        for (const t of redpandaTablesData?.tables ?? []) {
-          const list = tablesByNamespace.get(t.catalogNamespace) ?? [];
-          list.push({
-            id: `${catalog.name}.${t.catalogNamespace}.${t.name}`,
-            name: t.name,
-            namespaceName: t.catalogNamespace,
-            catalogName: catalog.name,
-            topicName: t.topic,
-          });
-          tablesByNamespace.set(t.catalogNamespace, list);
+        if (deps.latestRunToken.current === token) {
+          deps.setRun(successRun(res, token, start));
         }
-        const namespaces = catalog.namespaces.map((ns) => ({
-          ...ns,
-          tables: tablesByNamespace.get(ns.name) ?? ns.tables,
-        }));
-        for (const [name, tables] of tablesByNamespace) {
-          if (!namespaces.some((ns) => ns.name === name)) {
-            namespaces.push({ id: `${catalog.name}.${name}`, name, tables });
-          }
+      },
+      onError: (error) => {
+        if (deps.latestRunToken.current === token) {
+          deps.setRun(failedRun(error, token));
         }
-        return { ...catalog, namespaces };
-      }),
-    [catalogs, redpandaCatalogName, redpandaTablesData]
+      },
+    }
   );
+}
+
+// Editor runs: the current run state, its bridge indicator, and run/cancel actions.
+function useSqlRun(
+  completionCatalogs: Catalog[],
+  executeQuery: ExecuteQueryMutation,
+  invalidateSqlCatalog: InvalidateSqlCatalog
+) {
+  const [run, setRun] = useState<QueryRun>({ state: 'idle' });
+  // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
+  // is queried from the catalog tree; the lag itself comes from the
+  // ObservabilityService (useBridgeInfo), so ExecuteQuery stays untouched.
+  const [bridgeTopic, setBridgeTopic] = useState<string | null>(null);
+  // Timestamp of the run that set bridgeTopic — stamped into the lag query so
+  // re-running the same query refetches (new key) instead of serving a cached
+  // snapshot, and reflects the lag at that query's time.
+  const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
+  // Per-instance monotonic run token: drops out-of-order responses without
+  // sharing state across concurrently-mounted SqlWorkspace instances.
+  const latestRunToken = useRef(0);
+  // Aborter for the in-flight editor run. Aborting the request cancels the
+  // query on the engine (the backend sends a wire-protocol CancelRequest when
+  // the caller disconnects), so this powers the Cancel button, supersession by
+  // a newer run, and unmount cleanup.
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
+  const bridge = useBridgeInfo(bridgeTopic, bridgeRunAt);
 
   const doRun = useCallback(
     (sql: string) => {
@@ -281,70 +355,22 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
 
       if (blocked) {
-        let title = 'Statement not allowed';
-        let message = `Only read queries are supported in this release. Found "${kw || 'empty statement'}".`;
-        if (kw === 'REVOKE') {
-          title = 'Manage access in Security';
-          message = 'Grants are managed in Security in this release.';
-        }
-        setRun({ state: 'error', token, title, message });
+        setRun({ state: 'error', token, ...blockedStatementError(kw) });
         return;
       }
-
-      setRun({ state: 'running', token });
-      const start = performance.now();
-      // Abort a still-running previous run: its response would be dropped by the
-      // token guard anyway, and aborting also stops it on the engine.
-      abortRef.current?.abort();
-      const aborter = new AbortController();
-      abortRef.current = aborter;
-      executeQuery.mutate(
-        { request: create(ExecuteQueryRequestSchema, { statement: sql }), signal: aborter.signal },
-        {
-          onSuccess: (res) => {
-            // Refresh even when a newer run superseded this one: the DDL still ran.
-            if (isCatalogChangingKeyword(sql)) {
-              invalidateSqlCatalog();
-            }
-            if (latestRunToken.current !== token) {
-              return;
-            }
-            const columns = res.columns.map(columnDefFromProto);
-            const rows = res.rows.map((row) => resultRowFromProto(row, columns));
-            setRun({
-              state: 'success',
-              token,
-              columns,
-              rows,
-              totalRows: rows.length,
-              elapsedMs: Math.round(performance.now() - start),
-              truncated: res.truncated,
-            });
-          },
-          onError: (error) => {
-            if (latestRunToken.current !== token) {
-              return;
-            }
-            if (error.code === Code.Canceled) {
-              setRun({ state: 'canceled', token });
-              return;
-            }
-            setRun({
-              state: 'error',
-              token,
-              title: 'Query failed',
-              message: error.message,
-              hint: hintFromError(error),
-            });
-          },
-        }
-      );
+      executeRun(sql, token, { executeQuery, invalidateSqlCatalog, latestRunToken, abortRef, setRun });
     },
     [completionCatalogs, executeQuery, invalidateSqlCatalog]
   );
 
   const onCancelRun = useCallback(() => abortRef.current?.abort(), []);
 
+  return { run, bridge, doRun, onCancelRun };
+}
+
+// Opens `SELECT * FROM <catalog>=><table>` for a table picked in the catalog tree.
+function useQueryTableOpener() {
+  const editorRef = useRef<SqlEditorHandle>(null);
   const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
     // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
     // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
@@ -352,8 +378,15 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
     editorRef.current?.setQuery(sql, table.name);
   }, []);
+  return { editorRef, onQueryTable };
+}
 
-  // ---- Add-topic wizard ----
+// The add-topic wizard: open state, pickable topics, and table creation.
+function useAddTopicWizard(
+  executeQuery: ExecuteQueryMutation,
+  invalidateSqlCatalog: InvalidateSqlCatalog,
+  redpandaTables: FetchedTable[] | undefined
+) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
   const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
@@ -362,14 +395,14 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   // the wizard's topic picker so you can't create a duplicate.
   const takenTopics = useMemo(() => {
     const taken = new Set<string>();
-    for (const t of redpandaTablesData?.tables ?? []) {
+    for (const t of redpandaTables ?? []) {
       if (t.topic) {
         taken.add(t.topic);
       }
       taken.add(t.name);
     }
     return taken;
-  }, [redpandaTablesData]);
+  }, [redpandaTables]);
 
   const wizardTopics = useMemo<WizardTopic[]>(
     () =>
@@ -410,6 +443,30 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
     [executeQuery, invalidateSqlCatalog, closeWizard]
   );
 
+  return { wizardOpen, wizardError, wizardTopics, openWizard, closeWizard, onCreateTable };
+}
+
+export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
+  useSqlStudioPage();
+  const {
+    expanded,
+    toggleExpanded,
+    ref: expandedModeRef,
+  } = useExpandedPageMode({
+    storageKey: 'rp-sql-studio-mode',
+  });
+  const executeQuery = useExecuteQueryMutation();
+  const invalidateSqlCatalog = useInvalidateSqlCatalog();
+  const sqlRole = useSqlRole(sqlRoleProp);
+  const { catalogs, completionCatalogs, isLoading, isRefreshing, redpandaTables, hasTables } = useSqlCatalogs();
+  const { run, bridge, doRun, onCancelRun } = useSqlRun(completionCatalogs, executeQuery, invalidateSqlCatalog);
+  const { editorRef, onQueryTable } = useQueryTableOpener();
+  const { wizardOpen, wizardError, wizardTopics, openWizard, closeWizard, onCreateTable } = useAddTopicWizard(
+    executeQuery,
+    invalidateSqlCatalog,
+    redpandaTables
+  );
+
   return (
     <div
       // In-flow page (footer below), viewport-bounded like the RPCN editor
@@ -418,7 +475,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       ref={expandedModeRef}
     >
       <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>
-        <div className="flex items-center gap-2 font-semibold text-heading-md text-strong tracking-heading [&_svg]:text-action-primary">
+        <div className="flex items-center gap-2 text-heading-md font-semibold tracking-heading text-strong [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -441,7 +498,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
           <CatalogTree
             catalogs={catalogs}
             isLoading={isLoading}
-            isRefreshing={isFetchingCatalogs || isFetchingTables}
+            isRefreshing={isRefreshing}
             onAddTable={openWizard}
             onQueryTable={onQueryTable}
             onRefresh={invalidateSqlCatalog}
@@ -459,15 +516,11 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
             />
           ) : (
             <ResizablePanelGroup className="min-w-0 flex-1" orientation="vertical">
-              <ResizablePanel
-                className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1"
-                defaultSize="42%"
-                minSize="15%"
-              >
+              <ResizablePanel className="flex min-h-0 [&>*]:min-w-0 [&>*]:flex-1" defaultSize="42%" minSize="15%">
                 <SqlEditor catalogs={completionCatalogs} initialQuery={INITIAL_QUERY} onRun={doRun} ref={editorRef} />
               </ResizablePanel>
               <ResizableHandle withHandle />
-              <ResizablePanel className="flex min-h-0 bg-background [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
+              <ResizablePanel className="flex min-h-0 [&>*]:min-w-0 [&>*]:flex-1" minSize="20%">
                 <SqlResults
                   hasTables={hasTables}
                   onAddTable={openWizard}

@@ -49,6 +49,17 @@ export function isWriteKeyword(stmt: string): boolean {
   return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
 
+// Error copy for a statement the editor refuses to run.
+export function blockedStatementError(keyword: string): { title: string; message: string } {
+  if (keyword === 'REVOKE') {
+    return { title: 'Manage access in Security', message: 'Grants are managed in Security in this release.' };
+  }
+  return {
+    title: 'Statement not allowed',
+    message: `Only read queries are supported in this release. Found "${keyword || 'empty statement'}".`,
+  };
+}
+
 // Statements that can add, remove or rename catalog objects, so the catalog
 // tree must be refetched after they succeed.
 const CATALOG_CHANGING_KEYWORDS = new Set(['CREATE', 'DROP', 'ALTER', 'RENAME']);
@@ -65,32 +76,41 @@ const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/g;
 // only meaningful for a single Redpanda-catalog table reference.
 const BRIDGE_REF_RE = /([A-Za-z_][\w$]*)\s*=>\s*"?([a-zA-Z0-9._-]+)/g;
 
-export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]): string | null {
+// The statement's only `catalog=>table` reference, or null when it has none or several.
+function singleCatalogTableRef(stmt: string): { catalogName: string; tableName: string } | null {
   const cleaned = stmt.replace(SQL_NOISE_RE, ' ');
   const matches = [...cleaned.matchAll(BRIDGE_REF_RE)];
   if (matches.length !== 1) {
     return null;
   }
-  const match = matches[0];
-  const catalogName = match?.[1];
-  const tableName = match?.[2];
-  if (!catalogName) {
+  const catalogName = matches[0]?.[1];
+  const tableName = matches[0]?.[2];
+  if (!(catalogName && tableName)) {
     return null;
   }
-  if (!tableName) {
-    return null;
-  }
-  const catalog = catalogs.find((c) => c.engine === 'redpanda' && c.name === catalogName);
-  if (!catalog) {
-    return null;
-  }
+  return { catalogName, tableName };
+}
 
+// Topic backing `tableName` (bare or `namespace.table`) in the catalog; the
+// name itself when the catalog doesn't list the table.
+function topicForCatalogTable(catalog: Catalog, tableName: string): string {
   for (const namespace of catalog.namespaces) {
     const table = namespace.tables.find((t) => t.name === tableName || `${t.namespaceName}.${t.name}` === tableName);
     if (table) {
       return table.topicName ?? table.name;
     }
   }
-
   return tableName;
+}
+
+export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]): string | null {
+  const ref = singleCatalogTableRef(stmt);
+  if (!ref) {
+    return null;
+  }
+  const catalog = catalogs.find((c) => c.engine === 'redpanda' && c.name === ref.catalogName);
+  if (!catalog) {
+    return null;
+  }
+  return topicForCatalogTable(catalog, ref.tableName);
 }

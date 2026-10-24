@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-import type { Locator } from '../../shared/e2e';
+import type { Locator, Page } from '../../shared/e2e';
 import { appURL, expect, test } from '../../shared/e2e';
 import { SchemaPage } from '../utils/schema-page';
 
@@ -20,21 +20,81 @@ async function selectOption(selectContainer: Locator, optionText: string) {
   await option.click();
 }
 
-/**
- * Schema Registry E2E Tests
- * Complete test suite for Schema Registry features including:
- * - Filtering and search
- * - Schema creation with multiple strategies
- * - Version management (add, delete, recover)
- * - Compatibility mode editing
- * - Navigation and references
- * - Permissions and error handling
- */
-test.describe('Schema Registry E2E Tests', () => {
+/** Opens the topic select and picks its first topic, when the cluster has any. */
+async function selectFirstTopicIfAny(page: Page) {
+  const topicSelect = page.getByTestId('schema-create-topic-select');
+  const hasTopics = await topicSelect.isVisible({ timeout: 1000 }).catch(() => false);
+  if (!hasTopics) {
+    return;
+  }
+  // Open the topic select. Scope option lookup to the open popup (the
+  // registry's Base UI Select keeps a transitioning closed popup briefly,
+  // so the page-wide `[role="option"]` first match can be a stale item
+  // from the strategy select that's animating out).
+  await topicSelect.click();
+  if (await clickFirstOpenOption(page)) {
+    // Verify key/value radio appears
+    await expect(page.getByTestId('schema-create-key-value-radio')).toBeVisible();
+  }
+}
+
+/** Clicks the first option of the open select popup; resolves to whether it had one. */
+async function clickFirstOpenOption(page: Page) {
+  const openPopup = page.locator('[data-slot="select-content"][data-state="open"]');
+  const hasOptions = await openPopup.isVisible({ timeout: 1000 }).catch(() => false);
+  if (!hasOptions) {
+    return false;
+  }
+  const firstOption = openPopup.locator('[role="option"]').first();
+  await expect(firstOption).toBeVisible();
+  await firstOption.click();
+  return true;
+}
+
+async function expectAllSchemaFormats(page: Page) {
+  const formatRadio = page.getByTestId('schema-create-format-radio');
+  await expect(formatRadio.getByText('Avro')).toBeVisible();
+  await expect(formatRadio.getByText('Protobuf')).toBeVisible();
+  await expect(formatRadio.getByText('JSON')).toBeVisible();
+}
+
+async function showSoftDeletedSchemas(page: Page) {
+  await page.goto('/schema-registry');
+
+  // Enable soft-deleted checkbox to see deleted schemas
+  await page.getByTestId('schema-list-show-soft-deleted-checkbox').check();
+
+  // Wait for the table to update after toggling soft-deleted
+  await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
+}
+
+async function expectRecoverButtonOnFirstSchema(page: Page) {
+  // Click on a soft-deleted schema
+  await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first().click();
+
+  // Check for soft-deleted alert or recover button
+  const recoverButton = page.getByTestId('schema-definition-recover-btn');
+  const hasRecoverButton = await recoverButton.isVisible({ timeout: 1000 }).catch(() => false);
+
+  if (hasRecoverButton) {
+    await expect(recoverButton).toBeVisible();
+  }
+}
+
+async function expectSubjectCompatibilityEditor(page: Page, editButton: Locator) {
+  await editButton.click();
+  await expect(page).toHaveURL(/\/schema-registry\/subjects\/.+\/edit-compatibility/);
+
+  // Verify subject name is displayed
+  await expect(page.getByTestId('edit-compatibility-subject-name')).toBeVisible();
+}
+
+// Browsing the subject list: filtering, search, pagination and navigation.
+function describeSubjectListSuites() {
   /**
    * This test is depentent on a certain owlshop-data configuration.
    */
-  test.describe('Schema - Filtering (OwlShop dependent)', () => {
+  test.describe('schema - Filtering (OwlShop dependent)', () => {
     test('should filter on schema ID', async ({ page }) => {
       await page.goto('/schema-registry');
       await page.getByPlaceholder('Filter by subject name or schema ID...').fill('7');
@@ -75,7 +135,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema - Creation and Management', () => {
+  test.describe('schema - Creation and Management', () => {
     test('should show edit compatibility button', async ({ page }) => {
       await page.goto('/schema-registry');
       await expect(page.getByRole('button', { name: 'Edit compatibility' })).toBeVisible();
@@ -104,7 +164,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema - Details and Versions', () => {
+  test.describe('schema - Details and Versions', () => {
     test('should switch between schema versions', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -126,7 +186,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema - Search and Clear', () => {
+  test.describe('schema - Search and Clear', () => {
     test('should clear search filter', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -155,7 +215,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema - Pagination and Sorting', () => {
+  test.describe('schema - Pagination and Sorting', () => {
     test('should display pagination controls if many schemas exist', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -167,7 +227,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema - Navigation', () => {
+  test.describe('schema - Navigation', () => {
     test('should navigate back to schema list from details page', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -181,12 +241,15 @@ test.describe('Schema Registry E2E Tests', () => {
       await expect(page).toHaveURL(appURL('/schema-registry?showSoftDeleted=false'));
     });
   });
+}
 
+// Schema workflows: creation, versions, compatibility, references, permissions and errors.
+function describeSchemaWorkflowSuites() {
   /**
    * Comprehensive Schema Creation Tests
    * Tests the complete schema creation workflow with various strategies and formats
    */
-  test.describe('Schema Creation - Strategy and Format', () => {
+  test.describe('schema Creation - Strategy and Format', () => {
     test('should create schema with TOPIC_NAME strategy (AVRO)', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.gotoCreate();
@@ -196,38 +259,13 @@ test.describe('Schema Registry E2E Tests', () => {
       await expect(page.getByTestId('schema-create-format-radio')).toBeVisible();
 
       // Select TOPIC_NAME strategy using helper for custom select
-      const strategySelectContainer = page.getByTestId('schema-create-strategy-select');
-      await selectOption(strategySelectContainer, 'Topic-Record Name');
+      await selectOption(page.getByTestId('schema-create-strategy-select'), 'Topic-Record Name');
 
       // Check if topic selector appears and has options
-      const topicSelect = page.getByTestId('schema-create-topic-select');
-      const hasTopics = await topicSelect.isVisible({ timeout: 1000 }).catch(() => false);
-
-      if (hasTopics) {
-        // Open the topic select. Scope option lookup to the open popup (the
-        // registry's Base UI Select keeps a transitioning closed popup briefly,
-        // so the page-wide `[role="option"]` first match can be a stale item
-        // from the strategy select that's animating out).
-        await topicSelect.click();
-        const openPopup = page.locator('[data-slot="select-content"][data-state="open"]');
-        const hasOptions = await openPopup.isVisible({ timeout: 1000 }).catch(() => false);
-
-        if (hasOptions) {
-          const firstOption = openPopup.locator('[role="option"]').first();
-          await expect(firstOption).toBeVisible();
-          await firstOption.click();
-
-          // Verify key/value radio appears
-          const keyValueRadio = page.getByTestId('schema-create-key-value-radio');
-          await expect(keyValueRadio).toBeVisible();
-        }
-      }
+      await selectFirstTopicIfAny(page);
 
       // Verify format selection is always available
-      const formatRadio = page.getByTestId('schema-create-format-radio');
-      await expect(formatRadio.getByText('Avro')).toBeVisible();
-      await expect(formatRadio.getByText('Protobuf')).toBeVisible();
-      await expect(formatRadio.getByText('JSON')).toBeVisible();
+      await expectAllSchemaFormats(page);
     });
 
     test('should create schema with CUSTOM strategy', async ({ page }) => {
@@ -287,7 +325,7 @@ test.describe('Schema Registry E2E Tests', () => {
    * Schema Version Management Tests
    * Tests version switching, deletion, recovery, and permanent deletion
    */
-  test.describe('Schema Version Management - Switching and Display', () => {
+  test.describe('schema Version Management - Switching and Display', () => {
     test('should display version selector', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -376,31 +414,14 @@ test.describe('Schema Registry E2E Tests', () => {
     });
 
     test('should show soft-deleted alert when version is deleted', async ({ page, skip }) => {
-      await page.goto('/schema-registry');
-
-      // Enable soft-deleted checkbox to see deleted schemas
-      const checkbox = page.getByTestId('schema-list-show-soft-deleted-checkbox');
-      await checkbox.check();
-
-      // Wait for the table to update after toggling soft-deleted
-      await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
+      await showSoftDeletedSchemas(page);
 
       // Look for any soft-deleted schema indicator
       const softDeletedIcon = page.getByTestId('schema-list-soft-deleted-icon').first();
       const hasSoftDeleted = await softDeletedIcon.isVisible({ timeout: 2000 }).catch(() => false);
 
       if (hasSoftDeleted) {
-        // Click on a soft-deleted schema
-        const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
-        await firstSchema.click();
-
-        // Check for soft-deleted alert or recover button
-        const recoverButton = page.getByTestId('schema-definition-recover-btn');
-        const hasRecoverButton = await recoverButton.isVisible({ timeout: 1000 }).catch(() => false);
-
-        if (hasRecoverButton) {
-          await expect(recoverButton).toBeVisible();
-        }
+        await expectRecoverButtonOnFirstSchema(page);
       } else {
         skip();
       }
@@ -411,7 +432,7 @@ test.describe('Schema Registry E2E Tests', () => {
    * Schema Compatibility Editing Tests
    * Tests editing global and subject-specific compatibility modes
    */
-  test.describe('Schema Compatibility Editing', () => {
+  test.describe('schema Compatibility Editing', () => {
     test('should navigate to global compatibility edit page', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.goto();
@@ -456,12 +477,7 @@ test.describe('Schema Registry E2E Tests', () => {
       const hasEditButton = await editButton.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (hasEditButton) {
-        await editButton.click();
-        await expect(page).toHaveURL(/\/schema-registry\/subjects\/.+\/edit-compatibility/);
-
-        // Verify subject name is displayed
-        const subjectName = page.getByTestId('edit-compatibility-subject-name');
-        await expect(subjectName).toBeVisible();
+        await expectSubjectCompatibilityEditor(page, editButton);
       } else {
         skip();
       }
@@ -472,7 +488,7 @@ test.describe('Schema Registry E2E Tests', () => {
    * Schema Details and Navigation Tests
    * Tests navigation, references, and metadata display
    */
-  test.describe('Schema Details and References', () => {
+  test.describe('schema Details and References', () => {
     test('should display edit compatibility button on details page', async ({ page }) => {
       await page.goto('/schema-registry');
 
@@ -547,7 +563,7 @@ test.describe('Schema Registry E2E Tests', () => {
    * Schema Permissions and Error Handling Tests
    * Tests permission checks and error states
    */
-  test.describe('Schema Permissions', () => {
+  test.describe('schema Permissions', () => {
     test('should show create button on list page', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.goto();
@@ -590,7 +606,7 @@ test.describe('Schema Registry E2E Tests', () => {
     });
   });
 
-  test.describe('Schema Error Handling', () => {
+  test.describe('schema Error Handling', () => {
     test('should handle empty search results', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
       await schemaPage.goto();
@@ -617,4 +633,19 @@ test.describe('Schema Registry E2E Tests', () => {
       }
     });
   });
+}
+
+/**
+ * Schema Registry E2E Tests
+ * Complete test suite for Schema Registry features including:
+ * - Filtering and search
+ * - Schema creation with multiple strategies
+ * - Version management (add, delete, recover)
+ * - Compatibility mode editing
+ * - Navigation and references
+ * - Permissions and error handling
+ */
+test.describe('schema Registry E2E Tests', () => {
+  describeSubjectListSuites();
+  describeSchemaWorkflowSuites();
 });

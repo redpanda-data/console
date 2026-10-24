@@ -51,7 +51,7 @@ const makeContexts = (): DerivedContext[] => [
   { id: ALL_CONTEXT_ID, label: 'All', subjectCount: 5, mode: 'READWRITE', compatibility: 'BACKWARD' },
 ];
 
-describe('SchemaContextSelector', () => {
+describe('the SchemaContextSelector', () => {
   test('renders selected context label in trigger button', () => {
     renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: DEFAULT_CONTEXT_ID });
 

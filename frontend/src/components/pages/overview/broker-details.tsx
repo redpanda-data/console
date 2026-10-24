@@ -20,8 +20,8 @@ import { DefaultSkeleton, OptionGroup } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { ConfigList } from '../../misc/config-list';
 import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
+import { CompactSection } from '../shared/compact-section';
 
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
   initPage(p: PageInitHelper): void {
@@ -73,7 +73,7 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
 
   return (
     <PageContent>
-      <Section className="py-4">
+      <CompactSection>
         <div className="flex gap-8">
           <Stat label="Broker ID" size="lg" value={brokerId} />
           <Stat label="Role" size="lg" value={broker.isController ? 'Controller' : 'Follower'} />
@@ -82,10 +82,10 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
           <Stat label="IP address" size="lg" value={broker.address} />
           {Boolean(broker.rack) && <Stat label="Rack" size="lg" value={broker.rack} />}
         </div>
-      </Section>
-      <Section className="py-4">
+      </CompactSection>
+      <CompactSection>
         <BrokerConfigView entries={brokerConfigs} />
-      </Section>
+      </CompactSection>
     </PageContent>
   );
 };

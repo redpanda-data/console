@@ -52,7 +52,7 @@ export const AddConnectorsCard = memo(
       : false;
 
     return (
-      <div className="!border-border border-t p-4">
+      <div className="border-t !border-border p-4">
         <div className="flex flex-col gap-2">
           <h5 className="mb-2 text-heading-xs text-muted-foreground">Connectors</h5>
           <div className="flex flex-wrap gap-2">

@@ -231,9 +231,7 @@ function pushField(meta: NodeMetaEntry[], config: Record<string, unknown>, key: 
   }
 }
 
-// Fallback when no preferred field matched: salient-named scalars first, then the first couple of
-// remaining scalar/scalar-array fields (skipping booleans, noise, and topics).
-function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
+function salientFields(record: Record<string, unknown>): NodeMetaEntry[] {
   const meta: NodeMetaEntry[] = [];
   for (const name of SALIENT_FIELD_NAMES) {
     if (meta.length >= 2) {
@@ -243,15 +241,35 @@ function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
       pushField(meta, record, name);
     }
   }
-  if (meta.length > 0) {
-    return meta;
-  }
+  return meta;
+}
+
+function firstScalarFields(record: Record<string, unknown>): NodeMetaEntry[] {
+  const meta: NodeMetaEntry[] = [];
   for (const [key, value] of Object.entries(record)) {
     if (meta.length >= 2) {
       break;
     }
     if (key === 'label' || TOPIC_FIELDS.has(key) || NOISE_FIELDS.has(key) || typeof value === 'boolean') {
       continue;
+    }
+    pushField(meta, record, key);
+  }
+  return meta;
+}
+
+// Fallback when no preferred field matched: salient-named scalars first, then the first couple of
+// remaining scalar/scalar-array fields (skipping booleans, noise, and topics).
+function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
+  const salient = salientFields(record);
+  return salient.length > 0 ? salient : firstScalarFields(record);
+}
+
+function preferredFields(componentName: string, record: Record<string, unknown>): NodeMetaEntry[] {
+  const meta: NodeMetaEntry[] = [];
+  for (const key of PREFERRED_FIELDS[componentName] ?? []) {
+    if (meta.length >= MAX_META) {
+      break;
     }
     pushField(meta, record, key);
   }
@@ -270,14 +288,6 @@ export function summarizeComponent(componentName: string, config: unknown): Node
     return [];
   }
   const record = config as Record<string, unknown>;
-
-  const meta: NodeMetaEntry[] = [];
-  for (const key of PREFERRED_FIELDS[componentName] ?? []) {
-    if (meta.length >= MAX_META) {
-      break;
-    }
-    pushField(meta, record, key);
-  }
-
+  const meta = preferredFields(componentName, record);
   return (meta.length === 0 ? fallbackFields(record) : meta).slice(0, MAX_META);
 }

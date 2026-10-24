@@ -69,12 +69,14 @@ redpanda:
           .
         </Text>
 
-        <List className="flex flex-col gap-2" ordered>
+        <List className="flex flex-col" ordered>
           <ListItem>
             <Text className="mt-3">Install Redpanda Connect</Text>
             <div>
               <div className="mb-6 flex flex-col gap-2">
-                <Text className="font-bold">Choose your install method</Text>
+                <Text>
+                  <strong>Choose your install method</strong>
+                </Text>
                 <div className="w-[275px]">
                   <SingleSelect<typeof selectedInstall>
                     onChange={setSelectedInstall}

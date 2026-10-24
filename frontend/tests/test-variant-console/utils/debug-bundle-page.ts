@@ -1,4 +1,4 @@
-import type { Download, Page } from '../../shared/e2e';
+import type { Download, Locator, Page } from '../../shared/e2e';
 import { expect, step } from '../../shared/e2e';
 
 /**
@@ -30,30 +30,33 @@ export class DebugBundlePage {
     const hasProgressLink = await progressLink.isVisible().catch(() => false);
 
     if (hasProgressLink) {
-      await progressLink.click();
-      await this.page.waitForURL(/\/debug-bundle\/progress\//);
-
-      // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
-      await Promise.race([
-        this.page.getByTestId('debug-bundle-done-button').waitFor({ state: 'visible', timeout: 90_000 }),
-        this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 90_000 }),
-      ]);
-
-      // Click whichever button is available to get back to form
-      const doneButton = this.page.getByTestId('debug-bundle-done-button');
-      const tryAgainButton = this.page.getByTestId('debug-bundle-try-again-button');
-
-      if (await doneButton.isVisible().catch(() => false)) {
-        await doneButton.click();
-      } else if (await tryAgainButton.isVisible().catch(() => false)) {
-        await tryAgainButton.click();
-      }
-
-      await this.page.waitForURL('/debug-bundle');
+      await this.returnToFormFromProgress(progressLink);
     }
 
     // Wait for the form to be visible
     await expect(this.page.getByRole('button', { name: /generate/i }).first()).toBeVisible();
+  }
+
+  private async returnToFormFromProgress(progressLink: Locator) {
+    await progressLink.click();
+    await this.page.waitForURL(/\/debug-bundle\/progress\//);
+
+    // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
+    const doneButton = this.page.getByTestId('debug-bundle-done-button');
+    const tryAgainButton = this.page.getByTestId('debug-bundle-try-again-button');
+    await Promise.race([
+      doneButton.waitFor({ state: 'visible', timeout: 90_000 }),
+      tryAgainButton.waitFor({ state: 'visible', timeout: 90_000 }),
+    ]);
+
+    // Click whichever button is available to get back to form
+    if (await doneButton.isVisible().catch(() => false)) {
+      await doneButton.click();
+    } else if (await tryAgainButton.isVisible().catch(() => false)) {
+      await tryAgainButton.click();
+    }
+
+    await this.page.waitForURL('/debug-bundle');
   }
 
   async gotoProgress(bundleId?: string) {
@@ -146,7 +149,15 @@ export class DebugBundlePage {
     enableTLS?: boolean;
   }) {
     await this.switchToAdvancedMode();
+    await this.setAdvancedCollectionLimits(options);
+    await this.setAdvancedMetricsAndTLS(options);
+  }
 
+  private async setAdvancedCollectionLimits(options: {
+    cpuProfilerSeconds?: number;
+    controllerLogSizeMB?: number;
+    logsSizeLimitMB?: number;
+  }) {
     if (options.cpuProfilerSeconds !== undefined) {
       await this.setCpuProfilerSeconds(options.cpuProfilerSeconds);
     }
@@ -158,7 +169,9 @@ export class DebugBundlePage {
     if (options.logsSizeLimitMB !== undefined) {
       await this.setLogsSizeLimitMB(options.logsSizeLimitMB);
     }
+  }
 
+  private async setAdvancedMetricsAndTLS(options: { metricsIntervalSeconds?: number; enableTLS?: boolean }) {
     if (options.metricsIntervalSeconds !== undefined) {
       await this.setMetricsIntervalSeconds(options.metricsIntervalSeconds);
     }
@@ -176,25 +189,30 @@ export class DebugBundlePage {
     await expect(generateButton).toBeVisible();
     await generateButton.click();
 
-    // Check if confirmation dialog appears
-    const confirmDialog = this.page.getByRole('dialog').or(this.page.getByText(/are you sure|confirm|replace/i));
-    const hasConfirm = await confirmDialog.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (hasConfirm) {
-      if (options?.confirmOverwrite) {
-        // Confirm to proceed with generation
-        const confirmButton = this.page.getByRole('button', { name: /confirm|yes|replace/i });
-        await confirmButton.click();
-      } else {
-        // Cancel to avoid generating
-        const cancelButton = this.page.getByRole('button', { name: /cancel|no/i });
-        await cancelButton.click();
-        return; // Exit early since we cancelled
-      }
+    if (!(await this.answerOverwriteConfirmation(options?.confirmOverwrite))) {
+      return; // Exit early since we cancelled
     }
 
     // Wait for navigation to progress page
     await this.waitForProgressPage();
+  }
+
+  /** Answers the overwrite confirmation, if one appears; resolves to whether generation goes ahead. */
+  private async answerOverwriteConfirmation(confirmOverwrite: boolean | undefined) {
+    // Generate asks first when a bundle exists; otherwise it goes straight to the progress page.
+    const confirmDialog = this.page.getByRole('alertdialog', { name: 'Generate new debug bundle' });
+    await expect(confirmDialog.or(this.page.getByTestId('debug-bundle-description'))).toBeVisible({
+      timeout: 10_000,
+    });
+    if (!(await confirmDialog.isVisible())) {
+      return true;
+    }
+    if (confirmOverwrite) {
+      await confirmDialog.getByRole('button', { name: 'Confirm' }).click();
+      return true;
+    }
+    await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
+    return false;
   }
 
   async generateBasicBundle() {

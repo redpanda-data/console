@@ -24,7 +24,7 @@ const buildShadowLink = (configurations?: UnifiedShadowLink['configurations']): 
   syncedShadowTopicProperties: [],
 });
 
-describe('ConfigurationShadowing', () => {
+describe('the ConfigurationShadowing', () => {
   test('should render the role replication section with resource-aware filter labels', () => {
     const shadowLink = buildShadowLink({
       roleSyncOptions: {

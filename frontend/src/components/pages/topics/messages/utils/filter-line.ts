@@ -33,48 +33,45 @@ const opensQuote = (text: string, i: number, start: number): boolean =>
  * counts as still-being-typed and swallows the rest of the line into one word.
  */
 function findWordEnd(text: string, start: number): number {
-  const n = text.length;
   let i = start;
-  let inQuote = false;
-  while (i < n) {
-    const ch = text[i];
-    if (inQuote) {
-      if (ch === '\\' && i + 1 < n) {
-        i += 2;
-        continue;
-      }
-      inQuote = ch !== '"';
-      i += 1;
-      continue;
-    }
-    if (opensQuote(text, i, start)) {
-      inQuote = true;
-      i += 1;
-      continue;
-    }
-    if (WHITESPACE_PATTERN.test(ch)) {
-      break;
-    }
-    i += 1;
+  while (i < text.length && !WHITESPACE_PATTERN.test(text[i])) {
+    i = opensQuote(text, i, start) ? skipQuotedSpan(text, i) : i + 1;
   }
   return i;
 }
 
+/** Index just past the quoted span whose opening `"` is at `openQuote` (see `findWordEnd`). */
+function skipQuotedSpan(text: string, openQuote: number): number {
+  let i = openQuote + 1;
+  while (i < text.length) {
+    if (text[i] === '\\' && i + 1 < text.length) {
+      i += 2;
+    } else if (text[i] === '"') {
+      return i + 1;
+    } else {
+      i += 1;
+    }
+  }
+  return i;
+}
+
+/** Index of the first non-whitespace character at or after `from` (`text.length` when there is none). */
+const skipWhitespace = (text: string, from: number): number => {
+  let i = from;
+  while (i < text.length && WHITESPACE_PATTERN.test(text[i])) {
+    i += 1;
+  }
+  return i;
+};
+
 /** Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules. */
 export function tokenizeLine(text: string): LineWord[] {
   const words: LineWord[] = [];
-  const n = text.length;
-  let i = 0;
-  while (i < n) {
-    while (i < n && WHITESPACE_PATTERN.test(text[i])) {
-      i += 1;
-    }
-    if (i >= n) {
-      break;
-    }
-    const start = i;
-    i = findWordEnd(text, start);
-    words.push({ text: text.slice(start, i), start, end: i });
+  let start = skipWhitespace(text, 0);
+  while (start < text.length) {
+    const end = findWordEnd(text, start);
+    words.push({ text: text.slice(start, end), start, end });
+    start = skipWhitespace(text, end);
   }
   return words;
 }
@@ -102,28 +99,27 @@ export type ParsedFilterLine = {
  * step, just continuous re-parsing on every edit.
  */
 export function parseFilterLine(text: string, options?: { partitionCount?: number }): ParsedFilterLine {
-  const words = tokenizeLine(text);
-  let partitionId: number | null = null;
-  const fieldTokens: FieldFilterToken[] = [];
-  const remainderParts: string[] = [];
-  const tokenRanges: { start: number; end: number }[] = [];
+  const words = tokenizeLine(text).map((word) => ({ word, parsed: parseFilterInput(word.text, options) }));
+  const recognized = words.filter((entry): entry is RecognizedWord => entry.parsed !== null);
+  // The last `partition:` word wins, as each one overrides the one before it.
+  const partitionWord = recognized.findLast(({ parsed }) => parsed.field === 'partition');
 
-  for (const word of words) {
-    const parsed = parseFilterInput(word.text, options);
-    if (!parsed) {
-      remainderParts.push(word.text);
-      continue;
-    }
-    tokenRanges.push({ start: word.start, end: word.end });
-    if (parsed.field === 'partition') {
-      partitionId = Number(parsed.value);
-      continue;
-    }
-    fieldTokens.push({ kind: 'field', field: parsed.field, op: parsed.op, value: parsed.value });
-  }
-
-  return { partitionId, fieldTokens, remainder: remainderParts.join(' '), tokenRanges };
+  return {
+    partitionId: partitionWord ? Number(partitionWord.parsed.value) : null,
+    fieldTokens: recognized
+      .filter(({ parsed }) => parsed.field !== 'partition')
+      .map(
+        ({ parsed }): FieldFilterToken => ({ kind: 'field', field: parsed.field, op: parsed.op, value: parsed.value })
+      ),
+    remainder: words
+      .filter(({ parsed }) => parsed === null)
+      .map(({ word }) => word.text)
+      .join(' '),
+    tokenRanges: recognized.map(({ word }) => ({ start: word.start, end: word.end })),
+  };
 }
+
+type RecognizedWord = { word: LineWord; parsed: NonNullable<ReturnType<typeof parseFilterInput>> };
 
 /**
  * The reverse of `parseFilterLine` — rebuilds a line from the three pieces.

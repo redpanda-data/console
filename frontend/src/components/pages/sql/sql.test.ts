@@ -9,7 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { bridgeTopicForQuery, firstKeyword, isCatalogChangingKeyword, isWriteKeyword } from './sql';
+import {
+  blockedStatementError,
+  bridgeTopicForQuery,
+  firstKeyword,
+  isCatalogChangingKeyword,
+  isWriteKeyword,
+} from './sql';
 import type { Catalog } from './sql-types';
 import { describe, expect, test } from 'bun:test';
 
@@ -65,6 +71,20 @@ describe('sql helpers', () => {
     // Writes / DDL / DCL — still blocked.
     expect(isWriteKeyword('INSERT INTO t VALUES (1)')).toBe(true);
     expect(isWriteKeyword('DELETE FROM t')).toBe(true);
+  });
+
+  test('blockedStatementError points REVOKE at Security and names any other blocked keyword', () => {
+    expect(blockedStatementError('REVOKE')).toEqual({
+      title: 'Manage access in Security',
+      message: 'Grants are managed in Security in this release.',
+    });
+    expect(blockedStatementError('DELETE')).toEqual({
+      title: 'Statement not allowed',
+      message: 'Only read queries are supported in this release. Found "DELETE".',
+    });
+    expect(blockedStatementError('').message).toBe(
+      'Only read queries are supported in this release. Found "empty statement".'
+    );
   });
 
   test('isCatalogChangingKeyword matches DDL that adds or removes catalog objects', () => {

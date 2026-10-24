@@ -33,7 +33,7 @@ export const ACLFilterResume = ({ index }: { index: number }) => {
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
-      <div className="font-medium text-body">ACL Filter {index + 1}</div>
+      <div className="text-body font-medium">ACL Filter {index + 1}</div>
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-body md:grid-cols-3">
         <div>
           <span className="text-muted-foreground">Resource type:</span>{' '}

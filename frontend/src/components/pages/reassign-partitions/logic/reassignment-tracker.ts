@@ -14,7 +14,7 @@
 // - tracks progress history for each reassignment to estimate speed and ETA
 
 import { api } from '../../../../state/backend-api';
-import type { PartitionReassignments } from '../../../../state/rest-interfaces';
+import type { Partition, PartitionReassignments } from '../../../../state/rest-interfaces';
 import { IsDev } from '../../../../utils/env';
 import { clone, toJson } from '../../../../utils/json-utils';
 
@@ -117,7 +117,19 @@ export class ReassignmentTracker {
       await api.refreshPartitions(topics, true);
     }
 
-    // Add new reassignments
+    this.addNewReassignments(liveReassignments);
+    this.markRemovedReassignmentsCompleted(liveReassignments);
+
+    // Update running reassignments
+    for (const r of this.trackingReassignments.slice()) {
+      this.updateReassignmentState(r);
+    }
+
+    this.removeExpiredReassignments();
+  }
+
+  // Add new reassignments
+  addNewReassignments(liveReassignments: (PartitionReassignments & { id: string })[]) {
     for (const r of liveReassignments) {
       const existingState = this.trackingReassignments.first((x) => x.id === r.id);
       if (existingState === null) {
@@ -126,8 +138,10 @@ export class ReassignmentTracker {
         this.trackingReassignments.push(state);
       }
     }
+  }
 
-    // Mark removed reassignments as completed
+  // Mark removed reassignments as completed
+  markRemovedReassignmentsCompleted(liveReassignments: { id: string }[]) {
     for (const r of this.trackingReassignments) {
       if (r.actualTimeCompleted !== null) {
         continue; // no need to the ones already marked as completed
@@ -141,22 +155,16 @@ export class ReassignmentTracker {
         r.remaining = { value: 0, timestamp: new Date() };
       }
     }
+  }
 
-    // Update running reassignments
-    for (const r of this.trackingReassignments.slice()) {
-      this.updateReassignmentState(r);
-    }
-
-    // Remove reassignments that are in completed state for some time
+  // Remove reassignments that are in completed state for some time
+  removeExpiredReassignments() {
     this.trackingReassignments = this.trackingReassignments.filter((x) => {
       if (x.actualTimeCompleted === null) {
         return true; // not yet complete, keep it
       }
       const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
-      if (age > 8 && IsDev) {
-        return false; // expired in dev, remove it
-      }
-      return true;
+      return !(age > 8 && IsDev);
     });
   }
 
@@ -186,58 +194,10 @@ export class ReassignmentTracker {
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   updateReassignmentState(state: ReassignmentState) {
-    // partition stats
-    const topicPartitions = api.topicPartitions.get(state.topicName);
-    for (const p of state.partitions) {
-      const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
-      if (!logDirs || logDirs.length === 0) {
-        continue;
-      }
-
-      // current size (on new brokers)
-      const newSizeOnBrokers: { brokerId: number; replicaSize: number }[] = [];
-      for (const b of p.addingReplicas) {
-        const logDir = logDirs.first((l) => l.brokerId === b);
-        if (logDir && !logDir.error) {
-          newSizeOnBrokers.push({ brokerId: b, replicaSize: logDir.size });
-        } else {
-          newSizeOnBrokers.push({ brokerId: b, replicaSize: 0 });
-        }
-      }
-      p.currentSize = newSizeOnBrokers;
-
-      // max size (on any broker)
-      p.maxReplicaSize = logDirs.max((e) => e.size);
-    }
-
-    // total transfer size (size of each partition multiplied by how many brokers need to receive that partition)
-    state.totalTransferSize = state.partitions.sum((p) => p.maxReplicaSize * p.addingReplicas.length);
-
-    const newTransferred = state.partitions.sum((p) => p.currentSize.sum((x) => x.replicaSize));
-    const newRemaining = state.totalTransferSize - newTransferred;
-
-    if (state.remainingPrev === null || state.remainingPrev.value !== newRemaining) {
-      // only set a new transferred statistic when the new value is different from the previous one
-      // otherwise we'd end up with the same value for prev and cur with different timestamps
-      state.remainingPrev = state.remaining;
-      state.remaining = { value: newRemaining, timestamp: new Date() };
-      state.progressPercent = (1 - state.remaining.value / state.totalTransferSize) * 100;
-    }
-
-    // estimate speed (only if we have cur and prev)
-    if (state.remaining && state.remainingPrev && state.remaining.value !== state.remainingPrev.value) {
-      const intervalSec = (state.remaining.timestamp.getTime() - state.remainingPrev.timestamp.getTime()) / 1000;
-      const deltaRemaining = state.remaining.value - state.remainingPrev.value;
-      state.estimateSpeed = (deltaRemaining * -1) / intervalSec;
-    }
-
-    // estimate completion time
-    if (state.estimateSpeed !== null && state.remaining !== null) {
-      const remainingTimeSec = state.remaining.value / state.estimateSpeed;
-      state.estimateCompletionTime = new Date(Date.now() + remainingTimeSec * 1000);
-    }
+    updatePartitionSizes(state);
+    updateRemaining(state);
+    updateEstimates(state);
 
     return state;
   }
@@ -260,5 +220,64 @@ export class ReassignmentTracker {
       window.clearInterval(this.reassignTimer);
       this.reassignTimer = null;
     }
+  }
+}
+
+// partition stats
+function updatePartitionSizes(state: ReassignmentState) {
+  const topicPartitions = api.topicPartitions.get(state.topicName);
+  for (const p of state.partitions) {
+    const logDirs = topicPartitions?.first((e) => e.id === p.partitionId)?.partitionLogDirs.filter((l) => !l.error);
+    if (!logDirs || logDirs.length === 0) {
+      continue;
+    }
+
+    // current size (on new brokers)
+    p.currentSize = sizesOnAddingBrokers(p.addingReplicas, logDirs);
+
+    // max size (on any broker)
+    p.maxReplicaSize = logDirs.max((e) => e.size);
+  }
+}
+
+/** The replica size each adding broker reports so far, 0 for a broker without a log dir for the partition. */
+function sizesOnAddingBrokers(
+  addingReplicas: number[],
+  logDirs: Partition['partitionLogDirs']
+): { brokerId: number; replicaSize: number }[] {
+  return addingReplicas.map((b) => {
+    const logDir = logDirs.first((l) => l.brokerId === b);
+    return { brokerId: b, replicaSize: logDir && !logDir.error ? logDir.size : 0 };
+  });
+}
+
+function updateRemaining(state: ReassignmentState) {
+  // total transfer size (size of each partition multiplied by how many brokers need to receive that partition)
+  state.totalTransferSize = state.partitions.sum((p) => p.maxReplicaSize * p.addingReplicas.length);
+
+  const newTransferred = state.partitions.sum((p) => p.currentSize.sum((x) => x.replicaSize));
+  const newRemaining = state.totalTransferSize - newTransferred;
+
+  if (state.remainingPrev === null || state.remainingPrev.value !== newRemaining) {
+    // only set a new transferred statistic when the new value is different from the previous one
+    // otherwise we'd end up with the same value for prev and cur with different timestamps
+    state.remainingPrev = state.remaining;
+    state.remaining = { value: newRemaining, timestamp: new Date() };
+    state.progressPercent = (1 - state.remaining.value / state.totalTransferSize) * 100;
+  }
+}
+
+function updateEstimates(state: ReassignmentState) {
+  // estimate speed (only if we have cur and prev)
+  if (state.remaining && state.remainingPrev && state.remaining.value !== state.remainingPrev.value) {
+    const intervalSec = (state.remaining.timestamp.getTime() - state.remainingPrev.timestamp.getTime()) / 1000;
+    const deltaRemaining = state.remaining.value - state.remainingPrev.value;
+    state.estimateSpeed = -deltaRemaining / intervalSec;
+  }
+
+  // estimate completion time
+  if (state.estimateSpeed !== null && state.remaining !== null) {
+    const remainingTimeSec = state.remaining.value / state.estimateSpeed;
+    state.estimateCompletionTime = new Date(Date.now() + remainingTimeSec * 1000);
   }
 }

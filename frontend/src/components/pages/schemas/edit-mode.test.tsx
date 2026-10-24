@@ -14,7 +14,8 @@ import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
 
-const mockNavigate = rs.fn();
+// Real navigate() resolves once the route commits.
+const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
 const mockMutateContext = rs.fn();
@@ -93,7 +94,7 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import EditSchemaModePage from './edit-mode';
 
-describe('EditSchemaModePage', () => {
+describe('the EditSchemaModePage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
@@ -102,7 +103,7 @@ describe('EditSchemaModePage', () => {
     rs.restoreAllMocks();
   });
 
-  describe('Global mode (no subjectName)', () => {
+  describe('global mode (no subjectName)', () => {
     test('renders 3 mode options for global mode', async () => {
       renderWithFileRoutes(<EditSchemaModePage />);
 
@@ -164,7 +165,7 @@ describe('EditSchemaModePage', () => {
     });
   });
 
-  describe('Per-subject mode (with subjectName)', () => {
+  describe('per-subject mode (with subjectName)', () => {
     const subjectName = 'my-test-subject';
 
     beforeEach(() => {
@@ -254,7 +255,7 @@ describe('EditSchemaModePage', () => {
     });
   });
 
-  describe('Per-context mode (with contextName)', () => {
+  describe('per-context mode (with contextName)', () => {
     beforeEach(() => {
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
     });
@@ -290,7 +291,7 @@ describe('EditSchemaModePage', () => {
     });
   });
 
-  describe('Loading and edge cases', () => {
+  describe('loading and edge cases', () => {
     test('shows skeleton while loading mode', () => {
       rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: undefined,

@@ -18,7 +18,7 @@ import { act, renderWithFileRoutes, screen } from 'test-utils';
 import LoginPage from './login';
 import { config as appConfig } from '../../config';
 
-describe('LoginPage', () => {
+describe('the LoginPage', () => {
   const initialAuthClient = appConfig.authenticationClient;
   const loginSaslScram = rs.fn();
 
@@ -35,32 +35,14 @@ describe('LoginPage', () => {
   });
 
   test('shows a rejected password inline and re-enables the form', async () => {
-    let reject!: (reason: unknown) => void;
-    loginSaslScram.mockImplementation(
-      () =>
-        new Promise((_, r) => {
-          reject = r;
-        })
-    );
+    const reject = rejectNextLogin(loginSaslScram);
     const user = userEvent.setup();
 
     renderWithFileRoutes(<LoginPage />, { initialLocation: '/login' });
 
-    await user.type(await screen.findByTestId('auth-username-input'), 'e2euser');
-    await user.type(screen.getByTestId('auth-password-input'), 'not-the-password');
-    const submit = screen.getByTestId('auth-submit');
-    await user.click(submit);
+    const submit = await submitCredentials(user, 'e2euser', 'not-the-password');
 
-    // In flight: one request went out and the button cannot fire a second one.
-    expect(loginSaslScram).toHaveBeenCalledTimes(1);
-    expect(loginSaslScram).toHaveBeenCalledWith(
-      expect.objectContaining({
-        username: 'e2euser',
-        password: 'not-the-password',
-        mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-      })
-    );
-    expect(submit).toBeDisabled();
+    expectSingleLoginRequest(loginSaslScram, submit);
 
     act(() => {
       reject(new ConnectError('invalid credentials', Code.Unauthenticated));
@@ -72,3 +54,35 @@ describe('LoginPage', () => {
     expect(screen.getByTestId('auth-password-input')).toBeEnabled();
   });
 });
+
+function rejectNextLogin(login: ReturnType<typeof rs.fn>) {
+  let reject!: (reason: unknown) => void;
+  login.mockImplementation(
+    () =>
+      new Promise((_, rejectPromise) => {
+        reject = rejectPromise;
+      })
+  );
+  return (reason: unknown) => reject(reason);
+}
+
+async function submitCredentials(user: ReturnType<typeof userEvent.setup>, username: string, password: string) {
+  await user.type(await screen.findByTestId('auth-username-input'), username);
+  await user.type(screen.getByTestId('auth-password-input'), password);
+  const submit = screen.getByTestId('auth-submit');
+  await user.click(submit);
+  return submit;
+}
+
+function expectSingleLoginRequest(login: ReturnType<typeof rs.fn>, submit: HTMLElement) {
+  // In flight: one request went out and the button cannot fire a second one.
+  expect(login).toHaveBeenCalledTimes(1);
+  expect(login).toHaveBeenCalledWith(
+    expect.objectContaining({
+      username: 'e2euser',
+      password: 'not-the-password',
+      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+    })
+  );
+  expect(submit).toBeDisabled();
+}

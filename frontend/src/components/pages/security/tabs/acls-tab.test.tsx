@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, rs, test } from '@rstest/core';
+import { describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -21,12 +21,9 @@ rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
-    Link: ({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) => (
-      <a href={to ?? ''} {...props}>
-        {children}
-      </a>
-    ),
-    useNavigate: () => rs.fn(),
+    Link: MockLink,
+    // Real navigate() returns a promise that settles once the route commits.
+    useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
 
@@ -35,7 +32,7 @@ rs.mock('../../../misc/section', () => ({
 }));
 
 rs.mock('../shared/security-tabs-nav', () => ({
-  SecurityTabsNav: () => null,
+  SecurityTabsNav: MockSecurityTabsNav,
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
@@ -66,6 +63,9 @@ rs.mock('../../../../react-query/api/user', () => ({
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-admin' }, { name: 'shadowed' }] }, isLoading: false }),
 }));
 
+// A refetch can fail after data loaded; tests flip this to drive the error screen.
+const { aclQuery } = rs.hoisted(() => ({ aclQuery: { failed: false } }));
+
 rs.mock('../../../../react-query/api/acl', () => ({
   useDeleteAclMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
   useListACLAsPrincipalGroups: () => ({
@@ -77,8 +77,8 @@ rs.mock('../../../../react-query/api/acl', () => ({
       { principal: 'Group:shadowed', principalType: 'Group', principalName: 'shadowed', host: '10.0.0.9' },
     ],
     isLoading: false,
-    isError: false,
-    error: null,
+    isError: aclQuery.failed,
+    error: aclQuery.failed ? new Error('ACLs unavailable') : null,
   }),
 }));
 
@@ -93,7 +93,7 @@ const openRowMenu = async (principalName: string) => {
   return { user, menu: await screen.findByRole('menu') };
 };
 
-describe('AclsTab', () => {
+describe('the AclsTab', () => {
   test('lists each ACL principal with its host', () => {
     render(<AclsTab />);
 
@@ -147,6 +147,22 @@ describe('AclsTab', () => {
     expect(names).toEqual([...names].sort());
   });
 
+  test('keeps the name filter when a failed refetch recovers', async () => {
+    const user = userEvent.setup();
+    onTestFinished(() => {
+      aclQuery.failed = false;
+    });
+    const { rerender } = render(<AclsTab />);
+    await user.type(screen.getByPlaceholderText('Filter by name'), 'engineering');
+
+    aclQuery.failed = true;
+    rerender(<AclsTab />);
+    aclQuery.failed = false;
+    rerender(<AclsTab />);
+
+    expect(screen.getByPlaceholderText('Filter by name')).toHaveValue('engineering');
+  });
+
   test('disables the user-delete options for an ACL-only principal', async () => {
     render(<AclsTab />);
     const { menu } = await openRowMenu('acl-only');
@@ -157,3 +173,15 @@ describe('AclsTab', () => {
     expect(within(menu).getByRole('menuitem', { name: 'Delete (ACLs only)' })).not.toHaveAttribute('data-disabled');
   });
 });
+
+function MockLink({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) {
+  return (
+    <a href={to ?? ''} {...props}>
+      {children}
+    </a>
+  );
+}
+
+function MockSecurityTabsNav() {
+  return null;
+}

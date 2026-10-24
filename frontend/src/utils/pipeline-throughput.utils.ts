@@ -52,12 +52,11 @@ export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   if (step === null) {
     return points;
   }
-  const maxGap = step * 1.5;
   const result: MergedPoint[] = [];
   for (let i = 0; i < points.length; i++) {
     result.push(points[i]);
     const next = points[i + 1];
-    if (next && next.timestamp - points[i].timestamp > maxGap) {
+    if (next && next.timestamp - points[i].timestamp > step * 1.5) {
       result.push({ timestamp: points[i].timestamp + step, ingress: null, egress: null });
     }
   }

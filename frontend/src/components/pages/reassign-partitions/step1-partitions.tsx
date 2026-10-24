@@ -30,6 +30,7 @@ import { prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
+import { TonedIcon } from '../shared/toned-icon';
 
 // Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
@@ -105,14 +106,14 @@ export class StepSelectPartitions extends Component<{
 
           if (this.props.throttledTopics.includes(record.topicName)) {
             return (
-              <div className="whitespace-break-spaces break-words">
+              <div className="wrap-break-word whitespace-break-spaces">
                 <span>{content}</span>
                 <WarningToolip content="Topic replication is throttled" position="top" />
               </div>
             );
           }
 
-          return <div className="whitespace-break-spaces break-words">{content}</div>;
+          return <div className="wrap-break-word whitespace-break-spaces">{content}</div>;
         },
       },
       {
@@ -263,11 +264,7 @@ export class StepSelectPartitions extends Component<{
     }
 
     const selected = this.props.partitionSelection[topicName];
-    if (!selected) {
-      return { checked: false, indeterminate: false };
-    }
-
-    if (selected.length === 0) {
+    if (!selected || selected.length === 0) {
       return { checked: false, indeterminate: false };
     }
 
@@ -384,7 +381,7 @@ function renderPartitionError(partition: Partition) {
         render={
           <button aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-              <WarningIcon className="text-warning" size={19} />
+              <TonedIcon icon={WarningIcon} size={19} tone="warning" />
             </ZeroSizeWrapper>
           </button>
         }
@@ -408,7 +405,7 @@ function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
         render={
           <button aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
-              <WarningIcon className="text-warning" size={20} />
+              <TonedIcon icon={WarningIcon} size={20} tone="warning" />
             </ZeroSizeWrapper>
           </button>
         }

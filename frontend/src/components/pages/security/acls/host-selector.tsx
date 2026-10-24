@@ -10,6 +10,7 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
@@ -30,10 +31,10 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
         <CardHeader>
           <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>
-        <CardContent className={'flex flex-col gap-2'}>
+        <CardContent>
           <div className="mb-4 text-body text-subtle" data-testid="host-selector-description">
             This{' '}
-            <span className="font-bold text-body" data-testid="host-selector-principal-name">
+            <span className="text-body font-bold" data-testid="host-selector-principal-name">
               {principalName}
             </span>{' '}
             principal has ACLs configured for multiple hosts. Select a host to view its ACL configuration.
@@ -48,17 +49,19 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
             <TableBody>
               {hosts.map(({ sharedConfig: { host: hostValue } }) => (
                 <TableRow
-                  className="cursor-pointer hover:bg-surface-subtle"
+                  className="cursor-pointer"
                   key={hostValue}
                   onClick={() => {
-                    navigate({ to: baseUrl, search: { host: hostValue } });
+                    navigate({ to: baseUrl, search: { host: hostValue } }).catch((error: unknown) => {
+                      toast.error('Failed to navigate', { description: String(error) });
+                    });
                   }}
                   testId={`host-selector-row-${hostValue}`}
                 >
-                  <TableCell className="font-medium" testId={`host-selector-principal-${hostValue}`}>
+                  <TableCell testId={`host-selector-principal-${hostValue}`} weight="medium">
                     {principalName}
                   </TableCell>
-                  <TableCell className="font-medium" testId={`host-selector-host-${hostValue}`}>
+                  <TableCell testId={`host-selector-host-${hostValue}`} weight="medium">
                     {hostValue}
                   </TableCell>
                 </TableRow>

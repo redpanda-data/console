@@ -74,6 +74,18 @@ const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([config
 const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
 
+// Stored entries that still match the schema; throws on unparsable JSON.
+function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
+  const parsed: unknown = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+  return parsed.flatMap((entry) => {
+    const result = editorAutosaveEntrySchema.safeParse(entry);
+    return result.success ? [result.data] : [];
+  });
+}
+
 // Drops malformed and expired entries, writing the pruned set back.
 function readAll(): EditorAutosaveEntry[] {
   if (typeof window === 'undefined') {
@@ -81,14 +93,7 @@ function readAll(): EditorAutosaveEntry[] {
   }
   try {
     window.localStorage.removeItem(LEGACY_DRAFTS_STORAGE_KEY);
-    const raw = window.localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    const entries = Array.isArray(parsed)
-      ? parsed.flatMap((entry) => {
-          const result = editorAutosaveEntrySchema.safeParse(entry);
-          return result.success ? [result.data] : [];
-        })
-      : [];
+    const entries = parseStoredEntries(window.localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY));
     const live = entries.filter((entry) => !isAutosaveExpired(entry));
     if (live.length !== entries.length) {
       writeAll(live);

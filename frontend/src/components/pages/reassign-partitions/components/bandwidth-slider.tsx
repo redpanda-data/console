@@ -98,7 +98,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
       */}
       {isDragging && tipText(sliderValue) ? (
         <div
-          className="pointer-events-none absolute -top-7 -translate-x-1/2 whitespace-nowrap rounded-md bg-primary px-2 py-1 text-body-sm text-primary-foreground shadow-md"
+          className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-body-sm whitespace-nowrap text-primary-foreground shadow-md"
           style={{ left: `${percentOf(sliderValue)}%` }}
         >
           {tipText(sliderValue)}

@@ -12,6 +12,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
 import { isServerless } from 'config';
+import { toast } from 'sonner';
 
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -99,7 +100,9 @@ export function SecurityTabsNav() {
   const handleTabClick = (tabKey: string) => {
     const tab = tabs.find((t) => t.key === tabKey);
     if (tab && !tab.disabled) {
-      navigate({ to: tab.path });
+      navigate({ to: tab.path }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
     }
   };
 
@@ -115,7 +118,7 @@ export function SecurityTabsNav() {
                   render={
                     <span>
                       <TabsTrigger
-                        className="text-body-lg aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
+                        className="aria-disabled:cursor-not-allowed"
                         disabled={tab.disabled}
                         onClick={() => handleTabClick(tab.key)}
                         value={tab.key}

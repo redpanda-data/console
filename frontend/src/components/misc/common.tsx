@@ -85,18 +85,8 @@ export const UpdatePopup = () => {
 
   const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
 
-  if (!(curTimestamp && Number.isFinite(curTimestamp))) {
+  if (!isNewerBuild(curTimestamp, serverTimestamp)) {
     return null;
-  }
-  if (!(serverTimestamp && Number.isFinite(serverTimestamp))) {
-    return null;
-  }
-
-  if (serverTimestamp < curTimestamp) {
-    return null; // don't downgrade
-  }
-  if (serverTimestamp === curTimestamp) {
-    return null; // version already matches
   }
 
   return (
@@ -173,4 +163,8 @@ export function WarningToolip(p: { content: React.ReactNode; position: 'top' | '
       </div>
     </ZeroSizeWrapper>
   );
+}
+
+function isNewerBuild(current: number, server: number | undefined): boolean {
+  return Boolean(current && Number.isFinite(current) && server && Number.isFinite(server) && server > current);
 }

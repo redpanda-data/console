@@ -37,31 +37,32 @@ import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
+import { TonedIcon } from '../shared/toned-icon';
 
 export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionStatus }) => {
   switch (p.status) {
     case PartitionTransformStatus_PartitionStatus.UNSPECIFIED:
       return (
         <div className="flex items-center gap-2">
-          <CloseIcon className="size-3.5 text-warning" /> Unspecified
+          <TonedIcon className="size-3.5" icon={CloseIcon} tone="warning" /> Unspecified
         </div>
       );
     case PartitionTransformStatus_PartitionStatus.RUNNING:
       return (
         <div className="flex items-center gap-2">
-          <CheckIcon className="size-3.5 text-success" /> Running
+          <TonedIcon className="size-3.5" icon={CheckIcon} tone="success" /> Running
         </div>
       );
     case PartitionTransformStatus_PartitionStatus.INACTIVE:
       return (
         <div className="flex items-center gap-2">
-          <CloseIcon className="size-3.5 text-destructive" /> Inactive
+          <TonedIcon className="size-3.5" icon={CloseIcon} tone="destructive" /> Inactive
         </div>
       );
     case PartitionTransformStatus_PartitionStatus.ERRORED:
       return (
         <div className="flex items-center gap-2">
-          <CloseIcon className="size-3.5 text-destructive" /> Errored
+          <TonedIcon className="size-3.5" icon={CloseIcon} tone="destructive" /> Errored
         </div>
       );
     default:
@@ -98,7 +99,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     accessorKey: 'name',
     cell: ({ row: { original: r } }) => (
-      <div className="whitespace-break-spaces break-words">
+      <div className="wrap-break-word whitespace-break-spaces">
         <Link
           params={{ transformName: encodeURIComponentPercents(r.name) }}
           search={{} as never}
@@ -182,6 +183,23 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
   },
 ];
 
+const compileQuickSearch = (quickSearch: string): RegExp | null => {
+  try {
+    return new RegExp(quickSearch, 'i');
+  } catch {
+    return null;
+  }
+};
+
+// Compiled once, not once per row. An invalid pattern matches nothing, as before.
+const filterByQuickSearch = (transforms: TransformMetadata[], quickSearch: string) => {
+  if (!quickSearch) {
+    return transforms;
+  }
+  const quickSearchRegExp = compileQuickSearch(quickSearch);
+  return transforms.filter((u) => (quickSearchRegExp ? quickSearchRegExp.test(u.name) : false));
+};
+
 const TransformsListContent: FC = () => {
   const { transformsList, updateSettings } = useUISettingsStore();
 
@@ -194,21 +212,7 @@ const TransformsListContent: FC = () => {
   }
 
   const quickSearch = transformsList.quickSearch;
-  // Compiled once, not once per row. An invalid pattern matches nothing, as before.
-  let quickSearchRegExp: RegExp | null = null;
-  if (quickSearch) {
-    try {
-      quickSearchRegExp = new RegExp(quickSearch, 'i');
-    } catch {
-      quickSearchRegExp = null;
-    }
-  }
-  const filteredTransforms = (transformsApi.transforms ?? []).filter((u) => {
-    if (!quickSearch) {
-      return true;
-    }
-    return quickSearchRegExp ? quickSearchRegExp.test(u.name) : false;
-  });
+  const filteredTransforms = filterByQuickSearch(transformsApi.transforms, quickSearch);
 
   return (
     <PageContent>

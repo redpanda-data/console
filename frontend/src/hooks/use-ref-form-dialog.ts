@@ -49,6 +49,48 @@ function isTimeoutError(error: unknown): boolean {
   return error instanceof Error && error.message === 'timeout';
 }
 
+/** What the dialog does with each way a submission can end; an aborted one ends silently. */
+type SubmissionHandlers<TData> = {
+  onSubmitted: (data: TData) => void;
+  onTimeout: () => void;
+  onFailed: () => void;
+};
+
+function settleSubmissionError<TData>(error: unknown, abort: AbortController, handlers: SubmissionHandlers<TData>) {
+  if (abort.signal.aborted) {
+    return;
+  }
+  if (isTimeoutError(error)) {
+    handlers.onTimeout();
+  } else {
+    handlers.onFailed();
+  }
+}
+
+// The handlers run inside the try, so one that throws settles like a failed submit.
+async function settleSubmission<TData>(
+  formRef: RefFormSubmittable<TData>,
+  abort: AbortController,
+  timeout: number,
+  handlers: SubmissionHandlers<TData>
+): Promise<void> {
+  try {
+    const result = await raceWithTimeout(formRef.triggerSubmit(abort.signal), timeout);
+
+    if (abort.signal.aborted) {
+      return;
+    }
+
+    if (result.success && result.data) {
+      handlers.onSubmitted(result.data);
+    } else {
+      handlers.onFailed();
+    }
+  } catch (error) {
+    settleSubmissionError(error, abort, handlers);
+  }
+}
+
 function useRefFormDialog<TData, TTarget = boolean>(
   options: UseRefFormDialogOptions<TData, TTarget>
 ): UseRefFormDialogReturn<TTarget> {
@@ -78,30 +120,19 @@ function useRefFormDialog<TData, TTarget = boolean>(
     abortRef.current = abort;
     setIsSubmitting(true);
 
-    try {
-      const result = await raceWithTimeout(formRef.triggerSubmit(abort.signal), timeout);
-
-      if (abort.signal.aborted) {
-        return;
-      }
-
-      if (result.success && result.data) {
-        onSuccess(result.data, target);
+    await settleSubmission(formRef, abort, timeout, {
+      onSubmitted: (data) => {
+        onSuccess(data, target);
         close();
-      } else {
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      if (abort.signal.aborted) {
-        return;
-      }
-      if (isTimeoutError(error)) {
+      },
+      onTimeout: () => {
         toast.error('Request timed out');
         close();
-      } else {
+      },
+      onFailed: () => {
         setIsSubmitting(false);
-      }
-    }
+      },
+    });
   }, [ref, target, onSuccess, timeout, close]);
 
   return {

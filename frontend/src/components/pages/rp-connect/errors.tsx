@@ -16,107 +16,69 @@ import { ConnectError } from '@connectrpc/connect';
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
-  const lintHints: Record<string, LintHint> = {};
-  let hintIndex = 0;
-
-  if (err instanceof ConnectError) {
-    // First, check for lint hints (validation errors with line/column info)
-    let hasSpecificHints = false;
-
-    for (const detail of err.details) {
-      if (isLintHint(detail)) {
-        lintHints[`hint_${hintIndex}`] = detail.debug;
-        hintIndex += 1;
-        hasSpecificHints = true;
-      } else if (isBadRequest(detail)) {
-        // Handle field violations as lint hints
-        for (const violation of detail.debug.fieldViolations) {
-          lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
-            line: 0,
-            column: 0,
-            hint: `${violation.field}: ${violation.description}`,
-            lintType: 'error',
-          });
-          hintIndex += 1;
-          hasSpecificHints = true;
-        }
-      }
-    }
-
-    // If no specific hints were found, create a generic error hint with additional context
-    if (!hasSpecificHints) {
-      // Build a more helpful error message using ConnectError properties
-      let errorMessage = err.message;
-
-      // Add error code context if available and different from message
-      if (err.code) {
-        const codeStr = String(err.code);
-        if (!errorMessage.toLowerCase().includes(codeStr.toLowerCase())) {
-          errorMessage = `[${codeStr}] ${errorMessage}`;
-        }
-      }
-
-      lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
-        line: 0,
-        column: 0,
-        hint: errorMessage || err.rawMessage || String(err),
-        lintType: 'error',
-      });
-      hintIndex += 1;
-    }
-  } else {
-    // For non-ConnectError errors, create a generic hint
-    lintHints[`hint_${hintIndex}`] = create(LintHintSchema, {
-      line: 0,
-      column: 0,
-      hint: err instanceof Error ? err.message : String(err),
-      lintType: 'error',
-    });
-    hintIndex += 1;
+  if (!(err instanceof ConnectError)) {
+    return toHintRecord([errorHint(err instanceof Error ? err.message : String(err))]);
   }
 
-  return lintHints;
+  // Specific hints (validation errors with line/column info, field violations) win; otherwise fall
+  // back to a generic error hint with additional context.
+  const hints = lintHintsFromDetails(err.details);
+  return toHintRecord(hints.length > 0 ? hints : [errorHint(connectErrorHintText(err))]);
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function formatPipelineError(err: unknown): React.ReactNode {
-  const details: React.ReactNode[] = [];
-  let genDesc = String(err);
-  if (err instanceof ConnectError) {
-    genDesc = err.message;
-    for (const detail of err.details) {
-      if (isLintHint(detail)) {
-        const hint = detail.debug;
-        if (hint.line > 0) {
-          details.push(`Line ${hint.line}, Col ${hint.column}: ${hint.hint}`);
-        } else {
-          details.push(hint.hint);
-        }
-      } else if (isBadRequest(detail)) {
-        for (const v of detail.debug.fieldViolations) {
-          details.push(`${v.field}: ${v.description}`);
-        }
-      }
+  const message = err instanceof ConnectError ? err.message : String(err);
+  const details = err instanceof ConnectError ? lintHintsFromDetails(err.details).map(lintHintText) : [];
+  if (details.length === 0) {
+    return <span className="text-body">{message}</span>;
+  }
+  return (
+    <>
+      <span className="text-body">{message}</span>
+      <ul>
+        {details.map((detail) => (
+          <li key={detail} style={{ listStylePosition: 'inside' }}>
+            {detail}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function errorHint(hint: string): LintHint {
+  return create(LintHintSchema, { line: 0, column: 0, hint, lintType: 'error' });
+}
+
+function toHintRecord(hints: LintHint[]): Record<string, LintHint> {
+  return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint]));
+}
+
+/** Lint hints carried by the error details, with each field violation converted to a hint. */
+function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
+  const hints: LintHint[] = [];
+  for (const detail of details) {
+    if (isLintHint(detail)) {
+      hints.push(detail.debug);
+    } else if (isBadRequest(detail)) {
+      hints.push(...detail.debug.fieldViolations.map((v) => errorHint(`${v.field}: ${v.description}`)));
     }
   }
-  let desc = <span className="text-body">{genDesc}</span>;
-  if (details.length > 0) {
-    desc = (
-      <>
-        <span className="text-body">{genDesc}</span>
-        <ul>
-          {details.map((d) => (
-            <li key={String(d)} style={{ listStylePosition: 'inside' }}>
-              {d}
-            </li>
-          ))}
-        </ul>
-      </>
-    );
+  return hints;
+}
+
+/** The error message, prefixed with the error code when the message doesn't already mention it. */
+function connectErrorHintText(err: ConnectError): string {
+  const code = String(err.code);
+  if (err.code && !err.message.toLowerCase().includes(code.toLowerCase())) {
+    return `[${code}] ${err.message}`;
   }
-  return desc;
+  return err.message || err.rawMessage || String(err);
+}
+
+function lintHintText(hint: LintHint): string {
+  return hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint;
 }
 
 type BadRequest = {

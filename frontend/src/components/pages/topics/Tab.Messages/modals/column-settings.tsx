@@ -21,7 +21,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Label as CheckboxLabel } from 'components/redpanda-ui/components/label';
 import { PortalContainerProvider } from 'components/redpanda-ui/lib/use-portal-container';
-import { type FC, useState } from 'react';
+import { type FC, useId, useState } from 'react';
 
 import type { ColumnList, TimestampDisplayFormat } from '../../../../../state/ui';
 import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
@@ -49,6 +49,7 @@ export const ColumnSettings: FC<{
   const previewTimestamps = topicSettings?.previewTimestamps ?? 'default';
   const [previewTime] = useState(() => Date.now());
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const timestampFormatId = useId();
 
   return (
     <Dialog
@@ -65,14 +66,17 @@ export const ColumnSettings: FC<{
         {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
         <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>
-            {/* Room for DialogContent's close button. */}
-            <DialogHeader className="pr-10">
-              <DialogTitle>Column Settings</DialogTitle>
+            <DialogHeader>
+              {/* Room for DialogContent's close button: the header's own padding plus this makes 40px. */}
+              <div className="pr-6">
+                <DialogTitle>Column Settings</DialogTitle>
+              </div>
             </DialogHeader>
             <DialogBody>
               <p>Choose which columns will be shown in the messages table, as well as the format of the timestamp.</p>
               <div className="my-6">
-                <Label text="Columns shown">
+                <fieldset>
+                  <legend className="labelText">Columns shown</legend>
                   <div className="flex flex-row gap-5">
                     {COLUMN_SETTINGS.map(({ title, dataIndex }) => (
                       <div className="flex items-center gap-2" key={dataIndex}>
@@ -102,9 +106,9 @@ export const ColumnSettings: FC<{
                       </div>
                     ))}
                   </div>
-                </Label>
+                </fieldset>
                 <Button
-                  className="mt-2 p-0"
+                  className="mt-2"
                   onClick={() => {
                     setTopicSettings(topicName, { previewColumnFields: [] });
                   }}
@@ -115,8 +119,9 @@ export const ColumnSettings: FC<{
               </div>
               <div className="my-6 grid grid-cols-[1fr_2fr] gap-4">
                 <div>
-                  <Label text="Timestamp format">
+                  <Label htmlFor={timestampFormatId} text="Timestamp format">
                     <SingleSelect<TimestampDisplayFormat>
+                      id={timestampFormatId}
                       onChange={(e) => {
                         setTopicSettings(topicName, { previewTimestamps: e });
                       }}
@@ -133,9 +138,10 @@ export const ColumnSettings: FC<{
                   </Label>
                 </div>
                 <div>
-                  <Label text="Preview">
+                  <figure>
+                    <figcaption className="labelText">Preview</figcaption>
                     <TimestampDisplay format={previewTimestamps} unixEpochMillisecond={previewTime} />
-                  </Label>
+                  </figure>
                 </div>
               </div>
             </DialogBody>

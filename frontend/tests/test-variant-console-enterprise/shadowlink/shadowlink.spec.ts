@@ -5,8 +5,34 @@ import { step } from '../../shared/e2e';
 import { generateShadowlinkName, ShadowlinkPage } from '../../test-variant-console/utils/shadowlink-page';
 import { expect, test } from '../fixtures';
 
-test.describe('Shadow Link E2E Tests', () => {
-  test.describe('Shadow Link Creation', () => {
+/** Fails over `owlshop-orders` alone, then every topic once all 7 have synced, and verifies the result. */
+const failOverOneTopicThenAll = async (shadowlinkPage: ShadowlinkPage, shadowlinkName: string) => {
+  await step('Failover single topic and wait for all topics', async () => {
+    await shadowlinkPage.gotoDetails(shadowlinkName);
+    // Failover single topic (will verify state change)
+    await shadowlinkPage.failoverTopic('owlshop-orders');
+  });
+
+  await step('Failover all topics', async () => {
+    // Wait for all 7 topics to sync (uses metrics which is faster)
+    await shadowlinkPage.verifyMetrics({
+      totalTopics: 7,
+    });
+    await shadowlinkPage.performFailover();
+  });
+
+  await step('Verify all topics failed over', async () => {
+    await shadowlinkPage.gotoDetails(shadowlinkName);
+    await shadowlinkPage.verifyMetrics({
+      totalTopics: 7,
+      failedOverTopics: 7,
+      errorTopics: 0,
+    });
+  });
+};
+
+test.describe('shadow Link E2E Tests', () => {
+  test.describe('shadow Link Creation', () => {
     test('should fill connection step successfully', async ({ page, shadowBackendURL }) => {
       const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();
@@ -71,28 +97,7 @@ test.describe('Shadow Link E2E Tests', () => {
         ]);
       });
 
-      await step('Failover single topic and wait for all topics', async () => {
-        await shadowlinkPage.gotoDetails(shadowlinkName);
-        // Failover single topic (will verify state change)
-        await shadowlinkPage.failoverTopic('owlshop-orders');
-      });
-
-      await step('Failover all topics', async () => {
-        // Wait for all 7 topics to sync (uses metrics which is faster)
-        await shadowlinkPage.verifyMetrics({
-          totalTopics: 7,
-        });
-        await shadowlinkPage.performFailover();
-      });
-
-      await step('Verify all topics failed over', async () => {
-        await shadowlinkPage.gotoDetails(shadowlinkName);
-        await shadowlinkPage.verifyMetrics({
-          totalTopics: 7,
-          failedOverTopics: 7,
-          errorTopics: 0,
-        });
-      });
+      await failOverOneTopicThenAll(shadowlinkPage, shadowlinkName);
 
       await step('Delete shadowlink', async () => {
         await shadowlinkPage.deleteShadowlink();
@@ -104,7 +109,7 @@ test.describe('Shadow Link E2E Tests', () => {
     });
   });
 
-  test.describe.skipIf(!!process.env.CI)('Shadow Link Filter', () => {
+  test.describe.skipIf(!!process.env.CI)('shadow Link Filter', () => {
     test('should create with exclude filter and verify it works', async ({ page, shadowBackendURL }) => {
       const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();

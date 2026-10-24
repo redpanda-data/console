@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -116,7 +117,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           value={query}
         >
           <InputStart>
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <TonedIcon className="h-4 w-4" icon={Search} tone="muted" />
           </InputStart>
           {query.length > 0 ? (
             <InputEnd>
@@ -132,7 +133,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           ) : null}
         </Input>
         <Tabs onValueChange={(value) => setActiveFilter(value as CategoryFilter)} value={activeFilter}>
-          <TabsList className="h-9 w-fit border-b-0 bg-transparent" variant="underline">
+          <TabsList className="h-9 w-fit" variant="underline">
             {FILTER_OPTIONS.map((filter) => (
               <TabsTrigger
                 data-testid={`template-gallery-filter-${filter}`}
@@ -153,8 +154,8 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-16 text-center"
           data-testid="template-gallery-empty"
         >
-          <Search aria-hidden className="h-6 w-6 text-muted-foreground" />
-          <div className="font-medium text-body">No templates match your search</div>
+          <TonedIcon aria-hidden className="h-6 w-6" icon={Search} tone="muted" />
+          <div className="text-body font-medium">No templates match your search</div>
           {hasFiltersActive ? (
             <Button onClick={clearFilters} size="sm" variant="outline">
               Clear filters
@@ -200,7 +201,7 @@ const GallerySkeleton = () => (
         <Skeleton className="h-5 w-36" />
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((idx) => (
-            <Skeleton className="h-[96px] w-full rounded-lg" key={idx} />
+            <Skeleton className="h-[96px]" key={idx} variant="card" width="full" />
           ))}
         </div>
       </div>

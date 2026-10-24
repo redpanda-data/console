@@ -72,129 +72,135 @@ const buildTemplate = (slots: TemplateSlot[]): PipelineTemplate => ({
 });
 
 describe('applySchemaToSlots', () => {
-  test('returns the slots untouched when no component list is available', () => {
-    const template = buildTemplate([slot({ id: 'dsn', kind: 'secret', section: 'source', label: 'DSN' })]);
+  describe('slots it leaves alone', () => {
+    test('returns the slots untouched when no component list is available', () => {
+      const template = buildTemplate([slot({ id: 'dsn', kind: 'secret', section: 'source', label: 'DSN' })]);
 
-    expect(applySchemaToSlots(template, undefined)).toBe(template.slots);
+      expect(applySchemaToSlots(template, undefined)).toBe(template.slots);
+    });
+
+    test('passes through slots without a schemaField', () => {
+      const template = buildTemplate([slot({ id: 'note', kind: 'string', section: 'options', label: 'Note' })]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result).toEqual(template.slots[0]);
+      expect(result.description).toBeUndefined();
+    });
+
+    test('passes the slot through unchanged when the schemaField path does not resolve', () => {
+      const template = buildTemplate([
+        slot({ id: 'ghost', kind: 'string', section: 'source', label: 'Ghost', schemaField: 'does.not.exist' }),
+      ]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result).toEqual(template.slots[0]);
+      expect(result.description).toBeUndefined();
+    });
+
+    test('does not enrich option-section slots (no source/sink component to resolve against)', () => {
+      const template = buildTemplate([
+        slot({ id: 'topic', kind: 'string', section: 'options', label: 'Topic', schemaField: 'topic' }),
+      ]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result).toEqual(template.slots[0]);
+    });
   });
 
-  test('passes through slots without a schemaField', () => {
-    const template = buildTemplate([slot({ id: 'note', kind: 'string', section: 'options', label: 'Note' })]);
+  describe('descriptions', () => {
+    test('fills a blank description from the resolved schema field', () => {
+      const template = buildTemplate([
+        slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
+      ]);
 
-    const [result] = applySchemaToSlots(template, components);
-    expect(result).toEqual(template.slots[0]);
-    expect(result.description).toBeUndefined();
+      const [result] = applySchemaToSlots(template, components);
+      expect(result.description).toBe('Snapshot mode');
+    });
+
+    test('flattens a multi-paragraph AsciiDoc description to plain slot help', () => {
+      const template = buildTemplate([
+        slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'multiline' }),
+      ]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result.description).toBe('A Data Source Name. Drivers See the driver list.');
+    });
+
+    test('treats a blank short description as absent, as the config form does', () => {
+      const template = buildTemplate([
+        slot({ id: 'blank', kind: 'string', section: 'source', label: 'Blank', schemaField: 'blankShort' }),
+      ]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result.description).toBe('The long one.');
+    });
+
+    test('keeps an explicit slot description over the schema description', () => {
+      const template = buildTemplate([
+        slot({
+          id: 'snapshot',
+          kind: 'string',
+          section: 'source',
+          label: 'Snapshot',
+          description: 'Custom description',
+          schemaField: 'snapshot',
+        }),
+      ]);
+
+      const [result] = applySchemaToSlots(template, components);
+      expect(result.description).toBe('Custom description');
+    });
   });
 
-  test('fills a blank description from the resolved schema field', () => {
-    const template = buildTemplate([
-      slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
-    ]);
+  describe('required flags and defaults', () => {
+    test('derives required from the schema when the slot does not set it', () => {
+      const template = buildTemplate([
+        // schema field has no default → required
+        slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
+        // schema field has a default → not required
+        slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'dsn' }),
+      ]);
 
-    const [result] = applySchemaToSlots(template, components);
-    expect(result.description).toBe('Snapshot mode');
-  });
+      const [snapshot, dsn] = applySchemaToSlots(template, components);
+      expect(snapshot.required).toBe(true);
+      expect(dsn.required).toBe(false);
+    });
 
-  test('flattens a multi-paragraph AsciiDoc description to plain slot help', () => {
-    const template = buildTemplate([
-      slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'multiline' }),
-    ]);
+    test('keeps an explicit slot required flag over the schema', () => {
+      const template = buildTemplate([
+        // schema would mark this required, but the slot opts out explicitly
+        slot({
+          id: 'snapshot',
+          kind: 'string',
+          section: 'source',
+          label: 'Snapshot',
+          required: false,
+          schemaField: 'snapshot',
+        }),
+      ]);
 
-    const [result] = applySchemaToSlots(template, components);
-    expect(result.description).toBe('A Data Source Name. Drivers See the driver list.');
-  });
+      const [result] = applySchemaToSlots(template, components);
+      expect(result.required).toBe(false);
+    });
 
-  test('treats a blank short description as absent, as the config form does', () => {
-    const template = buildTemplate([
-      slot({ id: 'blank', kind: 'string', section: 'source', label: 'Blank', schemaField: 'blankShort' }),
-    ]);
+    test('fills a default for non-secret slots from the schema', () => {
+      const template = buildTemplate([
+        slot({ id: 'topic', kind: 'string', section: 'sink', label: 'Topic', schemaField: 'topic' }),
+      ]);
 
-    const [result] = applySchemaToSlots(template, components);
-    expect(result.description).toBe('The long one.');
-  });
+      const [result] = applySchemaToSlots(template, components);
+      expect(result).toMatchObject({ kind: 'string', default: 'orders' });
+    });
 
-  test('keeps an explicit slot description over the schema description', () => {
-    const template = buildTemplate([
-      slot({
-        id: 'snapshot',
-        kind: 'string',
-        section: 'source',
-        label: 'Snapshot',
-        description: 'Custom description',
-        schemaField: 'snapshot',
-      }),
-    ]);
+    test('never fills a default for secret slots even when the schema field has one', () => {
+      const template = buildTemplate([
+        slot({ id: 'dsn', kind: 'secret', section: 'source', label: 'DSN', schemaField: 'dsn' }),
+      ]);
 
-    const [result] = applySchemaToSlots(template, components);
-    expect(result.description).toBe('Custom description');
-  });
-
-  test('derives required from the schema when the slot does not set it', () => {
-    const template = buildTemplate([
-      // schema field has no default → required
-      slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
-      // schema field has a default → not required
-      slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'dsn' }),
-    ]);
-
-    const [snapshot, dsn] = applySchemaToSlots(template, components);
-    expect(snapshot.required).toBe(true);
-    expect(dsn.required).toBe(false);
-  });
-
-  test('keeps an explicit slot required flag over the schema', () => {
-    const template = buildTemplate([
-      // schema would mark this required, but the slot opts out explicitly
-      slot({
-        id: 'snapshot',
-        kind: 'string',
-        section: 'source',
-        label: 'Snapshot',
-        required: false,
-        schemaField: 'snapshot',
-      }),
-    ]);
-
-    const [result] = applySchemaToSlots(template, components);
-    expect(result.required).toBe(false);
-  });
-
-  test('fills a default for non-secret slots from the schema', () => {
-    const template = buildTemplate([
-      slot({ id: 'topic', kind: 'string', section: 'sink', label: 'Topic', schemaField: 'topic' }),
-    ]);
-
-    const [result] = applySchemaToSlots(template, components);
-    expect(result).toMatchObject({ kind: 'string', default: 'orders' });
-  });
-
-  test('never fills a default for secret slots even when the schema field has one', () => {
-    const template = buildTemplate([
-      slot({ id: 'dsn', kind: 'secret', section: 'source', label: 'DSN', schemaField: 'dsn' }),
-    ]);
-
-    const [result] = applySchemaToSlots(template, components);
-    expect(result).not.toHaveProperty('default');
-    // Description and required still get enriched from the schema.
-    expect(result.description).toBe('Postgres DSN');
-  });
-
-  test('passes the slot through unchanged when the schemaField path does not resolve', () => {
-    const template = buildTemplate([
-      slot({ id: 'ghost', kind: 'string', section: 'source', label: 'Ghost', schemaField: 'does.not.exist' }),
-    ]);
-
-    const [result] = applySchemaToSlots(template, components);
-    expect(result).toEqual(template.slots[0]);
-    expect(result.description).toBeUndefined();
-  });
-
-  test('does not enrich option-section slots (no source/sink component to resolve against)', () => {
-    const template = buildTemplate([
-      slot({ id: 'topic', kind: 'string', section: 'options', label: 'Topic', schemaField: 'topic' }),
-    ]);
-
-    const [result] = applySchemaToSlots(template, components);
-    expect(result).toEqual(template.slots[0]);
+      const [result] = applySchemaToSlots(template, components);
+      expect(result).not.toHaveProperty('default');
+      // Description and required still get enriched from the schema.
+      expect(result.description).toBe('Postgres DSN');
+    });
   });
 });

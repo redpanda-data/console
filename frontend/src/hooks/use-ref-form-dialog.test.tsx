@@ -12,7 +12,7 @@
 import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
-import { useRefFormDialog } from './use-ref-form-dialog';
+import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog';
 
 rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
 
@@ -21,6 +21,31 @@ const getToastError = async () => {
   const { toast } = await import('sonner');
   return toast.error as ReturnType<typeof rs.fn>;
 };
+
+// Renders the hook around a form whose submit is `triggerSubmit`, with the dialog already open.
+function renderOpenDialog(
+  triggerSubmit: RefFormSubmittable<unknown>['triggerSubmit'],
+  options: { timeout?: number } = {}
+) {
+  const ref = { current: { triggerSubmit } };
+  const onSuccess = rs.fn();
+  const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess, ...options }));
+
+  act(() => {
+    result.current.open();
+  });
+
+  return { result, onSuccess };
+}
+
+// Starts a submit without awaiting it, so the test can act while it is in flight.
+function startSubmit(result: { current: { submit: () => Promise<void> } }): Promise<void> {
+  let submitPromise!: Promise<void>;
+  act(() => {
+    submitPromise = result.current.submit();
+  });
+  return submitPromise;
+}
 
 describe('useRefFormDialog', () => {
   afterEach(() => {
@@ -66,7 +91,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.target).toBe(true);
   });
 
-  it('close resets all state', async () => {
+  it('close resets all state', () => {
     const ref = { current: null };
     const onSuccess = rs.fn();
 
@@ -134,20 +159,10 @@ describe('useRefFormDialog', () => {
       resolveSubmit = resolve;
     });
     const triggerSubmit = rs.fn().mockReturnValue(inflightPromise);
-    const ref = { current: { triggerSubmit } };
-    const onSuccess = rs.fn();
-
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
-
-    act(() => {
-      result.current.open();
-    });
+    const { result, onSuccess } = renderOpenDialog(triggerSubmit);
 
     // Start submit but don't await it yet
-    let submitPromise: Promise<void>;
-    act(() => {
-      submitPromise = result.current.submit();
-    });
+    const submitPromise = startSubmit(result);
 
     // Close while submit is in-flight
     act(() => {
@@ -174,19 +189,9 @@ describe('useRefFormDialog', () => {
       // intentionally never resolves
     });
     const triggerSubmit = rs.fn().mockReturnValue(neverResolves);
-    const ref = { current: { triggerSubmit } };
-    const onSuccess = rs.fn();
+    const { result } = renderOpenDialog(triggerSubmit, { timeout: 5000 });
 
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess, timeout: 5000 }));
-
-    act(() => {
-      result.current.open();
-    });
-
-    let submitPromise: Promise<void>;
-    act(() => {
-      submitPromise = result.current.submit();
-    });
+    const submitPromise = startSubmit(result);
 
     // Advance timers past the timeout
     await act(async () => {

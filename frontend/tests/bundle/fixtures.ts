@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { brotliCompressSync, gzipSync } from 'node:zlib';
-import { test as base, type Page } from '../shared/e2e';
+import { test as base, type Page, type Route, type TestArtifacts } from '../shared/e2e';
 
 export const buildDirectory = resolve(process.env.BUNDLE_BUILD_DIR ?? 'build');
 
@@ -94,6 +94,58 @@ const responses: Record<string, unknown> = {
   GetPipelinesBySecrets: { response: { pipelinesForSecret: [] } },
 };
 
+// Third-party telemetry and content are stubbed so tests never depend on hosted services.
+async function fulfillThirdPartyRequest(route: Route) {
+  const response =
+    route.request().resourceType() === 'script'
+      ? { contentType: 'application/javascript', body: '' }
+      : { contentType: 'application/json', body: '{"results":[]}' };
+  await route.fulfill(response);
+}
+
+// An empty Connect server stream: one end-of-stream envelope with no messages.
+async function fulfillEmptyMessageStream(route: Route) {
+  const end = Buffer.from('{"metadata":{}}');
+  const header = Buffer.alloc(5);
+  header[0] = 2;
+  header.writeUInt32BE(end.length, 1);
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/connect+json',
+    body: Buffer.concat([header, end]),
+  });
+}
+
+async function fulfillApiFixture(route: Route, path: string) {
+  const key = path.startsWith('/api/') ? path : (path.split('/').at(-1) ?? '');
+  const json = responses[key];
+  if (json === undefined) {
+    throw new Error(`Missing bundle API fixture: ${path}`);
+  }
+  await route.fulfill({ status: 200, contentType: 'application/json', json });
+}
+
+async function routeLocalRequest(route: Route, path: string) {
+  if (!(path.startsWith('/api/') || path.startsWith('/redpanda.api.'))) {
+    await route.continue();
+    return;
+  }
+  if (path.endsWith('/ListMessages')) {
+    await fulfillEmptyMessageStream(route);
+    return;
+  }
+  await fulfillApiFixture(route, path);
+}
+
+async function routeBundleRequest(route: Route) {
+  const url = new URL(route.request().url());
+  if (url.hostname !== '127.0.0.1') {
+    await fulfillThirdPartyRequest(route);
+    return;
+  }
+  await routeLocalRequest(route, url.pathname);
+}
+
 export const test = base.extend<{ errors: string[] }>({
   errors: [
     async ({ context, page }, use) => {
@@ -104,40 +156,7 @@ export const test = base.extend<{ errors: string[] }>({
           errors.push(message.text());
         }
       });
-      await context.route('**/*', async (route) => {
-        const url = new URL(route.request().url());
-        if (url.hostname !== '127.0.0.1') {
-          const response =
-            route.request().resourceType() === 'script'
-              ? { contentType: 'application/javascript', body: '' }
-              : { contentType: 'application/json', body: '{"results":[]}' };
-          await route.fulfill(response);
-          return;
-        }
-        const path = url.pathname;
-        if (!(path.startsWith('/api/') || path.startsWith('/redpanda.api.'))) {
-          await route.continue();
-          return;
-        }
-        if (path.endsWith('/ListMessages')) {
-          const end = Buffer.from('{"metadata":{}}');
-          const header = Buffer.alloc(5);
-          header[0] = 2;
-          header.writeUInt32BE(end.length, 1);
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/connect+json',
-            body: Buffer.concat([header, end]),
-          });
-          return;
-        }
-        const key = path.startsWith('/api/') ? path : (path.split('/').at(-1) ?? '');
-        const json = responses[key];
-        if (json === undefined) {
-          throw new Error(`Missing bundle API fixture: ${path}`);
-        }
-        await route.fulfill({ status: 200, contentType: 'application/json', json });
-      });
+      await context.route('**/*', routeBundleRequest);
       await use(errors);
     },
     { auto: true },
@@ -152,6 +171,22 @@ export function trackScripts(page: Page) {
     }
   });
   return paths;
+}
+
+export function trackWorkers(page: Page) {
+  const workers: string[] = [];
+  page.on('worker', (worker) => workers.push(worker.url()));
+  return workers;
+}
+
+export async function attachJson(testInfo: TestArtifacts, name: string, value: unknown) {
+  await writeFile(testInfo.outputPath(name), JSON.stringify(value, null, 2));
+  await testInfo.attach(name, { path: testInfo.outputPath(name), contentType: 'application/json' });
+}
+
+export async function attachScreenshot(page: Page, testInfo: TestArtifacts, name: string) {
+  await page.screenshot({ path: testInfo.outputPath(name) });
+  await testInfo.attach(name, { path: testInfo.outputPath(name), contentType: 'image/png' });
 }
 
 export async function measure(paths: Iterable<string>) {

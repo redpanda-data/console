@@ -61,11 +61,11 @@ export const DeleteShadowLinkDialog = ({
       <AlertDialogContent>
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Delete Shadowlink</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-4">
-            <div className="text-body">
+          <AlertDialogDescription>
+            <div className="mb-4 text-body">
               You are about to delete <InlineCode>{shadowLinkName}</InlineCode>
             </div>
-            <div className="text-body">
+            <div className="mb-4 text-body">
               This action will cause data loss. To confirm, type "delete" into the confirmation box below.
             </div>
             <Input

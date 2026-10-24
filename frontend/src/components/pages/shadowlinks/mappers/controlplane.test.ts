@@ -108,15 +108,16 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
     expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
     // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
-    expect(api.tlsSettings?.enabled).toBe(true);
-    expect(api.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    expect(api.tailIntervalSeconds).toBe(10);
-    expect(api.fullSyncIntervalSeconds).toBe(0.5);
-    expect(api.maxSourceRequestsPerSecond).toBe(30);
+    expect(api).toMatchObject({
+      tlsSettings: { enabled: true, tlsSettings: { case: 'tlsPemSettings' } },
+      tailIntervalSeconds: 10,
+      fullSyncIntervalSeconds: 0.5,
+      maxSourceRequestsPerSecond: 30,
+      unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
+      paused: true,
+    });
     expect(api.sourceFilter).toEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
     expect(api.destinationMapping).toEqual({ case: 'exact', mappings: [{ source: '.prod', destination: '.dr' }] });
-    expect(api.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.REMOVE);
-    expect(api.paused).toBe(true);
   });
 
   test('should normalize unset API values to undefined', () => {

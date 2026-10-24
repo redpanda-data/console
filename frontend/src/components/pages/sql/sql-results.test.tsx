@@ -28,7 +28,7 @@ beforeAll(() => {
   const original = proto.getBoundingClientRect;
   const isGridRoot = (el: Element) => el.classList.contains('rdg');
 
-  proto.getBoundingClientRect = function (this: HTMLDivElement) {
+  proto.getBoundingClientRect = function getBoundingClientRect(this: HTMLDivElement) {
     if (!isGridRoot(this)) {
       return original.call(this);
     }
@@ -76,7 +76,7 @@ const run: QueryRunSuccess = {
   truncated: false,
 };
 
-describe('SqlResults cell clamping', () => {
+describe('the SqlResults cell clamping', () => {
   test('short values render as plain text without a click target', () => {
     render(<SqlResults run={run} sqlRole={viewer} />);
     const short = screen.getByText('row-1');
@@ -94,7 +94,7 @@ describe('SqlResults cell clamping', () => {
   });
 });
 
-describe('SqlResults create-table hint', () => {
+describe('the SqlResults create-table hint', () => {
   test('admin create errors can open the add-topic wizard', async () => {
     const onAddTable = rs.fn();
     render(
@@ -137,7 +137,7 @@ describe('SqlResults create-table hint', () => {
   });
 });
 
-describe('SqlResults run cancellation', () => {
+describe('the SqlResults run cancellation', () => {
   test('the running state shows a Cancel button that stops the run', async () => {
     const onCancel = rs.fn();
     render(<SqlResults onCancel={onCancel} run={{ state: 'running', token: 1 }} sqlRole={viewer} />);

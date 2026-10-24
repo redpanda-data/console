@@ -63,7 +63,7 @@ const renderPartitions = () =>
     </NuqsTestingAdapter>
   );
 
-describe('TopicPartitions', () => {
+describe('the TopicPartitions', () => {
   beforeEach(() => {
     useApiStore.setState({ topicPartitions: new Map(), clusterHealth: undefined });
   });

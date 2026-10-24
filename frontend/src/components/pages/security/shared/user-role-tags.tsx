@@ -9,16 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQuery } from '@connectrpc/connect-query';
 import { useNavigate } from '@tanstack/react-router';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
-import type { JSX } from 'react';
 
-import { listACLs } from '../../../../protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { usePrincipalHasAcls } from '../hooks/use-principal-has-acls';
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+const getPrincipalRoleNames = (userName: string, principalType: 'User' | 'Group') =>
+  [...rolesApi.roleMembers]
+    .filter(([, members]) => members.any((m) => m.name === userName && m.principalType === principalType))
+    .map(([roleName]) => roleName);
+
 export const UserRoleTags = ({
   userName,
   principalType = 'User',
@@ -30,64 +32,29 @@ export const UserRoleTags = ({
   showMaxItems?: number;
   verticalView?: boolean;
 }) => {
-  const elements: JSX.Element[] = [];
-  let numberOfVisibleElements = 0;
-  let numberOfHiddenElements = 0;
-
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const navigate = useNavigate();
+  const hasAcls = usePrincipalHasAcls(`${principalType}:${userName}`, !!userName);
+  // Roles only show when the cluster supports them; an empty list then reads "No roles".
+  const roles = featureRolesApi ? getPrincipalRoleNames(userName, principalType) : [];
+  const visibleRoles = roles.slice(0, Math.min(roles.length, showMaxItems));
+  const hiddenCount = showMaxItems === Number.POSITIVE_INFINITY ? 0 : Math.max(0, roles.length - showMaxItems);
 
-  const { data: hasAcls } = useQuery(
-    listACLs,
-    {
-      filter: {
-        principal: `${principalType}:${userName}`,
-      },
-    },
-    {
-      enabled: !!userName,
-      select: (response) => response.resources.length > 0,
-    }
-  );
-
-  if (hasAcls) {
-    elements.push(
-      <TagsValue
-        key={`acl-${userName}`}
-        onClick={() => navigate({ to: `/security/acls/${userName}/details` })}
-      >{`${principalType}:${userName}`}</TagsValue>
-    );
-  }
-
-  if (featureRolesApi) {
-    // Get all roles, and ACL sets that apply to this user
-    const roles: string[] = [];
-    for (const [roleName, members] of rolesApi.roleMembers) {
-      if (!members.any((m) => m.name === userName && m.principalType === principalType)) {
-        continue; // this role doesn't contain our principal
-      }
-      roles.push(roleName);
-    }
-
-    numberOfVisibleElements = Math.min(roles.length, showMaxItems);
-    numberOfHiddenElements = showMaxItems === Number.POSITIVE_INFINITY ? 0 : Math.max(0, roles.length - showMaxItems);
-
-    for (let i = 0; i < numberOfVisibleElements; i++) {
-      const r = roles[i];
-      elements.push(
+  return (
+    <div className={verticalView ? 'flex' : ''}>
+      {hasAcls && (
+        <TagsValue
+          key={`acl-${userName}`}
+          onClick={() => navigate({ to: `/security/acls/${userName}/details` })}
+        >{`${principalType}:${userName}`}</TagsValue>
+      )}
+      {visibleRoles.map((r) => (
         <div key={r}>
           <TagsValue onClick={() => navigate({ to: `/security/roles/${r}/details` })}>{`RedpandaRole:${r}`}</TagsValue>
         </div>
-      );
-    }
-
-    if (elements.length === 0) {
-      elements.push(<p key="no-roles">No roles</p>);
-    }
-    if (numberOfHiddenElements > 0) {
-      elements.push(<p key="hidden-count">{`+${numberOfHiddenElements} more`}</p>);
-    }
-  }
-
-  return <div className={verticalView ? 'flex' : ''}>{elements}</div>;
+      ))}
+      {Boolean(featureRolesApi) && !hasAcls && visibleRoles.length === 0 && <p key="no-roles">No roles</p>}
+      {hiddenCount > 0 && <p key="hidden-count">{`+${hiddenCount} more`}</p>}
+    </div>
+  );
 };

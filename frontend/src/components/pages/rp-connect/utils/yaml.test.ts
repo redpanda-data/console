@@ -29,8 +29,20 @@ import {
 import { describe, expect, test } from 'bun:test';
 import type { ConnectComponentSpec } from '../types/schema';
 
+// The default config a fixture component generates; throws when the fixture or its config is missing.
+function generatedConfig(spec: ConnectComponentSpec | undefined, name: string) {
+  if (!spec) {
+    throw new Error(`${name} not found`);
+  }
+  const result = schemaToConfig(spec, false);
+  if (!result) {
+    throw new Error(`Failed to generate ${name} config`);
+  }
+  return result;
+}
+
 describe('yaml utils for creating connect configs', () => {
-  describe('YAML spacing for merged components', () => {
+  describe('yaml spacing for merged components', () => {
     test('should add newline between root-level items when adding cache', () => {
       const existingYaml = `input:
   generate:
@@ -40,16 +52,7 @@ output:
   drop: {}`;
 
       const cacheSpec = mockComponents.memoryCache;
-      if (!cacheSpec) {
-        throw new Error('memory cache not found');
-      }
-
-      const result = schemaToConfig(cacheSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate cache config');
-      }
-
-      const { config: newConfig } = result;
+      const { config: newConfig } = generatedConfig(cacheSpec, 'memory cache');
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig);
       const yamlString = configToYaml(mergedDoc);
 
@@ -62,16 +65,7 @@ output:
     mapping: 'root = {}'`;
 
       const processorSpec = mockComponents.bloblangProcessor;
-      if (!processorSpec) {
-        throw new Error('bloblang processor not found');
-      }
-
-      const result = schemaToConfig(processorSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate processor config');
-      }
-
-      const { config: newConfig } = result;
+      const { config: newConfig } = generatedConfig(processorSpec, 'bloblang processor');
       const mergedDoc = mergeConnectConfigs(existingYaml, newConfig);
       const yamlString = configToYaml(mergedDoc);
 
@@ -79,7 +73,7 @@ output:
     });
   });
 
-  describe('YAML comment generation', () => {
+  describe('yaml comment generation', () => {
     test('should add comments to required fields', () => {
       const spec = {
         name: 'test_output',
@@ -115,17 +109,7 @@ output:
 
     test('should add comments to critical connection fields', () => {
       const kafkaSpec = mockComponents.kafkaOutput;
-
-      if (!kafkaSpec) {
-        throw new Error('kafka output not found');
-      }
-
-      const result = schemaToConfig(kafkaSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate kafka config');
-      }
-
-      const { config } = result;
+      const { config } = generatedConfig(kafkaSpec, 'kafka output');
       const yaml = configToYaml(config, kafkaSpec);
 
       // Scalar required fields become comment-only lines
@@ -137,17 +121,7 @@ output:
 
     test('should not add comments to parent objects but should add to arrays', () => {
       const kafkaSpec = mockComponents.kafkaOutput;
-
-      if (!kafkaSpec) {
-        throw new Error('kafka output not found');
-      }
-
-      const result = schemaToConfig(kafkaSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate kafka config');
-      }
-
-      const { config } = result;
+      const { config } = generatedConfig(kafkaSpec, 'kafka output');
       const yaml = configToYaml(config, kafkaSpec);
 
       // Parent objects like tls should not have inline comments
@@ -167,17 +141,7 @@ output:
 
     test('should add comments to redpanda_common component (input type path)', () => {
       const redpandaCommonSpec = mockComponents.redpandaCommonInput;
-
-      if (!redpandaCommonSpec) {
-        throw new Error('redpanda_common input not found');
-      }
-
-      const result = schemaToConfig(redpandaCommonSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate redpanda_common config');
-      }
-
-      const { config, spec } = result;
+      const { config, spec } = generatedConfig(redpandaCommonSpec, 'redpanda_common input');
       const yaml = configToYaml(config, spec);
 
       // redpanda_common uses [componentSpec.type, componentName] path
@@ -242,13 +206,7 @@ output:
 `;
 
       const processorSpec = mockComponents.bloblangProcessor;
-      if (!processorSpec) {
-        throw new Error('bloblang processor not found');
-      }
-      const result = schemaToConfig(processorSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate processor config');
-      }
+      const result = generatedConfig(processorSpec, 'bloblang processor');
 
       const mergedDoc = mergeConnectConfigs(existingYaml, result.config);
       const yaml = configToYaml(mergedDoc);
@@ -266,13 +224,7 @@ output:
 `;
 
       const cacheSpec = mockComponents.memoryCache;
-      if (!cacheSpec) {
-        throw new Error('memory cache not found');
-      }
-      const result = schemaToConfig(cacheSpec, false);
-      if (!result) {
-        throw new Error('Failed to generate cache config');
-      }
+      const result = generatedConfig(cacheSpec, 'memory cache');
 
       const mergedDoc = mergeConnectConfigs(existingYaml, result.config);
       const yaml = configToYaml(mergedDoc);
@@ -345,9 +297,10 @@ output:
 });
 
 describe('parseConfigComponents', () => {
-  describe('single input', () => {
-    test('parses a simple generate input', () => {
-      const yaml = `
+  describe('inputs', () => {
+    describe('single input', () => {
+      test('parses a simple generate input', () => {
+        const yaml = `
 input:
   generate:
     mapping: 'root = {}'
@@ -355,12 +308,12 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['generate']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['generate']);
+      });
 
-    test('parses a kafka input', () => {
-      const yaml = `
+      test('parses a kafka input', () => {
+        const yaml = `
 input:
   kafka:
     addresses:
@@ -372,15 +325,15 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['kafka']);
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['kafka']);
+      });
     });
-  });
 
-  describe('broker input (multiple inputs from docs)', () => {
-    test('extracts child inputs from broker with amqp and kafka', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/inputs/broker/
-      const yaml = `
+    describe('broker input (multiple inputs from docs)', () => {
+      test('extracts child inputs from broker with amqp and kafka', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/inputs/broker/
+        const yaml = `
 input:
   broker:
     copies: 1
@@ -407,12 +360,12 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['amqp_0_9', 'kafka']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['amqp_0_9', 'kafka']);
+      });
 
-    test('handles broker with empty inputs array', () => {
-      const yaml = `
+      test('handles broker with empty inputs array', () => {
+        const yaml = `
 input:
   broker:
     copies: 1
@@ -421,15 +374,15 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual([]);
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual([]);
+      });
     });
-  });
 
-  describe('sequence input (multiple inputs from docs)', () => {
-    test('extracts child inputs from sequence with file and generate', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
-      const yaml = `
+    describe('sequence input (multiple inputs from docs)', () => {
+      test('extracts child inputs from sequence with file and generate', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
+        const yaml = `
 input:
   sequence:
     inputs:
@@ -445,13 +398,13 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['file', 'generate']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['file', 'generate']);
+      });
 
-    test('extracts child inputs from sequence with sharded join', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
-      const yaml = `
+      test('extracts child inputs from sequence with sharded join', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
+        const yaml = `
 input:
   sequence:
     sharded_join:
@@ -478,14 +431,16 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['file', 'file']);
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['file', 'file']);
+      });
     });
   });
 
-  describe('single output', () => {
-    test('parses a simple kafka output', () => {
-      const yaml = `
+  describe('outputs', () => {
+    describe('single output', () => {
+      test('parses a simple kafka output', () => {
+        const yaml = `
 input:
   generate:
     mapping: 'root = {}'
@@ -496,13 +451,13 @@ output:
       - localhost:9092
     topic: my_topic
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.inputs).toEqual(['generate']);
-      expect(result.outputs).toEqual(['kafka']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.inputs).toEqual(['generate']);
+        expect(result.outputs).toEqual(['kafka']);
+      });
 
-    test('parses a drop output', () => {
-      const yaml = `
+      test('parses a drop output', () => {
+        const yaml = `
 input:
   generate:
     mapping: 'root = {}'
@@ -510,15 +465,15 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['drop']);
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['drop']);
+      });
     });
-  });
 
-  describe('broker output (fan_out pattern from docs)', () => {
-    test('extracts child outputs from broker with resource outputs', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/outputs/broker/
-      const yaml = `
+    describe('broker output (fan_out pattern from docs)', () => {
+      test('extracts child outputs from broker with resource outputs', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/outputs/broker/
+        const yaml = `
 output:
   broker:
     pattern: fan_out
@@ -531,12 +486,12 @@ output:
   processors:
     - resource: general_processor
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['resource', 'resource']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['resource', 'resource']);
+      });
 
-    test('extracts mixed child outputs from broker', () => {
-      const yaml = `
+      test('extracts mixed child outputs from broker', () => {
+        const yaml = `
 output:
   broker:
     pattern: fan_out
@@ -552,23 +507,23 @@ output:
             - amqps://guest:guest@localhost:5672/
           target_address: queue:/my_queue
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['kafka', 'http_client', 'amqp_1']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['kafka', 'http_client', 'amqp_1']);
+      });
 
-    test('handles broker with empty outputs array', () => {
-      const yaml = `
+      test('handles broker with empty outputs array', () => {
+        const yaml = `
 output:
   broker:
     pattern: fan_out
     outputs: []
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual([]);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual([]);
+      });
 
-    test('handles broker with batching config', () => {
-      const yaml = `
+      test('handles broker with batching config', () => {
+        const yaml = `
 output:
   broker:
     pattern: fan_out
@@ -584,15 +539,15 @@ output:
       count: 10
       period: 1s
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['kafka', 'redis_streams']);
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['kafka', 'redis_streams']);
+      });
     });
-  });
 
-  describe('switch output', () => {
-    test('extracts outputs from switch cases', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
-      const yaml = `
+    describe('switch output', () => {
+      test('extracts outputs from switch cases', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
+        const yaml = `
 output:
   switch:
     cases:
@@ -618,13 +573,13 @@ output:
                 root = this
                 root.type = this.type | "unknown"
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
+      });
 
-    test('handles switch with continue flag', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
-      const yaml = `
+      test('handles switch with continue flag', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
+        const yaml = `
 output:
   switch:
     cases:
@@ -642,15 +597,15 @@ output:
             project: people
             topic: that_i_dont_want_to_hang_with
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+      });
     });
-  });
 
-  describe('fallback output', () => {
-    test('extracts outputs from fallback with http_client and file', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
-      const yaml = `
+    describe('fallback output', () => {
+      test('extracts outputs from fallback with http_client and file', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
+        const yaml = `
 output:
   fallback:
     - http_client:
@@ -666,13 +621,13 @@ output:
     - file:
         path: /usr/local/benthos/everything_failed.jsonl
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['http_client', 'http_client', 'file']);
-    });
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['http_client', 'http_client', 'file']);
+      });
 
-    test('extracts outputs from fallback with dynamodb and file', () => {
-      // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
-      const yaml = `
+      test('extracts outputs from fallback with dynamodb and file', () => {
+        // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
+        const yaml = `
 output:
   fallback:
     - aws_dynamodb:
@@ -686,8 +641,9 @@ output:
     - file:
         path: /usr/local/benthos/failed_stuff.jsonl
 `;
-      const result = parseConfigComponents(yaml);
-      expect(result.outputs).toEqual(['aws_dynamodb', 'file']);
+        const result = parseConfigComponents(yaml);
+        expect(result.outputs).toEqual(['aws_dynamodb', 'file']);
+      });
     });
   });
 
@@ -1357,58 +1313,59 @@ input:
       const brokersVariable = '${REDPANDA_BROKERS}';
       const sasl = [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }];
 
-      test('names the cluster brokers first, keeping the TLS default', () => {
-        const yaml = `output:
+      describe('brokers and tls defaults', () => {
+        test('names the cluster brokers first, keeping the TLS default', () => {
+          const yaml = `output:
   redpanda:
     tls:
       enabled: true
     topic: orders
 `;
-        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-        const component = parseYaml(result ?? '').output.redpanda;
-        expect(Object.keys(component)[0]).toBe('seed_brokers');
-        expect(component).toEqual({
-          seed_brokers: [brokersVariable],
-          tls: { enabled: true },
-          topic: 'orders',
-          sasl,
+          const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+          const component = parseYaml(result ?? '').output.redpanda;
+          expect(Object.keys(component)[0]).toBe('seed_brokers');
+          expect(component).toEqual({
+            seed_brokers: [brokersVariable],
+            tls: { enabled: true },
+            topic: 'orders',
+            sasl,
+          });
         });
-      });
 
-      test('enables TLS when the component has none', () => {
-        const result = patchRedpandaConfig('input:\n  redpanda:\n    topics: [orders]\n', 'input', 'redpanda', {
-          sasl,
+        test('enables TLS when the component has none', () => {
+          const result = patchRedpandaConfig('input:\n  redpanda:\n    topics: [orders]\n', 'input', 'redpanda', {
+            sasl,
+          });
+          expect(parseYaml(result ?? '').input.redpanda).toMatchObject({
+            seed_brokers: [brokersVariable],
+            tls: { enabled: true },
+          });
         });
-        expect(parseYaml(result ?? '').input.redpanda).toMatchObject({
-          seed_brokers: [brokersVariable],
-          tls: { enabled: true },
-        });
-      });
 
-      test('keeps brokers and TLS the user already set', () => {
-        const yaml = `output:
+        test('keeps brokers and TLS the user already set', () => {
+          const yaml = `output:
   redpanda:
     seed_brokers:
       - broker-0:9092
     tls:
       enabled: false
 `;
-        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-        expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
-          seed_brokers: ['broker-0:9092'],
-          tls: { enabled: false },
+          const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+          expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
+            seed_brokers: ['broker-0:9092'],
+            tls: { enabled: false },
+          });
         });
-      });
 
-      // Brokers the user names may be a plaintext listener, as localdev's is.
-      test('leaves TLS alone on brokers the component names', () => {
-        const yaml = 'output:\n  redpanda:\n    seed_brokers: [localhost:9092]\n    topic: orders\n';
-        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-        expect(parseYaml(result ?? '').output.redpanda.tls).toBeUndefined();
-      });
+        // Brokers the user names may be a plaintext listener, as localdev's is.
+        test('leaves TLS alone on brokers the component names', () => {
+          const yaml = 'output:\n  redpanda:\n    seed_brokers: [localhost:9092]\n    topic: orders\n';
+          const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+          expect(parseYaml(result ?? '').output.redpanda.tls).toBeUndefined();
+        });
 
-      test('keeps TLS that comes from a merge key', () => {
-        const yaml = `common: &rp
+        test('keeps TLS that comes from a merge key', () => {
+          const yaml = `common: &rp
   tls:
     enabled: false
 output:
@@ -1416,36 +1373,39 @@ output:
     <<: *rp
     topic: orders
 `;
-        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-        const component = parseYaml(result ?? '', { merge: true }).output.redpanda;
-        expect(component.seed_brokers).toEqual([brokersVariable]);
-        expect(component.tls).toEqual({ enabled: false });
-      });
-
-      test('fills an empty broker list', () => {
-        const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: []\n', 'output', 'redpanda', {
-          sasl,
+          const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+          const component = parseYaml(result ?? '', { merge: true }).output.redpanda;
+          expect(component.seed_brokers).toEqual([brokersVariable]);
+          expect(component.tls).toEqual({ enabled: false });
         });
-        expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
       });
 
-      test('replaces a placeholder broker list that names no broker', () => {
-        const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: [""]\n', 'output', 'redpanda', {
-          sasl,
+      describe('broker lists', () => {
+        test('fills an empty broker list', () => {
+          const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: []\n', 'output', 'redpanda', {
+            sasl,
+          });
+          expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
         });
-        expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
-      });
 
-      test('keeps brokers that come from a merge key', () => {
-        const yaml = `common: &rp
+        test('replaces a placeholder broker list that names no broker', () => {
+          const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: [""]\n', 'output', 'redpanda', {
+            sasl,
+          });
+          expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
+        });
+
+        test('keeps brokers that come from a merge key', () => {
+          const yaml = `common: &rp
   seed_brokers: [broker-0:9092]
 output:
   redpanda:
     <<: *rp
     topic: orders
 `;
-        const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-        expect(parseYaml(result ?? '', { merge: true }).output.redpanda.seed_brokers).toEqual(['broker-0:9092']);
+          const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
+          expect(parseYaml(result ?? '', { merge: true }).output.redpanda.seed_brokers).toEqual(['broker-0:9092']);
+        });
       });
 
       // What the patch writes and what the node checks must agree, or "Add user" never goes away.
@@ -1491,14 +1451,16 @@ output:
       });
     });
 
-    test('returns undefined for unparseable YAML', () => {
-      const result = patchRedpandaConfig('{{{', 'input', 'kafka', { topicName: 'test' });
-      expect(result).toBeUndefined();
-    });
+    describe('unpatchable yaml', () => {
+      test('returns undefined for unparseable YAML', () => {
+        const result = patchRedpandaConfig('{{{', 'input', 'kafka', { topicName: 'test' });
+        expect(result).toBeUndefined();
+      });
 
-    test('returns undefined for empty YAML', () => {
-      const result = patchRedpandaConfig('', 'input', 'kafka', { topicName: 'test' });
-      expect(result).toBeUndefined();
+      test('returns undefined for empty YAML', () => {
+        const result = patchRedpandaConfig('', 'input', 'kafka', { topicName: 'test' });
+        expect(result).toBeUndefined();
+      });
     });
   });
 
@@ -1718,51 +1680,54 @@ pipeline:
 output:
   drop: {}`;
 
-  describe('getComponentAt', () => {
-    test('reads the input component', () => {
-      expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+  describe('reading and editing components', () => {
+    describe('getComponentAt', () => {
+      test('reads the input component', () => {
+        expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+      });
+
+      test('reads a processor by index', () => {
+        expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+      });
+
+      test('returns undefined on parse failure', () => {
+        expect(getComponentAt('{{{', { kind: 'input' })).toBeUndefined();
+      });
     });
 
-    test('reads a processor by index', () => {
-      expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+    describe('setComponentAt', () => {
+      test('replaces a processor config in place', () => {
+        const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
+        expect(next).not.toBeNull();
+        expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({
+          log: { message: 'changed' },
+        });
+        // Sibling processor is untouched.
+        expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+      });
+
+      test('returns null on parse failure', () => {
+        expect(setComponentAt('{{{', { kind: 'input' }, { generate: {} })).toBeNull();
+      });
+
+      test('returns null for a stale numeric index instead of padding the sequence with nulls', () => {
+        expect(setComponentAt(pipelineYaml, { kind: 'processor', index: 5 }, { log: { message: 'x' } })).toBeNull();
+        expect(
+          setComponentAt(
+            pipelineYaml,
+            { kind: 'path', path: ['pipeline', 'processors', 9], componentType: 'processor' },
+            { log: {} }
+          )
+        ).toBeNull();
+      });
     });
 
-    test('returns undefined on parse failure', () => {
-      expect(getComponentAt('{{{', { kind: 'input' })).toBeUndefined();
-    });
-  });
+    describe('formatting stability', () => {
+      const longMapping =
+        'root.out = this.first_field.second_field.third_field.fourth_field.fifth_field.sixth_field.seventh_field.eighth_field.ninth_field';
 
-  describe('setComponentAt', () => {
-    test('replaces a processor config in place', () => {
-      const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
-      expect(next).not.toBeNull();
-      expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({ log: { message: 'changed' } });
-      // Sibling processor is untouched.
-      expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
-    });
-
-    test('returns null on parse failure', () => {
-      expect(setComponentAt('{{{', { kind: 'input' }, { generate: {} })).toBeNull();
-    });
-
-    test('returns null for a stale numeric index instead of padding the sequence with nulls', () => {
-      expect(setComponentAt(pipelineYaml, { kind: 'processor', index: 5 }, { log: { message: 'x' } })).toBeNull();
-      expect(
-        setComponentAt(
-          pipelineYaml,
-          { kind: 'path', path: ['pipeline', 'processors', 9], componentType: 'processor' },
-          { log: {} }
-        )
-      ).toBeNull();
-    });
-  });
-
-  describe('formatting stability', () => {
-    const longMapping =
-      'root.out = this.first_field.second_field.third_field.fourth_field.fifth_field.sixth_field.seventh_field.eighth_field.ninth_field';
-
-    test('an unrelated insert never folds long lines and keeps flow collections on one line', () => {
-      const yaml = `input:
+      test('an unrelated insert never folds long lines and keeps flow collections on one line', () => {
+        const yaml = `input:
   kafka:
     topics: [ foo, bar ]
 pipeline:
@@ -1770,26 +1735,26 @@ pipeline:
     - mapping: '${longMapping}'
 output:
   drop: {}`;
-      const next = insertComponentAt(yaml, ['pipeline', 'processors'], 1, { log: { message: 'hi' } }) as string;
-      expect(next).toContain(longMapping);
-      expect(next).toContain('topics: [ foo, bar ]');
-    });
+        const next = insertComponentAt(yaml, ['pipeline', 'processors'], 1, { log: { message: 'hi' } }) as string;
+        expect(next).toContain(longMapping);
+        expect(next).toContain('topics: [ foo, bar ]');
+      });
 
-    test('replacing a component keeps unrelated long lines unfolded', () => {
-      const yaml = `pipeline:
+      test('replacing a component keeps unrelated long lines unfolded', () => {
+        const yaml = `pipeline:
   processors:
     - mapping: '${longMapping}'
     - log:
         message: hello
 output:
   drop: {}`;
-      const next = setComponentAt(yaml, { kind: 'processor', index: 1 }, { log: { message: 'bye' } }) as string;
-      expect(next).toContain(longMapping);
+        const next = setComponentAt(yaml, { kind: 'processor', index: 1 }, { log: { message: 'bye' } }) as string;
+        expect(next).toContain(longMapping);
+      });
     });
-  });
 
-  describe('path edit targets (nested components)', () => {
-    const nestedYaml = `pipeline:
+    describe('path edit targets (nested components)', () => {
+      const nestedYaml = `pipeline:
   processors:
     - branch:
         request_map: 'root = this'
@@ -1799,51 +1764,51 @@ output:
         result_map: 'root.x = this'
 output:
   drop: {}`;
-    const httpTarget: EditTarget = {
-      kind: 'path',
-      path: ['pipeline', 'processors', 0, 'branch', 'processors', 0],
-      componentType: 'processor',
-    };
+      const httpTarget: EditTarget = {
+        kind: 'path',
+        path: ['pipeline', 'processors', 0, 'branch', 'processors', 0],
+        componentType: 'processor',
+      };
 
-    test('reads a nested component by path', () => {
-      expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
-    });
+      test('reads a nested component by path', () => {
+        expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
+      });
 
-    test('replaces a nested component in place, leaving siblings intact', () => {
-      const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
-      expect(next).not.toBeNull();
-      expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
-      // The branch's request_map/result_map are untouched.
-      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
-      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
-    });
+      test('replaces a nested component in place, leaving siblings intact', () => {
+        const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
+        expect(next).not.toBeNull();
+        expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
+        // The branch's request_map/result_map are untouched.
+        const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+      });
 
-    test('removing the last nested child keeps an empty fillable processors array', () => {
-      const next = removeComponentAt(nestedYaml, httpTarget);
-      expect(next).not.toBeNull();
-      const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
-      expect(parsed.pipeline.processors[0].branch.processors).toEqual([]);
-      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
-    });
+      test('removing the last nested child keeps an empty fillable processors array', () => {
+        const next = removeComponentAt(nestedYaml, httpTarget);
+        expect(next).not.toBeNull();
+        const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
+        expect(parsed.pipeline.processors[0].branch.processors).toEqual([]);
+        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+      });
 
-    test('removing the only step of a try keeps the try as an empty fillable array', () => {
-      const tryYaml = `pipeline:
+      test('removing the only step of a try keeps the try as an empty fillable array', () => {
+        const tryYaml = `pipeline:
   processors:
     - try:
         - mapping: 'root = this'
 output:
   drop: {}`;
-      const next = removeComponentAt(tryYaml, {
-        kind: 'path',
-        path: ['pipeline', 'processors', 0, 'try', 0],
-        componentType: 'processor',
+        const next = removeComponentAt(tryYaml, {
+          kind: 'path',
+          path: ['pipeline', 'processors', 0, 'try', 0],
+          componentType: 'processor',
+        });
+        const parsed = parseYaml(next as string) as { pipeline: { processors: { try: unknown[] }[] } };
+        expect(parsed.pipeline.processors[0].try).toEqual([]);
       });
-      const parsed = parseYaml(next as string) as { pipeline: { processors: { try: unknown[] }[] } };
-      expect(parsed.pipeline.processors[0].try).toEqual([]);
-    });
 
-    test('removing the only processor of a switch case keeps the case and its check', () => {
-      const switchYaml = `pipeline:
+      test('removing the only processor of a switch case keeps the case and its check', () => {
+        const switchYaml = `pipeline:
   processors:
     - switch:
         - check: 'this.x == 1'
@@ -1851,19 +1816,19 @@ output:
             - mapping: 'root = this'
 output:
   drop: {}`;
-      const next = removeComponentAt(switchYaml, {
-        kind: 'path',
-        path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 0],
-        componentType: 'processor',
+        const next = removeComponentAt(switchYaml, {
+          kind: 'path',
+          path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 0],
+          componentType: 'processor',
+        });
+        const parsed = parseYaml(next as string) as {
+          pipeline: { processors: { switch: { check: string; processors: unknown[] }[] }[] };
+        };
+        expect(parsed.pipeline.processors[0].switch[0]).toEqual({ check: 'this.x == 1', processors: [] });
       });
-      const parsed = parseYaml(next as string) as {
-        pipeline: { processors: { switch: { check: string; processors: unknown[] }[] }[] };
-      };
-      expect(parsed.pipeline.processors[0].switch[0]).toEqual({ check: 'this.x == 1', processors: [] });
-    });
 
-    test('removing the last item of a top-level resource array drops the emptied key', () => {
-      const resYaml = `input:
+      test('removing the last item of a top-level resource array drops the emptied key', () => {
+        const resYaml = `input:
   generate:
     mapping: 'root = {}'
 input_resources:
@@ -1871,28 +1836,30 @@ input_resources:
     stdin: {}
 output:
   drop: {}`;
-      const next = removeComponentAt(resYaml, {
-        kind: 'path',
-        path: ['input_resources', 0],
-        componentType: 'input',
+        const next = removeComponentAt(resYaml, {
+          kind: 'path',
+          path: ['input_resources', 0],
+          componentType: 'input',
+        });
+        const parsed = parseYaml(next as string) as Record<string, unknown>;
+        // A top-level container prunes like `pipeline:` does — no dead `input_resources: []` left behind.
+        expect(parsed.input_resources).toBeUndefined();
+        expect(parsed.input).toBeDefined();
       });
-      const parsed = parseYaml(next as string) as Record<string, unknown>;
-      // A top-level container prunes like `pipeline:` does — no dead `input_resources: []` left behind.
-      expect(parsed.input_resources).toBeUndefined();
-      expect(parsed.input).toBeDefined();
     });
   });
 
-  describe('appendResource', () => {
-    test('appends to a new cache_resources array', () => {
-      const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
-      const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
-      expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+  describe('inserting components', () => {
+    describe('appendResource', () => {
+      test('appends to a new cache_resources array', () => {
+        const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
+        const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
+        expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+      });
     });
-  });
 
-  describe('insertComponentAt (nested)', () => {
-    const switchYaml = `pipeline:
+    describe('insertComponentAt (nested)', () => {
+      const switchYaml = `pipeline:
   processors:
     - switch:
         - check: a == 1
@@ -1903,57 +1870,59 @@ output:
 output:
   drop: {}`;
 
-    test('inserts a processor into a specific switch case at an index', () => {
-      const casePath = ['pipeline', 'processors', 0, 'switch', 0, 'processors'];
-      const next = insertComponentAt(switchYaml, casePath, 0, { log: { message: 'first' } });
-      expect(next).not.toBeNull();
-      const parsed = parseYaml(next as string) as {
-        pipeline: { processors: { switch: { processors: Record<string, unknown>[] }[] }[] };
-      };
-      const case0 = parsed.pipeline.processors[0].switch[0].processors;
-      expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
-      // The other case is untouched.
-      expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
-    });
+      test('inserts a processor into a specific switch case at an index', () => {
+        const casePath = ['pipeline', 'processors', 0, 'switch', 0, 'processors'];
+        const next = insertComponentAt(switchYaml, casePath, 0, { log: { message: 'first' } });
+        expect(next).not.toBeNull();
+        const parsed = parseYaml(next as string) as {
+          pipeline: { processors: { switch: { processors: Record<string, unknown>[] }[] }[] };
+        };
+        const case0 = parsed.pipeline.processors[0].switch[0].processors;
+        expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
+        // The other case is untouched.
+        expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
+      });
 
-    test('creates a nested processors array when the container has none yet', () => {
-      const branchYaml = `pipeline:
+      test('creates a nested processors array when the container has none yet', () => {
+        const branchYaml = `pipeline:
   processors:
     - branch:
         request_map: 'root = this'
 output:
   drop: {}`;
-      const next = insertComponentAt(branchYaml, ['pipeline', 'processors', 0, 'branch', 'processors'], 0, {
-        mapping: 'root = x',
+        const next = insertComponentAt(branchYaml, ['pipeline', 'processors', 0, 'branch', 'processors'], 0, {
+          mapping: 'root = x',
+        });
+        const parsed = parseYaml(next as string) as {
+          pipeline: { processors: { branch: { processors: unknown[]; request_map: string } }[] };
+        };
+        expect(parsed.pipeline.processors[0].branch.processors).toEqual([{ mapping: 'root = x' }]);
+        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
       });
-      const parsed = parseYaml(next as string) as {
-        pipeline: { processors: { branch: { processors: unknown[]; request_map: string } }[] };
-      };
-      expect(parsed.pipeline.processors[0].branch.processors).toEqual([{ mapping: 'root = x' }]);
-      expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
-    });
 
-    test('appends a structural switch-case skeleton', () => {
-      const next = insertComponentAt(switchYaml, ['pipeline', 'processors', 0, 'switch'], 99, {
-        check: '',
-        processors: [],
+      test('appends a structural switch-case skeleton', () => {
+        const next = insertComponentAt(switchYaml, ['pipeline', 'processors', 0, 'switch'], 99, {
+          check: '',
+          processors: [],
+        });
+        const parsed = parseYaml(next as string) as { pipeline: { processors: { switch: unknown[] }[] } };
+        expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
+        expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
       });
-      const parsed = parseYaml(next as string) as { pipeline: { processors: { switch: unknown[] }[] } };
-      expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
-      expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
-    });
 
-    test('refuses to insert into a container that exists as a non-sequence (no clobbering)', () => {
-      // A `fallback` hand-authored as a map, not a list. Inserting must not overwrite it away.
-      const malformed = `output:
+      test('refuses to insert into a container that exists as a non-sequence (no clobbering)', () => {
+        // A `fallback` hand-authored as a map, not a list. Inserting must not overwrite it away.
+        const malformed = `output:
   fallback:
     stdout: {}`;
-      expect(insertComponentAt(malformed, ['output', 'fallback'], 0, { drop: {} })).toBeNull();
+        expect(insertComponentAt(malformed, ['output', 'fallback'], 0, { drop: {} })).toBeNull();
+      });
     });
   });
 
   describe('resource references', () => {
-    const withResources = `pipeline:
+    describe('listing and creating resources', () => {
+      const withResources = `pipeline:
   processors:
     - cache:
         resource: dedupe
@@ -1976,38 +1945,40 @@ rate_limit_resources:
   - label: limiter
     local: { count: 1, interval: 1s }`;
 
-    test('listResourceLabels returns labels per kind', () => {
-      expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
-      expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
-      expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+      test('listResourceLabels returns labels per kind', () => {
+        expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
+        expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
+        expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+      });
+
+      test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
+        const base = 'output:\n  drop: {}';
+        const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+        expect(result).not.toBeNull();
+        expect(result?.label).toBeTruthy();
+        if (!(result?.yaml && result.label)) {
+          throw new Error('Expected the resource YAML and label');
+        }
+        const parsed = parseYaml(result.yaml) as { cache_resources: { label: string }[] };
+        expect(parsed.cache_resources).toHaveLength(1);
+        expect(parsed.cache_resources[0].label).toBe(result?.label);
+        // The label the caller gets back is exactly the one it can link into a node.
+        expect(listResourceLabels(result.yaml, 'cache')).toContain(result.label);
+      });
+
+      test('createResourceAndReturnLabel makes the label collision-safe', () => {
+        const base = 'cache_resources:\n  - label: memory\n    memory: {}\noutput:\n  drop: {}';
+        const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
+        expect(result?.label).not.toBe('memory');
+        if (!result?.yaml) {
+          throw new Error('Expected the resource YAML');
+        }
+        expect(listResourceLabels(result.yaml, 'cache')).toHaveLength(2);
+      });
     });
 
-    test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
-      const base = 'output:\n  drop: {}';
-      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
-      expect(result).not.toBeNull();
-      expect(result?.label).toBeTruthy();
-      if (!(result?.yaml && result.label)) {
-        throw new Error('Expected the resource YAML and label');
-      }
-      const parsed = parseYaml(result.yaml) as { cache_resources: { label: string }[] };
-      expect(parsed.cache_resources).toHaveLength(1);
-      expect(parsed.cache_resources[0].label).toBe(result?.label);
-      // The label the caller gets back is exactly the one it can link into a node.
-      expect(listResourceLabels(result.yaml, 'cache')).toContain(result.label);
-    });
-
-    test('createResourceAndReturnLabel makes the label collision-safe', () => {
-      const base = 'cache_resources:\n  - label: memory\n    memory: {}\noutput:\n  drop: {}';
-      const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
-      expect(result?.label).not.toBe('memory');
-      if (!result?.yaml) {
-        throw new Error('Expected the resource YAML');
-      }
-      expect(listResourceLabels(result.yaml, 'cache')).toHaveLength(2);
-    });
-
-    const sharedLabelYaml = `pipeline:
+    describe('a label shared across kinds', () => {
+      const sharedLabelYaml = `pipeline:
   processors:
     - cache:
         resource: shared
@@ -2024,33 +1995,35 @@ rate_limit_resources:
   - label: shared
     local: { count: 1, interval: 1s }`;
 
-    type SharedParsed = {
-      pipeline: { processors: [{ cache: { resource: string } }, { rate_limit: { resource: string } }] };
-    };
+      type SharedParsed = {
+        pipeline: { processors: [{ cache: { resource: string } }, { rate_limit: { resource: string } }] };
+      };
 
-    test('renameResourceReferences with a kind leaves same-labelled references of the other kind alone', () => {
-      const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed', 'cache') as string;
-      const parsed = parseYaml(next) as SharedParsed;
-      expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
-      expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('shared');
+      test('renameResourceReferences with a kind leaves same-labelled references of the other kind alone', () => {
+        const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed', 'cache') as string;
+        const parsed = parseYaml(next) as SharedParsed;
+        expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
+        expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('shared');
+      });
+
+      test('renameResourceReferences without a kind rewrites every matching reference', () => {
+        const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed') as string;
+        const parsed = parseYaml(next) as SharedParsed;
+        expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
+        expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('renamed');
+      });
+
+      test('countResourceReferences scopes to the kind when given', () => {
+        expect(countResourceReferences(sharedLabelYaml, 'shared')).toBe(2);
+        expect(countResourceReferences(sharedLabelYaml, 'shared', 'cache')).toBe(1);
+        expect(countResourceReferences(sharedLabelYaml, 'shared', 'rate_limit')).toBe(1);
+      });
     });
 
-    test('renameResourceReferences without a kind rewrites every matching reference', () => {
-      const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed') as string;
-      const parsed = parseYaml(next) as SharedParsed;
-      expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
-      expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('renamed');
-    });
-
-    test('countResourceReferences scopes to the kind when given', () => {
-      expect(countResourceReferences(sharedLabelYaml, 'shared')).toBe(2);
-      expect(countResourceReferences(sharedLabelYaml, 'shared', 'cache')).toBe(1);
-      expect(countResourceReferences(sharedLabelYaml, 'shared', 'rate_limit')).toBe(1);
-    });
-
-    // Refs held in name-referencing fields (dedupe's `cache:`, a CDC input's `checkpoint_cache:`)
-    // must follow a rename too — leaving them behind strands the pipeline at deploy time.
-    const fieldRefYaml = `input:
+    describe('references held in named fields', () => {
+      // Refs held in name-referencing fields (dedupe's `cache:`, a CDC input's `checkpoint_cache:`)
+      // must follow a rename too — leaving them behind strands the pipeline at deploy time.
+      const fieldRefYaml = `input:
   mongodb_cdc:
     url: mongodb://x
     checkpoint_cache: my_cache
@@ -2065,25 +2038,27 @@ cache_resources:
   - label: my_cache
     memory: {}`;
 
-    test('renameResourceReferences follows refs held in non-`resource` fields', () => {
-      const next = renameResourceReferences(fieldRefYaml, 'my_cache', 'renamed', 'cache') as string;
-      const parsed = parseYaml(next) as {
-        input: { mongodb_cdc: { checkpoint_cache: string; url: string } };
-        pipeline: { processors: [{ dedupe: { cache: string; key: string } }] };
-      };
-      expect(parsed.input.mongodb_cdc.checkpoint_cache).toBe('renamed');
-      expect(parsed.pipeline.processors[0].dedupe.cache).toBe('renamed');
-      // An unrelated field with a matching value must NOT be rewritten.
-      expect(parsed.input.mongodb_cdc.url).toBe('mongodb://x');
+      test('renameResourceReferences follows refs held in non-`resource` fields', () => {
+        const next = renameResourceReferences(fieldRefYaml, 'my_cache', 'renamed', 'cache') as string;
+        const parsed = parseYaml(next) as {
+          input: { mongodb_cdc: { checkpoint_cache: string; url: string } };
+          pipeline: { processors: [{ dedupe: { cache: string; key: string } }] };
+        };
+        expect(parsed.input.mongodb_cdc.checkpoint_cache).toBe('renamed');
+        expect(parsed.pipeline.processors[0].dedupe.cache).toBe('renamed');
+        // An unrelated field with a matching value must NOT be rewritten.
+        expect(parsed.input.mongodb_cdc.url).toBe('mongodb://x');
+      });
+
+      test('countResourceReferences counts refs held in non-`resource` fields', () => {
+        expect(countResourceReferences(fieldRefYaml, 'my_cache', 'cache')).toBe(2);
+      });
     });
 
-    test('countResourceReferences counts refs held in non-`resource` fields', () => {
-      expect(countResourceReferences(fieldRefYaml, 'my_cache', 'cache')).toBe(2);
-    });
-
-    // `*_resources` items are referenced via `resource:` indirection components; renaming their
-    // label must cascade to those references (kind-scoped by section) just like cache/rate_limit.
-    const sectionResourceYaml = `input:
+    describe('section resources', () => {
+      // `*_resources` items are referenced via `resource:` indirection components; renaming their
+      // label must cascade to those references (kind-scoped by section) just like cache/rate_limit.
+      const sectionResourceYaml = `input:
   resource: src
 pipeline:
   processors:
@@ -2103,22 +2078,23 @@ output_resources:
   - label: src
     drop: {}`;
 
-    test('renameResourceReferences scoped to a section kind rewrites only that section', () => {
-      const next = renameResourceReferences(sectionResourceYaml, 'src', 'renamed', 'input') as string;
-      const parsed = parseYaml(next) as {
-        input: { resource: string };
-        pipeline: { processors: [{ resource: string }] };
-        output: { broker: { outputs: [{ resource: string }] } };
-      };
-      expect(parsed.input.resource).toBe('renamed');
-      expect(parsed.pipeline.processors[0].resource).toBe('src');
-      expect(parsed.output.broker.outputs[0].resource).toBe('src');
-    });
+      test('renameResourceReferences scoped to a section kind rewrites only that section', () => {
+        const next = renameResourceReferences(sectionResourceYaml, 'src', 'renamed', 'input') as string;
+        const parsed = parseYaml(next) as {
+          input: { resource: string };
+          pipeline: { processors: [{ resource: string }] };
+          output: { broker: { outputs: [{ resource: string }] } };
+        };
+        expect(parsed.input.resource).toBe('renamed');
+        expect(parsed.pipeline.processors[0].resource).toBe('src');
+        expect(parsed.output.broker.outputs[0].resource).toBe('src');
+      });
 
-    test('countResourceReferences scopes to section kinds', () => {
-      expect(countResourceReferences(sectionResourceYaml, 'src', 'input')).toBe(1);
-      expect(countResourceReferences(sectionResourceYaml, 'src', 'processor')).toBe(1);
-      expect(countResourceReferences(sectionResourceYaml, 'src', 'output')).toBe(1);
+      test('countResourceReferences scopes to section kinds', () => {
+        expect(countResourceReferences(sectionResourceYaml, 'src', 'input')).toBe(1);
+        expect(countResourceReferences(sectionResourceYaml, 'src', 'processor')).toBe(1);
+        expect(countResourceReferences(sectionResourceYaml, 'src', 'output')).toBe(1);
+      });
     });
   });
 

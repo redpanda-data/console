@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { MousePointerClick } from 'lucide-react';
 
 import { FloatingChipPanel } from './floating-chip-panel';
@@ -53,14 +55,15 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
             <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
             <span className="min-w-0 truncate text-body-sm text-foreground">{node.label}</span>
             {node.detail ? (
-              <span
-                className="min-w-0 max-w-[45%] shrink truncate text-body-sm text-muted-foreground"
-                title={node.detail}
-              >
-                {node.detail}
-              </span>
+              <ElementTooltip content={node.detail}>
+                <span className="max-w-[45%] min-w-0 shrink truncate text-body-sm text-muted-foreground">
+                  {node.detail}
+                </span>
+              </ElementTooltip>
             ) : null}
-            <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="ml-auto inline-flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+              <TonedIcon className="size-3" icon={MousePointerClick} tone="muted" />
+            </span>
           </button>
         ))
       }

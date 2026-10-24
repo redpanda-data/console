@@ -3,7 +3,7 @@ import { step } from '../../shared/e2e';
 // spec: User Management Tests (new security UI)
 // seed: tests/seed.spec.ts
 
-import { appURL, expect, test } from '../../shared/e2e';
+import { appURL, expect, type Page, test } from '../../shared/e2e';
 
 const TEST_USER_LINK_NAME = /test-user-.*/;
 const URL_NAME_QUERY_PARAM = /[?&]name=/;
@@ -11,7 +11,9 @@ const URL_NAME_TEST_QUERY_PARAM = /[?&]name=test/;
 const URL_NAME_E2E_QUERY_PARAM = /[?&]name=e2e/;
 const ACLS_HEADING_NAME = /ACLs/;
 
-test.describe('User Management', () => {
+const userNameFilter = (page: Page) => page.getByPlaceholder('Filter by name (regexp)...');
+
+test.describe('user Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/security/users', {
       waitUntil: 'domcontentloaded',
@@ -29,10 +31,10 @@ test.describe('User Management', () => {
       await expect(page.getByTestId('create-user-name')).toBeVisible();
     });
 
-    const timestamp = Date.now();
-    const username = `test-user-e2e-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const username = `test-user-e2e-${suffix}`;
 
-    await step('2. Fill in username field with timestamp suffix for unique test runs', async () => {
+    await step('2. Fill in username field with a unique suffix', async () => {
       await page.getByTestId('create-user-name').fill(username);
     });
 
@@ -63,8 +65,8 @@ test.describe('User Management', () => {
   });
 
   test('should navigate to user details after user creation via Add permissions button', async ({ page }) => {
-    const timestamp = Date.now();
-    const username = `test-user-acl-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const username = `test-user-acl-${suffix}`;
 
     await step('1. Create a new user', async () => {
       await page.getByTestId('create-user-button').click();
@@ -133,8 +135,7 @@ test.describe('User Management', () => {
   });
 
   test('should filter users by name', async ({ page }) => {
-    const timestamp = Date.now();
-    const username = `test-user-filter-${timestamp}`;
+    const username = `test-user-filter-${crypto.randomUUID()}`;
 
     await step('1. Create a unique test user for filtering', async () => {
       await page.getByTestId('create-user-button').click();
@@ -150,10 +151,8 @@ test.describe('User Management', () => {
       await expect(table).toBeVisible();
     });
 
-    const filterInput = page.getByPlaceholder('Filter by name (regexp)...');
-
     await step('3. Filter by test', async () => {
-      await filterInput.fill('test');
+      await userNameFilter(page).fill('test');
     });
 
     await step('4. Verify URL contains query parameter name=test', async () => {
@@ -166,7 +165,7 @@ test.describe('User Management', () => {
     });
 
     await step('6. Clear filter', async () => {
-      await filterInput.fill('');
+      await userNameFilter(page).fill('');
     });
 
     await step('7. Verify URL query parameter is removed', async () => {
@@ -179,8 +178,7 @@ test.describe('User Management', () => {
   });
 
   test('should filter users by partial match', async ({ page }) => {
-    const timestamp = Date.now();
-    const username = `test-user-partial-${timestamp}`;
+    const username = `test-user-partial-${crypto.randomUUID()}`;
 
     await step('1. Create a unique test user for partial matching', async () => {
       await page.getByTestId('create-user-button').click();
@@ -191,10 +189,8 @@ test.describe('User Management', () => {
       await expect(page).toHaveURL(appURL('/security/users'));
     });
 
-    const filterInput = page.getByPlaceholder('Filter by name (regexp)...');
-
     await step('2. Filter by e2e', async () => {
-      await filterInput.fill('e2e');
+      await userNameFilter(page).fill('e2e');
     });
 
     await step('3. Verify URL contains query parameter name=e2e', async () => {
@@ -206,7 +202,7 @@ test.describe('User Management', () => {
     });
 
     await step('5. Change filter to test', async () => {
-      await filterInput.fill('test');
+      await userNameFilter(page).fill('test');
     });
 
     await step('6. Verify URL contains query parameter name=test', async () => {
@@ -219,7 +215,7 @@ test.describe('User Management', () => {
     });
 
     await step('8. Clear filter', async () => {
-      await filterInput.fill('');
+      await userNameFilter(page).fill('');
     });
 
     await step('9. Verify URL query parameter is removed', async () => {
@@ -228,8 +224,8 @@ test.describe('User Management', () => {
   });
 
   test('should navigate to user detail page and back', async ({ page }) => {
-    const timestamp = Date.now();
-    const username = `test-user-nav-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const username = `test-user-nav-${suffix}`;
 
     await step('1. Create a unique test user for navigation test', async () => {
       await page.getByTestId('create-user-button').click();
@@ -320,8 +316,8 @@ test.describe('User Management', () => {
   });
 
   test('should delete a user', async ({ page }) => {
-    const timestamp = Date.now();
-    const username = `test-user-delete-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const username = `test-user-delete-${suffix}`;
 
     await step('1. Create a unique test user for deletion', async () => {
       await page.getByTestId('create-user-button').click();

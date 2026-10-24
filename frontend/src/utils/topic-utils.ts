@@ -94,29 +94,25 @@ export function getRetentionTimeFinalValue(value: number | undefined, unit: Rete
   if (value === undefined) {
     throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
   }
-  if (unit === 'ms') {
-    return value;
-  }
-  if (unit === 'seconds') {
-    return value * 1000;
-  }
-  if (unit === 'minutes') {
-    return value * 1000 * 60;
-  }
-  if (unit === 'hours') {
-    return value * 1000 * 60 * 60;
-  }
-  if (unit === 'days') {
-    return value * 1000 * 60 * 60 * 24;
-  }
-  if (unit === 'months') {
-    return value * 1000 * 60 * 60 * 24 * (365 / 12);
-  }
-  if (unit === 'years') {
-    return value * 1000 * 60 * 60 * 24 * 365;
-  }
-  if (unit === 'infinite') {
-    return -1;
+  switch (unit) {
+    case 'ms':
+      return value;
+    case 'seconds':
+      return value * 1000;
+    case 'minutes':
+      return value * 1000 * 60;
+    case 'hours':
+      return value * 1000 * 60 * 60;
+    case 'days':
+      return value * 1000 * 60 * 60 * 24;
+    case 'months':
+      return value * 1000 * 60 * 60 * 24 * (365 / 12);
+    case 'years':
+      return value * 1000 * 60 * 60 * 24 * 365;
+    case 'infinite':
+      return -1;
+    default:
+      return unsupportedRetentionUnit(unit);
   }
 }
 
@@ -128,23 +124,21 @@ export function getRetentionSizeFinalValue(value: number | undefined, unit: Rete
   if (value === undefined) {
     throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
   }
-  if (unit === 'Bit') {
-    return value;
-  }
-  if (unit === 'KiB') {
-    return value * 1024;
-  }
-  if (unit === 'MiB') {
-    return value * 1024 * 1024;
-  }
-  if (unit === 'GiB') {
-    return value * 1024 * 1024 * 1024;
-  }
-  if (unit === 'TiB') {
-    return value * 1024 * 1024 * 1024 * 1024;
-  }
-  if (unit === 'infinite') {
-    return -1;
+  switch (unit) {
+    case 'Bit':
+      return value;
+    case 'KiB':
+      return value * 1024;
+    case 'MiB':
+      return value * 1024 * 1024;
+    case 'GiB':
+      return value * 1024 * 1024 * 1024;
+    case 'TiB':
+      return value * 1024 * 1024 * 1024 * 1024;
+    case 'infinite':
+      return -1;
+    default:
+      return unsupportedRetentionUnit(unit);
   }
 }
 
@@ -163,4 +157,9 @@ export function validateReplicationFactor(replicationFactor: number, isRedpanda:
     }
   }
   return '';
+}
+
+// Exhaustive at compile time; retain the legacy undefined result for unknown runtime inputs.
+function unsupportedRetentionUnit(_unit: never): undefined {
+  // Unknown runtime units retain the legacy unset result; known units are exhaustively checked above.
 }

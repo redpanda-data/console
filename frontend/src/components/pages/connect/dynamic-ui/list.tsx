@@ -48,8 +48,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
         <TooltipTrigger
           render={
             <Input
-              // Border colour on the element: a layered !important beats the unlayered scss one.
-              className="ghostInput !border-transparent focus:!border-input"
               containerClassName="grow basis-[400px]"
               onBlur={() => {
                 setHasFocus(false);
@@ -136,7 +134,7 @@ export function CommaSeparatedStringList(props: {
   return (
     <div className="stringList" style={{ maxWidth: '500px' }}>
       <div className="createEntryRow">
-        <div className={`inputWrapper${newEntryError ? 'hasError' : ''}`} style={{ height: '100%' }}>
+        <div className={newEntryError ? 'inputWrapperhasError' : 'inputWrapper'} style={{ height: '100%' }}>
           <Input
             className="h-full"
             containerClassName="h-full grow basis-[260px]"
@@ -165,7 +163,7 @@ export function CommaSeparatedStringList(props: {
         </div>
 
         <Button
-          className="h-full min-w-[120px] px-4"
+          className="h-full min-w-[120px]"
           disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
           onClick={() => {
             if (!newEntry) {

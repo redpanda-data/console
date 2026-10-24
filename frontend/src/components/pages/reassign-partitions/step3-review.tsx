@@ -139,9 +139,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
     }
     if (api.topicPartitions.size === 0) {
       return (
-        // `border` explicitly: the Empty root sets only `border-dashed`, and Preflight leaves
-        // border-width at 0, so without it the panel is unframed text.
-        <Empty className="border">
+        <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <InboxIcon />
@@ -238,13 +236,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
           };
         }
 
-        // if there are 2 senders and 2 receivers, the bandwidth limit is effectively double
-        // but for (1sender and 2receivers), or (2senders and 1receiver) it won't go any faster.
-        const senders = p.brokersBefore.except(p.brokersAfter);
-        const receivers = p.brokersAfter.except(p.brokersBefore);
-
-        const participatingTransferPairs = Math.min(senders.length, receivers.length);
-        const potentialBandwidth = participatingTransferPairs * maxReplicationTraffic;
+        const potentialBandwidth = potentialTransferBandwidth(p, maxReplicationTraffic);
 
         let estimatedTimeSec = totalTraffic / potentialBandwidth;
         if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
@@ -361,3 +353,13 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
     </div>
   );
 };
+
+function potentialTransferBandwidth(p: PartitionWithMoves, maxReplicationTraffic: number): number {
+  // if there are 2 senders and 2 receivers, the bandwidth limit is effectively double
+  // but for (1sender and 2receivers), or (2senders and 1receiver) it won't go any faster.
+  const senders = p.brokersBefore.except(p.brokersAfter);
+  const receivers = p.brokersAfter.except(p.brokersBefore);
+
+  const participatingTransferPairs = Math.min(senders.length, receivers.length);
+  return participatingTransferPairs * maxReplicationTraffic;
+}

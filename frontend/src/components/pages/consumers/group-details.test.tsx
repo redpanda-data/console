@@ -98,7 +98,7 @@ const renderGroupDetails = () =>
     <GroupDetails groupId={GROUP_ID} matchedPath={`/groups/${GROUP_ID}`} onSearchChange={() => {}} search={{}} />
   );
 
-describe('GroupDetails - unconsumed partitions', () => {
+describe('the GroupDetails - unconsumed partitions', () => {
   beforeEach(() => {
     useApiStore.setState({
       consumerGroups: new Map([[GROUP_ID, mockGroup]]),

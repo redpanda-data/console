@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -42,7 +43,7 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
@@ -59,7 +60,7 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
@@ -76,7 +77,7 @@ export const ShadowLinkNoPermissionState = () => (
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <ShadowingDescription />
       <Alert icon={<Lock />} variant="warning">
         <AlertDescription>
@@ -92,7 +93,7 @@ export const ShadowLinkFeatureDisabledState = () => (
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <ShadowingDescription />
       <div className="text-body">To get started, run the following command to enable Shadowing on your cluster:</div>
       <SimpleCodeBlock
@@ -109,7 +110,7 @@ export const ShadowLinkUnavailableState = () => (
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <ShadowingDescription />
       <Alert icon={<Info />} variant="warning">
         <AlertDescription>
@@ -131,7 +132,7 @@ export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorS
     <CardHeader>
       <CardTitle>Error loading shadow links</CardTitle>
     </CardHeader>
-    <CardContent className="flex flex-col gap-3">
+    <CardContent space="sm">
       <div className="text-body">An error occurred while loading shadow links:</div>
       <div className="text-body text-destructive">{errorMessage}</div>
       <div>
@@ -151,7 +152,7 @@ type ShadowLinkNotFoundStateProps = {
 export const ShadowLinkNotFoundState = ({ name, onBackClick }: ShadowLinkNotFoundStateProps) => (
   <div className="flex h-64 items-center justify-center">
     <div className="flex flex-col items-center gap-4">
-      <SearchX className="h-12 w-12 text-muted-foreground" />
+      <TonedIcon className="h-12 w-12" icon={SearchX} tone="muted" />
       <div className="text-body-lg">Shadow link "{name}" not found</div>
       <div className="text-body text-muted-foreground">
         The shadow link may have been deleted or the name is incorrect.

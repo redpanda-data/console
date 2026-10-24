@@ -24,7 +24,7 @@ export const UserInformationCard = ({ username, onEditPassword }: UserInformatio
       <CardHeader>
         <CardTitle>User information</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent>
         {/* Username Row */}
         <div className="grid grid-cols-3 items-center gap-4 py-2">
           <div className="text-label">Username</div>

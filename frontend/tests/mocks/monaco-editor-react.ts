@@ -22,5 +22,4 @@ const Editor = ({ defaultValue, onChange, value }: MockEditorProps) =>
   });
 
 export const DiffEditor = Editor;
-export const useMonaco = () => null;
 export default Editor;

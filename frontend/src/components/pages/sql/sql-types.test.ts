@@ -13,7 +13,14 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
 
-import { arrayElementPgType, columnKindForPgType, hintFromError, isArrayPgType } from './sql-types';
+import {
+  arrayElementPgType,
+  type Catalog,
+  columnKindForPgType,
+  hintFromError,
+  isArrayPgType,
+  withFetchedTables,
+} from './sql-types';
 import { describe, expect, test } from 'bun:test';
 
 describe('columnKindForPgType', () => {
@@ -81,5 +88,37 @@ describe('hintFromError', () => {
   test('returns undefined when there is no ErrorInfo hint', () => {
     expect(hintFromError(new ConnectError('boom'))).toBeUndefined();
     expect(hintFromError(new Error('plain'))).toBeUndefined();
+  });
+});
+
+describe('withFetchedTables', () => {
+  const catalog: Catalog = {
+    name: 'rp',
+    displayLabel: 'Redpanda Catalog',
+    engine: 'redpanda',
+    namespaces: [{ id: 'rp.public', name: 'public', tables: [] }],
+  };
+
+  test('fills fetched tables into their namespace', () => {
+    const enriched = withFetchedTables(catalog, [{ name: 'cars', catalogNamespace: 'public', topic: 'cars-topic' }]);
+
+    expect(enriched.namespaces).toEqual([
+      {
+        id: 'rp.public',
+        name: 'public',
+        tables: [
+          { id: 'rp.public.cars', name: 'cars', namespaceName: 'public', catalogName: 'rp', topicName: 'cars-topic' },
+        ],
+      },
+    ]);
+  });
+
+  test('adds namespaces that only the fetched tables name, and keeps seeded tables otherwise', () => {
+    const enriched = withFetchedTables(catalog, [{ name: 'audit', catalogNamespace: 'internal' }]);
+
+    expect(enriched.namespaces.map((ns) => [ns.id, ns.tables.map((t) => t.name)])).toEqual([
+      ['rp.public', []],
+      ['rp.internal', ['audit']],
+    ]);
   });
 });

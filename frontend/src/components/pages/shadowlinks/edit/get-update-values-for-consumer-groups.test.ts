@@ -59,7 +59,7 @@ const baseFormValues: FormValues = {
 };
 
 describe('getUpdateValuesForConsumerGroups', () => {
-  describe('Consumer mode changes', () => {
+  describe('consumer mode changes', () => {
     test('should detect change from all to specify mode', () => {
       const original = { ...baseFormValues, consumersMode: 'all' as const, consumers: [] };
       const updated = {
@@ -107,7 +107,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
     });
   });
 
-  describe('Consumer array changes', () => {
+  describe('consumer array changes', () => {
     test('should detect when a consumer is added to the list', () => {
       const original = {
         ...baseFormValues,
@@ -281,7 +281,7 @@ describe('getUpdateValuesForConsumerGroups', () => {
     });
   });
 
-  describe('Multiple changes', () => {
+  describe('multiple changes', () => {
     test('should detect multiple changes at once (mode + consumers)', () => {
       const original = {
         ...baseFormValues,
@@ -312,16 +312,20 @@ describe('getUpdateValuesForConsumerGroups', () => {
 
       // Validate schema values
       expect(result.value.groupFilters).toHaveLength(2);
-      expect(result.value.groupFilters[0].name).toBe('consumer-group-1');
-      expect(result.value.groupFilters[0].patternType).toBe(PatternType.LITERAL);
-      expect(result.value.groupFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.groupFilters[1].name).toBe('consumer-group-2');
-      expect(result.value.groupFilters[1].patternType).toBe(PatternType.PREFIX);
-      expect(result.value.groupFilters[1].filterType).toBe(FilterType.EXCLUDE);
+      expect(result.value.groupFilters[0]).toMatchObject({
+        name: 'consumer-group-1',
+        patternType: PatternType.LITERAL,
+        filterType: FilterType.INCLUDE,
+      });
+      expect(result.value.groupFilters[1]).toMatchObject({
+        name: 'consumer-group-2',
+        patternType: PatternType.PREFIX,
+        filterType: FilterType.EXCLUDE,
+      });
     });
   });
 
-  describe('Schema building', () => {
+  describe('schema building', () => {
     test('should build correct schema for all mode (wildcard filter with name=*)', () => {
       const values = {
         ...baseFormValues,

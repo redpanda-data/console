@@ -6,9 +6,9 @@ import { step } from '../../shared/e2e';
 import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('Produce Messages', () => {
+test.describe('produce Messages', () => {
   test('should produce simple text message', async ({ page }) => {
-    const topicName = `text-message-${Date.now()}`;
+    const topicName = `text-message-${crypto.randomUUID()}`;
     const messageContent = 'Hello Redpanda Console';
 
     const topicPage = new TopicPage(page);
@@ -23,8 +23,8 @@ test.describe('Produce Messages', () => {
     await topicPage.deleteTopic(topicName);
   });
 
-  test.skip('should produce message with key', async ({ page }) => {
-    const topicName = `keyed-message-${Date.now()}`;
+  test('should produce message with key', async ({ page }) => {
+    const topicName = `keyed-message-${crypto.randomUUID()}`;
     const messageKey = 'user-123';
     const messageValue = 'User data for user 123';
 
@@ -32,76 +32,66 @@ test.describe('Produce Messages', () => {
     await topicPage.createTopic(topicName);
 
     await step('Produce message with key', async () => {
-      await page.goto(`/topics/${topicName}/produce-record`);
+      await topicPage.goToProduceRecord(topicName);
+      await topicPage.fillKeyEditor(messageKey);
+      await topicPage.fillValueEditor(messageValue);
+      await topicPage.clickProduceButton();
+      await topicPage.verifyMessageProduced(messageValue);
+    });
 
-      // Wait for page to load
-      await expect(page.getByTestId('produce-button')).toBeVisible();
-
-      // Find and fill key editor
-      const keyEditor = page.getByTestId('produce-key-editor').locator('.monaco-editor').first();
-      await keyEditor.click();
-      await page.keyboard.insertText(messageKey);
-
-      // Find and fill value editor
-      const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
-      await valueEditor.click();
-      await page.keyboard.insertText(messageValue);
-
-      // Produce message
-      await page.getByTestId('produce-button').click();
-
-      // Verify message was produced - page should show the message
-      await expect(page.getByRole('cell', { name: new RegExp(messageValue, 'i') }).first()).toBeVisible({
-        timeout: 10_000,
-      });
+    await step('Verify the key is shown with the message', async () => {
+      await expect(page.getByRole('cell', { name: messageKey }).first()).toBeVisible();
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should produce multiple messages in sequence', async ({ page }) => {
-    const topicName = `multi-produce-${Date.now()}`;
+    const topicName = `multi-produce-${crypto.randomUUID()}`;
     const messages = ['Message One', 'Message Two', 'Message Three'];
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    for (const message of messages) {
-      await step(`Produce message: ${message}`, async () => {
-        await page.goto(`/topics/${topicName}/produce-record`);
+    // Chained in order: every message goes through the same page and produce form, one after another.
+    await messages.reduce<Promise<unknown>>(
+      (previousMessage, message) =>
+        previousMessage.then(() =>
+          step(`Produce message: ${message}`, async () => {
+            await page.goto(`/topics/${topicName}/produce-record`);
 
-        const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
-        await valueEditor.click();
+            const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
+            await valueEditor.click();
 
-        // Clear any existing content before inserting new text
-        await page.keyboard.press('Meta+A'); // Select all (Mac)
-        await page.keyboard.press('Control+A'); // Select all (Windows/Linux)
-        await page.keyboard.press('Backspace');
+            // Clear any existing content before inserting new text
+            await page.keyboard.press('Meta+A'); // Select all (Mac)
+            await page.keyboard.press('Control+A'); // Select all (Windows/Linux)
+            await page.keyboard.press('Backspace');
 
-        await page.keyboard.insertText(message);
-        await page.getByTestId('produce-button').click();
+            await page.keyboard.insertText(message);
+            await page.getByTestId('produce-button').click();
 
-        // Verify message appears
-        await expect(page.getByRole('cell', { name: new RegExp(message, 'i') }).first()).toBeVisible({
-          timeout: 10_000,
-        });
-      });
-    }
+            // Verify message appears
+            await expect(page.getByRole('cell', { name: new RegExp(message, 'i') }).first()).toBeVisible({
+              timeout: 10_000,
+            });
+          })
+        ),
+      Promise.resolve()
+    );
 
     await step('Verify all messages in topic', async () => {
       await page.goto(`/topics/${topicName}`);
 
       // All messages should be visible
-      for (const message of messages) {
-        await expect(page.getByText(message)).toBeVisible();
-      }
+      await Promise.all(messages.map((message) => expect(page.getByText(message)).toBeVisible()));
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should produce large message and handle display limit', async ({ page }) => {
-    const topicName = `large-message-${Date.now()}`;
+    const topicName = `large-message-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -155,7 +145,7 @@ test.describe('Produce Messages', () => {
   });
 
   test('should navigate to produce page and see form elements', async ({ page }) => {
-    const topicName = `produce-ui-${Date.now()}`;
+    const topicName = `produce-ui-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -176,7 +166,7 @@ test.describe('Produce Messages', () => {
   });
 
   test('should handle empty message production', async ({ page }) => {
-    const topicName = `empty-message-${Date.now()}`;
+    const topicName = `empty-message-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -200,7 +190,7 @@ test.describe('Produce Messages', () => {
   });
 
   test('should clear editor content between produces', async ({ page }) => {
-    const topicName = `clear-editor-${Date.now()}`;
+    const topicName = `clear-editor-${crypto.randomUUID()}`;
     const message1 = 'First message';
     const message2 = 'Second message';
 

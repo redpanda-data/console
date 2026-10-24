@@ -22,13 +22,13 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
-          <Button className="px-8" disabled={!state.canContinue()} onClick={state.next} variant="primary">
+          <Button disabled={!state.canContinue()} onClick={state.next} size="lg" variant="primary">
             {currentStep.nextButtonLabel ?? 'Next'}
           </Button>
         )}
 
         {state.isFirst() ? null : (
-          <Button className="px-8" onClick={state.previous} variant="link">
+          <Button onClick={state.previous} size="lg" variant="link">
             {currentStep.prevButtonLabel ?? 'Back'}
           </Button>
         )}

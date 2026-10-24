@@ -11,7 +11,7 @@
 
 import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen, waitFor } from 'test-utils';
+import { render, screen, waitFor, within } from 'test-utils';
 
 import { NodeConfigForm } from './node-config-form';
 
@@ -33,296 +33,343 @@ function renderForm(value: Record<string, unknown>, onConfigChange = rs.fn()) {
 }
 
 const CREATE_NEW_TOPIC_RE = /create new topic/i;
+const TOPIC_FIELD_RE = /^topic/i;
 const KAFKA_OUTPUT_DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/kafka/';
 const TOPIC_DOCS_RE = /topic documentation/i;
 const BATCHING_COUNT_DOCS_RE = /count documentation/i;
+const NOT_VALID_INTEGER_RE = /Not a valid integer/;
+const NOT_SAVED_UNTIL_FIXED_RE = /won't be saved until fixed/;
+const REFERENCE_SECRET_RE = /reference a secret/i;
+const RESOURCE_NEEDS_LABEL_RE = /A resource needs a label/;
+const EDITED_ON_CANVAS_RE = /edited on the canvas/i;
+const TOPIC_NAME_RE = /topic/i;
+
+// A field's label row: its name, the required marker and type/default hints.
+function fieldLabelRow(name: string): HTMLElement {
+  const row = screen.getByText(name).closest('div');
+  if (!row) {
+    throw new Error(`No label row for field "${name}"`);
+  }
+  return row;
+}
 
 // The most recent config reported by the form (undefined if never called, null when clean).
 function lastReported(onConfigChange: ReturnType<typeof rs.fn>): unknown {
   return onConfigChange.mock.calls.at(-1)?.[0];
 }
 
-describe('NodeConfigForm — full schema', () => {
-  test('renders required scalar fields, a scalar-array field, and nested object groups', async () => {
-    const user = userEvent.setup();
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+// The form with a field-level commit handler whose write lands (`true`) or fails (`false`).
+function renderWithFieldCommit(value: Record<string, unknown>, commitLands = true) {
+  const onConfigChange = rs.fn();
+  const onCommitField = rs.fn(() => commitLands);
+  render(
+    <NodeConfigForm
+      componentName="kafka"
+      onCommitField={onCommitField}
+      onConfigChange={onConfigChange}
+      spec={spec}
+      value={value}
+    />
+  );
+  return { onCommitField, onConfigChange };
+}
 
-    // Required scalars + the scalar array.
-    expect(screen.getByText('topic')).toBeInTheDocument();
-    expect(screen.getByText('addresses')).toBeInTheDocument();
-    // A non-advanced nested object is exposed as its own sub-section (not raw YAML).
-    expect(screen.getByText('batching')).toBeInTheDocument();
-    // Optional/advanced groupings exist.
-    expect(screen.getByText('Optional')).toBeInTheDocument();
-    expect(screen.getByText('Advanced')).toBeInTheDocument();
+// A malformed numeric ("won't be saved until fixed") in the batching group, plus a valid key edit.
+async function editMalformedCountAlongsideKey(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText('batching'));
+  const count = screen.getByDisplayValue('5');
+  await user.clear(count);
+  await user.type(count, '10x');
+  await user.type(screen.getByDisplayValue('orig'), '-2');
+}
 
-    // Advanced nested objects appear once the Advanced section is expanded.
-    await user.click(screen.getByText('Advanced'));
-    expect(screen.getByText('sasl')).toBeInTheDocument();
-    expect(screen.getByText('tls')).toBeInTheDocument();
-  });
+describe('the NodeConfigForm — full schema', () => {
+  describe('field rendering', () => {
+    test('renders required scalar fields, a scalar-array field, and nested object groups', async () => {
+      const user = userEvent.setup();
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
 
-  test('marks only no-default fields required; a defaulted field (sasl.mechanism) is not', async () => {
-    const user = userEvent.setup();
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+      // Required scalars + the scalar array.
+      expect(screen.getByText('topic')).toBeInTheDocument();
+      expect(screen.getByText('addresses')).toBeInTheDocument();
+      // A non-advanced nested object is exposed as its own sub-section (not raw YAML).
+      expect(screen.getByText('batching')).toBeInTheDocument();
+      // Optional/advanced groupings exist.
+      expect(screen.getByText('Optional')).toBeInTheDocument();
+      expect(screen.getByText('Advanced')).toBeInTheDocument();
 
-    // A scalar with no default is genuinely required.
-    expect(screen.getByText('topic').closest('div')?.querySelector('[title="Required"]')).not.toBeNull();
-
-    // `mechanism` has a default (`none`), so even though the backend left `optional`
-    // unset it must NOT be flagged required.
-    await user.click(screen.getByText('Advanced'));
-    await user.click(screen.getByText('sasl'));
-    const mechRow = screen.getByText('mechanism').closest('div');
-    expect(mechRow).not.toBeNull();
-    expect(mechRow?.querySelector('[title="Required"]')).toBeNull();
-  });
-
-  test('deep-links every field to its own heading on the connector docs page', async () => {
-    const user = userEvent.setup();
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
-
-    expect(screen.getByRole('link', { name: TOPIC_DOCS_RE })).toHaveAttribute('href', `${KAFKA_OUTPUT_DOCS}#topic`);
-
-    // A nested field is anchored by its whole path, as the docs generator ids it.
-    await user.click(screen.getByText('batching'));
-    expect(screen.getByRole('link', { name: BATCHING_COUNT_DOCS_RE })).toHaveAttribute(
-      'href',
-      `${KAFKA_OUTPUT_DOCS}#batching-count`
-    );
-  });
-
-  test('shows the schema default as a hint for optional fields', () => {
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
-    // partitioner defaults to fnv1a_hash.
-    expect(screen.getByText('fnv1a_hash')).toBeInTheDocument();
-  });
-
-  test('reports a config only once something changes', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
-    // Clean on mount → reports null (nothing to commit).
-    expect(lastReported(onConfigChange)).toBeNull();
-
-    await user.type(screen.getByDisplayValue('orig'), 'X');
-    expect(lastReported(onConfigChange)).not.toBeNull();
-  });
-
-  test('reports a changed scalar and keeps the YAML minimal (no empty optionals)', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
-
-    const key = screen.getByDisplayValue('orig');
-    await user.clear(key);
-    await user.type(key, 'new-key');
-
-    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-    expect(next.kafka.key).toBe('new-key');
-    expect(next.kafka.addresses).toEqual(['a:9092']);
-    // Untouched optional fields are not written out.
-    expect(next.kafka).not.toHaveProperty('partitioner');
-  });
-
-  test('preserves complex/untouched settings when reporting an unrelated edit', async () => {
-    const user = userEvent.setup();
-    // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
-    const onConfigChange = renderForm({
-      kafka: {
-        topic: 't',
-        addresses: ['a:9092'],
-        key: 'orig',
-        metadata: { include_patterns: ['.*'] },
-        batching: { count: '1000$' },
-      },
+      // Advanced nested objects appear once the Advanced section is expanded.
+      await user.click(screen.getByText('Advanced'));
+      expect(screen.getByText('sasl')).toBeInTheDocument();
+      expect(screen.getByText('tls')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByDisplayValue('orig'), '-2');
+    test('marks only no-default fields required; a defaulted field (sasl.mechanism) is not', async () => {
+      const user = userEvent.setup();
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
 
-    const next = lastReported(onConfigChange) as { kafka: { metadata: unknown; batching: { count: unknown } } };
-    expect(next.kafka.metadata).toEqual({ include_patterns: ['.*'] });
-    // Malformed value is preserved exactly — not parseInt-ed to 1000.
-    expect(next.kafka.batching.count).toBe('1000$');
+      // A scalar with no default is genuinely required.
+      expect(within(fieldLabelRow('topic')).getByText('*')).toBeInTheDocument();
+
+      // `mechanism` has a default (`none`), so even though the backend left `optional`
+      // unset it must NOT be flagged required.
+      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByText('sasl'));
+      expect(within(fieldLabelRow('mechanism')).queryByText('*')).toBeNull();
+    });
+
+    test('deep-links every field to its own heading on the connector docs page', async () => {
+      const user = userEvent.setup();
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+
+      expect(screen.getByRole('link', { name: TOPIC_DOCS_RE })).toHaveAttribute('href', `${KAFKA_OUTPUT_DOCS}#topic`);
+
+      // A nested field is anchored by its whole path, as the docs generator ids it.
+      await user.click(screen.getByText('batching'));
+      expect(screen.getByRole('link', { name: BATCHING_COUNT_DOCS_RE })).toHaveAttribute(
+        'href',
+        `${KAFKA_OUTPUT_DOCS}#batching-count`
+      );
+    });
+
+    test('shows the schema default as a hint for optional fields', () => {
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
+      // partitioner defaults to fnv1a_hash.
+      expect(screen.getByText('fnv1a_hash')).toBeInTheDocument();
+    });
   });
 
-  test('shows a malformed numeric value instead of blanking it (text input, not type=number)', async () => {
-    const user = userEvent.setup();
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
-    await user.click(screen.getByText('batching'));
-    expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
-    // …and flags it inline as not a valid integer (with the not-saved warning).
-    expect(screen.getByText(/Not a valid integer/)).toBeInTheDocument();
+  describe('change reporting', () => {
+    test('reports a config only once something changes', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
+      // Clean on mount → reports null (nothing to commit).
+      expect(lastReported(onConfigChange)).toBeNull();
+
+      await user.type(screen.getByDisplayValue('orig'), 'X');
+      expect(lastReported(onConfigChange)).not.toBeNull();
+    });
+
+    test('reports a changed scalar and keeps the YAML minimal (no empty optionals)', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } });
+
+      const key = screen.getByDisplayValue('orig');
+      await user.clear(key);
+      await user.type(key, 'new-key');
+
+      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
+      expect(next.kafka.key).toBe('new-key');
+      expect(next.kafka.addresses).toEqual(['a:9092']);
+      // Untouched optional fields are not written out.
+      expect(next.kafka).not.toHaveProperty('partitioner');
+    });
+
+    test('preserves complex/untouched settings when reporting an unrelated edit', async () => {
+      const user = userEvent.setup();
+      // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
+      const onConfigChange = renderForm({
+        kafka: {
+          topic: 't',
+          addresses: ['a:9092'],
+          key: 'orig',
+          metadata: { include_patterns: ['.*'] },
+          batching: { count: '1000$' },
+        },
+      });
+
+      await user.type(screen.getByDisplayValue('orig'), '-2');
+
+      const next = lastReported(onConfigChange) as { kafka: { metadata: unknown; batching: { count: unknown } } };
+      expect(next.kafka.metadata).toEqual({ include_patterns: ['.*'] });
+      // Malformed value is preserved exactly — not parseInt-ed to 1000.
+      expect(next.kafka.batching.count).toBe('1000$');
+    });
+
+    test('shows a malformed numeric value instead of blanking it (text input, not type=number)', async () => {
+      const user = userEvent.setup();
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
+      await user.click(screen.getByText('batching'));
+      expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
+      // …and flags it inline as not a valid integer (with the not-saved warning).
+      expect(screen.getByText(NOT_VALID_INTEGER_RE)).toBeInTheDocument();
+    });
+
+    test('does not commit a malformed numeric value (the saved value is kept)', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
+      await user.click(screen.getByText('batching'));
+      const countInput = screen.getByDisplayValue('5');
+      await user.clear(countInput);
+      await user.type(countInput, '10x');
+
+      // The field is flagged, and the reported config keeps the saved value — NOT `10` (parseInt
+      // truncation) and NOT dropped.
+      expect(screen.getByText(NOT_SAVED_UNTIL_FIXED_RE)).toBeInTheDocument();
+      const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
+      expect(next.kafka.batching.count).toBe(5);
+    });
   });
 
-  test('does not commit a malformed numeric value (the saved value is kept)', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
-    await user.click(screen.getByText('batching'));
-    const countInput = screen.getByDisplayValue('5');
-    await user.clear(countInput);
-    await user.type(countInput, '10x');
+  describe('secret fields', () => {
+    test('masks credential-named fields and offers a secret-reference tip', async () => {
+      const user = userEvent.setup();
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'], sasl: { password: 'hunter2' } } });
+      await user.click(screen.getByText('Advanced'));
+      await user.click(screen.getByText('sasl'));
 
-    // The field is flagged, and the reported config keeps the saved value — NOT `10` (parseInt
-    // truncation) and NOT dropped.
-    expect(screen.getByText(/won't be saved until fixed/)).toBeInTheDocument();
-    const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
-    expect(next.kafka.batching.count).toBe(5);
+      const password = screen.getByDisplayValue('hunter2');
+      expect(password).toHaveAttribute('type', 'password');
+      // The reveal toggle is the registry Input's built-in one (label "Show password").
+      expect(screen.getAllByRole('button', { name: 'Show password' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(REFERENCE_SECRET_RE).length).toBeGreaterThan(0);
+    });
+
+    test('masks fields flagged secret by the schema even when the name heuristic misses them', () => {
+      // credentials_json doesn't match SECRET_NAME_RE — only the enrichment stamp catches it.
+      const secretSpec = {
+        ...spec,
+        config: {
+          ...spec.config,
+          children: [
+            { name: 'credentials_json', type: 'string', kind: 'scalar', secret: true },
+            { name: 'project', type: 'string', kind: 'scalar' },
+          ],
+        },
+      } as unknown as ConnectComponentSpec;
+      render(
+        <NodeConfigForm
+          componentName="gcp_pubsub"
+          onConfigChange={rs.fn()}
+          spec={secretSpec}
+          value={{ gcp_pubsub: { credentials_json: 'top-secret', project: 'p1' } }}
+        />
+      );
+
+      expect(screen.getByDisplayValue('top-secret')).toHaveAttribute('type', 'password');
+      expect(screen.getByDisplayValue('p1')).toHaveAttribute('type', 'text');
+    });
   });
 
-  test('masks credential-named fields and offers a secret-reference tip', async () => {
-    const user = userEvent.setup();
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'], sasl: { password: 'hunter2' } } });
-    await user.click(screen.getByText('Advanced'));
-    await user.click(screen.getByText('sasl'));
+  describe('value preservation', () => {
+    test('deprecated fields are not rendered as form fields; existing values fall to raw YAML', () => {
+      const deprecatedSpec = {
+        ...spec,
+        config: {
+          ...spec.config,
+          children: [
+            { name: 'topic', type: 'string', kind: 'scalar' },
+            { name: 'round_robin_partitions', type: 'string', kind: 'scalar', deprecated: true },
+          ],
+        },
+      } as unknown as ConnectComponentSpec;
+      render(
+        <NodeConfigForm
+          componentName="kafka"
+          onConfigChange={rs.fn()}
+          spec={deprecatedSpec}
+          value={{ kafka: { topic: 't', round_robin_partitions: 'legacy' } }}
+        />
+      );
 
-    const password = screen.getByDisplayValue('hunter2');
-    expect(password).toHaveAttribute('type', 'password');
-    // The reveal toggle is the registry Input's built-in one (label "Show password").
-    expect(screen.getAllByRole('button', { name: 'Show password' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/reference a secret/i).length).toBeGreaterThan(0);
-  });
+      // No form control for the deprecated field…
+      expect(screen.queryByLabelText('round_robin_partitions')).not.toBeInTheDocument();
+      // …but its existing value is preserved in the raw-YAML fallback section.
+      expect(screen.getByText('Other settings (YAML)')).toBeInTheDocument();
+    });
 
-  test('masks fields flagged secret by the schema even when the name heuristic misses them', () => {
-    // credentials_json doesn't match SECRET_NAME_RE — only the enrichment stamp catches it.
-    const secretSpec = {
-      ...spec,
-      config: {
-        ...spec.config,
-        children: [
-          { name: 'credentials_json', type: 'string', kind: 'scalar', secret: true },
-          { name: 'project', type: 'string', kind: 'scalar' },
-        ],
-      },
-    } as unknown as ConnectComponentSpec;
-    render(
-      <NodeConfigForm
-        componentName="gcp_pubsub"
-        onConfigChange={rs.fn()}
-        spec={secretSpec}
-        value={{ gcp_pubsub: { credentials_json: 'top-secret', project: 'p1' } }}
-      />
-    );
+    test('keeps the saved label when a resource label field is cleared (references depend on it)', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = rs.fn();
+      render(
+        <NodeConfigForm
+          componentName="kafka"
+          onConfigChange={onConfigChange}
+          requireLabel
+          spec={spec}
+          value={{ label: 'shared', kafka: { topic: 't', addresses: ['a:9092'] } }}
+        />
+      );
 
-    expect(screen.getByDisplayValue('top-secret')).toHaveAttribute('type', 'password');
-    expect(screen.getByDisplayValue('p1')).toHaveAttribute('type', 'text');
-  });
+      await user.clear(screen.getByDisplayValue('shared'));
+      expect(screen.getByText(RESOURCE_NEEDS_LABEL_RE)).toBeInTheDocument();
+      const next = lastReported(onConfigChange) as { label?: string };
+      expect(next.label).toBe('shared');
+    });
 
-  test('deprecated fields are not rendered as form fields; existing values fall to raw YAML', () => {
-    const deprecatedSpec = {
-      ...spec,
-      config: {
-        ...spec.config,
-        children: [
-          { name: 'topic', type: 'string', kind: 'scalar' },
-          { name: 'round_robin_partitions', type: 'string', kind: 'scalar', deprecated: true },
-        ],
-      },
-    } as unknown as ConnectComponentSpec;
-    render(
-      <NodeConfigForm
-        componentName="kafka"
-        onConfigChange={rs.fn()}
-        spec={deprecatedSpec}
-        value={{ kafka: { topic: 't', round_robin_partitions: 'legacy' } }}
-      />
-    );
+    test('does not flag secret/env interpolations in numeric fields', async () => {
+      const user = userEvent.setup();
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+      renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '${secrets.BATCH_COUNT}' } } });
+      await user.click(screen.getByText('batching'));
+      expect(screen.queryByText(NOT_VALID_INTEGER_RE)).not.toBeInTheDocument();
+    });
 
-    // No form control for the deprecated field…
-    expect(screen.queryByLabelText('round_robin_partitions')).not.toBeInTheDocument();
-    // …but its existing value is preserved in the raw-YAML fallback section.
-    expect(screen.getByText('Other settings (YAML)')).toBeInTheDocument();
-  });
+    test('keeps an interpolation typed into a numeric field (not coerced to NaN and dropped)', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
+      await user.click(screen.getByText('batching'));
+      const countInput = screen.getByDisplayValue('5');
+      await user.clear(countInput);
+      // `{{` is userEvent's escape for a literal `{`; this types `${env.COUNT}`.
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+      await user.type(countInput, '${{env.COUNT}');
 
-  test('keeps the saved label when a resource label field is cleared (references depend on it)', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = rs.fn();
-    render(
-      <NodeConfigForm
-        componentName="kafka"
-        onConfigChange={onConfigChange}
-        requireLabel
-        spec={spec}
-        value={{ label: 'shared', kafka: { topic: 't', addresses: ['a:9092'] } }}
-      />
-    );
+      const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
+      // The interpolation is preserved verbatim, not NaN-coerced to '' and deleted.
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
+      expect(next.kafka.batching.count).toBe('${env.COUNT}');
+    });
 
-    await user.clear(screen.getByDisplayValue('shared'));
-    expect(screen.getByText(/A resource needs a label/)).toBeInTheDocument();
-    const next = lastReported(onConfigChange) as { label?: string };
-    expect(next.label).toBe('shared');
-  });
+    test('does not render nested-component fields and preserves them on edit', async () => {
+      const user = userEvent.setup();
+      // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
+      const branchSpec = {
+        config: {
+          children: [
+            { name: 'request_map', type: 'string', kind: 'scalar', optional: false },
+            { name: 'processors', type: 'processor', kind: 'array', optional: false },
+          ],
+        },
+      } as unknown as ConnectComponentSpec;
+      const onConfigChange = rs.fn();
+      render(
+        <NodeConfigForm
+          componentName="branch"
+          onConfigChange={onConfigChange}
+          spec={branchSpec}
+          value={{ branch: { request_map: 'root = this', processors: [{ http: { url: 'http://x' } }] } }}
+        />
+      );
 
-  test('does not flag secret/env interpolations in numeric fields', async () => {
-    const user = userEvent.setup();
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
-    renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '${secrets.BATCH_COUNT}' } } });
-    await user.click(screen.getByText('batching'));
-    expect(screen.queryByText(/Not a valid integer/)).not.toBeInTheDocument();
-  });
+      // The scalar renders as a control; the nested component renders nothing here — it's its own
+      // canvas node (no inline control, and no redundant "select it on the canvas" hint).
+      expect(screen.getByText('request_map')).toBeInTheDocument();
+      expect(screen.queryByText('processors')).not.toBeInTheDocument();
 
-  test('keeps an interpolation typed into a numeric field (not coerced to NaN and dropped)', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: 5 } } });
-    await user.click(screen.getByText('batching'));
-    const countInput = screen.getByDisplayValue('5');
-    await user.clear(countInput);
-    // `{{` is userEvent's escape for a literal `{`; this types `${env.COUNT}`.
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
-    await user.type(countInput, '${{env.COUNT}');
+      await user.type(screen.getByDisplayValue('root = this'), '!');
 
-    const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
-    // The interpolation is preserved verbatim, not NaN-coerced to '' and deleted.
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
-    expect(next.kafka.batching.count).toBe('${env.COUNT}');
-  });
+      const next = lastReported(onConfigChange) as { branch: Record<string, unknown> };
+      // The sub-pipeline survives untouched; the scalar edit is written.
+      expect(next.branch.processors).toEqual([{ http: { url: 'http://x' } }]);
+      expect(next.branch.request_map).toBe('root = this!');
+    });
 
-  test('does not render nested-component fields and preserves them on edit', async () => {
-    const user = userEvent.setup();
-    // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
-    const branchSpec = {
-      config: {
-        children: [
-          { name: 'request_map', type: 'string', kind: 'scalar', optional: false },
-          { name: 'processors', type: 'processor', kind: 'array', optional: false },
-        ],
-      },
-    } as unknown as ConnectComponentSpec;
-    const onConfigChange = rs.fn();
-    render(
-      <NodeConfigForm
-        componentName="branch"
-        onConfigChange={onConfigChange}
-        spec={branchSpec}
-        value={{ branch: { request_map: 'root = this', processors: [{ http: { url: 'http://x' } }] } }}
-      />
-    );
+    test('round-trips a scalar array edited as one-per-line text', async () => {
+      const user = userEvent.setup();
+      const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
 
-    // The scalar renders as a control; the nested component renders nothing here — it's its own
-    // canvas node (no inline control, and no redundant "select it on the canvas" hint).
-    expect(screen.getByText('request_map')).toBeInTheDocument();
-    expect(screen.queryByText('processors')).not.toBeInTheDocument();
+      const addresses = screen.getByPlaceholderText('One value per line');
+      await user.clear(addresses);
+      await user.type(addresses, 'b:9092\nc:9092');
 
-    await user.type(screen.getByDisplayValue('root = this'), '!');
-
-    const next = lastReported(onConfigChange) as { branch: Record<string, unknown> };
-    // The sub-pipeline survives untouched; the scalar edit is written.
-    expect(next.branch.processors).toEqual([{ http: { url: 'http://x' } }]);
-    expect(next.branch.request_map).toBe('root = this!');
-  });
-
-  test('round-trips a scalar array edited as one-per-line text', async () => {
-    const user = userEvent.setup();
-    const onConfigChange = renderForm({ kafka: { topic: 't', addresses: ['a:9092'] } });
-
-    const addresses = screen.getByPlaceholderText('One value per line');
-    await user.clear(addresses);
-    await user.type(addresses, 'b:9092\nc:9092');
-
-    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-    expect(next.kafka.addresses).toEqual(['b:9092', 'c:9092']);
+      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
+      expect(next.kafka.addresses).toEqual(['b:9092', 'c:9092']);
+    });
   });
 });
 
-describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
+describe('the NodeConfigForm — list-valued components (switch/try/…)', () => {
   // A switch's value is an array of cases, not an object of fields. Its schema lists a
   // single case's fields, so the form must NOT render them or rebuild the value.
   const switchSpec = {
@@ -361,11 +408,11 @@ describe('NodeConfigForm — list-valued components (switch/try/…)', () => {
     render(<NodeConfigForm componentName="switch" spec={switchSpec} value={switchValue()} />);
     // The case-level `check` field must not appear on the container.
     expect(screen.queryByText('check')).toBeNull();
-    expect(screen.getByText(/edited on the canvas/i)).toBeInTheDocument();
+    expect(screen.getByText(EDITED_ON_CANVAS_RE)).toBeInTheDocument();
   });
 });
 
-describe('NodeConfigForm — all-optional components', () => {
+describe('the NodeConfigForm — all-optional components', () => {
   // Mirrors an unstamped redpanda-style input where the schema marks every field optional.
   const allOptionalSpec = {
     name: 'redpanda',
@@ -390,7 +437,7 @@ describe('NodeConfigForm — all-optional components', () => {
   });
 });
 
-describe('NodeConfigForm — field-anchored lint errors', () => {
+describe('the NodeConfigForm — field-anchored lint errors', () => {
   test('renders the message under its field and hides it while the field is being edited', async () => {
     const user = userEvent.setup();
     render(
@@ -469,20 +516,12 @@ describe('NodeConfigForm — field-anchored lint errors', () => {
   });
 });
 
-describe('NodeConfigForm — field-level commit', () => {
+describe('the NodeConfigForm — field-level commit', () => {
   test('commits on field blur and marks the form clean on success', async () => {
     const user = userEvent.setup();
-    const onConfigChange = rs.fn();
-    const onCommitField = rs.fn(() => true);
-    render(
-      <NodeConfigForm
-        componentName="kafka"
-        onCommitField={onCommitField}
-        onConfigChange={onConfigChange}
-        spec={spec}
-        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } }}
-      />
-    );
+    const { onCommitField, onConfigChange } = renderWithFieldCommit({
+      kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' },
+    });
 
     await user.type(screen.getByDisplayValue('orig'), '-2');
     expect(lastReported(onConfigChange)).not.toBeNull();
@@ -497,24 +536,11 @@ describe('NodeConfigForm — field-level commit', () => {
 
   test('a blur commit does not silently revert an uncommitted malformed edit', async () => {
     const user = userEvent.setup();
-    const onConfigChange = rs.fn();
-    const onCommitField = rs.fn(() => true);
-    render(
-      <NodeConfigForm
-        componentName="kafka"
-        onCommitField={onCommitField}
-        onConfigChange={onConfigChange}
-        spec={spec}
-        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig', batching: { count: 5 } } }}
-      />
-    );
+    const { onCommitField, onConfigChange } = renderWithFieldCommit({
+      kafka: { topic: 't', addresses: ['a:9092'], key: 'orig', batching: { count: 5 } },
+    });
 
-    // A malformed numeric ("won't be saved until fixed") plus a valid edit.
-    await user.click(screen.getByText('batching'));
-    const count = screen.getByDisplayValue('5');
-    await user.clear(count);
-    await user.type(count, '10x');
-    await user.type(screen.getByDisplayValue('orig'), '-2');
+    await editMalformedCountAlongsideKey(user);
 
     await user.tab();
     expect(onCommitField).toHaveBeenCalled();
@@ -525,16 +551,9 @@ describe('NodeConfigForm — field-level commit', () => {
 
   test('keeps the draft pending when the commit fails', async () => {
     const user = userEvent.setup();
-    const onConfigChange = rs.fn();
-    const onCommitField = rs.fn(() => false);
-    render(
-      <NodeConfigForm
-        componentName="kafka"
-        onCommitField={onCommitField}
-        onConfigChange={onConfigChange}
-        spec={spec}
-        value={{ kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } }}
-      />
+    const { onCommitField, onConfigChange } = renderWithFieldCommit(
+      { kafka: { topic: 't', addresses: ['a:9092'], key: 'orig' } },
+      false
     );
 
     await user.type(screen.getByDisplayValue('orig'), '-2');
@@ -570,7 +589,7 @@ describe('NodeConfigForm — field-level commit', () => {
       <NodeConfigForm componentName="kafka" spec={spec} value={{ kafka: { topic: 'orig', addresses: ['a:9092'] } }} />
     );
     // Query by role: Base UI's combobox mirrors its value into an aria-hidden form input.
-    expect(screen.getByRole('combobox', { name: /topic/i })).toHaveValue('orig');
+    expect(screen.getByRole('combobox', { name: TOPIC_NAME_RE })).toHaveValue('orig');
 
     // e.g. the Topic dialog wrote into this component while its inspector is open.
     rerender(
@@ -580,11 +599,32 @@ describe('NodeConfigForm — field-level commit', () => {
         value={{ kafka: { topic: 'from-dialog', addresses: ['a:9092'] } }}
       />
     );
-    expect(screen.getByRole('combobox', { name: /topic/i })).toHaveValue('from-dialog');
+    expect(screen.getByRole('combobox', { name: TOPIC_NAME_RE })).toHaveValue('from-dialog');
   });
 });
 
-describe('NodeConfigForm — topic fields', () => {
+describe('the NodeConfigForm — topic fields', () => {
+  test('marks the topic picker invalid for a backend lint error until the user edits it', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeConfigForm
+        componentName="kafka"
+        fieldErrors={new Map([['topic', ['topic does not exist']]])}
+        spec={spec}
+        value={{ kafka: { topic: 't', addresses: ['a:9092'] } }}
+      />
+    );
+
+    const topic = screen.getByRole('combobox', { name: TOPIC_FIELD_RE });
+    expect(topic).toHaveAttribute('aria-invalid', 'true');
+    expect(topic).toHaveAccessibleDescription('topic does not exist');
+
+    await user.type(topic, 'opic');
+    await waitFor(() => expect(topic).not.toHaveAttribute('aria-invalid'));
+    expect(topic).not.toHaveAttribute('aria-describedby');
+    expect(screen.queryByText('topic does not exist')).not.toBeInTheDocument();
+  });
+
   test('a topic scalar offers existing cluster topics; selecting one reports it', async () => {
     const user = userEvent.setup();
     const onConfigChange = rs.fn();
@@ -701,7 +741,7 @@ describe('NodeConfigForm — topic fields', () => {
   });
 });
 
-describe('NodeConfigForm — enum (select) fields', () => {
+describe('the NodeConfigForm — enum (select) fields', () => {
   const enumSpec = {
     name: 'redpanda',
     type: 'input',

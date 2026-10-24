@@ -48,7 +48,7 @@ export const diffColors = (base: DiffBase) => ({
   transparent: '#00000000',
 });
 
-const HEX_CHANNEL = (value: number) =>
+const hexChannel = (value: number) =>
   Math.max(0, Math.min(255, Math.round(value)))
     .toString(16)
     .padStart(2, '0');
@@ -60,7 +60,7 @@ const toHex = (painted: string): string => {
   if (parts.length < 3) {
     return '#000000';
   }
-  return `#${HEX_CHANNEL(parts[0])}${HEX_CHANNEL(parts[1])}${HEX_CHANNEL(parts[2])}`;
+  return `#${hexChannel(parts[0])}${hexChannel(parts[1])}${hexChannel(parts[2])}`;
 };
 
 // Monaco can't read CSS vars: paint each token on a probe and read the rgb() back, as redpanda-ui/lib/editor-theme does.

@@ -24,7 +24,7 @@ function mockEditor(lineContent: string, cursorColumn: number, lineNumber = 1) {
 
 // ─── SLASH_TRIGGER_PATTERN ───────────────────────────────────────────
 
-describe('SLASH_TRIGGER_PATTERN', () => {
+describe('the SLASH_TRIGGER_PATTERN', () => {
   it('matches space', () => {
     expect(SLASH_TRIGGER_PATTERN.test(' ')).toBe(true);
   });
@@ -148,7 +148,7 @@ describe('detectSlashTrigger', () => {
     });
   });
 
-  describe('YAML pipeline scenarios', () => {
+  describe('the YAML pipeline scenarios', () => {
     it('typing / to start a new value after label key', () => {
       expect(detectSlashTrigger(mockEditor('label: /', 9))).toEqual({ lineNumber: 1, column: 8 });
     });

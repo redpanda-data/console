@@ -69,7 +69,7 @@ const baseFormValues: FormValues = {
 };
 
 describe('getUpdateValuesForTopics', () => {
-  describe('Topics mode changes', () => {
+  describe('topics mode changes', () => {
     test('should detect change from all to specify mode', () => {
       const original = { ...baseFormValues, topicsMode: 'all' as const };
       const updated = { ...baseFormValues, topicsMode: 'specify' as const };
@@ -89,7 +89,7 @@ describe('getUpdateValuesForTopics', () => {
     });
   });
 
-  describe('Topics array changes', () => {
+  describe('topics array changes', () => {
     test('should detect when a topic is added to the list', () => {
       const original = {
         ...baseFormValues,
@@ -265,7 +265,7 @@ describe('getUpdateValuesForTopics', () => {
     });
   });
 
-  describe('Topic properties changes', () => {
+  describe('topic properties changes', () => {
     test('should detect when topic properties are added', () => {
       const original = {
         ...baseFormValues,
@@ -328,7 +328,7 @@ describe('getUpdateValuesForTopics', () => {
     });
   });
 
-  describe('Multiple changes', () => {
+  describe('multiple changes', () => {
     test('should detect multiple changes at once (mode + topics + properties)', () => {
       const original = {
         ...baseFormValues,
@@ -361,17 +361,21 @@ describe('getUpdateValuesForTopics', () => {
 
       // Validate schema values
       expect(result.value.autoCreateShadowTopicFilters).toHaveLength(2);
-      expect(result.value.autoCreateShadowTopicFilters[0].name).toBe('topic1');
-      expect(result.value.autoCreateShadowTopicFilters[0].patternType).toBe(PatternType.LITERAL);
-      expect(result.value.autoCreateShadowTopicFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.autoCreateShadowTopicFilters[1].name).toBe('topic2');
-      expect(result.value.autoCreateShadowTopicFilters[1].patternType).toBe(PatternType.PREFIX);
-      expect(result.value.autoCreateShadowTopicFilters[1].filterType).toBe(FilterType.EXCLUDE);
+      expect(result.value.autoCreateShadowTopicFilters[0]).toMatchObject({
+        name: 'topic1',
+        patternType: PatternType.LITERAL,
+        filterType: FilterType.INCLUDE,
+      });
+      expect(result.value.autoCreateShadowTopicFilters[1]).toMatchObject({
+        name: 'topic2',
+        patternType: PatternType.PREFIX,
+        filterType: FilterType.EXCLUDE,
+      });
       expect(result.value.syncedShadowTopicProperties).toEqual(['cleanup.policy', 'retention.ms']);
     });
   });
 
-  describe('Schema building', () => {
+  describe('schema building', () => {
     test('should build correct schema for all mode (with wildcard filter)', () => {
       const values = {
         ...baseFormValues,
@@ -462,7 +466,7 @@ describe('getUpdateValuesForTopics', () => {
   });
 
   describe('buildDefaultTopicsValues', () => {
-    describe('All Topics Mode', () => {
+    describe('the All Topics Mode', () => {
       test('should return "all" mode when filter is single wildcard (*)', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
@@ -557,7 +561,7 @@ describe('getUpdateValuesForTopics', () => {
       });
     });
 
-    describe('Specify Topics Mode', () => {
+    describe('the Specify Topics Mode', () => {
       test('should return "specify" mode when filters are not wildcard', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',
@@ -649,7 +653,7 @@ describe('getUpdateValuesForTopics', () => {
       });
     });
 
-    describe('Default Values & Edge Cases', () => {
+    describe('the Default Values & Edge Cases', () => {
       test('should default excludeDefault to false when undefined', () => {
         const shadowLink = create(ShadowLinkSchema, {
           name: 'test-link',

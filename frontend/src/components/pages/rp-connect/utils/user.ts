@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -93,6 +93,34 @@ const doesPatternMatchTopic = (
   }
 };
 
+/** Operations `username` holds an ALLOW for across `resources`; ALL/ANY stand for `impliedByAll`. */
+const allowedOperations = (
+  resources: ListACLsResponse_Resource[],
+  username: string,
+  impliedByAll: ACL_Operation[]
+): Set<ACL_Operation> => {
+  const allowed = new Set<ACL_Operation>();
+  const principal = `User:${username}`;
+
+  for (const resource of resources) {
+    for (const acl of resource.acls) {
+      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
+        const isWildcard = acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY;
+        for (const operation of isWildcard ? impliedByAll : [acl.operation]) {
+          allowed.add(operation);
+        }
+      }
+    }
+  }
+  return allowed;
+};
+
+// Determine which permissions the user has and which are missing
+const splitByGranted = (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>): TopicPermissionCheck => ({
+  hasPermissions: requiredOps.filter((op) => allowed.has(op)),
+  missingPermissions: requiredOps.filter((op) => !allowed.has(op)),
+});
+
 /** What a component does with its topic. */
 export type TopicAccess = 'read' | 'write' | 'read-write';
 
@@ -117,32 +145,11 @@ export const checkUserHasTopicPermissions = (
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, topicName)
   );
 
-  // Get all operations that the user has ALLOW permissions for
-  const userAllowedOps = new Set<ACL_Operation>();
-  const principal = `User:${username}`;
+  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
+  // they have all permissions including READ and WRITE.
+  const userAllowedOps = allowedOperations(topicACLs, username, [ACL_Operation.READ, ACL_Operation.WRITE]);
 
-  for (const resource of topicACLs) {
-    for (const acl of resource.acls) {
-      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
-        // If user has ALL or ANY operation, they have all permissions including READ and WRITE
-        if (acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY) {
-          userAllowedOps.add(ACL_Operation.READ);
-          userAllowedOps.add(ACL_Operation.WRITE);
-        } else {
-          userAllowedOps.add(acl.operation);
-        }
-      }
-    }
-  }
-
-  // Determine which permissions the user has and which are missing
-  const hasPermissions = requiredOps.filter((op) => userAllowedOps.has(op));
-  const missingPermissions = requiredOps.filter((op) => !userAllowedOps.has(op));
-
-  return {
-    hasPermissions,
-    missingPermissions,
-  };
+  return splitByGranted(requiredOps, userAllowedOps);
 };
 
 export const checkUserHasConsumerGroupPermissions = (
@@ -159,32 +166,11 @@ export const checkUserHasConsumerGroupPermissions = (
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, consumerGroupName)
   );
 
-  // Get all operations that the user has ALLOW permissions for
-  const userAllowedOps = new Set<ACL_Operation>();
-  const principal = `User:${username}`;
+  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
+  // they have all permissions.
+  const userAllowedOps = allowedOperations(groupACLs, username, [ACL_Operation.READ, ACL_Operation.DESCRIBE]);
 
-  for (const resource of groupACLs) {
-    for (const acl of resource.acls) {
-      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
-        // If user has ALL or ANY operation, they have all permissions
-        if (acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY) {
-          userAllowedOps.add(ACL_Operation.READ);
-          userAllowedOps.add(ACL_Operation.DESCRIBE);
-        } else {
-          userAllowedOps.add(acl.operation);
-        }
-      }
-    }
-  }
-
-  // Determine which permissions the user has and which are missing
-  const hasPermissions = requiredOps.filter((op) => userAllowedOps.has(op));
-  const missingPermissions = requiredOps.filter((op) => !userAllowedOps.has(op));
-
-  return {
-    hasPermissions,
-    missingPermissions,
-  };
+  return splitByGranted(requiredOps, userAllowedOps);
 };
 
 const configureUserPermissions = async (
@@ -225,18 +211,25 @@ const configureUserPermissions = async (
   }
 };
 
+// One grant at a time: they share a single mutation observer, and a failed grant stops the rest.
+const createACLsInOrder = async (
+  [config, ...rest]: ReturnType<typeof createConsumerGroupACLs>,
+  createACLMutation: ReturnType<typeof useCreateACLMutation>
+): Promise<void> => {
+  if (!config) {
+    return;
+  }
+  await createACLMutation.mutateAsync(create(CreateACLRequestSchema, config));
+  await createACLsInOrder(rest, createACLMutation);
+};
+
 const configureConsumerGroupPermissions = async (
   consumerGroupName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
 ): Promise<OperationResult> => {
   try {
-    const aclConfigs = createConsumerGroupACLs(consumerGroupName, username);
-
-    for (const config of aclConfigs) {
-      const aclRequest = create(CreateACLRequestSchema, config);
-      await createACLMutation.mutateAsync(aclRequest);
-    }
+    await createACLsInOrder(createConsumerGroupACLs(consumerGroupName, username), createACLMutation);
 
     return {
       operation: 'Configure consumer group permissions',
@@ -391,6 +384,85 @@ const handleOperationResult = (result: OperationResult) => {
   }
 };
 
+// Toasts a required step's outcome; false when it failed, so the flow stops there.
+const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
+  if (!result.success) {
+    toast.error(result.error || failureMessage);
+    return false;
+  }
+  toast.success(result.message || successMessage);
+  return true;
+};
+
+// Step 1: Create user, unless it exists
+const ensureUser = async (
+  userData: AddUserFormData,
+  existingUserSelected: boolean,
+  createUserMutation: ReturnType<typeof useCreateUserMutation>
+): Promise<boolean> => {
+  if (existingUserSelected) {
+    toast.success(`Using existing user "${userData.username}"`);
+    return true;
+  }
+  const userResult = await createKafkaUser(userData, createUserMutation);
+  return reportRequiredStep(userResult, 'Failed to create user', `User "${userData.username}" created`);
+};
+
+// Step 2: Configure topic ACL if needed
+const grantTopicAccess = async (
+  userData: AddUserFormData,
+  topicName: string | undefined,
+  createACLMutation: ReturnType<typeof useCreateACLMutation>
+): Promise<boolean> => {
+  if (!(topicName && userData.grantTopicPermissions)) {
+    return true;
+  }
+  const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
+  return reportRequiredStep(aclResult, 'Failed to configure topic permissions', 'Topic permissions configured');
+};
+
+// Step 3: Configure consumer group ACL if needed
+const grantConsumerGroupAccess = async (
+  userData: AddUserFormData,
+  consumerGroup: string | undefined,
+  createACLMutation: ReturnType<typeof useCreateACLMutation>,
+  queryClient: QueryClient
+): Promise<boolean> => {
+  if (!consumerGroup) {
+    return true;
+  }
+  const consumerGroupACLResult = await configureConsumerGroupPermissions(
+    consumerGroup,
+    userData.username,
+    createACLMutation
+  );
+  if (
+    !reportRequiredStep(
+      consumerGroupACLResult,
+      'Failed to configure consumer group permissions',
+      'Consumer group permissions configured'
+    )
+  ) {
+    return false;
+  }
+  await queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
+    exact: false,
+  });
+  return true;
+};
+
+const storeUserSecrets = async (
+  userData: AddUserFormData,
+  createSecretMutation: ReturnType<typeof useCreateSecretMutation>
+): Promise<void> => {
+  // Step 4: Create username secret
+  handleOperationResult(await createUsernameSecret(userData.username, createSecretMutation));
+
+  // Step 5: Create password secret
+  handleOperationResult(await createPasswordSecret(userData.username, userData.password, createSecretMutation));
+};
+
 export const useCreateUserWithSecretsMutation = () => {
   const createUserMutation = useCreateUserMutation();
   const createACLMutation = useCreateACLMutation();
@@ -400,64 +472,26 @@ export const useCreateUserWithSecretsMutation = () => {
   // Aggregate isPending from all mutations
   const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const createUserWithSecrets = async (params: CreateUserWithSecretsParams) => {
-    const { userData, topicName, consumerGroup, existingUserSelected } = params;
-
-    // Step 1: Create user, unless it exists
-    if (existingUserSelected) {
-      toast.success(`Using existing user "${userData.username}"`);
-    } else {
-      const userResult = await createKafkaUser(userData, createUserMutation);
-      if (!userResult.success) {
-        toast.error(userResult.error || 'Failed to create user');
-        return { success: false, data: userData };
-      }
-      toast.success(userResult.message || `User "${userData.username}" created`);
+  const createUserWithSecrets = async ({
+    userData,
+    topicName,
+    consumerGroup,
+    existingUserSelected,
+  }: CreateUserWithSecretsParams) => {
+    if (!(await ensureUser(userData, existingUserSelected, createUserMutation))) {
+      return { success: false, data: userData };
     }
-
-    // Step 2: Configure topic ACL if needed
-    if (topicName && userData.grantTopicPermissions) {
-      const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
-      if (!aclResult.success) {
-        toast.error(aclResult.error || 'Failed to configure topic permissions');
-        return { success: false, data: userData };
-      }
-      toast.success(aclResult.message || 'Topic permissions configured');
+    if (!(await grantTopicAccess(userData, topicName, createACLMutation))) {
+      return { success: false, data: userData };
     }
-
-    // Step 3: Configure consumer group ACL if needed
-    if (consumerGroup) {
-      const consumerGroupACLResult = await configureConsumerGroupPermissions(
-        consumerGroup,
-        userData.username,
-        createACLMutation
-      );
-      if (!consumerGroupACLResult.success) {
-        toast.error(consumerGroupACLResult.error || 'Failed to configure consumer group permissions');
-        return { success: false, data: userData };
-      }
-      toast.success(consumerGroupACLResult.message || 'Consumer group permissions configured');
-
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({ schema: listACLs, cardinality: 'finite' }),
-        exact: false,
-      });
+    if (!(await grantConsumerGroupAccess(userData, consumerGroup, createACLMutation, queryClient))) {
+      return { success: false, data: userData };
     }
 
     // Only a user created here has a password to store.
-    if (existingUserSelected) {
-      return { success: true, data: userData };
+    if (!existingUserSelected) {
+      await storeUserSecrets(userData, createSecretMutation);
     }
-
-    // Step 4: Create username secret
-    const usernameSecretResult = await createUsernameSecret(userData.username, createSecretMutation);
-    handleOperationResult(usernameSecretResult);
-
-    // Step 5: Create password secret
-    const passwordSecretResult = await createPasswordSecret(userData.username, userData.password, createSecretMutation);
-    handleOperationResult(passwordSecretResult);
-
     return { success: true, data: userData };
   };
 

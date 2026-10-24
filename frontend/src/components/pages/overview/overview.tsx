@@ -13,7 +13,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import type { BrokerWithConfigAndStorage } from '../../../state/rest-interfaces';
+import type { BrokerWithConfigAndStorage, ClusterOverview } from '../../../state/rest-interfaces';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
@@ -42,10 +42,47 @@ import {
 } from '../../license/license-utils';
 import { OverviewLicenseNotification } from '../../license/overview-license-notification';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
+import { CompactSection } from '../shared/compact-section';
+import { TonedIcon } from '../shared/toned-icon';
 
 // Shared placeholder for any metric that isn't available (cluster unreachable,
 // brokers not loaded, or backend simply didn't report a value).
 const NOT_AVAILABLE = 'N/A';
+
+const clusterStatusOf = (status?: StatusType) => {
+  if (status === StatusType.HEALTHY) {
+    return { displayText: 'Running', variant: 'success' as const };
+  }
+  if (status === StatusType.DEGRADED) {
+    return { displayText: 'Degraded', variant: 'warning' as const };
+  }
+  return { displayText: 'Unhealthy', variant: 'destructive' as const };
+};
+
+const formatBrokersOnline = (online?: number, expected?: number) =>
+  online === undefined || expected === undefined ? NOT_AVAILABLE : `${online} of ${expected}`;
+
+const BrokerIdCell: FC<{ broker: BrokerWithConfigAndStorage }> = ({ broker }) => {
+  const text = `${broker.brokerId}`;
+  if (!broker.isController) {
+    return text;
+  }
+  return (
+    <div className="flex items-start gap-4">
+      {text}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <div>
+              <TonedIcon icon={CrownIcon} size={16} tone="muted" />
+            </div>
+          }
+        />
+        <TooltipContent side="right">This broker is the current controller of the cluster</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+};
 
 class Overview extends PageComponent {
   initPage(p: PageInitHelper): void {
@@ -81,16 +118,7 @@ class Overview extends PageComponent {
 
     const overview = api.clusterOverview;
     const brokers = api.brokers ?? [];
-
-    const clusterStatus = (() => {
-      if (overview.kafka?.status?.status === StatusType.HEALTHY) {
-        return { displayText: 'Running', variant: 'success' as const };
-      }
-      if (overview.kafka?.status?.status === StatusType.DEGRADED) {
-        return { displayText: 'Degraded', variant: 'warning' as const };
-      }
-      return { displayText: 'Unhealthy', variant: 'destructive' as const };
-    })();
+    const clusterStatus = clusterStatusOf(overview.kafka?.status?.status);
 
     // On an unreachable cluster the brokers request fails and `api.brokers` stays
     // null forever, so there is no storage to report — fall back to the same N/A
@@ -98,35 +126,8 @@ class Overview extends PageComponent {
     const brokerSize =
       api.brokers && brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : NOT_AVAILABLE;
 
-    const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
-      if (!record.isController) {
-        return text;
-      }
-      return (
-        <div className="flex items-start gap-4">
-          {text}
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <div>
-                  <CrownIcon className="text-subtle" size={16} />
-                </div>
-              }
-            />
-            <TooltipContent side="right">This broker is the current controller of the cluster</TooltipContent>
-          </Tooltip>
-        </div>
-      );
-    };
-
     const version = overview.redpanda?.version ?? overview.kafka?.version ?? NOT_AVAILABLE;
-
-    const brokersOnline = overview.kafka?.brokersOnline;
-    const brokersExpected = overview.kafka?.brokersExpected;
-    const brokersOnlineText =
-      brokersOnline === undefined || brokersExpected === undefined
-        ? NOT_AVAILABLE
-        : `${brokersOnline} of ${brokersExpected}`;
+    const brokersOnlineText = formatBrokersOnline(overview.kafka?.brokersOnline, overview.kafka?.brokersExpected);
 
     return (
       <div>
@@ -136,8 +137,9 @@ class Overview extends PageComponent {
 
         <PageContent className="overviewGrid">
           <div className="my-4">
-            <Section className="py-5">
-              <div className="flex gap-8">
+            {/* Card padding (py-4) plus this row's py-1 keeps the stats band's 20px inset. */}
+            <CompactSection>
+              <div className="flex gap-8 py-1">
                 <Stat
                   label="Cluster Status"
                   size="lg"
@@ -154,7 +156,7 @@ class Overview extends PageComponent {
                 <Stat label="Topics" size="lg" value={overview.kafka?.topicsCount ?? NOT_AVAILABLE} />
                 <Stat label="Replicas" size="lg" value={overview.kafka?.replicasCount ?? NOT_AVAILABLE} />
               </div>
-            </Section>
+            </CompactSection>
           </div>
 
           {/* Shadow Link Overview Section */}
@@ -163,20 +165,20 @@ class Overview extends PageComponent {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[fit-content(60%)_1fr]">
             <div className="flex flex-col gap-6">
               {api.clusterHealth?.isHealthy === false && (
-                <Section className="py-4">
+                <CompactSection>
                   <h3>Cluster Health Debug</h3>
                   <ClusterHealthOverview />
-                </Section>
+                </CompactSection>
               )}
 
-              <Section className="py-4">
+              <CompactSection>
                 <h3>Broker Details</h3>
                 <DataTable<BrokerWithConfigAndStorage>
                   columns={[
                     {
                       header: 'ID',
                       accessorKey: 'brokerId',
-                      cell: ({ row: { original: broker } }) => renderIdColumn(`${broker.brokerId}`, broker),
+                      cell: ({ row: { original: broker } }) => <BrokerIdCell broker={broker} />,
                     },
                     {
                       id: 'status',
@@ -185,12 +187,12 @@ class Overview extends PageComponent {
                         <div className="flex gap-2">
                           {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
                             <>
-                              <ErrorIcon className="text-destructive" size={18} />
+                              <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />
                               Down
                             </>
                           ) : (
                             <>
-                              <CheckIcon className="text-success" size={18} />
+                              <TonedIcon icon={CheckIcon} size={18} tone="success" />
                               Running
                             </>
                           )}
@@ -235,7 +237,7 @@ class Overview extends PageComponent {
                   pagination={brokers.length > 10}
                   sorting={false}
                 />
-              </Section>
+              </CompactSection>
 
               <Section>
                 <h3>Resources and updates</h3>
@@ -250,11 +252,11 @@ class Overview extends PageComponent {
             </div>
 
             <div>
-              <Section className="py-4" id="clusterDetails">
+              <CompactSection id="clusterDetails">
                 <h3>Cluster Details</h3>
 
                 <ClusterDetails />
-              </Section>
+              </CompactSection>
             </div>
           </div>
         </PageContent>
@@ -270,7 +272,7 @@ type DetailsBlockProps = { title: string; children?: React.ReactNode };
 const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
   <>
     <div className="col-span-1 lg:col-span-3">
-      <h4 className="pb-1 font-semibold text-body-sm text-subtle uppercase">{title}</h4>
+      <h4 className="pb-1 text-body-sm font-semibold text-subtle uppercase">{title}</h4>
     </div>
     {children}
     {/* Hairline between blocks. */}
@@ -301,6 +303,43 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
   );
 };
 
+const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
+  if (!overviewStatus) {
+    return null;
+  }
+  let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
+  if (overviewStatus.statusReason) {
+    status = (
+      <Tooltip>
+        <TooltipTrigger render={status} />
+        <TooltipContent>{overviewStatus.statusReason}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return status;
+};
+
+const kafkaConnectLines = (kafkaConnect: ClusterOverview['kafkaConnect']): DetailsProps['content'] => {
+  const clusters = kafkaConnect?.clusters ?? [];
+  if (kafkaConnect === null || clusters.length === 0) {
+    return [['Not configured']];
+  }
+  return clusters.map((c) => [c.name, formatStatus(c.status)]);
+};
+
+// Without broker data, a "0 B" total would be wrong — report N/A instead.
+const storageSummaryOf = (brokers: BrokerWithConfigAndStorage[] | null) => {
+  const storageOrNA = (bytes: number) => (brokers == null ? NOT_AVAILABLE : prettyBytesOrNA(bytes));
+  const brokerList = brokers ?? [];
+  const totalStorageBytes = brokerList.sum((x) => x.totalLogDirSizeBytes ?? 0);
+  const totalPrimaryStorageBytes = brokerList.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
+  return {
+    total: storageOrNA(totalStorageBytes),
+    primary: storageOrNA(totalPrimaryStorageBytes),
+    replicated: storageOrNA(totalStorageBytes - totalPrimaryStorageBytes),
+  };
+};
+
 function ClusterDetails() {
   const overview = api.clusterOverview;
   const brokers = api.brokers;
@@ -313,50 +352,17 @@ function ClusterDetails() {
     return <SkeletonText className="mt-5" lines={13} width="full" />;
   }
 
-  const hasBrokers = brokers != null;
-  const brokerList = brokers ?? [];
-  const totalStorageBytes = brokerList.sum((x) => x.totalLogDirSizeBytes ?? 0);
-  const totalPrimaryStorageBytes = brokerList.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
-  const totalReplicatedStorageBytes = totalStorageBytes - totalPrimaryStorageBytes;
-  // Without broker data, a "0 B" total would be wrong — report N/A instead.
-  const storageOrNA = (bytes: number) => (hasBrokers ? prettyBytesOrNA(bytes) : NOT_AVAILABLE);
-
+  const storage = storageSummaryOf(brokers);
   const serviceAccounts = overview.redpanda?.userCount ?? 'Admin API not configured';
 
   const aclCount = overview.kafkaAuthorizerInfo
     ? overview.kafkaAuthorizerInfo.aclCount
     : (overview.kafkaAuthorizerError?.message ?? 'Authorizer not configured');
 
-  const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
-    if (!overviewStatus) {
-      return null;
-    }
-    let status = <div>{titleCase(StatusType[overviewStatus.status])}</div>;
-    if (overviewStatus.statusReason) {
-      status = (
-        <Tooltip>
-          <TooltipTrigger render={status} />
-          <TooltipContent>{overviewStatus.statusReason}</TooltipContent>
-        </Tooltip>
-      );
-    }
-    return status;
-  };
-
-  const clusters = overview.kafkaConnect?.clusters ?? [];
-  const hasConnect = overview.kafkaConnect !== null && clusters.length > 0;
-  const clusterLines = clusters.map((c) => ({
-    name: c.name,
-    status: formatStatus(c.status),
-  }));
-
   return (
     <div className="grid w-full grid-cols-[auto] items-center gap-2 lg:grid-cols-[repeat(3,auto)]">
       <DetailsBlock title="Services">
-        <Details
-          content={hasConnect ? clusterLines.map((c) => [c.name, c.status]) : [['Not configured']]}
-          title="Kafka Connect"
-        />
+        <Details content={kafkaConnectLines(overview.kafkaConnect)} title="Kafka Connect" />
         <Details
           content={
             overview.schemaRegistry === null
@@ -375,11 +381,11 @@ function ClusterDetails() {
       </DetailsBlock>
 
       <DetailsBlock title="Storage">
-        <Details content={[[storageOrNA(totalStorageBytes)]]} title="Total Bytes" />
+        <Details content={[[storage.total]]} title="Total Bytes" />
 
-        <Details content={[[storageOrNA(totalPrimaryStorageBytes)]]} title="Primary" />
+        <Details content={[[storage.primary]]} title="Primary" />
 
-        <Details content={[[storageOrNA(totalReplicatedStorageBytes)]]} title="Replicated" />
+        <Details content={[[storage.replicated]]} title="Replicated" />
       </DetailsBlock>
 
       <DetailsBlock title="Security">
@@ -412,7 +418,7 @@ function ClusterDetails() {
             ? [
                 [
                   <div className="flex items-center gap-1" key="error">
-                    <AlertIcon className="text-destructive" size={16} /> Failed to load license info
+                    <TonedIcon icon={AlertIcon} size={16} tone="destructive" /> Failed to load license info
                   </div>,
                 ],
               ]

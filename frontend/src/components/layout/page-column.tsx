@@ -33,15 +33,7 @@ const usePublishPageTop = () => {
     }
 
     // The write resizes the page, which resizes observed elements, so only write on change.
-    let lastValue = '';
-    const publish = () => {
-      const paddingTop = Number.parseFloat(getComputedStyle(columnEl).paddingTop) || 0;
-      const value = `${documentTop(columnEl) + paddingTop}px`;
-      if (value !== lastValue) {
-        lastValue = value;
-        columnEl.style.setProperty(PAGE_TOP_VAR, value);
-      }
-    };
+    const publish = createPageTopPublisher(columnEl);
 
     // Only what sits above can push the page down: the shell's wrappers (the host's too,
     // when embedded) and the preceding chrome inside #mainLayout.
@@ -85,3 +77,15 @@ export const PageColumn = ({ children }: { children: ReactNode }) => {
     </div>
   );
 };
+
+function createPageTopPublisher(columnEl: HTMLDivElement) {
+  let lastValue = '';
+  return () => {
+    const paddingTop = Number.parseFloat(getComputedStyle(columnEl).paddingTop) || 0;
+    const value = `${documentTop(columnEl) + paddingTop}px`;
+    if (value !== lastValue) {
+      lastValue = value;
+      columnEl.style.setProperty(PAGE_TOP_VAR, value);
+    }
+  };
+}

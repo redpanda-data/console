@@ -1,6 +1,6 @@
 import { expect, test } from '../shared/e2e';
 
-test.describe('Licenses', () => {
+test.describe('licenses', () => {
   test('should list an enterprise license', async ({ page }) => {
     await page.goto('/overview', {
       waitUntil: 'domcontentloaded',

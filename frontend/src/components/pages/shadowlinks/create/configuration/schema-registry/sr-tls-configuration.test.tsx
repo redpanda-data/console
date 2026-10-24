@@ -68,7 +68,7 @@ const TestWrapper = ({
   );
 };
 
-describe('SrTlsConfiguration', () => {
+describe('the SrTlsConfiguration', () => {
   test('shows a generic label for a hydrated certificate without a file name', () => {
     render(
       <TestWrapper

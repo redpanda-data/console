@@ -36,7 +36,7 @@ import {
 } from 'components/redpanda-ui/components/sidebar';
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut } from 'lucide-react';
 import type React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
 
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
@@ -53,7 +53,8 @@ function SidebarLogo() {
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
       <RedpandaLogo
-        className={isExpanded ? 'h-6 w-auto text-sidebar-foreground' : 'h-6 w-6'}
+        className={isExpanded ? 'h-6 w-auto' : 'h-6 w-6'}
+        color={isExpanded ? 'var(--color-sidebar-foreground)' : undefined}
         variant={isExpanded ? 'horizontal' : 'mark'}
       />
     </Link>
@@ -83,23 +84,12 @@ function SidebarCollapseToggle() {
 
 const UserProfile = () => {
   const { state, isMobile, setOpenMobile } = useSidebar();
-  useApiStoreHook((s) => s.userData); // re-render when userData changes
-
-  useEffect(() => {
-    api.refreshUserData().catch(() => {
-      // Error handling managed by API layer
-    });
-  }, []);
-
-  if (!(AppFeatures.SINGLE_SIGN_ON && api.userData)) {
+  const user = useAuthenticatedUser();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  if (!user) {
     return null;
   }
 
-  if (api.userData.authenticationMethod === AuthenticationMethod.NONE) {
-    return null;
-  }
-
-  const user = api.userData;
   const initials = getUserInitials(user.displayName);
 
   const handleMenuItemClick = () => {
@@ -111,23 +101,18 @@ const UserProfile = () => {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
       <DropdownMenuTrigger
         render={
           <SidebarMenuButton
             aria-label={`User menu for ${user.displayName}`}
-            className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+            isActive={isMenuOpen}
             size={isCollapsed ? 'md' : 'lg'}
             tooltip={isCollapsed ? user.displayName : undefined}
           >
             <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
               <AvatarImage alt="" src={user.avatarUrl} />
-              <AvatarFallback
-                aria-hidden="true"
-                className="bg-primary font-medium text-body-sm text-primary-foreground"
-              >
-                {initials}
-              </AvatarFallback>
+              <AvatarFallback aria-hidden="true">{initials}</AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <>
@@ -141,7 +126,7 @@ const UserProfile = () => {
           </SidebarMenuButton>
         }
       />
-      <DropdownMenuContent align="end" className="w-56 rounded-lg" side={isMobile ? 'bottom' : 'top'}>
+      <DropdownMenuContent align="end" className="w-56" side={isMobile ? 'bottom' : 'top'}>
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span className="text-body-sm">Signed in as</span>
@@ -186,7 +171,6 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
       <SidebarMenuButton
         aria-current={isActive ? 'page' : undefined}
         aria-disabled={item.isDisabled}
-        className={item.isDisabled ? 'cursor-not-allowed opacity-50' : ''}
         disabled={item.isDisabled}
         isActive={isActive}
         render={
@@ -273,4 +257,14 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
       {children}
     </SidebarProvider>
   );
+}
+
+function useAuthenticatedUser() {
+  const user = useApiStoreHook((state) => state.userData);
+  useEffect(function loadUserProfile() {
+    api.refreshUserData().catch(() => {
+      // The API layer records authentication failures in its error state.
+    });
+  }, []);
+  return AppFeatures.SINGLE_SIGN_ON && user && user.authenticationMethod !== AuthenticationMethod.NONE ? user : null;
 }

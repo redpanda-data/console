@@ -73,6 +73,18 @@ export type DerivedContext = {
   compatibility: string;
 };
 
+// Active subjects per context key: DEFAULT_CONTEXT_ID for the default
+// context, otherwise the context name without its leading dot.
+function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<string, number> {
+  const countByContext = new Map<string, number>();
+  for (const subject of activeSubjects) {
+    const { context } = parseSubjectContext(subject.name);
+    const key = context === 'default' ? DEFAULT_CONTEXT_ID : context;
+    countByContext.set(key, (countByContext.get(key) ?? 0) + 1);
+  }
+  return countByContext;
+}
+
 // Merge backend context list with subject counts for
 // the dropdown. Order: Default, named (sorted), All.
 export function deriveContexts(
@@ -80,56 +92,36 @@ export function deriveContexts(
   subjects: SchemaRegistrySubject[]
 ): DerivedContext[] {
   const activeSubjects = subjects.filter((s) => !s.isSoftDeleted);
-  const countByContext = new Map<string, number>();
-
-  for (const subject of activeSubjects) {
-    const { context } = parseSubjectContext(subject.name);
-    const key = context === 'default' ? DEFAULT_CONTEXT_ID : context;
-    countByContext.set(key, (countByContext.get(key) ?? 0) + 1);
-  }
-
-  const contexts: DerivedContext[] = [];
+  const countByContext = countSubjectsByContext(activeSubjects);
+  const defaultApiContexts = apiContexts.filter((ctx) => ctx.name === '.');
+  const namedApiContexts = apiContexts.filter((ctx) => ctx.name !== '.').sort((a, b) => a.name.localeCompare(b.name));
+  const defaultContext = defaultApiContexts.at(-1);
 
   // Default first, then named contexts alphabetically, then All at the bottom
-  const namedApiContexts: SchemaRegistryContextResponse[] = [];
-  let defaultContext: SchemaRegistryContextResponse | undefined;
-  for (const ctx of apiContexts) {
-    if (ctx.name === '.') {
-      defaultContext = ctx;
-      contexts.push({
-        id: DEFAULT_CONTEXT_ID,
-        label: DEFAULT_CONTEXT_LABEL,
-        subjectCount: countByContext.get(DEFAULT_CONTEXT_ID) ?? 0,
-        mode: ctx.mode,
-        compatibility: ctx.compatibility,
-      });
-    } else {
-      namedApiContexts.push(ctx);
-    }
-  }
-
-  namedApiContexts.sort((a, b) => a.name.localeCompare(b.name));
-  for (const ctx of namedApiContexts) {
-    const contextKey = ctx.name.startsWith('.') ? ctx.name.slice(1) : ctx.name;
-    contexts.push({
-      id: ctx.name,
-      label: ctx.name,
-      subjectCount: countByContext.get(contextKey) ?? 0,
+  return [
+    ...defaultApiContexts.map((ctx) => ({
+      id: DEFAULT_CONTEXT_ID,
+      label: DEFAULT_CONTEXT_LABEL,
+      subjectCount: countByContext.get(DEFAULT_CONTEXT_ID) ?? 0,
       mode: ctx.mode,
       compatibility: ctx.compatibility,
-    });
-  }
-
-  // "All" uses the default context's mode/compat, falling back to empty strings
-  contexts.push({
-    id: ALL_CONTEXT_ID,
-    label: 'All',
-    subjectCount: activeSubjects.length,
-    mode: defaultContext?.mode ?? '',
-    compatibility: defaultContext?.compatibility ?? '',
-  });
-
-  return contexts;
+    })),
+    ...namedApiContexts.map((ctx) => ({
+      id: ctx.name,
+      label: ctx.name,
+      subjectCount: countByContext.get(ctx.name.startsWith('.') ? ctx.name.slice(1) : ctx.name) ?? 0,
+      mode: ctx.mode,
+      compatibility: ctx.compatibility,
+    })),
+    // "All" uses the default context's mode/compat, falling back to empty strings
+    {
+      id: ALL_CONTEXT_ID,
+      label: 'All',
+      subjectCount: activeSubjects.length,
+      mode: defaultContext?.mode ?? '',
+      compatibility: defaultContext?.compatibility ?? '',
+    },
+  ];
 }
 
 // True for actual SR contexts (not the synthetic

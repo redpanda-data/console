@@ -39,7 +39,7 @@ describe('aggregateConnectors', () => {
   });
 });
 
-describe('PIPELINE_STATE_TABS', () => {
+describe('the PIPELINE_STATE_TABS', () => {
   it('assigns transitional states to their destination tab', () => {
     const running = PIPELINE_STATE_TABS.find((t) => t.id === 'running');
     const stopped = PIPELINE_STATE_TABS.find((t) => t.id === 'stopped');

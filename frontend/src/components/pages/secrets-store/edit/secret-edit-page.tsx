@@ -15,6 +15,7 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router';
 
 const routeApi = getRouteApi('/secrets/$id/edit');
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -29,7 +30,7 @@ import {
 } from 'components/redpanda-ui/components/multi-select';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { type Secret, UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
@@ -39,15 +40,20 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
-import { SCOPE_OPTIONS } from '../secret-form-shared';
+import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
 
-export const SecretEditPage = () => {
-  const { id } = routeApi.useParams();
+/** The console-managed `owner: console` label is hidden from the form. */
+const toFormValues = (secret: Secret): SecretUpdateFormValues => ({
+  id: secret.id,
+  value: '',
+  scopes: secret.scopes,
+  labels: Object.entries(secret.labels)
+    .filter(([key, value]) => !(key === 'owner' && value === 'console'))
+    .map(([key, value]) => ({ key, value })),
+});
+
+const SecretEditForm = ({ secret }: { secret: Secret }) => {
   const navigate = useNavigate();
-
-  const { data: secretData, isLoading, error } = useGetSecretQuery({ id: id || '' }, { enabled: Boolean(id) });
-  const secret = secretData?.response?.secret;
-
   const { mutateAsync: updateSecret, isPending: isUpdating } = useUpdateSecretMutation();
 
   const form = useForm<SecretUpdateFormValues>({
@@ -71,78 +77,31 @@ export const SecretEditPage = () => {
   });
 
   useEffect(() => {
-    const existingLabels = secret?.labels
-      ? Object.entries(secret.labels)
-          .filter(([key, value]) => !(key === 'owner' && value === 'console'))
-          .map(([key, value]) => ({ key, value }))
-      : [];
-
-    form.reset({
-      id: secret?.id ?? '',
-      value: '',
-      scopes: secret?.scopes ?? [],
-      labels: existingLabels,
-    });
+    form.reset(toFormValues(secret));
   }, [secret, form]);
 
-  useEffect(() => {
-    uiState.pageTitle = 'Edit Secret';
-    uiState.pageBreadcrumbs.pop();
-    uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
-    uiState.pageBreadcrumbs.push({ title: 'Edit', linkTo: `/secrets/${id}/edit` });
-  }, [id]);
-
   const onSubmit = async (values: SecretUpdateFormValues) => {
-    const labelsMap: { [key: string]: string } = {};
-    for (const label of values.labels) {
-      if (label.key && label.value) {
-        labelsMap[label.key] = label.value;
-      }
-    }
-
     const encodedSecretData = values.value ? base64ToUInt8Array(encodeBase64(values.value)) : new Uint8Array(0);
 
     const request = create(UpdateSecretRequestSchema, {
       id: values.id,
       secretData: encodedSecretData,
       scopes: values.scopes,
-      labels: labelsMap,
+      labels: labelsToMap(values.labels),
     });
 
     try {
       await updateSecret({ request });
       toast.success('Secret updated');
-      navigate({ to: '/secrets' });
+      // Handled here so a navigation failure is not reported as a failed update.
+      navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
+        toast.error('Failed to navigate', { description: String(navigationError) });
+      });
     } catch (updateError) {
       const connectError = ConnectError.from(updateError);
       toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'update', entity: 'secret' }));
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <div className="text-body">Loading secret...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !secret) {
-    return (
-      <div className="flex h-full items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-12 w-12 text-destructive" />
-          <div className="text-center text-body">Secret not found or could not be loaded.</div>
-          <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
-            Go Back to Secrets
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -231,7 +190,7 @@ export const SecretEditPage = () => {
           >
             {isUpdating ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <TonedIcon className="h-4 w-4" icon={Loader2} spin />
                 Updating...
               </>
             ) : (
@@ -250,4 +209,46 @@ export const SecretEditPage = () => {
       </form>
     </div>
   );
+};
+
+export const SecretEditPage = () => {
+  const { id } = routeApi.useParams();
+  const navigate = useNavigate();
+
+  const { data: secretData, isLoading, error } = useGetSecretQuery({ id: id || '' }, { enabled: Boolean(id) });
+  const secret = secretData?.response?.secret;
+
+  useEffect(() => {
+    uiState.pageTitle = 'Edit Secret';
+    uiState.pageBreadcrumbs.pop();
+    uiState.pageBreadcrumbs.push({ title: 'Secrets Store', linkTo: '/secrets' });
+    uiState.pageBreadcrumbs.push({ title: 'Edit', linkTo: `/secrets/${id}/edit` });
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="flex items-center gap-2">
+          <TonedIcon className="h-6 w-6" icon={Loader2} spin />
+          <div className="text-body">Loading secret...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !secret) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4">
+          <TonedIcon className="h-12 w-12" icon={AlertCircle} tone="destructive" />
+          <div className="text-center text-body">Secret not found or could not be loaded.</div>
+          <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
+            Go Back to Secrets
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return <SecretEditForm secret={secret} />;
 };

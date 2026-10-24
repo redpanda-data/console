@@ -11,7 +11,9 @@
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
-import { Alert, AlertAction, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
@@ -39,7 +41,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { type MutableRefObject, type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
@@ -107,7 +109,7 @@ type NodeInspectorProps = {
   /** Navigate the inspector to a child node. */
   onSelectChild?: (item: InspectorChildItem) => void;
   /** The selected node's pending-edit hooks; the panel flushes them on node-leave / save — no per-node Apply button. */
-  commitRef?: MutableRefObject<PendingNodeCommit | null>;
+  commitRef?: RefObject<PendingNodeCommit | null>;
   /** Flush pending edits into the YAML immediately (field-blur / Apply commits, not just node-leave). */
   onRequestCommit?: () => void;
   /** Bumped on undo/redo so the form remounts (drops now-stale edit state) instead of resyncing in place. */
@@ -138,42 +140,59 @@ function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?
     if (!checkNode?.range) {
       return;
     }
-    const line = lineCounter.linePos(checkNode.range[0]).line;
+    const { line } = lineCounter.linePos(checkNode.range[0]);
     return lintHints.find((h) => h.line === line)?.hint;
   } catch {
     // Unparseable YAML: no hint, as for a case without a check.
   }
 }
 
-/**
- * The always-present right rail: the selected node's identity plus either a schema-driven form
- * or scoped YAML (read-only / unknown schema). Edits write back into the pipeline YAML at `target`.
- */
-export function NodeInspector({
-  target,
-  caseTarget,
-  yaml,
-  components,
-  onApply,
-  onCreateResource,
-  onDelete,
-  readOnly,
-  lintHints,
-  onOpenInYaml,
-  onClose,
-  childItems,
-  onSelectChild,
-  commitRef,
-  onRequestCommit,
-  resetToken,
-  onAddTopic,
-}: NodeInspectorProps) {
-  const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
-  // The routing condition for a case-entry node, read from its switch case.
-  const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
+type InspectorDraftsArgs = Pick<NodeInspectorProps, 'target' | 'caseTarget' | 'commitRef' | 'onRequestCommit'> & {
+  component?: Record<string, unknown>;
+};
 
-  // Pending edits from the active editors (null when clean). Refs, not state, so per-keystroke
-  // reporting doesn't re-render. `component` applies at `target`; `condition` at `caseTarget`.
+type DraftRef = RefObject<Record<string, unknown> | null>;
+
+// Writes the pending routing-condition draft at `caseTarget`, consuming it once it lands.
+function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: EditTarget | null): string {
+  const cond = draftRef.current;
+  if (!(cond && caseTarget)) {
+    return yaml;
+  }
+  const applied = setComponentAt(yaml, caseTarget, cond);
+  if (applied === null) {
+    // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
+    toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
+    return yaml;
+  }
+  draftRef.current = null;
+  return applied;
+}
+
+// Writes the pending component draft at `target`, consuming it once it lands.
+function flushComponentDraft(
+  draftRef: DraftRef,
+  yaml: string,
+  target: EditTarget | null,
+  originalLabel?: string
+): string {
+  const comp = draftRef.current;
+  if (!(comp && target)) {
+    return yaml;
+  }
+  const applied = applyComponentDraft(yaml, target, comp, originalLabel);
+  if (applied === null) {
+    return yaml;
+  }
+  draftRef.current = null;
+  return applied;
+}
+
+// Pending edits from the active editors (null when clean), registered into the panel's `commitRef`
+// so it can flush them on node-leave / save, and flushed per field through `commitField`.
+function useInspectorDrafts({ target, caseTarget, component, commitRef, onRequestCommit }: InspectorDraftsArgs) {
+  // Refs, not state, so per-keystroke reporting doesn't re-render. `component` applies at
+  // `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
   // Stable draft reporters — they sit in the editors' effect deps, so an inline arrow would re-fire it every render.
@@ -194,27 +213,8 @@ export function NodeInspector({
   // written second it would clobber the component edit. Drafts are consumed as applied (re-call = no-op).
   const commit = useCallback(
     (input: string): string => {
-      let next = input;
-      const cond = conditionDraftRef.current;
-      if (cond && caseTarget) {
-        const applied = setComponentAt(next, caseTarget, cond);
-        if (applied === null) {
-          // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
-          toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
-        } else {
-          next = applied;
-          conditionDraftRef.current = null;
-        }
-      }
-      const comp = componentDraftRef.current;
-      if (comp && target) {
-        const applied = applyComponentDraft(next, target, comp, resourceLabel0);
-        if (applied !== null) {
-          next = applied;
-          componentDraftRef.current = null;
-        }
-      }
-      return next;
+      const withCondition = flushConditionDraft(conditionDraftRef, input, caseTarget);
+      return flushComponentDraft(componentDraftRef, withCondition, target, resourceLabel0);
     },
     [target, caseTarget, resourceLabel0]
   );
@@ -239,37 +239,6 @@ export function NodeInspector({
     componentDraftRef.current = null;
     conditionDraftRef.current = null;
   }, [target, caseTarget]);
-  // Lint problem on the condition's `check` line, so the field shows its own error, not just the banner.
-  const conditionError = useMemo(
-    () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
-    [yaml, caseTarget, lintHints]
-  );
-  const componentName = component ? firstKey(component) : undefined;
-
-  const spec = useMemo(() => {
-    if (!(target && componentName)) {
-      return;
-    }
-    return findConnectComponent(components, componentName, targetComponentType(target));
-  }, [components, target, componentName]);
-
-  // Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
-  // Anchors exist only when the schema form will actually render them: in read-only mode, for the
-  // raw-YAML/member-list fallbacks, and for list-valued components (switch/try — value is an array,
-  // so the form shows no schema fields) everything stays bannered, located by field name via lines.
-  const componentValue = componentName ? component?.[componentName] : undefined;
-  const rendersFieldAnchors = !readOnly && (spec?.config?.children?.length ?? 0) > 0 && !Array.isArray(componentValue);
-  const fieldKeys = useMemo(
-    () => (rendersFieldAnchors && spec ? formFieldKeys(spec) : new Set<string>()),
-    [rendersFieldAnchors, spec]
-  );
-  const lintMapping = useMemo(() => {
-    if (!(target && componentName && lintHints?.length)) {
-      const byField: FieldLintErrors = new Map();
-      return { byField, unmapped: (lintHints ?? []).map((hint) => ({ hint })) };
-    }
-    return mapLintHintsToFields({ yaml, target, componentName, hints: lintHints, fieldKeys });
-  }, [yaml, target, componentName, lintHints, fieldKeys]);
 
   // Flush the draft immediately (field blur / Apply); reports whether the write landed — the
   // panel's flush consumes the draft on success, so a surviving draft means it failed.
@@ -281,15 +250,20 @@ export function NodeInspector({
     return componentDraftRef.current === null;
   }, [onRequestCommit]);
 
-  // Create-topic is patched by section+componentName, which only resolves for top-level
-  // input/output nodes; nested topic fields still get the picker, just not the create flow.
-  const targetKind = target?.kind;
-  const createTopicForNode = useMemo(() => {
-    if (readOnly || !(onAddTopic && componentName) || !(targetKind === 'input' || targetKind === 'output')) {
-      return;
-    }
-    return () => onAddTopic(targetKind, componentName);
-  }, [readOnly, onAddTopic, componentName, targetKind]);
+  return { reportComponentDraft, reportConditionDraft, commitField };
+}
+
+type InspectorDrafts = ReturnType<typeof useInspectorDrafts>;
+
+/**
+ * The always-present right rail: the selected node's identity plus either a schema-driven form
+ * or scoped YAML (read-only / unknown schema). Edits write back into the pipeline YAML at `target`.
+ */
+export function NodeInspector(props: NodeInspectorProps) {
+  const { target, yaml, readOnly, onDelete, onClose, onOpenInYaml } = props;
+  const component = useMemo(() => (target ? getComponentAt(yaml, target) : undefined), [yaml, target]);
+  const drafts = useInspectorDrafts({ ...props, component });
+  const componentName = component ? firstKey(component) : undefined;
 
   if (!(target && component && componentName)) {
     return <InspectorEmptyState readOnly={readOnly} />;
@@ -305,7 +279,7 @@ export function NodeInspector({
         caseObject={component}
         key={JSON.stringify(editTargetPath(target))}
         onClose={onClose}
-        onConfigChange={reportComponentDraft}
+        onConfigChange={drafts.reportComponentDraft}
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
         onOpenInYaml={onOpenInYaml}
         readOnly={readOnly}
@@ -313,49 +287,156 @@ export function NodeInspector({
     );
   }
 
-  const kind = targetComponentType(target);
-  const kindLabel = COMPONENT_TYPE_LABEL[kind] ?? 'Component';
-  const docsUrl = getConnectorDocsUrl(kind, componentName);
-  const useForm = (spec?.config?.children?.length ?? 0) > 0;
-  // Delete lives in the header's 3-dot menu.
-  const handleDelete = readOnly || !onDelete ? undefined : () => onDelete(target);
+  return (
+    <ComponentInspector
+      {...props}
+      component={component}
+      componentName={componentName}
+      drafts={drafts}
+      target={target}
+    />
+  );
+}
 
-  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of
-  // another kind must not inflate the count.
-  const resourceRefKind = resourceRefKindForTarget(target);
-  const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
-  const usedByCount = resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceRefKind) : 0;
+// Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
+// Anchors exist only when the schema form will actually render them: in read-only mode, for the
+// raw-YAML/member-list fallbacks, and for list-valued components (switch/try — value is an array,
+// so the form shows no schema fields) everything stays bannered, located by field name via lines.
+function useNodeLintMapping({
+  yaml,
+  target,
+  component,
+  componentName,
+  spec,
+  readOnly,
+  lintHints,
+}: Pick<ComponentInspectorProps, 'yaml' | 'target' | 'component' | 'componentName' | 'readOnly' | 'lintHints'> & {
+  spec?: ConnectComponentSpec;
+}) {
+  const componentValue = component[componentName];
+  const rendersFieldAnchors = !readOnly && (spec?.config?.children?.length ?? 0) > 0 && !Array.isArray(componentValue);
+  const fieldKeys = useMemo(
+    () => (rendersFieldAnchors && spec ? formFieldKeys(spec) : new Set<string>()),
+    [rendersFieldAnchors, spec]
+  );
+  return useMemo(() => {
+    if (!lintHints?.length) {
+      const byField: FieldLintErrors = new Map();
+      return { byField, unmapped: (lintHints ?? []).map((hint) => ({ hint })) };
+    }
+    return mapLintHintsToFields({ yaml, target, componentName, hints: lintHints, fieldKeys });
+  }, [yaml, target, componentName, lintHints, fieldKeys]);
+}
 
-  // Resource labels for the `resource:` dropdowns in this component's form.
-  const resourceLabels: Record<ResourceKind, string[]> = {
-    cache: listResourceLabels(yaml, 'cache'),
-    rate_limit: listResourceLabels(yaml, 'rate_limit'),
-  };
+// The routing condition of the switch case a case-entry node sits in, with any lint problem on its
+// `check` line so the field shows its own error, not just the banner.
+function useCaseCondition(yaml: string, caseTarget?: EditTarget | null, lintHints?: LintHint[]) {
+  const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
+  const conditionError = useMemo(
+    () => (caseTarget ? lintMessageOnCaseCheck(yaml, caseTarget, lintHints) : undefined),
+    [yaml, caseTarget, lintHints]
+  );
+  return { caseObject, conditionError };
+}
 
-  // A `resource:` reference whose label has no matching resource — fixable here vs. failing at deploy.
+// Create-topic is patched by section+componentName, which only resolves for top-level
+// input/output nodes; nested topic fields still get the picker, just not the create flow.
+function createTopicHandler(
+  componentName: string,
+  targetKind: EditTarget['kind'],
+  readOnly?: boolean,
+  onAddTopic?: (section: string, componentName: string) => void
+): (() => void) | undefined {
+  if (readOnly || !onAddTopic || !(targetKind === 'input' || targetKind === 'output')) {
+    return;
+  }
+  return () => onAddTopic(targetKind, componentName);
+}
+
+// A `resource:` reference whose label has no matching resource — fixable here vs. failing at deploy.
+function findDanglingResourceRef(
+  component: Record<string, unknown>,
+  componentName: string,
+  resourceLabels: Record<ResourceKind, string[]>
+): { ref: string; kind: ResourceKind } | undefined {
   const refKind = resourceKindForComponentName(componentName);
   const innerConfig = component[componentName];
   const refValue =
     innerConfig && typeof innerConfig === 'object' && !Array.isArray(innerConfig)
       ? (innerConfig as Record<string, unknown>).resource
       : undefined;
-  const danglingRef =
-    refKind && typeof refValue === 'string' && refValue !== '' && !resourceLabels[refKind].includes(refValue)
-      ? { ref: refValue, kind: refKind }
-      : undefined;
+  return refKind && typeof refValue === 'string' && refValue !== '' && !resourceLabels[refKind].includes(refValue)
+    ? { ref: refValue, kind: refKind }
+    : undefined;
+}
 
-  // Quick-fix: create the missing resource under that exact label so the reference resolves.
-  const handleCreateMissingResource = () => {
-    if (!danglingRef) {
-      return;
-    }
-    const obj = buildInsertableComponent(DEFAULT_RESOURCE_COMPONENT[danglingRef.kind], danglingRef.kind, components);
-    if (!obj) {
-      return;
-    }
-    obj.label = danglingRef.ref;
-    onApply(appendResource(yaml, resourceArrayKey(danglingRef.kind), obj) ?? yaml);
+// Quick-fix: the YAML with the missing resource created under that exact label, so the reference
+// resolves; undefined when no default component of that kind is available.
+function yamlWithMissingResource(
+  yaml: string,
+  danglingRef: { ref: string; kind: ResourceKind },
+  components: ConnectComponentSpec[]
+): string | undefined {
+  const obj = buildInsertableComponent(DEFAULT_RESOURCE_COMPONENT[danglingRef.kind], danglingRef.kind, components);
+  if (!obj) {
+    return;
+  }
+  obj.label = danglingRef.ref;
+  return appendResource(yaml, resourceArrayKey(danglingRef.kind), obj) ?? yaml;
+}
+
+// Header for a component node: kind, name, and — for a resource — how many nodes reference it.
+const ComponentInspectorHeader = ({
+  target,
+  component,
+  componentName,
+  yaml,
+  onClose,
+  onDelete,
+  onOpenInYaml,
+}: Pick<ComponentInspectorProps, 'target' | 'component' | 'componentName' | 'yaml' | 'onClose' | 'onOpenInYaml'> & {
+  onDelete?: () => void;
+}) => {
+  const kind = targetComponentType(target);
+  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of
+  // another kind must not inflate the count.
+  const resourceRefKind = resourceRefKindForTarget(target);
+  const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
+  return (
+    <InspectorHeader
+      componentName={componentName}
+      docsUrl={getConnectorDocsUrl(kind, componentName)}
+      kindLabel={COMPONENT_TYPE_LABEL[kind] ?? 'Component'}
+      onClose={onClose}
+      onDelete={onDelete}
+      onOpenInYaml={onOpenInYaml}
+      usedByCount={resourceLabel ? countResourceReferences(yaml, resourceLabel, resourceRefKind) : undefined}
+    />
+  );
+};
+
+type ComponentInspectorProps = NodeInspectorProps & {
+  target: EditTarget;
+  component: Record<string, unknown>;
+  componentName: string;
+  drafts: InspectorDrafts;
+};
+
+// A component node: header, the problems that didn't anchor to a field, and its editor.
+function ComponentInspector(props: ComponentInspectorProps) {
+  const { target, caseTarget, yaml, components, component, componentName, readOnly, onDelete, drafts } = props;
+  const spec = useMemo(
+    () => findConnectComponent(components, componentName, targetComponentType(target)),
+    [components, target, componentName]
+  );
+  const lintMapping = useNodeLintMapping({ ...props, spec });
+  const { caseObject, conditionError } = useCaseCondition(yaml, caseTarget, props.lintHints);
+  // Resource labels for the `resource:` dropdowns in this component's form.
+  const resourceLabels: Record<ResourceKind, string[]> = {
+    cache: listResourceLabels(yaml, 'cache'),
+    rate_limit: listResourceLabels(yaml, 'rate_limit'),
   };
+  const danglingRef = findDanglingResourceRef(component, componentName, resourceLabels);
 
   // A case-entry node's condition is edited at the top of the panel. The form scrolls it with the
   // fields (headerSlot); raw/read-only render it above.
@@ -366,44 +447,53 @@ export function NodeInspector({
         caseObject={caseObject}
         error={conditionError}
         key={JSON.stringify(editTargetPath(caseTarget))}
-        onConfigChange={readOnly ? undefined : reportConditionDraft}
+        onConfigChange={readOnly ? undefined : drafts.reportConditionDraft}
         readOnly={readOnly}
       />
     ) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <InspectorHeader
+      <ComponentInspectorHeader
+        component={component}
         componentName={componentName}
-        docsUrl={docsUrl}
-        kindLabel={kindLabel}
-        onClose={onClose}
-        onDelete={handleDelete}
-        onOpenInYaml={onOpenInYaml}
-        usedByCount={resourceLabel ? usedByCount : undefined}
+        onClose={props.onClose}
+        // Delete lives in the header's 3-dot menu.
+        onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
+        onOpenInYaml={props.onOpenInYaml}
+        target={target}
+        yaml={yaml}
       />
       {/* Field-anchored problems render under their fields; the banner keeps only what didn't map. */}
       {lintMapping.unmapped.length > 0 ? <InspectorLintErrors hints={lintMapping.unmapped} /> : null}
       {danglingRef && !readOnly ? (
-        <DanglingRefBanner onCreate={handleCreateMissingResource} refLabel={danglingRef.ref} />
+        <DanglingRefBanner
+          onCreate={() => {
+            const next = yamlWithMissingResource(yaml, danglingRef, components);
+            if (next !== undefined) {
+              props.onApply(next);
+            }
+          }}
+          refLabel={danglingRef.ref}
+        />
       ) : null}
       <InspectorBody
-        childItems={childItems}
+        childItems={props.childItems}
         component={component}
         componentName={componentName}
         conditionSection={conditionSection}
         fieldErrors={lintMapping.byField}
-        onCommitField={readOnly || !onRequestCommit ? undefined : commitField}
-        onCreateResource={onCreateResource}
-        onCreateTopic={createTopicForNode}
-        onSelectChild={onSelectChild}
+        onCommitField={readOnly || !props.onRequestCommit ? undefined : drafts.commitField}
+        onCreateResource={props.onCreateResource}
+        onCreateTopic={createTopicHandler(componentName, target.kind, readOnly, props.onAddTopic)}
+        onSelectChild={props.onSelectChild}
         readOnly={readOnly}
-        reportComponentDraft={reportComponentDraft}
-        resetToken={resetToken}
+        reportComponentDraft={drafts.reportComponentDraft}
+        resetToken={props.resetToken}
         resourceLabels={resourceLabels}
         spec={spec}
         target={target}
-        useForm={useForm}
+        useForm={(spec?.config?.children?.length ?? 0) > 0}
       />
     </div>
   );
@@ -511,9 +601,8 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   return (
     <DropdownMenu>
       {/* Base UI `render` (not Radix `asChild`): the trigger IS our icon-sm Button, not a nested one. */}
-      <DropdownMenuTrigger
-        render={<Button aria-label="More actions" className="text-muted-foreground" size="icon-sm" variant="ghost" />}
-      >
+      {/* `current-ghost`: the trigger takes the muted ink of the header's action group. */}
+      <DropdownMenuTrigger render={<Button aria-label="More actions" size="icon-sm" variant="current-ghost" />}>
         <EllipsisVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -525,7 +614,7 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
         ) : null}
         {onOpenInYaml && onDelete ? <DropdownMenuSeparator /> : null}
         {onDelete ? (
-          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+          <DropdownMenuItem onClick={onDelete} variant="destructive">
             <Trash2 className="size-4" />
             Delete
           </DropdownMenuItem>
@@ -535,23 +624,35 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   );
 };
 
+const InspectorBanner = ({
+  tone,
+  title,
+  children,
+}: {
+  tone: 'destructive' | 'warning';
+  title: ReactNode;
+  children?: ReactNode;
+}) => (
+  <Alert className="shrink-0" icon={<AlertCircle />} variant={tone}>
+    <AlertTitle>{title}</AlertTitle>
+    {children ? <AlertDescription>{children}</AlertDescription> : null}
+  </Alert>
+);
+
 // Lint problems for the selected node that didn't anchor to a form field, shown above its config.
 // No line numbers — there are none to see in this view; when the problem's line resolved to a
-// known (unrendered) field, its name is shown instead. A registry Alert, squared off to sit flush.
+// known (unrendered) field, its name is shown instead.
 const InspectorLintErrors = ({ hints }: { hints: UnmappedLintHint[] }) => (
-  <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="destructive">
-    <AlertTitle>{pluralizeWithNumber(hints.length, 'problem')}</AlertTitle>
-    <AlertDescription>
-      <ul className="flex flex-col gap-1">
-        {hints.map(({ hint, fieldLabel }, i) => (
-          <li className="text-body-sm" key={`${hint.line}-${hint.column}-${i}`}>
-            {hint.hint}
-            {fieldLabel ? <span className="text-muted-foreground"> ({fieldLabel})</span> : null}
-          </li>
-        ))}
-      </ul>
-    </AlertDescription>
-  </Alert>
+  <InspectorBanner title={pluralizeWithNumber(hints.length, 'problem')} tone="destructive">
+    <ul className="flex flex-col gap-1">
+      {hints.map(({ hint, fieldLabel }, i) => (
+        <li className="text-body-sm" key={`${hint.line}-${hint.column}-${i}`}>
+          {hint.hint}
+          {fieldLabel ? <span className="text-muted-foreground"> ({fieldLabel})</span> : null}
+        </li>
+      ))}
+    </ul>
+  </InspectorBanner>
 );
 
 // Write a component-config draft at `target`, cascading a resource-label rename to every component
@@ -584,22 +685,15 @@ function applyComponentDraft(
 // set in place, an empty one omitted (the default/else case).
 function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
   const trimmed = check.trim();
-  const next: Record<string, unknown> = {};
-  let placed = false;
-  for (const [key, value] of Object.entries(caseObject)) {
-    if (key === 'check') {
-      placed = true;
-      if (trimmed !== '') {
-        next.check = trimmed;
-      }
-    } else {
-      next[key] = value;
-    }
+  const entries = Object.entries(caseObject);
+  if (!Object.hasOwn(caseObject, 'check')) {
+    entries.push(['check', trimmed]);
   }
-  if (trimmed !== '' && !placed) {
-    next.check = trimmed;
-  }
-  return next;
+  return Object.fromEntries(
+    entries
+      .map(([key, value]): [string, unknown] => (key === 'check' ? [key, trimmed] : [key, value]))
+      .filter(([key]) => key !== 'check' || trimmed !== '')
+  );
 }
 
 // Shared draft state for a case's `check` field: tracks the value, re-syncs on saved-case change,
@@ -636,7 +730,7 @@ const CaseCheckInput = ({
 }) => (
   <Input
     aria-invalid={invalid ? true : undefined}
-    className="w-full font-mono"
+    className="w-full"
     disabled={readOnly}
     id={id}
     onChange={(e) => setCheck(e.target.value)}
@@ -667,33 +761,26 @@ const SwitchCaseEditor = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
+      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning">
           <Split className="size-3.5" />
         </span>
         <div className="flex min-w-0 flex-col">
-          <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Switch</span>
-          <span className="font-semibold text-body">Routing condition</span>
+          <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Switch</span>
+          <span className="text-body font-semibold">Routing condition</span>
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
           {onClose ? (
-            <Button
-              aria-label="Close"
-              className="text-muted-foreground"
-              onClick={onClose}
-              size="icon-sm"
-              variant="ghost"
-            >
+            <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="current-ghost">
               <X />
             </Button>
           ) : null}
         </div>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
-        <Label className="font-medium text-body" htmlFor={inputId}>
-          Condition (check)
-        </Label>
+        <Label htmlFor={inputId}>Condition (check)</Label>
         <CaseCheckInput check={check} id={inputId} readOnly={readOnly} setCheck={setCheck} />
         <div className="text-body-sm text-muted-foreground">
           A Bloblang expression. Messages route to this case when it's true. Leave empty for the default (else) case.
@@ -720,15 +807,10 @@ const CaseConditionSection = ({
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
   const inputId = useId();
   return (
-    <div className="border-warning/30 border-b bg-warning/5 px-4 py-3">
+    <div className="border-b border-warning/30 bg-warning/5 px-4 py-3">
       <div className="flex items-center gap-1.5 pb-2">
-        <Split className="size-3.5 shrink-0 text-warning" />
-        <Label
-          className="font-semibold text-body-sm text-warning uppercase leading-none tracking-wide"
-          htmlFor={inputId}
-        >
-          Routing condition
-        </Label>
+        <TonedIcon className="size-3.5 shrink-0" icon={Split} tone="warning" />
+        <Label htmlFor={inputId}>Routing condition</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger
@@ -762,19 +844,20 @@ const CaseConditionSection = ({
 };
 
 // Banner for a dangling `resource:` reference, with a one-click fix that creates it under that
-// label. A registry Alert, squared off to sit flush as an inspector banner; the title reserves
-// right padding so it never runs under the absolutely-positioned action.
+// label.
 const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate: () => void }) => (
-  <Alert className="shrink-0 rounded-none border-x-0 border-t-0" icon={<AlertCircle />} variant="warning">
-    <AlertTitle className="pr-20 font-normal">
-      Resource <span className="font-mono">{refLabel}</span> doesn't exist.
-    </AlertTitle>
-    <AlertAction>
-      <Button onClick={onCreate} size="sm" variant="outline">
-        Create it
-      </Button>
-    </AlertAction>
-  </Alert>
+  <InspectorBanner
+    title={
+      <>
+        Resource <span className="font-mono">{refLabel}</span> doesn't exist.
+      </>
+    }
+    tone="warning"
+  >
+    <Button onClick={onCreate} size="sm" variant="outline">
+      Create it
+    </Button>
+  </InspectorBanner>
 );
 
 const EmptyHint = ({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) => (
@@ -792,7 +875,7 @@ const InspectorEmptyState = ({ readOnly }: { readOnly?: boolean }) => (
       <MousePointerSquareDashed className="size-7" />
     </div>
     <div className="flex max-w-[16rem] flex-col gap-1">
-      <div className="font-medium text-body">No node selected</div>
+      <div className="text-body font-medium">No node selected</div>
       <div className="text-body-sm text-muted-foreground">
         {readOnly
           ? 'Select a node on the canvas to inspect its configuration.'
@@ -823,35 +906,35 @@ const InspectorHeader = ({
   onDelete?: () => void;
   usedByCount?: number;
 }) => (
-  <div className="flex shrink-0 items-center gap-3 border-border border-b px-4 py-3">
+  <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
     <ConnectorLogo className="size-6 shrink-0" fallback={Box} name={componentName as ComponentName} />
     <div className="flex min-w-0 flex-col">
-      <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">
+      <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">
         {kindLabel}
         {typeof usedByCount === 'number' ? ` · used by ${pluralizeWithNumber(usedByCount, 'node')}` : ''}
       </span>
-      <span className="min-w-0 truncate font-semibold text-body" title={componentName}>
-        {componentName}
-      </span>
+      <ElementTooltip content={componentName}>
+        <span className="min-w-0 truncate text-body font-semibold">{componentName}</span>
+      </ElementTooltip>
     </div>
-    <div className="ml-auto flex shrink-0 items-center gap-1">
+    {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
+    <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
       {docsUrl ? (
         <Button
           aria-label={`${componentName} documentation`}
           as="a"
-          className="text-muted-foreground"
           href={docsUrl}
           rel="noopener noreferrer"
           size="icon-sm"
           target="_blank"
-          variant="ghost"
+          variant="current-ghost"
         >
           <BookOpenIcon />
         </Button>
       ) : null}
       <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
       {onClose ? (
-        <Button aria-label="Close" className="text-muted-foreground" onClick={onClose} size="icon-sm" variant="ghost">
+        <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="current-ghost">
           <X />
         </Button>
       ) : null}
@@ -872,6 +955,24 @@ const ReadOnlyComponent = ({ component }: { component: Record<string, unknown> }
   </div>
 );
 
+type ComponentDraft = { config: Record<string, unknown> | null; error: string | null };
+
+const CLEAN_COMPONENT_DRAFT: ComponentDraft = { config: null, error: null };
+
+// An edited draft as a component config, or why it can't be one.
+function parseComponentDraft(draft: string): ComponentDraft {
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(draft);
+  } catch (e) {
+    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { config: null, error: 'Configuration must be a YAML mapping.' };
+  }
+  return { config: parsed as Record<string, unknown>, error: null };
+}
+
 // Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
@@ -889,26 +990,9 @@ const RawComponentEditor = ({
   // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
   // error reports nothing, so invalid YAML is never committed.
   useEffect(() => {
-    if (draft === initial) {
-      setError(null);
-      onConfigChange?.(null);
-      return;
-    }
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(draft);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid YAML');
-      onConfigChange?.(null);
-      return;
-    }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      setError('Configuration must be a YAML mapping.');
-      onConfigChange?.(null);
-      return;
-    }
-    setError(null);
-    onConfigChange?.(parsed as Record<string, unknown>);
+    const result = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
+    setError(result.error);
+    onConfigChange?.(result.config);
   }, [draft, initial, onConfigChange]);
 
   return (

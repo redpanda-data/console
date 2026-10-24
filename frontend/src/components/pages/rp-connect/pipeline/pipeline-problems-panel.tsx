@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { AlertCircle, KeyRound, MousePointerClick } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
@@ -39,7 +40,7 @@ type PipelineProblemsPanelProps = {
 
 // Section heading in the expanded panel, shown only when more than one kind of issue is present.
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-2 pt-1.5 pb-0.5 font-medium text-body-sm text-muted-foreground uppercase tracking-wide">
+  <div className="px-2 pt-1.5 pb-0.5 text-body-sm font-medium tracking-wide text-muted-foreground uppercase">
     {children}
   </div>
 );
@@ -48,12 +49,14 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?: () => void }) => {
   const body = (
     <>
-      <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+      <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={AlertCircle} tone="destructive" />
       <span className="flex min-w-0 flex-col">
         <span className="text-body-sm text-foreground">{problem.message}</span>
         {onSelect ? (
           <span className="flex items-center gap-1 text-body-sm text-muted-foreground">
-            <MousePointerClick className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+            <span className="inline-flex opacity-0 transition-opacity group-hover:opacity-100">
+              <MousePointerClick className="size-3" />
+            </span>
             {problem.nodeLabel}
             {problem.line ? ` · line ${problem.line}` : ''}
           </span>
@@ -79,26 +82,21 @@ const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?
 const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: string[]; onAddSecrets?: () => void }) => (
   <div data-testid="pipeline-problems-secrets">
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
-      <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Missing secrets</span>
+      <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Missing secrets</span>
       {onAddSecrets ? (
-        <Button
-          className="h-6 gap-1 px-2 text-body-sm"
-          data-testid="missing-secrets-add"
-          icon={<KeyRound className="size-3" />}
-          onClick={onAddSecrets}
-          size="xs"
-          variant="outline"
-        >
+        // The icon is a child rather than the `icon` prop, which would widen the `xs` gap.
+        <Button data-testid="missing-secrets-add" onClick={onAddSecrets} size="xs" variant="outline">
           Add secrets
+          <KeyRound className="size-3" />
         </Button>
       ) : null}
     </div>
     {missingSecrets.map((name) => (
       <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left" key={`secret-${name}`}>
-        <KeyRound className="mt-0.5 size-3.5 shrink-0 text-warning" />
+        <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={KeyRound} tone="warning" />
         <span className="flex min-w-0 flex-col">
           <span className="text-body-sm text-foreground">
-            Missing secret <span className="font-medium font-mono">{name}</span>
+            Missing secret <span className="font-mono font-medium">{name}</span>
           </span>
           <span className="text-body-sm text-muted-foreground">Referenced by the pipeline but not created</span>
         </span>
@@ -165,7 +163,7 @@ export function PipelineProblemsPanel({
           ) : null}
 
           {hasLint && hasSecrets ? (
-            <div className="mt-1 border-border/60 border-t pt-1">
+            <div className="mt-1 border-t border-border/60 pt-1">
               <SectionLabel>Problems</SectionLabel>
             </div>
           ) : null}

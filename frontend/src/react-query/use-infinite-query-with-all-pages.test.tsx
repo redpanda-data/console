@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { describe, expect, test } from '@rstest/core';
+import { describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
   type ListUsersRequest,
@@ -143,6 +143,10 @@ describe('useInfiniteQueryWithAllPages', () => {
   });
 
   test('does not fetch when disabled', async () => {
+    rs.useFakeTimers();
+    onTestFinished(() => {
+      rs.useRealTimers();
+    });
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -172,11 +176,9 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Flush microtasks + one macrotask so a would-be fetch has a chance to run.
-    // Avoids a hard setTimeout(r, 500) that both wastes wall time and leaks into
-    // react-query's gcTime cleanup path.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    // Run every timer already queued, and the microtasks between them, so a would-be fetch
+    // has a chance to run. Timers it queues in turn, such as react-query's gcTime cleanup, wait.
+    await rs.runOnlyPendingTimersAsync();
 
     expect(callCount).toBe(0);
   });

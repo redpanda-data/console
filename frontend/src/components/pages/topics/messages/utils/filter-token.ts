@@ -154,27 +154,46 @@ export function parseFilterInput(
   text: string,
   options?: { partitionCount?: number }
 ): { field: string; op: FilterOp; value: string } | null {
-  const trimmed = text.trim();
+  const head = parseFieldAndOperator(text.trim());
+  if (!head) {
+    return null;
+  }
+  const value = parseFieldValue(head.field, head.rawValue);
+  if (value === null) {
+    return null;
+  }
+  // Out-of-range partition, when the topic's partition count is known — `partition:9999` on a
+  // 3-partition topic would otherwise reach the backend as a real request instead of staying
+  // live text the user can still correct.
+  if (isOutOfRangePartition(head.field, value, options?.partitionCount)) {
+    return null;
+  }
+  return { field: head.field, op: head.op, value };
+}
+
+/** The field name and operator `trimmed` starts with, plus the still-encoded value after them. */
+function parseFieldAndOperator(trimmed: string): { field: string; op: FilterOp; rawValue: string } | null {
   const fieldMatch = FIELD_PATTERN.exec(trimmed);
   if (!fieldMatch) {
     return null;
   }
-
   const field = fieldMatch[1];
   const operator = parseOperator(field, trimmed.slice(field.length));
   if (!operator) {
     return null;
   }
-  const { op, rawValue } = operator;
-
   // Partition is a single exact match, not a range — `partition>2`/`partition<2`/`partition!=2`
   // would otherwise silently collapse to "partition equals 2" downstream (parseFilterLine only
   // ever reads the value, never the operator, for this field). Reject rather than misparse so the
   // text stays live in the bar instead of quietly doing something other than what was typed.
-  if (field === 'partition' && op !== 'eq') {
+  if (field === 'partition' && operator.op !== 'eq') {
     return null;
   }
+  return { field, ...operator };
+}
 
+/** The decoded value, or null when it's empty, an unterminated quote, or not an integer for a numeric field. */
+function parseFieldValue(field: string, rawValue: string): string | null {
   const value = decodeValue(rawValue.trim());
   if (value === null || (NUMERIC_FIELDS.has(field) && !INTEGER_VALUE_PATTERN.test(value))) {
     // A non-numeric value for a numeric field (typo, or the incomplete "partition:-" while
@@ -183,15 +202,7 @@ export function parseFilterInput(
     // itself, which desyncs every "did this change" check built on top of this.
     return null;
   }
-
-  // Out-of-range partition, when the topic's partition count is known — `partition:9999` on a
-  // 3-partition topic would otherwise reach the backend as a real request instead of staying
-  // live text the user can still correct.
-  if (isOutOfRangePartition(field, value, options?.partitionCount)) {
-    return null;
-  }
-
-  return { field, op, value };
+  return value;
 }
 
 /**
@@ -202,20 +213,13 @@ export function parseFilterInput(
 function readQuotedValue(rawValue: string): { value: string; length: number } | null {
   let value = '';
   let i = 1;
-  while (i < rawValue.length) {
-    const ch = rawValue[i];
-    if (ch === '\\' && i + 1 < rawValue.length) {
-      value += rawValue[i + 1];
-      i += 2;
-      continue;
-    }
-    if (ch === '"') {
-      return { value, length: i + 1 };
-    }
-    value += ch;
-    i += 1;
+  while (i < rawValue.length && rawValue[i] !== '"') {
+    const escaped = rawValue[i] === '\\' && i + 1 < rawValue.length;
+    value += escaped ? rawValue[i + 1] : rawValue[i];
+    i += escaped ? 2 : 1;
   }
-  return null;
+  // Stopped short of the end only at the closing quote
+  return i < rawValue.length ? { value, length: i + 1 } : null;
 }
 
 /** Strips a value's surrounding quotes if present; null for an empty or unterminated-quote value, or

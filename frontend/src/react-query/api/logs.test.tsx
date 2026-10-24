@@ -54,7 +54,7 @@ function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {
     partitionID: 0,
     offset: id,
-    timestamp: Date.now() + id,
+    timestamp: Date.UTC(2026, 0, 15) + id,
     compression: 'uncompressed',
     isTransactional: false,
     headers: [],
@@ -85,8 +85,8 @@ type StreamOptions = { signal: AbortSignal };
 
 /** Live mode opens a history read and a tail side by side; this tells them apart. */
 function mockStreams(streams: {
-  history: (opts: StreamOptions) => AsyncGenerator<unknown>;
-  live: (opts: StreamOptions) => AsyncGenerator<unknown>;
+  history: (opts: StreamOptions) => Iterable<unknown> | AsyncIterable<unknown>;
+  live: (opts: StreamOptions) => Iterable<unknown> | AsyncIterable<unknown>;
 }) {
   mockListMessages.mockImplementation((req: StreamRequest, opts: StreamOptions) =>
     req.startOffset === LIVE_START_OFFSET ? streams.live(opts) : streams.history(opts)
@@ -94,7 +94,9 @@ function mockStreams(streams: {
 }
 
 const untilAborted = (signal: AbortSignal) =>
-  new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve()));
+  new Promise<void>((resolve) => {
+    signal.addEventListener('abort', () => resolve());
+  });
 
 describe('useLogSearch live mode', () => {
   beforeEach(() => {
@@ -105,7 +107,7 @@ describe('useLogSearch live mode', () => {
 
   test('shows recent history, with new messages on top', async () => {
     mockStreams({
-      async *history() {
+      *history() {
         yield dataOf(makeMessage(1));
         yield dataOf(makeMessage(2));
         yield DONE;
@@ -126,7 +128,7 @@ describe('useLogSearch live mode', () => {
 
   test('keeps one copy of a message both the history and the tail returned', async () => {
     mockStreams({
-      async *history() {
+      *history() {
         yield dataOf(makeMessage(1));
         yield dataOf(makeMessage(2));
         yield DONE;
@@ -149,7 +151,7 @@ describe('useLogSearch live mode', () => {
   // The tail heartbeats with empty progress while open, which isn't a search in progress.
   test('stops searching once history is read, while the tail stays open', async () => {
     mockStreams({
-      async *history() {
+      *history() {
         yield dataOf(makeMessage(1));
         yield DONE;
       },
@@ -173,7 +175,7 @@ describe('useLogSearch live mode', () => {
   test('keeps the tail showing when the history read fails', async () => {
     mockStreams({
       // biome-ignore lint/correctness/useYield: fails before the first message
-      async *history() {
+      *history() {
         throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
       },
       async *live({ signal }) {
@@ -211,7 +213,7 @@ describe('useLogSearch live mode', () => {
     ['entering', false],
     ['leaving', true],
   ])('reads history again on %s live mode', async (_case, startsLive) => {
-    const history = rs.fn(async function* () {
+    const history = rs.fn(function* streamMessages() {
       yield DONE;
     });
     mockStreams({
@@ -250,11 +252,11 @@ describe('useLogSearch history mode', () => {
   test('reports progress during history streaming', async () => {
     fakeMessages.push(makeMessage(1));
 
-    mockListMessages.mockImplementation(async function* () {
+    mockListMessages.mockImplementation(async function* streamMessages() {
       yield {
         controlMessage: {
           case: 'progress' as const,
-          value: { bytesConsumed: BigInt(10_000), messagesConsumed: BigInt(99) },
+          value: { bytesConsumed: 10_000n, messagesConsumed: 99n },
         },
       };
       yield {
@@ -288,7 +290,7 @@ describe('useLogSearch history mode', () => {
   test('returns history messages newest-first (matches live ordering)', async () => {
     fakeMessages.push(makeMessage(1), makeMessage(2), makeMessage(3));
 
-    mockListMessages.mockImplementation(async function* () {
+    mockListMessages.mockImplementation(function* streamMessages() {
       for (const _msg of fakeMessages) {
         yield { controlMessage: { case: 'data' as const, value: {} } };
       }
@@ -309,7 +311,7 @@ describe('useLogSearch history mode', () => {
   });
 
   test('treats a missing logs topic as no logs, not an error', async () => {
-    mockListMessages.mockImplementation(async function* () {
+    mockListMessages.mockImplementation(function* streamMessages() {
       yield { controlMessage: { case: 'phase' as const, value: { phase: 'Get Partitions' } } };
       throw new ConnectError(
         'failed to get metadata for topic __redpanda.connect.logs: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.',
@@ -330,7 +332,7 @@ describe('useLogSearch history mode', () => {
 
   // The embedded app's client retries once by default.
   test('does not retry a timed-out search, and says it timed out', async () => {
-    mockListMessages.mockImplementation(async function* () {
+    mockListMessages.mockImplementation(function* streamMessages() {
       yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
       throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
     });

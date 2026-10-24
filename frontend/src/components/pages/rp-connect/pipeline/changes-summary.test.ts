@@ -193,7 +193,7 @@ describe('changesImpactTone', () => {
   });
 });
 
-describe('NO_CHANGES_COPY', () => {
+describe('the NO_CHANGES_COPY', () => {
   // The lane covers both halves of a save, so the empty state has to claim both are unchanged.
   it('accounts for the settings as well as the configuration', () => {
     expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/i);

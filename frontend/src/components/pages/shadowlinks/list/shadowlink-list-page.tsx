@@ -15,9 +15,10 @@ import { Code } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { Loader2, Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
@@ -53,7 +54,7 @@ const ShadowLinkTableRows = ({
       <TableRow>
         <TableCell className="h-24 text-center" colSpan={columns.length}>
           <div className="flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner />
             Loading shadowlinks...
           </div>
         </TableCell>
@@ -83,7 +84,7 @@ export const createColumns: DataTableColumnDef<ListShadowLinksResponse_ShadowLin
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <div className="font-medium text-body">{row.getValue('name')}</div>,
+    cell: ({ row }) => <div className="text-body font-medium">{row.getValue('name')}</div>,
   },
   {
     id: 'sourceCluster',
@@ -103,24 +104,17 @@ export const createColumns: DataTableColumnDef<ListShadowLinksResponse_ShadowLin
   },
 ];
 
-export const ShadowLinkListPage = () => {
-  const navigate = useNavigate();
-
-  // React Query hooks
-  const { data: shadowLinksData, isLoading, error, refetch } = useListShadowLinksQuery({});
-
-  // Get shadowlinks array from response
-  const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
-
-  // Check if a shadowlink already exists (only one allowed)
-  const hasShadowLink = shadowLinks.length > 0;
-
+const useShadowLinksPageTitle = () => {
   useEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Shadow Links', linkTo: '' }];
     uiState.pageTitle = 'Shadow Links';
   }, []);
+};
 
-  // Show toast on error (except for feature-disabled or unavailable admin API errors)
+type ShadowLinksQueryError = ReturnType<typeof useListShadowLinksQuery>['error'];
+
+// Show toast on error (except for feature-disabled or unavailable admin API errors)
+const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
   useEffect(() => {
     if (
       error &&
@@ -133,72 +127,117 @@ export const ShadowLinkListPage = () => {
       });
     }
   }, [error]);
+};
 
-  const handleRowClick = (shadowLinkName: string) => {
-    navigate({ to: `/shadowlinks/${shadowLinkName}` });
-  };
+// Empty state when no shadowlinks exist
+const ShadowLinkCreateEmptyState = () => {
+  const navigate = useNavigate();
 
-  const columns = React.useMemo(() => createColumns, []);
+  if (isEmbedded()) {
+    return (
+      <ShadowLinkEmptyStateCloud
+        onCreateClick={() => {
+          window.location.href = `${getBasePath()}/shadowlinks/create`;
+        }}
+      />
+    );
+  }
+  return <ShadowLinkEmptyState onCreateClick={() => navigate({ to: '/shadowlinks/create' })} />;
+};
+
+type ShadowLinkListFallbackOptions = {
+  error: ShadowLinksQueryError;
+  isEmpty: boolean;
+  onRetry: () => void;
+};
+
+/** The state shown in place of the list, or `null` when there are shadow links to list. */
+const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFallbackOptions) => {
+  // Admin API unavailable
+  if (error?.code === Code.Unavailable) {
+    return <ShadowLinkUnavailableState />;
+  }
+  if (error?.code === Code.PermissionDenied) {
+    return <ShadowLinkNoPermissionState />;
+  }
+  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
+    return <ShadowLinkFeatureDisabledState />;
+  }
+  // Error state for other errors
+  if (error) {
+    return <ShadowLinkErrorState errorMessage={error.message} onRetry={onRetry} />;
+  }
+  return isEmpty ? <ShadowLinkCreateEmptyState /> : null;
+};
+
+type ShadowLinkListToolbarProps = {
+  isLoading: boolean;
+  hasShadowLink: boolean;
+  onRefresh: () => void;
+};
+
+const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLinkListToolbarProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        aria-label="Refresh shadow links"
+        data-testid="refresh-shadowlinks-button"
+        isLoading={isLoading}
+        onClick={onRefresh}
+        size="sm"
+        variant="outline"
+      >
+        <RefreshCw className="h-4 w-4" />
+      </Button>
+
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger
+          render={
+            <span className="inline-block">
+              <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
+                <Plus className="h-4 w-4" />
+                Create shadow link
+              </Button>
+            </span>
+          }
+        />
+        {Boolean(hasShadowLink) && (
+          <TooltipContent>
+            <p>Only one shadowlink can be created at this time</p>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </div>
+  );
+};
+
+export const ShadowLinkListPage = () => {
+  const navigate = useNavigate();
+
+  // React Query hooks
+  const { data: shadowLinksData, isLoading, error, refetch } = useListShadowLinksQuery({});
+
+  // Get shadowlinks array from response
+  const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
+
+  useShadowLinksPageTitle();
+  useShadowLinksErrorToast(error);
 
   const table = useDataTable({
     data: shadowLinks,
-    columns,
+    columns: createColumns,
   });
 
-  // Admin API unavailable
-  if (error?.code === Code.Unavailable) {
-    return (
-      <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkUnavailableState />
-      </div>
-    );
-  }
+  const fallback = getShadowLinkListFallback({
+    error,
+    isEmpty: !isLoading && shadowLinks.length === 0,
+    onRetry: () => refetch(),
+  });
 
-  // No permission state
-  if (error?.code === Code.PermissionDenied) {
-    return (
-      <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkNoPermissionState />
-      </div>
-    );
-  }
-
-  // Feature disabled state
-  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
-    return (
-      <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkFeatureDisabledState />
-      </div>
-    );
-  }
-
-  // Error state for other errors
-  if (error) {
-    return (
-      <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkErrorState errorMessage={error.message} onRetry={() => refetch()} />
-      </div>
-    );
-  }
-
-  // Empty state when no shadowlinks exist
-  if (!isLoading && shadowLinks.length === 0) {
-    if (isEmbedded()) {
-      return (
-        <div className="my-2 flex justify-center gap-2">
-          <ShadowLinkEmptyStateCloud
-            onCreateClick={() => {
-              window.location.href = `${getBasePath()}/shadowlinks/create`;
-            }}
-          />
-        </div>
-      );
-    }
-    return (
-      <div className="my-2 flex justify-center gap-2">
-        <ShadowLinkEmptyState onCreateClick={() => navigate({ to: '/shadowlinks/create' })} />
-      </div>
-    );
+  if (fallback) {
+    return <div className="my-2 flex justify-center gap-2">{fallback}</div>;
   }
 
   return (
@@ -208,35 +247,12 @@ export const ShadowLinkListPage = () => {
           Manage shadow links to replicate topics from source clusters for disaster recovery and high availability.
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            data-testid="refresh-shadowlinks-button"
-            disabled={isLoading}
-            onClick={() => refetch()}
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger
-              render={
-                <span className="inline-block">
-                  <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
-                    <Plus className="h-4 w-4" />
-                    Create shadow link
-                  </Button>
-                </span>
-              }
-            />
-            {Boolean(hasShadowLink) && (
-              <TooltipContent>
-                <p>Only one shadowlink can be created at this time</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </div>
+        {/* Only one shadow link is allowed, so creating another is disabled once one exists */}
+        <ShadowLinkListToolbar
+          hasShadowLink={shadowLinks.length > 0}
+          isLoading={isLoading}
+          onRefresh={() => refetch()}
+        />
       </div>
       <Table>
         <TableHeader>
@@ -248,8 +264,13 @@ export const ShadowLinkListPage = () => {
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody className="[&_tr:hover]:bg-transparent">
-          <ShadowLinkTableRows columns={columns} handleRowClick={handleRowClick} isLoading={isLoading} table={table} />
+        <TableBody>
+          <ShadowLinkTableRows
+            columns={createColumns}
+            handleRowClick={(shadowLinkName) => navigate({ to: `/shadowlinks/${shadowLinkName}` })}
+            isLoading={isLoading}
+            table={table}
+          />
         </TableBody>
       </Table>
     </div>

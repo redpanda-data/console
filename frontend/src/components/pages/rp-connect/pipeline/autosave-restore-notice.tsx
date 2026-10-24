@@ -30,20 +30,22 @@ export function AutosaveRestoreNotice({
   return (
     <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'informative'}>
       <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>
-      <AlertDescription className="flex flex-wrap items-center gap-3">
-        <span>
-          {isStale
-            ? 'Someone else saved this pipeline while you were away. Restoring replaces what is on screen with your unsaved version.'
-            : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}
-        </span>
-        <span className="flex items-center gap-2">
-          <Button onClick={onRestore} size="sm" testId="restore-autosave" variant="outline">
-            Restore edits
-          </Button>
-          <Button onClick={onDiscard} size="sm" testId="discard-autosave" variant="ghost">
-            Discard
-          </Button>
-        </span>
+      <AlertDescription>
+        <div className="flex flex-wrap items-center gap-3">
+          <span>
+            {isStale
+              ? 'Someone else saved this pipeline while you were away. Restoring replaces what is on screen with your unsaved version.'
+              : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}
+          </span>
+          <span className="flex items-center gap-2">
+            <Button onClick={onRestore} size="sm" testId="restore-autosave" variant="outline">
+              Restore edits
+            </Button>
+            <Button onClick={onDiscard} size="sm" testId="discard-autosave" variant="ghost">
+              Discard
+            </Button>
+          </span>
+        </div>
       </AlertDescription>
     </Alert>
   );
