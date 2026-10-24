@@ -22,6 +22,7 @@ import {
   buildChildrenMap,
   buildResourceRefResolver,
   CASE_CONTAINER_LABELS,
+  hasStopSlot,
   mainFlowSequence,
   type PipelineFlowNode,
   sectionChildren,
@@ -77,6 +78,8 @@ const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
 const FLOW_META_BLOCK_PAD = 12;
 // A switch case's routing-condition row beneath the header (only on cards carrying a `caseEditTarget`).
 const FLOW_CONDITION_ROW_H = 30;
+// An input's stop-condition row (StopRow), at the foot of its card or its broker/sequence marker.
+const FLOW_STOP_ROW_H = 30;
 
 function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   if (node.label === 'none') {
@@ -99,6 +102,9 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   }
   if (metaRows > 0) {
     h += FLOW_META_BLOCK_PAD + metaRows * dims.metaRowH;
+  }
+  if (hasStopSlot(node)) {
+    h += FLOW_STOP_ROW_H;
   }
   return h;
 }
@@ -153,6 +159,8 @@ function makeFlowNodeData(node: PipelineFlowNode, collapsed: boolean, childCount
     ...(node.insertSlot ? { insertSlot: node.insertSlot } : {}),
     ...(node.addChildSlot ? { addChildSlot: node.addChildSlot } : {}),
     ...(node.danglingRef ? { danglingRef: true } : {}),
+    ...(node.stopSlot ? { stopSlot: node.stopSlot } : {}),
+    ...(node.endBehavior ? { endBehavior: node.endBehavior } : {}),
     ...(typeof node.usedByCount === 'number' ? { usedByCount: node.usedByCount } : {}),
     ...(childCount > 0 ? { childCount } : {}),
     ...routingData(node),
@@ -265,8 +273,13 @@ function addGraphSplit(
     kind: 'split',
     node,
     w: GRAPH_SPLIT_W,
-    // Reserve a row each for the case-condition (caseEditTarget) and the footer add affordance.
-    h: GRAPH_SPLIT_H + (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0) + (footerAdd ? GRAPH_SPLIT_FOOTER_H : 0),
+    // Reserve a row each for the case-condition (caseEditTarget), an input group's stop condition and
+    // the footer add affordance.
+    h:
+      GRAPH_SPLIT_H +
+      (node.caseEditTarget ? FLOW_CONDITION_ROW_H : 0) +
+      (hasStopSlot(node) ? FLOW_STOP_ROW_H : 0) +
+      (footerAdd ? GRAPH_SPLIT_FOOTER_H : 0),
     childCount: ctx.childrenOf(node.id).length,
     ...(footerAdd ? { footerAdd } : {}),
   });

@@ -61,6 +61,15 @@ describe('usePipelineLint', () => {
     expect(hints.every((h) => h.hint !== 'server syntax error')).toBe(true);
   });
 
+  it('adds the stop conditions the server lint accepts but Connect refuses at start', () => {
+    mockUseLintQuery.mockReturnValue(lintQueryResult({ data: { lintHints: [] } }));
+    const yaml = 'input:\n  read_until:\n    input:\n      kafka: {}\noutput:\n  drop: {}';
+    const { result } = renderHook(() => usePipelineLint(yaml, {}, true));
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual([
+      'read_until needs a check or an idle_timeout to know when to stop.',
+    ]);
+  });
+
   it('surfaces a lint RPC that rejected the config (invalid_argument)', () => {
     mockUseLintQuery.mockReturnValue(
       lintQueryResult({ isError: true, error: new ConnectError('bad config', Code.InvalidArgument) })

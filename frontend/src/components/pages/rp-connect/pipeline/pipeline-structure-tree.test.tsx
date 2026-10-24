@@ -208,3 +208,15 @@ describe('PipelineStructureTree', () => {
     expect(screen.queryByText(INVALID_NOTICE_RE)).not.toBeInTheDocument();
   });
 });
+
+describe('PipelineStructureTree stop conditions', () => {
+  it('describes how each input row stops', async () => {
+    render(
+      <PipelineStructureTree
+        configYaml={'input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      kafka_franz: {}\n'}
+      />
+    );
+    const row = await screen.findByRole('treeitem', { name: 'kafka_franz' });
+    expect(row).toHaveAccessibleDescription('Stops after 30 seconds without new messages.');
+  });
+});

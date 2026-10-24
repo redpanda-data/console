@@ -39,6 +39,114 @@ export const firstKey = (obj: unknown): string | undefined => {
   return Object.keys(obj).find((k) => !RESERVED_COMPONENT_KEYS.has(k));
 };
 
+// Input and output slots also carry `processors`; there's a processor of that name, so only slots skip it.
+const SLOT_SIBLING_KEYS = new Set([...RESERVED_COMPONENT_KEYS, 'processors']);
+
+/** The component name in an input or output slot, skipping `label` and the slot's `processors`. */
+export const slotComponentKey = (obj: unknown): string | undefined => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return;
+  }
+  return Object.keys(obj).find((k) => !SLOT_SIBLING_KEYS.has(k));
+};
+
+const YAML_TRUE = new Set(['true', 'yes', 'y', 'on']);
+const YAML_FALSE = new Set(['false', 'no', 'n', 'off']);
+
+/** A boolean field as Connect decodes it, YAML 1.1 words included; undefined for an env reference or anything else. */
+export function yamlFlag(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  const word = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
+  if (word === undefined) {
+    return;
+  }
+  if (YAML_TRUE.has(word)) {
+    return true;
+  }
+  return YAML_FALSE.has(word) ? false : undefined;
+}
+
+/** The input wrapper that gives any input a logical end. */
+export const READ_UNTIL = 'read_until';
+
+/** A `read_until` wrapper's end settings: the fields beside its child `input`. */
+export type StopCondition = {
+  /** Bloblang query; the input closes after the message that makes it true. */
+  check?: string;
+  /** Go duration; the input closes once no message has arrived for this long. */
+  idleTimeout?: string;
+  /** Reopen the child input when it closes before `check` is met. */
+  restartInput?: boolean;
+};
+
+export type UnwrappedInput = {
+  /** The object holding the input component: the slot itself, or the wrapper's `read_until.input`. */
+  component: Record<string, unknown>;
+  /** Path from the slot to `component` — `[]` when the slot isn't wrapped. */
+  innerPath: string[];
+  /** The wrapper's settings, when the slot is a `read_until`. */
+  stop?: StopCondition;
+};
+
+/** The value as a plain object, or undefined for anything else (arrays included). */
+export const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+
+const nonEmptyString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() !== '' ? value : undefined;
+
+/** The settings of a parsed `read_until` value (its fields other than `input`). */
+export function readStopCondition(value: unknown): StopCondition {
+  const record = asRecord(value) ?? {};
+  const stop: StopCondition = {};
+  // Connect reads a scalar `check: true` as the query `true`.
+  const rawCheck =
+    typeof record.check === 'boolean' || typeof record.check === 'number' ? String(record.check) : record.check;
+  const check = nonEmptyString(rawCheck);
+  if (check) {
+    stop.check = check;
+  }
+  // An unquoted `idle_timeout: 30` parses as a number — keep it visible rather than drop it.
+  const idle =
+    typeof record.idle_timeout === 'number' ? String(record.idle_timeout) : nonEmptyString(record.idle_timeout);
+  if (idle) {
+    stop.idleTimeout = idle;
+  }
+  if (yamlFlag(record.restart_input) === true) {
+    stop.restartInput = true;
+  }
+  return stop;
+}
+
+/** True when the condition can end the input — a `check` or an idle timeout. `restart_input` alone can't. */
+export function isStopConditionSet(stop: StopCondition | undefined | null): stop is StopCondition {
+  return Boolean(stop && (stop.check || stop.idleTimeout));
+}
+
+/**
+ * Resolve an input slot through a `read_until` wrapper. A wrapper with no child input yet (mid-edit)
+ * is left as-is, so it still renders and edits as a plain component.
+ */
+export function unwrapReadUntil(slot: Record<string, unknown>): UnwrappedInput {
+  if (slotComponentKey(slot) !== READ_UNTIL) {
+    return { component: slot, innerPath: [] };
+  }
+  const wrapper = asRecord(slot[READ_UNTIL]);
+  const inner = asRecord(wrapper?.input);
+  if (!(wrapper && inner && slotComponentKey(inner))) {
+    return { component: slot, innerPath: [] };
+  }
+  return { component: inner, innerPath: [READ_UNTIL, 'input'], stop: readStopCondition(wrapper) };
+}
+
+// The component name of an input slot, looking through a `read_until` wrapper.
+const inputSlotName = (slot: unknown): string | undefined => {
+  const record = asRecord(slot);
+  return record ? slotComponentKey(unwrapReadUntil(record).component) : undefined;
+};
+
 /** Extract child input names from a multi-input component (broker, sequence). */
 export const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
   if (
@@ -50,7 +158,7 @@ export const parseMultiInputs = (inputKey: string, value: unknown): string[] | u
   ) {
     const items = (value as { inputs?: unknown[] }).inputs;
     if (Array.isArray(items)) {
-      return items.map(firstKey).filter((k): k is string => !!k);
+      return items.map(inputSlotName).filter((k): k is string => !!k);
     }
   }
 };
@@ -141,7 +249,9 @@ const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConf
   }
 
   const inputObj = (inputNode.toJSON?.() as Record<string, unknown>) || {};
-  const inputType = firstKey(inputObj);
+  // A scanner belongs to the input itself, inside any `read_until` around it.
+  const { component, innerPath } = unwrapReadUntil(inputObj);
+  const inputType = slotComponentKey(component);
   if (!inputType) {
     return;
   }
@@ -153,7 +263,7 @@ const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConf
     return;
   }
   const scannerConfig = (newConfigObject as Record<string, unknown>)[scannerName] ?? {};
-  doc.setIn(['input', inputType, 'scanner'], { [scannerName]: scannerConfig });
+  doc.setIn(['input', ...innerPath, inputType, 'scanner'], { [scannerName]: scannerConfig });
 };
 
 type DetectedComponentType = 'processor' | 'cache' | 'rate_limit' | 'root' | 'scanner' | 'unknown';
@@ -399,11 +509,13 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
     }
     case 'scanner': {
       // A merged scanner lives at `input.<type>.scanner.<name>` (see mergeScanner).
-      const inputType = firstKey((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
+      const inputObj = asRecord((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
+      const { component, innerPath } = unwrapReadUntil(inputObj ?? {});
+      const inputType = slotComponentKey(component);
       if (!inputType) {
         return;
       }
-      configPath = ['input', inputType, 'scanner', specName];
+      configPath = ['input', ...innerPath, inputType, 'scanner', specName];
       break;
     }
     default:
@@ -566,51 +678,42 @@ export type ParsedYamlConfig = {
   redpanda?: Record<string, unknown>;
 };
 
-type ParsedConfigComponents = {
+export type ParsedConfigComponents = {
   inputs: string[];
   processors: string[];
   outputs: string[];
 };
 
-/** Parse a pipeline's configYaml to extract input, processor, and output component names. */
-export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
-  const empty: ParsedConfigComponents = { inputs: [], processors: [], outputs: [] };
-  if (!configYaml) {
-    return empty;
+/** A parsed config's input, processor, and output component names. */
+export const configComponentsOf = (config: ParsedYamlConfig | null): ParsedConfigComponents => {
+  if (!config) {
+    return { inputs: [], processors: [], outputs: [] };
   }
 
-  try {
-    const config = parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null;
-    if (!config) {
-      return empty;
+  const processors = Array.isArray(config.pipeline?.processors)
+    ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
+    : [];
+
+  const inputObj = asRecord(config.input);
+  let inputs: string[] = [];
+  if (inputObj) {
+    const { component } = unwrapReadUntil(inputObj);
+    const inputKey = slotComponentKey(component);
+    if (inputKey) {
+      inputs = parseMultiInputs(inputKey, component[inputKey]) ?? [inputKey];
     }
-
-    const processors = Array.isArray(config.pipeline?.processors)
-      ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
-      : [];
-
-    const inputObj = config.input;
-    let inputs: string[] = [];
-    if (inputObj && typeof inputObj === 'object') {
-      const inputKey = firstKey(inputObj);
-      if (inputKey) {
-        inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
-      }
-    }
-
-    const outputObj = config.output;
-    let outputs: string[] = [];
-    if (outputObj && typeof outputObj === 'object') {
-      const outputKey = firstKey(outputObj);
-      if (outputKey) {
-        outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
-      }
-    }
-
-    return { inputs, processors, outputs };
-  } catch {
-    return empty;
   }
+
+  const outputObj = config.output;
+  let outputs: string[] = [];
+  if (outputObj && typeof outputObj === 'object') {
+    const outputKey = slotComponentKey(outputObj);
+    if (outputKey) {
+      outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
+    }
+  }
+
+  return { inputs, processors, outputs };
 };
 
 type RedpandaPatch = {
@@ -645,9 +748,30 @@ function buildSaslPatch(result: RedpandaSetupResultLike): RedpandaPatch['sasl'] 
 
 type RedpandaSection = 'input' | 'output';
 
+// The YAML path of a top-level input/output component, looking through an input's `read_until`, or
+// undefined when that isn't where the component is (a second wrapper inside, say). Judged on the
+// merge-resolved config, so a wrapper built from a `<<` merge key is still seen.
+function componentPathIn(yamlContent: string, section: RedpandaSection, componentName: string): string[] | undefined {
+  try {
+    const slot = asRecord(asRecord(parseYaml(yamlContent, { merge: true }))?.[section]);
+    if (!slot) {
+      return;
+    }
+    const { component, innerPath } = section === 'input' ? unwrapReadUntil(slot) : { component: slot, innerPath: [] };
+    return componentName in component ? [section, ...innerPath, componentName] : undefined;
+  } catch {
+    // Unparseable YAML: no path, as for a missing component.
+  }
+}
+
+const leadingSpaces = (line: string): number => line.length - line.trimStart().length;
+// Lines that close a block: content (not blank, not a comment) at or above the block's indent.
+const closesBlock = (line: string, indent: number): boolean =>
+  line.trim() !== '' && !line.trimStart().startsWith('#') && leadingSpaces(line) <= indent;
+
 // Strip commented-out placeholder lines for just-patched keys, so the user doesn't see
-// both the `# topics: Required ...` comment and the real value.
-function stripCommentedKeys(yaml: string, keys: string[], section: string, componentName: string): string {
+// both the `# topics: Required ...` comment and the real value. Assumes 2-space block indentation.
+function stripCommentedKeys(yaml: string, keys: string[], componentPath: string[]): string {
   if (keys.length === 0) {
     return yaml;
   }
@@ -656,44 +780,38 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   const keyPattern = keys.map(escapeRegExp).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
 
-  const sectionRegex = new RegExp(`^${section}:`);
-  const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
-  if (sectionStart === -1) {
-    return yaml;
-  }
-
-  const componentRegex = new RegExp(`^  ${escapeRegExp(componentName)}:`);
-  let componentStart = -1;
-  for (let i = sectionStart + 1; i < lines.length; i++) {
-    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) {
-      break; // left section
+  // Walk down the path one indent level per segment, staying inside each parent's block.
+  let start = -1;
+  let end = lines.length;
+  for (const [depth, segment] of componentPath.entries()) {
+    const indent = depth * 2;
+    const keyRegex = new RegExp(`^ {${indent}}${escapeRegExp(segment)}:`);
+    let found = -1;
+    for (let i = start + 1; i < end; i++) {
+      if (keyRegex.test(lines[i])) {
+        found = i;
+        break;
+      }
+      if (depth > 0 && closesBlock(lines[i], indent - 2)) {
+        break;
+      }
     }
-    if (componentRegex.test(lines[i])) {
-      componentStart = i;
-      break;
+    if (found === -1) {
+      return yaml;
     }
-  }
-  if (componentStart === -1) {
-    return yaml;
-  }
-
-  // Component block ends at the next top-level key or next sibling component (2-space indent).
-  let componentEnd = lines.length;
-  for (let i = componentStart + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#')) {
-      componentEnd = i;
-      break;
-    }
-    if (line.length > 0 && line.startsWith('  ') && !line.startsWith('    ') && !line.startsWith('  #')) {
-      componentEnd = i;
-      break;
+    start = found;
+    end = lines.length;
+    for (let i = found + 1; i < lines.length; i++) {
+      if (closesBlock(lines[i], indent)) {
+        end = i;
+        break;
+      }
     }
   }
 
   return lines
     .filter((line, i) => {
-      if (i <= componentStart || i >= componentEnd) {
+      if (i <= start || i >= end) {
         return true;
       }
       return !commentRegex.test(line);
@@ -707,20 +825,20 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
 function patchTopicName(
   doc: Document.Parsed,
   section: RedpandaSection,
-  componentName: string,
+  componentPath: string[],
   topicName: string
 ): string {
   if (section === 'output') {
-    doc.setIn([section, componentName, 'topic'], topicName);
+    doc.setIn([...componentPath, 'topic'], topicName);
     return 'topic';
   }
-  const existing = doc.getIn([section, componentName, 'topics']);
+  const existing = doc.getIn([...componentPath, 'topics']);
   if (isSeq(existing)) {
     if (!existing.toJSON().some((t: unknown) => String(t) === topicName)) {
-      doc.addIn([section, componentName, 'topics'], topicName);
+      doc.addIn([...componentPath, 'topics'], topicName);
     }
   } else {
-    doc.setIn([section, componentName, 'topics'], [topicName]);
+    doc.setIn([...componentPath, 'topics'], [topicName]);
   }
   return 'topics';
 }
@@ -740,11 +858,11 @@ export function hasSeedBrokers(component: unknown): boolean {
  */
 function ensureOwnConnection(
   doc: Document.Parsed,
-  section: RedpandaSection,
+  componentPath: string[],
   componentName: string,
   resolved: unknown
 ): string[] {
-  const component = doc.getIn([section, componentName]);
+  const component = doc.getIn(componentPath);
   if (!(SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) && isMap(component))) {
     return [];
   }
@@ -788,14 +906,19 @@ export function patchRedpandaConfig(
 
   const patchedKeys: string[] = [];
   const resolved = readComponent(existingYaml, section, componentName).component;
+  const componentPath = componentPathIn(existingYaml, section, componentName);
+  // Writing into a component that only a merge key supplies would shadow everything else it merges in.
+  if (!(componentPath && doc.hasIn(componentPath))) {
+    return;
+  }
 
   if (patch.topicName) {
-    patchedKeys.push(patchTopicName(doc, section, componentName, patch.topicName));
+    patchedKeys.push(patchTopicName(doc, section, componentPath, patch.topicName));
   }
 
   // Left alone when the input already reads with it, which may come from a merge key.
   if (patch.consumerGroup && section === 'input' && resolved?.consumer_group !== patch.consumerGroup) {
-    doc.setIn([section, componentName, 'consumer_group'], patch.consumerGroup);
+    doc.setIn([...componentPath, 'consumer_group'], patch.consumerGroup);
     patchedKeys.push('consumer_group');
   }
 
@@ -804,15 +927,15 @@ export function patchRedpandaConfig(
       // redpanda_common keeps SASL in a top-level `redpanda:` block.
       doc.setIn(['redpanda', 'sasl'], patch.sasl);
     } else {
-      doc.setIn([section, componentName, 'sasl'], patch.sasl);
-      patchedKeys.push(...ensureOwnConnection(doc, section, componentName, resolved));
+      doc.setIn([...componentPath, 'sasl'], patch.sasl);
+      patchedKeys.push(...ensureOwnConnection(doc, componentPath, componentName, resolved));
     }
     patchedKeys.push('sasl');
   }
 
   try {
     const result = yamlStringify(doc, yamlConfig);
-    return stripCommentedKeys(result, patchedKeys, section, componentName);
+    return stripCommentedKeys(result, patchedKeys, componentPath);
   } catch {
     // Unserializable document: undefined, as for empty input.
   }
@@ -881,9 +1004,10 @@ function readComponent(
   } catch {
     return { component: undefined, parseError: true };
   }
-  const sectionObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[section] : undefined;
-  const component =
-    sectionObj && typeof sectionObj === 'object' ? (sectionObj as Record<string, unknown>)[componentName] : undefined;
+  const sectionObj = asRecord(asRecord(parsed)?.[section]);
+  // An input's component may sit inside a `read_until` wrapper.
+  const holder = sectionObj && section === 'input' ? unwrapReadUntil(sectionObj).component : sectionObj;
+  const component = holder?.[componentName];
   if (!component || typeof component !== 'object' || Array.isArray(component)) {
     return { component: undefined, parseError: false };
   }
@@ -1074,6 +1198,12 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
     // *_resources items are path targets, but their array is still a top-level container — drop when emptied.
     doc.delete(target.path[0]);
   }
+}
+
+/** The component name of what `target` holds: input and output slots skip their own `processors`. */
+export function componentKeyAt(target: EditTarget, component: unknown): string | undefined {
+  const type = targetComponentType(target);
+  return type === 'input' || type === 'output' ? slotComponentKey(component) : firstKey(component);
 }
 
 /** The component type an edit target loads its schema/config as. */

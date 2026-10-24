@@ -11,7 +11,13 @@
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 
-import { localYamlLintHints, mapLintHintsToNodes, mergeLintHints, nodeLineRanges } from './pipeline-lint';
+import {
+  localStopConditionLintHints,
+  localYamlLintHints,
+  mapLintHintsToNodes,
+  mergeLintHints,
+  nodeLineRanges,
+} from './pipeline-lint';
 import { describe, expect, it } from 'bun:test';
 
 const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
@@ -176,5 +182,94 @@ describe('localYamlLintHints', () => {
     // Unclosed flow sequence on line 1 — a deterministic position.
     const hints = localYamlLintHints('input: [1, 2');
     expect(hints[0]?.line).toBe(1);
+  });
+});
+
+describe('stop conditions', () => {
+  it('a hint on a read_until setting lands on the input it wraps', () => {
+    const wrapped = `input:
+  read_until:
+    idle_timeout: soon
+    input:
+      kafka: { topics: [a] }
+output:
+  drop: {}`;
+    // Line 3 is `idle_timeout`, outside the kafka component itself.
+    expect(
+      mapLintHintsToNodes(wrapped, [hint(3, 'bad duration')])
+        .get('input-0')
+        ?.map((h) => h.hint)
+    ).toEqual(['bad duration']);
+  });
+});
+
+describe('localStopConditionLintHints', () => {
+  const hintsFor = (config: string) => localStopConditionLintHints(config).map((h) => [h.line, h.hint]);
+
+  it('flags a read_until with nothing to stop on, on its own line', () => {
+    expect(hintsFor('input:\n  read_until:\n    input:\n      kafka: {}\n')).toEqual([
+      [2, 'read_until needs a check or an idle_timeout to know when to stop.'],
+    ]);
+  });
+
+  it('flags one with no input, and an idle_timeout that is not a duration', () => {
+    expect(hintsFor('input:\n  broker:\n    inputs:\n      - read_until:\n          idle_timeout: 30\n')).toEqual([
+      [4, 'read_until needs an input to read from.'],
+      [5, 'idle_timeout must be a duration such as 30s, 5m or 1h.'],
+    ]);
+  });
+
+  it('accepts a complete one, an env var timeout, and anything outside the inputs', () => {
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      kafka: {}\n')).toEqual([]);
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect env var reference, not a JS template
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: ${IDLE}\n    input:\n      kafka: {}\n')).toEqual([]);
+    expect(hintsFor('pipeline:\n  processors:\n    - mapping: |\n        root.read_until = {}\n')).toEqual([]);
+  });
+
+  it('flags a timeout Connect accepts but never acts on', () => {
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 0s\n    input:\n      kafka: {}\n')).toEqual([
+      [3, 'An idle_timeout of 0 never fires. Use a duration such as 30s.'],
+    ]);
+    expect(
+      hintsFor('input:\n  read_until:\n    check: this.done\n    idle_timeout: -1s\n    input:\n      kafka: {}\n')
+    ).toEqual([[4, 'A negative idle_timeout is ignored. Use a duration such as 30s.']]);
+  });
+
+  it('reports nothing, rather than throwing, when a wrapper expands past the alias limit', () => {
+    const levels = ['a: &a [x, x, x, x, x, x, x, x, x, x]'];
+    for (const [prev, name] of [
+      ['a', 'b'],
+      ['b', 'c'],
+      ['c', 'd'],
+    ]) {
+      levels.push(`${name}: &${name} [${Array.from({ length: 10 }, () => `*${prev}`).join(', ')}]`);
+    }
+    const bomb = `${levels.join('\n')}\ninput:\n  read_until:\n    idle_timeout: 5s\n    input:\n      generate:\n        mapping: [*d, *d, *d, *d, *d, *d, *d, *d, *d, *d]\n`;
+    expect(localStopConditionLintHints(bomb)).toEqual([]);
+  });
+
+  it('reads the wrapper as Connect does: merge keys, a scalar check, a null input', () => {
+    const merged =
+      'base: &base\n  idle_timeout: 30s\ninput:\n  read_until:\n    <<: *base\n    input:\n      kafka: {}\n';
+    expect(hintsFor(merged)).toEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    check: true\n    input:\n      kafka: {}\n')).toEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    check: this.done\n    input: null\n')).toEqual([
+      [2, 'read_until needs an input to read from.'],
+    ]);
+  });
+
+  it('flags an empty read_until, and an input with no component', () => {
+    expect(hintsFor('input:\n  read_until:\n')).toEqual([
+      [2, 'read_until needs a check or an idle_timeout to know when to stop.'],
+      [2, 'read_until needs an input to read from.'],
+    ]);
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 5s\n    input: {}\n')).toEqual([
+      [2, 'read_until needs an input to read from.'],
+    ]);
+  });
+
+  it('lands on the input it wraps', () => {
+    const wrapped = 'input:\n  read_until:\n    input:\n      kafka: {}\noutput:\n  drop: {}';
+    expect([...mapLintHintsToNodes(wrapped, localStopConditionLintHints(wrapped)).keys()]).toEqual(['input-0']);
   });
 });

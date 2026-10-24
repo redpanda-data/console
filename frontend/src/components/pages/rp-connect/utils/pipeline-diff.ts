@@ -33,7 +33,9 @@ export function nodeConfigSignatures(yaml: string): NodeSignatures {
       if (!node.editTarget) {
         continue;
       }
-      const value = doc.getIn(editTargetPath(node.editTarget)) as { toJSON?: () => unknown } | undefined;
+      // An input signs its whole slot, so a stop-condition (`read_until`) edit marks it too.
+      const path = node.stopSlot?.path ?? editTargetPath(node.editTarget);
+      const value = doc.getIn(path) as { toJSON?: () => unknown } | undefined;
       signatures.set(node.id, JSON.stringify(value?.toJSON?.() ?? value ?? null));
     }
   } catch {

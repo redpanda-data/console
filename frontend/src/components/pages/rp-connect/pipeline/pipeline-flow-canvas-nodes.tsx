@@ -37,10 +37,13 @@ import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { pluralize, pluralizeWithNumber } from 'utils/string';
 
+import { StopRow } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { sectionLabel } from '../utils/pipeline-flow-parser';
+import { hasStopSlot, type StopSlot, sectionLabel } from '../utils/pipeline-flow-parser';
+import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
@@ -220,7 +223,24 @@ export type FlowCardData = {
   addAction?: { payload: FlowInsertPayload; label: string };
   /** Invoke the add affordance (wired by the canvas in edit mode). */
   onAddChild?: () => void;
+  /** An input's stop-condition slot (`read_until`) and how the input ends. */
+  stopSlot?: StopSlot;
+  endBehavior?: InputEndBehavior;
+  /** Set or clear the stop condition (wired by the canvas in edit mode). */
+  onSetStopCondition?: (draft: StopConditionDraft | null) => void;
 };
+
+// An input's stop row, on cards and broker/sequence markers that can take a stop condition.
+const InputStopRow = ({ data, isGroup }: { data: FlowCardData; isGroup?: boolean }) =>
+  hasStopSlot(data) ? (
+    <StopRow
+      effective={data.endBehavior}
+      isGroup={isGroup}
+      name={data.label}
+      onApply={data.onSetStopCondition}
+      slot={data.stopSlot}
+    />
+  ) : null;
 
 const HANDLE_IDS = [
   { id: 'l', position: Position.Left, type: 'target' },
@@ -457,6 +477,7 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         </div>
       ) : null}
       <MetaRows data={data} />
+      <InputStopRow data={data} />
     </div>
   );
 };
@@ -674,6 +695,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <LintBadge errors={data.lintErrors} />
           <UnsavedDot show={data.unsaved} />
         </div>
+        <InputStopRow data={data} isGroup />
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button

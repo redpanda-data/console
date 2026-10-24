@@ -28,6 +28,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { isFeatureFlagEnabled } from 'config';
 import {
   AlertTriangle,
   BookOpen,
@@ -47,7 +48,9 @@ import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { PipelineEndMeta } from './pipeline-end-chip';
 import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
+import { usePipelineScheduleControl } from './pipeline-schedule';
 import {
   alternateRunIntents,
   primaryRunIntent,
@@ -56,7 +59,11 @@ import {
   type SaveIntent,
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import { RichText } from './stop-condition';
+import { useRunObserver } from './use-run-observer';
 import { cpuToTasks } from '../tasks';
+import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -262,6 +269,50 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
   );
 };
 
+// The facts under a pipeline's name: its id, size, topics and end, then its tags and description.
+function PipelineViewMeta({
+  pipeline,
+  units,
+  endSummary,
+}: {
+  pipeline: Pipeline;
+  units: number;
+  endSummary: PipelineEndSummary;
+}) {
+  const description = pipeline.description?.trim();
+  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
+  const topicCount = useMemo(
+    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
+    [pipeline.configYaml]
+  );
+  const editedAt = isDraft(pipeline) ? timestampToMillis(pipeline.updateTime) : null;
+  const items: MetaEntry[] = [
+    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
+    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
+    {
+      key: 'topics',
+      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
+    },
+    { key: 'end', node: endSummary.status === 'none' ? null : <PipelineEndMeta summary={endSummary} /> },
+    {
+      key: 'url',
+      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
+    },
+    { key: 'edited', node: editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <MetaStrip items={items} />
+      {tags.length > 0 ? (
+        <DetailLine label="Tags">
+          <TagBadges tags={tags} />
+        </DetailLine>
+      ) : null}
+      {description ? <DescriptionBlock clamp text={description} /> : null}
+    </div>
+  );
+}
+
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -279,32 +330,26 @@ export function PipelineViewHeader({
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
   const units = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
-  const description = pipeline.description?.trim();
-  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
-  const topicCount = useMemo(
-    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
-    [pipeline.configYaml]
-  );
+  const endSummary = useMemo(() => summarizePipelineEndYaml(pipeline.configYaml ?? ''), [pipeline.configYaml]);
+  const schedule = usePipelineScheduleControl({
+    pipelineId: pipeline.id,
+    configYaml: pipeline.configYaml,
+    fixHint: (
+      <Button
+        className="self-start"
+        icon={<EditIcon />}
+        onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
+        size="sm"
+        variant="outline"
+      >
+        Edit pipeline
+      </Button>
+    ),
+  });
 
   const viewingDraft = isDraft(pipeline);
-  const editedAt = timestampToMillis(pipeline.updateTime);
-
-  const items: MetaEntry[] = [
-    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
-    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
-    {
-      key: 'topics',
-      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
-    },
-    {
-      key: 'url',
-      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
-    },
-    {
-      key: 'edited',
-      node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
-    },
-  ];
+  // Ends a run this browser started once the pipeline is seen to stop.
+  useRunObserver(pipeline.id, pipeline.state);
 
   return (
     <header className={headerClassName(expanded)}>
@@ -327,6 +372,7 @@ export function PipelineViewHeader({
           <Button as="a" href={DOCS_URL} icon={<BookOpen />} rel="noopener noreferrer" target="_blank" variant="ghost">
             Docs
           </Button>
+          {schedule.button}
           <Button
             icon={<EditIcon />}
             onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
@@ -339,19 +385,17 @@ export function PipelineViewHeader({
           {viewingDraft ? (
             <StartDraftControl pipeline={pipeline} units={units} />
           ) : (
-            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />
+            <PipelineRunButton
+              pipelineId={pipeline.id}
+              pipelineState={pipeline.state}
+              recordsRuns={startRecordsRun(endSummary.status, schedule.scheduled)}
+              scheduled={schedule.scheduled}
+            />
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <MetaStrip items={items} />
-        {tags.length > 0 ? (
-          <DetailLine label="Tags">
-            <TagBadges tags={tags} />
-          </DetailLine>
-        ) : null}
-        {description ? <DescriptionBlock clamp text={description} /> : null}
-      </div>
+      <PipelineViewMeta endSummary={endSummary} pipeline={pipeline} units={units} />
+      {schedule.dialog}
     </header>
   );
 }
@@ -403,9 +447,15 @@ const SaveActions = ({
   );
 };
 
+const EDIT_FIX_HINT_CANVAS =
+  'Close this and use the stop button beside each input on the canvas, or wrap it in `read_until` in the YAML.';
+const EDIT_FIX_HINT_YAML = 'Wrap each one in `read_until` in the YAML, with a `check` or an `idle_timeout`.';
+
 export function PipelineEditHeader({
   form,
   saveContext,
+  pipelineId,
+  configYaml,
   url,
   onBack,
   onSave,
@@ -420,6 +470,10 @@ export function PipelineEditHeader({
   form: UseFormReturn<PipelineFormValues>;
   /** The object `handleSave` reads too, so the button's label and its action can't drift apart. */
   saveContext: SaveContext;
+  /** Unset while creating. */
+  pipelineId?: string;
+  /** The editor's YAML, saved or not. */
+  configYaml: string;
   url?: string;
   onBack: () => void;
   onSave: (intent?: SaveIntent) => void;
@@ -440,6 +494,14 @@ export function PipelineEditHeader({
   const { mode, state: pipelineState } = saveContext;
   const editingDraft = isDraft({ state: pipelineState });
   const issueSummary = editingDraft ? draftIssueSummary(draftIssueCount ?? 0) : null;
+  const schedule = usePipelineScheduleControl({
+    pipelineId,
+    configYaml,
+    hasUnsavedChanges,
+    fixHint: (
+      <RichText text={isFeatureFlagEnabled('enableRpcnVisualEditor') ? EDIT_FIX_HINT_CANVAS : EDIT_FIX_HINT_YAML} />
+    ),
+  });
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
@@ -457,6 +519,7 @@ export function PipelineEditHeader({
             <Button className="shrink-0" icon={<Settings />} onClick={onEditSettings} size="sm" variant="outline">
               Edit settings
             </Button>
+            {schedule.button}
             {editingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           </div>
           {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
@@ -500,6 +563,7 @@ export function PipelineEditHeader({
         ) : null}
         {description ? <DescriptionBlock text={description} /> : null}
       </div>
+      {schedule.dialog}
     </header>
   );
 }

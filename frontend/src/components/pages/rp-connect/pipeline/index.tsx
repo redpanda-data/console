@@ -83,6 +83,7 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -112,6 +113,7 @@ import {
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineRunsPanel } from './pipeline-runs-panel';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import {
@@ -152,6 +154,7 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
 import { enclosingNodeId, mapLintHintsToNodes, nodeLineRanges } from '../utils/pipeline-lint';
+import { hasOpenRun } from '../utils/pipeline-runs';
 import { useCreateModeInitialYaml } from '../utils/use-create-mode-initial-yaml';
 import { useEnrichedComponents } from '../utils/use-enriched-components';
 import { usePipelineMode } from '../utils/use-pipeline-mode';
@@ -164,6 +167,8 @@ import {
 } from '../utils/yaml';
 import { withYamlDocumentation } from '../utils/yaml-editor-schema';
 
+// How often the page checks on a run this browser started.
+const RUN_WATCH_INTERVAL_MS = 5000;
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
     return 'Add an input';
@@ -686,11 +691,20 @@ function useDiagramDialogs(
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
+  // A component that comes from a merge key, or sits inside nested wrappers, can't be rewritten safely.
+  const warnUnpatched = (componentName: string) =>
+    toast.warning('Couldn’t add it to the YAML', { description: `Add it to the ${componentName} config by hand.` });
+
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
-      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+      if (!data.topicName) {
+        return;
+      }
+      if (patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -704,6 +718,8 @@ function useDiagramDialogs(
           onServiceAccountAttached(serviceAccount);
         }
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -854,6 +870,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     // Natural height on purpose: this lane scrolls with the page, so logs pagination sits right below
     // the table.
     <div className="flex flex-col p-6">
+      <PipelineRunsPanel configYaml={pipeline.configYaml} pipelineId={pipeline.id} />
       {showThroughput ? (
         <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
@@ -1234,9 +1251,15 @@ function PipelinePageContent() {
     [slashCommand, setCommandMenuFilter]
   );
 
+  // A run this browser started is watched until it ends; the query otherwise polls only while the
+  // pipeline starts or stops.
+  const watchingRun = useRunHistoryStore((s) => (pipelineId ? hasOpenRun(runsOf(s.runs, pipelineId)) : false));
   const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId }
+    {
+      enabled: mode !== 'create' && !!pipelineId,
+      steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+    }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
 
@@ -1717,6 +1740,7 @@ function PipelinePageContent() {
       ) : null}
       {mode === 'view' ? null : (
         <PipelineEditHeader
+          configYaml={yamlContent}
           draftIssueCount={Object.keys(lintHints).length}
           expanded={expanded}
           form={form}
@@ -1727,6 +1751,7 @@ function PipelinePageContent() {
           onEditSettings={() => setIsConfigDialogOpen(true)}
           onRequestDelete={editingDraft ? () => setIsDeleteAlertOpen(true) : undefined}
           onSave={handleSave}
+          pipelineId={pipeline?.id}
           saveContext={saveContext}
           url={pipeline?.url}
         />

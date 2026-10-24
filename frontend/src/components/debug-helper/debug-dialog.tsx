@@ -15,17 +15,16 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
 import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemHeader,
   ItemMedia,
   ItemSeparator,
   ItemTitle,
@@ -34,6 +33,7 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
@@ -41,12 +41,12 @@ import {
   ChevronDown,
   ChevronRight,
   Clipboard,
-  ClipboardCopy,
   Cog,
   Database,
   Eye,
   FileCode,
   Flag,
+  History,
   Info,
   RotateCw,
   Trash2,
@@ -56,6 +56,8 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { usePipelineRuns, useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { pluralizeWithNumber } from 'utils/string';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
 import { DebugPanda } from './debug-panda';
@@ -75,6 +77,10 @@ import {
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
+import { PIPELINE_END_RUNS, PipelineRunsCell } from '../pages/rp-connect/pipeline/pipeline-end-chip';
+import { RunOutcomeStrip } from '../pages/rp-connect/pipeline/run-history';
+import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
+import { sampleRuns } from '../pages/rp-connect/utils/pipeline-runs';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
 
@@ -84,7 +90,10 @@ const TAG_TONE: Record<ConnectConfigFixture['tags'][number], BadgeProps['tone']>
   complex: 'warning',
   'edge-case': 'brand',
   invalid: 'destructive',
+  stops: 'primary',
 };
+
+const RUNS_LABEL = new Map(PIPELINE_END_RUNS.map((option) => [option.value, option.label]));
 
 type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
 
@@ -170,76 +179,272 @@ function DebugSection({
   );
 }
 
-function ConfigFixtureRow({ fixture }: { fixture: ConnectConfigFixture }) {
-  const [previewing, setPreviewing] = useState(false);
-  const lineCount = useMemo(() => fixture.yaml.split('\n').length, [fixture.yaml]);
+type FixtureTag = ConnectConfigFixture['tags'][number];
+
+// The Configs panel's sections, in the order they read.
+const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; description: string }[] = [
+  { tag: 'simple', label: 'Simple', chip: 'Simple', description: 'Small pipelines to start from.' },
+  { tag: 'medium', label: 'Medium', chip: 'Medium', description: 'One source, a few processors, one sink.' },
+  {
+    tag: 'complex',
+    label: 'Complex',
+    chip: 'Complex',
+    description: 'Large, branching pipelines for the visual editor.',
+  },
+  {
+    tag: 'edge-case',
+    label: 'Edge cases',
+    chip: 'Edge',
+    description: 'Resource indirection, many secrets, editor perf.',
+  },
+  {
+    tag: 'stops',
+    label: 'Stop conditions',
+    chip: 'Stops',
+    description: 'Whether a pipeline ends on its own: input stop rows, the Runs column, the schedule preview.',
+  },
+  { tag: 'invalid', label: 'Invalid', chip: 'Invalid', description: 'Configs the editor or Connect should reject.' },
+];
+
+// A stop-condition fixture lists under Stop conditions; any other under its first tag.
+const groupOf = (f: ConnectConfigFixture): FixtureTag => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
+
+const SECRET_REF_RE = /\$\{secrets\.([A-Za-z0-9_]+)\}/g;
+
+type FixtureEntry = {
+  fixture: ConnectConfigFixture;
+  group: FixtureTag;
+  end: PipelineEndStatus;
+  lineCount: number;
+  /** Console secrets that must exist before Cloud saves it. */
+  secrets: string[];
+};
+
+function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const { fixture, group, end, lineCount, secrets } = entry;
 
   return (
-    <Item className="flex-col items-stretch" size="sm" variant="outline">
-      <ItemHeader>
-        <ItemContent>
-          <ItemTitle className="flex-wrap">
-            {fixture.name}
-            {fixture.tags.map((tag) => (
-              <Badge key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
-                {tag}
-              </Badge>
-            ))}
-            <Badge size="sm" tone="default" variant="outline">
-              {lineCount} lines
-            </Badge>
-          </ItemTitle>
-          <ItemDescription>{fixture.description}</ItemDescription>
-        </ItemContent>
-        <ItemActions>
-          <Button icon={<Eye />} onClick={() => setPreviewing((v) => !v)} size="xs" variant="ghost">
-            {previewing ? 'Hide' : 'Preview'}
-          </Button>
-          <Button
-            icon={<ClipboardCopy />}
-            onClick={() => copyToClipboard(fixture.yaml, `Copied “${fixture.name}”`)}
-            size="xs"
-            variant="primary"
-          >
-            Copy YAML
-          </Button>
-        </ItemActions>
-      </ItemHeader>
-      {previewing ? (
-        <SimpleCodeBlock className="my-0" code={fixture.yaml} language="yaml" maxHeight="sm" size="sm" width="full" />
-      ) : null}
-    </Item>
+    <Collapsible className="border-b last:border-0" onOpenChange={setExpanded} open={expanded}>
+      <div className="flex items-start gap-2 px-3 py-1.5 hover:bg-muted/40">
+        <CollapsibleTrigger
+          aria-label={`${expanded ? 'Hide' : 'Show'} the YAML for ${fixture.name}`}
+          className="flex min-w-0 flex-1 cursor-pointer items-start gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {expanded ? (
+            <ChevronDown className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
+          )}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate font-medium text-body-sm">{fixture.name}</span>
+              {fixture.tags
+                .filter((tag) => tag !== group)
+                .map((tag) => (
+                  <Badge className="shrink-0" key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
+                    {tag}
+                  </Badge>
+                ))}
+            </span>
+            <span className={cn('text-body-sm text-muted-foreground', !expanded && 'line-clamp-2')}>
+              {fixture.description}
+              {secrets.length > 0 ? (
+                <span className="whitespace-nowrap text-muted-foreground/70">
+                  {' · '}
+                  {pluralizeWithNumber(secrets.length, 'secret')}
+                </span>
+              ) : null}
+            </span>
+          </span>
+        </CollapsibleTrigger>
+        <span className="w-28 shrink-0 pt-0.5">
+          <PipelineRunsCell status={end} />
+        </span>
+        <CopyButton
+          aria-label={`Copy the YAML for ${fixture.name}`}
+          className="shrink-0"
+          content={fixture.yaml}
+          size="icon-xs"
+          title="Copy YAML"
+          variant="ghost"
+        />
+      </div>
+      <CollapsibleContent>
+        <div className="flex flex-col gap-1.5 pr-3 pb-2.5 pl-7.5">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body-sm text-muted-foreground">
+            {pluralizeWithNumber(lineCount, 'line')} ·
+            {secrets.length > 0 ? (
+              <>
+                {' '}
+                needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
+                {secrets.map((name) => (
+                  <InlineCode className="py-0 font-medium text-body-sm leading-normal" key={name}>
+                    {name}
+                  </InlineCode>
+                ))}
+              </>
+            ) : (
+              ' needs no secrets'
+            )}
+          </div>
+          <SimpleCodeBlock
+            allowCopy={false}
+            className="my-0"
+            code={fixture.yaml}
+            language="yaml"
+            maxHeight="sm"
+            size="sm"
+            width="full"
+          />
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// The pipeline a pipeline page shows, to fill the run history tools in with.
+const PIPELINE_PATH_RE = /\/rp-connect\/([^/]+)/;
+
+function RunHistoryPanel() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const fromPage = PIPELINE_PATH_RE.exec(pathname)?.[1];
+  const [pipelineId, setPipelineId] = useState(() => (fromPage ? decodeURIComponent(fromPage) : ''));
+  const id = pipelineId.trim();
+  const runs = usePipelineRuns(id);
+  const replaceRuns = useRunHistoryStore((s) => s.replaceRuns);
+  const startManualRun = useRunHistoryStore((s) => s.startManualRun);
+  const running = runs[0]?.outcome === 'running';
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="debug-run-history-pipeline">Pipeline ID</Label>
+        <Input
+          className="max-w-sm font-mono"
+          id="debug-run-history-pipeline"
+          onChange={(e) => setPipelineId(e.target.value)}
+          placeholder="e.g. d4f2…"
+          value={pipelineId}
+        />
+        <span className="text-body-sm text-muted-foreground">
+          {fromPage ? 'From the pipeline you’re viewing. ' : null}
+          History shows on the Monitor tab of a pipeline that stops on its own, or has a schedule.
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          disabled={!id}
+          onClick={() => {
+            replaceRuns(id, sampleRuns(Date.now()));
+            toast.success('Sample runs added');
+          }}
+          size="sm"
+        >
+          Fill with sample runs
+        </Button>
+        <Button
+          disabled={!id || running}
+          onClick={() => startManualRun(id, { simulated: true })}
+          size="sm"
+          variant="outline"
+        >
+          Add a running run
+        </Button>
+        <Button disabled={runs.length === 0} onClick={() => replaceRuns(id, [])} size="sm" variant="destructive-ghost">
+          Clear history
+        </Button>
+      </div>
+      {runs.length > 0 ? (
+        <span className="flex flex-wrap items-center gap-3 text-body-sm text-muted-foreground">
+          {runs.length === 1 ? '1 run stored.' : `${runs.length} runs stored.`}
+          <RunOutcomeStrip runs={runs} />
+        </span>
+      ) : (
+        <span className="text-body-sm text-muted-foreground">No runs stored for this pipeline.</span>
+      )}
+    </div>
   );
 }
 
 function ConnectConfigsPanel() {
   const [filter, setFilter] = useState('');
-  const filtered = useMemo(() => {
+  const [shown, setShown] = useState<'all' | FixtureTag>('all');
+  const entries = useMemo(
+    (): FixtureEntry[] =>
+      CONNECT_CONFIG_FIXTURES.map((fixture) => ({
+        fixture,
+        group: groupOf(fixture),
+        // How it ends, as the pipelines list's Runs column reads it.
+        end: summarizePipelineEndYaml(fixture.yaml).status,
+        lineCount: fixture.yaml.split('\n').length,
+        secrets: [...new Set(Array.from(fixture.yaml.matchAll(SECRET_REF_RE), (m) => m[1]))],
+      })),
+    []
+  );
+  const sections = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) {
-      return CONNECT_CONFIG_FIXTURES;
-    }
-    return CONNECT_CONFIG_FIXTURES.filter(
-      (f) =>
-        f.name.toLowerCase().includes(q) || f.description.toLowerCase().includes(q) || f.tags.some((t) => t.includes(q))
-    );
-  }, [filter]);
+    const matches = (e: FixtureEntry) =>
+      !q ||
+      [e.fixture.name, e.fixture.description, ...e.fixture.tags, RUNS_LABEL.get(e.end) ?? '', ...e.secrets].some((s) =>
+        s.toLowerCase().includes(q)
+      );
+    return FIXTURE_GROUPS.filter((g) => shown === 'all' || g.tag === shown)
+      .map((g) => ({ ...g, entries: entries.filter((e) => e.group === g.tag && matches(e)) }))
+      .filter((g) => g.entries.length > 0);
+  }, [entries, filter, shown]);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <Input
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter by name, tag, or description…"
-        value={filter}
-      />
-      {filtered.length === 0 ? (
-        <EmptyState>No fixtures match “{filter}”.</EmptyState>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          {filtered.map((fixture) => (
-            <ConfigFixtureRow fixture={fixture} key={fixture.id} />
+    <div className="flex flex-col gap-3">
+      {/* Stays in view while the list scrolls. Sticky offsets count from inside the scroller's padding,
+          so the negative top and margins cancel it. */}
+      <div className="sticky -top-4 z-10 -mx-5 -mt-4 flex flex-wrap items-center gap-2 border-b bg-background px-5 py-2">
+        <Input
+          aria-label="Filter configs by name, tag, secret or how they run"
+          containerClassName="min-w-40 flex-1"
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter configs…"
+          size="sm"
+          value={filter}
+        />
+        <ToggleGroup
+          aria-label="Show"
+          attached={false}
+          onValueChange={([next]) => {
+            if (next) {
+              setShown(next as 'all' | FixtureTag);
+            }
+          }}
+          size="sm"
+          value={[shown]}
+        >
+          <ToggleGroupItem className="text-body-sm" value="all">
+            All
+          </ToggleGroupItem>
+          {FIXTURE_GROUPS.map((g) => (
+            <ToggleGroupItem className="text-body-sm" key={g.tag} value={g.tag}>
+              {g.chip}
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
+      </div>
+      {sections.length === 0 ? (
+        <EmptyState>No configs match “{filter}”.</EmptyState>
+      ) : (
+        sections.map((section) => (
+          <section aria-label={section.label} className="overflow-hidden rounded-md border" key={section.tag}>
+            <div className="flex items-baseline gap-2 border-b bg-muted/30 px-3 py-1.5">
+              <span className="shrink-0 font-medium text-body-sm">{section.label}</span>
+              <Badge className="shrink-0" size="sm" tone="default" variant="outline">
+                {section.entries.length}
+              </Badge>
+              <span className="min-w-0 text-body-sm text-muted-foreground">{section.description}</span>
+            </div>
+            {section.entries.map((entry) => (
+              <ConfigFixtureRow entry={entry} key={entry.fixture.id} />
+            ))}
+          </section>
+        ))
       )}
     </div>
   );
@@ -762,7 +967,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
+type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs' | 'runs';
 
 const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   overview: {
@@ -791,10 +996,15 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
     title: 'Environment',
     description: 'Build, route, and runtime snapshot. Copy it into bug reports.',
   },
+  runs: {
+    title: 'Run history',
+    description:
+      'Fill a pipeline’s run history with sample runs in every state, to try the History on its Monitor tab before a server records runs. Kept in this browser only.',
+  },
   configs: {
     title: 'Connect configs',
     description:
-      'Pre-built pipeline YAMLs for stress-testing the editor and validation. Copy one, then paste it into the editor on the create or edit page.',
+      'Pipeline YAMLs for exercising the editor, lint and stop conditions. Paste one into the YAML tab of a create or edit page; Cloud saves it once the secrets it lists exist.',
   },
 };
 
@@ -822,7 +1032,10 @@ const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: Re
   },
   {
     label: 'Connect',
-    items: [{ id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> }],
+    items: [
+      { id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'runs', label: 'Run history', icon: <History className="h-3.5 w-3.5 shrink-0" /> },
+    ],
   },
 ];
 
@@ -922,6 +1135,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         return <EnvironmentPanel />;
       case 'configs':
         return <ConnectConfigsPanel />;
+      case 'runs':
+        return <RunHistoryPanel />;
       default:
         return null;
     }

@@ -9,20 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
-import { type Document, type LineCounter, parseDocument, parse as parseYaml } from 'yaml';
+import { type Document, type LineCounter, parseDocument } from 'yaml';
 
+import { classifyInputSlot, type InputEndBehavior } from './input-end-behavior';
 import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flow-meta';
+import { stopSlotLock } from './read-until';
 import {
   type EditTarget,
   firstKey,
   hasSeedBrokers,
   type ParsedYamlConfig,
   parseMultiInputs,
+  READ_UNTIL,
   type ResourceArrayKey,
   type ResourceKind,
   resourceArrayKey,
   resourceKindForComponentName,
   resourceKindForFieldName,
+  type StopCondition,
+  slotComponentKey,
+  unwrapReadUntil,
 } from './yaml';
 import { REDPANDA_TOPIC_AND_USER_COMPONENTS, SHARED_CLIENT_FALLBACK_COMPONENTS } from '../types/constants';
 
@@ -83,7 +89,79 @@ export type PipelineFlowNode = {
   // For an array-resource node: the `*_resources` key it was defined under, so references
   // resolve kind-aware (a cache ref never links to a same-labelled rate_limit).
   resourceKey?: string;
+  // An input's stop-condition slot: the YAML path of the object holding the input, where a
+  // `read_until` wraps it, plus the condition already set there.
+  stopSlot?: StopSlot;
+  // How the input ends — a stop condition, once its data runs out, or never (inputs only).
+  endBehavior?: InputEndBehavior;
 };
+
+export type StopSlot = {
+  path: (string | number)[];
+  condition?: StopCondition;
+  /** How the input ends without the stop condition. */
+  ownEnd: InputEndBehavior;
+  /** Why the condition can only be read here, not edited: a `read_until` with no input yet. */
+  locked?: string;
+};
+
+/** Whether a node (or a canvas card's data) is an input that takes a stop condition: it has a slot and a known end. */
+export function hasStopSlot<T extends { section?: string; stopSlot?: StopSlot; endBehavior?: InputEndBehavior }>(
+  node: T
+): node is T & { stopSlot: StopSlot; endBehavior: InputEndBehavior } {
+  return node.section === 'input' && node.stopSlot !== undefined && node.endBehavior !== undefined;
+}
+
+export type InputEndRow = {
+  id: string;
+  name: string;
+  labelText?: string;
+  /** Broker/sequence members are indented under their group. */
+  nested: boolean;
+  slot: StopSlot;
+  effective: InputEndBehavior;
+};
+
+/** The pipeline's inputs that can take a stop condition, in canvas order. */
+export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
+  const rows: InputEndRow[] = [];
+  for (const node of nodes) {
+    if (hasStopSlot(node)) {
+      rows.push({
+        id: node.id,
+        name: node.label,
+        labelText: node.labelText,
+        nested: node.parentId !== 'section-input',
+        slot: node.stopSlot,
+        effective: node.endBehavior,
+      });
+    }
+  }
+  return rows;
+}
+
+const CHILDLESS_WRAPPER = 'Its `read_until` has no input to read from yet. Add one in the YAML first.';
+
+// The stop slot of the input held by `slot`; `component` is that input with any `read_until` peeled off.
+function stopSlotFor(
+  {
+    path,
+    slot,
+    component,
+    condition,
+  }: { path: (string | number)[]; slot: unknown; component: unknown; condition?: StopCondition },
+  config: ParsedYamlConfig
+): { stopSlot: StopSlot; endBehavior: InputEndBehavior } {
+  const ownEnd = classifyInputSlot(component, config);
+  const base: StopSlot = condition ? { path, condition, ownEnd } : { path, ownEnd };
+  // A `read_until` left over after peeling is childless, unless it wraps an input of its own (nested).
+  const childless =
+    slotComponentKey(component) === READ_UNTIL && !unwrapReadUntil(component as Record<string, unknown>).stop;
+  return {
+    stopSlot: childless ? { ...base, locked: CHILDLESS_WRAPPER } : base,
+    endBehavior: condition ? classifyInputSlot(slot, config) : ownEnd,
+  };
+}
 
 // Human label for a node's section (canvas card kind chips, command-palette rows).
 export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, string> = {
@@ -124,6 +202,8 @@ type GroupSpec = {
   groupLabel: string;
   section: 'input' | 'output';
   sectionId: string;
+  /** YAML path of the object holding the group component (`['input']`, or inside a `read_until`). */
+  componentPath: (string | number)[];
 };
 
 type GroupChildSpec = {
@@ -131,6 +211,9 @@ type GroupChildSpec = {
   /** Original index in the source array — drives the child id + edit path. */
   index?: number;
   meta?: NodeMetaEntry[];
+  /** Path from the member's slot to its component — set when a `read_until` wraps it. */
+  innerPath?: string[];
+  stop?: { stopSlot: StopSlot; endBehavior: InputEndBehavior };
 };
 
 // A container member may itself be a container (e.g. a `fallback` output). Summarize what
@@ -161,7 +244,11 @@ function memberNameAndMeta(key: string, obj: unknown): { name: string; meta?: No
 }
 
 // Member specs (name + summary) for a `broker`/`sequence` input, from its `inputs` array.
-function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
+function multiMemberSpecs(
+  value: unknown,
+  membersPath: (string | number)[],
+  config: ParsedYamlConfig
+): GroupChildSpec[] | undefined {
   if (!value || typeof value !== 'object') {
     return;
   }
@@ -171,19 +258,24 @@ function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
   }
   // Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
   // matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
+  // A `read_until` member is shown as the input it wraps.
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
-    const key = firstKey(item);
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      continue;
+    }
+    const { component, innerPath, stop } = unwrapReadUntil(item as Record<string, unknown>);
+    const key = slotComponentKey(component);
     if (key) {
-      specs.push({ index: i, ...memberNameAndMeta(key, item) });
+      specs.push({
+        index: i,
+        ...memberNameAndMeta(key, component),
+        innerPath,
+        stop: stopSlotFor({ path: [...membersPath, i], slot: item, component, condition: stop }, config),
+      });
     }
   }
   return specs;
-}
-
-// YAML path to the i-th child of a multi-input component (nested members are editable).
-function multiChildPath(groupLabel: string, i: number): (string | number)[] {
-  return ['input', groupLabel, 'inputs', i];
 }
 
 function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): PipelineFlowNode[] {
@@ -201,6 +293,7 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
     ...children.map((child, i): PipelineFlowNode => {
       // Original array index (falls back to render position) so ids/paths survive skipped entries.
       const idx = child.index ?? i;
+      const slotPath = [...spec.componentPath, spec.groupLabel, 'inputs', idx];
       return {
         id: `${spec.groupId}-${idx}`,
         kind: 'leaf',
@@ -208,7 +301,8 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         section: spec.section,
         parentId: spec.groupId,
         meta: child.meta,
-        editTarget: pathEditTarget(spec.section, multiChildPath(spec.groupLabel, idx)),
+        editTarget: pathEditTarget(spec.section, [...slotPath, ...(child.innerPath ?? [])]),
+        ...child.stop,
       };
     }),
   ];
@@ -221,29 +315,42 @@ type ContainerSlot =
   | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
   | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
 
-const EMPTY_INPUT_CONTAINERS: Record<string, ContainerSlot> = {
-  broker: { insertSlot: { containerPath: ['input', 'broker', 'inputs'], accepts: 'input' } },
-  sequence: { insertSlot: { containerPath: ['input', 'sequence', 'inputs'], accepts: 'input' } },
+const MULTI_INPUT_CONTAINERS: ReadonlySet<string> = new Set(['broker', 'sequence']);
+
+// The top-level input as rendered: its component (looking through a `read_until`), how it's edited,
+// and the slot its stop condition attaches to.
+type TopLevelInput = {
+  key: string;
+  value: unknown;
+  componentPath: (string | number)[];
+  editTarget: EditTarget;
+  stopSlot: StopSlot;
+  endBehavior: InputEndBehavior;
+  labelText?: string;
 };
 
 // Empty-container group for a top-level input, or null if not a recognised container. Empty output
 // containers don't need this — buildOutputNodes always returns a (possibly empty) member list.
-function emptyInputContainerGroup(key: string, sectionId: string, labelText?: string): PipelineFlowNode[] | null {
-  const slot = EMPTY_INPUT_CONTAINERS[key];
-  if (!slot) {
+function emptyInputContainerGroup(input: TopLevelInput, sectionId: string): PipelineFlowNode[] | null {
+  if (!MULTI_INPUT_CONTAINERS.has(input.key)) {
     return null;
   }
+  const slot: ContainerSlot = {
+    insertSlot: { containerPath: [...input.componentPath, input.key, 'inputs'], accepts: 'input' },
+  };
   return [
     {
-      id: `input-${key}`,
+      id: `input-${input.key}`,
       kind: 'group',
-      label: key,
+      label: input.key,
       section: 'input',
       parentId: sectionId,
       collapsible: true,
       childFlow: 'parallel',
-      editTarget: { kind: 'input' },
-      ...(labelText ? { labelText } : {}),
+      editTarget: input.editTarget,
+      stopSlot: input.stopSlot,
+      endBehavior: input.endBehavior,
+      ...(input.labelText ? { labelText: input.labelText } : {}),
       ...slot,
     },
   ];
@@ -368,33 +475,61 @@ function hasSaslConfig(componentName: string, componentConfig: unknown, rootConf
   return ownSaslIsUsed || hasNonEmptySasl(rootConfig.redpanda);
 }
 
+// A `read_until` input renders as the input it wraps, edited at the wrapped path; the wrapper's
+// settings ride the node as its stop condition.
+function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedYamlConfig): TopLevelInput | undefined {
+  const { component, innerPath, stop } = unwrapReadUntil(inputObj);
+  const key = slotComponentKey(component);
+  if (!key) {
+    return;
+  }
+  const componentPath = ['input', ...innerPath];
+  return {
+    key,
+    value: component[key],
+    componentPath,
+    editTarget: innerPath.length > 0 ? pathEditTarget('input', componentPath) : { kind: 'input' },
+    ...stopSlotFor({ path: ['input'], slot: inputObj, component, condition: stop }, config),
+    // The input's own label is the one the inspector edits; a label on the wrapper is a fallback.
+    labelText: extractLabel(component) ?? extractLabel(inputObj),
+  };
+}
+
 function parseInputNodes(
   inputObj: Record<string, unknown>,
   sectionId: string,
   config: ParsedYamlConfig
 ): PipelineFlowNode[] {
-  const inputKey = firstKey(inputObj);
-  if (!inputKey) {
+  const input = resolveTopLevelInput(inputObj, config);
+  if (!input) {
     return [];
   }
+  const { key: inputKey, value, componentPath, editTarget, stopSlot, endBehavior, labelText } = input;
 
-  const childNames = parseMultiInputs(inputKey, inputObj[inputKey]);
+  const childNames = parseMultiInputs(inputKey, value);
   if (childNames && childNames.length > 0) {
     const groupNodes = buildGroupWithChildren(
-      { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
-      multiMemberSpecs(inputObj[inputKey]) ?? childNames.map((name) => ({ name }))
+      { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId, componentPath },
+      multiMemberSpecs(value, [...componentPath, inputKey, 'inputs'], config) ?? childNames.map((name) => ({ name }))
     );
-    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' }, labelText: extractLabel(inputObj) };
+    groupNodes[0] = {
+      ...groupNodes[0],
+      editTarget,
+      labelText,
+      stopSlot,
+      endBehavior,
+      // Explicit, since a wrapped member's edit path doesn't end at its array index.
+      insertSlot: { containerPath: [...componentPath, inputKey, 'inputs'], accepts: 'input' },
+    };
     return groupNodes;
   }
 
-  const emptyContainer = emptyInputContainerGroup(inputKey, sectionId, extractLabel(inputObj));
+  const emptyContainer = emptyInputContainerGroup(input, sectionId);
   if (emptyContainer) {
     return emptyContainer;
   }
 
-  const labelText = extractLabel(inputObj);
-  const topics = extractTopics(inputObj[inputKey]);
+  const topics = extractTopics(value);
   const isRedpanda = REDPANDA_COMPONENTS.has(inputKey);
   return [
     {
@@ -406,11 +541,13 @@ function parseInputNodes(
       section: 'input',
       parentId: sectionId,
       missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(inputKey, inputObj[inputKey], config) ? true : undefined,
-      editTarget: { kind: 'input' },
-      meta: summarizeComponent(inputKey, inputObj[inputKey]),
-      resourceRef: indirectionResourceRef(inputKey, inputObj[inputKey]),
-      resourceRefCandidates: extractRefCandidates(inputObj[inputKey]),
+      missingSasl: isRedpanda && !hasSaslConfig(inputKey, value, config) ? true : undefined,
+      editTarget,
+      stopSlot,
+      endBehavior,
+      meta: summarizeComponent(inputKey, value),
+      resourceRef: indirectionResourceRef(inputKey, value),
+      resourceRefCandidates: extractRefCandidates(value),
     },
   ];
 }
@@ -1029,14 +1166,25 @@ const emptyConfigNodes = (): PipelineFlowNode[] => [
   { id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: 'section-output' },
 ];
 
-// Build the flow-node tree from an already merge-resolved config object.
-function buildFlowTree(config: ParsedYamlConfig): PipelineFlowNode[] {
+// Lock the stop conditions the YAML can't take a rewrite of (an aliased or merged input, say).
+function lockStopSlots(nodes: PipelineFlowNode[], doc: Document): void {
+  for (const node of nodes) {
+    const locked = node.stopSlot && !node.stopSlot.locked ? stopSlotLock(doc, node.stopSlot.path) : undefined;
+    if (node.stopSlot && locked) {
+      node.stopSlot = { ...node.stopSlot, locked };
+    }
+  }
+}
+
+// Build the flow-node tree from `doc`'s merge-resolved config object.
+function buildFlowTree(config: ParsedYamlConfig, doc: Document): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
   buildInputSection(nodes, config);
   buildProcessorSection(nodes, config);
   buildResourceSection(nodes, config);
   buildOutputSection(nodes, config);
   annotateFlowMeta(nodes);
+  lockStopSlots(nodes, doc);
   return nodes;
 }
 
@@ -1048,8 +1196,13 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
   try {
     // `merge: true` resolves `<<: *anchor` keys so merged fields (topics, sasl, …) render
     // as part of the component instead of a literal `<<` node with false missing-* badges.
-    const config = (parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null) ?? {};
-    return { nodes: buildFlowTree(config) };
+    const doc = parseDocument(configYaml, { merge: true });
+    // As `parse` does: the first error throws.
+    if (doc.errors.length > 0) {
+      throw doc.errors[0];
+    }
+    const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
+    return { nodes: buildFlowTree(config, doc) };
   } catch (err) {
     return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
   }
@@ -1071,7 +1224,7 @@ export function parseEditableNodes(
   }
   try {
     const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
-    return { doc, nodes: buildFlowTree(config) };
+    return { doc, nodes: buildFlowTree(config, doc) };
   } catch {
     return { doc, nodes: [] };
   }

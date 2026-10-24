@@ -37,6 +37,7 @@ import { pluralizeWithNumber } from 'utils/string';
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
+import { PipelineEndChip } from './pipeline-end-chip';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
 import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
@@ -46,13 +47,26 @@ import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { pipelineEndStatus } from '../utils/input-end-behavior';
 import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
 import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
-import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
+import {
+  inputEndRows,
+  type PipelineFlowNode,
+  parsePipelineFlowTree,
+  shouldOfferTemplate,
+} from '../utils/pipeline-flow-parser';
 import { mapLintHintsToNodes } from '../utils/pipeline-lint';
+import {
+  resolveStopCondition,
+  type StopConditionDraft,
+  sameStopCondition,
+  setStopCondition,
+} from '../utils/read-until';
 import {
   appendResource,
   buildInsertableComponent,
+  componentKeyAt,
   countResourceReferences,
   createResourceAndReturnLabel,
   type EditTarget,
@@ -60,6 +74,7 @@ import {
   firstKey,
   getComponentAt,
   insertComponentAt,
+  isStopConditionSet,
   type ResourceArrayKey,
   type ResourceKind,
   removeComponentAt,
@@ -67,6 +82,7 @@ import {
   resourceTargetKind,
   seqLengthAt,
   setComponentAt,
+  unwrapReadUntil,
 } from '../utils/yaml';
 
 // Types the insert (+) picker offers: pipeline steps plus the resources they reference.
@@ -160,7 +176,7 @@ function buildChildItems(
 // The component's name (its single top-level key) at a target, or undefined when unresolvable.
 function componentNameAt(yaml: string, target: EditTarget): string | undefined {
   const comp = getComponentAt(yaml, target);
-  return comp ? firstKey(comp) : undefined;
+  return comp ? componentKeyAt(target, comp) : undefined;
 }
 
 // The next YAML plus the edit target of the node that was just added, so the caller can select it.
@@ -263,10 +279,10 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 // Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
-// switches, menus (toolbar buttons, Radix triggers — all render as focusable controls) must not have
-// Delete open the confirm dialog or `/` open the palette while focused.
+// switches, radios, menus (toolbar buttons, Radix triggers — all render as focusable controls) and
+// anything in a popup dialog must not have Delete open the confirm dialog or `/` open the palette.
 const FOCUS_GUARD_SELECTOR =
-  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], .monaco-editor';
+  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [role="dialog"], .monaco-editor';
 
 function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   // Another layer (a chip popover, a dialog) already handled this key.
@@ -406,15 +422,18 @@ export function VisualEditorPanel({
   const commitRef = useRef<PendingNodeCommit | null>(null);
   const yamlRef = useRef(yamlContent);
   yamlRef.current = yamlContent;
-  const commitPending = useCallback(() => {
+  // Returns the YAML after the flush, for a caller that edits on top of it in the same tick.
+  const commitPending = useCallback((): string => {
     const pending = commitRef.current;
     if (!pending) {
-      return;
+      return yamlRef.current;
     }
     const next = pending.commit(yamlRef.current);
     if (next !== yamlRef.current) {
       onYamlChange(next);
+      yamlRef.current = next;
     }
+    return next;
   }, [onYamlChange]);
   // Select a different node (or none), committing the current node's pending edits first. The name
   // is read pre-commit, which is safe: the commit rewrites a node in place and never reorders.
@@ -482,18 +501,35 @@ export function VisualEditorPanel({
 
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
-  // Close the inspector (dropping its stale draft) when an undo/redo or external edit removes the
-  // node — or reorders the document so a different component now sits at the positional target.
-  useEffect(() => {
+  // The selection against the current YAML: as is; followed to its input's new path when a stop
+  // condition wraps/unwraps it (same node); or null once an undo/redo or external edit removes the
+  // node or puts a different component at its positional target.
+  const liveSelected = useMemo(() => {
     if (!selected) {
-      return;
+      return null;
     }
     const comp = getComponentAt(yamlContent, selected.target);
-    if (comp === undefined || (selected.name !== undefined && firstKey(comp) !== selected.name)) {
-      commitRef.current?.discard();
-      setSelected(null);
+    if (
+      comp !== undefined &&
+      (selected.name === undefined || componentKeyAt(selected.target, comp) === selected.name)
+    ) {
+      return selected;
     }
-  }, [selected, yamlContent]);
+    // Followed only to a target that really holds the component, so this settles in one sync.
+    const moved = flowNodes.find((n) => n.id === selected.id)?.editTarget;
+    return moved && !editTargetsEqual(moved, selected.target) && componentNameAt(yamlContent, moved) === selected.name
+      ? { ...selected, target: moved }
+      : null;
+  }, [selected, yamlContent, flowNodes]);
+  // Keep the state in step with what renders, dropping a vanished node's stale draft.
+  useEffect(() => {
+    if (liveSelected !== selected) {
+      if (!liveSelected) {
+        commitRef.current?.discard();
+      }
+      setSelected(liveSelected);
+    }
+  }, [liveSelected, selected]);
 
   // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
   const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
@@ -597,10 +633,31 @@ export function VisualEditorPanel({
 
   // Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
   const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
-  const pendingDeleteName = useMemo(
-    () => (pendingDelete ? componentNameAt(yamlContent, pendingDelete) : undefined),
+  // A wrapped input goes with its stop condition — deleting only the inner input would orphan the `read_until`.
+  const requestDelete = useCallback(
+    (target: EditTarget) => {
+      const slot = flowNodes.find((n) => editTargetsEqual(n.editTarget, target))?.stopSlot;
+      if (!slot?.condition) {
+        setPendingDelete(target);
+        return;
+      }
+      setPendingDelete(
+        slot.path.length === 1 ? { kind: 'input' } : { kind: 'path', path: slot.path, componentType: 'input' }
+      );
+    },
+    [flowNodes]
+  );
+  const pendingDeleteComponent = useMemo(
+    () => (pendingDelete ? getComponentAt(yamlContent, pendingDelete) : undefined),
     [pendingDelete, yamlContent]
   );
+  const pendingDeleteName =
+    pendingDelete && pendingDeleteComponent
+      ? componentKeyAt(pendingDelete, unwrapReadUntil(pendingDeleteComponent).component)
+      : undefined;
+  const pendingDeleteHasStop = pendingDeleteComponent
+    ? isStopConditionSet(unwrapReadUntil(pendingDeleteComponent).stop)
+    : false;
 
   // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
@@ -639,7 +696,7 @@ export function VisualEditorPanel({
       delete: (e) => {
         if (isEditing && selected) {
           e.preventDefault();
-          setPendingDelete(selected.target);
+          requestDelete(selected.target);
         }
       },
       undo: (e) => {
@@ -668,7 +725,18 @@ export function VisualEditorPanel({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isEditing, undo, redo, selected, selectNode, pendingInsert, pendingDelete, isPaletteOpen, isSecretsDialogOpen]);
+  }, [
+    isEditing,
+    undo,
+    redo,
+    selected,
+    selectNode,
+    requestDelete,
+    pendingInsert,
+    pendingDelete,
+    isPaletteOpen,
+    isSecretsDialogOpen,
+  ]);
 
   const handleInsertSelected = useCallback(
     (connectionName: string, connectionType: ConnectComponentType) => {
@@ -756,6 +824,47 @@ export function VisualEditorPanel({
     [selected, commitPending]
   );
 
+  // Set/clear an input's stop condition (a card's stop row, inspector section). Pending inspector
+  // edits land first — wrapping moves the component, so a later flush would miss its path — and
+  // stay their own undo step.
+  const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
+  const handleSetStopCondition = useCallback(
+    (nodeId: string, draft: StopConditionDraft | null) => {
+      const before = yamlRef.current;
+      const yaml = commitPending();
+      if (yaml !== before) {
+        recordEdit(yaml);
+      }
+      // The canvas already parsed this YAML unless a pending edit just landed.
+      const nodes = yaml === yamlContent ? flowNodes : parsePipelineFlowTree(yaml).nodes;
+      const slot = nodes.find((n) => n.id === nodeId)?.stopSlot;
+      if (!slot) {
+        toast.error('Couldn’t find that input any more — it may have been removed.');
+        return;
+      }
+      const stop = draft ? resolveStopCondition(slot.condition, draft) : null;
+      if (isStopConditionSet(stop) ? sameStopCondition(stop, slot.condition) : !slot.condition) {
+        return;
+      }
+      const next = setStopCondition(yaml, slot.path, stop);
+      if (next === null || next === yaml) {
+        toast.error('Couldn’t update the stop condition — edit it in the YAML view instead.');
+        return;
+      }
+      onYamlChange(next);
+    },
+    [commitPending, flowNodes, onYamlChange, recordEdit, yamlContent]
+  );
+  const selectedFlowNode = useMemo(
+    () => (selected ? flowNodes.find((n) => n.id === selected.id) : undefined),
+    [selected, flowNodes]
+  );
+  // The pipeline ends when its top-level input does (a broker/sequence aggregates its members).
+  const pipelineEnd = useMemo(() => {
+    const top = flowNodes.find((n) => n.section === 'input' && n.parentId === 'section-input' && n.endBehavior);
+    return { status: pipelineEndStatus(top?.endBehavior), behavior: top?.endBehavior, rows: inputEndRows(flowNodes) };
+  }, [flowNodes]);
+
   // Command-palette "go to": select + recenter (only nodes with an edit target are listed).
   const handleJumpToNode = useCallback(
     (node: PipelineFlowNode) => {
@@ -824,41 +933,50 @@ export function VisualEditorPanel({
                 onClearSelection={handleClearSelection}
                 onInsert={isEditing ? handleSpineInsert : undefined}
                 onSelectNode={handleCanvasSelectNode}
+                onSetStopCondition={isEditing ? handleSetStopCondition : undefined}
                 onSlotInsert={isEditing ? handleSlotInsert : undefined}
                 selectedNodeId={selected?.id}
                 selectedTargetKind={selected?.target.kind}
                 unsavedNodeIds={unsavedNodeIds}
               />
-              {isEditing ? (
-                <TooltipProvider>
-                  <div className="absolute top-3 left-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
-                            <Undo2 />
-                          </Button>
-                        }
-                      />
-                      <TooltipContent>
-                        <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
-                            <Redo2 />
-                          </Button>
-                        }
-                      />
-                      <TooltipContent>
-                        <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </TooltipProvider>
-              ) : null}
+              <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+                {isEditing ? (
+                  <TooltipProvider>
+                    <div className="flex items-center gap-0.5 rounded-md border border-border bg-background/90 p-0.5 shadow-sm backdrop-blur-sm">
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button aria-label="Undo" disabled={!canUndo} onClick={undo} size="icon-sm" variant="ghost">
+                              <Undo2 />
+                            </Button>
+                          }
+                        />
+                        <TooltipContent>
+                          <ShortcutLabel keys={UNDO_SHORTCUT} label="Undo" />
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button aria-label="Redo" disabled={!canRedo} onClick={redo} size="icon-sm" variant="ghost">
+                              <Redo2 />
+                            </Button>
+                          }
+                        />
+                        <TooltipContent>
+                          <ShortcutLabel keys={REDO_SHORTCUT} label="Redo" />
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
+                ) : null}
+                <PipelineEndChip
+                  behavior={pipelineEnd.behavior}
+                  onSelectInput={handleJumpToNodeId}
+                  rows={pipelineEnd.rows}
+                  status={pipelineEnd.status}
+                />
+              </div>
               <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
                 <PipelineProblemsPanel
                   missingSecrets={missingSecrets}
@@ -891,7 +1009,7 @@ export function VisualEditorPanel({
         {/* Inspector rail. Animate its width (not a transform) so the canvas and its right-anchored
           minimap/zoom controls glide in lockstep instead of snapping. */}
         <AnimatePresence>
-          {selected ? (
+          {liveSelected ? (
             <motion.aside
               animate={{ width: 384, opacity: 1 }}
               className="relative shrink-0 overflow-hidden border-border border-l bg-background"
@@ -903,22 +1021,36 @@ export function VisualEditorPanel({
               {/* min-width clips the content instead of reflowing it while the rail width animates. */}
               <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden">
                 <NodeInspector
-                  caseTarget={selected.caseTarget}
+                  caseTarget={liveSelected.caseTarget}
                   childItems={childItems}
                   commitRef={isEditing ? commitRef : undefined}
                   components={components}
-                  lintHints={lintByNode.get(selected.id)}
+                  lintHints={lintByNode.get(liveSelected.id)}
                   onAddTopic={isEditing ? onAddTopic : undefined}
                   onApply={onYamlChange}
                   onClose={() => selectNode(null)}
                   onCreateResource={isEditing ? handleRequestCreateResource : undefined}
-                  onDelete={isEditing ? setPendingDelete : undefined}
-                  onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined}
+                  onDelete={isEditing ? requestDelete : undefined}
+                  onOpenInYaml={onNavigateToYaml ? () => onNavigateToYaml(liveSelected.id) : undefined}
                   onRequestCommit={isEditing ? commitPending : undefined}
                   onSelectChild={selectAndReveal}
+                  onSetStopCondition={
+                    isEditing && selectedFlowNode?.stopSlot
+                      ? (draft) => handleSetStopCondition(liveSelected.id, draft)
+                      : undefined
+                  }
                   readOnly={!isEditing}
                   resetToken={formEpoch}
-                  target={selected.target}
+                  stop={
+                    selectedFlowNode?.stopSlot && selectedFlowNode.endBehavior
+                      ? {
+                          slot: selectedFlowNode.stopSlot,
+                          effective: selectedFlowNode.endBehavior,
+                          isGroup: selectedFlowNode.kind === 'group',
+                        }
+                      : undefined
+                  }
+                  target={liveSelected.target}
                   yaml={yamlContent}
                 />
               </div>
@@ -966,8 +1098,9 @@ export function VisualEditorPanel({
               <AlertDialogDescription>
                 {pendingDeleteName ? (
                   <>
-                    This removes the <span className="font-mono">{pendingDeleteName}</span> node from the pipeline. You
-                    can undo it with {UNDO_SHORTCUT}.
+                    This removes the <span className="font-mono">{pendingDeleteName}</span> node
+                    {pendingDeleteHasStop ? ' and its stop condition' : ''} from the pipeline. You can undo it with{' '}
+                    {UNDO_SHORTCUT}.
                   </>
                 ) : (
                   <>This removes the node from the pipeline. You can undo it with {UNDO_SHORTCUT}.</>
