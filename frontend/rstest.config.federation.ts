@@ -6,7 +6,7 @@ import { defineConfig } from '@rstest/core';
 
 import { fileURLToPath } from 'node:url';
 
-const remoteEntry = fileURLToPath(new URL('./tests/federation/remote-adapter.cjs', import.meta.url));
+const react19RemoteEntry = fileURLToPath(new URL('./tests/federation/react19-remote-adapter.cjs', import.meta.url));
 
 export default defineConfig({
   name: 'federation',
@@ -26,7 +26,14 @@ export default defineConfig({
     federation({
       name: 'rp_console_federation_test',
       remotes: {
-        rp_console: `commonjs ${remoteEntry}`,
+        rp_console_react19: `commonjs ${react19RemoteEntry}`,
+      },
+      shared: {
+        react: { singleton: true, requiredVersion: '^19.3.0' },
+        'react/jsx-runtime': { singleton: true, requiredVersion: '^19.3.0' },
+        'react/jsx-dev-runtime': { singleton: true, requiredVersion: '^19.3.0' },
+        'react-dom': { singleton: true, requiredVersion: '^19.3.0' },
+        'react-dom/client': { singleton: true, requiredVersion: '^19.3.0' },
       },
     }),
   ],

@@ -20,12 +20,7 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
   },
 
   exposes: {
-    // './App' is a React 18-safe compatibility shim. Console runs React 19, but
-    // the current Cloud UI host (React 18) still loads 'rp_console/App' and
-    // renders it as a plain element. The shim returns a React 18 element shape
-    // whose ref mounts the real React 19 app via Console's own createRoot, so
-    // the existing host keeps working with no Cloud UI change. New Cloud UI
-    // hosts consume './BridgeApp' instead.
+    // React 18 hosts need the compatibility shim's private React 19 root.
     './App': './src/federation/console-legacy-app.tsx',
     // React bridge entry consumed by Cloud UI. Mounts the app with Console's own
     // React 19 createRoot into a host-provided DOM node, decoupling it from the
@@ -39,12 +34,30 @@ export const moduleFederationConfig: ModuleFederationPluginOptions = {
     './config': './src/config.ts',
   },
 
-  // Nothing is shared. Console runs React 19 while Cloud UI stays on React 18; a
-  // shared React singleton cannot span both majors. The React bridge
-  // ('./BridgeApp') isolates Console's React 19 along with its own
-  // @tanstack/react-query, @tanstack/react-router, react-hook-form and the rest,
-  // so each app bundles its own copies and no cross-major React conflict can
-  // occur in the embedded scene. (lucide-react was never shared either —
-  // stateless SVGs with no singleton requirement.)
+  // These compatibility entries must never consume the host's React singleton.
   shared: {},
+};
+
+const sharedReact19 = {
+  singleton: true,
+  strictVersion: true,
+  requiredVersion: '^19.3.0',
+};
+
+// A separate container keeps the existing entries' private React untouched.
+export const react19ModuleFederationConfig: ModuleFederationPluginOptions = {
+  name: 'rp_console_react19',
+  filename: 'embedded.js',
+  manifest: { fileName: 'mf-manifest.json' },
+  exposes: {
+    './ReactApp': './src/federation/console-app.tsx',
+    './types': './src/federation/types.ts',
+  },
+  shared: {
+    react: sharedReact19,
+    'react/jsx-runtime': sharedReact19,
+    'react/jsx-dev-runtime': sharedReact19,
+    'react-dom': sharedReact19,
+    'react-dom/client': sharedReact19,
+  },
 };

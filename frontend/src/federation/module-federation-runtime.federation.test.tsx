@@ -9,11 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { expect, test } from '@rstest/core';
-import { getGrpcBasePath } from 'rp_console/config';
+import { expect, rs, test } from '@rstest/core';
+import { cleanup, render } from '@testing-library/react';
 
-test('loads the public config API from the built Console remote', () => {
-  expect(getGrpcBasePath('https://example.com/redpanda.api.console.v1alpha1')).toBe(
-    'https://example.com/redpanda.api.console.v1alpha1'
+test('renders the built ReactApp with the host React 19 renderer', async () => {
+  const { default: ConsoleApp } = await import('rp_console_react19/ReactApp');
+  const getAccessToken = rs.fn(
+    () =>
+      new Promise<string>(() => {
+        // Keep backend initialization pending while exercising the real renderer.
+      })
   );
+
+  try {
+    render(<ConsoleApp clusterId="federation-test" config={{}} getAccessToken={getAccessToken} />);
+    expect(getAccessToken).toHaveBeenCalledTimes(1);
+  } finally {
+    cleanup();
+  }
 });
