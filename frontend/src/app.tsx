@@ -64,8 +64,7 @@ import { installUISettingsSideEffects } from './state/ui';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
-  // Do not pass ''. An empty string is not nullish, so getGrpcBasePath would
-  // skip window.BASE_URL and dataplane calls would miss SERVER_BASEPATH.
+  // '' is not nullish, so it would skip window.BASE_URL.
   baseUrl: getGrpcBasePath(),
   interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   jsonOptions: {
