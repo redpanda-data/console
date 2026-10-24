@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const frontendRoot = fileURLToPath(new URL('../../', import.meta.url));
 
-function buildFederatedRemote(): Promise<void> {
-  const child = spawn('bun', ['x', 'rsbuild', 'build', '--config=rsbuild.config.federation-test.ts'], {
+function buildFederatedRemote(react19: boolean): Promise<void> {
+  const child = spawn('bun', ['run', 'build:federation-test'], {
     cwd: frontendRoot,
-    env: process.env,
+    env: { ...process.env, CONSOLE_FEDERATION_REACT19: react19 ? 'true' : '' },
     stdio: 'inherit',
   });
 
@@ -25,5 +25,6 @@ function buildFederatedRemote(): Promise<void> {
 }
 
 export async function setup(): Promise<void> {
-  await buildFederatedRemote();
+  await buildFederatedRemote(false);
+  await buildFederatedRemote(true);
 }

@@ -22,32 +22,34 @@ const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 // Matches the `?raw` import query (load files as raw source strings).
 const RAW_QUERY = /raw/;
 
+export const consolePlugins = (federationConfig = moduleFederationConfig) => [
+  pluginReact({
+    reactRefreshOptions: {
+      forceEnable: true,
+    },
+    // Rspack's Rust implementation avoids the extra Babel transform while
+    // preserving the existing opt-in React Compiler behavior.
+    reactCompiler: {
+      target: '19',
+      compilationMode: 'annotation',
+      panicThreshold: 'critical_errors',
+    },
+  }),
+  pluginSvgr({ mixedImport: true, parallel: true }),
+  pluginSass(),
+  pluginTailwindcss(),
+  pluginYaml(),
+  pluginModuleFederation({
+    ...federationConfig,
+    dts: false,
+  }),
+  pluginNodePolyfill({
+    globals: { process: true },
+  }),
+];
+
 export default defineConfig({
-  plugins: [
-    pluginReact({
-      reactRefreshOptions: {
-        forceEnable: true,
-      },
-      // Rspack's Rust implementation avoids the extra Babel transform while
-      // preserving the existing opt-in React Compiler behavior.
-      reactCompiler: {
-        target: '19',
-        compilationMode: 'annotation',
-        panicThreshold: 'critical_errors',
-      },
-    }),
-    pluginSvgr({ mixedImport: true, parallel: true }),
-    pluginSass(),
-    pluginTailwindcss(),
-    pluginYaml(),
-    pluginModuleFederation({
-      ...moduleFederationConfig,
-      dts: false,
-    }),
-    pluginNodePolyfill({
-      globals: { process: true },
-    }),
-  ],
+  plugins: consolePlugins(),
   dev: {
     hmr: true,
     lazyCompilation: false,
