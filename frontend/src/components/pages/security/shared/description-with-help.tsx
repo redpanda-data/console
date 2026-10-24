@@ -13,6 +13,7 @@ import { InfoIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../../redpanda-ui/components/drawer';
+import { Separator } from '../../../redpanda-ui/components/separator';
 
 type Props = {
   short: string;
@@ -43,11 +44,12 @@ export function DescriptionWithHelp({ short, title, children, testId, titleTestI
       </span>
       <Drawer direction="right" onOpenChange={setOpen} open={open}>
         <DrawerContent aria-labelledby="help-drawer-title" className="w-[520px] sm:max-w-[520px]" role="dialog">
-          <DrawerHeader className="border-b">
+          <DrawerHeader>
             <DrawerTitle data-testid={titleTestId} id="help-drawer-title">
               {title}
             </DrawerTitle>
           </DrawerHeader>
+          <Separator />
           <div className="space-y-4 p-6">{children}</div>
         </DrawerContent>
       </Drawer>

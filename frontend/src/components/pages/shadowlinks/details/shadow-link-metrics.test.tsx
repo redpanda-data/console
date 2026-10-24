@@ -31,7 +31,7 @@ const mockShadowLink: UnifiedShadowLink = {
   syncedShadowTopicProperties: [],
 };
 
-describe('ShadowLinkMetrics', () => {
+describe('the ShadowLinkMetrics', () => {
   test('should display metrics when data is loaded', () => {
     rs.mocked(useGetShadowMetricsQuery).mockReturnValue({
       data: {

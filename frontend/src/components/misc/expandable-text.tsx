@@ -31,8 +31,9 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
       {Boolean(showExpander) && (
         <Button
           aria-expanded={expanded}
-          className="h-auto px-2 align-baseline"
+          className="h-auto align-baseline"
           onClick={() => setExpanded(!expanded)}
+          size="xs"
           variant="link"
         >
           {expanded ? (

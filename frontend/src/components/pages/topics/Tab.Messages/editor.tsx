@@ -21,6 +21,7 @@ type FilterEditorProps = {
 };
 
 const options: editor.IStandaloneEditorConstructionOptions = {
+  ariaLabel: 'Filter code',
   lineNumbers: 'on',
 };
 

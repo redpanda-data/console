@@ -561,45 +561,83 @@ function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
   return (tag as PreviewTag).text !== undefined;
 }
 
+type NewTopicSettingsField = 'previewColumnFields' | 'previewTimestamps' | 'dynamicFilters';
+
+// Topic settings as an older version saved them: without the fields added since.
+type StoredTopicDetailsSettings = Omit<TopicDetailsSettings, NewTopicSettingsField> &
+  Partial<Pick<TopicDetailsSettings, NewTopicSettingsField>>;
+
+// when loading a previous version, we'll have "undefined" for all the new properties,
+// which is ok for 'number', but not for any other type.
+function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
+  ts.previewColumnFields = ts.previewColumnFields ?? [];
+  ts.previewTimestamps = ts.previewTimestamps ?? 'default';
+
+  if (!ts.dynamicFilters) {
+    ts.dynamicFilters = [];
+  }
+}
+
+// upgrade by constructing a new tag from the old data
+function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
+  return {
+    id: tag.id,
+    isActive: tag.isActive,
+    pattern: `**.${tag.text}`,
+    customName: tag.customName,
+    searchInMessageHeaders: false,
+    searchInMessageKey: false,
+    searchInMessageValue: true,
+  };
+}
+
+// Upgrade: PreviewTag to PreviewTagV2
+function upgradePreviewTags(ts: TopicDetailsSettings) {
+  for (let i = 0; i < ts.previewTags.length; i++) {
+    const tag = ts.previewTags[i];
+    if (isPreviewTagV1(tag)) {
+      // replace old tag
+      ts.previewTags[i] = previewTagV2From(tag);
+    }
+  }
+}
+
 // Upgrade function for loading old data
 function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
   // Upgrade: new props in 'TopicDetailsSettings'
   if (loadedSettings.perTopicSettings) {
     for (const ts of loadedSettings.perTopicSettings) {
-      // when loading a previous version, we'll have "undefined" for all the new properties,
-      // which is ok for 'number', but not for any other type.
-      ts.previewColumnFields = ts.previewColumnFields ?? [];
-      ts.previewTimestamps = ts.previewTimestamps ?? 'default';
-
-      if (!ts.dynamicFilters) {
-        ts.dynamicFilters = [];
-      }
+      fillNewTopicSettingsDefaults(ts);
     }
 
-    // Upgrade: PreviewTag to PreviewTagV2
     for (const ts of loadedSettings.perTopicSettings) {
-      for (let i = 0; i < ts.previewTags.length; i++) {
-        const tag = ts.previewTags[i];
-        if (isPreviewTagV1(tag)) {
-          // upgrade by constructing a new tag from the old data
-          const newTag: PreviewTagV2 = {
-            id: tag.id,
-            isActive: tag.isActive,
-            pattern: `**.${tag.text}`,
-            customName: tag.customName,
-            searchInMessageHeaders: false,
-            searchInMessageKey: false,
-            searchInMessageValue: true,
-          };
-
-          // replace old tag
-          ts.previewTags[i] = newTag;
-        }
-      }
+      upgradePreviewTags(ts);
     }
   }
 
   return loadedSettings;
+}
+
+// Parsed and upgraded settings, or null when the stored text holds nothing usable.
+function loadStoredSettings(str: string) {
+  try {
+    const loadedSettings = JSON.parse(str);
+    if (!loadedSettings) {
+      return null;
+    }
+
+    // Apply upgrades
+    const upgradedSettings = upgradeSettings(loadedSettings);
+
+    return {
+      state: upgradedSettings as UISettings,
+      version: 3,
+    };
+  } catch (error) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error('Error loading UI settings:', error);
+    return null;
+  }
 }
 
 // Debounced save function
@@ -660,24 +698,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
               return null;
             }
 
-            try {
-              const loadedSettings = JSON.parse(str);
-              if (!loadedSettings) {
-                return null;
-              }
-
-              // Apply upgrades
-              const upgradedSettings = upgradeSettings(loadedSettings);
-
-              return {
-                state: upgradedSettings as UISettings,
-                version: 3,
-              };
-            } catch (error) {
-              // biome-ignore lint/suspicious/noConsole: intentional console usage
-              console.error('Error loading UI settings:', error);
-              return null;
-            }
+            return loadStoredSettings(str);
           },
           setItem: (name, value) => {
             // Extract only the state, not the action functions

@@ -17,12 +17,12 @@
 
 import { test } from '../../shared/e2e';
 
-test.describe.sequential('ACL multi-match delete', () => {
-  test.skip('Delete (ACLs only) with multiple hosts deletes all matching rows', async () => {
+test.describe.sequential('aCL multi-match delete', () => {
+  test.skip('delete (ACLs only) with multiple hosts deletes all matching rows', async () => {
     // TODO(UX-1216): un-skip once the multi-host delete confirmation flow is stable.
   });
 
-  test.skip('Delete (ACLs only) is disabled or absent when principal has zero ACLs', async () => {
+  test.skip('delete (ACLs only) is disabled or absent when principal has zero ACLs', async () => {
     // TODO(UX-1216): un-skip alongside the first test.
   });
 });

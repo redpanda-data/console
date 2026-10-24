@@ -53,268 +53,288 @@ describe('durationFromString', () => {
 });
 
 describe('buildShadowSchemaRegistryApiOptions', () => {
-  test('builds minimal options with defaults', () => {
-    const options = buildShadowSchemaRegistryApiOptions(createApiFormValues());
+  describe('defaults and authentication', () => {
+    test('builds minimal options with defaults', () => {
+      const options = buildShadowSchemaRegistryApiOptions(createApiFormValues());
 
-    expect(options.sourceUrl).toBe('https://schema-registry.example.com:8081');
-    expect(options.authOptions).toBeUndefined();
-    expect(options.tlsSettings).toMatchObject({ enabled: true, tlsSettings: { case: undefined } });
-    expect(options.tailInterval).toBeUndefined();
-    expect(options.fullSyncInterval).toBeUndefined();
-    expect(options.maxSourceRequestsPerSecond).toBe(0);
-    expect(options.sourceFilter).toBeUndefined();
-    expect(options.destination).toBeUndefined();
-    expect(options.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.FAIL);
-    expect(options.paused).toBe(false);
-  });
-
-  test('sends the raw HTTP Basic password without secret wrapping', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        authMethod: SR_AUTH_METHOD.BASIC,
-        basicCredentials: { username: ' sr-replicator ', password: 'p@ssw0rd!' },
-      })
-    );
-
-    expect(options.authOptions?.authOptions?.case).toBe('basic');
-    if (options.authOptions?.authOptions?.case === 'basic') {
-      expect(options.authOptions.authOptions.value.username).toBe('sr-replicator');
-      expect(options.authOptions.authOptions.value.password).toBe('p@ssw0rd!');
-      expect(options.authOptions.authOptions.value.password).not.toContain('${secrets.');
-    }
-  });
-
-  test('passes an embedded-mode secret-reference password through verbatim', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        authMethod: SR_AUTH_METHOD.BASIC,
-        basicCredentials: { username: 'sr-replicator', password: '${secrets.SR_PASSWORD}' },
-      })
-    );
-
-    expect(options.authOptions?.authOptions?.case).toBe('basic');
-    if (options.authOptions?.authOptions?.case === 'basic') {
-      // The SecretSelector already stores the reference; the builder must not
-      // re-wrap or unwrap it.
-      expect(options.authOptions.authOptions.value.password).toBe('${secrets.SR_PASSWORD}');
-    }
-  });
-
-  test('passes an embedded-mode client-key secret reference through verbatim', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          clientCert: { pemContent: 'CERT_PEM', fileName: 'client.pem' },
-          clientKey: { pemContent: '${secrets.SR_MTLS_CLIENT_KEY}', fileName: '' },
-        },
-      })
-    );
-
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-      expect(options.tlsSettings.tlsSettings.value.key).toBe('${secrets.SR_MTLS_CLIENT_KEY}');
-      expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-    }
-  });
-
-  test('sends raw PEM contents for TLS certificates and key', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          ca: { pemContent: '-----BEGIN CERTIFICATE-----\nCA', fileName: 'ca.pem' },
-          clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nCERT', fileName: 'client.pem' },
-          clientKey: { pemContent: '-----BEGIN PRIVATE KEY-----\nKEY\n', fileName: 'client.key' },
-        },
-      })
-    );
-
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-      expect(options.tlsSettings.tlsSettings.value.ca).toBe('-----BEGIN CERTIFICATE-----\nCA');
-      expect(options.tlsSettings.tlsSettings.value.cert).toBe('-----BEGIN CERTIFICATE-----\nCERT');
-      expect(options.tlsSettings.tlsSettings.value.key).toBe('-----BEGIN PRIVATE KEY-----\nKEY');
-    }
-  });
-
-  test('omits TLS settings when TLS is disabled and material is a fresh upload', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        useTls: false,
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          ca: { pemContent: '-----BEGIN CERTIFICATE-----\nCA', fileName: 'ca.pem' },
-        },
-      })
-    );
-
-    expect(options.tlsSettings).toBeUndefined();
-  });
-
-  test('round-trips hydrated file-path settings stored with TLS disabled', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        useTls: false,
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          doNotSetSniHostname: true,
-          filePaths: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
-        },
-      })
-    );
-
-    expect(options.tlsSettings?.enabled).toBe(false);
-    expect(options.tlsSettings?.doNotSetSniHostname).toBe(true);
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsFileSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-      expect(options.tlsSettings.tlsSettings.value).toMatchObject({ caPath: '/etc/tls/ca.pem' });
-    }
-  });
-
-  test('round-trips hydrated PEMs stored with TLS disabled', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        useTls: false,
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          // Hydrated material carries no fileName.
-          ca: { pemContent: 'CA_PEM', fileName: '' },
-          clientCert: { pemContent: 'CERT_PEM', fileName: '' },
-          existingKeyConfigured: true,
-          existingKeyFingerprint: 'fp=',
-        },
-      })
-    );
-
-    expect(options.tlsSettings?.enabled).toBe(false);
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-      expect(options.tlsSettings.tlsSettings.value.ca).toBe('CA_PEM');
-      expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-      // Empty key = keep the stored key, same as the enabled path.
-      expect(options.tlsSettings.tlsSettings.value.key).toBe('');
-    }
-  });
-
-  test('builds source filter and exact destination mappings', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        scopeMode: 'specify',
-        contexts: [' .prod '],
-        subjects: ['orders-value'],
-        destinationContextsMode: 'map',
-        contextMappings: [{ source: ' .prod ', destination: ' .dr ' }],
-        syncBehavior: {
-          tailInterval: '10s',
-          fullSyncInterval: '5m',
-          maxSourceRequestRate: '30',
-          unsupportedSchemaFeatures: 'remove',
-        },
-      })
-    );
-
-    expect(options.sourceFilter?.contexts).toEqual(['.prod']);
-    expect(options.sourceFilter?.subjects).toEqual(['orders-value']);
-    expect(options.destination?.mapping?.case).toBe('exact');
-    if (options.destination?.mapping?.case === 'exact') {
-      expect(options.destination.mapping.value.mappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);
-    }
-    expect(options.tailInterval).toMatchObject({ seconds: 10n });
-    expect(options.fullSyncInterval).toMatchObject({ seconds: 300n });
-    expect(options.maxSourceRequestsPerSecond).toBe(30);
-    expect(options.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.REMOVE);
-  });
-
-  test('preserve mode and empty mapping list leave destination unset', () => {
-    const preserved = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        destinationContextsMode: 'preserve',
-        contextMappings: [{ source: '.prod', destination: '.dr' }],
-      })
-    );
-    expect(preserved.destination).toBeUndefined();
-
-    const emptyMap = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({ destinationContextsMode: 'map', contextMappings: [] })
-    );
-    expect(emptyMap.destination).toBeUndefined();
-  });
-
-  test('round-trips doNotSetSniHostname on every TLS shape', () => {
-    const bare = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({ mtls: { ...initialValues.schemaRegistry.mtls, doNotSetSniHostname: true } })
-    );
-    expect(bare.tlsSettings?.doNotSetSniHostname).toBe(true);
-
-    const withPem = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          ca: { pemContent: 'CA_PEM', fileName: 'ca.pem' },
-          doNotSetSniHostname: true,
-        },
-      })
-    );
-    expect(withPem.tlsSettings?.doNotSetSniHostname).toBe(true);
-
-    const withFilePaths = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          doNotSetSniHostname: true,
-          filePaths: { caPath: '/ca.pem', keyPath: '/client.key', certPath: '/client.pem' },
-        },
-      })
-    );
-    expect(withFilePaths.tlsSettings?.doNotSetSniHostname).toBe(true);
-  });
-
-  test('round-trips paused from the form slice', () => {
-    expect(buildShadowSchemaRegistryApiOptions(createApiFormValues()).paused).toBe(false);
-    expect(buildShadowSchemaRegistryApiOptions(createApiFormValues({ paused: true })).paused).toBe(true);
-  });
-
-  test('round-trips file-path TLS settings verbatim', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          filePaths: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
-        },
-      })
-    );
-
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsFileSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-      expect(options.tlsSettings.tlsSettings.value).toMatchObject({
-        caPath: '/etc/tls/ca.pem',
-        keyPath: '/etc/tls/client.key',
-        certPath: '/etc/tls/client.pem',
+      expect(options.tlsSettings).toMatchObject({ enabled: true, tlsSettings: { case: undefined } });
+      expect({
+        sourceUrl: options.sourceUrl,
+        authOptions: options.authOptions,
+        tailInterval: options.tailInterval,
+        fullSyncInterval: options.fullSyncInterval,
+        maxSourceRequestsPerSecond: options.maxSourceRequestsPerSecond,
+        sourceFilter: options.sourceFilter,
+        destination: options.destination,
+        unsupportedSchemaFeaturePolicy: options.unsupportedSchemaFeaturePolicy,
+        paused: options.paused,
+      }).toStrictEqual({
+        sourceUrl: 'https://schema-registry.example.com:8081',
+        authOptions: undefined,
+        tailInterval: undefined,
+        fullSyncInterval: undefined,
+        maxSourceRequestsPerSecond: 0,
+        sourceFilter: undefined,
+        destination: undefined,
+        unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.FAIL,
+        paused: false,
       });
-    }
+    });
+
+    test('sends the raw HTTP Basic password without secret wrapping', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          authMethod: SR_AUTH_METHOD.BASIC,
+          basicCredentials: { username: ' sr-replicator ', password: 'p@ssw0rd!' },
+        })
+      );
+
+      expect(options.authOptions?.authOptions?.case).toBe('basic');
+      if (options.authOptions?.authOptions?.case === 'basic') {
+        expect(options.authOptions.authOptions.value.username).toBe('sr-replicator');
+        expect(options.authOptions.authOptions.value.password).toBe('p@ssw0rd!');
+        expect(options.authOptions.authOptions.value.password).not.toContain('${secrets.');
+      }
+    });
+
+    test('passes an embedded-mode secret-reference password through verbatim', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          authMethod: SR_AUTH_METHOD.BASIC,
+          basicCredentials: { username: 'sr-replicator', password: '${secrets.SR_PASSWORD}' },
+        })
+      );
+
+      expect(options.authOptions?.authOptions?.case).toBe('basic');
+      if (options.authOptions?.authOptions?.case === 'basic') {
+        // The SecretSelector already stores the reference; the builder must not
+        // re-wrap or unwrap it.
+        expect(options.authOptions.authOptions.value.password).toBe('${secrets.SR_PASSWORD}');
+      }
+    });
   });
 
-  test('sends an empty key alongside a kept server-side pair', () => {
-    const options = buildShadowSchemaRegistryApiOptions(
-      createApiFormValues({
-        mtls: {
-          ...initialValues.schemaRegistry.mtls,
-          clientCert: { pemContent: 'CERT_PEM', fileName: '' },
-          existingKeyConfigured: true,
-          existingKeyFingerprint: 'fp=',
-        },
-      })
-    );
+  describe('tls material', () => {
+    test('passes an embedded-mode client-key secret reference through verbatim', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: 'CERT_PEM', fileName: 'client.pem' },
+            clientKey: { pemContent: '${secrets.SR_MTLS_CLIENT_KEY}', fileName: '' },
+          },
+        })
+      );
 
-    expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-      expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-      // Empty key = keep the stored key (verified server behavior); the
-      // fingerprint marker never reaches the wire.
-      expect(options.tlsSettings.tlsSettings.value.key).toBe('');
-      expect(options.tlsSettings.tlsSettings.value.keyFingerprint).toBe('');
-    }
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
+        expect(options.tlsSettings.tlsSettings.value.key).toBe('${secrets.SR_MTLS_CLIENT_KEY}');
+        expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
+      }
+    });
+
+    test('sends raw PEM contents for TLS certificates and key', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            ca: { pemContent: '-----BEGIN CERTIFICATE-----\nCA', fileName: 'ca.pem' },
+            clientCert: { pemContent: '-----BEGIN CERTIFICATE-----\nCERT', fileName: 'client.pem' },
+            clientKey: { pemContent: '-----BEGIN PRIVATE KEY-----\nKEY\n', fileName: 'client.key' },
+          },
+        })
+      );
+
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
+        expect(options.tlsSettings.tlsSettings.value.ca).toBe('-----BEGIN CERTIFICATE-----\nCA');
+        expect(options.tlsSettings.tlsSettings.value.cert).toBe('-----BEGIN CERTIFICATE-----\nCERT');
+        expect(options.tlsSettings.tlsSettings.value.key).toBe('-----BEGIN PRIVATE KEY-----\nKEY');
+      }
+    });
+
+    test('omits TLS settings when TLS is disabled and material is a fresh upload', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          useTls: false,
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            ca: { pemContent: '-----BEGIN CERTIFICATE-----\nCA', fileName: 'ca.pem' },
+          },
+        })
+      );
+
+      expect(options.tlsSettings).toBeUndefined();
+    });
+
+    test('round-trips hydrated file-path settings stored with TLS disabled', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          useTls: false,
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            doNotSetSniHostname: true,
+            filePaths: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
+          },
+        })
+      );
+
+      expect(options.tlsSettings?.enabled).toBe(false);
+      expect(options.tlsSettings?.doNotSetSniHostname).toBe(true);
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsFileSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
+        expect(options.tlsSettings.tlsSettings.value).toMatchObject({ caPath: '/etc/tls/ca.pem' });
+      }
+    });
+
+    test('round-trips hydrated PEMs stored with TLS disabled', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          useTls: false,
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            // Hydrated material carries no fileName.
+            ca: { pemContent: 'CA_PEM', fileName: '' },
+            clientCert: { pemContent: 'CERT_PEM', fileName: '' },
+            existingKeyConfigured: true,
+            existingKeyFingerprint: 'fp=',
+          },
+        })
+      );
+
+      expect(options.tlsSettings?.enabled).toBe(false);
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
+        expect(options.tlsSettings.tlsSettings.value.ca).toBe('CA_PEM');
+        expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
+        // Empty key = keep the stored key, same as the enabled path.
+        expect(options.tlsSettings.tlsSettings.value.key).toBe('');
+      }
+    });
+  });
+
+  describe('scope and destination', () => {
+    test('builds source filter and exact destination mappings', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          scopeMode: 'specify',
+          contexts: [' .prod '],
+          subjects: ['orders-value'],
+          destinationContextsMode: 'map',
+          contextMappings: [{ source: ' .prod ', destination: ' .dr ' }],
+          syncBehavior: {
+            tailInterval: '10s',
+            fullSyncInterval: '5m',
+            maxSourceRequestRate: '30',
+            unsupportedSchemaFeatures: 'remove',
+          },
+        })
+      );
+
+      expect(options.sourceFilter?.contexts).toEqual(['.prod']);
+      expect(options.sourceFilter?.subjects).toEqual(['orders-value']);
+      expect(options.destination?.mapping?.case).toBe('exact');
+      if (options.destination?.mapping?.case === 'exact') {
+        expect(options.destination.mapping.value.mappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);
+      }
+      expect(options.tailInterval).toMatchObject({ seconds: 10n });
+      expect(options.fullSyncInterval).toMatchObject({ seconds: 300n });
+      expect(options.maxSourceRequestsPerSecond).toBe(30);
+      expect(options.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.REMOVE);
+    });
+
+    test('preserve mode and empty mapping list leave destination unset', () => {
+      const preserved = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          destinationContextsMode: 'preserve',
+          contextMappings: [{ source: '.prod', destination: '.dr' }],
+        })
+      );
+      expect(preserved.destination).toBeUndefined();
+
+      const emptyMap = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({ destinationContextsMode: 'map', contextMappings: [] })
+      );
+      expect(emptyMap.destination).toBeUndefined();
+    });
+  });
+
+  describe('round trips', () => {
+    test('round-trips doNotSetSniHostname on every TLS shape', () => {
+      const bare = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({ mtls: { ...initialValues.schemaRegistry.mtls, doNotSetSniHostname: true } })
+      );
+      expect(bare.tlsSettings?.doNotSetSniHostname).toBe(true);
+
+      const withPem = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            ca: { pemContent: 'CA_PEM', fileName: 'ca.pem' },
+            doNotSetSniHostname: true,
+          },
+        })
+      );
+      expect(withPem.tlsSettings?.doNotSetSniHostname).toBe(true);
+
+      const withFilePaths = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            doNotSetSniHostname: true,
+            filePaths: { caPath: '/ca.pem', keyPath: '/client.key', certPath: '/client.pem' },
+          },
+        })
+      );
+      expect(withFilePaths.tlsSettings?.doNotSetSniHostname).toBe(true);
+    });
+
+    test('round-trips paused from the form slice', () => {
+      expect(buildShadowSchemaRegistryApiOptions(createApiFormValues()).paused).toBe(false);
+      expect(buildShadowSchemaRegistryApiOptions(createApiFormValues({ paused: true })).paused).toBe(true);
+    });
+
+    test('round-trips file-path TLS settings verbatim', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            filePaths: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
+          },
+        })
+      );
+
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsFileSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
+        expect(options.tlsSettings.tlsSettings.value).toMatchObject({
+          caPath: '/etc/tls/ca.pem',
+          keyPath: '/etc/tls/client.key',
+          certPath: '/etc/tls/client.pem',
+        });
+      }
+    });
+
+    test('sends an empty key alongside a kept server-side pair', () => {
+      const options = buildShadowSchemaRegistryApiOptions(
+        createApiFormValues({
+          mtls: {
+            ...initialValues.schemaRegistry.mtls,
+            clientCert: { pemContent: 'CERT_PEM', fileName: '' },
+            existingKeyConfigured: true,
+            existingKeyFingerprint: 'fp=',
+          },
+        })
+      );
+
+      expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
+      if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
+        expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
+        // Empty key = keep the stored key (verified server behavior); the
+        // fingerprint marker never reaches the wire.
+        expect(options.tlsSettings.tlsSettings.value.key).toBe('');
+        expect(options.tlsSettings.tlsSettings.value.keyFingerprint).toBe('');
+      }
+    });
   });
 });
 

@@ -38,14 +38,14 @@ export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoa
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Failover</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-4">
-            <div className="text-body">
+          <AlertDialogDescription>
+            <div className="mb-4 text-body">
               {topicName
                 ? `This action will promote the shadow topic "${topicName}" to an active state, allowing writes to this cluster.`
                 : 'This action will promote all shadow topics to an active state, allowing writes to this cluster.'}
             </div>
             <div>
-              <div className="font-semibold text-body">Before proceeding, ensure:</div>
+              <div className="text-body font-semibold">Before proceeding, ensure:</div>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li>
                   <div className="text-body">

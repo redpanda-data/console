@@ -15,7 +15,7 @@ const CLUSTER_STATUS_LABEL = /^Cluster Status$/i;
  * fetch settles, so any assertion on its transient state is a race, not a
  * contract.
  */
-test.describe('Login', () => {
+test.describe('login', () => {
   test('sends an unauthenticated variant straight to the overview', async ({ page }) => {
     await page.goto('/login');
 

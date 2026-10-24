@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('Console CLI schedules independent files concurrently', () => {
+test('console CLI schedules independent files concurrently', () => {
   mkdirSync(resolve('tests/.rstest'), { recursive: true });
   const directory = mkdtempSync(resolve('tests/.rstest/runner-cli-'));
   try {

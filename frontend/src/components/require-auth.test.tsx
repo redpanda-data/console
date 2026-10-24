@@ -25,7 +25,7 @@ function setPath(path: string) {
   window.history.pushState({}, '', path);
 }
 
-describe('RequireAuth', () => {
+describe('the RequireAuth', () => {
   const initialSingleSignOn = AppFeatures.SINGLE_SIGN_ON;
   const initialAuthClient = appConfig.authenticationClient;
 

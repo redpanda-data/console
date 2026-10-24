@@ -55,7 +55,7 @@ const TestWrapper = ({
   );
 };
 
-describe('SyncBehaviorSection', () => {
+describe('the SyncBehaviorSection', () => {
   test('should start collapsed and reveal fields when expanded', async () => {
     const user = userEvent.setup();
     let formValues: FormValues | undefined;

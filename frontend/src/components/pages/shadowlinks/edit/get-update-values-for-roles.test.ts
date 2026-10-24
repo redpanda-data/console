@@ -59,7 +59,7 @@ const baseFormValues: FormValues = {
 };
 
 describe('getUpdateValuesForRoles', () => {
-  describe('Role mode changes', () => {
+  describe('role mode changes', () => {
     test('should detect change from all to specify mode', () => {
       const original = { ...baseFormValues, rolesMode: 'all' as const, roles: [] };
       const updated = {
@@ -107,7 +107,7 @@ describe('getUpdateValuesForRoles', () => {
     });
   });
 
-  describe('Role array changes', () => {
+  describe('role array changes', () => {
     test('should detect when a role is added to the list', () => {
       const original = {
         ...baseFormValues,
@@ -281,7 +281,7 @@ describe('getUpdateValuesForRoles', () => {
     });
   });
 
-  describe('No changes', () => {
+  describe('no changes', () => {
     test('should not emit a mask path when mode and roles are unchanged', () => {
       const original = { ...baseFormValues, rolesMode: 'specify' as const, roles: [] };
       const updated = { ...baseFormValues, rolesMode: 'specify' as const, roles: [] };
@@ -292,7 +292,7 @@ describe('getUpdateValuesForRoles', () => {
     });
   });
 
-  describe('Multiple changes', () => {
+  describe('multiple changes', () => {
     test('should detect multiple changes at once (mode + roles)', () => {
       const original = {
         ...baseFormValues,
@@ -323,16 +323,20 @@ describe('getUpdateValuesForRoles', () => {
 
       // Validate schema values
       expect(result.value.roleNameFilters).toHaveLength(2);
-      expect(result.value.roleNameFilters[0].name).toBe('role-1');
-      expect(result.value.roleNameFilters[0].patternType).toBe(PatternType.LITERAL);
-      expect(result.value.roleNameFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.roleNameFilters[1].name).toBe('role-2');
-      expect(result.value.roleNameFilters[1].patternType).toBe(PatternType.PREFIX);
-      expect(result.value.roleNameFilters[1].filterType).toBe(FilterType.EXCLUDE);
+      expect(result.value.roleNameFilters[0]).toMatchObject({
+        name: 'role-1',
+        patternType: PatternType.LITERAL,
+        filterType: FilterType.INCLUDE,
+      });
+      expect(result.value.roleNameFilters[1]).toMatchObject({
+        name: 'role-2',
+        patternType: PatternType.PREFIX,
+        filterType: FilterType.EXCLUDE,
+      });
     });
   });
 
-  describe('Schema building', () => {
+  describe('schema building', () => {
     test('should build correct schema for all mode (wildcard filter with name=*)', () => {
       const values = {
         ...baseFormValues,

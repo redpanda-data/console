@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
+import clsx from 'clsx';
 import { BadRequestSchema } from 'protogen/google/rpc/error_details_pb';
 import {
   ACL_Operation,
@@ -21,11 +22,10 @@ import {
   CreateACLRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { type Control, type UseFormSetError, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useCreateACLMutation } from '../../../../react-query/api/acl';
-import { useListUsersQuery } from '../../../../react-query/api/user';
 import { api } from '../../../../state/backend-api';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -51,6 +51,7 @@ import {
 import { Input } from '../../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { InlineCode } from '../../../redpanda-ui/components/typography';
+import { usePrincipalPicker } from '../hooks/use-principal-picker';
 
 const schema = z.object({
   principal: z.string().min(1, 'Principal is required'),
@@ -98,6 +99,138 @@ const PATTERN_TYPE_HELP: Partial<Record<ACL_ResourcePatternType, string>> = {
   [ACL_ResourcePatternType.ANY]: 'Matches any resource name.',
 };
 
+const getResourceFieldOptions = (resourceType: ACL_ResourceType, patternType: ACL_ResourcePatternType) => {
+  const showPatternAndName = resourceType !== ACL_ResourceType.CLUSTER && resourceType !== ACL_ResourceType.REGISTRY;
+  return {
+    resourceTypeOptions: api.isRedpanda
+      ? [...BASE_resourceTypeOptions, ...REDPANDA_resourceTypeOptions]
+      : BASE_resourceTypeOptions,
+    showPatternAndName,
+    showResourceName:
+      showPatternAndName &&
+      (patternType === ACL_ResourcePatternType.LITERAL || patternType === ACL_ResourcePatternType.PREFIXED),
+  };
+};
+
+const getResourceName = (values: FormValues) => {
+  if (values.resourceType === ACL_ResourceType.CLUSTER) {
+    return 'kafka-cluster';
+  }
+  // ANY is a query-only pattern type; it is created as LITERAL with a wildcard name
+  return values.patternType === ACL_ResourcePatternType.ANY ? '*' : values.resourceName || '*';
+};
+
+const toCreateAclRequest = (values: FormValues) =>
+  create(CreateACLRequestSchema, {
+    resourceType: values.resourceType,
+    resourceName: getResourceName(values),
+    resourcePatternType:
+      values.patternType === ACL_ResourcePatternType.ANY ? ACL_ResourcePatternType.LITERAL : values.patternType,
+    principal: values.principal,
+    host: values.host || '*',
+    operation: values.operation,
+    permissionType: values.permissionType,
+  });
+
+// A violation the form can show next to its field.
+const isRenderableViolation = (violation: { field: string }, renderableFieldNames: Set<string>) =>
+  Boolean(violation.field) && renderableFieldNames.has(violation.field);
+
+/**
+ * Puts each server field violation on its rendered field and returns the message for the form-level alert:
+ * the other violations, else the raw error when no field took one, else `null`.
+ */
+const getSubmitErrorMessage = (
+  err: unknown,
+  setError: UseFormSetError<FormValues>,
+  renderableFieldNames: Set<string>
+): string | null => {
+  if (!(err instanceof ConnectError)) {
+    return err instanceof Error ? err.message : String(err);
+  }
+  const violations = err.findDetails(BadRequestSchema).flatMap((badRequest) => badRequest.fieldViolations);
+  const fieldViolations = violations.filter((v) => isRenderableViolation(v, renderableFieldNames));
+  for (const violation of fieldViolations) {
+    setError(violation.field as keyof FormValues, { type: 'server', message: violation.description });
+  }
+  const globalMessages = violations
+    .filter((v) => !isRenderableViolation(v, renderableFieldNames))
+    .map((v) => (v.field ? `${v.field}: ${v.description}` : v.description));
+  if (globalMessages.length > 0) {
+    return globalMessages.join('\n');
+  }
+  return fieldViolations.length > 0 ? null : err.rawMessage;
+};
+
+type PrincipalFieldProps = {
+  control: Control<FormValues>;
+  picker: ReturnType<typeof usePrincipalPicker>;
+};
+
+const PrincipalField = ({ control, picker }: PrincipalFieldProps) => {
+  const { principalType, setPrincipalType, principalValue, setPrincipalValue, userOptions } = picker;
+
+  return (
+    <FormField
+      control={control}
+      name="principal"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Principal</FormLabel>
+          <FormControl>
+            <div className="flex gap-2">
+              <Select
+                onValueChange={(v) => {
+                  setPrincipalType(v as 'User' | 'Group');
+                  setPrincipalValue('');
+                  field.onChange('');
+                }}
+                value={principalType}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="User">User</SelectItem>
+                  <SelectItem value="Group">Group</SelectItem>
+                </SelectContent>
+              </Select>
+              {principalType === 'User' ? (
+                <Combobox
+                  className="flex-1"
+                  clearable={false}
+                  creatable
+                  createLabel="user"
+                  onChange={(v) => {
+                    setPrincipalValue(v);
+                    field.onChange(v ? `${principalType}:${v}` : '');
+                  }}
+                  options={userOptions}
+                  placeholder="Select or type a user..."
+                  value={principalValue}
+                />
+              ) : (
+                <Input
+                  // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
+                  autoFocus
+                  className="flex-1"
+                  onChange={(e) => {
+                    setPrincipalValue(e.target.value);
+                    field.onChange(e.target.value ? `${principalType}:${e.target.value}` : '');
+                  }}
+                  placeholder="Enter group name..."
+                  value={principalValue}
+                />
+              )}
+            </div>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};
+
 type AddAclDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -108,11 +241,7 @@ type AddAclDialogProps = {
 export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProps) => {
   const { mutateAsync: createACL, isPending } = useCreateACLMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [principalType, setPrincipalType] = useState<'User' | 'Group'>('User');
-  const [principalValue, setPrincipalValue] = useState('');
-
-  const { data: usersData } = useListUsersQuery(undefined, { enabled: !principal });
-  const userOptions = (usersData?.users ?? []).map((u) => ({ value: u.name, label: u.name }));
+  const picker = usePrincipalPicker(!principal);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -127,22 +256,18 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     },
   });
 
-  const resourceType = useWatch({ control: form.control, name: 'resourceType' });
-  const patternType = useWatch({ control: form.control, name: 'patternType' });
+  const [resourceType, patternType] = useWatch({ control: form.control, name: ['resourceType', 'patternType'] });
+  const { resourceTypeOptions, showPatternAndName, showResourceName } = getResourceFieldOptions(
+    resourceType,
+    patternType
+  );
 
-  const resourceTypeOptions = api.isRedpanda
-    ? [...BASE_resourceTypeOptions, ...REDPANDA_resourceTypeOptions]
-    : BASE_resourceTypeOptions;
-
-  const showPatternAndName = resourceType !== ACL_ResourceType.CLUSTER && resourceType !== ACL_ResourceType.REGISTRY;
-
-  const showResourceName =
-    showPatternAndName &&
-    (patternType === ACL_ResourcePatternType.LITERAL || patternType === ACL_ResourcePatternType.PREFIXED);
-
-  const resetPrincipalSelector = () => {
-    setPrincipalType('User');
-    setPrincipalValue('');
+  const closeAndReset = () => {
+    onOpenChange(false);
+    form.reset();
+    if (!principal) {
+      picker.reset();
+    }
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -154,68 +279,16 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
       ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
       : FORM_FIELD_NAMES;
     try {
-      // ANY is a query-only pattern type; translate it to LITERAL with wildcard name
-      const isAny = values.patternType === ACL_ResourcePatternType.ANY;
-      await createACL(
-        create(CreateACLRequestSchema, {
-          resourceType: values.resourceType,
-          resourceName:
-            values.resourceType === ACL_ResourceType.CLUSTER
-              ? 'kafka-cluster'
-              : isAny
-                ? '*'
-                : values.resourceName || '*',
-          resourcePatternType: isAny ? ACL_ResourcePatternType.LITERAL : values.patternType,
-          principal: values.principal,
-          host: values.host || '*',
-          operation: values.operation,
-          permissionType: values.permissionType,
-        })
-      );
-      onOpenChange(false);
-      form.reset();
-      if (!principal) {
-        resetPrincipalSelector();
-      }
+      await createACL(toCreateAclRequest(values));
+      closeAndReset();
     } catch (err) {
-      if (err instanceof ConnectError) {
-        const globalMessages: string[] = [];
-        let hasFieldError = false;
-
-        for (const badRequest of err.findDetails(BadRequestSchema)) {
-          for (const violation of badRequest.fieldViolations) {
-            if (violation.field && renderableFieldNames.has(violation.field)) {
-              form.setError(violation.field as keyof FormValues, {
-                type: 'server',
-                message: violation.description,
-              });
-              hasFieldError = true;
-            } else {
-              globalMessages.push(
-                violation.field ? `${violation.field}: ${violation.description}` : violation.description
-              );
-            }
-          }
-        }
-
-        if (globalMessages.length > 0) {
-          setSubmitError(globalMessages.join('\n'));
-        } else if (!hasFieldError) {
-          setSubmitError(err.rawMessage);
-        }
-      } else {
-        setSubmitError(err instanceof Error ? err.message : String(err));
-      }
+      setSubmitError(getSubmitErrorMessage(err, form.setError, renderableFieldNames));
     }
   };
 
   const handleClose = () => {
     setSubmitError(null);
-    onOpenChange(false);
-    form.reset();
-    if (!principal) {
-      resetPrincipalSelector();
-    }
+    closeAndReset();
   };
 
   return (
@@ -230,65 +303,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
           <Form {...form}>
             <form id="add-acl-form" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="space-y-4 py-2">
-                {!principal && (
-                  <FormField
-                    control={form.control}
-                    name="principal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Principal</FormLabel>
-                        <FormControl>
-                          <div className="flex gap-2">
-                            <Select
-                              onValueChange={(v) => {
-                                setPrincipalType(v as 'User' | 'Group');
-                                setPrincipalValue('');
-                                field.onChange('');
-                              }}
-                              value={principalType}
-                            >
-                              <SelectTrigger className="w-28">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="User">User</SelectItem>
-                                <SelectItem value="Group">Group</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {principalType === 'User' ? (
-                              <Combobox
-                                className="flex-1"
-                                clearable={false}
-                                creatable
-                                createLabel="user"
-                                onChange={(v) => {
-                                  setPrincipalValue(v);
-                                  field.onChange(v ? `${principalType}:${v}` : '');
-                                }}
-                                options={userOptions}
-                                placeholder="Select or type a user..."
-                                value={principalValue}
-                              />
-                            ) : (
-                              <Input
-                                // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
-                                autoFocus
-                                className="flex-1"
-                                onChange={(e) => {
-                                  setPrincipalValue(e.target.value);
-                                  field.onChange(e.target.value ? `${principalType}:${e.target.value}` : '');
-                                }}
-                                placeholder="Enter group name..."
-                                value={principalValue}
-                              />
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                {!principal && <PrincipalField control={form.control} picker={picker} />}
 
                 <FormField
                   control={form.control}
@@ -331,11 +346,12 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             { value: ACL_ResourcePatternType.ANY, label: 'Any' },
                           ].map((opt) => (
                             <button
-                              className={`inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                              className={clsx(
+                                'inline-flex flex-1 items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
                                 field.value === opt.value
                                   ? 'bg-background text-foreground shadow-sm'
                                   : 'text-muted-foreground hover:text-foreground'
-                              }`}
+                              )}
                               key={opt.value}
                               onClick={() => field.onChange(opt.value)}
                               type="button"

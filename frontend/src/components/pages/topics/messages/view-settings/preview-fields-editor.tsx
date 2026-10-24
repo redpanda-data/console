@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
@@ -32,7 +33,7 @@ const OptionRow = ({
   onChange: (value: string) => void;
 }) => (
   <div className="flex flex-col gap-1">
-    <div className="font-semibold text-caption text-muted-foreground uppercase tracking-wide">{label}</div>
+    <div className="text-caption font-semibold tracking-wide text-muted-foreground uppercase">{label}</div>
     <ToggleGroup
       className="w-full"
       onValueChange={(next: string[]) => {
@@ -44,7 +45,7 @@ const OptionRow = ({
       value={[value]}
     >
       {options.map((option) => (
-        <ToggleGroupItem className="flex-1 text-body-sm" key={option.value} value={option.value}>
+        <ToggleGroupItem className="flex-1" key={option.value} value={option.value}>
           {option.label}
         </ToggleGroupItem>
       ))}
@@ -82,10 +83,10 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <div className="mb-1 font-semibold text-caption text-muted-foreground uppercase tracking-wide">
+        <div className="mb-1 text-caption font-semibold tracking-wide text-muted-foreground uppercase">
           Preview fields
         </div>
-        <p className="mb-2 text-body-sm text-muted-foreground leading-relaxed">
+        <p className="mb-2 text-body-sm leading-relaxed text-muted-foreground">
           Show only chosen fields from the value. Add glob patterns like{' '}
           <span className="font-mono text-foreground">address.*</span>.
         </p>
@@ -110,24 +111,26 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
                 start={null}
                 value={tag.pattern}
               />
-              <button
-                className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() =>
-                  setPreviewTags(
-                    topicName,
-                    tags.filter((t) => t.id !== tag.id)
-                  )
-                }
-                title="Remove"
-                type="button"
-              >
-                <XIcon className="size-3.5" />
-              </button>
+              <ElementTooltip content="Remove">
+                <button
+                  aria-label="Remove"
+                  className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() =>
+                    setPreviewTags(
+                      topicName,
+                      tags.filter((t) => t.id !== tag.id)
+                    )
+                  }
+                  type="button"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              </ElementTooltip>
             </div>
           ))}
         </div>
         <Button
-          className="mt-1.5 w-full border-dashed"
+          className="mt-1.5 w-full"
           onClick={() =>
             setPreviewTags(topicName, [
               ...tags,
@@ -143,7 +146,7 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
           }
           size="sm"
           testId="preview-tag-add"
-          variant="outline"
+          variant="dashed"
         >
           Add field…
         </Button>

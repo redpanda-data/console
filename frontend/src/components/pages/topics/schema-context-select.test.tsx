@@ -30,7 +30,7 @@ describe('schemaContextOptions', () => {
   });
 });
 
-describe('SchemaContextSelect', () => {
+describe('the SchemaContextSelect', () => {
   test('shows the automatic option for an empty value', () => {
     render(<SchemaContextSelect contexts={['.', '.outgo']} id="schema-context" onChange={rs.fn()} value="" />);
     expect(screen.getByTestId('schema-context')).toHaveTextContent('Automatic (topic config)');

@@ -10,6 +10,7 @@
  */
 
 import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronDownIcon, GripVerticalIcon, Settings2Icon } from 'lucide-react';
@@ -64,20 +65,20 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                     {...dragProvided.draggableProps}
                   >
                     <div className="flex items-center gap-2 px-1.5 py-1.5">
-                      <span
-                        className="cursor-grab text-muted-foreground/60"
-                        {...dragProvided.dragHandleProps}
-                        title="Drag to reorder"
-                      >
-                        <GripVerticalIcon className="size-4" />
-                      </span>
+                      {/* dragHandleProps make this a focusable role="button"; the sr-only text names it. */}
+                      <ElementTooltip content="Drag to reorder">
+                        <span className="cursor-grab text-muted-foreground/60" {...dragProvided.dragHandleProps}>
+                          <GripVerticalIcon className="size-4" />
+                          <span className="sr-only">Drag to reorder</span>
+                        </span>
+                      </ElementTooltip>
                       <Checkbox
                         aria-labelledby={`column-label-${column.id}`}
                         checked={column.visible}
                         onCheckedChange={() => toggleVisible(column.id)}
                         testId={`column-toggle-${column.id}`}
                       />
-                      <span className="flex-1 text-[13.5px]" id={`column-label-${column.id}`}>
+                      <span className="flex-1 text-body" id={`column-label-${column.id}`}>
                         {COLUMN_LABELS[column.id]}
                       </span>
                       {CONFIGURABLE.has(column.id) && (
@@ -94,9 +95,9 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                           <span className="max-w-36 overflow-hidden text-ellipsis whitespace-nowrap">
                             {configSummary(column.id)}
                           </span>
-                          <ChevronDownIcon
-                            className={cn('size-3 transition-transform', expanded === column.id && 'rotate-180')}
-                          />
+                          <span className={cn('block transition-transform', expanded === column.id && 'rotate-180')}>
+                            <ChevronDownIcon className="size-3" />
+                          </span>
                         </button>
                       )}
                     </div>

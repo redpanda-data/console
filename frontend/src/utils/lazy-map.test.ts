@@ -12,7 +12,7 @@
 import { LazyMap } from './lazy-map';
 import { describe, expect, test } from 'bun:test';
 
-describe('LazyMap', () => {
+describe('the LazyMap', () => {
   test('auto-creates missing values via defaultCreate', () => {
     const map = new LazyMap<string, string>((k) => `v:${k}`);
     expect(map.get('a')).toBe('v:a');

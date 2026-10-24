@@ -47,5 +47,7 @@ try {
     });
   });
 } finally {
-  await new Promise((resolve, reject) => compiler.close((error) => (error ? reject(error) : resolve())));
+  await new Promise((resolve, reject) => {
+    compiler.close((error) => (error ? reject(error) : resolve()));
+  });
 }

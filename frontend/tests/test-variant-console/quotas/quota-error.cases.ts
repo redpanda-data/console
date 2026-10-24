@@ -12,8 +12,8 @@ import { expect, test } from '../../shared/e2e';
 
 const QUOTA_SERVICE = 'redpanda.api.dataplane.v1.QuotaService';
 
-test.describe('Quotas page - Connect error handling', () => {
-  test('ListQuotas INTERNAL renders an error state, not a silent empty table', async ({ page }) => {
+test.describe('quotas page - Connect error handling', () => {
+  test('listQuotas INTERNAL renders an error state, not a silent empty table', async ({ page }) => {
     await mockConnectError({
       page,
       urlGlob: rpcUrl(QUOTA_SERVICE, 'ListQuotas'),
@@ -38,7 +38,7 @@ test.describe('Quotas page - Connect error handling', () => {
     await expect(page.getByRole('alert')).toContainText('mocked backend failure', { timeout: 30_000 });
   });
 
-  test('ListQuotas PERMISSION_DENIED surfaces a permission message (not a raw gRPC code)', async ({ page }) => {
+  test('listQuotas PERMISSION_DENIED surfaces a permission message (not a raw gRPC code)', async ({ page }) => {
     await mockConnectError({
       page,
       urlGlob: rpcUrl(QUOTA_SERVICE, 'ListQuotas'),

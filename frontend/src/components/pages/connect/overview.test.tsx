@@ -10,11 +10,13 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { createRouterTransport } from '@connectrpc/connect';
+import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import { config, isEmbedded } from 'config';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
+import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 rs.mock('config', () => ({
@@ -38,8 +40,10 @@ const renderPage = (embedded: boolean) => {
   renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />, { transport });
 };
 
-describe('Connect overview mount', () => {
+describe('connect overview mount', () => {
   const initialState = useApiStore.getState();
+  const initialFeatures = useSupportedFeaturesStore.getState();
+  const initialSecretsClient = config.rpcnSecretsClient;
   beforeEach(() => {
     const originalFetch = config.fetch;
     rs.spyOn(config, 'fetch').mockImplementation((input, init) => {
@@ -52,6 +56,8 @@ describe('Connect overview mount', () => {
   afterEach(() => {
     rs.restoreAllMocks();
     useApiStore.setState(initialState, true);
+    useSupportedFeaturesStore.setState(initialFeatures, true);
+    config.rpcnSecretsClient = initialSecretsClient;
   });
 
   it('renders the new pipelines list in Cloud', async () => {
@@ -65,5 +71,25 @@ describe('Connect overview mount', () => {
     renderPage(false);
     await waitFor(() => expect(screen.getByText('Using Redpanda Connect')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: NEW_LIST_CTA })).not.toBeInTheDocument();
+  });
+
+  it('loads connectors without probing unused secret scope permissions', async () => {
+    const toastError = rs.spyOn(toast, 'error');
+    config.rpcnSecretsClient = createClient(
+      SecretService,
+      createRouterTransport(({ rpc }) => {
+        rpc(SecretService.method.listSecretScopes, () => {
+          throw new ConnectError('scope lookup denied', Code.PermissionDenied);
+        });
+      })
+    );
+    useSupportedFeaturesStore.setState({ pipelinesApi: true });
+
+    renderPage(true);
+
+    await waitFor(() =>
+      expect(useApiStore.getState().connectConnectors).toEqual({ isConfigured: false, clusters: null })
+    );
+    expect(toastError).not.toHaveBeenCalled();
   });
 });

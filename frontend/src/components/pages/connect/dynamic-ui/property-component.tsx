@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import clsx from 'clsx';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
@@ -26,108 +27,109 @@ const updatePropertyValue = (property: Property, value: Property['value']) => {
   property.notifyChange();
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export const PropertyComponent = (props: { property: Property }) => {
-  const p = props.property;
-  const def = p.entry.definition;
+function recommendedRadioOptions(p: Property) {
   const metadata = p.entry.metadata;
-  if (p.isHidden) {
-    return null;
-  }
-  if (p.entry.value.visible === false) {
-    return null;
-  }
+  const recValues = p.entry.value.recommended_values;
+  return metadata?.recommended_values && metadata.recommended_values?.length > 0
+    ? metadata.recommended_values.map(({ value, display_name: label }) => ({ value, label }))
+    : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
+}
 
-  let inputComp = (
-    <div key={p.name}>
-      <div>
-        "{p.name}" (unknown type "{def.type}")
-      </div>
-      <div className="codeBox" style={{ fontSize: 'smaller' }}>
-        {JSON.stringify(p.entry, undefined, 4)}
-      </div>
-    </div>
-  );
-
-  const v = p.value;
-  // Field generates no ids; the label and the control share this one.
-  const fieldId = `property-${p.name}`;
-  const isRequired = def.required;
-
-  switch (def.type) {
-    case 'STRING':
-    case 'CLASS': {
-      const recValues = p.entry.value.recommended_values;
-      if (metadata?.component_type === 'RADIO_GROUP') {
-        const options =
-          metadata.recommended_values && metadata.recommended_values?.length > 0
-            ? metadata.recommended_values.map(({ value, display_name: label }) => ({ value, label }))
-            : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
-        inputComp = (
-          <RadioGroup
-            aria-labelledby={`${fieldId}-label`}
-            aria-required={isRequired || undefined}
-            // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
-            className="flex flex-wrap gap-4"
-            name={p.name}
-            onValueChange={(next) => {
-              updatePropertyValue(p, next as Property['value']);
-            }}
-            orientation="horizontal"
-            value={String(v || def.default_value)}
-          >
-            {options.map((option) => {
-              const id = `${p.name}-${option.value}`;
-              return (
-                <div className="flex items-center gap-2" key={String(option.value)}>
-                  <RadioGroupItem id={id} testId={`${option.value}_field`} value={String(option.value)} />
-                  <Label className="cursor-pointer" htmlFor={id}>
-                    {option.label}
-                  </Label>
-                </div>
-              );
-            })}
-          </RadioGroup>
-        );
-        break;
-      }
-
-      if (recValues?.length) {
-        // Enum (recommended_values)
-        const options = recValues.map((x: string) => ({ label: x, value: x }));
-        inputComp = (
-          <div className="max-w-[260px]">
-            <SingleSelect
-              id={fieldId}
-              onChange={(e) => {
-                updatePropertyValue(p, e);
-              }}
-              options={options}
-              value={v}
-            />
+function renderRadioGroupInput(p: Property, fieldId: string) {
+  const def = p.entry.definition;
+  return (
+    <RadioGroup
+      // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
+      aria-labelledby={`${fieldId}-label`}
+      aria-required={def.required || undefined}
+      name={p.name}
+      onValueChange={(next) => {
+        updatePropertyValue(p, next as Property['value']);
+      }}
+      orientation="horizontal"
+      value={String(p.value || def.default_value)}
+    >
+      {recommendedRadioOptions(p).map((option) => {
+        const id = `${p.name}-${option.value}`;
+        return (
+          <div className="flex items-center gap-2" key={String(option.value)}>
+            <RadioGroupItem id={id} testId={`${option.value}_field`} value={String(option.value)} />
+            <Label className="cursor-pointer" htmlFor={id}>
+              {option.label}
+            </Label>
           </div>
         );
-      } else {
-        // Input
-        inputComp = (
-          <Input
-            defaultValue={def.default_value ?? undefined}
-            disabled={props.property.isDisabled}
-            id={fieldId}
-            onChange={(e) => {
-              updatePropertyValue(p, e.target.value);
-            }}
-            required={isRequired}
-            spellCheck={false}
-            value={String(v)}
-          />
-        );
-      }
-      break;
-    }
+      })}
+    </RadioGroup>
+  );
+}
+
+function renderStringInput(p: Property, fieldId: string) {
+  const def = p.entry.definition;
+  const recValues = p.entry.value.recommended_values;
+  if (p.entry.metadata?.component_type === 'RADIO_GROUP') {
+    return renderRadioGroupInput(p, fieldId);
+  }
+
+  if (recValues?.length) {
+    // Enum (recommended_values)
+    const options = recValues.map((x: string) => ({ label: x, value: x }));
+    return (
+      <div className="max-w-[260px]">
+        <SingleSelect
+          id={fieldId}
+          onChange={(e) => {
+            updatePropertyValue(p, e);
+          }}
+          options={options}
+          value={p.value}
+        />
+      </div>
+    );
+  }
+
+  // Input
+  return (
+    <Input
+      defaultValue={def.default_value ?? undefined}
+      disabled={p.isDisabled}
+      id={fieldId}
+      onChange={(e) => {
+        updatePropertyValue(p, e.target.value);
+      }}
+      required={def.required}
+      spellCheck={false}
+      value={String(p.value)}
+    />
+  );
+}
+
+function renderTextInput(p: Property, fieldId: string) {
+  const def = p.entry.definition;
+  return (
+    <Input
+      defaultValue={def.default_value ?? undefined}
+      id={fieldId}
+      onChange={(e) => {
+        updatePropertyValue(p, e.target.value);
+      }}
+      required={def.required}
+      value={String(p.value)}
+    />
+  );
+}
+
+function renderPropertyInput(p: Property, fieldId: string) {
+  const v = p.value;
+  const isRequired = p.entry.definition.required;
+
+  switch (p.entry.definition.type) {
+    case 'STRING':
+    case 'CLASS':
+      return renderStringInput(p, fieldId);
 
     case 'PASSWORD':
-      inputComp = (
+      return (
         <SecretInput
           id={fieldId}
           onChange={(e) => {
@@ -138,13 +140,12 @@ export const PropertyComponent = (props: { property: Property }) => {
           value={String(v ?? '')}
         />
       );
-      break;
     case 'INT':
     case 'LONG':
     case 'SHORT':
     case 'DOUBLE':
     case 'FLOAT':
-      inputComp = (
+      return (
         <Input
           id={fieldId}
           onChange={(e) => {
@@ -160,10 +161,9 @@ export const PropertyComponent = (props: { property: Property }) => {
           value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );
-      break;
 
     case 'BOOLEAN':
-      inputComp = (
+      return (
         <Switch
           aria-required={isRequired || undefined}
           checked={Boolean(v)}
@@ -173,11 +173,10 @@ export const PropertyComponent = (props: { property: Property }) => {
           }}
         />
       );
-      break;
 
     case 'LIST':
       if (p.name === 'transforms') {
-        inputComp = (
+        return (
           <CommaSeparatedStringList
             defaultValue={String(v)}
             id={fieldId}
@@ -186,41 +185,29 @@ export const PropertyComponent = (props: { property: Property }) => {
             }}
           />
         );
-      } else {
-        inputComp = (
-          <Input
-            defaultValue={def.default_value ?? undefined}
-            id={fieldId}
-            onChange={(e) => {
-              updatePropertyValue(p, e.target.value);
-            }}
-            required={isRequired}
-            value={String(v)}
-          />
-        );
       }
-
-      break;
+      return renderTextInput(p, fieldId);
     default:
-      inputComp = (
-        <Input
-          defaultValue={def.default_value ?? undefined}
-          id={fieldId}
-          onChange={(e) => {
-            updatePropertyValue(p, e.target.value);
-          }}
-          required={isRequired}
-          value={String(v)}
-        />
-      );
-      break;
+      return renderTextInput(p, fieldId);
+  }
+}
+
+export const PropertyComponent = (props: { property: Property }) => {
+  const p = props.property;
+  if (p.isHidden) {
+    return null;
+  }
+  if (p.entry.value.visible === false) {
+    return null;
   }
 
-  inputComp = <ErrorWrapper input={inputComp} inputId={fieldId} property={p} />;
+  // Field generates no ids; the label and the control share this one.
+  const fieldId = `property-${p.name}`;
+
   // Wrap name and input element
   return (
-    <div className={`mt-6 ${inputSizeToClass[def.width]}`} data-testid={`property-${p.name}`}>
-      {inputComp}
+    <div className={clsx('mt-6', inputSizeToClass[p.entry.definition.width])} data-testid={`property-${p.name}`}>
+      <ErrorWrapper input={renderPropertyInput(p, fieldId)} inputId={fieldId} property={p} />
     </div>
   );
 };

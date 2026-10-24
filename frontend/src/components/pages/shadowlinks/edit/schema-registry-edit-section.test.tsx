@@ -55,7 +55,7 @@ const TestWrapper = ({
   );
 };
 
-describe('SchemaRegistryEditSection', () => {
+describe('the SchemaRegistryEditSection', () => {
   beforeEach(() => {
     useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkSchemaRegistrySync: false });
   });

@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
-import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -22,11 +22,14 @@ import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
   CompressionTypeSchema,
+  type KafkaRecordHeader,
   KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
+  type PublishMessagePayloadOptions,
   PublishMessagePayloadOptionsSchema,
+  type PublishMessageRequest,
   PublishMessageRequestSchema,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -172,11 +175,158 @@ const produceRecordSchema = z
 
 type Inputs = z.infer<typeof produceRecordSchema>;
 
+type PayloadInputs = Inputs['key'];
+
 const persistCompressionType = (compressionType: CompressionType) => {
   uiState.topicSettings.produceRecordCompression = compressionType;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+const compressionTypes = CompressionTypeSchema.values
+  .filter((value) => value.number !== CompressionType.UNSPECIFIED)
+  .map((value) => ({
+    label: value.localName,
+    value: value.number as CompressionType,
+  }));
+
+const filteredEncodingOptions = encodingOptions
+  .filter((x) => x.value !== PayloadEncoding.AVRO)
+  .map((x) => ({ label: x.label, value: x.value as number }));
+
+function isSchemaEncoding(encoding: PayloadEncoding) {
+  return encoding === PayloadEncoding.AVRO || encoding === PayloadEncoding.PROTOBUF;
+}
+
+function buildPartitionOptions(count: number | undefined) {
+  const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
+
+  if (count === undefined) {
+    // topic not found
+    return partitions;
+  }
+
+  if (count === 1) {
+    // only one partition to select
+    return partitions;
+  }
+
+  for (let i = 0; i < count; i++) {
+    partitions.push({ label: `Partition ${i}`, value: i });
+  }
+
+  return partitions;
+}
+
+function usePartitionOptions(topicName: string) {
+  const topics = useApiStoreHook((s) => s.topics);
+  return buildPartitionOptions(topics?.first((t) => t.topicName === topicName)?.partitionCount);
+}
+
+function useSchemaNameOptions() {
+  const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
+  const availableValues = schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
+  return availableValues.map((schema) => ({ label: schema.name, value: schema.name }));
+}
+
+// Versions of the subject selected for the key or the value, newest first.
+function useSchemaVersionOptions(control: Control<Inputs>, payload: 'key' | 'value') {
+  const schemaName = useWatch({ control, name: `${payload}.schemaName` as const });
+  const schemaDetail = useApiStoreHook((s) => (schemaName ? s.schemaDetails.get(schemaName) : undefined));
+  return (
+    schemaDetail?.versions
+      .slice()
+      .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
+      .map(({ version }) => ({ label: version, value: version })) ?? []
+  );
+}
+
+function buildKafkaHeaders(headers: Inputs['headers']) {
+  const kafkaHeaders: KafkaRecordHeader[] = [];
+  for (const h of headers) {
+    if (!(h.value || h.value)) {
+      continue;
+    }
+    const kafkaHeader = create(KafkaRecordHeaderSchema);
+    kafkaHeader.key = h.key;
+    kafkaHeader.value = new TextEncoder().encode(h.value);
+    kafkaHeaders.push(kafkaHeader);
+  }
+  return kafkaHeaders;
+}
+
+function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array {
+  if (encoding === PayloadEncoding.BINARY) {
+    // This will throw an exception if data is not base64.
+    // We want to catch exceptions so that we can show an error.
+    window.atob(payloadData);
+    return base64ToUInt8Array(payloadData);
+  }
+
+  return new TextEncoder().encode(payloadData);
+}
+
+function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
+  try {
+    return encodeData(payload.data, payload.encoding);
+  } catch (err) {
+    // TODO: Handle error
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error(err);
+  }
+}
+
+// Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
+function applySchemaSelection(options: PublishMessagePayloadOptions, payload: PayloadInputs) {
+  if (!(isSchemaEncoding(payload.encoding) && payload.schemaName && payload.schemaVersion)) {
+    return;
+  }
+  const selectedSchema = api.schemaDetails
+    .get(payload.schemaName)
+    ?.schemas.find((schema) => schema.version === payload.schemaVersion && !schema.isSoftDeleted);
+  if (selectedSchema) {
+    options.schemaId = selectedSchema.id;
+    options.schemaContext = subjectSchemaContext(payload.schemaName);
+  }
+}
+
+// Returns undefined when the payload data cannot be encoded; the error is logged.
+function buildPayloadOptions(payload: PayloadInputs): PublishMessagePayloadOptions | undefined {
+  const data = tryEncodeData(payload);
+  if (data === undefined) {
+    return;
+  }
+  const options = create(PublishMessagePayloadOptionsSchema);
+  options.data = data;
+  options.encoding = payload.encoding;
+  applySchemaSelection(options, payload);
+  if (payload.protobufIndex !== undefined) {
+    options.index = payload.protobufIndex;
+  }
+  return options;
+}
+
+// Returns undefined when the key or the value cannot be encoded.
+function buildPublishRequest(topicName: string, data: Inputs): PublishMessageRequest | undefined {
+  const req = create(PublishMessageRequestSchema, {
+    topic: topicName,
+    partitionId: data.partition,
+    compression: data.compressionType,
+    headers: buildKafkaHeaders(data.headers),
+  });
+  if (data.key.encoding !== PayloadEncoding.NULL) {
+    req.key = buildPayloadOptions(data.key);
+    if (!req.key) {
+      return;
+    }
+  }
+  if (data.value.encoding !== PayloadEncoding.NULL) {
+    req.value = buildPayloadOptions(data.value);
+    if (!req.value) {
+      return;
+    }
+  }
+  return req;
+}
+
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const {
     control,
@@ -208,152 +358,17 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   const [isKeyExpanded, setKeyExpanded] = useState(false);
 
-  const showKeySchemaSelection =
-    keyPayloadOptions.encoding === PayloadEncoding.AVRO || keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF;
-  const showValueSchemaSelection =
-    valuePayloadOptions.encoding === PayloadEncoding.AVRO || valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF;
+  const availablePartitions = usePartitionOptions(topicName);
+  const schemaNameOptions = useSchemaNameOptions();
+  const sortedKeyVersions = useSchemaVersionOptions(control, 'key');
+  const sortedValueVersions = useSchemaVersionOptions(control, 'value');
 
-  const compressionTypes = CompressionTypeSchema.values
-    .filter((value) => value.number !== CompressionType.UNSPECIFIED)
-    .map((value) => ({
-      label: value.localName,
-      value: value.number as CompressionType,
-    }));
-
-  const topics = useApiStoreHook((s) => s.topics);
-  const availablePartitions = (() => {
-    const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
-
-    const count = topics?.first((t) => t.topicName === topicName)?.partitionCount;
-    if (count === undefined) {
-      // topic not found
-      return partitions;
-    }
-
-    if (count === 1) {
-      // only one partition to select
-      return partitions;
-    }
-
-    for (let i = 0; i < count; i++) {
-      partitions.push({ label: `Partition ${i}`, value: i });
-    }
-
-    return partitions;
-  })();
-
-  const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
-  const availableValues = schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
-
-  const keySchemaName = useWatch({ control, name: 'key.schemaName' });
-  const valueSchemaName = useWatch({ control, name: 'value.schemaName' });
-  const keySchemaDetail = useApiStoreHook((s) => (keySchemaName ? s.schemaDetails.get(keySchemaName) : undefined));
-  const valueSchemaDetail = useApiStoreHook((s) =>
-    valueSchemaName ? s.schemaDetails.get(valueSchemaName) : undefined
-  );
-
-  // biome-ignore lint/complexity: This will be refactored anyway as part of MobX removal
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    const req = create(PublishMessageRequestSchema);
-    req.topic = topicName;
-    req.partitionId = data.partition;
-    req.compression = data.compressionType;
-
     persistCompressionType(data.compressionType);
 
-    // Headers
-    for (const h of data.headers) {
-      if (!(h.value || h.value)) {
-        continue;
-      }
-      const kafkaHeader = create(KafkaRecordHeaderSchema);
-      kafkaHeader.key = h.key;
-      kafkaHeader.value = new TextEncoder().encode(h.value);
-      req.headers.push(kafkaHeader);
-    }
-
-    const encodeData = (payloadData: string, encoding: PayloadEncoding): Uint8Array => {
-      if (encoding === PayloadEncoding.BINARY) {
-        // This will throw an exception if data is not base64.
-        // We want to catch exceptions so that we can show an error.
-        window.atob(payloadData);
-        return base64ToUInt8Array(payloadData);
-      }
-
-      return new TextEncoder().encode(payloadData);
-    };
-
-    // Key
-    if (data.key.encoding !== PayloadEncoding.NULL) {
-      req.key = create(PublishMessagePayloadOptionsSchema);
-      try {
-        req.key.data = encodeData(data.key.data, data.key.encoding);
-      } catch (err) {
-        // TODO: Handle error
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(err);
-        return;
-      }
-      req.key.data = encodeData(data.key.data, data.key.encoding);
-      req.key.encoding = data.key.encoding;
-
-      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
-      if (
-        (data.key.encoding === PayloadEncoding.AVRO || data.key.encoding === PayloadEncoding.PROTOBUF) &&
-        data.key.schemaName &&
-        data.key.schemaVersion
-      ) {
-        const schemaDetail = api.schemaDetails.get(data.key.schemaName);
-        if (schemaDetail) {
-          const selectedSchema = schemaDetail.schemas.find(
-            (schema) => schema.version === data.key.schemaVersion && !schema.isSoftDeleted
-          );
-          if (selectedSchema) {
-            req.key.schemaId = selectedSchema.id;
-            req.key.schemaContext = subjectSchemaContext(data.key.schemaName);
-          }
-        }
-      }
-
-      if (data.key.protobufIndex !== undefined) {
-        req.key.index = data.key.protobufIndex;
-      }
-    }
-
-    // Value
-    if (data.value.encoding !== PayloadEncoding.NULL) {
-      req.value = create(PublishMessagePayloadOptionsSchema);
-      try {
-        req.value.data = encodeData(data.value.data, data.value.encoding);
-      } catch (err) {
-        // TODO: Handle error
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(err);
-        return;
-      }
-      req.value.encoding = data.value.encoding;
-
-      // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
-      if (
-        (data.value.encoding === PayloadEncoding.AVRO || data.value.encoding === PayloadEncoding.PROTOBUF) &&
-        data.value.schemaName &&
-        data.value.schemaVersion
-      ) {
-        const schemaDetail = api.schemaDetails.get(data.value.schemaName);
-        if (schemaDetail) {
-          const selectedSchema = schemaDetail.schemas.find(
-            (schema) => schema.version === data.value.schemaVersion && !schema.isSoftDeleted
-          );
-          if (selectedSchema) {
-            req.value.schemaId = selectedSchema.id;
-            req.value.schemaContext = subjectSchemaContext(data.value.schemaName);
-          }
-        }
-      }
-
-      if (data.value.protobufIndex !== undefined) {
-        req.value.index = data.value.protobufIndex;
-      }
+    const req = buildPublishRequest(topicName, data);
+    if (!req) {
+      return;
     }
 
     const result = await api.publishMessage(req).catch((err) => {
@@ -367,24 +382,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       appGlobal.historyPush(`/topics/${encodeURIComponent(topicName)}`);
     }
   };
-
-  const filteredEncodingOptions = encodingOptions
-    .filter((x) => x.value !== PayloadEncoding.AVRO)
-    .map((x) => ({ label: x.label, value: x.value as number }));
-
-  const schemaNameOptions = availableValues.map((schema) => ({ label: schema.name, value: schema.name }));
-
-  const sortedKeyVersions =
-    keySchemaDetail?.versions
-      .slice()
-      .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-      .map(({ version }) => ({ label: version, value: version })) ?? [];
-
-  const sortedValueVersions =
-    valueSchemaDetail?.versions
-      .slice()
-      .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
-      .map(({ version }) => ({ label: version, value: version })) ?? [];
 
   return (
     <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
@@ -444,7 +441,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
               </Field>
             )}
           />
-          {Boolean(showKeySchemaSelection) && (
+          {isSchemaEncoding(keyPayloadOptions.encoding) && (
             <Controller
               control={control}
               name="key.schemaName"
@@ -487,7 +484,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
               )}
             />
           )}
-          {Boolean(showKeySchemaSelection) && (
+          {isSchemaEncoding(keyPayloadOptions.encoding) && (
             <Controller
               control={control}
               name="key.schemaVersion"
@@ -534,7 +531,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                   render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
                 />
               )}
-              <Button className="mt-1 px-0" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
+              <Button className="mt-1" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
                 {isKeyExpanded ? 'Collapse' : 'Expand'}
               </Button>
             </div>
@@ -559,7 +556,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 </Field>
               )}
             />
-            {Boolean(showValueSchemaSelection) && (
+            {isSchemaEncoding(valuePayloadOptions.encoding) && (
               <Controller
                 control={control}
                 name="value.schemaName"
@@ -597,7 +594,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 )}
               />
             )}
-            {Boolean(showValueSchemaSelection) && (
+            {isSchemaEncoding(valuePayloadOptions.encoding) && (
               <Controller
                 control={control}
                 name="value.schemaVersion"

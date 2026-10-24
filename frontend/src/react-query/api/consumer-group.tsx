@@ -13,38 +13,43 @@ export type GetConsumerGroupsResponse = {
  * Uses the legacy REST API because authorization is only possible with Console v3 and above.
  * TODO: Remove once Console v3 is released.
  */
+// Enrich with the frontend-only fields (mirrors addFrontendFieldsForConsumerGroup in backend-api.ts).
+function addListTableFields(group: GroupDescription) {
+  group.lagSum = group.topicOffsets.sum((o) => o.summedLag);
+  group.isInUse = group.state.toLowerCase() !== 'empty';
+  if (group.allowedActions && !group.allowedActions.includes('all')) {
+    group.noEditPerms = !group.allowedActions.includes('editConsumerGroup');
+    group.noDeletePerms = !group.allowedActions.includes('deleteConsumerGroup');
+  }
+}
+
+async function fetchConsumerGroupsFull(): Promise<GetConsumerGroupsResponse> {
+  const headers: HeadersInit = {};
+  if (config.jwt) {
+    headers.Authorization = `Bearer ${config.jwt}`;
+  }
+
+  const response = await config.fetch(`${config.restBasePath}/consumer-groups`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch consumer groups: ${response.statusText}`);
+  }
+
+  const data: GetConsumerGroupsResponse = await response.json();
+  for (const group of data.consumerGroups ?? []) {
+    addListTableFields(group);
+  }
+
+  return data;
+}
+
 export const useLegacyListConsumerGroupsFullQuery = (options?: { enabled?: boolean }) => {
   const result = useTanstackQuery<GetConsumerGroupsResponse>({
     queryKey: ['consumer-groups', 'full'],
-    queryFn: async () => {
-      const headers: HeadersInit = {};
-      if (config.jwt) {
-        headers.Authorization = `Bearer ${config.jwt}`;
-      }
-
-      const response = await config.fetch(`${config.restBasePath}/consumer-groups`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch consumer groups: ${response.statusText}`);
-      }
-
-      const data: GetConsumerGroupsResponse = await response.json();
-
-      // Enrich with the frontend-only fields (mirrors addFrontendFieldsForConsumerGroup in backend-api.ts).
-      for (const group of data.consumerGroups ?? []) {
-        group.lagSum = group.topicOffsets.sum((o) => o.summedLag);
-        group.isInUse = group.state.toLowerCase() !== 'empty';
-        if (group.allowedActions && !group.allowedActions.includes('all')) {
-          group.noEditPerms = !group.allowedActions.includes('editConsumerGroup');
-          group.noDeletePerms = !group.allowedActions.includes('deleteConsumerGroup');
-        }
-      }
-
-      return data;
-    },
+    queryFn: fetchConsumerGroupsFull,
     enabled: options?.enabled,
   });
 

@@ -81,7 +81,7 @@ const formatRequestRate = (rate?: number): string => {
 
 // Small uppercase label introducing a subsection of the card
 const SectionLabel = ({ children }: { children: string }) => (
-  <div className="font-semibold text-body-sm text-muted-foreground uppercase tracking-wider">{children}</div>
+  <div className="text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">{children}</div>
 );
 
 // Label/value grid row; `narrow` is for rows nested inside split columns
@@ -116,8 +116,8 @@ const PillRow = ({ label, testId, values }: { label: string; testId: string; val
     </div>
     <div className="flex flex-wrap gap-1.5" data-testid={`${testId}-value`}>
       {values.map((value) => (
-        <Badge className="font-mono" key={value} size="sm" tone="default" variant="subtle">
-          {value}
+        <Badge key={value} size="sm" tone="default" variant="subtle">
+          <code>{value}</code>
         </Badge>
       ))}
     </div>
@@ -135,7 +135,7 @@ const SplitColumns = ({ left, right }: { left: React.ReactNode; right: React.Rea
 
 const AuthenticationColumn = ({ basicAuth }: { basicAuth?: UnifiedSchemaRegistryBasicAuth }) => (
   <>
-    <div className="font-semibold text-label">Authentication</div>
+    <div className="text-label font-semibold">Authentication</div>
     {basicAuth ? (
       <div className="flex flex-col gap-1">
         <ConfigRow label="Type" narrow testId="sr-config-auth-type" value="HTTP Basic" />
@@ -152,7 +152,7 @@ const AuthenticationColumn = ({ basicAuth }: { basicAuth?: UnifiedSchemaRegistry
 
 const TlsColumn = ({ tlsSettings }: { tlsSettings?: UnifiedTLSSettings }) => (
   <>
-    <div className="font-semibold text-label">TLS</div>
+    <div className="text-label font-semibold">TLS</div>
     <div className="flex flex-col gap-1">
       <ConfigRow
         label="Enabled"
@@ -194,7 +194,7 @@ const DestinationMappingColumn = ({
   destinationMapping: UnifiedSchemaRegistryApiOptions['destinationMapping'];
 }) => (
   <>
-    <div className="font-semibold text-label">Destination contexts mapping</div>
+    <div className="text-label font-semibold">Destination contexts mapping</div>
     {destinationMapping?.case === 'exact' ? (
       <div className="flex flex-col gap-1">
         {destinationMapping.mappings.map((mapping, index) => (
@@ -203,9 +203,9 @@ const DestinationMappingColumn = ({
             data-testid={`sr-config-mapping-${index}`}
             key={`${mapping.source}-${mapping.destination}`}
           >
-            <span className="break-all font-mono text-body">{mapping.source}</span>
+            <span className="font-mono text-body break-all">{mapping.source}</span>
             <span className="text-body text-muted-foreground">→</span>
-            <span className="break-all font-mono text-body">{mapping.destination}</span>
+            <span className="font-mono text-body break-all">{mapping.destination}</span>
           </div>
         ))}
       </div>
@@ -306,70 +306,85 @@ export type ConfigurationSchemaRegistryProps = {
   syncOptions?: UnifiedSchemaRegistrySyncOptions;
 };
 
+type SchemaRegistryShadowingMode = NonNullable<
+  ConfigurationSchemaRegistryProps['syncOptions']
+>['schemaRegistryShadowingMode'];
+
+const SchemaRegistryBadges = ({ mode }: { mode: SchemaRegistryShadowingMode | undefined }) => {
+  switch (mode?.case) {
+    case 'shadowSchemaRegistryApi':
+      return (
+        <>
+          <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
+            Other
+          </Badge>
+          {mode.value.paused ? (
+            <Badge testId="schema-registry-status-badge" tone="warning" variant="subtle">
+              Paused
+            </Badge>
+          ) : (
+            <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
+              Enabled
+            </Badge>
+          )}
+        </>
+      );
+    case 'shadowSchemaRegistryTopic':
+      return (
+        <>
+          <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
+            Redpanda
+          </Badge>
+          <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
+            Enabled
+          </Badge>
+        </>
+      );
+    default:
+      return (
+        <Badge testId="schema-registry-status-badge" tone="default" variant="subtle">
+          Disabled
+        </Badge>
+      );
+  }
+};
+
+const SchemaRegistryBody = ({ mode }: { mode: SchemaRegistryShadowingMode | undefined }) => {
+  switch (mode?.case) {
+    case 'shadowSchemaRegistryApi':
+      return <ApiModeBody api={mode.value} />;
+    case 'shadowSchemaRegistryTopic':
+      return (
+        <div className="text-body text-muted-foreground" data-testid="schema-registry-topic-description">
+          Replicate the source cluster's _schemas topic, which replaces the shadow cluster's Schema Registry.
+        </div>
+      );
+    default:
+      return (
+        <div className="text-body text-muted-foreground" data-testid="schema-registry-disabled-description">
+          Schema Registry shadowing is off. The shadow cluster keeps its own independent Schema Registry.
+        </div>
+      );
+  }
+};
+
 // Read-only display of the Schema Registry shadowing configuration
 export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchemaRegistryProps) => {
   const mode = syncOptions?.schemaRegistryShadowingMode;
-
-  let badges: React.ReactNode;
-  let body: React.ReactNode;
-
-  if (mode?.case === 'shadowSchemaRegistryApi') {
-    const statusBadge = mode.value.paused ? (
-      <Badge testId="schema-registry-status-badge" tone="warning" variant="subtle">
-        Paused
-      </Badge>
-    ) : (
-      <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
-        Enabled
-      </Badge>
-    );
-    badges = (
-      <>
-        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
-          Other
-        </Badge>
-        {statusBadge}
-      </>
-    );
-    body = <ApiModeBody api={mode.value} />;
-  } else if (mode?.case === 'shadowSchemaRegistryTopic') {
-    badges = (
-      <>
-        <Badge testId="schema-registry-mode-badge" tone="informative" variant="subtle">
-          Redpanda
-        </Badge>
-        <Badge testId="schema-registry-status-badge" tone="success" variant="subtle">
-          Enabled
-        </Badge>
-      </>
-    );
-    body = (
-      <div className="text-body text-muted-foreground" data-testid="schema-registry-topic-description">
-        Replicate the source cluster's _schemas topic, which replaces the shadow cluster's Schema Registry.
-      </div>
-    );
-  } else {
-    badges = (
-      <Badge testId="schema-registry-status-badge" tone="default" variant="subtle">
-        Disabled
-      </Badge>
-    );
-    body = (
-      <div className="text-body text-muted-foreground" data-testid="schema-registry-disabled-description">
-        Schema Registry shadowing is off. The shadow cluster keeps its own independent Schema Registry.
-      </div>
-    );
-  }
 
   return (
     <Card size="full" testId="schema-registry-card">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-heading-md">Schema Registry</h3>
-          <div className="flex items-center gap-2">{badges}</div>
+          <div className="flex items-center gap-2">
+            <SchemaRegistryBadges mode={mode} />
+          </div>
         </div>
       </CardHeader>
-      <CardContent>{body}</CardContent>
+      <CardContent>
+        <SchemaRegistryBody mode={mode} />
+      </CardContent>
     </Card>
   );
 };

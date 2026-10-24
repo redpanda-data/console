@@ -227,15 +227,21 @@ describe('buildDataplaneUpdateRequest', () => {
     });
 
     expect(request.updateMask?.paths).toHaveLength(4);
-    expect(request.updateMask?.paths).toContain('configurations.client_options.metadata_max_age_ms');
-    expect(request.updateMask?.paths).toContain('configurations.client_options.connection_timeout_ms');
-    expect(request.updateMask?.paths).toContain('configurations.client_options.retry_backoff_ms');
-    expect(request.updateMask?.paths).toContain('configurations.client_options.fetch_wait_max_ms');
+    expect(request.updateMask?.paths).toEqual(
+      expect.arrayContaining([
+        'configurations.client_options.metadata_max_age_ms',
+        'configurations.client_options.connection_timeout_ms',
+        'configurations.client_options.retry_backoff_ms',
+        'configurations.client_options.fetch_wait_max_ms',
+      ])
+    );
 
-    expect(request.shadowLink?.configurations?.clientOptions?.metadataMaxAgeMs).toBe(30_000);
-    expect(request.shadowLink?.configurations?.clientOptions?.connectionTimeoutMs).toBe(2000);
-    expect(request.shadowLink?.configurations?.clientOptions?.retryBackoffMs).toBe(200);
-    expect(request.shadowLink?.configurations?.clientOptions?.fetchWaitMaxMs).toBe(1000);
+    expect(request.shadowLink?.configurations?.clientOptions).toMatchObject({
+      metadataMaxAgeMs: 30_000,
+      connectionTimeoutMs: 2000,
+      retryBackoffMs: 200,
+      fetchWaitMaxMs: 1000,
+    });
   });
 
   test('handles cross-tab workflow maintaining state', () => {

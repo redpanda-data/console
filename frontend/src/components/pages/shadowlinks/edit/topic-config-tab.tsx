@@ -16,15 +16,13 @@ import {
   AccordionTrigger,
 } from 'components/redpanda-ui/components/accordion';
 import { Badge, type BadgeEmphasis, type BadgeTone, type BadgeVariant } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
+import { CardContent, CardTitle } from 'components/redpanda-ui/components/card';
+import { CollapsibleContent } from 'components/redpanda-ui/components/collapsible';
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from 'components/redpanda-ui/components/item';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
-import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -36,6 +34,7 @@ import {
   isPropertyEditable,
   type ShadowingStatus,
 } from './topic-properties-config';
+import { CollapsibleSectionCard } from '../create/collapsible-section-card';
 import type { FormValues } from '../create/model';
 
 /** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
@@ -181,6 +180,20 @@ const ExcludeDefaultToggle = () => {
   );
 };
 
+/**
+ * The explicit property list after the "exclude defaults" toggle flips, or `undefined` when it is
+ * already in sync: excluding drops every default property, including adds the missing ones.
+ */
+const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolean | undefined) => {
+  const defaultProps = getDefaultProperties();
+  if (excludeDefault) {
+    const filteredProperties = topicProperties.filter((prop) => !defaultProps.includes(prop));
+    return filteredProperties.length === topicProperties.length ? undefined : filteredProperties;
+  }
+  const propsToAdd = defaultProps.filter((prop) => !topicProperties.includes(prop));
+  return propsToAdd.length > 0 ? [...topicProperties, ...propsToAdd] : undefined;
+};
+
 export const TopicConfigTab = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
@@ -208,20 +221,9 @@ export const TopicConfigTab = () => {
       return;
     }
 
-    const defaultProps = getDefaultProperties();
-
-    if (excludeDefault) {
-      // When excluding defaults, remove all default properties from the list
-      const filteredProperties = topicProperties.filter((prop) => !defaultProps.includes(prop));
-      if (filteredProperties.length !== topicProperties.length) {
-        setValue('topicProperties', filteredProperties, { shouldDirty: true });
-      }
-    } else {
-      // When not excluding defaults, add all default properties to the explicit list
-      const propsToAdd = defaultProps.filter((prop) => !topicProperties.includes(prop));
-      if (propsToAdd.length > 0) {
-        setValue('topicProperties', [...topicProperties, ...propsToAdd], { shouldDirty: true });
-      }
+    const nextProperties = syncDefaultProperties(topicProperties, excludeDefault);
+    if (nextProperties) {
+      setValue('topicProperties', nextProperties, { shouldDirty: true });
     }
   }, [excludeDefault, topicProperties, setValue]);
 
@@ -256,86 +258,79 @@ export const TopicConfigTab = () => {
   };
 
   return (
-    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
-      <Card className="gap-0" size="full">
-        <CardHeader>
+    <CollapsibleSectionCard
+      heading={
+        <div className="space-y-2">
+          <CardTitle>Topic properties shadowed</CardTitle>
+          <div className="text-body text-muted-foreground">
+            Toggle replication on and off for specific topic configurations. When enabled, the configuration will be
+            replicated to the shadow cluster.
+          </div>
+        </div>
+      }
+      onOpenChange={setIsOpen}
+      open={isOpen}
+      toggleLabel="Toggle topic properties section"
+      toggleTestId="topic-config-toggle-button"
+    >
+      <CardContent>
+        {/* Exclude Default Toggle */}
+        <ExcludeDefaultToggle />
+
+        {/* Summary view when collapsed */}
+        {!isOpen && (
           <div className="space-y-2">
-            <CardTitle>Topic properties shadowed</CardTitle>
-            <div className="text-body text-muted-foreground">
-              Toggle replication on and off for specific topic configurations. When enabled, the configuration will be
-              replicated to the shadow cluster.
+            <div className="text-body-sm">
+              {topicProperties.length} {topicProperties.length === 1 ? 'property' : 'properties'} selected for
+              replication
             </div>
           </div>
-          <CardAction>
-            <CollapsibleTrigger
-              render={
-                <Button className="w-fit p-0" data-testid="topic-config-toggle-button" size="sm" variant="ghost">
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                </Button>
+        )}
+
+        {/* Full editable view when expanded */}
+        <CollapsibleContent>
+          <Accordion defaultValue={CATEGORY_ORDER} multiple>
+            {CATEGORY_ORDER.map((category) => {
+              const properties = propertiesByCategory.get(category);
+              if (!properties || properties.length === 0) {
+                return null;
               }
-            />
-          </CardAction>
-        </CardHeader>
 
-        <CardContent>
-          {/* Exclude Default Toggle */}
-          <ExcludeDefaultToggle />
+              return (
+                <AccordionItem data-testid={`category-${category}`} key={category} value={category}>
+                  <AccordionTrigger>{category}</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      {properties.map((property) => {
+                        const isEditable = isPropertyEditable(property.name);
+                        const isSelected = isPropertySelected(property.name);
 
-          {/* Summary view when collapsed */}
-          {!isOpen && (
-            <div className="space-y-2">
-              <div className="text-body-sm">
-                {topicProperties.length} {topicProperties.length === 1 ? 'property' : 'properties'} selected for
-                replication
-              </div>
-            </div>
-          )}
-
-          {/* Full editable view when expanded */}
-          <CollapsibleContent>
-            <Accordion className="space-y-2" defaultValue={CATEGORY_ORDER} multiple>
-              {CATEGORY_ORDER.map((category) => {
-                const properties = propertiesByCategory.get(category);
-                if (!properties || properties.length === 0) {
-                  return null;
-                }
-
-                return (
-                  <AccordionItem data-testid={`category-${category}`} key={category} value={category}>
-                    <AccordionTrigger className="font-medium text-body-lg">{category}</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        {properties.map((property) => {
-                          const isEditable = isPropertyEditable(property.name);
-                          const isSelected = isPropertySelected(property.name);
-
-                          return (
-                            <FormField
-                              control={control}
-                              key={property.name}
-                              name="topicProperties"
-                              render={() => (
-                                <FormItem>
-                                  <TopicPropertyItem
-                                    isEditable={isEditable}
-                                    isSelected={isSelected}
-                                    onToggle={handlePropertyToggle}
-                                    property={property}
-                                  />
-                                </FormItem>
-                              )}
-                            />
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-          </CollapsibleContent>
-        </CardContent>
-      </Card>
-    </Collapsible>
+                        return (
+                          <FormField
+                            control={control}
+                            key={property.name}
+                            name="topicProperties"
+                            render={() => (
+                              <FormItem>
+                                <TopicPropertyItem
+                                  isEditable={isEditable}
+                                  isSelected={isSelected}
+                                  onToggle={handlePropertyToggle}
+                                  property={property}
+                                />
+                              </FormItem>
+                            )}
+                          />
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </CollapsibleContent>
+      </CardContent>
+    </CollapsibleSectionCard>
   );
 };

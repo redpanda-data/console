@@ -45,7 +45,7 @@ const TestWrapper = ({
   );
 };
 
-describe('ShadowSchemaRegistrySection', () => {
+describe('the ShadowSchemaRegistrySection', () => {
   test('should render the three modes with none selected by default', () => {
     render(<TestWrapper />);
 

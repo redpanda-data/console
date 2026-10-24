@@ -1,7 +1,7 @@
 import { type APIRequestContext, request as playwrightRequest } from 'playwright';
 import { z } from 'zod';
 
-import { expect, retryAssertion, test } from '../../shared/e2e';
+import { expect, type Page, retryAssertion, test } from '../../shared/e2e';
 
 const CLUSTER = 'local-connect-cluster';
 const CREATE_URL = `/connect-clusters/${CLUSTER}/create-connector`;
@@ -9,7 +9,7 @@ const { kafkaConnect = 18_283 } = z
   .object({ kafkaConnect: z.number().int().min(1).max(65_535).optional() })
   .parse(JSON.parse(process.env.E2E_PORTS_OVERRIDE ?? '{}'));
 const CONNECT_BASE = `http://127.0.0.1:${kafkaConnect}`;
-const CONNECTOR_NAME = `e2e-heartbeat-${Date.now()}`;
+const CONNECTOR_NAME = `e2e-heartbeat-${crypto.randomUUID()}`;
 
 const HEARTBEAT_CONFIG = {
   name: CONNECTOR_NAME,
@@ -26,7 +26,35 @@ const HEARTBEAT_CONFIG = {
   },
 };
 
-test.describe('Kafka Connect Cluster', () => {
+const openConnectorConfiguration = async (page: Page) => {
+  await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
+  await page.getByRole('tab', { name: /configuration/i }).click();
+};
+
+const setHeartbeatFrequency = async (page: Page, seconds: string) => {
+  const frequencyWrapper = page.locator('[data-testid="property-emit.heartbeats.interval.seconds"]');
+  const frequencyField = frequencyWrapper.getByRole('spinbutton');
+  await expect(frequencyField).toBeVisible({ timeout: 15_000 });
+  await frequencyField.clear();
+  await frequencyField.fill(seconds);
+};
+
+/** Saves the configuration through the confirmation dialog and resolves with the connector's PUT response. */
+const confirmConfigUpdate = async (page: Page) => {
+  await page.getByRole('button', { name: /update config/i }).click();
+  await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
+
+  const updateResponse = page.waitForResponse(
+    (res) =>
+      res.url().includes(`/api/kafka-connect/clusters/${CLUSTER}/connectors/${CONNECTOR_NAME}`) &&
+      res.request().method() === 'PUT',
+    { timeout: 15_000 }
+  );
+  await page.getByRole('button', { name: 'Yes' }).click();
+  return updateResponse;
+};
+
+test.describe('kafka Connect Cluster', () => {
   test('should show Kafka Connect tab on connect page', async ({ page }) => {
     await page.goto('/connect-clusters?defaultTab=kafka-connect');
     await expect(page.getByRole('tab', { name: 'Kafka Connect' })).toBeVisible({ timeout: 30_000 });
@@ -38,7 +66,7 @@ test.describe('Kafka Connect Cluster', () => {
   });
 });
 
-test.describe('Kafka Connect Wizard', () => {
+test.describe('kafka Connect Wizard', () => {
   test('connector plugin list loads', async ({ page }) => {
     await page.goto(CREATE_URL);
     await expect(page.getByText('Heartbeat', { exact: true })).toBeVisible({ timeout: 15_000 });
@@ -78,8 +106,8 @@ test.describe('Kafka Connect Wizard', () => {
   });
 });
 
-test.describe('Kafka Connect Connector Lifecycle', { timeout: 120_000 }, () => {
-  // Run sequentially — delete must happen last, and give more time in CI
+test.describe('kafka Connect Connector Lifecycle', () => {
+  // Run sequentially — delete must happen last
 
   let request: APIRequestContext;
   test.beforeAll(async () => {
@@ -138,33 +166,15 @@ test.describe('Kafka Connect Connector Lifecycle', { timeout: 120_000 }, () => {
   });
 
   test('edit frequency of heartbeats and verify in JSON editor', async ({ page }) => {
-    await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
-    await page.getByRole('tab', { name: /configuration/i }).click();
+    await openConnectorConfiguration(page);
+    await setHeartbeatFrequency(page, '33');
 
-    const frequencyWrapper = page.locator('[data-testid="property-emit.heartbeats.interval.seconds"]');
-    const frequencyField = frequencyWrapper.getByRole('spinbutton');
-    await expect(frequencyField).toBeVisible({ timeout: 15_000 });
-    await frequencyField.clear();
-    await frequencyField.fill('33');
-
-    await page.getByRole('button', { name: /update config/i }).click();
-    await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
-
-    const updateResponse = page.waitForResponse(
-      (res) =>
-        res.url().includes(`/api/kafka-connect/clusters/${CLUSTER}/connectors/${CONNECTOR_NAME}`) &&
-        res.request().method() === 'PUT',
-      { timeout: 15_000 }
-    );
-    await page.getByRole('button', { name: 'Yes' }).click();
-
-    const response = await updateResponse;
+    const response = await confirmConfigUpdate(page);
     expect(response.ok()).toBe(true);
     expect(response.request().postDataJSON()?.['config']['emit.heartbeats.interval.seconds']).toBe('33');
 
     // Navigate back and open JSON view to verify the change
-    await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
-    await page.getByRole('tab', { name: /configuration/i }).click();
+    await openConnectorConfiguration(page);
     await page.locator('[data-testid="json_field"]').click();
 
     await expect(page.locator('.view-lines')).toContainText('"emit.heartbeats.interval.seconds": "33",', {

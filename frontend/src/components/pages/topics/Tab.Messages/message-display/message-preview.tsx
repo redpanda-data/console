@@ -10,16 +10,76 @@
  */
 
 import { InfoIcon, WarningIcon } from 'components/icons';
-import React, { type ReactNode } from 'react';
+import type React from 'react';
+import type { ReactNode } from 'react';
 
-import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
+import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../../state/ui';
-import { uiState } from '../../../../../state/ui-state';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
-import { getPreviewTags } from '../preview-settings';
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+function isEmptyValue(value: Payload): boolean {
+  return (
+    value.encoding === 'null' ||
+    value.payload === null ||
+    (typeof value.payload === 'string' && value.payload.length === 0)
+  );
+}
+
+function isPrimitivePayload(payload: unknown): boolean {
+  return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
+}
+
+function getValuePreviewText(msg: TopicMessage): ReactNode {
+  if (msg.value.encoding === 'binary') {
+    // If the original data was binary, display as hex dump
+    return msg.valueBinHexPreview as React.ReactNode;
+  }
+  if (isPrimitivePayload(msg.value.payload)) {
+    // If we can show the value as a primitive, do so.
+    return msg.value.payload as React.ReactNode;
+  }
+  // Only thing left is 'object'
+  // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
+  // Normal display (json, no filters). Reuse the cached JSON string.
+  return cullText(msg.valueJson, 300);
+}
+
+function renderValuePreview(
+  msg: TopicMessage,
+  previewFields: () => PreviewTagV2[],
+  previewDisplayMode: PreviewDisplayMode | undefined
+): ReactNode {
+  const value = msg.value;
+  if (value.isPayloadNull) {
+    return <EmptyBadge mode="null" />;
+  }
+  if (isEmptyValue(value)) {
+    return <EmptyBadge mode="empty" />;
+  }
+
+  const isObject = !(value.encoding === 'binary' || isPrimitivePayload(value.payload));
+  // Preview tags replace the whole cell for an object payload.
+  const tagsPreview = isObject ? renderPreviewTags(value.payload, previewFields, previewDisplayMode) : null;
+  if (tagsPreview) {
+    return tagsPreview;
+  }
+
+  return (
+    <div className="flex flex-col">
+      <code>
+        <span className="cellDiv" style={{ fontSize: '95%' }}>
+          {getValuePreviewText(msg)}
+        </span>
+      </code>
+      <span className="text-muted-foreground">
+        {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
+      </span>
+    </div>
+  );
+}
+
 export const MessagePreview = ({
   msg,
   previewFields,
@@ -29,7 +89,7 @@ export const MessagePreview = ({
   msg: TopicMessage;
   previewFields: () => PreviewTagV2[];
   isCompactTopic: boolean;
-  previewDisplayMode?: 'single' | 'wrap' | 'rows';
+  previewDisplayMode?: PreviewDisplayMode;
 }) => {
   const value = msg.value;
 
@@ -52,59 +112,8 @@ export const MessagePreview = ({
     );
   }
 
-  const isPrimitive =
-    typeof value.payload === 'string' || typeof value.payload === 'number' || typeof value.payload === 'boolean';
-
   try {
-    let text: ReactNode = <></>;
-
-    if (value.isPayloadNull) {
-      return <EmptyBadge mode="null" />;
-    }
-    if (
-      value.encoding === 'null' ||
-      value.payload === null ||
-      (typeof value.payload === 'string' && value.payload.length === 0)
-    ) {
-      return <EmptyBadge mode="empty" />;
-    }
-    if (msg.value.encoding === 'binary') {
-      // If the original data was binary, display as hex dump
-      text = msg.valueBinHexPreview as React.ReactNode;
-    } else if (isPrimitive) {
-      // If we can show the value as a primitive, do so.
-      text = value.payload as React.ReactNode;
-    } else {
-      // Only thing left is 'object'
-      // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-      const previewTags = previewFields().filter((t) => t.searchInMessageValue);
-      if (previewTags.length > 0) {
-        const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
-        const tags = getPreviewTags(value.payload as Record<string, unknown>, previewTags, caseSensitive);
-        const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
-        text = (
-          <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-            <div className={`previewTags previewTags-${displayMode}`}>{tags}</div>
-          </span>
-        );
-        return text;
-      }
-      // Normal display (json, no filters). Reuse the cached JSON string.
-      text = cullText(msg.valueJson, 300);
-    }
-
-    return (
-      <div className="flex flex-col">
-        <code>
-          <span className="cellDiv" style={{ fontSize: '95%' }}>
-            {text}
-          </span>
-        </code>
-        <span className="text-muted-foreground">
-          {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
-        </span>
-      </div>
-    );
+    return renderValuePreview(msg, previewFields, previewDisplayMode);
   } catch (e) {
     return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
   }

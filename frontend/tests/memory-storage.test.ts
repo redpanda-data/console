@@ -12,12 +12,18 @@
 import { createMemoryStorage } from './memory-storage';
 import { describe, expect, test } from 'bun:test';
 
+function createStorageWithTwoItems() {
+  const storage = createMemoryStorage();
+
+  storage.setItem('first', 'one');
+  storage.setItem('second', 'two');
+
+  return storage;
+}
+
 describe('createMemoryStorage', () => {
   test('implements the Storage contract without retaining values after clear', () => {
-    const storage = createMemoryStorage();
-
-    storage.setItem('first', 'one');
-    storage.setItem('second', 'two');
+    const storage = createStorageWithTwoItems();
 
     expect(storage.length).toBe(2);
     expect(storage.getItem('first')).toBe('one');

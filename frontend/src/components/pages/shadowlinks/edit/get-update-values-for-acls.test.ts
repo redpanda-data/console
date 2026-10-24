@@ -60,7 +60,7 @@ const baseFormValues: FormValues = {
 };
 
 describe('getUpdateValuesForACLs', () => {
-  describe('ACL mode changes', () => {
+  describe('the ACL mode changes', () => {
     test('should detect change from all to specify mode', () => {
       const original = { ...baseFormValues, aclsMode: 'all' as const, aclFilters: [] };
       const updated = {
@@ -83,13 +83,19 @@ describe('getUpdateValuesForACLs', () => {
 
       expect(result.fieldMaskPaths).toContain('configurations.security_sync_options');
       expect(result.value.aclFilters).toHaveLength(1);
-      expect(result.value.aclFilters[0].resourceFilter?.resourceType).toBe(ACLResource.ACL_RESOURCE_TOPIC);
-      expect(result.value.aclFilters[0].resourceFilter?.patternType).toBe(ACLPattern.ACL_PATTERN_LITERAL);
-      expect(result.value.aclFilters[0].resourceFilter?.name).toBe('my-topic');
-      expect(result.value.aclFilters[0].accessFilter?.principal).toBe('User:alice');
-      expect(result.value.aclFilters[0].accessFilter?.operation).toBe(ACLOperation.ACL_OPERATION_READ);
-      expect(result.value.aclFilters[0].accessFilter?.permissionType).toBe(ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW);
-      expect(result.value.aclFilters[0].accessFilter?.host).toBe('192.168.1.1');
+      expect(result.value.aclFilters[0]).toMatchObject({
+        resourceFilter: {
+          resourceType: ACLResource.ACL_RESOURCE_TOPIC,
+          patternType: ACLPattern.ACL_PATTERN_LITERAL,
+          name: 'my-topic',
+        },
+        accessFilter: {
+          principal: 'User:alice',
+          operation: ACLOperation.ACL_OPERATION_READ,
+          permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+          host: '192.168.1.1',
+        },
+      });
     });
 
     test('should detect change from specify to all mode', () => {
@@ -114,17 +120,23 @@ describe('getUpdateValuesForACLs', () => {
 
       expect(result.fieldMaskPaths).toContain('configurations.security_sync_options');
       expect(result.value.aclFilters).toHaveLength(1);
-      expect(result.value.aclFilters[0].resourceFilter?.resourceType).toBe(ACLResource.ACL_RESOURCE_ANY);
-      expect(result.value.aclFilters[0].resourceFilter?.patternType).toBe(ACLPattern.ACL_PATTERN_ANY);
-      expect(result.value.aclFilters[0].resourceFilter?.name).toBe('');
-      expect(result.value.aclFilters[0].accessFilter?.principal).toBe('');
-      expect(result.value.aclFilters[0].accessFilter?.operation).toBe(ACLOperation.ACL_OPERATION_ANY);
-      expect(result.value.aclFilters[0].accessFilter?.permissionType).toBe(ACLPermissionType.ACL_PERMISSION_TYPE_ANY);
-      expect(result.value.aclFilters[0].accessFilter?.host).toBe('');
+      expect(result.value.aclFilters[0]).toMatchObject({
+        resourceFilter: {
+          resourceType: ACLResource.ACL_RESOURCE_ANY,
+          patternType: ACLPattern.ACL_PATTERN_ANY,
+          name: '',
+        },
+        accessFilter: {
+          principal: '',
+          operation: ACLOperation.ACL_OPERATION_ANY,
+          permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
+          host: '',
+        },
+      });
     });
   });
 
-  describe('ACL array changes', () => {
+  describe('the ACL array changes', () => {
     test('should detect when an ACL is added to the list', () => {
       const original = {
         ...baseFormValues,
@@ -223,7 +235,7 @@ describe('getUpdateValuesForACLs', () => {
     });
   });
 
-  describe('ACL filter property changes', () => {
+  describe('the ACL filter property changes', () => {
     test('should detect when resourceType changes', () => {
       const original = {
         ...baseFormValues,
@@ -491,7 +503,7 @@ describe('getUpdateValuesForACLs', () => {
     });
   });
 
-  describe('Multiple changes', () => {
+  describe('multiple changes', () => {
     test('should detect multiple ACL changes at once (mode + multiple filters)', () => {
       const original = {
         ...baseFormValues,
@@ -530,25 +542,37 @@ describe('getUpdateValuesForACLs', () => {
 
       // Validate schema values
       expect(result.value.aclFilters).toHaveLength(2);
-      expect(result.value.aclFilters[0].resourceFilter?.resourceType).toBe(ACLResource.ACL_RESOURCE_TOPIC);
-      expect(result.value.aclFilters[0].resourceFilter?.patternType).toBe(ACLPattern.ACL_PATTERN_LITERAL);
-      expect(result.value.aclFilters[0].resourceFilter?.name).toBe('topic1');
-      expect(result.value.aclFilters[0].accessFilter?.principal).toBe('User:alice');
-      expect(result.value.aclFilters[0].accessFilter?.operation).toBe(ACLOperation.ACL_OPERATION_READ);
-      expect(result.value.aclFilters[0].accessFilter?.permissionType).toBe(ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW);
-      expect(result.value.aclFilters[0].accessFilter?.host).toBe('192.168.1.1');
+      expect(result.value.aclFilters[0]).toMatchObject({
+        resourceFilter: {
+          resourceType: ACLResource.ACL_RESOURCE_TOPIC,
+          patternType: ACLPattern.ACL_PATTERN_LITERAL,
+          name: 'topic1',
+        },
+        accessFilter: {
+          principal: 'User:alice',
+          operation: ACLOperation.ACL_OPERATION_READ,
+          permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+          host: '192.168.1.1',
+        },
+      });
 
-      expect(result.value.aclFilters[1].resourceFilter?.resourceType).toBe(ACLResource.ACL_RESOURCE_GROUP);
-      expect(result.value.aclFilters[1].resourceFilter?.patternType).toBe(ACLPattern.ACL_PATTERN_PREFIXED);
-      expect(result.value.aclFilters[1].resourceFilter?.name).toBe('group-');
-      expect(result.value.aclFilters[1].accessFilter?.principal).toBe('User:bob');
-      expect(result.value.aclFilters[1].accessFilter?.operation).toBe(ACLOperation.ACL_OPERATION_WRITE);
-      expect(result.value.aclFilters[1].accessFilter?.permissionType).toBe(ACLPermissionType.ACL_PERMISSION_TYPE_DENY);
-      expect(result.value.aclFilters[1].accessFilter?.host).toBe('192.168.1.2');
+      expect(result.value.aclFilters[1]).toMatchObject({
+        resourceFilter: {
+          resourceType: ACLResource.ACL_RESOURCE_GROUP,
+          patternType: ACLPattern.ACL_PATTERN_PREFIXED,
+          name: 'group-',
+        },
+        accessFilter: {
+          principal: 'User:bob',
+          operation: ACLOperation.ACL_OPERATION_WRITE,
+          permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_DENY,
+          host: '192.168.1.2',
+        },
+      });
     });
   });
 
-  describe('Schema building', () => {
+  describe('schema building', () => {
     test('should build correct schema for all mode (ANY for all fields)', () => {
       const values = {
         ...baseFormValues,

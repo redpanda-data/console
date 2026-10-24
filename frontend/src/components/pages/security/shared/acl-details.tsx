@@ -54,23 +54,23 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
             {/* Left Column - Configuration Details */}
             <div className="space-y-6">
               {/* Shared Configuration */}
-              <Card className={`${isSimpleView ? 'hidden' : ''}`} size="full">
-                <CardHeader className="pb-4">
-                  <CardTitle className="font-medium text-heading-md text-strong" data-testid={'share-config-title'}>
+              <Card className={isSimpleView ? 'hidden' : ''} size="full">
+                <CardHeader>
+                  <CardTitle data-testid={'share-config-title'} level={3}>
                     Shared configuration
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <div className="mb-1 font-medium text-body text-foreground">Principal</div>
+                      <div className="mb-1 text-body font-medium text-foreground">Principal</div>
                       <div className="text-body text-strong">
                         <span className="text-subtle">{data.principalType}:</span>{' '}
                         <span>{parsePrincipal(data.sharedConfig.principal).name}</span>
                       </div>
                     </div>
                     <div>
-                      <div className="mb-1 font-medium text-body text-foreground">Host</div>
+                      <div className="mb-1 text-body font-medium text-foreground">Host</div>
                       <div className="text-body text-strong">
                         <span className="text-subtle">{data.hostType}:</span>{' '}
                         <span className="font-mono">{data.sharedConfig.host}</span>
@@ -81,9 +81,9 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
               </Card>
 
               {/* Rules */}
-              <Card className="border-border" size="full" variant={isSimpleView ? 'elevated' : undefined}>
+              <Card size="full" variant={isSimpleView ? 'elevated' : undefined}>
                 <CardHeader>
-                  <CardTitle className="font-medium text-heading-md text-strong" data-testid={'acl-rules-length'}>
+                  <CardTitle data-testid={'acl-rules-length'} level={3}>
                     {isSimpleView ? (
                       <Button onClick={() => navigate({ to: getGoTo(sharedConfig) })} variant="link">
                         {sharedConfig.principal}
@@ -93,7 +93,7 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                     )}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                   {data.rules.length === 0 ? (
                     <div className="py-8 text-center text-subtle">No permissions configured</div>
                   ) : (

@@ -35,7 +35,7 @@ rs.mock('./console-app', () => ({
   ConsoleApp: 'MockConsoleApp',
 }));
 
-import ConsoleCompatApp from './console-legacy-app';
+import createConsoleCompatElement from './console-legacy-app';
 
 interface LegacyReactElement {
   $$typeof: symbol;
@@ -51,10 +51,10 @@ const baseProps: ConsoleAppProps = {
 };
 
 function legacyElement(overrides: Partial<ConsoleAppProps> = {}): LegacyReactElement {
-  return ConsoleCompatApp({ ...baseProps, ...overrides });
+  return createConsoleCompatElement({ ...baseProps, ...overrides });
 }
 
-describe('Console legacy Module Federation app expose', () => {
+describe('the Console legacy Module Federation app expose', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });

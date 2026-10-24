@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import {
   FormControl,
   FormDescription,
@@ -45,7 +46,7 @@ const InfoTooltip = ({ content }: { content: string }) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger aria-label={content} className="inline-flex cursor-help items-center">
-        <InfoIcon className="h-3.5 w-3.5 text-muted-foreground" />
+        <TonedIcon className="h-3.5 w-3.5" icon={InfoIcon} tone="muted" />
       </TooltipTrigger>
       <TooltipContent className="max-w-64">{content}</TooltipContent>
     </Tooltip>

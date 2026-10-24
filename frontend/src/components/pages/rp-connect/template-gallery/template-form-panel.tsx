@@ -11,6 +11,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Waypoints } from 'lucide-react';
@@ -50,12 +51,12 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
   const resolvedName = endpoint.logoOverride ?? endpoint.component;
   const Logo = componentLogoMap[resolvedName as ComponentName];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono font-normal text-body-sm text-foreground normal-case tracking-normal">
+    <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono text-body-sm font-normal tracking-normal text-foreground normal-case">
       <span className="flex h-4 w-4 shrink-0 items-center justify-center">
         {Logo ? (
           <ConnectorLogo className="h-4 w-4" name={resolvedName as ComponentName} />
         ) : (
-          <Waypoints aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
+          <TonedIcon aria-hidden className="h-3.5 w-3.5" icon={Waypoints} tone="muted" />
         )}
       </span>
       {endpoint.component}
@@ -65,30 +66,38 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
+// A slot's presence check. Optional slots accept anything; a comma-separated list needs one
+// non-blank entry (",," must not pass).
+const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<string> => {
+  if (!slot.required) {
+    return z.string();
+  }
+  if (isList) {
+    return z.string().refine((v) => v.split(',').some((part) => part.trim()), `${slot.label} is required`);
+  }
+  return z.string().min(1, `${slot.label} is required`);
+};
+
+const slotSchema = (slot: TemplateSlot): z.ZodTypeAny => {
+  const isList = slot.kind === 'string' && Boolean(slot.list);
+  const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
+
+  let field = requiredSlotSchema(slot, isList);
+  if (entryPattern) {
+    // Validate each trimmed entry; blanks are the required check's concern, not the pattern's.
+    const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
+    field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
+  }
+  return slot.required ? field : field.optional().default('');
+};
+
 // Exported for tests: slot validation rules (required, list entries, entryPattern) live here.
 export const buildSchema = (slots: TemplateSlot[]) => {
   const shape: Record<string, z.ZodTypeAny> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),
   };
   for (const slot of slots) {
-    const isList = slot.kind === 'string' && slot.list;
-    const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
-
-    let field: z.ZodType<string>;
-    if (!slot.required) {
-      field = z.string();
-    } else if (isList) {
-      // Comma-separated multi-value: require at least one non-blank entry (",," must not pass).
-      field = z.string().refine((v) => v.split(',').some((part) => part.trim()), `${slot.label} is required`);
-    } else {
-      field = z.string().min(1, `${slot.label} is required`);
-    }
-    if (entryPattern) {
-      // Validate each trimmed entry; blanks are the required check's concern, not the pattern's.
-      const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
-      field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
-    }
-    shape[slot.id] = slot.required ? field : field.optional().default('');
+    shape[slot.id] = slotSchema(slot);
   }
   return z.object(shape);
 };
@@ -149,41 +158,51 @@ export type TemplateFormPanelProps = {
   onSlotValueApplied?: () => void;
 };
 
+/**
+ * The template's slots, with the connector schema applied once it loads, and a form validating them.
+ * Schema-driven defaults can arrive after mount, so they are reapplied once per template while the
+ * form is pristine.
+ */
+const useTemplateForm = (template: PipelineTemplate) => {
+  const { components, isLoading: isComponentsLoading } = useEnrichedComponents();
+  const effectiveSlots = useMemo(
+    () => applySchemaToSlots(template, components.length > 0 ? components : undefined),
+    [template, components]
+  );
+
+  const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
+  const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
+    defaultValues: defaultValues as FormValues,
+    mode: 'onBlur',
+  });
+
+  const lastAppliedTemplateId = useRef<string | null>(null);
+  useEffect(() => {
+    // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
+    // required-ness/defaults rather than locking in values derived from proto flags alone.
+    // If that query hangs forever the reset never fires (errors settle isLoading) and the
+    // form stays on its first-render defaults — degraded but usable.
+    if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
+      return;
+    }
+    lastAppliedTemplateId.current = template.id;
+    if (!form.formState.isDirty) {
+      form.reset(defaultValues as FormValues);
+    }
+  }, [isComponentsLoading, components, defaultValues, form, template.id]);
+
+  return { form, effectiveSlots };
+};
+
 export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFormPanelProps>(
   (
     { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
     ref
   ) => {
-    const { components, isLoading: isComponentsLoading } = useEnrichedComponents();
-    const effectiveSlots = useMemo(
-      () => applySchemaToSlots(template, components.length > 0 ? components : undefined),
-      [template, components]
-    );
-
-    const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
-    const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);
-
-    const form = useForm<FormValues>({
-      resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
-      defaultValues: defaultValues as FormValues,
-      mode: 'onBlur',
-    });
-
-    // Schema-driven defaults can arrive after mount; reapply once per template, but only while pristine.
-    const lastAppliedTemplateId = useRef<string | null>(null);
-    useEffect(() => {
-      // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
-      // required-ness/defaults rather than locking in values derived from proto flags alone.
-      // If that query hangs forever the reset never fires (errors settle isLoading) and the
-      // form stays on its first-render defaults — degraded but usable.
-      if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
-        return;
-      }
-      lastAppliedTemplateId.current = template.id;
-      if (!form.formState.isDirty) {
-        form.reset(defaultValues as FormValues);
-      }
-    }, [isComponentsLoading, components, defaultValues, form, template.id]);
+    const { form, effectiveSlots } = useTemplateForm(template);
 
     const stitchCurrentYaml = (values: FormValues): string => {
       const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;
@@ -257,7 +276,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
                 key={section}
               >
                 <div className="flex flex-wrap items-center gap-2.5 border-b pb-2.5">
-                  <h5 className="font-bold text-heading-xs uppercase tracking-wider" id={`section-${section}`}>
+                  <h5 className="text-heading-xs font-bold tracking-wider uppercase" id={`section-${section}`}>
                     {SECTION_LABELS[section]}
                   </h5>
                   {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}

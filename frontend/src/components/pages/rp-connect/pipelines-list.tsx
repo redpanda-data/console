@@ -10,6 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -18,7 +19,7 @@ import {
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
 import { Text } from 'components/redpanda-ui/components/typography';
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -36,6 +37,24 @@ import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
 
 const STATUS_ICON_SIZE = 24;
+
+const statusIconToneVariants = cva('contents', {
+  variants: {
+    tone: {
+      subtle: 'text-subtle',
+      success: 'text-success',
+      destructive: 'text-destructive',
+    },
+  },
+});
+
+/** Colours a status icon. `contents` draws no box, so the icon itself stays the flex item. */
+const StatusIconTone = ({
+  tone,
+  children,
+}: Required<VariantProps<typeof statusIconToneVariants>> & { children: ReactNode }) => (
+  <span className={statusIconToneVariants({ tone })}>{children}</span>
+);
 
 /**
  * Navigates to /rp-connect/create (legacy flow)
@@ -70,43 +89,64 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
     case Pipeline_State.STARTING:
       return (
         <div className="flex items-center gap-2">
-          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Starting
+          <StatusIconTone tone="subtle">
+            <RotateCwIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Starting
         </div>
       );
     case Pipeline_State.RUNNING:
       return (
         <div className="flex items-center gap-2">
-          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Running
+          <StatusIconTone tone="success">
+            <CheckIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Running
         </div>
       );
     case Pipeline_State.COMPLETED:
       return (
         <div className="flex items-center gap-2">
-          <CheckIcon className="text-success" size={STATUS_ICON_SIZE} /> Completed
+          <StatusIconTone tone="success">
+            <CheckIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Completed
         </div>
       );
     case Pipeline_State.STOPPING:
       return (
         <div className="flex items-center gap-2">
-          <RotateCwIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopping
+          <StatusIconTone tone="subtle">
+            <RotateCwIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Stopping
         </div>
       );
     case Pipeline_State.STOPPED:
       return (
         <div className="flex items-center gap-2">
-          <StopCircleIcon className="text-subtle" size={STATUS_ICON_SIZE} /> Stopped
+          <StatusIconTone tone="subtle">
+            <StopCircleIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Stopped
         </div>
       );
     case Pipeline_State.ERROR:
       return (
         <div className="flex items-center gap-2">
-          <CloseIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Error
+          <StatusIconTone tone="destructive">
+            <CloseIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Error
         </div>
       );
     default:
       return (
         <div className="flex items-center gap-2">
-          <HelpIcon className="text-destructive" size={STATUS_ICON_SIZE} /> Unknown
+          <StatusIconTone tone="destructive">
+            <HelpIcon size={STATUS_ICON_SIZE} />
+          </StatusIconTone>{' '}
+          Unknown
         </div>
       );
   }
@@ -161,7 +201,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
           search={{} as never}
           to="/rp-connect/$pipelineId"
         >
-          <Text className="whitespace-break-spaces break-words">{original.displayName}</Text>
+          <Text className="wrap-break-word whitespace-break-spaces">{original.displayName}</Text>
         </Link>
       </div>
     ),
@@ -171,7 +211,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'description',
     accessorKey: 'description',
     cell: ({ row: { original } }) => (
-      <Text className="min-w-[200px] whitespace-break-spaces break-words">{original.description}</Text>
+      <Text className="min-w-[200px] wrap-break-word whitespace-break-spaces">{original.description}</Text>
     ),
   },
   {
@@ -257,6 +297,15 @@ class RpConnectPipelinesList extends PageComponent<{}> {
   }
 }
 
+/** The quick-search text as a case-insensitive pattern, or `null` when it is not a valid one. */
+const toQuickSearchRegExp = (quickSearch: string): RegExp | null => {
+  try {
+    return new RegExp(quickSearch, 'i');
+  } catch {
+    return null;
+  }
+};
+
 // A nested write on the `uiSettings` proxy notifies nobody, so this subscribes to the store.
 const RpConnectPipelinesListContent: FC = () => {
   const { pipelinesList, updateSettings } = useUISettingsStore();
@@ -267,14 +316,7 @@ const RpConnectPipelinesListContent: FC = () => {
 
   const quickSearch = pipelinesList.quickSearch;
   // Compiled once, not once per row. An invalid pattern matches nothing, as before.
-  let quickSearchRegExp: RegExp | null = null;
-  if (quickSearch) {
-    try {
-      quickSearchRegExp = new RegExp(quickSearch, 'i');
-    } catch {
-      quickSearchRegExp = null;
-    }
-  }
+  const quickSearchRegExp = quickSearch ? toQuickSearchRegExp(quickSearch) : null;
 
   const filteredPipelines = (pipelinesApi.pipelines ?? [])
     ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents

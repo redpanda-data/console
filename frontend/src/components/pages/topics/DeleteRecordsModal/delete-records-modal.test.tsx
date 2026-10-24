@@ -30,7 +30,7 @@ const testTopic: Topic = {
   },
 };
 
-describe('DeleteRecordsModal', () => {
+describe('the DeleteRecordsModal', () => {
   afterEach(() => rs.restoreAllMocks());
 
   test('renders all expected elements in step 1', () => {

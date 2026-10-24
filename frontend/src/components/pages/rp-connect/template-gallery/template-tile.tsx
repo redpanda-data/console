@@ -10,6 +10,7 @@
  */
 
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Card } from 'components/redpanda-ui/components/card';
 import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypoints } from 'lucide-react';
 
@@ -35,7 +36,7 @@ const ComponentIcon = ({ name, override }: { name: string; override?: string }) 
   const inner = componentLogoMap[resolvedName as ComponentName] ? (
     <ConnectorLogo className="h-5 w-5" name={resolvedName as ComponentName} />
   ) : (
-    <Waypoints className="h-5 w-5 text-muted-foreground" />
+    <TonedIcon className="h-5 w-5" icon={Waypoints} tone="muted" />
   );
   return (
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background">{inner}</div>
@@ -51,24 +52,20 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
   const { label: tierLabel, Icon: TierIcon } = setupTierFor(template.setupTimeMinutes);
   return (
     <button
-      className="group h-full w-full rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+      className="group h-full w-full cursor-pointer rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       data-testid={`template-tile-${template.id}`}
       onClick={() => onSelect(template)}
       type="button"
     >
-      <Card
-        className="flex h-full cursor-pointer flex-col gap-2.5 rounded-md border-2 border-solid p-4 shadow-none transition-all hover:shadow-elevated"
-        size="full"
-        variant="standard"
-      >
+      <Card className="h-full" size="full" variant="standard">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ComponentIcon name={template.source.component} override={template.source.logoOverride} />
-            <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <TonedIcon aria-hidden className="h-3.5 w-3.5 shrink-0" icon={ArrowRight} tone="muted" />
             <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
           </div>
           <span
-            className="flex shrink-0 items-center gap-0.5 text-body-sm text-muted-foreground leading-none"
+            className="flex shrink-0 items-center gap-0.5 text-body-sm leading-none text-muted-foreground"
             data-testid={`template-tile-tier-${template.id}`}
           >
             <TierIcon aria-hidden className="h-3.5 w-3.5" />
@@ -76,8 +73,8 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
           </span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-body text-foreground leading-tight">{template.name}</span>
-          <span className="line-clamp-2 text-body-sm text-muted-foreground leading-snug">{template.description}</span>
+          <span className="text-body leading-tight font-semibold text-foreground">{template.name}</span>
+          <span className="line-clamp-2 text-body-sm leading-snug text-muted-foreground">{template.description}</span>
         </div>
       </Card>
     </button>

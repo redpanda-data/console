@@ -43,12 +43,82 @@ const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockConfig = rs.mocked(config);
 const mockUseControlplaneTransport = rs.mocked(useControlplaneTransport);
 
+type ListTestCase = {
+  name: string;
+  clusterId: string;
+  isEmbedded: boolean;
+  optsEnabled: boolean | undefined;
+  shouldMakeRequest: boolean;
+};
+
+const listShadowLinksTransport = (clusterId: string, mockListShadowLinks: ReturnType<typeof rs.fn>) => {
+  const mockShadowLinks = [
+    create(ShadowLinkListItemSchema, {
+      id: 'sl-1',
+      name: 'shadow-link-1',
+      shadowRedpandaId: clusterId,
+    }),
+  ];
+
+  return createRouterTransport(({ rpc }) => {
+    rpc(listShadowLinks, (request) => {
+      mockListShadowLinks(request);
+      return create(ListShadowLinksResponseSchema, {
+        shadowLinks: mockShadowLinks,
+      });
+    });
+  });
+};
+
+const renderListShadowLinksHook = (testCase: ListTestCase) => {
+  const mockListShadowLinks = rs.fn();
+  const transport = listShadowLinksTransport(testCase.clusterId, mockListShadowLinks);
+  mockUseControlplaneTransport.mockReturnValue(transport);
+
+  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+
+  const opts = testCase.optsEnabled === undefined ? undefined : { enabled: testCase.optsEnabled };
+  const { result } = renderHook(() => useControlplaneListShadowLinksQuery(opts), { wrapper });
+  return { result, mockListShadowLinks };
+};
+
+type ListHookRender = ReturnType<typeof renderListShadowLinksHook>;
+
+const expectListRequestMade = async ({ result, mockListShadowLinks }: ListHookRender, clusterId: string) => {
+  // Wait for data to load
+  await waitFor(() => {
+    expect(result.current.isSuccess).toBe(true);
+  });
+
+  // Verify request was made with correct filter
+  expect(mockListShadowLinks).toHaveBeenCalledTimes(1);
+  expect(mockListShadowLinks).toHaveBeenCalledWith(
+    expect.objectContaining({
+      filter: expect.objectContaining({
+        shadowRedpandaId: clusterId,
+      }),
+    })
+  );
+  expect(result.current.data?.shadowLinks).toHaveLength(1);
+};
+
+const expectNoListRequest = async ({ result, mockListShadowLinks }: ListHookRender) => {
+  // Wait a tick to ensure query would have been made if enabled
+  await waitFor(() => {
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  // Verify request was NOT made
+  expect(mockListShadowLinks).not.toHaveBeenCalled();
+  expect(result.current.data).toBeUndefined();
+};
+
 describe('useControlplaneListShadowLinksQuery', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
 
-  const testCases = [
+  const testCases: ListTestCase[] = [
     {
       name: 'Standalone mode (clusterId=default, isEmbedded=false)',
       clusterId: 'default',
@@ -77,56 +147,12 @@ describe('useControlplaneListShadowLinksQuery', () => {
     mockIsEmbedded.mockReturnValue(testCase.isEmbedded);
     mockConfig.clusterId = testCase.clusterId;
 
-    const mockListShadowLinks = rs.fn();
-    const mockShadowLinks = [
-      create(ShadowLinkListItemSchema, {
-        id: 'sl-1',
-        name: 'shadow-link-1',
-        shadowRedpandaId: testCase.clusterId,
-      }),
-    ];
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(listShadowLinks, (request) => {
-        mockListShadowLinks(request);
-        return create(ListShadowLinksResponseSchema, {
-          shadowLinks: mockShadowLinks,
-        });
-      });
-    });
-
-    mockUseControlplaneTransport.mockReturnValue(transport);
-
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-
-    const opts = testCase.optsEnabled === undefined ? undefined : { enabled: testCase.optsEnabled };
-    const { result } = renderHook(() => useControlplaneListShadowLinksQuery(opts), { wrapper });
+    const rendered = renderListShadowLinksHook(testCase);
 
     if (testCase.shouldMakeRequest) {
-      // Wait for data to load
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      // Verify request was made with correct filter
-      expect(mockListShadowLinks).toHaveBeenCalledTimes(1);
-      expect(mockListShadowLinks).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: expect.objectContaining({
-            shadowRedpandaId: testCase.clusterId,
-          }),
-        })
-      );
-      expect(result.current.data?.shadowLinks).toHaveLength(1);
+      await expectListRequestMade(rendered, testCase.clusterId);
     } else {
-      // Wait a tick to ensure query would have been made if enabled
-      await waitFor(() => {
-        expect(result.current.fetchStatus).toBe('idle');
-      });
-
-      // Verify request was NOT made
-      expect(mockListShadowLinks).not.toHaveBeenCalled();
-      expect(result.current.data).toBeUndefined();
+      await expectNoListRequest(rendered);
     }
   });
 });

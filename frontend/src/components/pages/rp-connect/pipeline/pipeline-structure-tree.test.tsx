@@ -36,175 +36,189 @@ pipeline:
 output:
   drop: {}`;
 
-describe('PipelineStructureTree', () => {
-  it('renders the section headers and the full nested structure as rows', () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    expect(screen.getByText('INPUT')).toBeInTheDocument();
-    expect(screen.getByText('PROCESSORS')).toBeInTheDocument();
-    expect(screen.getByText('OUTPUT')).toBeInTheDocument();
-    // Deeply nested components are all present (not clipped/dropped).
-    for (const label of ['switch', 'case 1', 'branch', 'http', 'rate_limit']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
+// Presses a key and asserts roving focus landed on the named row.
+async function pressAndExpectFocus(key: string, rowName: string) {
+  await userEvent.keyboard(key);
+  expect(screen.getByRole('treeitem', { name: rowName })).toHaveFocus();
+}
+
+describe('the PipelineStructureTree', () => {
+  describe('rendering and selection', () => {
+    it('renders the section headers and the full nested structure as rows', () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      expect(screen.getByText('INPUT')).toBeInTheDocument();
+      expect(screen.getByText('PROCESSORS')).toBeInTheDocument();
+      expect(screen.getByText('OUTPUT')).toBeInTheDocument();
+      // Deeply nested components are all present (not clipped/dropped).
+      for (const label of ['switch', 'case 1', 'branch', 'http', 'rate_limit']) {
+        expect(screen.getByText(label)).toBeInTheDocument();
+      }
+    });
+
+    it('selects an editable node directly when its row is clicked', async () => {
+      const onSelectNode = rs.fn();
+      render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+      await userEvent.click(screen.getByText('http'));
+      // http maps to its own YAML location, so the highlighted and editable ids match.
+      expect(onSelectNode).toHaveBeenCalledTimes(1);
+      const [highlightId, editableId] = onSelectNode.mock.calls[0];
+      expect(highlightId).toBeTruthy();
+      expect(highlightId).toBe(editableId);
+    });
+
+    it('resolves a switch case to itself so its routing condition is editable', async () => {
+      const onSelectNode = rs.fn();
+      render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+      await userEvent.click(screen.getByText('case 1'));
+      const [highlightId, editableId] = onSelectNode.mock.calls[0];
+      // The case is selectable in its own right (switchCase editTarget) so the
+      // inspector can edit its `check` — both ids point at the case row.
+      expect(highlightId).toContain('case');
+      expect(editableId).toContain('case');
+    });
   });
 
-  it('selects an editable node directly when its row is clicked', async () => {
-    const onSelectNode = rs.fn();
-    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    await userEvent.click(screen.getByText('http'));
-    // http maps to its own YAML location, so the highlighted and editable ids match.
-    expect(onSelectNode).toHaveBeenCalledTimes(1);
-    const [highlightId, editableId] = onSelectNode.mock.calls[0];
-    expect(highlightId).toBeTruthy();
-    expect(highlightId).toBe(editableId);
+  describe('expansion', () => {
+    it('collapses a group to hide its descendants', async () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      expect(screen.getByText('http')).toBeInTheDocument();
+      const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+      expect(switchRow).toHaveAttribute('aria-expanded', 'true');
+      act(() => switchRow.focus());
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(screen.queryByText('http')).not.toBeInTheDocument();
+      expect(switchRow).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByText('switch')).toBeInTheDocument();
+    });
+
+    it('toggles a group via the chevron without selecting the node', async () => {
+      const onSelectNode = rs.fn();
+      render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+      const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+      // The chevron is presentational (the row owns the ARIA expansion), so target it directly.
+      const chevron = switchRow.querySelector('button');
+      expect(chevron).not.toBeNull();
+      await userEvent.click(chevron as HTMLElement);
+      expect(screen.queryByText('http')).not.toBeInTheDocument();
+      // Collapsing must not also select the node.
+      expect(onSelectNode).not.toHaveBeenCalled();
+    });
   });
 
-  it('resolves a switch case to itself so its routing condition is editable', async () => {
-    const onSelectNode = rs.fn();
-    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    await userEvent.click(screen.getByText('case 1'));
-    const [highlightId, editableId] = onSelectNode.mock.calls[0];
-    // The case is selectable in its own right (switchCase editTarget) so the
-    // inspector can edit its `check` — both ids point at the case row.
-    expect(highlightId).toContain('case');
-    expect(editableId).toContain('case');
+  describe('keyboard navigation', () => {
+    it('exposes rows as treeitems with level, position and expansion state', () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      // One labelled tree per non-empty section, so role="tree" owns only treeitems
+      // (headers / Add buttons live between the trees).
+      expect(screen.getByRole('tree', { name: 'PROCESSORS' })).toBeInTheDocument();
+      const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+      expect(switchRow).toHaveAttribute('aria-level', '1');
+      expect(switchRow).toHaveAttribute('aria-posinset', '2');
+      expect(switchRow).toHaveAttribute('aria-setsize', '2');
+      expect(switchRow).toHaveAttribute('aria-expanded', 'true');
+      const httpRow = screen.getByRole('treeitem', { name: 'http' });
+      expect(httpRow).toHaveAttribute('aria-level', '4');
+      // Leaves expose no aria-expanded.
+      expect(httpRow).not.toHaveAttribute('aria-expanded');
+    });
+
+    it('moves focus between visible rows with the arrow, Home and End keys', async () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      const first = screen.getByRole('treeitem', { name: 'kafka_franz' });
+      // Roving tabindex: only the first row is initially tabbable.
+      expect(first).toHaveAttribute('tabindex', '0');
+      expect(screen.getByRole('treeitem', { name: 'mapping' })).toHaveAttribute('tabindex', '-1');
+      act(() => first.focus());
+      await pressAndExpectFocus('{ArrowDown}', 'mapping');
+      await pressAndExpectFocus('{End}', 'drop');
+      await userEvent.keyboard('{Home}');
+      expect(first).toHaveFocus();
+    });
+
+    it('moves into an expanded group with ArrowRight and to the parent with ArrowLeft', async () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      const switchRow = screen.getByRole('treeitem', { name: 'switch' });
+      act(() => switchRow.focus());
+      await userEvent.keyboard('{ArrowRight}');
+      expect(screen.getByRole('treeitem', { name: 'case 1' })).toHaveFocus();
+      // From a leaf, ArrowLeft climbs to the parent group.
+      const httpRow = screen.getByRole('treeitem', { name: 'http' });
+      act(() => httpRow.focus());
+      await userEvent.keyboard('{ArrowLeft}');
+      expect(screen.getByRole('treeitem', { name: 'branch' })).toHaveFocus();
+    });
+
+    it('selects the focused row with Enter', async () => {
+      const onSelectNode = rs.fn();
+      render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+      const httpRow = screen.getByRole('treeitem', { name: 'http' });
+      act(() => httpRow.focus());
+      await userEvent.keyboard('{Enter}');
+      expect(onSelectNode).toHaveBeenCalledTimes(1);
+      const [highlightId, editableId] = onSelectNode.mock.calls[0];
+      expect(highlightId).toBe(editableId);
+    });
   });
 
-  it('collapses a group to hide its descendants', async () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    expect(screen.getByText('http')).toBeInTheDocument();
-    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
-    expect(switchRow).toHaveAttribute('aria-expanded', 'true');
-    act(() => switchRow.focus());
-    await userEvent.keyboard('{ArrowLeft}');
-    expect(screen.queryByText('http')).not.toBeInTheDocument();
-    expect(switchRow).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByText('switch')).toBeInTheDocument();
+  describe('docs links', () => {
+    // The registry Button renders `as="a"` with role="button" (Base UI), so query by that role.
+    it('links each component row to its reference docs', () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+      expect(docsLink).toHaveAttribute(
+        'href',
+        'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
+      );
+      expect(docsLink).toHaveAttribute('target', '_blank');
+      expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(screen.getByRole('button', { name: 'http documentation' })).toHaveAttribute(
+        'href',
+        'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/http/'
+      );
+      expect(screen.getByRole('button', { name: 'switch documentation' })).toBeInTheDocument();
+    });
+
+    it('omits the docs link on structural rows that name no component', () => {
+      render(<PipelineStructureTree configYaml={NESTED} />);
+      const caseRow = screen.getByRole('treeitem', { name: 'case 1' });
+      expect(caseRow.querySelector('a')).toBeNull();
+    });
+
+    it('opens the docs link without also selecting the row', async () => {
+      const onSelectNode = rs.fn();
+      render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
+      const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+      await userEvent.click(docsLink);
+      expect(onSelectNode).not.toHaveBeenCalled();
+      // Enter must reach the link, not the row's select handler (which would preventDefault it).
+      act(() => docsLink.focus());
+      await userEvent.keyboard('{Enter}');
+      expect(onSelectNode).not.toHaveBeenCalled();
+    });
   });
 
-  it('toggles a group via the chevron without selecting the node', async () => {
-    const onSelectNode = rs.fn();
-    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
-    // The chevron is presentational (the row owns the ARIA expansion), so target it directly.
-    const chevron = switchRow.querySelector('button');
-    expect(chevron).not.toBeNull();
-    await userEvent.click(chevron as HTMLElement);
-    expect(screen.queryByText('http')).not.toBeInTheDocument();
-    // Collapsing must not also select the node.
-    expect(onSelectNode).not.toHaveBeenCalled();
-  });
+  describe('invalid yaml', () => {
+    it('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
+      const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
+      expect(screen.getByText('switch')).toBeInTheDocument();
 
-  it('exposes rows as treeitems with level, position and expansion state', () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    // One labelled tree per non-empty section, so role="tree" owns only treeitems
-    // (headers / Add buttons live between the trees).
-    expect(screen.getByRole('tree', { name: 'PROCESSORS' })).toBeInTheDocument();
-    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
-    expect(switchRow).toHaveAttribute('aria-level', '1');
-    expect(switchRow).toHaveAttribute('aria-posinset', '2');
-    expect(switchRow).toHaveAttribute('aria-setsize', '2');
-    expect(switchRow).toHaveAttribute('aria-expanded', 'true');
-    const httpRow = screen.getByRole('treeitem', { name: 'http' });
-    expect(httpRow).toHaveAttribute('aria-level', '4');
-    // Leaves expose no aria-expanded.
-    expect(httpRow).not.toHaveAttribute('aria-expanded');
-  });
+      // A syntax error mid-edit: the lane must not blank out — it holds the outline and flags it.
+      rerender(<PipelineStructureTree configYaml={'input: [unclosed'} />);
+      expect(screen.getByText(HOLDING_NOTICE_RE)).toBeInTheDocument();
+      expect(screen.getByText('switch')).toBeInTheDocument();
+    });
 
-  it('moves focus between visible rows with the arrow, Home and End keys', async () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    const first = screen.getByRole('treeitem', { name: 'kafka_franz' });
-    // Roving tabindex: only the first row is initially tabbable.
-    expect(first).toHaveAttribute('tabindex', '0');
-    expect(screen.getByRole('treeitem', { name: 'mapping' })).toHaveAttribute('tabindex', '-1');
-    act(() => first.focus());
-    await userEvent.keyboard('{ArrowDown}');
-    expect(screen.getByRole('treeitem', { name: 'mapping' })).toHaveFocus();
-    await userEvent.keyboard('{End}');
-    expect(screen.getByRole('treeitem', { name: 'drop' })).toHaveFocus();
-    await userEvent.keyboard('{Home}');
-    expect(first).toHaveFocus();
-  });
+    it('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
+      render(<PipelineStructureTree configYaml={'input: [unclosed'} />);
+      expect(screen.getByText(FIX_IT_NOTICE_RE)).toBeInTheDocument();
+      expect(screen.queryByText('INPUT')).not.toBeInTheDocument();
+    });
 
-  it('moves into an expanded group with ArrowRight and to the parent with ArrowLeft', async () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    const switchRow = screen.getByRole('treeitem', { name: 'switch' });
-    act(() => switchRow.focus());
-    await userEvent.keyboard('{ArrowRight}');
-    expect(screen.getByRole('treeitem', { name: 'case 1' })).toHaveFocus();
-    // From a leaf, ArrowLeft climbs to the parent group.
-    const httpRow = screen.getByRole('treeitem', { name: 'http' });
-    act(() => httpRow.focus());
-    await userEvent.keyboard('{ArrowLeft}');
-    expect(screen.getByRole('treeitem', { name: 'branch' })).toHaveFocus();
-  });
-
-  it('selects the focused row with Enter', async () => {
-    const onSelectNode = rs.fn();
-    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    const httpRow = screen.getByRole('treeitem', { name: 'http' });
-    act(() => httpRow.focus());
-    await userEvent.keyboard('{Enter}');
-    expect(onSelectNode).toHaveBeenCalledTimes(1);
-    const [highlightId, editableId] = onSelectNode.mock.calls[0];
-    expect(highlightId).toBe(editableId);
-  });
-
-  // The registry Button renders `as="a"` with role="button" (Base UI), so query by that role.
-  it('links each component row to its reference docs', () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
-    expect(docsLink).toHaveAttribute(
-      'href',
-      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
-    );
-    expect(docsLink).toHaveAttribute('target', '_blank');
-    expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByRole('button', { name: 'http documentation' })).toHaveAttribute(
-      'href',
-      'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/http/'
-    );
-    expect(screen.getByRole('button', { name: 'switch documentation' })).toBeInTheDocument();
-  });
-
-  it('omits the docs link on structural rows that name no component', () => {
-    render(<PipelineStructureTree configYaml={NESTED} />);
-    const caseRow = screen.getByRole('treeitem', { name: 'case 1' });
-    expect(caseRow.querySelector('a')).toBeNull();
-  });
-
-  it('opens the docs link without also selecting the row', async () => {
-    const onSelectNode = rs.fn();
-    render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-    const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
-    await userEvent.click(docsLink);
-    expect(onSelectNode).not.toHaveBeenCalled();
-    // Enter must reach the link, not the row's select handler (which would preventDefault it).
-    act(() => docsLink.focus());
-    await userEvent.keyboard('{Enter}');
-    expect(onSelectNode).not.toHaveBeenCalled();
-  });
-
-  it('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
-    const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
-    expect(screen.getByText('switch')).toBeInTheDocument();
-
-    // A syntax error mid-edit: the lane must not blank out — it holds the outline and flags it.
-    rerender(<PipelineStructureTree configYaml={'input: [unclosed'} />);
-    expect(screen.getByText(HOLDING_NOTICE_RE)).toBeInTheDocument();
-    expect(screen.getByText('switch')).toBeInTheDocument();
-  });
-
-  it('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
-    render(<PipelineStructureTree configYaml={'input: [unclosed'} />);
-    expect(screen.getByText(FIX_IT_NOTICE_RE)).toBeInTheDocument();
-    expect(screen.queryByText('INPUT')).not.toBeInTheDocument();
-  });
-
-  it('does not flag a valid but still-incomplete config as invalid while authoring from blank', () => {
-    const { rerender } = render(<PipelineStructureTree configYaml={''} />);
-    // `input:` is valid, just not yet a pipeline — no prior outline to hold, so no "invalid" notice.
-    rerender(<PipelineStructureTree configYaml={'input:'} />);
-    expect(screen.queryByText(INVALID_NOTICE_RE)).not.toBeInTheDocument();
+    it('does not flag a valid but still-incomplete config as invalid while authoring from blank', () => {
+      const { rerender } = render(<PipelineStructureTree configYaml={''} />);
+      // `input:` is valid, just not yet a pipeline — no prior outline to hold, so no "invalid" notice.
+      rerender(<PipelineStructureTree configYaml={'input:'} />);
+      expect(screen.queryByText(INVALID_NOTICE_RE)).not.toBeInTheDocument();
+    });
   });
 });

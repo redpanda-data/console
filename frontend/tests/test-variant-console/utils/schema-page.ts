@@ -1,6 +1,12 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import type { Locator, Page } from '../../shared/e2e';
 import { appURL, expect } from '../../shared/e2e';
+
+const SCHEMA_REGISTRY_HEADING = /schema registry/i;
+const CREATE_SCHEMA_HEADING = /create schema/i;
+const EDIT_COMPATIBILITY_HEADING = /edit.*compatibility/i;
+const SUBJECT_DETAILS_URL = /\/schema-registry\/subjects\/.+/;
+const REFERENCE_NAME_INPUT = /schema-create-reference-name-input-\d+/;
+const RECOVER_CONFIRM_BUTTON = /confirm|recover|yes/i;
 
 /**
  * Helper function to select an option from a custom Select component (react-select based)
@@ -15,6 +21,31 @@ async function selectCustomOption(selectContainer: Locator, optionText: string) 
   const option = selectContainer.page().getByText(optionText, { exact: true });
   await option.click();
 }
+
+type SchemaReferenceParams = {
+  name: string;
+  subject: string;
+  version: number;
+};
+
+type CreateSchemaParams = {
+  strategy: 'TOPIC_NAME' | 'RECORD_NAME' | 'TOPIC_RECORD_NAME' | 'CUSTOM';
+  format: 'AVRO' | 'PROTOBUF' | 'JSON';
+  topicName?: string;
+  keyOrValue?: 'key' | 'value';
+  subjectName?: string;
+  schemaDefinition: string;
+  references?: SchemaReferenceParams[];
+  validate?: boolean;
+};
+
+// Map strategy values to their display labels
+const STRATEGY_LABELS: Record<CreateSchemaParams['strategy'], string> = {
+  TOPIC_NAME: 'Topic Name',
+  RECORD_NAME: 'Record Name',
+  TOPIC_RECORD_NAME: 'Topic-Record Name',
+  CUSTOM: 'Custom',
+};
 
 /**
  * Page Object Model for Schema Registry pages
@@ -32,12 +63,12 @@ export class SchemaPage {
    */
   async goto() {
     await this.page.goto('/schema-registry');
-    await expect(this.page.getByRole('heading', { name: /schema registry/i })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: SCHEMA_REGISTRY_HEADING })).toBeVisible();
   }
 
   async gotoCreate() {
     await this.page.goto('/schema-registry/create', { waitUntil: 'networkidle' });
-    await expect(this.page.getByRole('heading', { name: /create schema/i }).first()).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: CREATE_SCHEMA_HEADING }).first()).toBeVisible();
   }
 
   async gotoDetails(subjectName: string, version?: number | 'latest') {
@@ -51,87 +82,25 @@ export class SchemaPage {
       ? `/schema-registry/subjects/${encodeURIComponent(subjectName)}/edit-compatibility`
       : '/schema-registry/edit-compatibility';
     await this.page.goto(url);
-    await expect(this.page.getByRole('heading', { name: /edit.*compatibility/i })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: EDIT_COMPATIBILITY_HEADING })).toBeVisible();
   }
 
   /**
    * Schema creation methods
    */
-  async createSchema(params: {
-    strategy: 'TOPIC_NAME' | 'RECORD_NAME' | 'TOPIC_RECORD_NAME' | 'CUSTOM';
-    format: 'AVRO' | 'PROTOBUF' | 'JSON';
-    topicName?: string;
-    keyOrValue?: 'key' | 'value';
-    subjectName?: string;
-    schemaDefinition: string;
-    references?: Array<{
-      name: string;
-      subject: string;
-      version: number;
-    }>;
-    validate?: boolean;
-  }) {
+  async createSchema(params: CreateSchemaParams) {
     await this.gotoCreate();
-
-    // Map strategy values to their display labels
-    const strategyLabels = {
-      TOPIC_NAME: 'Topic Name',
-      RECORD_NAME: 'Record Name',
-      TOPIC_RECORD_NAME: 'Topic-Record Name',
-      CUSTOM: 'Custom',
-    };
-
-    // Select strategy using custom select component
-    const strategySelect = this.page.getByTestId('schema-create-strategy-select');
-    await selectCustomOption(strategySelect, strategyLabels[params.strategy]);
-
-    // Select format
-    const formatRadio = this.page.getByTestId('schema-create-format-radio');
-    await formatRadio.getByRole('radio', { name: params.format }).click();
-
-    // Fill in topic and key/value if using TOPIC strategy
-    if (params.strategy === 'TOPIC_NAME' && params.topicName) {
-      const topicSelect = this.page.getByTestId('schema-create-topic-select');
-      // For topic select, we also need to use custom select
-      await selectCustomOption(topicSelect, params.topicName);
-
-      if (params.keyOrValue) {
-        const keyValueRadio = this.page.getByTestId('schema-create-key-value-radio');
-        await keyValueRadio.getByRole('radio', { name: params.keyOrValue }).click();
-      }
-    }
-
-    // Fill in subject name if using CUSTOM strategy
-    if (params.strategy === 'CUSTOM' && params.subjectName) {
-      const subjectInput = this.page.getByTestId('schema-create-subject-name-input');
-      await subjectInput.fill(params.subjectName);
-    }
+    await this.selectNamingStrategyAndFormat(params.strategy, params.format);
+    await this.fillSubjectSource(params);
 
     // Fill in schema definition
-    const schemaEditor = this.page.getByTestId('schema-create-schema-editor');
-    await schemaEditor.fill(params.schemaDefinition);
+    await this.page.getByTestId('schema-create-schema-editor').fill(params.schemaDefinition);
 
-    // Add references if provided
-    if (params.references && params.references.length > 0) {
-      for (let i = 0; i < params.references.length; i++) {
-        const ref = params.references[i];
-
-        // Click add reference button
-        const addRefButton = this.page.getByTestId('schema-create-add-reference-btn');
-        await addRefButton.click();
-
-        // Fill in reference details
-        const nameInput = this.page.getByTestId(`schema-create-reference-name-input-${i}`);
-        await nameInput.fill(ref.name);
-
-        // Use custom select for subject and version dropdowns
-        const subjectSelect = this.page.getByTestId(`schema-create-reference-subject-select-${i}`);
-        await selectCustomOption(subjectSelect, ref.subject);
-
-        const versionSelect = this.page.getByTestId(`schema-create-reference-version-select-${i}`);
-        await selectCustomOption(versionSelect, ref.version.toString());
-      }
-    }
+    // Add references if provided, chained in order: reference row `i` exists only after the previous rows were added
+    await (params.references ?? []).reduce<Promise<unknown>>(
+      (previousReference, ref, i) => previousReference.then(() => this.fillNewReference(i, ref)),
+      Promise.resolve()
+    );
 
     // Validate if requested
     if (params.validate) {
@@ -139,11 +108,52 @@ export class SchemaPage {
     }
 
     // Save schema
-    const saveButton = this.page.getByTestId('schema-create-save-btn');
-    await saveButton.click();
+    await this.page.getByTestId('schema-create-save-btn').click();
 
     // Wait for navigation to details page
-    await expect(this.page).toHaveURL(/\/schema-registry\/subjects\/.+/, { timeout: 10_000 });
+    await expect(this.page).toHaveURL(SUBJECT_DETAILS_URL, { timeout: 10_000 });
+  }
+
+  private async selectNamingStrategyAndFormat(
+    strategy: CreateSchemaParams['strategy'],
+    format: CreateSchemaParams['format']
+  ) {
+    // Select strategy using custom select component
+    await selectCustomOption(this.page.getByTestId('schema-create-strategy-select'), STRATEGY_LABELS[strategy]);
+
+    // Select format
+    await this.page.getByTestId('schema-create-format-radio').getByRole('radio', { name: format }).click();
+  }
+
+  /** Fills the topic (TOPIC_NAME strategy) or the subject name (CUSTOM strategy) the subject is named after. */
+  private async fillSubjectSource({ strategy, topicName, keyOrValue, subjectName }: CreateSchemaParams) {
+    if (strategy === 'TOPIC_NAME' && topicName) {
+      // For topic select, we also need to use custom select
+      await selectCustomOption(this.page.getByTestId('schema-create-topic-select'), topicName);
+
+      if (keyOrValue) {
+        await this.page.getByTestId('schema-create-key-value-radio').getByRole('radio', { name: keyOrValue }).click();
+      }
+    }
+
+    if (strategy === 'CUSTOM' && subjectName) {
+      await this.page.getByTestId('schema-create-subject-name-input').fill(subjectName);
+    }
+  }
+
+  private async fillNewReference(i: number, ref: SchemaReferenceParams) {
+    // Click add reference button
+    await this.page.getByTestId('schema-create-add-reference-btn').click();
+
+    // Fill in reference details
+    await this.page.getByTestId(`schema-create-reference-name-input-${i}`).fill(ref.name);
+
+    // Use custom select for subject and version dropdowns
+    await selectCustomOption(this.page.getByTestId(`schema-create-reference-subject-select-${i}`), ref.subject);
+    await selectCustomOption(
+      this.page.getByTestId(`schema-create-reference-version-select-${i}`),
+      ref.version.toString()
+    );
   }
 
   async validateSchema() {
@@ -156,7 +166,7 @@ export class SchemaPage {
     await addRefButton.click();
 
     // Get the index of the newly added reference
-    const referenceInputs = await this.page.getByTestId(/schema-create-reference-name-input-\d+/).all();
+    const referenceInputs = await this.page.getByTestId(REFERENCE_NAME_INPUT).all();
     const index = referenceInputs.length - 1;
 
     const nameInput = this.page.getByTestId(`schema-create-reference-name-input-${index}`);
@@ -184,7 +194,7 @@ export class SchemaPage {
     await recoverButton.click();
 
     // Confirm in modal
-    const confirmButton = this.page.getByRole('button', { name: /confirm|recover|yes/i });
+    const confirmButton = this.page.getByRole('button', { name: RECOVER_CONFIRM_BUTTON });
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();
     }
@@ -315,20 +325,22 @@ export class SchemaPage {
     const referencesList = this.page.getByTestId('schema-references-list');
     await expect(referencesList).toBeVisible();
 
-    for (const refSubject of referenceSubjects) {
-      const refLink = this.page.getByTestId(`schema-reference-link-${refSubject}`);
-      await expect(refLink).toBeVisible();
-    }
+    await Promise.all(
+      referenceSubjects.map((refSubject) =>
+        expect(this.page.getByTestId(`schema-reference-link-${refSubject}`)).toBeVisible()
+      )
+    );
   }
 
   async verifyReferencedBy(referencingSubjects: string[]) {
     const referencedByList = this.page.getByTestId('schema-referenced-by-list');
     await expect(referencedByList).toBeVisible();
 
-    for (const refSubject of referencingSubjects) {
-      const refLink = this.page.getByTestId(`schema-referenced-by-link-${refSubject}`);
-      await expect(refLink).toBeVisible();
-    }
+    await Promise.all(
+      referencingSubjects.map((refSubject) =>
+        expect(this.page.getByTestId(`schema-referenced-by-link-${refSubject}`)).toBeVisible()
+      )
+    );
   }
 
   async verifyValidationError() {

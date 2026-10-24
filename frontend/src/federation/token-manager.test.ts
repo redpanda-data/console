@@ -12,7 +12,7 @@
 import { TokenManager } from './token-manager';
 import { describe, expect, mock, test } from 'bun:test';
 
-describe('TokenManager', () => {
+describe('the TokenManager', () => {
   describe('refresh', () => {
     test('calls getAccessToken and returns the token', async () => {
       const mockGetToken = mock().mockResolvedValue('test-token-123');
@@ -33,9 +33,7 @@ describe('TokenManager', () => {
       const tokenManager = new TokenManager(mockGetToken);
 
       // Start multiple refresh calls concurrently
-      const promise1 = tokenManager.refresh();
-      const promise2 = tokenManager.refresh();
-      const promise3 = tokenManager.refresh();
+      const promises = [tokenManager.refresh(), tokenManager.refresh(), tokenManager.refresh()];
 
       // getAccessToken should only be called once
       expect(mockGetToken).toHaveBeenCalledTimes(1);
@@ -44,10 +42,8 @@ describe('TokenManager', () => {
       resolveToken!('deduplicated-token');
 
       // All promises should resolve to the same value
-      const [result1, result2, result3] = await Promise.all([promise1, promise2, promise3]);
-      expect(result1).toBe('deduplicated-token');
-      expect(result2).toBe('deduplicated-token');
-      expect(result3).toBe('deduplicated-token');
+      const results = await Promise.all(promises);
+      expect(results).toEqual(['deduplicated-token', 'deduplicated-token', 'deduplicated-token']);
     });
 
     test('allows new refresh after previous completes', async () => {
@@ -96,7 +92,7 @@ describe('TokenManager', () => {
       const tokenManager = new TokenManager(mockGetToken);
 
       // Start a refresh
-      tokenManager.refresh();
+      const pending = tokenManager.refresh();
       expect(tokenManager.isRefreshing).toBe(true);
 
       // Reset
@@ -105,6 +101,7 @@ describe('TokenManager', () => {
 
       // Resolve the original promise (cleanup)
       resolveToken!('token');
+      await pending;
     });
 
     test('is safe to call when no refresh is in progress', () => {
@@ -144,11 +141,11 @@ describe('TokenManager', () => {
       const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
-      tokenManager.refresh();
+      const pending = tokenManager.refresh();
       expect(tokenManager.isRefreshing).toBe(true);
 
       resolveToken!('token');
-      await tokenManager.refresh();
+      await pending;
       expect(tokenManager.isRefreshing).toBe(false);
     });
 

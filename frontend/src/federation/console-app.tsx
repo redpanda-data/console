@@ -14,7 +14,7 @@ import '../utils/array-extensions';
 // Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
-import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
@@ -32,18 +32,21 @@ import '../assets/fonts/kumbh-sans.css';
 import '../globals.css';
 /* end tailwind styles */
 
-import { Code, ConnectError, type Interceptor } from '@connectrpc/connect';
+import { Code, ConnectError, type Interceptor, type Transport } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
+import { toast } from 'sonner';
 
 import { FederatedProviders } from './federated-providers';
 import { federatedRootRoute } from './federated-routes';
 import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
+import { Alert, AlertDescription } from '../components/redpanda-ui/components/alert';
+import { Button } from '../components/redpanda-ui/components/button';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
@@ -132,13 +135,13 @@ class ConsoleErrorBoundary extends Component<
       return (
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
-            <h2 className="font-semibold text-destructive text-heading-md">Something went wrong</h2>
+            <h2 className="text-heading-md font-semibold text-destructive">Something went wrong</h2>
             <p className="mt-2 text-body text-subtle">Console encountered an error.</p>
             {this.state.error ? (
               <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
             <button
-              className="mt-4 rounded-md bg-surface-informative px-4 py-2 font-medium text-body text-informative-foreground hover:bg-surface-informative-hover"
+              className="mt-4 rounded-md bg-surface-informative px-4 py-2 text-body font-medium text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
             >
@@ -188,67 +191,26 @@ function ConsoleAppInner({
   config: configOverrides,
   featureFlags,
 }: ConsoleAppProps) {
-  const [isInitialized, setIsInitialized] = useState(false);
-  // Track last notified path to prevent navigation loops between host and remote
-  const lastNotifiedPathRef = useRef<string>(initialPath);
-
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
 
   // Create stable TokenManager instance with initial getAccessToken
-  const [tokenManager] = useState(
-    () =>
-      new TokenManager(async () => {
-        const token = await getAccessToken();
-        setConfigJwt(token);
-        return token;
-      })
-  );
-
-  // Keep TokenManager's callback in sync when getAccessToken prop changes
-  useEffect(() => {
-    tokenManager.setGetAccessToken(async () => {
-      const token = await getAccessToken();
-      setConfigJwt(token);
-      return token;
-    });
-  }, [getAccessToken, tokenManager]);
+  const tokenManager = useFederatedTokenManager(getAccessToken);
 
   // Create token refresh interceptor using TokenManager
   const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(tokenManager), [tokenManager]);
 
   // Initialize Console on mount and cleanup on unmount
-  useEffect(() => {
-    let setupTeardown: (() => void) | undefined;
-
-    const initialize = async () => {
-      await tokenManager.refresh();
-
-      // Setup Console config with overrides
-      setupTeardown = setup({
-        jwt: config.jwt,
-        clusterId,
-        setSidebarItems: onSidebarItemsChange,
-        setBreadcrumbs: onBreadcrumbsChange,
-        featureFlags,
-        ...configOverrides,
-      });
-
-      setIsInitialized(true);
-    };
-
-    initialize();
-
-    const uiSettingsTeardown = installUISettingsSideEffects();
-
-    // Cleanup on unmount
-    return () => {
-      uiSettingsTeardown();
-      setupTeardown?.();
-      tokenManager.reset();
-      queryClient.clear();
-    };
-  }, [tokenManager, queryClient, clusterId, onSidebarItemsChange, onBreadcrumbsChange, featureFlags, configOverrides]);
+  const initialization = useFederatedInitialization({
+    tokenManager,
+    queryClient,
+    clusterId,
+    onSidebarItemsChange,
+    onBreadcrumbsChange,
+    featureFlags,
+    config: configOverrides,
+    onError,
+  });
 
   // Create transport with token interceptors (including refresh on 401)
   const dataplaneTransport = useMemo(
@@ -263,13 +225,153 @@ function ConsoleAppInner({
     [configOverrides?.urlOverride?.grpc, tokenRefreshInterceptor]
   );
 
+  // Create memory history router (host controls browser URL)
+  const router = useFederatedRouter(queryClient, dataplaneTransport, initialPath);
+
+  // Subscribe to route changes and notify host (with loop prevention)
+  useHostNavigation(router, initialPath, initialization.isInitialized, onRouteChange, navigateTo);
+
+  return (
+    <FederatedInitialization initialization={initialization}>
+      <ConsoleErrorBoundary onError={onError}>
+        <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
+          <RouterProvider router={router} />
+        </FederatedProviders>
+      </ConsoleErrorBoundary>
+    </FederatedInitialization>
+  );
+}
+
+export const ConsoleApp = ConsoleAppInner;
+
+export default ConsoleApp;
+
+function FederatedInitialization({
+  initialization: { isInitialized, error, retry },
+  children,
+}: {
+  initialization: ReturnType<typeof useFederatedInitialization>;
+  children: ReactNode;
+}) {
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Failed to initialize Console: {error.message}
+          <Button onClick={retry} variant="outline">
+            Try again
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  return isInitialized ? children : null;
+}
+
+function useFederatedTokenManager(getAccessToken: ConsoleAppProps['getAccessToken']) {
+  const [tokenManager] = useState(
+    () =>
+      new TokenManager(async () => {
+        const token = await getAccessToken();
+        setConfigJwt(token);
+        return token;
+      })
+  );
+  useEffect(() => {
+    tokenManager.setGetAccessToken(async () => {
+      const token = await getAccessToken();
+      setConfigJwt(token);
+      return token;
+    });
+  }, [getAccessToken, tokenManager]);
+  return tokenManager;
+}
+
+function useFederatedInitialization({
+  tokenManager,
+  queryClient,
+  clusterId,
+  onSidebarItemsChange,
+  onBreadcrumbsChange,
+  featureFlags,
+  config: configOverrides,
+  onError,
+}: Pick<
+  ConsoleAppProps,
+  'clusterId' | 'onSidebarItemsChange' | 'onBreadcrumbsChange' | 'featureFlags' | 'config' | 'onError'
+> & {
+  tokenManager: TokenManager;
+  queryClient: QueryClient;
+}) {
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [failure, setFailure] = useState<{ attempt: number; error: Error } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const notifyInitializationError = useEffectEvent((error: Error) => onError?.(error, { componentStack: '' }));
+  useEffect(() => {
+    let setupTeardown: (() => void) | undefined;
+    let cancelled = false;
+    setFailure(null);
+
+    const initialize = async () => {
+      await tokenManager.refresh();
+      if (cancelled) {
+        return;
+      }
+
+      // Setup Console config with overrides
+      setupTeardown = setup({
+        jwt: config.jwt,
+        clusterId,
+        setSidebarItems: onSidebarItemsChange,
+        setBreadcrumbs: onBreadcrumbsChange,
+        featureFlags,
+        ...configOverrides,
+      });
+
+      setIsInitialized(true);
+    };
+
+    initialize().catch((cause: unknown) => {
+      if (!cancelled) {
+        const initializationError = cause instanceof Error ? cause : new Error(String(cause));
+        setFailure({ attempt, error: initializationError });
+        notifyInitializationError(initializationError);
+      }
+    });
+
+    const uiSettingsTeardown = installUISettingsSideEffects();
+
+    // Cleanup on unmount
+    return () => {
+      cancelled = true;
+      uiSettingsTeardown();
+      setupTeardown?.();
+      tokenManager.reset();
+      queryClient.clear();
+    };
+  }, [
+    tokenManager,
+    queryClient,
+    clusterId,
+    onSidebarItemsChange,
+    onBreadcrumbsChange,
+    featureFlags,
+    configOverrides,
+    attempt,
+  ]);
+  const retry = () => {
+    setAttempt((previous) => previous + 1);
+  };
+  return { isInitialized, error: failure?.attempt === attempt ? failure.error : null, retry };
+}
+
+function useFederatedRouter(queryClient: QueryClient, dataplaneTransport: Transport, initialPath: string) {
   // Capture initialPath on first render only — subsequent navigation is handled
   // by the navigateTo prop via router.navigate(). Including initialPath in the
   // useMemo deps would recreate the entire router on every host navigation,
   // remounting all route components and retriggering all data fetches.
-  const initialPathRef = useRef(initialPath);
 
-  // Create memory history router (host controls browser URL)
+  const initialPathRef = useRef(initialPath);
   const router = useMemo(() => {
     const memoryHistory = createMemoryHistory({
       initialEntries: [initialPathRef.current],
@@ -288,8 +390,17 @@ function ConsoleAppInner({
 
     return r;
   }, [queryClient, dataplaneTransport]);
+  return router;
+}
 
-  // Subscribe to route changes and notify host (with loop prevention)
+function useHostNavigation(
+  router: ReturnType<typeof useFederatedRouter>,
+  initialPath: string,
+  isInitialized: boolean,
+  onRouteChange: ConsoleAppProps['onRouteChange'],
+  navigateTo: ConsoleAppProps['navigateTo']
+) {
+  const lastNotifiedPathRef = useRef<string>(initialPath);
   useEffect(() => {
     if (!onRouteChange) {
       return;
@@ -312,9 +423,6 @@ function ConsoleAppInner({
       unsubscribe();
     };
   }, [router, onRouteChange]);
-
-  // Handle navigation from host via navigateTo prop (browser back/forward).
-  // navigateTo may include search params (e.g., '/topics?tab=messages').
   useEffect(() => {
     if (!(navigateTo && isInitialized && router)) {
       return;
@@ -327,27 +435,14 @@ function ConsoleAppInner({
       const qIdx = navigateTo.indexOf('?');
       const toPath = qIdx >= 0 ? navigateTo.slice(0, qIdx) : navigateTo;
       const toSearch = qIdx >= 0 ? navigateTo.slice(qIdx + 1) : undefined;
-      router.navigate({
-        to: toPath,
-        search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
-      });
+      router
+        .navigate({
+          to: toPath,
+          search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
+        })
+        .catch((error: unknown) => {
+          toast.error('Failed to navigate', { description: String(error) });
+        });
     }
   }, [navigateTo, isInitialized, router]);
-
-  // Don't render until initialized, don't show anything until then
-  if (!isInitialized) {
-    return null;
-  }
-
-  return (
-    <ConsoleErrorBoundary onError={onError}>
-      <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
-        <RouterProvider router={router} />
-      </FederatedProviders>
-    </ConsoleErrorBoundary>
-  );
 }
-
-export const ConsoleApp = ConsoleAppInner;
-
-export default ConsoleApp;

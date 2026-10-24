@@ -28,12 +28,26 @@ export type ConfigPageProps = {
   context: 'CREATE' | 'EDIT';
 };
 
-export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
+// Re-renders the caller whenever the store reports a change.
+function useConnectorStoreVersion(connectorStore: ConnectorPropertiesStore) {
   const subscribe = useCallback((cb: () => void) => connectorStore.subscribe(cb), [connectorStore]);
   useSyncExternalStore(subscribe, connectorStore.getVersion);
+}
+
+// Find all steps, each with its property groups
+function connectorStepsWithGroups(
+  connectorStore: ConnectorPropertiesStore
+): { step: ConnectorStep; groups: PropertyGroup[] }[] {
+  return connectorStore.connectorStepDefinitions.map((step) => ({
+    step,
+    groups: connectorStore.allGroups.filter((g) => g.step.stepIndex === step.stepIndex),
+  }));
+}
+
+export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context }: ConfigPageProps) => {
+  useConnectorStoreVersion(connectorStore);
 
   const [viewMode, setViewMode] = useState<'form' | 'json'>(connectorStore.viewMode);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(connectorStore.showAdvancedOptions);
   if (connectorStore.error) {
     return (
       <div>
@@ -55,22 +69,10 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
     return <div>debug: no groups</div>;
   }
 
-  // Find all steps
-  const steps: {
-    step: ConnectorStep;
-    groups: PropertyGroup[];
-  }[] = [];
-
-  for (const step of connectorStore.connectorStepDefinitions) {
-    const groups = connectorStore.allGroups.filter((g) => g.step.stepIndex === step.stepIndex);
-    steps.push({ step, groups });
-  }
-
   return (
     <>
       <div className="mb-8">
         <RadioGroup
-          className="flex gap-4"
           name="settingsMode"
           onValueChange={(next) => {
             connectorStore.viewMode = next as 'form' | 'json';
@@ -91,33 +93,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
       </div>
 
       {viewMode === 'form' ? (
-        <>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={showAdvancedOptions}
-              id="show-advanced-options"
-              onCheckedChange={(checked) => {
-                connectorStore.showAdvancedOptions = checked;
-                setShowAdvancedOptions(checked);
-              }}
-            />
-            <Label className="cursor-pointer" htmlFor="show-advanced-options">
-              Show advanced options
-            </Label>
-          </div>
-
-          {steps.map(({ step, groups }) => (
-            <ConnectorStepComponent
-              allGroups={connectorStore.allGroups}
-              connectorType={connectorStore.connectorType}
-              context={context}
-              groups={groups}
-              key={step.stepIndex}
-              showAdvancedOptions={showAdvancedOptions}
-              step={step}
-            />
-          ))}
-        </>
+        <ConnectorFormView connectorStore={connectorStore} context={context} />
       ) : (
         <div style={{ margin: '0 auto 1.5rem' }}>
           <ConnectorJsonEditor connectorStore={connectorStore} context={context} />
@@ -127,45 +103,86 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
   );
 };
 
+function ConnectorFormView({ connectorStore, context }: ConfigPageProps) {
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(connectorStore.showAdvancedOptions);
+  const steps = connectorStepsWithGroups(connectorStore);
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={showAdvancedOptions}
+          id="show-advanced-options"
+          onCheckedChange={(checked) => {
+            connectorStore.showAdvancedOptions = checked;
+            setShowAdvancedOptions(checked);
+          }}
+        />
+        <Label className="cursor-pointer" htmlFor="show-advanced-options">
+          Show advanced options
+        </Label>
+      </div>
+
+      {steps.map(({ step, groups }) => (
+        <ConnectorStepComponent
+          allGroups={connectorStore.allGroups}
+          connectorType={connectorStore.connectorType}
+          context={context}
+          groups={groups}
+          key={step.stepIndex}
+          showAdvancedOptions={showAdvancedOptions}
+          step={step}
+        />
+      ))}
+    </>
+  );
+}
+
+function findExistingConnector(connectorStore: ConnectorPropertiesStore, connectorName: string) {
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.log('trying to obtain initial config from existing connector...', { name: connectorName });
+  const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === connectorStore.clusterName);
+  const connector = cluster?.connectors.first((x) => x.name === connectorName);
+  if (connector) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.log('success! found connector config', {
+      clusterName: connectorStore.clusterName,
+      connectorName,
+      config: clone(connector.config),
+    });
+    return connector;
+  }
+
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.log('unable to find existing connector for known connector name!', {
+    clusterName: connectorStore.clusterName,
+    connectorName,
+  });
+}
+
+// Initialize connector with existing data
+function initialConnectorJson(connectorStore: ConnectorPropertiesStore): string {
+  const configObj = connectorStore.getConfigObject();
+  const connectorName = (configObj as { name?: string })?.name;
+
+  const existingConnector = connectorName ? findExistingConnector(connectorStore, connectorName) : undefined;
+  if (existingConnector) {
+    return JSON.stringify(existingConnector.config, undefined, 4);
+  }
+
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.log('creating "new" config for connector', {
+    name: connectorName,
+    config: clone(configObj),
+  });
+
+  return JSON.stringify(configObj, undefined, 4);
+}
+
 function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; context: 'CREATE' | 'EDIT' }) {
   const connectorStore = p.connectorStore;
 
-  // Initialize connector with existing data
-  const [jsonText, setJsonText] = useState(() => {
-    const configObj = connectorStore.getConfigObject();
-    const connectorName = (configObj as { name?: string })?.name;
-
-    if (connectorName) {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('trying to obtain initial config from existing connector...', { name: connectorName });
-      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === connectorStore.clusterName);
-      const connector = cluster?.connectors.first((x) => x.name === connectorName);
-      if (connector) {
-        // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.log('success! found connector config', {
-          clusterName: connectorStore.clusterName,
-          connectorName,
-          config: clone(connector.config),
-        });
-
-        return JSON.stringify(connector.config, undefined, 4);
-      }
-
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.log('unable to find existing connector for known connector name!', {
-        clusterName: connectorStore.clusterName,
-        connectorName,
-      });
-    }
-
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.log('creating "new" config for connector', {
-      name: connectorName,
-      config: clone(configObj),
-    });
-
-    return JSON.stringify(configObj, undefined, 4);
-  });
+  const [jsonText, setJsonText] = useState(() => initialConnectorJson(connectorStore));
 
   return (
     <KowlEditor

@@ -10,6 +10,7 @@
  */
 
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import {
   AlertDialog,
@@ -81,7 +82,7 @@ import { ZeroSizeWrapper } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
-type ConnectorMetadata = {
+export type ConnectorMetadata = {
   readonly className?: string; // match by exact match
   readonly classNamePrefix?: string; // match by prefix
 
@@ -385,50 +386,35 @@ const connectorMetadataMatchCache: {
   [className: string]: ConnectorMetadata;
 } = {};
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-export function findConnectorMetadata(className: string): ConnectorMetadata | null {
-  const c = className;
-
-  // Quick and dirty cache
-  // If cache has too many entries, remove some
+// Quick and dirty cache: if it has too many entries, remove some
+function trimConnectorMetadataCache() {
   const cacheKeys = Object.keys(connectorMetadataMatchCache);
   if (cacheKeys.length > 200) {
     for (const k of cacheKeys.slice(0, 5)) {
       delete connectorMetadataMatchCache[k];
     }
   }
+}
 
-  // try find in cache
-  let meta = connectorMetadataMatchCache[c];
-  if (meta) {
-    return meta;
+// An exact match wins over a prefix match; anything else gets the fallback icon.
+function matchConnectorMetadata(className: string): ConnectorMetadata {
+  return (
+    connectorMetadata.find((e) => e.className && e.className === className) ??
+    connectorMetadata.find((e) => e.classNamePrefix && className.startsWith(e.classNamePrefix)) ??
+    fallbackConnector
+  );
+}
+
+export function findConnectorMetadata(className: string): ConnectorMetadata | null {
+  trimConnectorMetadataCache();
+
+  const cached = connectorMetadataMatchCache[className];
+  if (cached) {
+    return cached;
   }
 
-  // look for exact match
-  for (const e of connectorMetadata) {
-    if (e.className && e.className === c) {
-      meta = e;
-      break;
-    }
-  }
-
-  // look for prefix match
-  if (!meta) {
-    for (const e of connectorMetadata) {
-      if (e.classNamePrefix && c.startsWith(e.classNamePrefix)) {
-        meta = e;
-        break;
-      }
-    }
-  }
-
-  // use fallback icon
-  if (!meta) {
-    meta = fallbackConnector;
-  }
-
-  // store entry in cache
-  connectorMetadataMatchCache[c] = meta;
+  const meta = matchConnectorMetadata(className);
+  connectorMetadataMatchCache[className] = meta;
   return meta;
 }
 
@@ -484,7 +470,7 @@ export const OverviewStatisticsCard = () => {
   const totalConnectors = api.connectConnectors?.clusters?.sum((c) => c.totalConnectors) ?? '...';
 
   return (
-    <Section className="py-4">
+    <Section padding="compact">
       <div className="flex gap-8">
         <Stat label="Connect Clusters" size="lg" value={totalClusters} />
         <Stat label="Total Connectors" size="lg" value={totalConnectors} />
@@ -507,7 +493,7 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   const version = cluster?.clusterInfo.version ?? '...';
 
   return (
-    <Section className="py-4">
+    <Section padding="compact">
       <div className="flex gap-8">
         <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
 
@@ -524,7 +510,7 @@ export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName:
   const connector = cluster?.connectors.first((x) => x.name === p.connectorName);
 
   return (
-    <Section className="py-4">
+    <Section padding="compact">
       <div className="flex gap-8">
         <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
         <Stat label="Connector" size="lg" value={connector?.name} />
@@ -575,42 +561,37 @@ type ConfirmModalProps<T> = {
   onSuccess?: (target: T) => void; // called after the success toast; use for navigation
 };
 
+function parseApiError(text: string): ApiError | undefined {
+  try {
+    const apiErr = JSON.parse(text) as ApiError;
+    return apiErr?.message && apiErr.statusCode ? apiErr : undefined;
+  } catch {}
+}
+
+function describeConfirmError(error: string | Error): { title: string; content: string } {
+  const txt = typeof error === 'string' ? error : error.message;
+
+  // try parsing as json
+  const apiErr = parseApiError(txt);
+
+  // return text only
+  if (!apiErr) {
+    return {
+      title: 'Error',
+      content: txt,
+    };
+  }
+
+  // render error object
+  return {
+    title: `${apiErr.statusCode}`,
+    content: apiErr.message,
+  };
+}
+
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
-
-  const renderError = (): { title: string; content: string } | undefined => {
-    if (!error) {
-      return;
-    }
-
-    const txt = typeof error === 'string' ? error : error.message;
-
-    // try parsing as json
-    let apiErr: ApiError | undefined;
-    try {
-      apiErr = JSON.parse(txt) as ApiError;
-      if (!(apiErr?.message && apiErr.statusCode)) {
-        apiErr = undefined;
-      }
-    } catch {
-      apiErr = undefined;
-    }
-
-    // return text only
-    if (!apiErr) {
-      return {
-        title: 'Error',
-        content: txt,
-      };
-    }
-
-    // render error object
-    return {
-      title: `${apiErr.statusCode}`,
-      content: apiErr.message,
-    };
-  };
 
   const cancel = () => {
     setIsPending(false);
@@ -644,7 +625,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   };
 
   const target = props.target();
-  const err = renderError();
+  const err = error ? describeConfirmError(error) : undefined;
 
   const content = target && props.content(target);
 
@@ -663,16 +644,18 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
         </AlertDialogHeader>
         {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
             long API error would otherwise be clipped with no way to scroll to the footer. */}
-        <AlertDialogDescription className="min-h-0 overflow-y-auto text-foreground">
-          {content}
-          {err ? (
-            <div className="mt-4">
-              <Alert icon={<AlertIcon />} variant="destructive">
-                <AlertTitle>{err.title}</AlertTitle>
-                <AlertDescription>{err.content}</AlertDescription>
-              </Alert>
-            </div>
-          ) : null}
+        <AlertDialogDescription className="min-h-0 overflow-y-auto">
+          <div className="text-foreground">
+            {content}
+            {err ? (
+              <div className="mt-4">
+                <Alert icon={<AlertIcon />} variant="destructive">
+                  <AlertTitle>{err.title}</AlertTitle>
+                  <AlertDescription>{err.content}</AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
+          </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
           {/* Cancel first: Base UI focuses the first tabbable. */}
@@ -688,15 +671,18 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   );
 };
 
-// Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
-// or an array of connectors (in which case it will show the sum)
+type RunningCount = { running: number; total: number };
 
-export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
-  const obs = props.observable;
+const RunningOfTotal = ({ running, total }: RunningCount) => (
+  <>
+    {running < total ? <span style={mr05}>{warnIcon}</span> : null}
+    <span>
+      {running} / {total}
+    </span>
+  </>
+);
 
-  let running = 0;
-  let total = 0;
-
+function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount | null {
   if ('error' in obs && obs.error !== null) {
     return null;
   }
@@ -706,93 +692,92 @@ export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConn
     if (obs.error) {
       return null;
     }
-    running = obs.connectors.sum((x) => x.runningTasks);
-    total = obs.connectors.sum((x) => x.totalTasks);
-  } else if ('name' in obs) {
+    return { running: obs.connectors.sum((x) => x.runningTasks), total: obs.connectors.sum((x) => x.totalTasks) };
+  }
+
+  if ('name' in obs) {
     // ClusterConnectorInfo
-    running = obs.runningTasks;
-    total = obs.totalTasks;
+    return { running: obs.runningTasks, total: obs.totalTasks };
   }
 
-  return (
-    <>
-      {running < total ? <span style={mr05}>{warnIcon}</span> : null}
-      <span>
-        {running} / {total}
-      </span>
-    </>
-  );
-};
+  return { running: 0, total: 0 };
+}
 
-type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
-export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
-  let running = 0;
-  let total = 0;
-  let error: string | undefined;
-  if ('runningConnectors' in props.observable) {
-    running = props.observable.runningConnectors;
-    total = props.observable.totalConnectors;
-    error = props.observable.error;
-  } else {
-    if (props.observable.length === 0) {
-      return null;
-    }
-    error = props.observable[0].error;
-    running = props.observable.sum((x) => x.runningConnectors);
-    total = props.observable.sum((x) => x.totalConnectors);
-  }
+// Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
+// or an array of connectors (in which case it will show the sum)
 
-  if (error) {
+export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
+  const tasks = countTasks(props.observable);
+  if (!tasks) {
     return null;
   }
 
-  return (
-    <>
-      {running < total ? <span style={mr05}>{warnIcon}</span> : null}
-      <span>
-        {running} / {total}
-      </span>
-    </>
-  );
+  return <RunningOfTotal running={tasks.running} total={tasks.total} />;
 };
 
-export const TaskState = (p: {
-  observable: { state: ClusterConnectorTaskInfo['state']; trace?: string; taskId?: number };
-}) => {
-  const [err, showErr] = useState(undefined as string | undefined);
+type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
 
-  const task = p.observable;
-  const state = task.state;
-
-  const iconWrapper = (iconElement: JSX.Element) => <span style={{ fontSize: '18px' }}>{iconElement}</span>;
-
-  let icon: JSX.Element = <></>;
-  if (state === ConnectorState.Running) {
-    icon = iconWrapper(okIcon);
-  }
-  if (state === ConnectorState.Failed) {
-    icon = iconWrapper(errIcon);
-  }
-  if (state === ConnectorState.Paused) {
-    icon = iconWrapper(pauseIcon);
-  }
-  if (state === ConnectorState.Unassigned) {
-    icon = iconWrapper(waitIcon);
+function countConnectors(observable: ConnectorInfo | ConnectorInfo[]): (RunningCount & { error?: string }) | null {
+  if ('runningConnectors' in observable) {
+    return { running: observable.runningConnectors, total: observable.totalConnectors, error: observable.error };
   }
 
-  let stateContent = (
+  if (observable.length === 0) {
+    return null;
+  }
+
+  return {
+    running: observable.sum((x) => x.runningConnectors),
+    total: observable.sum((x) => x.totalConnectors),
+    error: observable[0].error,
+  };
+}
+
+export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
+  const connectors = countConnectors(props.observable);
+  if (!connectors || connectors.error) {
+    return null;
+  }
+
+  return <RunningOfTotal running={connectors.running} total={connectors.total} />;
+};
+
+type TaskStateValue = ClusterConnectorTaskInfo['state'];
+
+function taskStateIcon(state: TaskStateValue): JSX.Element | null {
+  switch (state) {
+    case ConnectorState.Running:
+      return okIcon;
+    case ConnectorState.Failed:
+      return errIcon;
+    case ConnectorState.Paused:
+      return pauseIcon;
+    case ConnectorState.Unassigned:
+      return waitIcon;
+    default:
+      return null;
+  }
+}
+
+const TaskStateLabel = ({ state }: { state: TaskStateValue }) => {
+  const icon = taskStateIcon(state);
+
+  return (
     <span className="capitalize" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }}>
-      {icon}
+      {icon ? <span style={{ fontSize: '18px' }}>{icon}</span> : null}
       {String(state).toLowerCase()}
     </span>
   );
+};
 
-  let errBtn: JSX.Element | undefined;
-  let errModal: JSX.Element | undefined;
-  if (task.trace) {
-    errBtn = (
+const TaskErrorTrace = ({ label, trace, taskId }: { label: JSX.Element; trace: string; taskId?: number }) => {
+  const [err, showErr] = useState<string>();
+  const close = () => showErr(undefined);
+
+  return (
+    <div>
       <Button
-        onClick={() => showErr(task.trace)}
+        onClick={() => showErr(trace)}
         style={{
           padding: '0px 12px',
           display: 'inline-flex',
@@ -802,26 +787,20 @@ export const TaskState = (p: {
         }}
         variant="destructive-outline"
       >
-        {stateContent}
+        {label}
         <span>(Show Error)</span>
       </Button>
-    );
-
-    const close = () => showErr(undefined);
-    errModal = (
       <Dialog
         onOpenChange={(open) => {
           if (!open) {
             close();
           }
         }}
-        open={err !== null && err !== undefined}
+        open={err !== undefined}
       >
         <DialogContent size="full">
           <DialogHeader>
-            <DialogTitle>
-              {task.taskId === undefined ? 'Error in Connector' : `Error trace of task ${task.taskId}`}
-            </DialogTitle>
+            <DialogTitle>{taskId === undefined ? 'Error in Connector' : `Error trace of task ${taskId}`}</DialogTitle>
           </DialogHeader>
           <DialogBody>
             <SimpleCodeBlock code={err ?? ''} language="text" maxHeight="none" width="full" />
@@ -831,24 +810,26 @@ export const TaskState = (p: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    );
-
-    stateContent = errBtn;
-  }
-
-  return (
-    <div>
-      {stateContent}
-      {errModal}
     </div>
   );
 };
 
-export const okIcon = <CheckCircleIcon className="text-success" />;
-export const warnIcon = <WarningIcon className="text-warning" />;
-export const errIcon = <AlertIcon className="text-destructive" />;
-const waitIcon = <HourglassIcon className="text-muted-foreground" />;
-const pauseIcon = <PauseCircleIcon className="text-muted-foreground" />;
+export const TaskState = (p: { observable: { state: TaskStateValue; trace?: string; taskId?: number } }) => {
+  const task = p.observable;
+  const label = <TaskStateLabel state={task.state} />;
+
+  if (!task.trace) {
+    return <div>{label}</div>;
+  }
+
+  return <TaskErrorTrace label={label} taskId={task.taskId} trace={task.trace} />;
+};
+
+export const okIcon = <TonedIcon icon={CheckCircleIcon} tone="success" />;
+export const warnIcon = <TonedIcon icon={WarningIcon} tone="warning" />;
+export const errIcon = <TonedIcon icon={AlertIcon} tone="destructive" />;
+const waitIcon = <TonedIcon icon={HourglassIcon} tone="muted" />;
+const pauseIcon = <TonedIcon icon={PauseCircleIcon} tone="muted" />;
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };

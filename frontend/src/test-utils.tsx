@@ -42,42 +42,8 @@ import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
-const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) => {
-  function Wrapper({ children }: PropsWithChildren): JSX.Element {
-    const finalTransport =
-      renderOptions.transport ??
-      createConnectTransport({
-        baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-      });
-
-    // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
-    // This prevents the client from being recreated when the Wrapper re-renders
-    const [queryClient] = useState(() => {
-      const client = new QueryClient({
-        defaultOptions: {
-          queries: {
-            retry: false,
-            gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
-            staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
-          },
-          mutations: {
-            retry: false,
-          },
-        },
-      });
-      trackedQueryClients.add(client);
-      return client;
-    });
-
-    return (
-      <TransportProvider transport={finalTransport}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </TransportProvider>
-    );
-  }
-
-  return render(ui, { wrapper: Wrapper, ...renderOptions });
-};
+const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) =>
+  render(ui, { wrapper: renderTransportQueryProviders.bind(null, renderOptions), ...renderOptions });
 
 // File-based routing test utilities
 interface RenderWithFileRoutesOptions extends ExtendedRenderOptions {
@@ -122,21 +88,9 @@ export function renderWithFileRoutes(
   });
   trackedRouters.add(router);
 
-  function Wrapper({ children }: PropsWithChildren): JSX.Element {
-    return (
-      <TransportProvider transport={finalTransport}>
-        <QueryClientProvider client={queryClient}>
-          <RouterContextProvider router={router}>
-            <TooltipProvider>{children}</TooltipProvider>
-          </RouterContextProvider>
-        </QueryClientProvider>
-      </TransportProvider>
-    );
-  }
+  const wrapper = FileRouteProviders.bind(null, { transport: finalTransport, queryClient, router });
 
-  const rendered = ui
-    ? render(ui, { wrapper: Wrapper, ...renderOptions })
-    : render(<div />, { wrapper: Wrapper, ...renderOptions });
+  const rendered = ui ? render(ui, { wrapper, ...renderOptions }) : render(<div />, { wrapper, ...renderOptions });
 
   return {
     ...rendered,
@@ -243,3 +197,65 @@ export * from '@testing-library/react';
 
 // override render method
 export { connectQueryWrapper, customRender as render, renderWithRouter };
+
+function TransportQueryProviders({
+  renderOptions,
+  children,
+}: PropsWithChildren<{ renderOptions: ExtendedRenderOptions }>): JSX.Element {
+  const finalTransport =
+    renderOptions.transport ??
+    createConnectTransport({
+      baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+    });
+
+  // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
+  // This prevents the client from being recreated when the Wrapper re-renders
+  const [queryClient] = useState(() => {
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
+          staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
+        },
+        mutations: {
+          retry: false,
+        },
+      },
+    });
+    trackedQueryClients.add(client);
+    return client;
+  });
+
+  return (
+    <TransportProvider transport={finalTransport}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </TransportProvider>
+  );
+}
+
+function renderTransportQueryProviders(
+  renderOptions: ExtendedRenderOptions,
+  { children }: PropsWithChildren
+): JSX.Element {
+  return <TransportQueryProviders renderOptions={renderOptions}>{children}</TransportQueryProviders>;
+}
+
+function FileRouteProviders(
+  {
+    transport: finalTransport,
+    queryClient,
+    router,
+  }: { transport: Transport; queryClient: QueryClient; router: ReturnType<typeof createTestRouterFromFiles> },
+  { children }: PropsWithChildren
+): JSX.Element {
+  return (
+    <TransportProvider transport={finalTransport}>
+      <QueryClientProvider client={queryClient}>
+        <RouterContextProvider router={router}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </RouterContextProvider>
+      </QueryClientProvider>
+    </TransportProvider>
+  );
+}

@@ -10,7 +10,7 @@ function Example({ slashToFocus }: { slashToFocus?: boolean }) {
   return (
     <>
       <input aria-label="Other field" />
-      <SearchInput onChange={setQuery} slashToFocus={slashToFocus} value={query} />
+      <SearchInput aria-label="Search items" onChange={setQuery} slashToFocus={slashToFocus} value={query} />
       <output>{query}</output>
     </>
   );
@@ -24,11 +24,7 @@ test('slash focuses the field; Escape clears it, then blurs', async () => {
   expect(search).toHaveFocus();
   await user.type(search, 'alpha');
   expect(screen.getByRole('status')).toHaveTextContent('alpha');
-  await user.keyboard('{Escape}');
-  expect(search).toHaveValue('');
-  expect(search).toHaveFocus();
-  await user.keyboard('{Escape}');
-  expect(search).not.toHaveFocus();
+  await expectEscapeClearsThenBlurs(user, search);
 });
 
 test('slash typed into another field is left alone', async () => {
@@ -57,3 +53,24 @@ test('the clear button is hidden and unfocusable while empty', () => {
   expect(clear).toBeDisabled();
   expect(clear).toHaveClass('invisible');
 });
+
+test('keyboard focus exposes the clear hint without replacing its accessible name', async () => {
+  const user = userEvent.setup();
+  render(<Example />);
+  await user.click(screen.getByRole('textbox', { name: 'Search items' }));
+  await user.paste('alpha');
+  await user.tab();
+  const clear = screen.getByRole('button', { name: 'Clear search' });
+  expect(clear).toHaveFocus();
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('Clear (Esc)');
+  expect(clear).toHaveAccessibleDescription('Clear (Esc)');
+  expect(clear).not.toHaveAttribute('title');
+});
+
+async function expectEscapeClearsThenBlurs(user: ReturnType<typeof userEvent.setup>, search: HTMLElement) {
+  await user.keyboard('{Escape}');
+  expect(search).toHaveValue('');
+  expect(search).toHaveFocus();
+  await user.keyboard('{Escape}');
+  expect(search).not.toHaveFocus();
+}

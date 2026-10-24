@@ -15,6 +15,7 @@ import { api } from '../../../state/backend-api';
 import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/license-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
+import { TonedIcon } from '../shared/toned-icon';
 
 const UploadLicenseForm: FC<{
   onUploadLicense: (license: string) => Promise<SetLicenseResponse>;
@@ -145,7 +146,7 @@ const UploadLicensePageContent: FC = () => {
     <PageContent>
       {success ? (
         <div className="mb-20 flex flex-col items-center gap-4 text-center">
-          <CheckCircle2Icon className="size-[72px] text-success" />
+          <TonedIcon className="size-[72px]" icon={CheckCircle2Icon} tone="success" />
           {/* license.spec.ts asserts on `h1:has-text("License uploaded")`. */}
           <h1 className="text-heading-lg">License uploaded</h1>
           <div className="flex flex-col gap-4">

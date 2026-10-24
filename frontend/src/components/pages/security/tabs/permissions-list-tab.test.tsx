@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
@@ -24,43 +24,28 @@ import type { ReactNode } from 'react';
  *   (they're ACL-only principals, not SASL-SCRAM accounts)
  */
 
+const { deleteAclMock, deleteUserMock } = rs.hoisted(() => ({ deleteAclMock: rs.fn(), deleteUserMock: rs.fn() }));
+// A refetch can fail after data loaded; tests flip this to drive the error screen.
+const { aclsQuery } = rs.hoisted(() => ({ aclsQuery: { failed: false } }));
+
 const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
-    Link: ({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) => (
-      <a href={to ?? ''} {...props}>
-        {children}
-      </a>
-    ),
-    useNavigate: () => rs.fn(),
+    Link: MockLink,
+    // Real navigate() returns a promise that settles once the route commits.
+    useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
 
 rs.mock('../shared/security-tabs-nav', () => ({
-  SecurityTabsNav: () => null,
+  SecurityTabsNav: MockSecurityTabsNav,
 }));
 
 rs.mock('../shared/delete-user-confirm-modal', () => ({
-  DeleteUserConfirmModal: ({
-    open,
-    userName,
-    onConfirm,
-  }: {
-    open: boolean;
-    userName: string;
-    onConfirm: () => void;
-    onOpenChange: (open: boolean) => void;
-  }) =>
-    open ? (
-      <div data-testid={`delete-user-modal-${userName}`}>
-        <button data-testid="confirm-delete" onClick={onConfirm}>
-          Confirm
-        </button>
-      </div>
-    ) : null,
+  DeleteUserConfirmModal: MockDeleteUserConfirmModal,
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
@@ -124,12 +109,12 @@ rs.mock('../../../../config', () => {
 
 rs.mock('../../../../react-query/api/acl', () => ({
   useCreateACLMutation: () => ({ mutateAsync: rs.fn() }),
-  useDeleteAclMutation: () => ({ mutateAsync: rs.fn() }),
+  useDeleteAclMutation: () => ({ mutateAsync: deleteAclMock }),
 }));
 
 rs.mock('../../../../react-query/api/user', () => ({
   useInvalidateUsersCache: () => rs.fn(),
-  useDeleteUserMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
+  useDeleteUserMutation: () => ({ mutateAsync: deleteUserMock }),
   useListUsersQuery: () => ({ data: { users: [] }, isLoading: false }),
 }));
 
@@ -171,8 +156,8 @@ rs.mock('../hooks/use-principal-permissions', () => ({
       },
     ],
     isAclsLoading: false,
-    isAclsError: false,
-    aclsError: null,
+    isAclsError: aclsQuery.failed,
+    aclsError: aclsQuery.failed ? new Error('ACLs unavailable') : null,
     isUsersError: false,
     usersError: null,
   }),
@@ -180,12 +165,14 @@ rs.mock('../hooks/use-principal-permissions', () => ({
 
 import { PermissionsListTab } from './permissions-list-tab';
 
-describe('Permissions List - delete dropdown for different principal types', () => {
+describe('the Permissions List - delete dropdown for different principal types', () => {
   beforeEach(() => {
     rs.clearAllMocks();
+    deleteAclMock.mockResolvedValue(undefined);
+    deleteUserMock.mockResolvedValue(undefined);
   });
 
-  test('Group principal does not show "Delete User" options in dropdown', async () => {
+  test('group principal does not show "Delete User" options in dropdown', async () => {
     const user = userEvent.setup();
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
@@ -200,7 +187,7 @@ describe('Permissions List - delete dropdown for different principal types', () 
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });
 
-  test('SCRAM user principal has "Delete User" options enabled', async () => {
+  test('the SCRAM user principal has "Delete User" options enabled', async () => {
     const user = userEvent.setup();
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
@@ -219,7 +206,7 @@ describe('Permissions List - delete dropdown for different principal types', () 
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });
 
-  test('Group principal has "Delete (ACLs only)" available', async () => {
+  test('group principal has "Delete (ACLs only)" available', async () => {
     const user = userEvent.setup();
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
@@ -230,4 +217,128 @@ describe('Permissions List - delete dropdown for different principal types', () 
 
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });
+
+  test('keeps expanded principals when a failed refetch recovers', async () => {
+    const user = userEvent.setup();
+    onTestFinished(() => {
+      aclsQuery.failed = false;
+    });
+    const { rerender } = render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+    await user.click(within(await screen.findByTestId('row-engineering')).getAllByRole('button')[0]);
+
+    aclsQuery.failed = true;
+    rerender(<PermissionsListTab />);
+    aclsQuery.failed = false;
+    rerender(<PermissionsListTab />);
+
+    expect(within(screen.getByTestId('row-engineering')).getAllByRole('button')[0]).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
+  });
+
+  test('keeps the delete-user dialog open until the user is deleted', async () => {
+    const user = userEvent.setup();
+    const deletion = Promise.withResolvers<void>();
+    deleteUserMock.mockReturnValue(deletion.promise);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+
+    await confirmUserOnlyDelete(user, 'scram-admin');
+    expect(screen.getByTestId('delete-user-modal-scram-admin')).toBeVisible();
+
+    deletion.resolve();
+    await waitFor(() => expect(screen.queryByTestId('delete-user-modal-scram-admin')).not.toBeInTheDocument());
+  });
+
+  test('deletes ACLs once when confirm is double-clicked, then closes the dialog', async () => {
+    const user = userEvent.setup();
+    const deletion = Promise.withResolvers<void>();
+    deleteAclMock.mockReturnValue(deletion.promise);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+
+    await openAclsOnlyDelete(user, 'engineering');
+    await user.dblClick(screen.getByRole('button', { name: 'Delete ACLs' }));
+    expect(deleteAclMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Delete ACLs' })).toBeDisabled();
+
+    deletion.resolve();
+    await waitFor(() => expect(screen.queryByText('Delete ACLs for engineering')).not.toBeInTheDocument());
+  });
+
+  test('reports a delayed ACL deletion failure once, then closes the dialog', async () => {
+    const user = userEvent.setup();
+    const deletion = Promise.withResolvers<void>();
+    deleteAclMock.mockReturnValue(deletion.promise);
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+
+    await openAclsOnlyDelete(user, 'engineering');
+    await user.dblClick(screen.getByRole('button', { name: 'Delete ACLs' }));
+    deletion.reject(new Error('acl delete denied'));
+
+    expect(await screen.findByText('acl delete denied')).toBeVisible();
+    expect(deleteAclMock).toHaveBeenCalledTimes(1);
+    // The dialog unmounts once its exit transition ends.
+    await waitFor(() => expect(screen.queryByText('Delete ACLs for engineering')).not.toBeInTheDocument());
+  });
+
+  test('reports a failed user deletion and then closes the dialog', async () => {
+    const user = userEvent.setup();
+    deleteUserMock.mockRejectedValue(new Error('user is still referenced'));
+    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+
+    await confirmUserOnlyDelete(user, 'scram-admin');
+
+    expect(await screen.findByText('user is still referenced')).toBeVisible();
+    await waitFor(() => expect(screen.queryByTestId('delete-user-modal-scram-admin')).not.toBeInTheDocument());
+  });
 });
+
+async function openAclsOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
+  const row = await screen.findByTestId(`row-${principalName}`);
+  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
+  await user.click(screen.getByText('Delete (ACLs only)'));
+}
+
+async function confirmUserOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
+  const row = await screen.findByTestId(`row-${principalName}`);
+  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
+  await user.click(screen.getByText('Delete (User only)'));
+  await user.click(screen.getByTestId('confirm-delete'));
+}
+
+function MockLink({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) {
+  return (
+    <a href={to ?? ''} {...props}>
+      {children}
+    </a>
+  );
+}
+
+function MockSecurityTabsNav() {
+  return null;
+}
+
+function MockDeleteUserConfirmModal({
+  open,
+  userName,
+  onConfirm,
+  onOpenChange,
+}: {
+  open: boolean;
+  userName: string;
+  onConfirm: () => Promise<void> | void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  // Mirrors the real modal: it closes only once onConfirm settles.
+  const handleConfirm = async () => {
+    await onConfirm();
+    onOpenChange(false);
+  };
+  return open ? (
+    <div data-testid={`delete-user-modal-${userName}`}>
+      <button data-testid="confirm-delete" onClick={handleConfirm} type="button">
+        Confirm
+      </button>
+    </div>
+  ) : null;
+}

@@ -22,12 +22,10 @@ import {
   NameFilterSchema,
   RoleSyncOptionsSchema,
   SecuritySettingsSyncOptionsSchema,
-  ShadowLinkClientOptionsSchema,
   ShadowLinkConfigurationsSchema,
   ShadowLinkSchema,
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { TLSSettingsSchema } from 'protogen/redpanda/core/common/v1/tls_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -47,7 +45,7 @@ import {
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
 import { getBasePath } from '../../../../utils/env';
-import { allNameFilter, buildAuthenticationConfiguration, buildTLSSettings } from '../edit/shadowlink-edit-utils';
+import { allNameFilter, buildClientOptions } from '../edit/shadowlink-edit-utils';
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -70,47 +68,49 @@ export const updatePageTitle = () => {
   ];
 };
 
+const ALL_ACLS_FILTER = [
+  create(ACLFilterSchema, {
+    resourceFilter: {
+      resourceType: ACLResource.ACL_RESOURCE_ANY,
+      patternType: ACLPattern.ACL_PATTERN_ANY,
+      name: '',
+    },
+    accessFilter: {
+      principal: '',
+      operation: ACLOperation.ACL_OPERATION_ANY,
+      permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
+      host: '',
+    },
+  }),
+];
+
+const buildSecuritySyncOptions = (values: FormValues) =>
+  create(SecuritySettingsSyncOptionsSchema, {
+    aclFilters:
+      values.aclsMode === 'all'
+        ? ALL_ACLS_FILTER
+        : values.aclFilters?.map((acl) =>
+            create(ACLFilterSchema, {
+              resourceFilter: {
+                resourceType: acl.resourceType,
+                patternType: acl.resourcePattern,
+                name: acl.resourceName || '',
+              },
+              accessFilter: {
+                principal: acl.principal || '',
+                operation: acl.operation,
+                permissionType: acl.permissionType,
+                host: acl.host || '',
+              },
+            })
+          ),
+  });
+
 /**
  * Transform form values to CreateShadowLinkRequest protobuf message
  */
 const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }: { roleSyncSupported: boolean }) => {
-  // Build TLS settings from certificate configuration
-  const tlsSettings = buildTLSSettings(values);
-
-  // Build client options
-  const clientOptions = create(ShadowLinkClientOptionsSchema, {
-    bootstrapServers: values.bootstrapServers.map((s) => s.value),
-    tlsSettings: values.useTls
-      ? create(TLSSettingsSchema, {
-          enabled: true,
-          tlsSettings,
-        })
-      : undefined,
-    authenticationConfiguration: buildAuthenticationConfiguration(values),
-    metadataMaxAgeMs: values.advanceClientOptions.metadataMaxAgeMs,
-    connectionTimeoutMs: values.advanceClientOptions.connectionTimeoutMs,
-    retryBackoffMs: values.advanceClientOptions.retryBackoffMs,
-    fetchWaitMaxMs: values.advanceClientOptions.fetchWaitMaxMs,
-    fetchMinBytes: values.advanceClientOptions.fetchMinBytes,
-    fetchMaxBytes: values.advanceClientOptions.fetchMaxBytes,
-    fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
-  });
-
-  const allACLs = [
-    create(ACLFilterSchema, {
-      resourceFilter: {
-        resourceType: ACLResource.ACL_RESOURCE_ANY,
-        patternType: ACLPattern.ACL_PATTERN_ANY,
-        name: '',
-      },
-      accessFilter: {
-        principal: '',
-        operation: ACLOperation.ACL_OPERATION_ANY,
-        permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
-        host: '',
-      },
-    }),
-  ];
+  const clientOptions = buildClientOptions(values);
 
   // Build topic metadata sync options
   const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
@@ -159,27 +159,7 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
       })
     : undefined;
 
-  // Build security sync options (ACL filters, ignore enabled field)
-  const securitySyncOptions = create(SecuritySettingsSyncOptionsSchema, {
-    aclFilters:
-      values.aclsMode === 'all'
-        ? allACLs
-        : values.aclFilters?.map((acl) =>
-            create(ACLFilterSchema, {
-              resourceFilter: {
-                resourceType: acl.resourceType,
-                patternType: acl.resourcePattern,
-                name: acl.resourceName || '',
-              },
-              accessFilter: {
-                principal: acl.principal || '',
-                operation: acl.operation,
-                permissionType: acl.permissionType,
-                host: acl.host || '',
-              },
-            })
-          ),
-  });
+  const securitySyncOptions = buildSecuritySyncOptions(values);
 
   // Build schema registry sync options (api mode via the redesigned section,
   // topic mode via the legacy switch, otherwise unset)
@@ -222,7 +202,10 @@ export const ShadowLinkCreatePage = () => {
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
-      navigate({ to: '/shadowlinks' });
+      // Handled here so a navigation failure is not reported as a failed create.
+      navigate({ to: '/shadowlinks' }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
     },
     onError: (error) => {
       toast.error('Shadow link create failed', {
@@ -262,9 +245,9 @@ export const ShadowLinkCreatePage = () => {
         preserved offsets and timestamps. Select the replicated content for this shadow link.
       </div>
 
-      <Stepper.Provider className="flex flex-col space-y-4" variant="horizontal">
+      <Stepper.Provider variant="horizontal">
         {({ methods }) => (
-          <>
+          <div className="flex flex-col gap-4">
             <div className="xl:w-1/3">
               <Stepper.Navigation>
                 <Stepper.Step of="shadow-connection">
@@ -325,7 +308,7 @@ export const ShadowLinkCreatePage = () => {
                 )}
               </Stepper.Controls>
             </div>
-          </>
+          </div>
         )}
       </Stepper.Provider>
     </div>

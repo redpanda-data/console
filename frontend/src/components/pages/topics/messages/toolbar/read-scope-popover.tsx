@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -35,6 +36,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { TonedIcon } from '../../../shared/toned-icon';
 import { StartOffsetDateTimePicker } from '../../Tab.Messages/forms/start-offset-date-time-picker';
 import { LIMIT_OPTIONS } from '../constants';
 import type { ReadScopeMode } from '../types';
@@ -88,17 +90,16 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
       onClick={onSelect}
       type="button"
     >
-      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone="muted" />
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold text-label">{meta.label}</span>
-        <span className="mt-0.5 block text-body-sm text-muted-foreground leading-relaxed">{meta.description}</span>
+        <span className="block text-label font-semibold">{meta.label}</span>
+        <span className="mt-0.5 block text-body-sm leading-relaxed text-muted-foreground">{meta.description}</span>
       </span>
-      {selected && <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />}
+      {selected && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
     </button>
   );
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: popover composes several independent controls
 export const ReadScopePopover = ({
   topicName,
   mode,
@@ -140,40 +141,39 @@ export const ReadScopePopover = ({
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        render={
-          <Button
-            className="h-10 gap-2 px-3.5"
-            data-testid="read-scope-button"
-            title="Read scope — where to start reading"
-            variant="outline"
-          >
-            <Icon className={cn('size-4', liveTail ? 'text-green-600' : 'text-muted-foreground')} />
-            <span className="font-semibold text-label">{liveTail ? 'Live tail' : meta.label}</span>
-            <span className="text-body-sm text-muted-foreground tabular-nums">{summary}</span>
-            <ChevronDownIcon className="size-3.5 text-muted-foreground" />
-          </Button>
-        }
-      />
-      <PopoverContent align="start" className="w-[600px] p-0">
+      <ElementTooltip content="Read scope — where to start reading">
+        <PopoverTrigger
+          render={
+            <Button className="h-10" data-testid="read-scope-button" variant="outline">
+              <TonedIcon className="size-4" icon={Icon} tone={liveTail ? 'live' : 'muted'} />
+              <span className="text-label font-semibold">{liveTail ? 'Live tail' : meta.label}</span>
+              <span className="text-body-sm text-muted-foreground tabular-nums">{summary}</span>
+              <TonedIcon className="size-3.5" icon={ChevronDownIcon} tone="muted" />
+            </Button>
+          }
+        />
+      </ElementTooltip>
+      <PopoverContent align="start" className="w-[600px]">
         <div className="flex items-stretch">
           <div className="min-w-0 flex-1 p-2">
             <div className="flex min-h-6 items-center justify-between gap-2 px-3 pt-1 pb-2">
-              <span className="font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider">
+              <span className="text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
                 Start from
               </span>
-              <Button
-                data-testid="read-scope-docs-button"
-                onClick={() => {
-                  setOpen(false);
-                  onOpenDocs();
-                }}
-                size="icon-xs"
-                title="How reading works — open explainer"
-                variant="ghost"
-              >
-                <InfoIcon />
-              </Button>
+              <ElementTooltip content="How reading works — open explainer">
+                <Button
+                  aria-label="How reading works — open explainer"
+                  data-testid="read-scope-docs-button"
+                  onClick={() => {
+                    setOpen(false);
+                    onOpenDocs();
+                  }}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <InfoIcon />
+                </Button>
+              </ElementTooltip>
             </div>
             {SCOPE_MODES.map((m) => (
               <ModeRow
@@ -190,7 +190,7 @@ export const ReadScopePopover = ({
             ))}
             <div className="my-1.5 flex items-center gap-2 px-2">
               <div className="h-px flex-1 bg-border" />
-              <span className="font-semibold text-caption text-muted-foreground uppercase tracking-wider">
+              <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
                 or stream
               </span>
               <div className="h-px flex-1 bg-border" />
@@ -198,7 +198,7 @@ export const ReadScopePopover = ({
             <button
               className={cn(
                 'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
-                liveTail && 'bg-green-100 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-950'
+                liveTail && 'bg-success-wash hover:bg-success-wash'
               )}
               data-testid="read-scope-mode-live"
               onClick={() => {
@@ -207,25 +207,22 @@ export const ReadScopePopover = ({
               }}
               type="button"
             >
-              <RadioIcon className="mt-0.5 size-4 shrink-0 text-green-600" />
+              <TonedIcon className="mt-0.5 size-4 shrink-0" icon={RadioIcon} tone="live" />
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-label">Live tail</span>
-                <span className="mt-0.5 block text-body-sm text-muted-foreground leading-relaxed">
+                <span className="block text-label font-semibold">Live tail</span>
+                <span className="mt-0.5 block text-body-sm leading-relaxed text-muted-foreground">
                   Stream new messages as they arrive
                 </span>
               </span>
-              {liveTail && <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />}
+              {liveTail && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
             </button>
           </div>
 
           <div className="flex w-[290px] shrink-0 flex-col gap-3 border-l p-4">
             {mode === 'offset' && (
               <div className="flex flex-col gap-1.5">
-                <Label className="text-caption uppercase tracking-wide" htmlFor="read-scope-offset">
-                  Start offset
-                </Label>
+                <Label htmlFor="read-scope-offset">Start offset</Label>
                 <Input
-                  className="font-mono"
                   id="read-scope-offset"
                   inputMode="numeric"
                   onChange={(e) => {
@@ -242,8 +239,8 @@ export const ReadScopePopover = ({
               </div>
             )}
             {mode === 'timestamp' && (
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-caption uppercase tracking-wide">Start timestamp</Label>
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="mb-1.5 text-label">Start timestamp</legend>
                 <StartOffsetDateTimePicker
                   inline
                   onChange={onStartTimestampChange}
@@ -251,15 +248,15 @@ export const ReadScopePopover = ({
                   value={startTimestamp}
                 />
                 <span className="text-body-sm text-muted-foreground">First message at or after this time</span>
-              </div>
+              </fieldset>
             )}
 
             {/* Continuous pagination only exists for the newest/oldest scopes */}
             {continuousAvailable && (
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-semibold text-label">Load continuously</div>
-                  <div className="mt-0.5 text-body-sm text-muted-foreground leading-relaxed">
+                  <div className="text-label font-semibold">Load continuously</div>
+                  <div className="mt-0.5 text-body-sm leading-relaxed text-muted-foreground">
                     On: pages load as you scroll. Turn off to sort the table.
                   </div>
                 </div>
@@ -274,7 +271,7 @@ export const ReadScopePopover = ({
             <div className="mt-auto flex flex-col gap-1.5 border-t pt-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-semibold text-label">
+                  <div className="text-label font-semibold">
                     {continuousMode && continuousAvailable ? 'Page size' : 'Max results'}
                   </div>
                   <div className="mt-0.5 text-body-sm text-muted-foreground">
@@ -293,12 +290,7 @@ export const ReadScopePopover = ({
                   value={[String(maxResults)]}
                 >
                   {limitValues.map((limit) => (
-                    <ToggleGroupItem
-                      className="font-mono text-body-sm"
-                      key={limit}
-                      testId={`read-scope-limit-${limit}`}
-                      value={String(limit)}
-                    >
+                    <ToggleGroupItem key={limit} testId={`read-scope-limit-${limit}`} value={String(limit)}>
                       {limit}
                     </ToggleGroupItem>
                   ))}
@@ -306,7 +298,7 @@ export const ReadScopePopover = ({
               </div>
 
               <div className="mt-2 flex items-center justify-between gap-3">
-                <div className="font-semibold text-label">Partition</div>
+                <div className="text-label font-semibold">Partition</div>
                 <Select onValueChange={(value) => onPartitionIdChange(Number(value))} value={String(partitionId)}>
                   <SelectTrigger className="w-40" testId="read-scope-partition-select">
                     <SelectValue>

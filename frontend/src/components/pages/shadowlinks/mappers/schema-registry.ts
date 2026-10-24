@@ -172,6 +172,28 @@ function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): Unif
   };
 }
 
+const formatSubSecondDuration = (totalNs: number): string => {
+  if (totalNs % 1000 !== 0) {
+    return `${totalNs}ns`;
+  }
+  const totalUs = totalNs / 1000;
+  if (totalUs % 1000 !== 0) {
+    return `${totalUs}us`;
+  }
+  return `${totalUs / 1000}ms`;
+};
+
+const formatWholeSecondsDuration = (seconds: number): string => {
+  if (seconds % 60 !== 0) {
+    return `${seconds}s`;
+  }
+  const minutes = seconds / 60;
+  if (minutes % 60 !== 0) {
+    return `${minutes}m`;
+  }
+  return `${minutes / 60}h`;
+};
+
 /**
  * Formats a proto Duration as the largest single-unit string the sync-behavior inputs accept ("90s",
  * "5m") so it round-trips through `durationFromString`; zero/unset gives '' to take the cluster
@@ -190,25 +212,9 @@ export function formatDurationForInput(duration: Duration | undefined): string {
 
   if (duration.nanos !== 0) {
     // Sub-second precision present, so the largest exact unit is at most ms.
-    const totalNs = seconds * 1_000_000_000 + duration.nanos;
-    if (totalNs % 1000 !== 0) {
-      return `${totalNs}ns`;
-    }
-    const totalUs = totalNs / 1000;
-    if (totalUs % 1000 !== 0) {
-      return `${totalUs}us`;
-    }
-    return `${totalUs / 1000}ms`;
+    return formatSubSecondDuration(seconds * 1_000_000_000 + duration.nanos);
   }
-
-  if (seconds % 60 !== 0) {
-    return `${seconds}s`;
-  }
-  const minutes = seconds / 60;
-  if (minutes % 60 !== 0) {
-    return `${minutes}m`;
-  }
-  return `${minutes / 60}h`;
+  return formatWholeSecondsDuration(seconds);
 }
 
 function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValues['mtls'] {

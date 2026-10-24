@@ -11,6 +11,7 @@
 
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle, Position } from '@xyflow/react';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -100,34 +101,46 @@ const LogoTile = ({ name }: { name: string }) => (
   </span>
 );
 
+function branchChipText(data: FlowCardData): string {
+  if (data.condition) {
+    return `if ${data.condition}`;
+  }
+  if (data.isDefault) {
+    return 'default';
+  }
+  return 'on error';
+}
+
+function branchChipTone(data: FlowCardData): 'error' | 'muted' | 'condition' {
+  if (data.isErrorPath) {
+    return 'error';
+  }
+  if (data.isDefault) {
+    return 'muted';
+  }
+  return 'condition';
+}
+
 // Routing semantics as a chip: `if <check>`, `default`, or `on error`. Display-only; edited in the inspector.
 const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
   }
-  let text = 'on error';
-  if (data.condition) {
-    text = `if ${data.condition}`;
-  } else if (data.isDefault) {
-    text = 'default';
-  }
-  let tone: 'error' | 'muted' | 'condition' = 'condition';
-  if (data.isErrorPath) {
-    tone = 'error';
-  } else if (data.isDefault) {
-    tone = 'muted';
-  }
+  const text = branchChipText(data);
+  const tone = branchChipTone(data);
   const cls = cn(
-    'inline-flex min-w-0 max-w-full items-center rounded border px-1.5 py-0.5 font-medium text-2xs leading-none',
+    'inline-flex max-w-full min-w-0 items-center rounded border px-1.5 py-0.5 text-2xs leading-none font-medium',
     tone === 'error' && 'border-destructive/40 bg-destructive/5 text-destructive',
     tone === 'muted' && 'border-warning/30 bg-warning/5 text-warning/80',
     tone === 'condition' && 'border-warning/40 bg-warning/10 text-warning',
     className
   );
   return (
-    <span className={cls} title={text}>
-      <span className="truncate">{text}</span>
-    </span>
+    <ElementTooltip content={text}>
+      <span className={cls}>
+        <span className="truncate">{text}</span>
+      </span>
+    </ElementTooltip>
   );
 };
 
@@ -160,12 +173,14 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
         selected && 'ring-2 ring-primary ring-inset'
       )}
     >
-      <Split className="size-3.5 shrink-0 opacity-80" />
-      <span className="shrink-0 font-semibold text-2xs uppercase tracking-wide opacity-70">{eyebrow}</span>
+      <span className="inline-flex shrink-0 opacity-80">
+        <Split className="size-3.5" />
+      </span>
+      <span className="shrink-0 text-2xs font-semibold tracking-wide uppercase opacity-70">{eyebrow}</span>
       {data.condition ? (
-        <span className="min-w-0 flex-1 truncate font-mono text-body-sm" title={data.condition}>
-          {data.condition}
-        </span>
+        <ElementTooltip content={data.condition}>
+          <span className="min-w-0 flex-1 truncate font-mono text-body-sm">{data.condition}</span>
+        </ElementTooltip>
       ) : null}
     </div>
   );
@@ -280,9 +295,9 @@ const MetaRows = ({ data }: { data: FlowCardData }) => {
       {data.meta?.map((entry) => (
         <div className="flex items-baseline gap-1.5 text-body-sm" key={`${entry.label}-${entry.value}`}>
           <span className="shrink-0 text-muted-foreground">{entry.label}</span>
-          <span className="min-w-0 truncate font-mono text-foreground" title={entry.value}>
-            {entry.value}
-          </span>
+          <ElementTooltip content={entry.value}>
+            <span className="min-w-0 truncate font-mono text-foreground">{entry.value}</span>
+          </ElementTooltip>
         </div>
       ))}
       {data.missingTopic || data.missingSasl ? (
@@ -342,21 +357,21 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   // Read-only (no handler): plain text, not a disabled button that reads as broken permissions.
   if (!onAdd) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm">
         <span className="text-body">No {section} configured</span>
       </div>
     );
   }
   return (
     <button
-      className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-border border-dashed bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
+      className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
       onClick={() => onAdd(data.section ?? '')}
       type="button"
     >
       <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
         <PlusIcon className="size-4" />
       </span>
-      <span className="font-medium text-body">Add {section}</span>
+      <span className="text-body font-medium">Add {section}</span>
     </button>
   );
 };
@@ -372,42 +387,46 @@ function cardRing(data: FlowCardData): string {
 
 // A brief double-pulse ring after an undo/redo touched a node — the `brand` token, distinct from
 // selection (primary) and errors (destructive). Keyed by `token` so re-flashing replays it.
+// The motion layer only animates opacity; the ring it fades is the native span inside.
 const FlashPulse = ({ token }: { token?: number }) => (
   <motion.span
     animate={{ opacity: [0, 1, 0.3, 1, 0] }}
     aria-hidden
-    className="pointer-events-none absolute inset-0 z-20 rounded-lg ring-2 ring-brand"
+    className="pointer-events-none absolute inset-0 z-20"
     initial={{ opacity: 0 }}
     key={token}
     transition={{ duration: 1.2, ease: 'easeOut', times: [0, 0.15, 0.5, 0.7, 1] }}
-  />
+  >
+    <span className="absolute inset-0 rounded-lg ring-2 ring-brand" />
+  </motion.span>
 );
 
-// Lint-problem count on a node; the messages are the native tooltip.
+// Lint-problem count on a node; the messages are its tooltip, one per line.
 const LintBadge = ({ errors }: { errors?: string[] }) =>
   errors && errors.length > 0 ? (
-    <span
-      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 font-medium text-2xs text-destructive"
-      title={errors.join('\n')}
-    >
-      <AlertCircle className="size-3" />
-      {errors.length}
-    </span>
+    <ElementTooltip content={<span className="whitespace-pre-line">{errors.join('\n')}</span>}>
+      <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/40 bg-destructive/5 px-1.5 py-0.5 text-2xs font-medium text-destructive">
+        <AlertCircle className="size-3" />
+        {errors.length}
+      </span>
+    </ElementTooltip>
   ) : null;
 
 // An info-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
-    <span className="size-2 shrink-0 rounded-full bg-informative" title="Unsaved changes on this node">
-      <span className="sr-only">Unsaved changes</span>
-    </span>
+    <ElementTooltip content="Unsaved changes on this node">
+      <span className="size-2 shrink-0 rounded-full bg-informative">
+        <span className="sr-only">Unsaved changes</span>
+      </span>
+    </ElementTooltip>
   ) : null;
 
 // The component's `label:` — shown on every node (leaf, container) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
   label ? (
     <Badge
-      className={cn('min-w-0 max-w-full shrink-0', className)}
+      className={cn('max-w-full min-w-0 shrink-0', className)}
       size="sm"
       title={label}
       tone="informative"
@@ -430,10 +449,10 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
     >
       {/* Routing condition at the TOP — the editable condition is the first, most obvious click target. */}
       {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
-      <div className="border-border/60 border-b" style={headerTintStyle(accent)}>
+      <div className="border-b border-border/60" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
           <span
-            className="shrink-0 font-medium text-body-sm uppercase tracking-wide"
+            className="shrink-0 text-body-sm font-medium tracking-wide uppercase"
             style={accent ? { color: accent } : undefined}
           >
             {kindLabel}
@@ -445,9 +464,9 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
           <LogoTile name={data.label} />
-          <span className="min-w-0 flex-1 truncate font-semibold text-body" title={data.label}>
-            {data.label}
-          </span>
+          <ElementTooltip content={data.label}>
+            <span className="min-w-0 flex-1 truncate text-body font-semibold">{data.label}</span>
+          </ElementTooltip>
         </div>
       </div>
       {data.labelText ? (
@@ -499,9 +518,9 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
       <button
         aria-label={data.label ?? 'Add'}
         className={cn(
-          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 font-medium text-body-sm text-primary transition-colors',
+          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 text-body-sm font-medium text-primary transition-colors',
           data.ghost
-            ? 'justify-center rounded-full border border-primary/40 border-dashed bg-background hover:border-primary hover:bg-primary/10'
+            ? 'justify-center rounded-full border border-dashed border-primary/40 bg-background hover:border-primary hover:bg-primary/10'
             : 'rounded-md hover:bg-primary/10'
         )}
         onClick={() => data.onInsert?.(payload)}
@@ -556,7 +575,7 @@ const LinkLabel = ({
 }) => {
   const className = cn(
     // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
-    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-medium font-mono text-2xs shadow-sm',
+    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-mono text-2xs font-medium shadow-sm',
     LINK_LABEL_STYLE[tone],
     // A condition label is clickable to edit its case — make that obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
@@ -569,13 +588,17 @@ const LinkLabel = ({
   return (
     <EdgeLabelRenderer>
       {onClick ? (
-        <button className={className} onClick={onClick} style={style} title={d.label} type="button">
-          {d.label}
-        </button>
+        <ElementTooltip content={d.label}>
+          <button className={className} onClick={onClick} style={style} type="button">
+            {d.label}
+          </button>
+        </ElementTooltip>
       ) : (
-        <div className={className} style={style} title={d.label}>
-          {d.label}
-        </div>
+        <ElementTooltip content={d.label}>
+          <div className={className} style={style}>
+            {d.label}
+          </div>
+        </ElementTooltip>
       )}
     </EdgeLabelRenderer>
   );
@@ -659,16 +682,17 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
           <span className="flex min-w-0 flex-1 flex-col">
-            <span
-              className="truncate font-medium text-caption uppercase leading-none tracking-wide"
-              style={{ color: accent }}
-              title={descriptor}
-            >
-              {descriptor}
-            </span>
-            <span className="min-w-0 truncate font-semibold text-body leading-tight" title={data.label}>
-              {data.label}
-            </span>
+            <ElementTooltip content={descriptor}>
+              <span
+                className="truncate text-caption leading-none font-medium tracking-wide uppercase"
+                style={{ color: accent }}
+              >
+                {descriptor}
+              </span>
+            </ElementTooltip>
+            <ElementTooltip content={data.label}>
+              <span className="min-w-0 truncate text-body leading-tight font-semibold">{data.label}</span>
+            </ElementTooltip>
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
@@ -677,7 +701,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button
-            className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-border/70 border-t border-dashed px-3 py-1.5 font-medium text-body-sm text-primary transition-colors hover:bg-primary/5"
+            className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-dashed border-border/70 px-3 py-1.5 text-body-sm font-medium text-primary transition-colors hover:bg-primary/5"
             onClick={(e) => {
               e.stopPropagation();
               data.onAddChild?.();
@@ -693,6 +717,8 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   );
 };
 
+const JOIN_HINT = 'Join — branches reconverge here';
+
 // The join point where a fan's branches reconverge; a filled primary-tint disc so it reads as a deliberate "join".
 const FlowMergeNode = () => {
   const handle = { top: 16, transform: 'none' } as const;
@@ -707,16 +733,19 @@ const FlowMergeNode = () => {
         style={{ left: 24, transform: 'none' }}
         type="target"
       />
-      <span
-        className="flex size-8 items-center justify-center rounded-full border-2 shadow-sm"
-        style={{
-          borderColor: 'var(--color-primary)',
-          backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))',
-        }}
-        title="Join — branches reconverge here"
-      >
-        <GitMerge className="size-4 text-primary" />
-      </span>
+      <ElementTooltip content={JOIN_HINT}>
+        <span
+          aria-label={JOIN_HINT}
+          className="flex size-8 items-center justify-center rounded-full border-2 text-primary shadow-sm"
+          role="img"
+          style={{
+            borderColor: 'var(--color-primary)',
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))',
+          }}
+        >
+          <GitMerge className="size-4" />
+        </span>
+      </ElementTooltip>
     </div>
   );
 };
@@ -764,6 +793,13 @@ type FlowGraphEdgeData = {
   ghost?: boolean;
 };
 
+type FlowPoint = { x: number; y: number };
+
+const lerpPoint = (a: FlowPoint, b: FlowPoint, f: number): FlowPoint => ({
+  x: a.x + (b.x - a.x) * f,
+  y: a.y + (b.y - a.y) * f,
+});
+
 // The point at fraction `t` (0–1) of the polyline's arc length — so an edge label / "+" sits ON
 // the line (a raw middle waypoint can sit well off a curved edge). t=0.5 = midpoint.
 function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
@@ -775,11 +811,7 @@ function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: numb
   let dist = total * Math.min(Math.max(t, 0), 1);
   for (let i = 0; i < segLen.length; i += 1) {
     if (dist <= segLen[i]) {
-      const f = segLen[i] === 0 ? 0 : dist / segLen[i];
-      return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * f,
-        y: points[i].y + (points[i + 1].y - points[i].y) * f,
-      };
+      return lerpPoint(points[i], points[i + 1], segLen[i] === 0 ? 0 : dist / segLen[i]);
     }
     dist -= segLen[i];
   }
@@ -819,43 +851,41 @@ function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
   return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
 }
 
+type EdgeEndpoints = Pick<
+  EdgeProps,
+  'sourceX' | 'sourceY' | 'sourcePosition' | 'targetX' | 'targetY' | 'targetPosition'
+>;
+// `label` is where a condition label sits (often near its target); `insert` is the on-edge "+" (midpoint).
+type EdgeGeometry = { path: string; label: FlowPoint; insert: FlowPoint };
+
+// Routed through Dagre's waypoints when it has them, else a smooth-step path between the handles.
+function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | undefined): EdgeGeometry {
+  const dagrePts = d?.points;
+  if (dagrePts && dagrePts.length >= 2) {
+    // Cap Dagre's routed waypoints with the real handle endpoints for a clean attach.
+    const pts = [
+      { x: endpoints.sourceX, y: endpoints.sourceY },
+      ...dagrePts.slice(1, -1),
+      { x: endpoints.targetX, y: endpoints.targetY },
+    ];
+    return {
+      path: smoothGraphPath(pts),
+      label: polylinePointAt(pts, d?.labelT ?? 0.5),
+      insert: polylinePointAt(pts, 0.5),
+    };
+  }
+  const [path, x, y] = getSmoothStepPath({ ...endpoints, borderRadius: 10 });
+  return { path, label: { x, y }, insert: { x, y } };
+}
+
 // Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. No
 // arrowheads — the left-to-right layout already reads as direction.
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
-  let path: string;
-  // `label*` is where a condition label sits (often near its target); `insert*` is the on-edge "+" (midpoint).
-  let labelX: number;
-  let labelY: number;
-  let insertX: number;
-  let insertY: number;
-  const dagrePts = d?.points;
-  if (dagrePts && dagrePts.length >= 2) {
-    // Cap Dagre's routed waypoints with the real handle endpoints for a clean attach.
-    const pts = [{ x: sourceX, y: sourceY }, ...dagrePts.slice(1, -1), { x: targetX, y: targetY }];
-    path = smoothGraphPath(pts);
-    const labelPos = polylinePointAt(pts, d?.labelT ?? 0.5);
-    const insertPos = polylinePointAt(pts, 0.5);
-    labelX = labelPos.x;
-    labelY = labelPos.y;
-    insertX = insertPos.x;
-    insertY = insertPos.y;
-  } else {
-    const [p, lx, ly] = getSmoothStepPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-      borderRadius: 10,
-    });
-    path = p;
-    labelX = lx;
-    labelY = ly;
-    insertX = lx;
-    insertY = ly;
-  }
+  const { path, label, insert } = graphEdgeGeometry(
+    { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition },
+    d
+  );
   const tone: LinkTone = d?.tone ?? 'muted';
   const width = d?.emphasized ? 4 : 3;
   return (
@@ -876,12 +906,12 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
           // A labelled primary edge's label IS a routing condition (flow edges are unlabelled), so
           // render it in the warning tone like the condition chips, not primary-blue. Line stays primary.
           tone={tone === 'primary' ? 'condition' : tone}
-          x={labelX}
+          x={label.x}
           // When an on-edge "+" shares this midpoint, lift the label clear so the two don't overprint.
-          y={d?.onInsert ? labelY - 18 : labelY}
+          y={d?.onInsert ? label.y - 18 : label.y}
         />
       ) : null}
-      {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={insertX} y={insertY} zIndex={1001} /> : null}
+      {d?.onInsert ? <EdgeInsertButton onInsert={d.onInsert} x={insert.x} y={insert.y} zIndex={1001} /> : null}
     </>
   );
 }

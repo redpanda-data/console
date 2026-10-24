@@ -48,8 +48,12 @@ rs.mock('state/backend-api', () => ({
 }));
 
 // 3. Mock AdvancedTopicSettings sub-component (not under test)
+function MockAdvancedTopicSettings() {
+  return <div data-testid="advanced-topic-settings" />;
+}
+
 rs.mock('./advanced-topic-settings', () => ({
-  AdvancedTopicSettings: () => <div data-testid="advanced-topic-settings" />,
+  AdvancedTopicSettings: MockAdvancedTopicSettings,
 }));
 
 // 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
@@ -108,9 +112,19 @@ function TestHarness({ onResult, ...props }: HarnessProps) {
   );
 }
 
+/** Opens the combobox, filters it to `optionName`, and clicks the matching option. */
+async function selectComboboxOption(user: ReturnType<typeof userEvent.setup>, placeholder: string, optionName: string) {
+  const comboboxInput = await screen.findByPlaceholderText(placeholder);
+  await user.click(comboboxInput);
+  await user.type(comboboxInput, optionName);
+
+  const option = await screen.findByRole('option', { name: optionName });
+  await user.click(option);
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────
 
-describe('AddTopicStep', () => {
+describe('the AddTopicStep', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     // Default: return empty topic list
@@ -120,256 +134,255 @@ describe('AddTopicStep', () => {
     });
   });
 
-  it('existing topic returns name via triggerSubmit', async () => {
-    const user = userEvent.setup();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
+  describe('submitting the step', () => {
+    it('existing topic returns name via triggerSubmit', async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
+      });
+
+      let result: unknown;
+      const transport = createTransport();
+
+      render(
+        <TestHarness
+          onResult={(r) => {
+            result = r;
+          }}
+          selectionMode="both"
+        />,
+        { transport }
+      );
+
+      // Wait for topics to load so the combobox has options
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      // The component starts in "Existing" mode when topics exist.
+      // Open the combobox, type to filter, then click the matching option.
+      // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+      // load — clicking the rendered option is deterministic.)
+      await selectComboboxOption(user, 'Select a topic', 'my-topic');
+
+      // Submit
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(result).toEqual(
+          expect.objectContaining({
+            success: true,
+            data: expect.objectContaining({ topicName: 'my-topic' }),
+          })
+        );
+      });
     });
 
-    let result: unknown;
-    const transport = createTransport();
-
-    render(
-      <TestHarness
-        onResult={(r) => {
-          result = r;
-        }}
-        selectionMode="both"
-      />,
-      { transport }
-    );
-
-    // Wait for topics to load so the combobox has options
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled();
-    });
-
-    // The component starts in "Existing" mode when topics exist.
-    // Open the combobox, type to filter, then click the matching option.
-    // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
-    // load — clicking the rendered option is deterministic.)
-    const comboboxInput = await screen.findByPlaceholderText('Select a topic');
-    await user.click(comboboxInput);
-    await user.type(comboboxInput, 'my-topic');
-
-    const option = await screen.findByRole('option', { name: 'my-topic' });
-    await user.click(option);
-
-    // Submit
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({ topicName: 'my-topic' }),
+    it('new topic calls createTopic RPC', async () => {
+      const user = userEvent.setup();
+      const createTopicMock = rs.fn().mockReturnValue(
+        create(CreateTopicResponseSchema, {
+          topicName: 'new-topic',
+          partitionCount: 1,
+          replicationFactor: 3,
         })
       );
+      const transport = createTransport({ createTopicMock });
+
+      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
+
+      const input = screen.getByPlaceholderText('Enter a topic name');
+      await user.type(input, 'new-topic');
+
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(createTopicMock).toHaveBeenCalled();
+      });
     });
-  });
 
-  it('new topic calls createTopic RPC', async () => {
-    const user = userEvent.setup();
-    const createTopicMock = rs.fn().mockReturnValue(
-      create(CreateTopicResponseSchema, {
-        topicName: 'new-topic',
-        partitionCount: 1,
-        replicationFactor: 3,
-      })
-    );
-    const transport = createTransport({ createTopicMock });
+    it('new topic returns success result', async () => {
+      const user = userEvent.setup();
+      const transport = createTransport();
 
-    render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
-
-    const input = screen.getByPlaceholderText('Enter a topic name');
-    await user.type(input, 'new-topic');
-
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(createTopicMock).toHaveBeenCalled();
-    });
-  });
-
-  it('new topic returns success result', async () => {
-    const user = userEvent.setup();
-    const transport = createTransport();
-
-    let result: unknown;
-    render(
-      <TestHarness
-        onResult={(r) => {
-          result = r;
-        }}
-        selectionMode="new"
-      />,
-      { transport }
-    );
-
-    const input = screen.getByPlaceholderText('Enter a topic name');
-    await user.type(input, 'new-topic');
-
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: true,
-          message: expect.stringMatching(/Topic ".*" created/),
-        })
+      let result: unknown;
+      render(
+        <TestHarness
+          onResult={(r) => {
+            result = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
       );
-    });
-  });
 
-  it('empty topic name rejected', async () => {
-    const user = userEvent.setup();
-    const transport = createTransport();
+      const input = screen.getByPlaceholderText('Enter a topic name');
+      await user.type(input, 'new-topic');
 
-    let result: unknown;
-    render(
-      <TestHarness
-        onResult={(r) => {
-          result = r;
-        }}
-        selectionMode="new"
-      />,
-      { transport }
-    );
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
 
-    // Do not type anything — leave topic name empty
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(result).toEqual(expect.objectContaining({ success: false }));
-    });
-  });
-
-  it('invalid characters rejected', async () => {
-    const user = userEvent.setup();
-    const transport = createTransport();
-
-    let result: unknown;
-    render(
-      <TestHarness
-        onResult={(r) => {
-          result = r;
-        }}
-        selectionMode="new"
-      />,
-      { transport }
-    );
-
-    const input = screen.getByPlaceholderText('Enter a topic name');
-    await user.type(input, 'bad topic name');
-
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(result).toEqual(expect.objectContaining({ success: false }));
-    });
-  });
-
-  it('selectionMode=new hides existing/new toggle', async () => {
-    const transport = createTransport();
-
-    render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
-
-    expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
-  });
-
-  it('selectionMode=existing shows combobox', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
-    });
-    const transport = createTransport();
-
-    render(<TestHarness onResult={() => {}} selectionMode="existing" />, { transport });
-
-    const combobox = await screen.findByPlaceholderText('Select a topic');
-    expect(combobox).toBeInTheDocument();
-  });
-
-  it('existing topic alert shown in create mode when name matches', async () => {
-    const user = userEvent.setup();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
-    });
-    const transport = createTransport();
-
-    render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
-
-    // Wait for topics to load
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(result).toEqual(
+          expect.objectContaining({
+            success: true,
+            message: expect.stringMatching(/Topic ".*" created/),
+          })
+        );
+      });
     });
 
-    // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
-    const newButton = await screen.findByRole('button', { name: 'New' });
-    await user.click(newButton);
+    it('empty topic name rejected', async () => {
+      const user = userEvent.setup();
+      const transport = createTransport();
 
-    // Type a name matching an existing topic
-    const input = screen.getByPlaceholderText('Enter a topic name');
-    await user.type(input, 'existing-topic');
-
-    // Assert alert about existing topic appears
-    await waitFor(() => {
-      expect(screen.getByText(/already exists/)).toBeInTheDocument();
-    });
-  });
-
-  it('createTopic error returns failure result', async () => {
-    const user = userEvent.setup();
-    const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
-    const transport = createTransport({ createTopicMock });
-
-    let result: unknown;
-    render(
-      <TestHarness
-        onResult={(r) => {
-          result = r;
-        }}
-        selectionMode="new"
-      />,
-      { transport }
-    );
-
-    const input = screen.getByPlaceholderText('Enter a topic name');
-    await user.type(input, 'valid-topic');
-
-    const submitBtn = screen.getByTestId('submit');
-    await user.click(submitBtn);
-
-    await waitFor(() => {
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: false,
-          message: 'Failed to save topic configuration',
-        })
+      let result: unknown;
+      render(
+        <TestHarness
+          onResult={(r) => {
+            result = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
       );
+
+      // Do not type anything — leave topic name empty
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(result).toEqual(expect.objectContaining({ success: false }));
+      });
+    });
+
+    it('invalid characters rejected', async () => {
+      const user = userEvent.setup();
+      const transport = createTransport();
+
+      let result: unknown;
+      render(
+        <TestHarness
+          onResult={(r) => {
+            result = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      const input = screen.getByPlaceholderText('Enter a topic name');
+      await user.type(input, 'bad topic name');
+
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(result).toEqual(expect.objectContaining({ success: false }));
+      });
+    });
+
+    it('createTopic error returns failure result', async () => {
+      const user = userEvent.setup();
+      const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
+      const transport = createTransport({ createTopicMock });
+
+      let result: unknown;
+      render(
+        <TestHarness
+          onResult={(r) => {
+            result = r;
+          }}
+          selectionMode="new"
+        />,
+        { transport }
+      );
+
+      const input = screen.getByPlaceholderText('Enter a topic name');
+      await user.type(input, 'valid-topic');
+
+      const submitBtn = screen.getByTestId('submit');
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(result).toEqual(
+          expect.objectContaining({
+            success: false,
+            message: 'Failed to save topic configuration',
+          })
+        );
+      });
     });
   });
 
-  it('selectionMode=both renders toggle group', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse(['t1'])),
+  describe('topic selection modes', () => {
+    it('selectionMode=new hides existing/new toggle', () => {
+      const transport = createTransport();
+
+      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
+
+      expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
     });
-    const transport = createTransport();
 
-    render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
+    it('selectionMode=existing shows combobox', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
+      });
+      const transport = createTransport();
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
+      render(<TestHarness onResult={() => {}} selectionMode="existing" />, { transport });
+
+      const combobox = await screen.findByPlaceholderText('Select a topic');
+      expect(combobox).toBeInTheDocument();
+    });
+
+    it('existing topic alert shown in create mode when name matches', async () => {
+      const user = userEvent.setup();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
+      });
+      const transport = createTransport();
+
+      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
+
+      // Wait for topics to load
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
+      });
+
+      // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
+      const newButton = await screen.findByRole('button', { name: 'New' });
+      await user.click(newButton);
+
+      // Type a name matching an existing topic
+      const input = screen.getByPlaceholderText('Enter a topic name');
+      await user.type(input, 'existing-topic');
+
+      // Assert alert about existing topic appears
+      await waitFor(() => {
+        expect(screen.getByText(/already exists/)).toBeInTheDocument();
+      });
+    });
+
+    it('selectionMode=both renders toggle group', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createTopicsResponse(['t1'])),
+      });
+      const transport = createTransport();
+
+      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
+      });
     });
   });
 });

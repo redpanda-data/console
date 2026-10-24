@@ -102,7 +102,10 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
       return errorNotConfigured;
     }
 
-    const markdown = docu?.text;
+    return this.renderMarkdown(docu.text);
+  }
+
+  private renderMarkdown(markdown: string | null | undefined) {
     if (markdown === null || markdown === undefined) {
       return errorNotFound;
     }

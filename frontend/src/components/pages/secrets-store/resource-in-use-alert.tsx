@@ -89,7 +89,7 @@ export const ResourceInUseAlert = ({ resources }: ResourceInUseAlertProps) => {
             <div key={type}>
               <div className="flex items-center gap-2">
                 {icon}
-                <div className="font-medium text-body">{label}</div>
+                <div className="text-body font-medium">{label}</div>
               </div>
               <List>
                 {resourceList.map((resource) => (

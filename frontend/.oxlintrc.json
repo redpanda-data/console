@@ -1,0 +1,60 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "jsPlugins": ["./lint-rules/index.ts"],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "rules": {
+    "console/no-hookless-use-function": "error",
+    "console/no-real-time-wait-in-tests": "error",
+    "console/no-polling-loop-in-tests": "error",
+    "console/no-wall-clock-in-tests": "error",
+    "console/no-test-timeout-or-unreasoned-skip": "error",
+    "console/require-suppression-reason": "error",
+    "console/no-native-title-tooltip": "error"
+  },
+  "options": {
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": false,
+    "typeCheck": false
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/routeTree.gen.ts",
+    "**/protogen/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/out/**",
+    "**/coverage*/**",
+    "**/.nyc_output/**",
+    "**/.rstest/**",
+    "**/.cache/**",
+    "src/components/redpanda-ui/**",
+    "src/components/ui/**",
+    "tests/console/**",
+    "tests/console-enterprise/**"
+  ],
+  "overrides": [
+    {
+      "files": ["tests/shared/assertions.ts"],
+      "rules": {
+        "console/no-real-time-wait-in-tests": "off",
+        "console/no-polling-loop-in-tests": "off",
+        "console/no-wall-clock-in-tests": "off"
+      }
+    },
+    {
+      "files": ["tests/shared/global-setup.mjs"],
+      "rules": {
+        "console/no-real-time-wait-in-tests": "off"
+      }
+    }
+  ]
+}

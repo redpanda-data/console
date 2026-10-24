@@ -24,6 +24,48 @@ import { formatPipelineError } from '../errors';
 const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
 const SECRET_NAME_MAX_LENGTH = 255;
 
+// Returns the validation message for a secret name, or '' when it is empty or valid.
+const validateSecretName = (secretName: string) => {
+  if (secretName === '') {
+    return '';
+  }
+  if (!SECRET_NAME_REGEX.test(secretName)) {
+    return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
+  }
+  if (secretName.length > SECRET_NAME_MAX_LENGTH) {
+    return 'The secret name must be fewer than 255 characters.';
+  }
+  return '';
+};
+
+// Creates the secret and toasts the outcome; resolves to whether it was created.
+const createSecret = (secretId: string, secretValue: string) =>
+  rpcnSecretManagerApi
+    .create(
+      create(CreateSecretRequestSchema, {
+        id: secretId,
+        secretData: base64ToUInt8Array(encodeBase64(secretValue)),
+        scopes: [Scope.REDPANDA_CONNECT, Scope.MCP_SERVER],
+      })
+    )
+    .then(async () => {
+      showToast({
+        status: 'success',
+        duration: 4000,
+        title: 'Secret created',
+      });
+      await rpcnSecretManagerApi.refreshSecrets(true);
+      return true;
+    })
+    .catch((err) => {
+      showToast({
+        status: 'error',
+        title: 'Failed to create secret',
+        description: formatPipelineError(err),
+      });
+      return false;
+    });
+
 type SecretsQuickAddProps = {
   isOpen: boolean;
   onCloseAddSecret: () => void;
@@ -45,35 +87,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   }));
 
   const addSecret = async (secretId: string) => {
-    const normalizedId = secretId.toUpperCase();
     if (isNewSecret) {
       setIsCreating(true);
-      const result = await rpcnSecretManagerApi
-        .create(
-          create(CreateSecretRequestSchema, {
-            id: normalizedId,
-            secretData: base64ToUInt8Array(encodeBase64(secret)),
-            scopes: [Scope.REDPANDA_CONNECT, Scope.MCP_SERVER],
-          })
-        )
-        .then(async () => {
-          showToast({
-            status: 'success',
-            duration: 4000,
-            title: 'Secret created',
-          });
-          await rpcnSecretManagerApi.refreshSecrets(true);
-          return true;
-        })
-        .catch((err) => {
-          showToast({
-            status: 'error',
-            title: 'Failed to create secret',
-            description: formatPipelineError(err),
-          });
-          return false;
-        });
-
+      const result = await createSecret(secretId.toUpperCase(), secret);
       if (!result) {
         return;
       }
@@ -94,20 +110,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     onCloseAddSecret();
   };
 
-  const isNameValid = (secretName: string) => {
-    if (secretName === '') {
-      return '';
-    }
-    if (!SECRET_NAME_REGEX.test(secretName)) {
-      return 'The name you entered is invalid. It must start with an letter (A–Z) and can only contain alphanumeric and underscores (_).';
-    }
-    if (secretName.length > SECRET_NAME_MAX_LENGTH) {
-      return 'The secret name must be fewer than 255 characters.';
-    }
-    return '';
-  };
-
-  const nameError = isNameValid(id);
+  const nameError = validateSecretName(id);
   const hasNameError = Boolean(nameError);
 
   return (
@@ -120,9 +123,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
       open={isOpen}
     >
       <DialogContent size="md">
-        {/* Room for DialogContent's close button. */}
-        <DialogHeader className="pr-10">
-          <DialogTitle>Select or add secret</DialogTitle>
+        <DialogHeader>
+          {/* Room for DialogContent's close button: the header's own padding plus this margin clear its 2.5rem. */}
+          <DialogTitle className="mr-6">Select or add secret</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="flex w-[300px] flex-col gap-5">

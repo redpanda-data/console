@@ -278,46 +278,43 @@ export const FormSchemaWithoutSchemaRegistryRules = formSchemaShape.superRefine(
   refineMtlsConsistency(data, ctx);
 });
 
+type CredentialPair = { username: string; password: string };
+
+const refineCredentialPair = (
+  credentials: CredentialPair | undefined,
+  field: 'scramCredentials' | 'plainCredentials',
+  mechanism: string,
+  ctx: z.RefinementCtx
+) => {
+  if (!credentials?.username?.trim()) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `Username is required when ${mechanism} is enabled`,
+      path: [field, 'username'],
+    });
+  }
+  if (!credentials?.password) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `Password is required when ${mechanism} is enabled`,
+      path: [field, 'password'],
+    });
+  }
+};
+
 const refineAuthCredentials = (
   data: {
     authMethod: AuthMethod;
-    scramCredentials?: { username: string; password: string };
-    plainCredentials?: { username: string; password: string };
+    scramCredentials?: CredentialPair;
+    plainCredentials?: CredentialPair;
   },
   ctx: z.RefinementCtx
 ) => {
   if (data.authMethod === AUTH_METHOD.SCRAM) {
-    if (!data.scramCredentials?.username?.trim()) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Username is required when SCRAM is enabled',
-        path: ['scramCredentials', 'username'],
-      });
-    }
-    if (!data.scramCredentials?.password) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Password is required when SCRAM is enabled',
-        path: ['scramCredentials', 'password'],
-      });
-    }
-    return;
+    refineCredentialPair(data.scramCredentials, 'scramCredentials', 'SCRAM', ctx);
   }
   if (data.authMethod === AUTH_METHOD.PLAIN) {
-    if (!data.plainCredentials?.username?.trim()) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Username is required when PLAIN is enabled',
-        path: ['plainCredentials', 'username'],
-      });
-    }
-    if (!data.plainCredentials?.password) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'Password is required when PLAIN is enabled',
-        path: ['plainCredentials', 'password'],
-      });
-    }
+    refineCredentialPair(data.plainCredentials, 'plainCredentials', 'PLAIN', ctx);
   }
 };
 
@@ -408,44 +405,38 @@ const addSrDurationIssues = (value: string, path: (string | number)[], ctx: z.Re
   }
 };
 
-const addSrSourceUrlIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
-  const trimmed = sr.sourceUrl.trim();
+// The TLS toggle and the URL scheme must agree, otherwise the request
+// connects over the wrong transport with no feedback: an http:// endpoint
+// can't be reached over TLS, and an https:// endpoint won't be reached
+// without it.
+const srTlsSchemeMismatch = (protocol: string, useTls: boolean): string | null => {
+  if (useTls && protocol === 'http:') {
+    return 'Use an https:// URL when TLS is enabled, or turn off Enable TLS';
+  }
+  if (!useTls && protocol === 'https:') {
+    return 'Enable TLS to use an https:// URL, or use an http:// URL';
+  }
+  return null;
+};
+
+const srSourceUrlIssue = (sourceUrl: string, useTls: boolean): string | null => {
+  const trimmed = sourceUrl.trim();
   if (!trimmed) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Source URL is required',
-      path: ['schemaRegistry', 'sourceUrl'],
-    });
-    return;
+    return 'Source URL is required';
   }
 
   const protocol = urlProtocol(trimmed);
   if (protocol !== 'http:' && protocol !== 'https:') {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Must be a valid URL, e.g. https://schema-registry.example.com:8081',
-      path: ['schemaRegistry', 'sourceUrl'],
-    });
-    return;
+    return 'Must be a valid URL, e.g. https://schema-registry.example.com:8081';
   }
 
-  // The TLS toggle and the URL scheme must agree, otherwise the request
-  // connects over the wrong transport with no feedback: an http:// endpoint
-  // can't be reached over TLS, and an https:// endpoint won't be reached
-  // without it.
-  if (sr.useTls && protocol === 'http:') {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Use an https:// URL when TLS is enabled, or turn off Enable TLS',
-      path: ['schemaRegistry', 'sourceUrl'],
-    });
-  }
-  if (!sr.useTls && protocol === 'https:') {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Enable TLS to use an https:// URL, or use an http:// URL',
-      path: ['schemaRegistry', 'sourceUrl'],
-    });
+  return srTlsSchemeMismatch(protocol, useTls);
+};
+
+const addSrSourceUrlIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
+  const message = srSourceUrlIssue(sr.sourceUrl, sr.useTls);
+  if (message) {
+    ctx.addIssue({ code: 'custom', message, path: ['schemaRegistry', 'sourceUrl'] });
   }
 };
 
@@ -471,18 +462,9 @@ const addSrBasicAuthIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx
   }
 };
 
-// Client key and cert are individually optional, but if one is provided both
-// must be. Skipped when TLS is off: the mTLS UI is hidden and the request
-// builder omits TLS settings, so leftover uploads must not block the wizard
-// invisibly. Also skipped for file-path TLS (rpk-created links): those
-// settings are read-only and round-tripped verbatim.
-const addSrMtlsPairIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
-  if (!sr.useTls || sr.mtls.filePaths) {
-    return;
-  }
-
-  const hasClientKey = hasSrClientKeyMaterial(sr.mtls);
-  const hasClientCert = hasSrCertificate(sr.mtls.clientCert);
+const addSrMtlsPairConsistencyIssues = (mtls: SchemaRegistryFormValues['mtls'], ctx: z.RefinementCtx) => {
+  const hasClientKey = hasSrClientKeyMaterial(mtls);
+  const hasClientCert = hasSrCertificate(mtls.clientCert);
 
   if (hasClientKey && !hasClientCert) {
     ctx.addIssue({
@@ -499,17 +481,33 @@ const addSrMtlsPairIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx)
       path: ['schemaRegistry', 'mtls', 'clientKey'],
     });
   }
+};
 
-  // A cert uploaded this session (hydrated certs carry no fileName) cannot
-  // pair with the key stored server-side. Require the matching key upload.
-  const certReplaced = hasClientCert && Boolean(sr.mtls.clientCert?.fileName);
-  if (certReplaced && sr.mtls.existingKeyConfigured && !hasSrCertificate(sr.mtls.clientKey)) {
+// A cert uploaded this session (hydrated certs carry no fileName) cannot
+// pair with the key stored server-side. Require the matching key upload.
+const addSrReplacedCertIssues = (mtls: SchemaRegistryFormValues['mtls'], ctx: z.RefinementCtx) => {
+  const certReplaced = hasSrCertificate(mtls.clientCert) && Boolean(mtls.clientCert?.fileName);
+  if (certReplaced && mtls.existingKeyConfigured && !hasSrCertificate(mtls.clientKey)) {
     ctx.addIssue({
       code: 'custom',
       message: 'Upload the matching private key when replacing the client certificate',
       path: ['schemaRegistry', 'mtls', 'clientKey'],
     });
   }
+};
+
+// Client key and cert are individually optional, but if one is provided both
+// must be. Skipped when TLS is off: the mTLS UI is hidden and the request
+// builder omits TLS settings, so leftover uploads must not block the wizard
+// invisibly. Also skipped for file-path TLS (rpk-created links): those
+// settings are read-only and round-tripped verbatim.
+const addSrMtlsPairIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
+  if (!sr.useTls || sr.mtls.filePaths) {
+    return;
+  }
+
+  addSrMtlsPairConsistencyIssues(sr.mtls, ctx);
+  addSrReplacedCertIssues(sr.mtls, ctx);
 };
 
 const addSrScopeIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {

@@ -41,8 +41,7 @@ describe('createAuthInjectingFetch', () => {
     expect(headers.get('Authorization')).toBe('Bearer token-123');
     // existing init is preserved
     expect(headers.get('Content-Type')).toBe('application/json');
-    expect(init.method).toBe('POST');
-    expect(init.body).toBe('{}');
+    expectJsonPostBody(init);
   });
 
   test('does not overwrite an Authorization header a host-provided (V1) fetch already set', async () => {
@@ -79,3 +78,8 @@ describe('createAuthInjectingFetch', () => {
     expect(headers.get('Authorization')).toBe('Bearer refreshed-token');
   });
 });
+
+function expectJsonPostBody(init: RequestInit) {
+  expect(init.method).toBe('POST');
+  expect(init.body).toBe('{}');
+}

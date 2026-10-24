@@ -71,15 +71,9 @@ export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number
   }
 }
 
-/**
- * URL-backed search state for the messages page (same query keys as the legacy
- * viewer so shared links keep working), mirrored into the per-topic Zustand store.
- *
- * `live` is new: live tail is orthogonal to the read scope. Legacy URLs with
- * `o=-3` (PartitionOffsetOrigin.End) are migrated to `live=true` + newest scope.
- */
-export function useMessagesUrlState(topicName: string) {
-  const { setSearchParams, getSearchParams, setSorting, getSorting } = useTopicSettingsStore();
+/** Read scope and limits (`p`, `s`, `o`, `t`), mirrored into the per-topic search params. */
+function useReadScopeParams(topicName: string) {
+  const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
   const [partitionId, setPartitionId] = useQueryStateWithCallback<number>(
     {
@@ -121,10 +115,31 @@ export function useMessagesUrlState(topicName: string) {
     parseAsInteger.withDefault(-1)
   );
 
+  return {
+    partitionId,
+    setPartitionId,
+    maxResults,
+    setMaxResults,
+    startOffset,
+    setStartOffset,
+    startTimestamp,
+    setStartTimestamp,
+  };
+}
+
+/** Client-side filters (`q`, `f`); URL only, never mirrored into the store. */
+function useFilterParams() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
   // Committed filter chips (`key:abc`, `offset>5`, …). JS filter chips are excluded.
   const [fieldTokens, setFieldTokens] = useQueryState('f', fieldTokensParser.withDefault([]));
+
+  return { quickSearch, setQuickSearch, fieldTokens, setFieldTokens };
+}
+
+/** Decoding (`kd`, `vd`, `sc`), mirrored into the per-topic search params. */
+function useDecodingParams(topicName: string) {
+  const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
     {
@@ -153,6 +168,20 @@ export function useMessagesUrlState(topicName: string) {
     parseAsString.withDefault('')
   );
 
+  return {
+    keyDeserializer,
+    setKeyDeserializer,
+    valueDeserializer,
+    setValueDeserializer,
+    schemaContext,
+    setSchemaContext,
+  };
+}
+
+/** Table paging and sorting (`page`, `pageSize`, `sort`). */
+function usePagingParams(topicName: string) {
+  const { setSearchParams, getSearchParams, setSorting, getSorting } = useTopicSettingsStore();
+
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
 
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
@@ -173,6 +202,13 @@ export function useMessagesUrlState(topicName: string) {
     sortingParser.withDefault(DEFAULT_SORTING)
   );
 
+  return { pageIndex, setPageIndex, pageSize, setPageSize, sorting, setSortingState };
+}
+
+/** How rows arrive and which one is open (`inf`, `live`, `selected`). */
+function useStreamModeParams(topicName: string) {
+  const { setSearchParams, getSearchParams } = useTopicSettingsStore();
+
   const [continuousMode, setContinuousMode] = useQueryStateWithCallback<boolean>(
     {
       onUpdate: (val) => setSearchParams(topicName, { continuousPaginationEnabled: val }),
@@ -187,6 +223,20 @@ export function useMessagesUrlState(topicName: string) {
   // Selected message (`partition-offset`), so a reload or shared link reopens the detail
   const [selectedKey, setSelectedKey] = useQueryState('selected', parseAsString);
 
+  return { continuousMode, setContinuousMode, liveTail, setLiveTail, selectedKey, setSelectedKey };
+}
+
+type ReadScopeParams = ReturnType<typeof useReadScopeParams>;
+
+/**
+ * The toolbar's read-scope mode over the start offset, plus the URL repairs that keep the two
+ * consistent.
+ */
+function useReadScopeMode(
+  { startOffset, setStartOffset, startTimestamp, setStartTimestamp }: ReadScopeParams,
+  setLiveTail: ReturnType<typeof useStreamModeParams>['setLiveTail'],
+  setPageIndex: ReturnType<typeof usePagingParams>['setPageIndex']
+) {
   // Migrate legacy live-tail URLs (`o=-3`) to the orthogonal `live` param
   useEffect(() => {
     if (startOffset === PartitionOffsetOrigin.End) {
@@ -226,38 +276,26 @@ export function useMessagesUrlState(topicName: string) {
     [setStartOffset, setPageIndex, setStartTimestamp, startTimestamp]
   );
 
-  return {
-    partitionId,
-    setPartitionId,
-    maxResults,
-    setMaxResults,
-    startOffset,
-    setStartOffset,
-    startTimestamp,
-    setStartTimestamp,
-    quickSearch,
-    setQuickSearch,
-    fieldTokens,
-    setFieldTokens,
-    keyDeserializer,
-    setKeyDeserializer,
-    valueDeserializer,
-    setValueDeserializer,
-    schemaContext,
-    setSchemaContext,
-    pageIndex,
-    setPageIndex,
-    pageSize,
-    setPageSize,
-    sorting,
-    setSortingState,
-    continuousMode,
-    setContinuousMode,
-    liveTail,
-    setLiveTail,
-    selectedKey,
-    setSelectedKey,
-    readScopeMode,
-    setReadScopeMode,
-  };
+  return { readScopeMode, setReadScopeMode };
 }
+
+/**
+ * URL-backed search state for the messages page (same query keys as the legacy
+ * viewer so shared links keep working), mirrored into the per-topic Zustand store.
+ *
+ * `live` is new: live tail is orthogonal to the read scope. Legacy URLs with
+ * `o=-3` (PartitionOffsetOrigin.End) are migrated to `live=true` + newest scope.
+ */
+export function useMessagesUrlState(topicName: string) {
+  // Grouped in the original query-key order, so the params' first-render URL syncs keep their order.
+  const readScope = useReadScopeParams(topicName);
+  const filters = useFilterParams();
+  const decoding = useDecodingParams(topicName);
+  const paging = usePagingParams(topicName);
+  const streamMode = useStreamModeParams(topicName);
+  const mode = useReadScopeMode(readScope, streamMode.setLiveTail, paging.setPageIndex);
+
+  return { ...readScope, ...filters, ...decoding, ...paging, ...streamMode, ...mode };
+}
+
+export type MessagesUrlState = ReturnType<typeof useMessagesUrlState>;

@@ -23,7 +23,7 @@ rs.mock('react-query/api/pipeline', () => ({
   useStopPipelineMutation: () => ({ mutate: stopMutate, isPending: false }),
 }));
 
-describe('PipelineStateBadge', () => {
+describe('the PipelineStateBadge', () => {
   test('reads the state without offering to change it', () => {
     render(<PipelineStateBadge state={Pipeline_State.STOPPED} />);
     const badge = screen.getByTestId('pipeline-state-badge');
@@ -34,7 +34,7 @@ describe('PipelineStateBadge', () => {
   });
 });
 
-describe('PipelineRunButton', () => {
+describe('the PipelineRunButton', () => {
   beforeEach(() => {
     startMutate.mockClear();
     stopMutate.mockClear();
@@ -90,6 +90,14 @@ describe('PipelineRunButton', () => {
 
   test('a stopping pipeline keeps Start in place, disabled (already settling toward Stopped)', () => {
     render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPING} />);
+    expect(screen.getByTestId('pipeline-start')).toBeDisabled();
+  });
+
+  test('hovering the settling Start explains why it is unavailable', async () => {
+    const user = userEvent.setup();
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPING} />);
+    await user.hover(screen.getByTestId('pipeline-start'));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Wait for the pipeline to finish stopping.');
     expect(screen.getByTestId('pipeline-start')).toBeDisabled();
   });
 

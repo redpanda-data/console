@@ -21,6 +21,7 @@ import { RadioIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { READ_SCOPE_META } from './read-scope-popover';
+import { TonedIcon } from '../../../shared/toned-icon';
 import type { ReadScopeMode } from '../types';
 
 type AxisMode = ReadScopeMode | 'live';
@@ -111,13 +112,13 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
           return (
             <div
               className={cn(
-                'h-[22px] min-w-0 flex-1 rounded-[3px] border-[1.5px] border-border bg-background transition-all',
+                'h-[22px] min-w-0 flex-1 rounded-sm border-[1.5px] border-border bg-background transition-all',
                 aged && 'opacity-70',
                 future && 'border-dashed bg-transparent',
                 inWindow && 'border-primary bg-primary/15',
                 isAnchor && 'border-primary bg-primary',
-                liveInflow && 'animate-pulse border-green-600 border-dashed bg-green-100 dark:bg-green-950',
-                isGhost && 'border-destructive border-dashed bg-transparent'
+                liveInflow && 'animate-pulse border-dashed border-success-line bg-success-wash',
+                isGhost && 'border-dashed border-destructive bg-transparent'
               )}
               // biome-ignore lint/suspicious/noArrayIndexKey: fixed-size illustration
               key={i}
@@ -127,28 +128,28 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
         })}
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <span className={cn('font-bold font-mono text-[10.5px]', mode === 'live' ? 'text-green-600' : 'text-primary')}>
+        <span className={cn('font-mono text-body-sm font-bold', mode === 'live' ? 'text-success' : 'text-primary')}>
           {DIRECTION_ARROWS[cfg.direction]} {cfg.anchorLabel}
         </span>
-        <span className="flex items-center gap-2.5 text-[9px] text-muted-foreground uppercase tracking-wide">
+        <span className="flex items-center gap-2.5 text-body-sm tracking-wide text-muted-foreground uppercase">
           <span className="inline-flex items-center gap-1">
             <span
-              className="inline-block size-[9px] rounded-[2px] border-[1.5px] border-border"
+              className="inline-block size-[9px] rounded-xs border-[1.5px] border-border"
               style={{ backgroundImage: AGED_STRIPES }}
             />
             aged
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block size-[9px] rounded-[2px] border-[1.5px] border-border bg-background" />
+            <span className="inline-block size-[9px] rounded-xs border-[1.5px] border-border bg-background" />
             retained
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block size-[9px] rounded-[2px] border-[1.5px] border-green-600 border-dashed" />
+            <span className="inline-block size-[9px] rounded-xs border-[1.5px] border-dashed border-success-line" />
             future
           </span>
         </span>
       </div>
-      <p className="mt-2 text-muted-foreground text-xs leading-relaxed">{cfg.caption}</p>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{cfg.caption}</p>
     </div>
   );
 };
@@ -178,7 +179,7 @@ export const ReadScopeDocSheet = ({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="w-[400px] gap-3 px-5 py-5 sm:max-w-[400px]" side="right">
+      <SheetContent className="w-[400px] sm:max-w-[400px]" side="right">
         <SheetHeader>
           <SheetTitle>How reading starts</SheetTitle>
           <SheetDescription>
@@ -186,14 +187,14 @@ export const ReadScopeDocSheet = ({
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col overflow-y-auto pb-2">
-          <div className="mb-2 font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider">
+          <div className="mb-2 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Where {previewTitle} lands
           </div>
           <div className="rounded-md border bg-card px-3 pt-3 pb-3.5">
             <MiniAxis mode={previewMode} />
           </div>
 
-          <div className="mt-4 mb-1 border-t pt-3 font-semibold text-[10.5px] text-muted-foreground uppercase tracking-wider">
+          <div className="mt-4 mb-1 border-t pt-3 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Every mode — tap to preview
           </div>
           {MODE_DESCRIPTIONS.map(({ mode: m, title, description }) => {
@@ -209,10 +210,10 @@ export const ReadScopeDocSheet = ({
                 onClick={() => setPreviewMode(m)}
                 type="button"
               >
-                <Icon className={cn('mt-0.5 size-4 shrink-0', m === 'live' ? 'text-green-600' : 'text-primary')} />
+                <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone={m === 'live' ? 'live' : 'primary'} />
                 <span className="min-w-0">
-                  <span className="block font-semibold text-[12.5px]">{title}</span>
-                  <span className="mt-0.5 block text-muted-foreground text-xs leading-relaxed">{description}</span>
+                  <span className="block text-body-sm font-semibold">{title}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
                 </span>
               </button>
             );

@@ -84,7 +84,7 @@ export function FloatingChipPanel({
       <button
         aria-expanded={open}
         className={cn(
-          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 font-medium text-body-sm shadow-sm backdrop-blur-sm transition-colors',
+          'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors',
           chipClassName
         )}
         data-testid={chipTestId}
@@ -93,7 +93,9 @@ export function FloatingChipPanel({
       >
         {leading}
         {label}
-        <ChevronDown className={cn('size-3.5 transition-transform', open && 'rotate-180')} />
+        <span className={cn('inline-flex transition-transform', open && 'rotate-180')}>
+          <ChevronDown className="size-3.5" />
+        </span>
       </button>
 
       {open ? (

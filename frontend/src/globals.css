@@ -114,7 +114,7 @@ button[aria-label="Open TanStack Router Devtools"]:hover {
 
   @keyframes message-flash {
     0% {
-      background-color: var(--color-green-100, #d1fadf);
+      background-color: var(--color-success-wash);
     }
     100% {
       background-color: transparent;

@@ -24,106 +24,114 @@ import { fieldTokensParser } from '../hooks/use-messages-url-state';
 import type { FieldFilterToken } from '../types';
 
 describe('parseFilterInput', () => {
-  test('parses partition equality', () => {
-    expect(parseFilterInput('partition:2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
-  });
-
-  test('rejects partition comparisons — partition is exact-match only, unlike offset', () => {
-    expect(parseFilterInput('partition>2')).toBeNull();
-    expect(parseFilterInput('partition<2')).toBeNull();
-    expect(parseFilterInput('partition!=2')).toBeNull();
-    expect(parseFilterInput('partition=2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
-  });
-
-  test('rejects a partition value at or beyond the known partition count', () => {
-    expect(parseFilterInput('partition:2', { partitionCount: 3 })).toEqual({
-      field: 'partition',
-      op: 'eq',
-      value: '2',
+  describe('partition', () => {
+    test('parses partition equality', () => {
+      expect(parseFilterInput('partition:2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
     });
-    expect(parseFilterInput('partition:3', { partitionCount: 3 })).toBeNull();
-    expect(parseFilterInput('partition:9999', { partitionCount: 3 })).toBeNull();
-  });
 
-  test('does not range-check partition when the count is unknown — omitting the option skips the check', () => {
-    expect(parseFilterInput('partition:9999')).toEqual({ field: 'partition', op: 'eq', value: '9999' });
-  });
-
-  test('never range-checks offset, only partition', () => {
-    expect(parseFilterInput('offset:9999', { partitionCount: 3 })).toEqual({
-      field: 'offset',
-      op: 'eq',
-      value: '9999',
+    test('rejects partition comparisons — partition is exact-match only, unlike offset', () => {
+      expect(parseFilterInput('partition>2')).toBeNull();
+      expect(parseFilterInput('partition<2')).toBeNull();
+      expect(parseFilterInput('partition!=2')).toBeNull();
+      expect(parseFilterInput('partition=2')).toEqual({ field: 'partition', op: 'eq', value: '2' });
     });
-  });
 
-  test('parses offset comparisons', () => {
-    expect(parseFilterInput('offset>48210')).toEqual({ field: 'offset', op: 'gt', value: '48210' });
-    expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });
-  });
+    test('rejects a partition value at or beyond the known partition count', () => {
+      expect(parseFilterInput('partition:2', { partitionCount: 3 })).toEqual({
+        field: 'partition',
+        op: 'eq',
+        value: '2',
+      });
+      expect(parseFilterInput('partition:3', { partitionCount: 3 })).toBeNull();
+      expect(parseFilterInput('partition:9999', { partitionCount: 3 })).toBeNull();
+    });
 
-  test('parses offset >= / <= before falling through to the bare >/< branches', () => {
-    expect(parseFilterInput('offset>=48210')).toEqual({ field: 'offset', op: 'gte', value: '48210' });
-    expect(parseFilterInput('offset<=100')).toEqual({ field: 'offset', op: 'lte', value: '100' });
-  });
+    test('does not range-check partition when the count is unknown — omitting the option skips the check', () => {
+      expect(parseFilterInput('partition:9999')).toEqual({ field: 'partition', op: 'eq', value: '9999' });
+    });
 
-  test('offset: means equality, not substring containment — offset:12 must not match offset 1123', () => {
-    expect(parseFilterInput('offset:12')).toEqual({ field: 'offset', op: 'eq', value: '12' });
-  });
-
-  test('rejects a non-numeric offset value the same way as partition', () => {
-    expect(parseFilterInput('offset:a')).toBeNull();
-    expect(parseFilterInput('offset:-1')).toBeNull();
-    expect(parseFilterInput('offset>abc')).toBeNull();
-  });
-
-  test('parses key/value contains and not-equals', () => {
-    expect(parseFilterInput('key:abc')).toEqual({ field: 'key', op: 'contains', value: 'abc' });
-    expect(parseFilterInput('key!=abc')).toEqual({ field: 'key', op: 'neq', value: 'abc' });
-  });
-
-  test('parses nested value paths', () => {
-    expect(parseFilterInput('value.address.city:Berlin')).toEqual({
-      field: 'value.address.city',
-      op: 'contains',
-      value: 'Berlin',
+    test('rejects a non-numeric partition value instead of producing NaN downstream', () => {
+      expect(parseFilterInput('partition:a')).toBeNull();
+      expect(parseFilterInput('partition:-1')).toBeNull();
+      expect(parseFilterInput('partition:-')).toBeNull();
+      expect(parseFilterInput('partition:1.5')).toBeNull();
     });
   });
 
-  test('rejects plain text, unknown fields, and empty values', () => {
-    expect(parseFilterInput('hello world')).toBeNull();
-    expect(parseFilterInput('timestamp:5')).toBeNull();
-    expect(parseFilterInput('partition:')).toBeNull();
-    expect(parseFilterInput('')).toBeNull();
+  describe('offset', () => {
+    test('never range-checks offset, only partition', () => {
+      expect(parseFilterInput('offset:9999', { partitionCount: 3 })).toEqual({
+        field: 'offset',
+        op: 'eq',
+        value: '9999',
+      });
+    });
+
+    test('parses offset comparisons', () => {
+      expect(parseFilterInput('offset>48210')).toEqual({ field: 'offset', op: 'gt', value: '48210' });
+      expect(parseFilterInput('offset<100')).toEqual({ field: 'offset', op: 'lt', value: '100' });
+    });
+
+    test('parses offset >= / <= before falling through to the bare >/< branches', () => {
+      expect(parseFilterInput('offset>=48210')).toEqual({ field: 'offset', op: 'gte', value: '48210' });
+      expect(parseFilterInput('offset<=100')).toEqual({ field: 'offset', op: 'lte', value: '100' });
+    });
+
+    test('offset: means equality, not substring containment — offset:12 must not match offset 1123', () => {
+      expect(parseFilterInput('offset:12')).toEqual({ field: 'offset', op: 'eq', value: '12' });
+    });
+
+    test('rejects a non-numeric offset value the same way as partition', () => {
+      expect(parseFilterInput('offset:a')).toBeNull();
+      expect(parseFilterInput('offset:-1')).toBeNull();
+      expect(parseFilterInput('offset>abc')).toBeNull();
+    });
   });
 
-  test('rejects a non-numeric partition value instead of producing NaN downstream', () => {
-    expect(parseFilterInput('partition:a')).toBeNull();
-    expect(parseFilterInput('partition:-1')).toBeNull();
-    expect(parseFilterInput('partition:-')).toBeNull();
-    expect(parseFilterInput('partition:1.5')).toBeNull();
+  describe('key and value', () => {
+    test('parses key/value contains and not-equals', () => {
+      expect(parseFilterInput('key:abc')).toEqual({ field: 'key', op: 'contains', value: 'abc' });
+      expect(parseFilterInput('key!=abc')).toEqual({ field: 'key', op: 'neq', value: 'abc' });
+    });
+
+    test('parses nested value paths', () => {
+      expect(parseFilterInput('value.address.city:Berlin')).toEqual({
+        field: 'value.address.city',
+        op: 'contains',
+        value: 'Berlin',
+      });
+    });
+
+    test('rejects plain text, unknown fields, and empty values', () => {
+      expect(parseFilterInput('hello world')).toBeNull();
+      expect(parseFilterInput('timestamp:5')).toBeNull();
+      expect(parseFilterInput('partition:')).toBeNull();
+      expect(parseFilterInput('')).toBeNull();
+    });
   });
 
-  test('quoted values keep internal spaces', () => {
-    expect(parseFilterInput('value:"New York"')).toEqual({ field: 'value', op: 'contains', value: 'New York' });
-    expect(parseFilterInput('key!="New York"')).toEqual({ field: 'key', op: 'neq', value: 'New York' });
-  });
+  describe('quoting', () => {
+    test('quoted values keep internal spaces', () => {
+      expect(parseFilterInput('value:"New York"')).toEqual({ field: 'value', op: 'contains', value: 'New York' });
+      expect(parseFilterInput('key!="New York"')).toEqual({ field: 'key', op: 'neq', value: 'New York' });
+    });
 
-  test('an unterminated quote is treated as incomplete input', () => {
-    expect(parseFilterInput('value:"New')).toBeNull();
-    expect(parseFilterInput('value:"')).toBeNull();
-  });
+    test('an unterminated quote is treated as incomplete input', () => {
+      expect(parseFilterInput('value:"New')).toBeNull();
+      expect(parseFilterInput('value:"')).toBeNull();
+    });
 
-  test('an escaped quote inside a quoted value decodes to a literal quote', () => {
-    expect(parseFilterInput('key:"a\\"b"')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
-  });
+    test('an escaped quote inside a quoted value decodes to a literal quote', () => {
+      expect(parseFilterInput('key:"a\\"b"')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
+    });
 
-  test('an escaped backslash inside a quoted value decodes to a literal backslash', () => {
-    expect(parseFilterInput('key:"a\\\\b"')).toEqual({ field: 'key', op: 'contains', value: 'a\\b' });
-  });
+    test('an escaped backslash inside a quoted value decodes to a literal backslash', () => {
+      expect(parseFilterInput('key:"a\\\\b"')).toEqual({ field: 'key', op: 'contains', value: 'a\\b' });
+    });
 
-  test('a literal quote mid-word outside quote position is kept as-is, not treated as opening a quote', () => {
-    expect(parseFilterInput('key:a"b')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
+    test('a literal quote mid-word outside quote position is kept as-is, not treated as opening a quote', () => {
+      expect(parseFilterInput('key:a"b')).toEqual({ field: 'key', op: 'contains', value: 'a"b' });
+    });
   });
 });
 

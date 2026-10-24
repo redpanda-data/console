@@ -31,6 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -49,12 +50,12 @@ import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
 import {
   ALL_CONTEXT_ID,
-  CONTEXT_PREFIX_RE,
   DEFAULT_CONTEXT_ID,
   deriveContexts,
   isNamedContext,
   parseSubjectContext,
 } from './schema-context-utils';
+import { subjectsInContext, subjectsMatchingSearch } from './schema-list-filters';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import {
@@ -79,6 +80,7 @@ import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
+import { TonedIcon } from '../shared/toned-icon';
 
 const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
@@ -128,10 +130,11 @@ const multiSelectFilterFn: FilterFn<DataTableFeatures, EnrichedSubject> = (row, 
   return selected.includes(String(row.getValue(columnId)));
 };
 
-const SchemaList: FC = () => {
-  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
+type DeleteTarget = { kind: 'soft' | 'permanent'; name: string };
 
+// The quick search and the soft-deleted toggle, both kept in the URL.
+function useSchemaListSearch() {
+  const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
   const [showSoftDeleted, setShowSoftDeleted] = useQueryStateWithCallback<boolean>(
     {
       onUpdate: (val) => {
@@ -142,69 +145,17 @@ const SchemaList: FC = () => {
     'showSoftDeleted',
     parseAsBoolean
   );
+  return { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted };
+}
 
-  const [selectedContext, setSelectedContext] = useQueryState('context', parseAsString.withDefault(DEFAULT_CONTEXT_ID));
+// Registry-wide data for the list (subjects, contexts, global mode and
+// compatibility); also owns the page header and the refresh action.
+function useSchemaRegistryOverview() {
+  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
   const { data: contexts } = useSchemaRegistryContextsQuery(schemaRegistryContextsSupported);
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
-  const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
-  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'soft' | 'permanent'; name: string } | null>(null);
-  const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
-  const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
-  const [compatibilityFilter, setCompatibilityFilter] = useQueryState(
-    'compatibility',
-    parseAsArrayOf(parseAsString).withDefault([])
-  );
-  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
-  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
-
-  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
-
-  const handlePaginationChange = useCallback(
-    (updater: Updater<PaginationState>) => {
-      const next = typeof updater === 'function' ? updater(pagination) : updater;
-      setPageIndex(next.pageIndex);
-      setPageSize(next.pageSize);
-    },
-    [pagination, setPageIndex, setPageSize]
-  );
-
-  // Faceted filter state lives in the URL, one param per column, so a filtered view
-  // survives a reload and can be shared — same as the search, context and page params.
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
-    const filters: ColumnFiltersState = [];
-    if (typeFilter.length > 0) {
-      filters.push({ id: 'type', value: typeFilter });
-    }
-    if (compatibilityFilter.length > 0) {
-      filters.push({ id: 'compatibility', value: compatibilityFilter });
-    }
-    return filters;
-  }, [typeFilter, compatibilityFilter]);
-
-  const handleColumnFiltersChange = useCallback(
-    (updater: Updater<ColumnFiltersState>) => {
-      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-      const valuesFor = (id: string) => (next.find((filter) => filter.id === id)?.value as string[] | undefined) ?? [];
-      setTypeFilter(valuesFor('type'));
-      setCompatibilityFilter(valuesFor('compatibility'));
-      setPageIndex(0);
-    },
-    [columnFilters, setTypeFilter, setCompatibilityFilter, setPageIndex]
-  );
-
-  // Parse schema ID from search query
-  const schemaIdSearch = useMemo(() => {
-    const trimmedValue = quickSearch.trim();
-    const searchAsNum = Number(trimmedValue);
-    return trimmedValue.length && !Number.isNaN(searchAsNum) ? searchAsNum : null;
-  }, [quickSearch]);
-
-  const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
-
-  const subjectNames = useMemo(() => (schemaSubjects ?? []).map((s) => s.name), [schemaSubjects]);
-  const detailsByName = useSchemaDetailsByNameQuery(subjectNames);
 
   const refreshData = useCallback(() => {
     refetchMode();
@@ -212,6 +163,36 @@ const SchemaList: FC = () => {
     api.refreshSchemaTypes();
     refetchSchemas();
   }, [refetchSchemas, refetchMode, refetchCompatibility]);
+
+  useEffect(() => {
+    setPageHeader('Schema Registry', [{ title: 'Schema Registry', linkTo: '/schema-registry' }]);
+    appGlobal.onRefresh = () => refreshData();
+  }, [refreshData]);
+
+  return {
+    schemaRegistryContextsSupported,
+    schemaSubjects,
+    contexts,
+    isLoading,
+    isError,
+    schemaMode,
+    schemaCompatibility,
+  };
+}
+
+// The selected context (kept in the URL), the contexts to pick from, and the
+// mode and compatibility to show for the selection.
+function useSelectedSchemaContext({
+  schemaRegistryContextsSupported,
+  contexts,
+  schemaSubjects,
+  schemaMode,
+  schemaCompatibility,
+}: Pick<
+  ReturnType<typeof useSchemaRegistryOverview>,
+  'schemaRegistryContextsSupported' | 'contexts' | 'schemaSubjects' | 'schemaMode' | 'schemaCompatibility'
+>) {
+  const [selectedContext, setSelectedContext] = useQueryState('context', parseAsString.withDefault(DEFAULT_CONTEXT_ID));
 
   const derivedContexts = useMemo(
     () => (schemaRegistryContextsSupported ? deriveContexts(contexts ?? [], schemaSubjects ?? []) : []),
@@ -243,52 +224,116 @@ const SchemaList: FC = () => {
     };
   }, [derivedContexts, selectedContext, schemaRegistryContextsSupported, schemaMode, schemaCompatibility]);
 
-  useEffect(() => {
-    setPageHeader('Schema Registry', [{ title: 'Schema Registry', linkTo: '/schema-registry' }]);
-    appGlobal.onRefresh = () => refreshData();
-  }, [refreshData]);
+  return {
+    selectedContext,
+    setSelectedContext,
+    derivedContexts,
+    displayMode,
+    displayCompat,
+    isAllContext: schemaRegistryContextsSupported && selectedContext === ALL_CONTEXT_ID,
+  };
+}
 
-  const isAllContext = schemaRegistryContextsSupported && selectedContext === ALL_CONTEXT_ID;
+function useSchemaListPagination() {
+  const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
+  const [pageSize, setPageSize] = useQueryState('pageSize', parseAsInteger.withDefault(10));
+
+  const pagination = useMemo<PaginationState>(() => ({ pageIndex, pageSize }), [pageIndex, pageSize]);
+
+  const handlePaginationChange = useCallback(
+    (updater: Updater<PaginationState>) => {
+      const next = typeof updater === 'function' ? updater(pagination) : updater;
+      setPageIndex(next.pageIndex);
+      setPageSize(next.pageSize);
+    },
+    [pagination, setPageIndex, setPageSize]
+  );
+
+  return { pagination, setPageIndex, handlePaginationChange };
+}
+
+// Faceted filter state lives in the URL, one param per column, so a filtered view
+// survives a reload and can be shared — same as the search, context and page params.
+function useSchemaListColumnFilters(setPageIndex: (pageIndex: number) => unknown) {
+  const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
+  const [compatibilityFilter, setCompatibilityFilter] = useQueryState(
+    'compatibility',
+    parseAsArrayOf(parseAsString).withDefault([])
+  );
+
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const filters: ColumnFiltersState = [];
+    if (typeFilter.length > 0) {
+      filters.push({ id: 'type', value: typeFilter });
+    }
+    if (compatibilityFilter.length > 0) {
+      filters.push({ id: 'compatibility', value: compatibilityFilter });
+    }
+    return filters;
+  }, [typeFilter, compatibilityFilter]);
+
+  const handleColumnFiltersChange = useCallback(
+    (updater: Updater<ColumnFiltersState>) => {
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const valuesFor = (id: string) => (next.find((filter) => filter.id === id)?.value as string[] | undefined) ?? [];
+      setTypeFilter(valuesFor('type'));
+      setCompatibilityFilter(valuesFor('compatibility'));
+      setPageIndex(0);
+    },
+    [columnFilters, setTypeFilter, setCompatibilityFilter, setPageIndex]
+  );
+
+  return { columnFilters, handleColumnFiltersChange };
+}
+
+// Sorting, pagination and column filters for the subject table, all kept in the URL.
+function useSchemaListTableState() {
+  const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
+  const { pagination, setPageIndex, handlePaginationChange } = useSchemaListPagination();
+  const { columnFilters, handleColumnFiltersChange } = useSchemaListColumnFilters(setPageIndex);
+  return {
+    sorting,
+    setSorting,
+    pagination,
+    setPageIndex,
+    handlePaginationChange,
+    columnFilters,
+    handleColumnFiltersChange,
+  };
+}
+
+// The subjects to list: the selected context, soft-deleted toggle and search
+// applied, each enriched with its details so type and compatibility can be
+// filtered list-wide.
+function useVisibleSubjects({
+  schemaSubjects,
+  quickSearch,
+  showSoftDeleted,
+  schemaRegistryContextsSupported,
+  selectedContext,
+}: {
+  schemaSubjects: SchemaRegistrySubject[] | undefined;
+  quickSearch: string;
+  showSoftDeleted: boolean;
+  schemaRegistryContextsSupported: boolean;
+  selectedContext: string;
+}) {
+  // Parse schema ID from search query
+  const schemaIdSearch = useMemo(() => {
+    const trimmedValue = quickSearch.trim();
+    const searchAsNum = Number(trimmedValue);
+    return trimmedValue.length && !Number.isNaN(searchAsNum) ? searchAsNum : null;
+  }, [quickSearch]);
+
+  const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
+
+  const subjectNames = useMemo(() => (schemaSubjects ?? []).map((s) => s.name), [schemaSubjects]);
+  const detailsByName = useSchemaDetailsByNameQuery(subjectNames);
 
   const filteredSubjects = useMemo(() => {
-    let subjects = schemaSubjects ?? [];
-
-    // Filter by context
-    if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
-      if (selectedContext === DEFAULT_CONTEXT_ID) {
-        subjects = subjects.filter((s) => !CONTEXT_PREFIX_RE.test(s.name));
-      } else {
-        const prefix = `:${selectedContext}:`;
-        subjects = subjects.filter((s) => s.name.startsWith(prefix));
-      }
-    }
-
-    // Filter by soft-deleted status
-    if (!showSoftDeleted) {
-      subjects = subjects.filter((x) => !x.isSoftDeleted);
-    }
-
-    // Filter by search query
-    const searchQuery = quickSearch;
-    if (searchQuery) {
-      // Find by schema ID
-      const filterAsNumber = Number(searchQuery.trim());
-      if (Number.isNaN(filterAsNumber)) {
-        // Find by regex or string matching
-        try {
-          const quickSearchRegExp = new RegExp(searchQuery, 'i');
-          subjects = subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
-        } catch (_e) {
-          const searchLower = searchQuery.toLowerCase();
-          subjects = subjects.filter((subject) => subject.name.toLowerCase().includes(searchLower));
-        }
-      } else {
-        const matchingSubjectNames = new Set(schemaUsages?.map((s) => s.subject) ?? []);
-        subjects = subjects.filter((subject) => matchingSubjectNames.has(subject.name));
-      }
-    }
-
-    return subjects;
+    const inContext = subjectsInContext(schemaSubjects ?? [], schemaRegistryContextsSupported, selectedContext);
+    const visible = showSoftDeleted ? inContext : inContext.filter((x) => !x.isSoftDeleted);
+    return subjectsMatchingSearch(visible, quickSearch, schemaUsages);
   }, [schemaSubjects, quickSearch, showSoftDeleted, schemaUsages, schemaRegistryContextsSupported, selectedContext]);
 
   const enrichedSubjects = useMemo<EnrichedSubject[]>(
@@ -301,7 +346,15 @@ const SchemaList: FC = () => {
     [filteredSubjects, detailsByName]
   );
 
-  const columns = useMemo<DataTableColumnDef<EnrichedSubject>[]>(
+  return { enrichedSubjects, isLoadingSchemaVersionMatches };
+}
+
+function useSchemaListColumns(
+  isAllContext: boolean,
+  selectedContext: string,
+  setDeleteTarget: (target: DeleteTarget) => void
+) {
+  return useMemo<DataTableColumnDef<EnrichedSubject>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -313,7 +366,7 @@ const SchemaList: FC = () => {
         }) => {
           const parsed = parseSubjectContext(name);
           return (
-            <div className="whitespace-break-spaces break-words">
+            <div className="wrap-break-word whitespace-break-spaces">
               <div className="flex items-center gap-2">
                 <Link
                   data-testid="schema-registry-table-name"
@@ -331,7 +384,7 @@ const SchemaList: FC = () => {
                     <TooltipTrigger
                       render={
                         <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
-                          <ArchiveIcon aria-hidden="true" className="text-muted-foreground" height={16} width={16} />
+                          <TonedIcon aria-hidden="true" height={16} icon={ArchiveIcon} tone="muted" width={16} />
                         </span>
                       }
                     />
@@ -464,57 +517,171 @@ const SchemaList: FC = () => {
         ),
       },
     ],
-    [isAllContext, selectedContext]
+    [isAllContext, selectedContext, setDeleteTarget]
   );
+}
 
+function useSchemaListTable({
+  enrichedSubjects,
+  isAllContext,
+  selectedContext,
+  setDeleteTarget,
+  tableState,
+}: {
+  enrichedSubjects: EnrichedSubject[];
+  isAllContext: boolean;
+  selectedContext: string;
+  setDeleteTarget: (target: DeleteTarget) => void;
+  tableState: ReturnType<typeof useSchemaListTableState>;
+}) {
+  const columns = useSchemaListColumns(isAllContext, selectedContext, setDeleteTarget);
   const table = useDataTable({
     data: enrichedSubjects,
     columns,
     enableHiding: false,
     enableRowSelection: false,
-    state: { sorting, pagination, columnFilters },
-    onSortingChange: setSorting,
-    onPaginationChange: handlePaginationChange,
-    onColumnFiltersChange: handleColumnFiltersChange,
+    state: { sorting: tableState.sorting, pagination: tableState.pagination, columnFilters: tableState.columnFilters },
+    onSortingChange: tableState.setSorting,
+    onPaginationChange: tableState.handlePaginationChange,
+    onColumnFiltersChange: tableState.handleColumnFiltersChange,
     autoResetPageIndex: false,
   });
+  return { table, columns };
+}
 
-  const renderBody = () => {
-    if (isLoading) {
-      return [0, 1, 2, 3, 4].map((rowIdx) => (
-        <TableRow key={rowIdx}>
-          {columns.map((_col, colIdx) => (
-            <TableCell key={colIdx}>
-              <Skeleton variant="text" width="md" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ));
-    }
-
-    if (table.getRowModel().rows.length) {
-      return table.getRowModel().rows.map((row) => (
-        <TableRow className={row.original.isSoftDeleted ? 'text-muted-foreground' : ''} key={row.id}>
-          {row.getVisibleCells().map((cell) => {
-            const meta = readColumnMeta(cell.column.columnDef.meta);
-            return (
-              <TableCell align={meta?.align} key={cell.id}>
-                {<table.FlexRender cell={cell} />}
-              </TableCell>
-            );
-          })}
-        </TableRow>
-      ));
-    }
-
-    return (
-      <TableRow>
-        <TableCell className="text-center text-muted-foreground" colSpan={columns.length}>
-          No schemas found.
-        </TableCell>
+function SchemaListTableBody({
+  isLoading,
+  table,
+  columnCount,
+}: {
+  isLoading: boolean;
+  table: ReturnType<typeof useSchemaListTable>['table'];
+  columnCount: number;
+}) {
+  if (isLoading) {
+    return [0, 1, 2, 3, 4].map((rowIdx) => (
+      <TableRow key={rowIdx}>
+        {Array.from({ length: columnCount }, (_col, colIdx) => (
+          <TableCell key={colIdx}>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+        ))}
       </TableRow>
-    );
-  };
+    ));
+  }
+
+  if (table.getRowModel().rows.length) {
+    return table.getRowModel().rows.map((row) => (
+      <TableRow key={row.id}>
+        {row.getVisibleCells().map((cell) => {
+          const meta = readColumnMeta(cell.column.columnDef.meta);
+          const content = <table.FlexRender cell={cell} />;
+          return (
+            <TableCell align={meta?.align} key={cell.id}>
+              {content}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    ));
+  }
+
+  return (
+    <TableRow>
+      <TableCell align="center" colSpan={columnCount}>
+        No schemas found.
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// Confirmation dialogs for soft- and permanently deleting the subject picked in the table.
+function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteTarget | null; onClose: () => void }) {
+  const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
+
+  return (
+    <>
+      <DeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) {
+            return;
+          }
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: false },
+            {
+              onSuccess: () => toast.success('Subject soft-deleted'),
+              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+        open={deleteTarget?.kind === 'soft'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
+      <PermanentDeleteDialog
+        onConfirm={() => {
+          if (!deleteTarget) {
+            return;
+          }
+          deleteSchemaMutation.mutate(
+            { subjectName: deleteTarget.name, permanent: true },
+            {
+              onSuccess: () => toast.success('Subject permanently deleted'),
+              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
+            }
+          );
+        }}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
+        open={deleteTarget?.kind === 'permanent'}
+        schemaVersionName={deleteTarget?.name ?? ''}
+      />
+    </>
+  );
+}
+
+const SchemaList: FC = () => {
+  const { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted } = useSchemaListSearch();
+  const {
+    schemaRegistryContextsSupported,
+    schemaSubjects,
+    contexts,
+    isLoading,
+    isError,
+    schemaMode,
+    schemaCompatibility,
+  } = useSchemaRegistryOverview();
+  const { selectedContext, setSelectedContext, derivedContexts, displayMode, displayCompat, isAllContext } =
+    useSelectedSchemaContext({
+      schemaRegistryContextsSupported,
+      contexts,
+      schemaSubjects,
+      schemaMode,
+      schemaCompatibility,
+    });
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const tableState = useSchemaListTableState();
+  const { enrichedSubjects, isLoadingSchemaVersionMatches } = useVisibleSubjects({
+    schemaSubjects,
+    quickSearch,
+    showSoftDeleted,
+    schemaRegistryContextsSupported,
+    selectedContext,
+  });
+  const { table, columns } = useSchemaListTable({
+    enrichedSubjects,
+    isAllContext,
+    selectedContext,
+    setDeleteTarget,
+    tableState,
+  });
 
   if (schemaMode === null) {
     return <SchemaNotConfiguredPage />;
@@ -540,7 +707,7 @@ const SchemaList: FC = () => {
                 contexts={derivedContexts}
                 onContextChange={(ctx) => {
                   setSelectedContext(ctx);
-                  setPageIndex(0);
+                  tableState.setPageIndex(0);
                 }}
                 selectedContext={selectedContext}
               />
@@ -635,7 +802,7 @@ const SchemaList: FC = () => {
               titleTestId="schema-help-title"
             >
               <section aria-labelledby="filtering-heading" className="space-y-3">
-                <h3 className="text-foreground text-heading-sm" id="filtering-heading">
+                <h3 className="text-heading-sm text-foreground" id="filtering-heading">
                   Filtering schemas
                 </h3>
                 <p className="text-body text-muted-foreground">
@@ -645,7 +812,7 @@ const SchemaList: FC = () => {
 
               <div className="space-y-4 pl-4">
                 <section aria-labelledby="schema-id-heading" className="space-y-2">
-                  <h3 className="text-foreground text-heading-sm" id="schema-id-heading">
+                  <h3 className="text-heading-sm text-foreground" id="schema-id-heading">
                     Schema ID
                   </h3>
                   <p className="text-body text-muted-foreground">
@@ -654,7 +821,7 @@ const SchemaList: FC = () => {
                 </section>
 
                 <section aria-labelledby="subject-name-heading" className="space-y-2">
-                  <h3 className="text-foreground text-heading-sm" id="subject-name-heading">
+                  <h3 className="text-heading-sm text-foreground" id="subject-name-heading">
                     Subject name
                   </h3>
                   <p className="text-body text-muted-foreground">
@@ -694,21 +861,20 @@ const SchemaList: FC = () => {
               </Tooltip>
             }
           >
-            <div className="relative" data-testid="schema-list-search-field">
-              <SearchIcon
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-              />
+            <div data-testid="schema-list-search-field">
               <ListLayoutSearchInput
                 aria-label="Filter by subject name or schema ID"
-                className="pl-9"
                 onChange={(e) => {
                   setQuickSearch(e.target.value);
-                  setPageIndex(0);
+                  tableState.setPageIndex(0);
                 }}
                 placeholder="Filter by subject name or schema ID..."
                 value={quickSearch ?? ''}
-              />
+              >
+                <InputStart>
+                  <TonedIcon aria-hidden="true" className="size-4" icon={SearchIcon} tone="muted" />
+                </InputStart>
+              </ListLayoutSearchInput>
             </div>
             {isLoadingSchemaVersionMatches && <Spinner className="size-5" />}
             <DataTableFacetedFilter
@@ -728,7 +894,7 @@ const SchemaList: FC = () => {
                 checked={showSoftDeleted}
                 onCheckedChange={(checked) => {
                   setShowSoftDeleted(checked === true);
-                  setPageIndex(0);
+                  tableState.setPageIndex(0);
                 }}
                 testId="schema-list-show-soft-deleted-checkbox"
               />
@@ -750,53 +916,14 @@ const SchemaList: FC = () => {
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>{renderBody()}</TableBody>
+            <TableBody>
+              <SchemaListTableBody columnCount={columns.length} isLoading={isLoading} table={table} />
+            </TableBody>
           </Table>
           <DataTablePagination table={table} />
         </ListLayout>
       )}
-      <DeleteDialog
-        onConfirm={() => {
-          if (!deleteTarget) {
-            return;
-          }
-          deleteSchemaMutation.mutate(
-            { subjectName: deleteTarget.name, permanent: false },
-            {
-              onSuccess: () => toast.success('Subject soft-deleted'),
-              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
-            }
-          );
-        }}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-          }
-        }}
-        open={deleteTarget?.kind === 'soft'}
-        schemaVersionName={deleteTarget?.name ?? ''}
-      />
-      <PermanentDeleteDialog
-        onConfirm={() => {
-          if (!deleteTarget) {
-            return;
-          }
-          deleteSchemaMutation.mutate(
-            { subjectName: deleteTarget.name, permanent: true },
-            {
-              onSuccess: () => toast.success('Subject permanently deleted'),
-              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
-            }
-          );
-        }}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-          }
-        }}
-        open={deleteTarget?.kind === 'permanent'}
-        schemaVersionName={deleteTarget?.name ?? ''}
-      />
+      <SubjectDeleteDialogs deleteTarget={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </PageContent>
   );
 };

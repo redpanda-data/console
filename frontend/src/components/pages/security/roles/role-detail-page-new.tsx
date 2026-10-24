@@ -40,38 +40,91 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
-export const RoleDetailPageNew = () => {
-  const { roleName: rawRoleName } = useParams({ from: '/security/roles/$roleName/details' });
-  const roleName = decodeURIComponent(rawRoleName);
-  const [deletingPrincipal, setDeletingPrincipal] = useState<string | null>(null);
+type RoleMember = { principal: string };
 
-  useLayoutEffect(() => {
-    setPageHeader(
-      roleName,
-      [
-        { title: 'Security', linkTo: '/security/users' },
-        { title: 'Roles', linkTo: '/security/roles' },
-        { title: roleName, linkTo: `/security/roles/${roleName}/details` },
-      ],
-      { title: 'Roles', linkTo: '/security/roles' }
+const getUnassignedUserOptions = (users: { name: string }[], members: RoleMember[]) => {
+  const assignedPrincipals = new Set(members.map((m) => m.principal));
+  return users.filter((u) => !assignedPrincipals.has(`User:${u.name}`)).map((u) => ({ value: u.name, label: u.name }));
+};
+
+type RolePrincipalRowsProps = {
+  isLoading: boolean;
+  members: RoleMember[];
+  isRemoveDisabled: (memberPrincipal: string) => boolean;
+  onRemove: (memberPrincipal: string) => void;
+};
+
+const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: RolePrincipalRowsProps) => {
+  if (isLoading) {
+    return (
+      <TableRow>
+        <TableCell align="center" colSpan={2}>
+          Loading members...
+        </TableCell>
+      </TableRow>
     );
-  }, [roleName]);
+  }
+  if (members.length === 0) {
+    return (
+      <TableRow>
+        <TableCell colSpan={2}>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Users2Icon />
+              </EmptyMedia>
+              <EmptyTitle>No principals assigned</EmptyTitle>
+              <EmptyDescription>
+                Assign users to this role to grant them its permissions. Use the dropdown above to add a principal.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button
+                render={
+                  <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
+                    Read the docs →
+                  </a>
+                }
+                variant="link"
+              />
+            </EmptyContent>
+          </Empty>
+        </TableCell>
+      </TableRow>
+    );
+  }
+  return members.map((member) => {
+    const parsed = parsePrincipal(member.principal);
+    const displayName = parsed.name || member.principal;
+    return (
+      <TableRow key={member.principal}>
+        <TableCell>
+          <span className="font-mono">{displayName}</span>
+        </TableCell>
+        <TableCell align="right">
+          <Button
+            data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
+            disabled={isRemoveDisabled(member.principal)}
+            onClick={() => onRemove(member.principal)}
+            size="icon-sm"
+            variant="destructive-ghost"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </TableCell>
+      </TableRow>
+    );
+  });
+};
 
-  const { data: aclData, isLoading: isAclsLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
-
+const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
+  const [deletingPrincipal, setDeletingPrincipal] = useState<string | null>(null);
   const { data: membersData, isLoading: membersLoading } = useListRoleMembersQuery(
     create(ListRoleMembersRequestSchema, { roleName })
   );
   const { data: usersData } = useListUsersQuery(create(ListUsersRequestSchema));
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
-
   const allMembers = membersData?.members ?? [];
-
-  const assignedPrincipals = new Set(allMembers.map((m) => m.principal));
-
-  const availablePrincipalOptions = (usersData?.users ?? [])
-    .filter((u) => !assignedPrincipals.has(`User:${u.name}`))
-    .map((u) => ({ value: u.name, label: u.name }));
 
   const addMember = async (userName: string) => {
     if (!userName) {
@@ -112,96 +165,70 @@ export const RoleDetailPageNew = () => {
   };
 
   return (
+    <ListLayout className="my-4 min-h-0">
+      <ListLayoutFilters
+        actions={
+          <Combobox
+            className="w-56"
+            clearable={false}
+            creatable
+            createLabel="principal"
+            disabled={isSubmitting}
+            onChange={addMember}
+            options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
+            placeholder="Select or type a principal..."
+            testId="add-principal-combobox"
+            value=""
+          />
+        }
+      >
+        <h2 className="text-heading-sm">Principals</h2>
+      </ListLayoutFilters>
+      <ListLayoutContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead align="right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <RolePrincipalRows
+              isLoading={membersLoading}
+              isRemoveDisabled={(memberPrincipal) => deletingPrincipal === memberPrincipal || isSubmitting}
+              members={allMembers}
+              onRemove={handleRemoveMember}
+            />
+          </TableBody>
+        </Table>
+      </ListLayoutContent>
+    </ListLayout>
+  );
+};
+
+export const RoleDetailPageNew = () => {
+  const { roleName: rawRoleName } = useParams({ from: '/security/roles/$roleName/details' });
+  const roleName = decodeURIComponent(rawRoleName);
+
+  useLayoutEffect(() => {
+    setPageHeader(
+      roleName,
+      [
+        { title: 'Security', linkTo: '/security/users' },
+        { title: 'Roles', linkTo: '/security/roles' },
+        { title: roleName, linkTo: `/security/roles/${roleName}/details` },
+      ],
+      { title: 'Roles', linkTo: '/security/roles' }
+    );
+  }, [roleName]);
+
+  const { data: aclData, isLoading: isAclsLoading } = useGetAclsByPrincipal(`RedpandaRole:${roleName}`);
+
+  return (
     <div className="flex flex-col gap-6 pt-4">
       <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
       {/* Principals */}
-      <ListLayout className="my-4 min-h-0 gap-3 py-0">
-        <ListLayoutFilters
-          actions={
-            <Combobox
-              className="w-56"
-              clearable={false}
-              creatable
-              createLabel="principal"
-              disabled={isSubmitting}
-              onChange={addMember}
-              options={availablePrincipalOptions}
-              placeholder="Select or type a principal..."
-              testId="add-principal-combobox"
-              value=""
-            />
-          }
-        >
-          <h2 className="text-heading-sm">Principals</h2>
-        </ListLayoutFilters>
-        <ListLayoutContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead align="right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {membersLoading ? (
-                <TableRow>
-                  <TableCell className="py-4 text-center text-body text-muted-foreground" colSpan={2}>
-                    Loading members...
-                  </TableCell>
-                </TableRow>
-              ) : allMembers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={2}>
-                    <Empty>
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <Users2Icon />
-                        </EmptyMedia>
-                        <EmptyTitle>No principals assigned</EmptyTitle>
-                        <EmptyDescription>
-                          Assign users to this role to grant them its permissions. Use the dropdown above to add a
-                          principal.
-                        </EmptyDescription>
-                      </EmptyHeader>
-                      <EmptyContent>
-                        <Button
-                          render={
-                            <a href={docsLinks.selfManaged.rbac} rel="noopener noreferrer" target="_blank">
-                              Read the docs →
-                            </a>
-                          }
-                          variant="link"
-                        />
-                      </EmptyContent>
-                    </Empty>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                allMembers.map((member) => {
-                  const parsed = parsePrincipal(member.principal);
-                  const displayName = parsed.name || member.principal;
-                  return (
-                    <TableRow key={member.principal}>
-                      <TableCell className="font-mono">{displayName}</TableCell>
-                      <TableCell align="right">
-                        <Button
-                          data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
-                          disabled={deletingPrincipal === member.principal || isSubmitting}
-                          onClick={() => handleRemoveMember(member.principal)}
-                          size="icon-sm"
-                          variant="destructive-ghost"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </ListLayoutContent>
-      </ListLayout>
+      <RolePrincipalsSection roleName={roleName} />
     </div>
   );
 };

@@ -14,7 +14,7 @@ import { render, screen } from '@testing-library/react';
 
 import { RoutePending } from './route-pending';
 
-describe('RoutePending', () => {
+describe('the RoutePending', () => {
   it('announces route loading', () => {
     render(<RoutePending />);
 

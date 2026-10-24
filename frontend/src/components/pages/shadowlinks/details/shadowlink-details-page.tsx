@@ -15,8 +15,9 @@ import { Code } from '@connectrpc/connect';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { AlertTriangle, Edit, Loader2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   useDeleteShadowLinkUnified,
@@ -34,13 +35,9 @@ import { TasksTable } from './tasks-table';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 
-export const ShadowLinkDetailsPage = () => {
-  const { name } = useParams({ from: '/shadowlinks/$name/' });
-  const navigate = useNavigate();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showFailoverDialog, setShowFailoverDialog] = useState(false);
-  const [failoverTopicName, setFailoverTopicName] = useState<string>('');
+type UnifiedShadowLinkQuery = ReturnType<typeof useGetShadowLinkUnified>;
 
+const useShadowLinkBreadcrumbs = (name: string) => {
   useEffect(() => {
     uiState.pageTitle = name;
     uiState.pageBreadcrumbs = [
@@ -48,21 +45,42 @@ export const ShadowLinkDetailsPage = () => {
       { title: name, linkTo: '' },
     ];
   }, [name]);
+};
 
-  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
-  const {
-    data: shadowLink,
-    isLoading,
-    error: errorGetShadowLink,
-    dataplaneError,
-    refetch,
-  } = useGetShadowLinkUnified({ name: name ?? '' });
+// Use unified delete hook (works in both embedded and non-embedded modes)
+const useShadowLinkDelete = (name: string) => {
+  const navigate = useNavigate();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkUnified({ name });
 
-  // When dataplane fails but we have controlplane data (fallback scenario)
-  const hasPartialData = Boolean(shadowLink && dataplaneError);
+  const handleDelete = () => {
+    deleteShadowLink({
+      force: false,
+      onSuccess: () => {
+        toast.success(`Shadowlink ${name} deleted`);
+        navigate({ to: '/shadowlinks' }).catch((error: unknown) => {
+          toast.error('Failed to navigate', { description: String(error) });
+        });
+      },
+      onError: (error) => {
+        toast.error(
+          formatToastErrorMessageGRPC({
+            error,
+            action: 'delete',
+            entity: 'shadowlink',
+          })
+        );
+      },
+    });
+  };
 
-  // Use unified delete hook (works in both embedded and non-embedded modes)
-  const { deleteShadowLink, isPending: isDeleting } = useDeleteShadowLinkUnified({ name: name ?? '' });
+  return { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete };
+};
+
+/** Failover for the whole link, or for one topic when the dialog is opened with its name. */
+const useShadowLinkFailover = (name: string, refetch: UnifiedShadowLinkQuery['refetch']) => {
+  const [showFailoverDialog, setShowFailoverDialog] = useState(false);
+  const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     onSuccess: async () => {
@@ -78,25 +96,6 @@ export const ShadowLinkDetailsPage = () => {
     },
   });
 
-  const handleDelete = () => {
-    deleteShadowLink({
-      force: false,
-      onSuccess: () => {
-        toast.success(`Shadowlink ${name} deleted`);
-        navigate({ to: '/shadowlinks' });
-      },
-      onError: (error) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
-            error,
-            action: 'delete',
-            entity: 'shadowlink',
-          })
-        );
-      },
-    });
-  };
-
   const handleFailover = () => {
     if (name) {
       failoverShadowLink({
@@ -111,38 +110,68 @@ export const ShadowLinkDetailsPage = () => {
     setShowFailoverDialog(true);
   };
 
-  // Loading state
+  const handleFailoverOpenChange = (open: boolean) => {
+    setShowFailoverDialog(open);
+    if (!open) {
+      setFailoverTopicName('');
+    }
+  };
+
+  return {
+    failoverTopicName,
+    showFailoverDialog,
+    isFailingOver,
+    handleFailover,
+    openFailoverDialog,
+    handleFailoverOpenChange,
+  };
+};
+
+type ShadowLinkDetailsFallbackProps = {
+  name: string;
+  isLoading: boolean;
+  error: UnifiedShadowLinkQuery['error'];
+};
+
+// Loading, load-error, and not-found states
+const ShadowLinkDetailsFallback = ({ name, isLoading, error }: ShadowLinkDetailsFallbackProps) => {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Spinner className="size-6" />
           <div className="text-body">Loading shadow link details...</div>
         </div>
       </div>
     );
   }
 
-  // Not found error state
-  if (errorGetShadowLink?.code === Code.NotFound) {
-    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
+  if (error && error.code !== Code.NotFound) {
+    return <ShadowLinkLoadErrorState errorMessage={error.message} />;
   }
 
-  // Other error state
-  if (errorGetShadowLink) {
-    return <ShadowLinkLoadErrorState errorMessage={errorGetShadowLink.message} />;
-  }
+  return <ShadowLinkNotFoundState name={name} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
+};
 
-  // Not found state
-  if (!shadowLink) {
-    return <ShadowLinkNotFoundState name={name ?? ''} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
-  }
+type ShadowLinkDetailsViewProps = {
+  name: string;
+  shadowLink: NonNullable<UnifiedShadowLinkQuery['data']>;
+  hasPartialData: boolean;
+  refetch: UnifiedShadowLinkQuery['refetch'];
+};
+
+const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: ShadowLinkDetailsViewProps) => {
+  const navigate = useNavigate();
+  const { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete } = useShadowLinkDelete(name);
+  const failover = useShadowLinkFailover(name, refetch);
 
   return (
     <div className="flex flex-col gap-6">
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
-        <Button onClick={() => openFailoverDialog()} size="sm" variant="outline">
+        <Button onClick={() => failover.openFailoverDialog()} size="sm" variant="outline">
           Failover all topics
         </Button>
 
@@ -154,7 +183,7 @@ export const ShadowLinkDetailsPage = () => {
         <Button disabled={isDeleting} onClick={() => setShowDeleteDialog(true)} size="sm" variant="destructive">
           {isDeleting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Spinner className="mr-2" />
               Deleting...
             </>
           ) : (
@@ -194,7 +223,7 @@ export const ShadowLinkDetailsPage = () => {
         <TabsContents>
           <TabsContent testId="overview-content" value="overview">
             <ShadowLinkDetails
-              onFailoverTopic={openFailoverDialog}
+              onFailoverTopic={failover.openFailoverDialog}
               shadowLink={shadowLink}
               shadowLinkName={name || ''}
             />
@@ -221,17 +250,40 @@ export const ShadowLinkDetailsPage = () => {
 
       {/* Failover Dialog */}
       <FailoverDialog
-        isLoading={isFailingOver}
-        onConfirm={handleFailover}
-        onOpenChange={(open) => {
-          setShowFailoverDialog(open);
-          if (!open) {
-            setFailoverTopicName('');
-          }
-        }}
-        open={showFailoverDialog}
-        topicName={failoverTopicName}
+        isLoading={failover.isFailingOver}
+        onConfirm={failover.handleFailover}
+        onOpenChange={failover.handleFailoverOpenChange}
+        open={failover.showFailoverDialog}
+        topicName={failover.failoverTopicName}
       />
     </div>
+  );
+};
+
+export const ShadowLinkDetailsPage = () => {
+  const { name } = useParams({ from: '/shadowlinks/$name/' });
+  useShadowLinkBreadcrumbs(name);
+
+  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
+  const {
+    data: shadowLink,
+    isLoading,
+    error: errorGetShadowLink,
+    dataplaneError,
+    refetch,
+  } = useGetShadowLinkUnified({ name: name ?? '' });
+
+  if (isLoading || errorGetShadowLink || !shadowLink) {
+    return <ShadowLinkDetailsFallback error={errorGetShadowLink} isLoading={isLoading} name={name ?? ''} />;
+  }
+
+  return (
+    <ShadowLinkDetailsView
+      // When dataplane fails but we have controlplane data (fallback scenario)
+      hasPartialData={Boolean(dataplaneError)}
+      name={name}
+      refetch={refetch}
+      shadowLink={shadowLink}
+    />
   );
 };

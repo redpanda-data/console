@@ -3,12 +3,21 @@ import { step } from '../../shared/e2e';
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '../../shared/e2e';
+import { expect, type Page, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('Topic Creation', () => {
+/** Creates the topic through the topics list's create modal and dismisses the success dialog. */
+const createTopicFromList = async (page: Page, topicName: string) => {
+  await page.goto('/topics');
+  await page.getByTestId('create-topic-button').click();
+  await page.getByTestId('topic-name').fill(topicName);
+  await page.getByTestId('onOk-button').click();
+  await page.getByTestId('create-topic-success__close-button').click();
+};
+
+test.describe('topic Creation', () => {
   test('should create topic with default settings', async ({ page }) => {
-    const topicName = `default-topic-${Date.now()}`;
+    const topicName = `default-topic-${crypto.randomUUID()}`;
 
     await step('Open create topic modal', async () => {
       await page.goto('/topics');
@@ -36,7 +45,7 @@ test.describe('Topic Creation', () => {
   });
 
   test('should create topic with custom configuration', async ({ page }) => {
-    const topicName = `custom-config-${Date.now()}`;
+    const topicName = `custom-config-${crypto.randomUUID()}`;
 
     await page.goto('/topics');
     await page.getByTestId('create-topic-button').click();
@@ -122,7 +131,7 @@ test.describe('Topic Creation', () => {
     await page.getByTestId('create-topic-button').click();
 
     await step('Set high replication factor', async () => {
-      await page.getByTestId('topic-name').fill(`replication-test-${Date.now()}`);
+      await page.getByTestId('topic-name').fill(`replication-test-${crypto.randomUUID()}`);
 
       // Try to set replication factor higher than broker count
       const replicationInput = page.getByPlaceholder(/replication/i);
@@ -162,13 +171,9 @@ test.describe('Topic Creation', () => {
   });
 
   test('should create topic and verify it appears in multiple views', async ({ page }) => {
-    const topicName = `multi-view-${Date.now()}`;
+    const topicName = `multi-view-${crypto.randomUUID()}`;
 
-    await page.goto('/topics');
-    await page.getByTestId('create-topic-button').click();
-    await page.getByTestId('topic-name').fill(topicName);
-    await page.getByTestId('onOk-button').click();
-    await page.getByTestId('create-topic-success__close-button').click();
+    await createTopicFromList(page, topicName);
 
     await step('Verify in topics list', async () => {
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();

@@ -11,7 +11,7 @@
 
 import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create } from '@bufbuild/protobuf';
-import { DurationSchema } from '@bufbuild/protobuf/wkt';
+import { type Duration, DurationSchema } from '@bufbuild/protobuf/wkt';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import {
   ACLFilterSchema,
@@ -201,6 +201,17 @@ const createBaseControlplaneShadowLink = () =>
     // Schema registry sync disabled (no schemaRegistryShadowingMode set)
   });
 
+/**
+ * Pause role sync with a custom interval: neither is exposed in the UI, so both must round-trip
+ */
+const pauseRoleSyncWithCustomInterval = (roleSyncOptions: { paused: boolean; interval?: Duration } | undefined) => {
+  if (!roleSyncOptions) {
+    throw new Error('base shadow link must have role sync options');
+  }
+  roleSyncOptions.paused = true;
+  roleSyncOptions.interval = create(DurationSchema, { seconds: 300n });
+};
+
 describe('buildControlplaneUpdateRequest', () => {
   describe('field mask path stripping', () => {
     test.each<{
@@ -304,12 +315,7 @@ describe('buildControlplaneUpdateRequest', () => {
 
     test('should preserve original interval and paused when role filters change', () => {
       const baseShadowLink = createBaseControlplaneShadowLink();
-      const roleSyncOptions = baseShadowLink.roleSyncOptions;
-      if (!roleSyncOptions) {
-        throw new Error('base shadow link must have role sync options');
-      }
-      roleSyncOptions.paused = true;
-      roleSyncOptions.interval = create(DurationSchema, { seconds: BigInt(300) });
+      pauseRoleSyncWithCustomInterval(baseShadowLink.roleSyncOptions);
 
       const updatedValues = {
         ...baseFormValues,
@@ -325,7 +331,7 @@ describe('buildControlplaneUpdateRequest', () => {
       // the fields the UI never exposes must carry over from the fetched link
       expect(result.updateMask?.paths).toContain('role_sync_options');
       expect(result.shadowLink?.roleSyncOptions?.paused).toBe(true);
-      expect(result.shadowLink?.roleSyncOptions?.interval?.seconds).toBe(BigInt(300));
+      expect(result.shadowLink?.roleSyncOptions?.interval?.seconds).toBe(300n);
     });
   });
 
@@ -687,12 +693,7 @@ describe('buildDataplaneUpdateRequest', () => {
   describe('role sync interval and paused round-trip', () => {
     test('should preserve original interval and paused when role filters change', () => {
       const baseShadowLink = createBaseShadowLink();
-      const roleSyncOptions = baseShadowLink.configurations?.roleSyncOptions;
-      if (!roleSyncOptions) {
-        throw new Error('base shadow link must have role sync options');
-      }
-      roleSyncOptions.paused = true;
-      roleSyncOptions.interval = create(DurationSchema, { seconds: BigInt(300) });
+      pauseRoleSyncWithCustomInterval(baseShadowLink.configurations?.roleSyncOptions);
 
       const updatedValues = {
         ...baseFormValues,
@@ -708,7 +709,7 @@ describe('buildDataplaneUpdateRequest', () => {
       // the fields the UI never exposes must carry over from the fetched link
       expect(result.updateMask?.paths).toContain('configurations.role_sync_options');
       expect(result.shadowLink?.configurations?.roleSyncOptions?.paused).toBe(true);
-      expect(result.shadowLink?.configurations?.roleSyncOptions?.interval?.seconds).toBe(BigInt(300));
+      expect(result.shadowLink?.configurations?.roleSyncOptions?.interval?.seconds).toBe(300n);
       expect(result.shadowLink?.configurations?.roleSyncOptions?.roleNameFilters).toEqual([
         expect.objectContaining({ name: 'test-role' }),
       ]);

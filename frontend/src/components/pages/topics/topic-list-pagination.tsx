@@ -16,7 +16,7 @@ export function TopicListPagination({ table }: { table: DataTableRenderInstance<
       {(pagination) => (
         <nav aria-label="Topic pagination" className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3 px-2">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-body">Rows per page</span>
+            <span className="text-body font-medium">Rows per page</span>
             <Select onValueChange={(value) => table.setPageSize(Number(value))} value={`${pagination.pageSize}`}>
               <SelectTrigger aria-label="Rows per page" className="h-8 w-[70px]">
                 <SelectValue />

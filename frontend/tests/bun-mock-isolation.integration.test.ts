@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('Bun store units leave shared backend exports intact for subsequent files', () => {
+test('bun store units leave shared backend exports intact for subsequent files', () => {
   mkdirSync(resolve('tests/.rstest'), { recursive: true });
   const directory = mkdtempSync(resolve('tests/.rstest/bun-isolation-'));
   try {

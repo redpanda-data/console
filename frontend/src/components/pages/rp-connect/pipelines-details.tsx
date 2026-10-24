@@ -45,7 +45,7 @@ import type { TopicMessage } from '../../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../../state/ui';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { isFilterMatch } from '../../../utils/message-table-helpers';
-import { DefaultSkeleton, QuickTable, TimestampDisplay } from '../../../utils/tsx-utils';
+import { DefaultSkeleton, quickTable, TimestampDisplay } from '../../../utils/tsx-utils';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
@@ -100,7 +100,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
   return (
     <PageContent>
       <div className="my-4">
-        {QuickTable(
+        {quickTable(
           [
             { key: 'ID', value: pipeline.id },
             { key: 'Name', value: pipeline.displayName },
@@ -126,29 +126,6 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
           onClick={() => {
             setIsChangingPauseState(true);
 
-            const watchPipelineUpdates = async () => {
-              const waitDelays = [200, 400, 1000, 1000, 1000, 5000];
-              let waitIteration = 0;
-
-              while (true) {
-                const waitTime = waitDelays[Math.min(waitDelays.length - 1, waitIteration)];
-                waitIteration += 1;
-                await delay(waitTime);
-
-                await pipelinesApi.refreshPipelines(true);
-                // if we can't find the pipeline we're checking anymore it got deleted
-                const p = pipelinesApi.pipelines?.first((x) => x.id === pipeline.id);
-                if (!p) {
-                  return;
-                }
-
-                // if its no longer in a transition state, we're done
-                if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
-                  return;
-                }
-              }
-            };
-
             const changePromise = isStopped
               ? pipelinesApi.startPipeline(pipeline.id)
               : pipelinesApi.stopPipeline(pipeline.id);
@@ -162,7 +139,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                 });
 
                 // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-                watchPipelineUpdates().catch(console.error);
+                watchPipelineUpdates(pipeline.id).catch(console.error);
               })
               .catch((err) => {
                 showToast({
@@ -235,6 +212,30 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
   );
 };
 
+// Back-off between polls while a started or stopped pipeline settles.
+const PIPELINE_TRANSITION_POLL_DELAYS = [200, 400, 1000, 1000, 1000, 5000];
+
+/**
+ * Refreshes the pipeline list until the pipeline leaves its starting/stopping state, or is gone. Each
+ * poll backs off from the previous one and reads the list it refreshed, so attempts recurse in order.
+ */
+async function watchPipelineUpdates(pipelineId: string, attempt = 0): Promise<void> {
+  await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, attempt)]);
+
+  await pipelinesApi.refreshPipelines(true);
+  // if we can't find the pipeline we're checking anymore it got deleted
+  const p = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
+  if (!p) {
+    return;
+  }
+
+  // if its no longer in a transition state, we're done
+  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
+    return;
+  }
+  return watchPipelineUpdates(pipelineId, attempt + 1);
+}
+
 const PipelineEditor = (p: { pipeline: Pipeline }) => {
   const { pipeline } = p;
 
@@ -263,16 +264,17 @@ const LOGS_TABLE_OPTIONS = {
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
-export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
-  const topicName = '__redpanda.connect.logs';
-  const topic = api.topics?.first((x) => x.topicName === topicName);
+/**
+ * Streams the last hours of the pipeline's log messages, re-running the search when `refresh` is
+ * called, and loads a message's full content on demand.
+ */
+const PIPELINE_LOGS_TOPIC = '__redpanda.connect.logs';
 
+function usePipelineLogMessages(pipelineId: string) {
   const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
     messages: [],
     isComplete: false,
   });
-  const { messages, isComplete } = logState;
-  const [logsQuickSearch, setLogsQuickSearch] = useState('');
   const searchRef = useRef<MessageSearch | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -282,13 +284,13 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
     const search = createMessageSearch();
     searchRef.current = search;
     queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
-    executeMessageSearch(search, topicName, pipeline.id).finally(() => {
+    executeMessageSearch(search, PIPELINE_LOGS_TOPIC, pipelineId).finally(() => {
       setLogState({ messages: [...search.messages], isComplete: true });
     });
     return () => {
       search.stopSearch();
     };
-  }, [refreshCount, pipeline.id]);
+  }, [refreshCount, pipelineId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -305,7 +307,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const loadLargeMessage = useCallback(async (msgTopicName: string, partitionID: number, offset: number) => {
+  const loadLargeMessage = useCallback(async (partitionID: number, offset: number) => {
     const search = createMessageSearch();
     const searchReq: MessageSearchRequest = {
       filterInterpreterCode: '',
@@ -313,7 +315,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
       partitionId: partitionID,
       startOffset: offset,
       startTimestamp: 0,
-      topicName: msgTopicName,
+      topicName: searchRef.current?.searchRequest?.topicName ?? '',
       includeRawPayload: true,
       ignoreSizeLimit: true,
       keyDeserializer: PayloadEncoding.UNSPECIFIED,
@@ -335,6 +337,19 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
       throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
     }
   }, []);
+
+  return {
+    ...logState,
+    loadLargeMessage,
+    refresh: () => setRefreshCount((c) => c + 1),
+  };
+}
+
+export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
+  const topic = api.topics?.first((x) => x.topicName === PIPELINE_LOGS_TOPIC);
+
+  const { messages, isComplete, loadLargeMessage, refresh } = usePipelineLogMessages(pipeline.id);
+  const [logsQuickSearch, setLogsQuickSearch] = useState('');
 
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
@@ -386,9 +401,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const renderSubComponent = useCallback(
     ({ row: { original } }: { row: { original: TopicMessage } }) => (
       <ExpandedMessage
-        loadLargeMessage={() =>
-          loadLargeMessage(searchRef.current?.searchRequest?.topicName ?? '', original.partitionID, original.offset)
-        }
+        loadLargeMessage={() => loadLargeMessage(original.partitionID, original.offset)}
         msg={original}
       />
     ),
@@ -418,7 +431,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
             placeholder="Search..."
             value={logsQuickSearch}
           />
-          <Button onClick={() => setRefreshCount((c) => c + 1)} size="icon" variant="ghost">
+          <Button onClick={refresh} size="icon" variant="ghost">
             <RefreshCcw />
           </Button>
         </div>

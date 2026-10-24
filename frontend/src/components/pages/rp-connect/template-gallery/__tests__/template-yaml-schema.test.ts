@@ -10,7 +10,7 @@
  */
 
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { isMap, isSeq, parseDocument } from 'yaml';
+import { type Document, isMap, isSeq, type Pair, parseDocument } from 'yaml';
 
 import { describe, expect, test } from 'bun:test';
 import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
@@ -64,36 +64,79 @@ const sampleValues = (slotIds: string[]): Record<string, string> =>
 
 type FieldNode = { children?: { name: string }[] };
 
+// Field paths under one stitched mapping pair that are absent from the component schema.
+function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string): string[] {
+  const key = (pair.key as { value?: unknown } | null)?.value;
+  if (typeof key !== 'string') {
+    return [];
+  }
+  if (prefix === '' && FRAMEWORK_KEYS.has(key)) {
+    return [];
+  }
+  const path = prefix ? `${prefix}.${key}` : key;
+  const field = resolveFieldByPath(componentConfig as never, path);
+  if (!field) {
+    return [path];
+  }
+  return isMap(pair.value) && (field as FieldNode).children
+    ? collectUnknownFieldPaths(pair.value, componentConfig, path)
+    : [];
+}
+
 // Walk a stitched mapping, collecting field paths absent from the component schema (recurses into nested maps).
 function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | undefined, prefix: string): string[] {
   if (!isMap(node)) {
     return [];
   }
-  const unknown: string[] = [];
-  for (const pair of node.items) {
-    const key = (pair.key as { value?: unknown } | null)?.value;
-    if (typeof key !== 'string') {
+  return node.items.flatMap((pair) => unknownFieldPathsOfPair(pair, componentConfig, prefix));
+}
+
+type StitchedComponent = { type: 'input' | 'output'; name: string; config: unknown };
+
+// The components a stitched config declares under its `input:` and `output:` sections.
+function stitchedComponents(doc: Document): StitchedComponent[] {
+  const components: StitchedComponent[] = [];
+  for (const type of ['input', 'output'] as const) {
+    const section = doc.get(type, true);
+    if (!isMap(section)) {
       continue;
     }
-    if (prefix === '' && FRAMEWORK_KEYS.has(key)) {
-      continue;
-    }
-    const path = prefix ? `${prefix}.${key}` : key;
-    const field = resolveFieldByPath(componentConfig as never, path);
-    if (!field) {
-      unknown.push(path);
-      continue;
-    }
-    if (isMap(pair.value) && (field as FieldNode).children) {
-      unknown.push(...collectUnknownFieldPaths(pair.value, componentConfig, path));
+    for (const pair of section.items) {
+      const name = (pair.key as { value?: unknown } | null)?.value;
+      if (typeof name === 'string') {
+        components.push({ type, name, config: pair.value });
+      }
     }
   }
-  return unknown;
+  return components;
+}
+
+// The schema-required fields of `comp` that a stitched component mapping leaves unset.
+function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>): string[] {
+  const present = new Set(
+    isMap(config)
+      ? config.items.map((p) => (p.key as { value?: unknown } | null)?.value).filter((k) => typeof k === 'string')
+      : []
+  );
+  return (comp?.config?.children ?? [])
+    .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
+    .map((field) => (field as { name?: string }).name)
+    .filter((name): name is string => !!name && !present.has(name));
+}
+
+// Looks up a bundled template, failing the test when it is missing.
+function requireTemplate(id: string): PipelineTemplate {
+  const template = PIPELINE_TEMPLATES.find((t) => t.id === id);
+  expect(template).toBeDefined();
+  if (!template) {
+    throw new Error(`Expected the bundled template "${id}"`);
+  }
+  return template;
 }
 
 // Stitches each template with sample values and asserts every emitted field resolves against the
 // schema snapshot, so connector field renames/removals fail here rather than as a server lint error post-submit.
-describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
+describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
     '$id stitches to YAML with only known component fields',
     ({ template }) => {
@@ -106,28 +149,15 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       const doc = parseDocument(yaml);
       expect(doc.errors, `template "${template.id}" stitched to invalid YAML`).toHaveLength(0);
 
-      for (const [yamlKey, type] of [
-        ['input', 'input'],
-        ['output', 'output'],
-      ] as const) {
-        const section = doc.get(yamlKey, true);
-        if (!isMap(section)) {
-          continue;
-        }
-        for (const pair of section.items) {
-          const componentName = (pair.key as { value?: unknown } | null)?.value;
-          if (typeof componentName !== 'string') {
-            continue;
-          }
-          const comp = findComponentByName(componentList, componentName, type);
-          expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
+      for (const { type, name: componentName, config } of stitchedComponents(doc)) {
+        const comp = findComponentByName(componentList, componentName, type);
+        expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
 
-          const unknownPaths = collectUnknownFieldPaths(pair.value, comp?.config as FieldNode | undefined, '');
-          expect(
-            unknownPaths,
-            `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
-          ).toEqual([]);
-        }
+        const unknownPaths = collectUnknownFieldPaths(config, comp?.config as FieldNode | undefined, '');
+        expect(
+          unknownPaths,
+          `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
+        ).toEqual([]);
       }
     }
   );
@@ -144,11 +174,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   });
 
   test('blank optional slots without a fallback are dropped, not left empty', () => {
-    const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');
-    expect(postgres).toBeDefined();
-    if (!postgres) {
-      return;
-    }
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
     // includedTable is optional with no fallback; blank should drop the whole `tables:` key, not emit `tables: []`.
     const yaml = stitchTemplateYaml({
       template: postgres,
@@ -198,47 +224,18 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
       const doc = parseDocument(yaml);
       expect(doc.errors).toHaveLength(0);
 
-      for (const [yamlKey, type] of [
-        ['input', 'input'],
-        ['output', 'output'],
-      ] as const) {
-        const section = doc.get(yamlKey, true);
-        if (!isMap(section)) {
-          continue;
-        }
-        for (const pair of section.items) {
-          const componentName = (pair.key as { value?: unknown } | null)?.value;
-          if (typeof componentName !== 'string') {
-            continue;
-          }
-          const comp = findComponentByName(componentList, componentName, type);
-          const present = new Set(
-            isMap(pair.value)
-              ? pair.value.items
-                  .map((p) => (p.key as { value?: unknown } | null)?.value)
-                  .filter((k) => typeof k === 'string')
-              : []
-          );
-          const missing = (comp?.config?.children ?? [])
-            .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
-            .map((field) => (field as { name?: string }).name)
-            .filter((name): name is string => !!name && !present.has(name));
-
-          expect(
-            missing,
-            `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
-          ).toEqual([]);
-        }
+      for (const { type, name: componentName, config } of stitchedComponents(doc)) {
+        const missing = missingRequiredFields(config, findComponentByName(componentList, componentName, type));
+        expect(
+          missing,
+          `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
+        ).toEqual([]);
       }
     }
   );
 
   test('slot_name falls back to a deterministic name derived from the pipeline', () => {
-    const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');
-    expect(postgres).toBeDefined();
-    if (!postgres) {
-      return;
-    }
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
     const yaml = stitchTemplateYaml({
       template: postgres,
       values: { dsn: 'PG_DSN', slotName: '', includedTable: 'users', targetTopic: 'orders' },
@@ -249,11 +246,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   });
 
   test('list slots expand comma-separated values into one sequence item each', () => {
-    const postgres = PIPELINE_TEMPLATES.find((t) => t.id === 'postgres-cdc-to-redpanda');
-    expect(postgres).toBeDefined();
-    if (!postgres) {
-      return;
-    }
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
     const yaml = stitchTemplateYaml({
       template: postgres,
       // Ragged whitespace and a trailing comma must not produce blank entries.
@@ -271,11 +264,7 @@ describe('PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   });
 
   test('a blank list slot still drops the whole sequence key', () => {
-    const mongodb = PIPELINE_TEMPLATES.find((t) => t.id === 'mongodb-cdc-to-redpanda');
-    expect(mongodb).toBeDefined();
-    if (!mongodb) {
-      return;
-    }
+    const mongodb = requireTemplate('mongodb-cdc-to-redpanda');
     const yaml = stitchTemplateYaml({
       template: mongodb,
       values: { url: 'MONGODB_URL', database: 'mydb', collection: ' , ', targetTopic: 'orders' },

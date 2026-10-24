@@ -17,15 +17,15 @@ describe('parsePrincipalFromParam', () => {
     expect(parsePrincipalFromParam('alice')).toEqual({ principalType: 'User', principalName: 'alice' });
   });
 
-  test('User: prefix is parsed correctly', () => {
+  test('the User: prefix is parsed correctly', () => {
     expect(parsePrincipalFromParam('User:alice')).toEqual({ principalType: 'User', principalName: 'alice' });
   });
 
-  test('Group: prefix is parsed correctly', () => {
+  test('the Group: prefix is parsed correctly', () => {
     expect(parsePrincipalFromParam('Group:mygroup')).toEqual({ principalType: 'Group', principalName: 'mygroup' });
   });
 
-  test('RedpandaRole: prefix is parsed correctly', () => {
+  test('the RedpandaRole: prefix is parsed correctly', () => {
     expect(parsePrincipalFromParam('RedpandaRole:some-role')).toEqual({
       principalType: 'RedpandaRole',
       principalName: 'some-role',
@@ -39,7 +39,7 @@ describe('parsePrincipalFromParam', () => {
     });
   });
 
-  test('Group with colon in name uses first colon as separator', () => {
+  test('group with colon in name uses first colon as separator', () => {
     expect(parsePrincipalFromParam('Group:team:a')).toEqual({ principalType: 'Group', principalName: 'team:a' });
   });
 });

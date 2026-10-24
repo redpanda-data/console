@@ -23,15 +23,16 @@ import {
   ChoiceboxItemTitle,
 } from 'components/redpanda-ui/components/choicebox';
 import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Field, FieldDescription, FieldError, FieldLabel, FieldTitle } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
 import { Progress } from 'components/redpanda-ui/components/progress';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
 import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
+
+import { TonedIcon } from '../shared/toned-icon';
 
 export type WizardTopic = {
   name: string;
@@ -108,7 +109,7 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-card">
       <header className="flex items-center justify-between border-b px-4 py-2">
-        <span className="inline-flex items-center gap-2 font-semibold text-body text-strong [&_svg]:text-action-primary">
+        <span className="inline-flex items-center gap-2 text-body font-semibold text-strong [&_svg]:text-action-primary">
           <Plus size={16} /> Add a topic to SQL
         </span>
         <Button aria-label="Close" onClick={onClose} size="icon-sm" variant="ghost">
@@ -118,14 +119,11 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mx-auto w-full max-w-[720px] px-6 pt-4 pb-1">
-          <span className="font-semibold text-action-primary text-body-sm uppercase tracking-wider">
+          <span className="text-body-sm font-semibold tracking-wider text-action-primary uppercase">
             Step {step + 1} of {STEPS.length}
           </span>
-          <span className="mt-1 mb-2 block font-semibold text-heading-sm text-strong">{STEPS[step]}</span>
-          <Progress
-            className="h-1 bg-muted [&_[data-slot=progress-indicator]]:bg-action-primary"
-            value={((step + 1) / STEPS.length) * 100}
-          />
+          <span className="mt-1 mb-2 block text-heading-sm font-semibold text-strong">{STEPS[step]}</span>
+          <Progress className="h-1" value={((step + 1) / STEPS.length) * 100} />
         </div>
 
         <div className="mx-auto min-h-0 w-full max-w-[720px] flex-1 overflow-y-auto px-6 py-4">
@@ -186,25 +184,28 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
       ) : (
         <Choicebox
           aria-label="Topics"
-          className="gap-2"
           onValueChange={(value) => onSelect(value as string)}
           value={selectedTopicName ?? ''}
         >
-          {visibleTopics.map((topic) => (
-            <ChoiceboxItem className="items-center gap-3 p-3" key={topic.name} size="full" value={topic.name}>
-              <ChoiceboxItemContent>
-                <ChoiceboxItemIndicator />
-              </ChoiceboxItemContent>
-              <ChoiceboxItemHeader>
-                <ChoiceboxItemTitle className="gap-2 font-mono text-body">
-                  <Layers className="shrink-0 text-action-primary" size={15} />
-                  {topic.name}
-                </ChoiceboxItemTitle>
-                <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
-              </ChoiceboxItemHeader>
-              {topic.iceberg ? <IcebergBadge /> : null}
-            </ChoiceboxItem>
-          ))}
+          <div className="grid gap-2">
+            {visibleTopics.map((topic) => (
+              <ChoiceboxItem className="items-center" key={topic.name} size="full" value={topic.name}>
+                <ChoiceboxItemContent>
+                  <ChoiceboxItemIndicator />
+                </ChoiceboxItemContent>
+                <ChoiceboxItemHeader>
+                  <ChoiceboxItemTitle>
+                    <span className="flex items-center gap-2 font-mono text-body">
+                      <TonedIcon className="shrink-0" icon={Layers} size={15} tone="action" />
+                      {topic.name}
+                    </span>
+                  </ChoiceboxItemTitle>
+                  <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
+                </ChoiceboxItemHeader>
+                {topic.iceberg ? <IcebergBadge /> : null}
+              </ChoiceboxItem>
+            ))}
+          </div>
         </Choicebox>
       )}
     </div>
@@ -219,6 +220,7 @@ type TableNameStepProps = {
 
 function TableNameStep({ topic, form, error }: TableNameStepProps) {
   const tableName = useWatch({ control: form.control, name: 'tableName' });
+  const previewLabelId = useId();
 
   return (
     <div className="flex flex-col gap-4">
@@ -237,11 +239,8 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
       </SummaryRow>
 
       {topic.iceberg ? (
-        <Alert
-          className="border-informative-line bg-informative-wash [&>svg]:text-informative"
-          icon={<GitMerge size={15} />}
-        >
-          <AlertDescription className="text-body-sm text-foreground">
+        <Alert icon={<GitMerge size={15} />}>
+          <AlertDescription>
             This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes the live
             topic with its Iceberg table so results stay realtime despite the flush lag.
           </AlertDescription>
@@ -261,10 +260,12 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
         )}
       />
 
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-strong">This will run</Label>
+      <figure aria-labelledby={previewLabelId} className="flex flex-col gap-1.5">
+        <FieldTitle id={previewLabelId}>
+          <span className="text-strong">This will run</span>
+        </FieldTitle>
         <SyncCodeBlock className="my-0" code={createTableSql(tableName, topic.name)} keepBackground lang="sql" />
-      </div>
+      </figure>
 
       {error ? (
         <Alert variant="destructive">
@@ -277,12 +278,16 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
 
 function SummaryRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-strong">{label}</Label>
-      <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 font-mono text-body text-strong [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
+    <dl className="flex flex-col gap-1.5">
+      <dt>
+        <FieldTitle>
+          <span className="text-strong">{label}</span>
+        </FieldTitle>
+      </dt>
+      <dd className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 font-mono text-body text-strong [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
         {children}
-      </div>
-    </div>
+      </dd>
+    </dl>
   );
 }
 

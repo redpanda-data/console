@@ -22,6 +22,8 @@
       "!**/*.css",
       "!**/*.svg",
       "!**/*.html",
+      // Keep the pre-2.6 file scope; Markdown, YAML, and SCSS need separate adoption.
+      "!**/*.{md,mdx,yaml,yml,scss}",
       "!**/tests/global-setup.mjs",
       "!**/tests/console",
       "!**/tests/console-enterprise",
@@ -58,6 +60,9 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "complexity": {
+        "useMathMinMax": "error"
+      },
       "correctness": {
         // tsconfig maps "*" to src/*, so this rule reads every internal import
         // (`components/…`, `utils/…`) as an undeclared npm package.
@@ -66,12 +71,40 @@
         "useJsonImportAttributes": "error" // this may slow down the linting process
       },
       "performance": {
-        "noJsxPropsBind": "off" // React Compiler (rsbuild.config.ts) memoizes inline callbacks
+        "noJsxPropsBind": "off", // React Compiler (rsbuild.config.ts) memoizes inline callbacks
+        "useDomNodeTextContent": "error"
       },
       "nursery": {
-        "noFloatingPromises": "off", // Disabled - navigate() and similar fire-and-forget promises are intentional
-        "noMisusedPromises": "error", // this may slow down the linting process
-        "useExhaustiveSwitchCases": "error" // this may slow down the linting process
+        "noAccidentalBitwiseOperators": "error",
+        "noArgumentsCallerOrCallee": "error",
+        "noDoubleComparison": "error",
+        "noExcessiveStatementsPerFunction": "error",
+        "noFloatingPromises": { "level": "error", "fix": "none" },
+        "noInvalidThis": "error",
+        "noMisusedPromises": { "level": "error", "fix": "none" },
+        "noNestedSwitch": "error",
+        "noNestedTemplateLiterals": "error",
+        "noObjectConstructor": "error",
+        "noOctal": "error",
+        "noProcessExit": "error",
+        "noPromiseExecutorReturn": "error",
+        "noTailwindLegacyUtilities": "error",
+        "noTailwindRestyledComponents": "error",
+        "noUnsafeUnaryMinus": "error",
+        "noUselessAssignment": "error",
+        "noUselessCall": "error",
+        "noUselessDateGetTime": "error",
+        "noZeroFractions": "error",
+        "useBigintLiterals": "error",
+        "useCapitalizedConstructors": "error",
+        "useConsistentJsonFileRead": "error",
+        "useExhaustiveSwitchCases": "error", // this may slow down the linting process
+        "useLowercaseTestTitle": "error",
+        "useMatchingFunctionName": "error",
+        "useNamedFunction": "error",
+        "useSimplifiedBooleanReturn": "error",
+        "useTailwindStaticClassStrings": "error",
+        "useUnaryMinus": "error"
       },
       "style": {
         "noDefaultExport": "off",
@@ -115,6 +148,11 @@
         "noImportCycles": "off"
       }
     }
+  },
+  "tailwind": {
+    "stylesheet": "./src/globals.css",
+    "mergeFunctions": ["clsx", "tw", "twMerge", "cn", "twJoin"],
+    "variantFunctions": ["cva", "tv"]
   },
   "javascript": {
     "formatter": {
@@ -166,7 +204,6 @@
       "linter": {
         "rules": {
           "a11y": {
-            "noLabelWithoutControl": "warn",
             "noNoninteractiveElementInteractions": "warn",
             "noNoninteractiveTabindex": "warn",
             "noStaticElementInteractions": "warn",
@@ -183,14 +220,11 @@
             "useLiteralKeys": "warn"
           },
           "correctness": {
-            "noUnsafeOptionalChaining": "warn",
             "noUnusedFunctionParameters": "warn",
             "noUnusedVariables": "warn",
-            "useExhaustiveDependencies": "warn",
             "useYield": "warn"
           },
           "performance": {
-            "noAwaitInLoops": "warn",
             "noBarrelFile": "warn",
             "useTopLevelRegex": "warn"
           },
@@ -220,14 +254,12 @@
             "noEmptyBlockStatements": "warn",
             "noEmptySource": "warn",
             "noEqualsToNull": "warn",
-            "noExplicitAny": "warn",
             "noForIn": "warn",
             "noLeakedRender": "warn",
             "noNestedPromises": "warn",
             "noShadow": "warn",
             "noTemplateCurlyInString": "warn",
             "noUnnecessaryConditions": "warn",
-            "useAwait": "warn",
             "useErrorMessage": "warn",
             "useIterableCallbackReturn": "warn"
           }

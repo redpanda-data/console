@@ -10,6 +10,8 @@
  */
 
 import type { Monaco } from '@monaco-editor/react';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
@@ -66,8 +68,8 @@ const DIFF_OPTIONS = {
 } as const;
 
 const DIFF_LOADING = (
-  <div className="flex h-full items-center justify-center">
-    <Spinner className="size-6 text-muted-foreground" />
+  <div className="flex h-full items-center justify-center text-muted-foreground">
+    <Spinner className="size-6" />
   </div>
 );
 
@@ -93,7 +95,9 @@ const ChangeRow = ({
         </Badge>
         <span className="min-w-0 truncate text-body-sm text-foreground">{title}</span>
         {onSelect ? (
-          <MousePointerClick className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <span className="ml-auto inline-flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+            <TonedIcon className="size-3" icon={MousePointerClick} tone="muted" />
+          </span>
         ) : null}
       </span>
       {detail ? <span className="truncate pl-0.5 text-body-sm text-muted-foreground">{detail}</span> : null}
@@ -102,14 +106,15 @@ const ChangeRow = ({
   return (
     <li>
       {onSelect ? (
-        <button
-          className="group flex w-full cursor-pointer flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
-          onClick={onSelect}
-          title={actionLabel}
-          type="button"
-        >
-          {body}
-        </button>
+        <ElementTooltip content={actionLabel}>
+          <button
+            className="group flex w-full cursor-pointer flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
+            onClick={onSelect}
+            type="button"
+          >
+            {body}
+          </button>
+        </ElementTooltip>
       ) : (
         <div className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left">{body}</div>
       )}
@@ -118,7 +123,7 @@ const ChangeRow = ({
 };
 
 const GroupLabel = ({ children }: { children: string }) => (
-  <h6 className="px-2 pt-1 pb-0.5 text-muted-foreground text-overline-sm">{children}</h6>
+  <h6 className="px-2 pt-1 pb-0.5 text-overline-sm text-muted-foreground">{children}</h6>
 );
 
 export function ChangesPanel({
@@ -156,7 +161,7 @@ export function ChangesPanel({
       <Empty className="h-full" testId="changes-panel-empty">
         <EmptyHeader>
           <EmptyMedia>
-            <CheckCircle2 className="size-5 text-success" />
+            <TonedIcon className="size-5" icon={CheckCircle2} tone="success" />
           </EmptyMedia>
           <EmptyTitle>{NO_CHANGES_COPY.title}</EmptyTitle>
           <EmptyDescription>{NO_CHANGES_COPY.body}</EmptyDescription>
@@ -180,9 +185,9 @@ export function ChangesPanel({
           <AlertDescription>{changesImpactMessage(pipelineState)}</AlertDescription>
         </Alert>
       </div>
-      <div className="flex shrink-0 items-center border-border! border-b">
+      <div className="flex shrink-0 items-center border-b border-border!">
         {itemCount > 0 ? (
-          <div className="flex w-70 shrink-0 items-center gap-2 self-stretch border-border! border-r px-3 py-2">
+          <div className="flex w-70 shrink-0 items-center gap-2 self-stretch border-r border-border! px-3 py-2">
             <h5 className="text-heading-xs text-muted-foreground">What changed</h5>
             <CountDot count={itemCount} size="sm" variant="informative" />
           </div>
@@ -200,7 +205,7 @@ export function ChangesPanel({
       </div>
       <div className="flex min-h-0 flex-1">
         {itemCount > 0 ? (
-          <div className="w-70 shrink-0 overflow-auto border-border! border-r p-2">
+          <div className="w-70 shrink-0 overflow-auto border-r border-border! p-2">
             {settingsChanges.length > 0 ? (
               <>
                 <GroupLabel>Settings</GroupLabel>

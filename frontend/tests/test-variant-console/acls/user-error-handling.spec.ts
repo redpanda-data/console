@@ -17,11 +17,11 @@ import { appURL, expect, test } from '../../shared/e2e';
 const USER_SERVICE = 'redpanda.api.dataplane.v1.UserService';
 const CREATE_USER_FAILURE_TOAST_PREFIX = /^Failed to create user/;
 
-test.describe('User creation - Connect RPC error handling', () => {
+test.describe('user creation - Connect RPC error handling', () => {
   test('network failure on CreateUser shows error toast and preserves form state', async ({ page }) => {
     await mockConnectNetworkFailure({ page, urlGlob: rpcUrl(USER_SERVICE, 'CreateUser') });
 
-    const username = `net-fail-${Date.now()}`;
+    const username = `net-fail-${crypto.randomUUID()}`;
     await page.goto('/security/users/create', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('create-user-name')).toBeVisible();
 
@@ -43,7 +43,7 @@ test.describe('User creation - Connect RPC error handling', () => {
     await expect(page.getByText(CREATE_USER_FAILURE_TOAST_PREFIX).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('CreateUser ALREADY_EXISTS surfaces a user-friendly error', async ({ page }) => {
+  test('createUser ALREADY_EXISTS surfaces a user-friendly error', async ({ page }) => {
     await mockConnectError({
       page,
       urlGlob: rpcUrl(USER_SERVICE, 'CreateUser'),
@@ -51,7 +51,7 @@ test.describe('User creation - Connect RPC error handling', () => {
       message: 'user "existing-user" already exists',
     });
 
-    const username = `dup-${Date.now()}`;
+    const username = `dup-${crypto.randomUUID()}`;
     await page.goto('/security/users/create', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('create-user-name')).toBeVisible();
 

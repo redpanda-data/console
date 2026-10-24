@@ -1,6 +1,6 @@
 import { expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { Button } from 'components/redpanda-ui/components/button';
 import { useRef, useState } from 'react';
 import type { TopicMessage } from 'state/rest-interfaces';
@@ -22,8 +22,8 @@ const message: TopicMessage = {
   valueBinHexPreview: '',
 };
 
-test('expanding focuses the sheet controls and does not steal focus when the message changes', async () => {
-  const user = userEvent.setup();
+/** Renders the expanded sheet, returning its props alongside the render result. */
+function renderExpandedPanel() {
   const props = {
     msg: message,
     expanded: true,
@@ -31,7 +31,12 @@ test('expanding focuses the sheet controls and does not steal focus when the mes
     onExpandedChange: rs.fn(),
     loadLargeMessage: rs.fn().mockResolvedValue(undefined),
   };
-  const { rerender } = render(<MessageDetailPanel {...props} />);
+  return { props, ...render(<MessageDetailPanel {...props} />) };
+}
+
+test('expanding focuses the sheet controls and does not steal focus when the message changes', async () => {
+  const user = userEvent.setup();
+  const { props, rerender } = renderExpandedPanel();
   expect(screen.getByRole('button', { name: 'Collapse back to panel' })).toHaveFocus();
 
   await user.tab();
@@ -81,22 +86,41 @@ function DetailPresentationHarness() {
   );
 }
 
-test('restores focus across separate docked and expanded mounts on Escape, Collapse, and Close', async () => {
+const openerButton = () => screen.getByRole('button', { name: 'Open message' });
+const expandButton = () => screen.getByRole('button', { name: 'Expand', exact: true });
+const collapseButton = () => screen.getByRole('button', { name: 'Collapse back to panel' });
+
+/** Opens the docked panel from the opener, then expands it into the sheet. */
+async function openExpandedSheet(user: UserEvent) {
+  await user.click(openerButton());
+  await user.click(expandButton());
+}
+
+/** From the docked panel with focus on Expand: Enter re-expands it, then one of the sheet's buttons is clicked. */
+async function reExpandThenClick(user: UserEvent, name: string) {
+  await user.keyboard('{Enter}');
+  await user.click(screen.getByRole('button', { name, exact: true }));
+}
+
+test('restores focus to Expand across separate docked and expanded mounts on Escape and Collapse', async () => {
   const user = userEvent.setup();
   render(<DetailPresentationHarness />);
-  const trigger = screen.getByRole('button', { name: 'Open message' });
-  await user.click(trigger);
-  await user.click(screen.getByRole('button', { name: 'Expand', exact: true }));
+  await openExpandedSheet(user);
   await user.keyboard('{Escape}');
-  expect(screen.getByRole('button', { name: 'Expand', exact: true })).toHaveFocus();
-  await user.keyboard('{Enter}');
-  await user.click(screen.getByRole('button', { name: 'Collapse back to panel' }));
-  expect(screen.getByRole('button', { name: 'Expand', exact: true })).toHaveFocus();
-  await user.keyboard('{Enter}');
-  await user.click(screen.getByRole('button', { name: 'Close', exact: true }));
-  expect(trigger).toHaveFocus();
-  await user.keyboard('{Enter}');
-  expect(screen.getByRole('button', { name: 'Collapse back to panel' })).toHaveFocus();
+  expect(expandButton()).toHaveFocus();
+  await reExpandThenClick(user, 'Collapse back to panel');
+  expect(expandButton()).toHaveFocus();
+});
+
+test('restores focus to the opener on Close, and reopening resumes the expanded sheet', async () => {
+  const user = userEvent.setup();
+  render(<DetailPresentationHarness />);
+  await openExpandedSheet(user);
   await user.keyboard('{Escape}');
-  expect(screen.getByRole('button', { name: 'Expand', exact: true })).toHaveFocus();
+  await reExpandThenClick(user, 'Close');
+  expect(openerButton()).toHaveFocus();
+  await user.keyboard('{Enter}');
+  expect(collapseButton()).toHaveFocus();
+  await user.keyboard('{Escape}');
+  expect(expandButton()).toHaveFocus();
 });

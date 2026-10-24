@@ -12,6 +12,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import type { ColumnFiltersState, ColumnVisibilityState, PaginationState, SortingState } from '@tanstack/react-table';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -96,7 +97,7 @@ export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef
     {
       accessorKey: 'id',
       header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-      cell: ({ row }) => <div className="font-medium text-body">{row.getValue('id')}</div>,
+      cell: ({ row }) => <div className="text-body font-medium">{row.getValue('id')}</div>,
     },
     {
       accessorKey: 'labels',
@@ -115,7 +116,7 @@ export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef
           <div className="flex flex-wrap gap-1">
             {filteredLabels.map(([key, value]) => (
               <span
-                className="inline-flex items-center rounded-md bg-surface-subtle px-2 py-1 font-medium text-body-sm text-foreground"
+                className="inline-flex items-center rounded-md bg-surface-subtle px-2 py-1 text-body-sm font-medium text-foreground"
                 key={`${key}-${value}`}
               >
                 {key}: {value}
@@ -234,38 +235,33 @@ function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<Secr
   );
 }
 
-export const SecretsStoreListPage = () => {
-  const navigate = useNavigate();
-
+/** Sorting, filter, visibility, pagination and selection state for the secrets table. */
+const useSecretsTableState = () => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<ColumnVisibilityState>({});
   const [pagination, setPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const {
-    data: secretList,
-    isLoading,
-    error,
-  } = useListSecretsQuery(
-    create(ListSecretsRequestSchema, {
-      filter: create(ListSecretsFilterSchema, {}),
-    })
-  );
-
-  const { mutateAsync: deleteSecret, isPending: isDeletingSecret } = useDeleteSecretMutation();
-
-  const secrets = React.useMemo(
-    () => secretList?.secrets?.filter((s): s is Secret => s !== undefined).map(transformSecret) || [],
-    [secretList]
-  );
-
-  const handleEdit = React.useCallback(
-    (secretId: string) => {
-      navigate({ to: `/secrets/${secretId}/edit` });
+  return {
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      pagination,
+      rowSelection,
     },
-    [navigate]
-  );
+  };
+};
+
+/** Deletes a secret and reports the outcome in a toast. */
+const useDeleteSecretHandler = () => {
+  const { mutateAsync: deleteSecret, isPending: isDeletingSecret } = useDeleteSecretMutation();
 
   const handleDelete = React.useCallback(
     async (secretId: string) => {
@@ -286,6 +282,40 @@ export const SecretsStoreListPage = () => {
     [deleteSecret]
   );
 
+  return { handleDelete, isDeletingSecret };
+};
+
+export const SecretsStoreListPage = () => {
+  const navigate = useNavigate();
+
+  const tableState = useSecretsTableState();
+
+  const {
+    data: secretList,
+    isLoading,
+    error,
+  } = useListSecretsQuery(
+    create(ListSecretsRequestSchema, {
+      filter: create(ListSecretsFilterSchema, {}),
+    })
+  );
+
+  const { handleDelete, isDeletingSecret } = useDeleteSecretHandler();
+
+  const secrets = React.useMemo(
+    () => secretList?.secrets?.filter((s): s is Secret => s !== undefined).map(transformSecret) || [],
+    [secretList]
+  );
+
+  const handleEdit = React.useCallback(
+    (secretId: string) => {
+      navigate({ to: `/secrets/${secretId}/edit` }).catch((navigationError: unknown) => {
+        toast.error('Failed to navigate', { description: String(navigationError) });
+      });
+    },
+    [navigate]
+  );
+
   const columns = React.useMemo(
     () =>
       createColumns({
@@ -299,18 +329,7 @@ export const SecretsStoreListPage = () => {
   const table = useDataTable({
     data: secrets,
     columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      pagination,
-      rowSelection,
-    },
+    ...tableState,
   });
 
   useEffect(() => {
@@ -354,7 +373,7 @@ export const SecretsStoreListPage = () => {
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
                       <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <TonedIcon className="h-4 w-4" icon={Loader2} spin />
                         Loading secrets...
                       </div>
                     </TableCell>

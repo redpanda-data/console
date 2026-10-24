@@ -10,6 +10,7 @@
  */
 
 import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpenIcon, Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
@@ -88,30 +89,40 @@ function stopRowSelectKeys(e: React.KeyboardEvent): void {
 /** Error takes precedence over the unsaved dot, so a row never shows both. */
 const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boolean }) => {
   if (hasError) {
-    return <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" title="Has errors" />;
+    return (
+      <ElementTooltip content="Has errors">
+        <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" />
+      </ElementTooltip>
+    );
   }
   if (unsaved) {
-    return <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" title="Unsaved changes" />;
+    return (
+      <ElementTooltip content="Unsaved changes">
+        <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
+      </ElementTooltip>
+    );
   }
   return null;
 };
 
+// The muted ink and the hover/focus reveal live on the wrapper; `current-ghost` takes that ink.
 const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
-  <Button
-    aria-label={`${label} documentation`}
-    as="a"
-    className="shrink-0 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
-    href={href}
-    // Clicking the row jumps the YAML cursor — opening docs must not also do that.
-    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-    onKeyDown={stopRowSelectKeys}
-    rel="noopener noreferrer"
-    size="icon-xs"
-    target="_blank"
-    variant="ghost"
-  >
-    <BookOpenIcon />
-  </Button>
+  <span className="inline-flex shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 has-[:focus-visible]:opacity-100">
+    <Button
+      aria-label={`${label} documentation`}
+      as="a"
+      href={href}
+      // Clicking the row jumps the YAML cursor — opening docs must not also do that.
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      onKeyDown={stopRowSelectKeys}
+      rel="noopener noreferrer"
+      size="icon-xs"
+      target="_blank"
+      variant="current-ghost"
+    >
+      <BookOpenIcon />
+    </Button>
+  </span>
 );
 
 type TreeKeyNav = { visibleIds: string[]; maps: NodeMaps; collapsedIds: Set<string> };
@@ -144,6 +155,23 @@ function keyboardFocusTarget(
     default:
       return;
   }
+}
+
+type RowKeyIntent = { kind: 'select' } | { kind: 'toggle' } | { kind: 'focus'; id: string };
+
+// What a key on a row does: Enter/Space select it, ArrowRight/ArrowLeft expand or collapse a group
+// before they move focus, and the remaining navigation keys move focus to another visible row.
+function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav): RowKeyIntent | undefined {
+  if (key === 'Enter' || key === ' ') {
+    return { kind: 'select' };
+  }
+  const hasChildren = treeNav.maps.childrenOf(node.id).length > 0;
+  const collapsed = treeNav.collapsedIds.has(node.id);
+  if ((key === 'ArrowRight' && hasChildren && collapsed) || (key === 'ArrowLeft' && hasChildren && !collapsed)) {
+    return { kind: 'toggle' };
+  }
+  const target = keyboardFocusTarget(key, node, treeNav);
+  return target ? { kind: 'focus', id: target } : undefined;
 }
 
 // Roving-focus wiring shared by every row.
@@ -232,31 +260,31 @@ const NodeRow = ({
         ) : (
           <span aria-hidden className="w-5 shrink-0" />
         )}
-        <span
-          className={cn(
-            'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-body transition-colors',
-            selected ? 'font-medium text-foreground' : 'text-foreground hover:bg-muted/50'
-          )}
-          style={
-            selected
-              ? { backgroundColor: accent ? `color-mix(in srgb, ${accent} 16%, transparent)` : 'var(--color-muted)' }
-              : undefined
-          }
-          title={node.label}
-        >
-          <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={node.label as ComponentName} />
-          <span className="min-w-0 flex-1 truncate font-medium">{node.label}</span>
-          {node.labelText ? (
-            <span
-              className="min-w-0 max-w-[40%] shrink truncate text-body-sm text-muted-foreground"
-              title={node.labelText}
-            >
-              {node.labelText}
-            </span>
-          ) : null}
-          <RowStatusDot hasError={hasError} unsaved={unsaved} />
-          {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
-        </span>
+        <ElementTooltip content={node.label}>
+          <span
+            className={cn(
+              'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-body transition-colors',
+              selected ? 'font-medium text-foreground' : 'text-foreground hover:bg-muted/50'
+            )}
+            style={
+              selected
+                ? { backgroundColor: accent ? `color-mix(in srgb, ${accent} 16%, transparent)` : 'var(--color-muted)' }
+                : undefined
+            }
+          >
+            <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={node.label as ComponentName} />
+            <span className="min-w-0 flex-1 truncate font-medium">{node.label}</span>
+            {node.labelText ? (
+              <ElementTooltip content={node.labelText}>
+                <span className="max-w-[40%] min-w-0 shrink truncate text-body-sm text-muted-foreground">
+                  {node.labelText}
+                </span>
+              </ElementTooltip>
+            ) : null}
+            <RowStatusDot hasError={hasError} unsaved={unsaved} />
+            {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
+          </span>
+        </ElementTooltip>
       </div>
       {hasChildren && !collapsed
         ? children.map((child, index) => (
@@ -286,7 +314,7 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
     <button
-      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-border border-dashed py-1 pr-2 pl-1.5 text-left text-body text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
+      className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border py-1 pr-2 pl-1.5 text-left text-body text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
       onClick={() => onAdd(section)}
       type="button"
     >
@@ -304,6 +332,49 @@ function invalidOutlineNotice(showingStale: boolean, error?: string): string | u
   if (error) {
     return 'The current YAML is invalid — fix it in the editor to see the outline.';
   }
+}
+
+type TreeRovingFocusOptions = {
+  maps: NodeMaps;
+  collapsedIds: Set<string>;
+  toggle: (id: string) => void;
+  onSelectNode?: (highlightId: string, editableId?: string) => void;
+};
+
+// Roving tabindex: exactly one row is tabbable; arrow keys move focus between visible rows.
+function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRovingFocusOptions): TreeNav {
+  const visibleIds = useMemo(() => collectVisibleIds(maps, collapsedIds), [maps, collapsedIds]);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const registerRow = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) {
+      rowRefs.current.set(id, el);
+    } else {
+      rowRefs.current.delete(id);
+    }
+  }, []);
+  const focusRow = useCallback((id: string) => {
+    setFocusedId(id);
+    rowRefs.current.get(id)?.focus();
+  }, []);
+  const tabbableId = focusedId && visibleIds.includes(focusedId) ? focusedId : visibleIds[0];
+
+  const handleRowKeyDown = (e: React.KeyboardEvent, node: PipelineFlowNode) => {
+    const intent = rowKeyIntent(e.key, node, { visibleIds, maps, collapsedIds });
+    if (!intent) {
+      return;
+    }
+    e.preventDefault();
+    if (intent.kind === 'select') {
+      onSelectNode?.(node.id, editableAncestorId(node, maps));
+    } else if (intent.kind === 'toggle') {
+      toggle(node.id);
+    } else {
+      focusRow(intent.id);
+    }
+  };
+
+  return { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId };
 }
 
 type PipelineStructureTreeProps = {
@@ -358,44 +429,7 @@ export function PipelineStructureTree({
   // Sections with no real component (only a `none` placeholder) read as "empty".
   const isEmptySection = (sectionId: string) => sectionRows(maps, sectionId).length === 0;
 
-  // Roving tabindex: exactly one row is tabbable; arrow keys move focus between visible rows.
-  const visibleIds = useMemo(() => collectVisibleIds(maps, collapsedIds), [maps, collapsedIds]);
-  const [focusedId, setFocusedId] = useState<string | null>(null);
-  const rowRefs = useRef(new Map<string, HTMLDivElement>());
-  const registerRow = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) {
-      rowRefs.current.set(id, el);
-    } else {
-      rowRefs.current.delete(id);
-    }
-  }, []);
-  const focusRow = useCallback((id: string) => {
-    setFocusedId(id);
-    rowRefs.current.get(id)?.focus();
-  }, []);
-  const tabbableId = focusedId && visibleIds.includes(focusedId) ? focusedId : visibleIds[0];
-
-  const handleRowKeyDown = (e: React.KeyboardEvent, node: PipelineFlowNode) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelectNode?.(node.id, editableAncestorId(node, maps));
-      return;
-    }
-    const hasChildren = maps.childrenOf(node.id).length > 0;
-    const collapsed = collapsedIds.has(node.id);
-    if ((e.key === 'ArrowRight' && hasChildren && collapsed) || (e.key === 'ArrowLeft' && hasChildren && !collapsed)) {
-      e.preventDefault();
-      toggle(node.id);
-      return;
-    }
-    const target = keyboardFocusTarget(e.key, node, { visibleIds, maps, collapsedIds });
-    if (target) {
-      e.preventDefault();
-      focusRow(target);
-    }
-  };
-
-  const nav: TreeNav = { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId };
+  const nav = useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode });
   const notice = invalidOutlineNotice(showingStale, error);
 
   return (
@@ -403,13 +437,17 @@ export function PipelineStructureTree({
     // children, so headers, "empty" notes and Add rows live between trees. Arrows still cross sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
       {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
-      {notice ? <InvalidConfigNotice className="ml-2 px-2.5 py-2 text-body-sm">{notice}</InvalidConfigNotice> : null}
+      {notice ? (
+        <InvalidConfigNotice className="ml-2" variant="compact">
+          {notice}
+        </InvalidConfigNotice>
+      ) : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
         return (
           <div className="flex flex-col" key={section.id}>
             <div
-              className="px-2 pb-1 font-medium text-body-sm text-muted-foreground uppercase tracking-wide"
+              className="px-2 pb-1 text-body-sm font-medium tracking-wide text-muted-foreground uppercase"
               style={section.section ? { color: sectionAccent(section.section) } : undefined}
             >
               {title}

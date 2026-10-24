@@ -109,18 +109,19 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
     expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
     // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
-    expect(api.tlsSettings?.enabled).toBe(true);
-    expect(api.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
-    expect(api.tailIntervalSeconds).toBe(10);
-    expect(api.effectiveTailIntervalSeconds).toBe(10);
-    expect(api.fullSyncIntervalSeconds).toBe(0.5);
-    expect(api.effectiveFullSyncIntervalSeconds).toBe(300);
-    expect(api.maxSourceRequestsPerSecond).toBe(30);
-    expect(api.effectiveMaxSourceRequestsPerSecond).toBe(30);
+    expect(api).toMatchObject({
+      tlsSettings: { enabled: true, tlsSettings: { case: 'tlsPemSettings' } },
+      tailIntervalSeconds: 10,
+      effectiveTailIntervalSeconds: 10,
+      fullSyncIntervalSeconds: 0.5,
+      effectiveFullSyncIntervalSeconds: 300,
+      maxSourceRequestsPerSecond: 30,
+      effectiveMaxSourceRequestsPerSecond: 30,
+      unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
+      paused: true,
+    });
     expect(api.sourceFilter).toEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
     expect(api.destinationMapping).toEqual({ case: 'exact', mappings: [{ source: '.prod', destination: '.dr' }] });
-    expect(api.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.REMOVE);
-    expect(api.paused).toBe(true);
   });
 
   test('should normalize unset API values to undefined', () => {
@@ -133,16 +134,29 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
       },
     });
 
-    expect(api.basicAuth).toBeUndefined();
-    expect(api.tlsSettings).toBeUndefined();
-    expect(api.tailIntervalSeconds).toBeUndefined();
-    expect(api.effectiveTailIntervalSeconds).toBeUndefined();
-    expect(api.fullSyncIntervalSeconds).toBeUndefined();
-    expect(api.maxSourceRequestsPerSecond).toBeUndefined();
-    expect(api.sourceFilter).toBeUndefined();
-    expect(api.destinationMapping).toBeUndefined();
-    expect(api.unsupportedSchemaFeaturePolicy).toBe(UnsupportedSchemaFeaturePolicy.UNSPECIFIED);
-    expect(api.paused).toBe(false);
+    expect({
+      basicAuth: api.basicAuth,
+      tlsSettings: api.tlsSettings,
+      tailIntervalSeconds: api.tailIntervalSeconds,
+      effectiveTailIntervalSeconds: api.effectiveTailIntervalSeconds,
+      fullSyncIntervalSeconds: api.fullSyncIntervalSeconds,
+      maxSourceRequestsPerSecond: api.maxSourceRequestsPerSecond,
+      sourceFilter: api.sourceFilter,
+      destinationMapping: api.destinationMapping,
+      unsupportedSchemaFeaturePolicy: api.unsupportedSchemaFeaturePolicy,
+      paused: api.paused,
+    }).toStrictEqual({
+      basicAuth: undefined,
+      tlsSettings: undefined,
+      tailIntervalSeconds: undefined,
+      effectiveTailIntervalSeconds: undefined,
+      fullSyncIntervalSeconds: undefined,
+      maxSourceRequestsPerSecond: undefined,
+      sourceFilter: undefined,
+      destinationMapping: undefined,
+      unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.UNSPECIFIED,
+      paused: false,
+    });
   });
 
   test('should map an identity destination mapping', () => {

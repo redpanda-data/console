@@ -36,6 +36,80 @@ type UseUrlTableStateResult = {
   onPaginationChange: OnChangeFn<PaginationState>;
 };
 
+type SetPageIndex = (pageIndex: number) => unknown;
+
+/** Sorting in `?{prefix}SortId=` / `?{prefix}SortDesc=`, mirrored to the settings slice; a re-sort returns to the first page. */
+function useUrlSorting(
+  keyPrefix: string,
+  settings: TableSettings,
+  setPageIndex: SetPageIndex
+): Pick<UseUrlTableStateResult, 'sorting' | 'onSortingChange'> {
+  const [sortId, setSortId] = useQueryStateWithCallback<string>(
+    {
+      onUpdate: (val) => {
+        settings.sortId = val;
+      },
+      getDefaultValue: () => settings.sortId,
+    },
+    `${keyPrefix}SortId`,
+    parseAsString.withDefault(settings.sortId ?? '')
+  );
+
+  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        settings.sortDesc = val;
+      },
+      getDefaultValue: () => settings.sortDesc,
+    },
+    `${keyPrefix}SortDesc`,
+    parseAsBoolean.withDefault(settings.sortDesc ?? false)
+  );
+
+  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
+
+  const onSortingChange: OnChangeFn<SortingState> = (updater: Updater<SortingState>) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    if (next.length > 0) {
+      setSortId(next[0].id);
+      setSortDesc(next[0].desc);
+    } else {
+      setSortId('');
+      setSortDesc(false);
+    }
+    setPageIndex(0);
+  };
+
+  return { sorting, onSortingChange };
+}
+
+// Clamp a stale/out-of-range page index into a valid range. Effective value is
+// used for rendering immediately; the effect below repairs the URL.
+function useClampedPageIndex({
+  pageIndex,
+  setPageIndex,
+  pageSize,
+  rowCount,
+  enabled,
+}: {
+  pageIndex: number;
+  setPageIndex: SetPageIndex;
+  pageSize: number;
+  rowCount: number;
+  enabled: boolean;
+}): number {
+  const lastPageIndex = enabled && rowCount > 0 ? Math.ceil(rowCount / pageSize) - 1 : 0;
+  const clampedPageIndex = enabled ? Math.max(0, Math.min(pageIndex, lastPageIndex)) : pageIndex;
+
+  useEffect(() => {
+    if (enabled && clampedPageIndex !== pageIndex) {
+      setPageIndex(clampedPageIndex);
+    }
+  }, [enabled, clampedPageIndex, pageIndex, setPageIndex]);
+
+  return clampedPageIndex;
+}
+
 /**
  * URL-backed sorting and pagination for TanStack Table: page index, size and sorting live in the
  * search query under `keyPrefix` (shareable, reload-safe) and mirror back to the ui settings slice.
@@ -62,52 +136,8 @@ export function useUrlTableState({
     parseAsInteger.withDefault(settings.pageSize || DEFAULT_TABLE_PAGE_SIZE)
   );
 
-  const [sortId, setSortId] = useQueryStateWithCallback<string>(
-    {
-      onUpdate: (val) => {
-        settings.sortId = val;
-      },
-      getDefaultValue: () => settings.sortId,
-    },
-    `${keyPrefix}SortId`,
-    parseAsString.withDefault(settings.sortId ?? '')
-  );
-
-  const [sortDesc, setSortDesc] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        settings.sortDesc = val;
-      },
-      getDefaultValue: () => settings.sortDesc,
-    },
-    `${keyPrefix}SortDesc`,
-    parseAsBoolean.withDefault(settings.sortDesc ?? false)
-  );
-
-  // Clamp a stale/out-of-range page index into a valid range. Effective value is
-  // used for rendering immediately; the effect below repairs the URL.
-  const lastPageIndex = enabled && rowCount > 0 ? Math.ceil(rowCount / pageSize) - 1 : 0;
-  const clampedPageIndex = enabled ? Math.max(0, Math.min(pageIndex, lastPageIndex)) : pageIndex;
-
-  useEffect(() => {
-    if (enabled && clampedPageIndex !== pageIndex) {
-      setPageIndex(clampedPageIndex);
-    }
-  }, [enabled, clampedPageIndex, pageIndex, setPageIndex]);
-
-  const sorting: SortingState = sortId ? [{ id: sortId, desc: sortDesc }] : [];
-
-  const onSortingChange: OnChangeFn<SortingState> = (updater: Updater<SortingState>) => {
-    const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
-    } else {
-      setSortId('');
-      setSortDesc(false);
-    }
-    setPageIndex(0);
-  };
+  const { sorting, onSortingChange } = useUrlSorting(keyPrefix, settings, setPageIndex);
+  const clampedPageIndex = useClampedPageIndex({ pageIndex, setPageIndex, pageSize, rowCount, enabled });
 
   const pagination: PaginationState = { pageIndex: clampedPageIndex, pageSize };
 

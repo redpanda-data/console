@@ -262,6 +262,38 @@ export const useUpdateGlobalCompatibilityMutation = () => {
   });
 };
 
+async function readSchemaRegistryResponse<T>(response: Response, failureMessage: string): Promise<T> {
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || failureMessage);
+  }
+
+  return response.json();
+}
+
+// Deleting a subject's or context's own setting makes it inherit the global one again (`DEFAULT`).
+async function resetSchemaRegistrySetting<T>(path: string, failureMessage: string): Promise<T> {
+  const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
+    method: 'DELETE',
+    headers: {
+      ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+    },
+  });
+  return readSchemaRegistryResponse<T>(response, failureMessage);
+}
+
+async function putSchemaRegistrySetting<T>(path: string, body: object, failureMessage: string): Promise<T> {
+  const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
+    method: 'PUT',
+    headers: {
+      ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  return readSchemaRegistryResponse<T>(response, failureMessage);
+}
+
 export const useUpdateSubjectCompatibilityMutation = () => {
   const queryClient = useQueryClient();
 
@@ -270,41 +302,11 @@ export const useUpdateSubjectCompatibilityMutation = () => {
     Error,
     { subjectName: string; mode: SchemaRegistryCompatibilityModeWithDefault }
   >({
-    mutationFn: async ({ subjectName, mode }) => {
-      if (mode === 'DEFAULT') {
-        const response = await fetch(
-          `${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to reset subject compatibility mode to default');
-        }
-
-        return response.json();
-      }
-
-      const response = await fetch(`${config.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`, {
-        method: 'PUT',
-        headers: {
-          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ compatibility: mode }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to update subject compatibility mode');
-      }
-
-      return response.json();
+    mutationFn: ({ subjectName, mode }) => {
+      const path = `config/${encodeURIComponent(subjectName)}`;
+      return mode === 'DEFAULT'
+        ? resetSchemaRegistrySetting(path, 'Failed to reset subject compatibility mode to default')
+        : putSchemaRegistrySetting(path, { compatibility: mode }, 'Failed to update subject compatibility mode');
     },
     onSuccess: async (_, { subjectName }) => {
       await queryClient.invalidateQueries({
@@ -327,38 +329,11 @@ export const useUpdateSubjectModeMutation = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation<{ mode: string }, Error, { subjectName: string; mode: SchemaRegistryModeWithDefault }>({
-    mutationFn: async ({ subjectName, mode }) => {
-      if (mode === 'DEFAULT') {
-        const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(subjectName)}`, {
-          method: 'DELETE',
-          headers: {
-            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to reset subject mode to default');
-        }
-
-        return response.json();
-      }
-
-      const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(subjectName)}`, {
-        method: 'PUT',
-        headers: {
-          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ mode }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to update subject mode');
-      }
-
-      return response.json();
+    mutationFn: ({ subjectName, mode }) => {
+      const path = `mode/${encodeURIComponent(subjectName)}`;
+      return mode === 'DEFAULT'
+        ? resetSchemaRegistrySetting(path, 'Failed to reset subject mode to default')
+        : putSchemaRegistrySetting(path, { mode }, 'Failed to update subject mode');
     },
     onSuccess: async (_, { subjectName }) => {
       await queryClient.invalidateQueries({
@@ -381,42 +356,12 @@ export const useUpdateContextModeMutation = () => {
   const queryClient = useQueryClient();
 
   return useTanstackMutation<{ mode: string }, Error, { contextName: string; mode: SchemaRegistryModeWithDefault }>({
-    mutationFn: async ({ contextName, mode }) => {
+    mutationFn: ({ contextName, mode }) => {
       const qualifiedName = `:${contextName}:`;
-      if (mode === 'DEFAULT') {
-        const response = await fetch(
-          `${config.restBasePath}/schema-registry/mode/${encodeURIComponent(qualifiedName)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to reset context mode to default');
-        }
-
-        return response.json();
-      }
-
-      const response = await fetch(`${config.restBasePath}/schema-registry/mode/${encodeURIComponent(qualifiedName)}`, {
-        method: 'PUT',
-        headers: {
-          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ mode }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to update context mode');
-      }
-
-      return response.json();
+      const path = `mode/${encodeURIComponent(qualifiedName)}`;
+      return mode === 'DEFAULT'
+        ? resetSchemaRegistrySetting(path, 'Failed to reset context mode to default')
+        : putSchemaRegistrySetting(path, { mode }, 'Failed to update context mode');
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'contexts'], exact: false });
@@ -440,45 +385,12 @@ export const useUpdateContextCompatibilityMutation = () => {
     Error,
     { contextName: string; mode: SchemaRegistryCompatibilityModeWithDefault }
   >({
-    mutationFn: async ({ contextName, mode }) => {
+    mutationFn: ({ contextName, mode }) => {
       const qualifiedName = `:${contextName}:`;
-      if (mode === 'DEFAULT') {
-        const response = await fetch(
-          `${config.restBasePath}/schema-registry/config/${encodeURIComponent(qualifiedName)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-            },
-          }
-        );
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to reset context compatibility mode to default');
-        }
-
-        return response.json();
-      }
-
-      const response = await fetch(
-        `${config.restBasePath}/schema-registry/config/${encodeURIComponent(qualifiedName)}`,
-        {
-          method: 'PUT',
-          headers: {
-            ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ compatibility: mode }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to update context compatibility mode');
-      }
-
-      return response.json();
+      const path = `config/${encodeURIComponent(qualifiedName)}`;
+      return mode === 'DEFAULT'
+        ? resetSchemaRegistrySetting(path, 'Failed to reset context compatibility mode to default')
+        : putSchemaRegistrySetting(path, { compatibility: mode }, 'Failed to update context compatibility mode');
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'contexts'], exact: false });
@@ -671,12 +583,7 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
       const data = await response.json();
 
       // Filter out entries with errors
-      return data.filter((ref: { error?: string }) => {
-        if (ref.error) {
-          return false;
-        }
-        return true;
-      });
+      return data.filter((ref: { error?: string }) => !ref.error);
     },
     staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
@@ -723,39 +630,36 @@ export const useDeleteSchemaVersionMutation = () => {
   });
 };
 
-export const useSchemaUsagesByIdQuery = (schemaId: number | null) => {
-  return useTanstackQuery<SchemaVersion[]>({
-    queryKey: ['schemaRegistry', 'schemas', 'ids', schemaId, 'versions'],
-    queryFn: async () => {
-      if (schemaId === null) {
-        return [];
-      }
-
-      const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
-        method: 'GET',
-        headers: {
-          ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
-        },
-      });
-
-      if (!response.ok) {
-        // 404 means the schema ID doesn't exist, return empty array
-        if (response.status === 404) {
-          return [];
-        }
-        throw new Error(`Failed to fetch schema usages for schema ID ${schemaId}`);
-      }
-
-      const data = await response.json();
-
-      // Handle "not configured" response
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
+async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]> {
+  const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
+    method: 'GET',
+    headers: {
+      ...(config.jwt && { Authorization: `Bearer ${config.jwt}` }),
     },
+  });
+
+  if (!response.ok) {
+    // 404 means the schema ID doesn't exist, return empty array
+    if (response.status === 404) {
+      return [];
+    }
+    throw new Error(`Failed to fetch schema usages for schema ID ${schemaId}`);
+  }
+
+  const data = await response.json();
+
+  // Handle "not configured" response
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data;
+}
+
+export const useSchemaUsagesByIdQuery = (schemaId: number | null) =>
+  useTanstackQuery<SchemaVersion[]>({
+    queryKey: ['schemaRegistry', 'schemas', 'ids', schemaId, 'versions'],
+    queryFn: async () => (schemaId === null ? [] : await fetchSchemaUsagesById(schemaId)),
     staleTime: STALE_TIME_MEDIUM,
     enabled: schemaId !== null,
   });
-};

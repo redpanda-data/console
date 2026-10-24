@@ -9,7 +9,7 @@ const LOGIN_URL = /\/login/;
  * The credential form's failure path. `auth.setup.ts` exercises the success path for
  * every enterprise spec, so a rejected password is only asserted here.
  */
-test.describe('Login', () => {
+test.describe('login', () => {
   // A fresh context: the shared storageState would skip the form entirely.
 
   test('rejects a wrong password inline and stays on the login page', async ({ page }) => {

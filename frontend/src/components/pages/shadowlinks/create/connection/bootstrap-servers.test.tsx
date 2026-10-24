@@ -43,11 +43,29 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 // Helper to get bootstrap server input
 const getBootstrapInput = (index: number) => screen.getByTestId(`bootstrap-server-input-${index}`);
 
+// Replaces an input's value and leaves the field, which triggers onBlur validation
+const enterBootstrapValue = async (user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string) => {
+  await user.click(input);
+  await user.clear(input);
+  await user.type(input, value);
+  await user.tab();
+};
+
+// Adds a broker field and waits for its input to appear
+const addBootstrapInput = async (user: ReturnType<typeof userEvent.setup>, index: number) => {
+  await user.click(screen.getByTestId('add-bootstrap-server-button'));
+
+  await waitFor(() => {
+    expect(screen.getByTestId(`bootstrap-server-input-${index}`)).toBeInTheDocument();
+  });
+  return getBootstrapInput(index);
+};
+
 // Validation error message
 const ERROR_MESSAGE = 'Must be in format host:port (e.g., localhost:9092)';
 
-describe('BootstrapServers', () => {
-  describe('Rendering', () => {
+describe('the BootstrapServers', () => {
+  describe('rendering', () => {
     test('should show delete button only when multiple servers exist', () => {
       const customValues: FormValues = {
         ...initialValues,
@@ -61,7 +79,7 @@ describe('BootstrapServers', () => {
     });
   });
 
-  describe('Broker format validation', () => {
+  describe('broker format validation', () => {
     test('should accept valid broker format (host:port)', async () => {
       const user = userEvent.setup();
       render(<TestWrapper />);
@@ -104,17 +122,13 @@ describe('BootstrapServers', () => {
 
       const input = getBootstrapInput(0);
 
-      await user.type(input, 'localhost');
-      await user.tab();
+      await enterBootstrapValue(user, input, 'localhost');
 
       await waitFor(() => {
         expect(screen.getByText(ERROR_MESSAGE)).toBeInTheDocument();
       });
 
-      await user.click(input);
-      await user.clear(input);
-      await user.type(input, 'localhost:9092');
-      await user.tab();
+      await enterBootstrapValue(user, input, 'localhost:9092');
 
       await waitFor(() => {
         expect(screen.queryByText(ERROR_MESSAGE)).not.toBeInTheDocument();
@@ -122,7 +136,7 @@ describe('BootstrapServers', () => {
     });
   });
 
-  describe('Adding and removing brokers', () => {
+  describe('adding and removing brokers', () => {
     test('should add a new broker field when clicking Add URL button', async () => {
       const user = userEvent.setup();
       render(<TestWrapper />);
@@ -176,7 +190,7 @@ describe('BootstrapServers', () => {
     });
   });
 
-  describe('TLS disclosures', () => {
+  describe('the TLS disclosures', () => {
     test('should hide disclosures and intro when TLS is off', () => {
       const customValues: FormValues = {
         ...initialValues,
@@ -249,7 +263,7 @@ describe('BootstrapServers', () => {
     });
   });
 
-  describe('Integration', () => {
+  describe('integration', () => {
     test('should handle complete workflow: add broker, fill values, toggle TLS', async () => {
       const user = userEvent.setup();
       render(<TestWrapper />);
@@ -257,14 +271,7 @@ describe('BootstrapServers', () => {
       const input0 = getBootstrapInput(0);
       await user.type(input0, 'kafka1.example.com:9092');
 
-      const addButton = screen.getByTestId('add-bootstrap-server-button');
-      await user.click(addButton);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('bootstrap-server-input-1')).toBeInTheDocument();
-      });
-
-      const input1 = getBootstrapInput(1);
+      const input1 = await addBootstrapInput(user, 1);
       await user.type(input1, 'kafka2.example.com:9092');
 
       const tlsToggle = screen.getByTestId('tls-toggle');

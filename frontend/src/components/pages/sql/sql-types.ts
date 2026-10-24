@@ -53,6 +53,41 @@ export type TableRef = {
   columns?: ColumnDef[];
 };
 
+// A table as ListTables returns it.
+export type FetchedTable = { name: string; catalogNamespace: string; topic?: string };
+
+function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]): Map<string, TableRef[]> {
+  const byNamespace = new Map<string, TableRef[]>();
+  for (const t of tables) {
+    const list = byNamespace.get(t.catalogNamespace) ?? [];
+    list.push({
+      id: `${catalog.name}.${t.catalogNamespace}.${t.name}`,
+      name: t.name,
+      namespaceName: t.catalogNamespace,
+      catalogName: catalog.name,
+      topicName: t.topic,
+    });
+    byNamespace.set(t.catalogNamespace, list);
+  }
+  return byNamespace;
+}
+
+// The catalog with fetched tables filled into its namespaces (which the bare
+// catalog list seeds empty), adding any namespace only the tables name.
+export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Catalog {
+  const byNamespace = groupFetchedTables(catalog, tables);
+  const namespaces = catalog.namespaces.map((ns) => ({
+    ...ns,
+    tables: byNamespace.get(ns.name) ?? ns.tables,
+  }));
+  for (const [name, nsTables] of byNamespace) {
+    if (!namespaces.some((ns) => ns.name === name)) {
+      namespaces.push({ id: `${catalog.name}.${name}`, name, tables: nsTables });
+    }
+  }
+  return { ...catalog, namespaces };
+}
+
 // Logical kind derived from the Postgres type name, used for alignment and
 // cell rendering.
 export type ColumnKind = 'num' | 'str' | 'bool' | 'time' | 'json';
@@ -137,6 +172,16 @@ export function isArrayPgType(pgType: string): boolean {
   return arrayElementPgType(pgType) !== null;
 }
 
+// Checked in order against the upper-cased type name; the first match wins.
+const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
+  // Temporal first: INTERVAL would otherwise match the INT substring in NUMERIC.
+  ['time', (t) => TEMPORAL_TYPE.test(t)],
+  ['num', (t) => NUMERIC_TYPE.test(t)],
+  ['bool', (t) => BOOL_TYPE.test(t)],
+  // RECORD/RECORD[] are composite columns; JSON kept for any real json scalar.
+  ['json', (t) => t.includes('RECORD') || t.includes('JSON')],
+];
+
 // Maps a Postgres type name to a display kind. Composite columns arrive as the
 // literal "record"/"record[]" (the backend parses structure into Column.fields)
 // and render with the JSON tree viewer. Arrays map to their element kind;
@@ -147,21 +192,7 @@ export function columnKindForPgType(pgType: string): ColumnKind {
     return columnKindForPgType(element);
   }
   const t = pgType.toUpperCase();
-  // Temporal first: INTERVAL would otherwise match the INT substring in NUMERIC.
-  if (TEMPORAL_TYPE.test(t)) {
-    return 'time';
-  }
-  if (NUMERIC_TYPE.test(t)) {
-    return 'num';
-  }
-  if (BOOL_TYPE.test(t)) {
-    return 'bool';
-  }
-  // RECORD/RECORD[] are composite columns; JSON kept for any real json scalar.
-  if (t.includes('RECORD') || t.includes('JSON')) {
-    return 'json';
-  }
-  return 'str';
+  return SCALAR_KIND_MATCHERS.find(([, matches]) => matches(t))?.[0] ?? 'str';
 }
 
 // Structured hint from the Connect error's ErrorInfo metadata. undefined when absent.

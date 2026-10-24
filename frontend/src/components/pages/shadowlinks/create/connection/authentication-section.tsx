@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
-import { ExternalLink, InfoIcon } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
@@ -66,6 +66,8 @@ const AUTH_METHOD_DESCRIPTIONS: Record<AuthMethod, string> = {
   [AUTH_METHOD.PLAIN]: 'Username and password are sent unhashed. Only use over a TLS-encrypted connection.',
 };
 
+const isAuthMethod = (value: string): value is AuthMethod => value in AUTH_METHOD_DESCRIPTIONS;
+
 export const AuthenticationSection = () => {
   const { control, setValue, getValues } = useFormContext<FormValues>();
   const authMethod = useWatch({ control, name: 'authMethod' });
@@ -84,25 +86,19 @@ export const AuthenticationSection = () => {
   }, [secretsData]);
 
   const handleAuthMethodChange = (next: string) => {
-    if (next !== AUTH_METHOD.NONE && next !== AUTH_METHOD.SCRAM && next !== AUTH_METHOD.PLAIN) {
+    if (!isAuthMethod(next)) {
       return;
     }
     setValue('authMethod', next);
-    if (next === AUTH_METHOD.SCRAM) {
-      const existing = getValues('scramCredentials');
-      if (!existing) {
-        setValue('scramCredentials', {
-          username: '',
-          password: '',
-          mechanism: ScramMechanism.SCRAM_SHA_256,
-        });
-      }
+    if (next === AUTH_METHOD.SCRAM && !getValues('scramCredentials')) {
+      setValue('scramCredentials', {
+        username: '',
+        password: '',
+        mechanism: ScramMechanism.SCRAM_SHA_256,
+      });
     }
-    if (next === AUTH_METHOD.PLAIN) {
-      const existing = getValues('plainCredentials');
-      if (!existing) {
-        setValue('plainCredentials', { username: '', password: '' });
-      }
+    if (next === AUTH_METHOD.PLAIN && !getValues('plainCredentials')) {
+      setValue('plainCredentials', { username: '', password: '' });
     }
   };
 
@@ -134,14 +130,9 @@ export const AuthenticationSection = () => {
 
       {showCredentials ? (
         <div className="space-y-4" data-testid="auth-credentials-form">
-          <Alert
-            className="border-primary/20 bg-primary/5 text-foreground"
-            data-testid="auth-source-cluster-callout"
-            icon={<InfoIcon className="text-primary" />}
-            variant="informative"
-          >
-            <AlertTitle className="font-medium text-foreground">The user must exist on the source cluster.</AlertTitle>
-            <AlertDescription className="!block text-muted-foreground">
+          <Alert data-testid="auth-source-cluster-callout" variant="informative">
+            <AlertTitle>The user must exist on the source cluster.</AlertTitle>
+            <AlertDescription className="!block">
               <p className="leading-relaxed">
                 Provide credentials for a service account on the source cluster (the one being shadowed) with ACLs to
                 manage shadow link replication.{' '}

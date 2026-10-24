@@ -10,7 +10,7 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
-import { isMap, isScalar, LineCounter, parseDocument } from 'yaml';
+import { isMap, isScalar, LineCounter, parseDocument, type Scalar, type YAMLMap } from 'yaml';
 
 import { type EditTarget, editTargetPath } from '../utils/yaml';
 
@@ -21,6 +21,27 @@ type FieldSegment = { key: string; depth: number; startLine: number; endLine: nu
 
 type RangedNode = { range?: [number, number, number] | null } | null | undefined;
 
+// A mapping key a field can anchor to: a string scalar with a source range.
+type RangedStringKey = Scalar<string> & { range: [number, number, number] };
+
+function isRangedStringKey(key: unknown): key is RangedStringKey {
+  return isScalar(key) && typeof key.value === 'string' && Boolean(key.range);
+}
+
+// The segment one mapping pair covers: from its key's line through the end of its value.
+function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter): FieldSegment {
+  const valueRange = (value as RangedNode)?.range;
+  // Value-end (range[1]), not node-end (range[2]) — node-end swallows trailing blank lines,
+  // which would bleed a hint on the next sibling's line into this field.
+  const endOffset = valueRange ? valueRange[1] : keyNode.range[1];
+  return {
+    key: path.join('/'),
+    depth: path.length,
+    startLine: lineCounter.linePos(keyNode.range[0]).line,
+    endLine: lineCounter.linePos(Math.max(endOffset - 1, keyNode.range[0])).line,
+  };
+}
+
 // Record a segment per mapping pair, recursing into nested mappings. Children are deeper, so the
 // deepest segment containing a line wins during lookup.
 function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineCounter: LineCounter): void {
@@ -29,20 +50,11 @@ function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineC
   }
   for (const pair of node.items) {
     const keyNode = pair.key;
-    if (!(isScalar(keyNode) && typeof keyNode.value === 'string' && keyNode.range)) {
+    if (!isRangedStringKey(keyNode)) {
       continue;
     }
     const path = [...prefix, keyNode.value];
-    const valueRange = (pair.value as RangedNode)?.range;
-    // Value-end (range[1]), not node-end (range[2]) — node-end swallows trailing blank lines,
-    // which would bleed a hint on the next sibling's line into this field.
-    const endOffset = valueRange ? valueRange[1] : keyNode.range[1];
-    out.push({
-      key: path.join('/'),
-      depth: path.length,
-      startLine: lineCounter.linePos(keyNode.range[0]).line,
-      endLine: lineCounter.linePos(Math.max(endOffset - 1, keyNode.range[0])).line,
-    });
+    out.push(pairSegment(keyNode, pair.value, path, lineCounter));
     walkMapping(pair.value, path, out, lineCounter);
   }
 }
@@ -79,12 +91,18 @@ const MIN_MENTION_NAME_LENGTH = 3;
 // Dots only BETWEEN segments ("batching.count"), so a sentence-ending period isn't swallowed.
 const FIELD_TOKEN_RE = /\bfield\s+[`'"]?([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/gi;
 
-// Fields the hint names via the exact "field X" convention — precise, so any name length counts.
-function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+// Lower-cased names the hint references as "field X".
+function fieldTokens(hintText: string): Set<string> {
   const tokens = new Set<string>();
   for (const match of hintText.matchAll(FIELD_TOKEN_RE)) {
     tokens.add(match[1].toLowerCase());
   }
+  return tokens;
+}
+
+// Fields the hint names via the exact "field X" convention — precise, so any name length counts.
+function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+  const tokens = fieldTokens(hintText);
   if (tokens.size === 0) {
     return [];
   }
@@ -115,6 +133,27 @@ function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>): s
   return matches;
 }
 
+// The `label` line plus every field of the inner config (paths relative to it).
+function pushComponentSegments(
+  wrapper: YAMLMap,
+  componentName: string,
+  out: FieldSegment[],
+  lineCounter: LineCounter
+): void {
+  for (const pair of wrapper.items) {
+    const keyNode = pair.key;
+    if (!isRangedStringKey(keyNode)) {
+      continue;
+    }
+    if (keyNode.value === 'label') {
+      const start = lineCounter.linePos(keyNode.range[0]).line;
+      out.push({ key: 'label', depth: 1, startLine: start, endLine: start });
+    } else if (keyNode.value === componentName) {
+      walkMapping(pair.value, [], out, lineCounter);
+    }
+  }
+}
+
 // Segments for the component entry at `target`: its `label` line plus every field of the inner
 // config (paths relative to it, matching the form's leaf keys).
 function collectFieldSegments(yaml: string, target: EditTarget, componentName: string): FieldSegment[] {
@@ -123,20 +162,8 @@ function collectFieldSegments(yaml: string, target: EditTarget, componentName: s
     const lineCounter = new LineCounter();
     const doc = parseDocument(yaml, { lineCounter });
     const wrapper = doc.getIn(editTargetPath(target), true);
-    if (!isMap(wrapper)) {
-      return segments;
-    }
-    for (const pair of wrapper.items) {
-      const keyNode = pair.key;
-      if (!(isScalar(keyNode) && typeof keyNode.value === 'string' && keyNode.range)) {
-        continue;
-      }
-      if (keyNode.value === 'label') {
-        const start = lineCounter.linePos(keyNode.range[0]).line;
-        segments.push({ key: 'label', depth: 1, startLine: start, endLine: start });
-      } else if (keyNode.value === componentName) {
-        walkMapping(pair.value, [], segments, lineCounter);
-      }
+    if (isMap(wrapper)) {
+      pushComponentSegments(wrapper, componentName, segments, lineCounter);
     }
   } catch {
     // Unparsable YAML: no line anchoring; mention matching below still applies.
@@ -149,27 +176,47 @@ export type UnmappedLintHint = { hint: LintHint; fieldLabel?: string };
 
 type ResolvedHint = { anchors: { key: string; message: string }[]; fieldLabel?: string };
 
+// The hint anchored to each of `keys` with its message unchanged, or undefined when none matched.
+function anchoredToKeys(keys: string[], message: string): ResolvedHint | undefined {
+  return keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
+}
+
+// The line's field walked up to its nearest rendered ancestor (a group section), with the deeper
+// path noted in the message; undefined when no ancestor is rendered.
+function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>): ResolvedHint | undefined {
+  const lineAnchor = nearestRenderedAncestor(lineKey, fieldKeys);
+  if (!lineAnchor) {
+    return;
+  }
+  const remainder = lineKey === lineAnchor ? '' : lineKey.slice(lineAnchor.length + 1).replaceAll('/', '.');
+  return { anchors: [{ key: lineAnchor, message: remainder ? `${message} (${remainder})` : message }] };
+}
+
 // Where one hint anchors, by signal strength: an explicit "field X …" reference (it beats the
 // line, which for a MISSING field can only point at the component — whose mapping starts on some
 // other field's line); then the line's field, walked up to its nearest rendered ancestor (a group
 // section) with the deeper path noted; then loose prose mentions. No anchors = the banner keeps
 // it, labelled with the line's field when known (a line number is meaningless in the form view).
 function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>): ResolvedHint {
-  const named = fieldKeysNamedExplicitly(hint.hint, fieldKeys);
-  if (named.length > 0) {
-    return { anchors: named.map((key) => ({ key, message: hint.hint })) };
+  const named = anchoredToKeys(fieldKeysNamedExplicitly(hint.hint, fieldKeys), hint.hint);
+  if (named) {
+    return named;
   }
   const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
-  const lineAnchor = lineKey ? nearestRenderedAncestor(lineKey, fieldKeys) : undefined;
-  if (lineKey && lineAnchor) {
-    const remainder = lineKey === lineAnchor ? '' : lineKey.slice(lineAnchor.length + 1).replaceAll('/', '.');
-    return { anchors: [{ key: lineAnchor, message: remainder ? `${hint.hint} (${remainder})` : hint.hint }] };
+  const lineAnchored = lineKey ? lineAnchoredHint(hint.hint, lineKey, fieldKeys) : undefined;
+  return (
+    lineAnchored ??
+    anchoredToKeys(fieldKeysMentioned(hint.hint, fieldKeys), hint.hint) ?? {
+      anchors: [],
+      fieldLabel: lineKey?.replaceAll('/', '.'),
+    }
+  );
+}
+
+function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']): void {
+  for (const { key, message } of anchors) {
+    byField.set(key, [...(byField.get(key) ?? []), message]);
   }
-  const mentioned = fieldKeysMentioned(hint.hint, fieldKeys);
-  if (mentioned.length > 0) {
-    return { anchors: mentioned.map((key) => ({ key, message: hint.hint })) };
-  }
-  return { anchors: [], fieldLabel: lineKey?.replaceAll('/', '.') };
 }
 
 /**
@@ -194,10 +241,8 @@ export function mapLintHintsToFields(opts: {
     const resolved = resolveHint(hint, segments, opts.fieldKeys);
     if (resolved.anchors.length === 0) {
       unmapped.push({ hint, fieldLabel: resolved.fieldLabel });
-      continue;
-    }
-    for (const { key, message } of resolved.anchors) {
-      byField.set(key, [...(byField.get(key) ?? []), message]);
+    } else {
+      appendFieldMessages(byField, resolved.anchors);
     }
   }
   return { byField, unmapped };

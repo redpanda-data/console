@@ -3,12 +3,56 @@ import { step } from '../../shared/e2e';
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
 
-import { expect, test } from '../../shared/e2e';
+import { expect, type Request, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('Filter Messages by Timestamp', () => {
+// Whether this is the ListMessages call that starts from the timestamp (startOffset -4).
+const isTimestampListMessagesRequest = (request: Request, timestampInMilliseconds: number) => {
+  if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
+    return false;
+  }
+
+  try {
+    const postData = request.postData();
+    if (!postData) {
+      return false;
+    }
+
+    // Check if the postData contains startOffset -4 and the correct startTimestamp in milliseconds
+    return (
+      postData.includes('"startOffset":"-4"') && postData.includes(`"startTimestamp":"${timestampInMilliseconds}"`)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const expectTimestampListMessagesRequest = (apiRequest: Request, timestampInMilliseconds: number) => {
+  // Verify the request was made
+  expect(apiRequest).toBeTruthy();
+
+  // Verify the postData contains the expected timestamp in milliseconds
+  const postData = apiRequest.postData();
+  expect(postData).toBeTruthy();
+  expect(postData).toContain('"startOffset":"-4"');
+  expect(postData).toContain(`"startTimestamp":"${timestampInMilliseconds}"`);
+};
+
+const expectUrlTimestamp = (currentUrl: string, timestampInMilliseconds: number) => {
+  // Verify URL contains timestamp in milliseconds format
+  expect(currentUrl).toContain('t=');
+
+  // Extract timestamp from URL
+  const urlTimestamp = new URL(currentUrl).searchParams.get('t');
+  expect(urlTimestamp).toBeTruthy();
+
+  // Verify the URL timestamp is in milliseconds and matches our expected value
+  expect(Number(urlTimestamp)).toBe(timestampInMilliseconds);
+};
+
+test.describe('filter Messages by Timestamp', () => {
   test('should set timestamp and verify API request with correct parameters', async ({ page }) => {
-    const topicName = `timestamp-filter-${Date.now()}`;
+    const topicName = `timestamp-filter-${crypto.randomUUID()}`;
     const message = 'Test message for timestamp filter';
 
     const topicPage = new TopicPage(page);
@@ -16,6 +60,8 @@ test.describe('Filter Messages by Timestamp', () => {
     await topicPage.produceMessage(topicName, message);
 
     await step('Navigate to topic and select Timestamp offset origin', async () => {
+      // The picker defaults to the browser's current time; pin it so the time filled below differs.
+      await page.clock.setFixedTime(new Date('2026-01-15T12:00:00'));
       await page.goto(`/topics/${topicName}`);
 
       await page.waitForRequest((request) => request.url().includes('ConsoleService/ListMessages'));
@@ -35,11 +81,7 @@ test.describe('Filter Messages by Timestamp', () => {
     });
 
     await step('Set timestamp and verify URL update and API request', async () => {
-      const timestampValue = Date.now() - 60 * 60 * 1000;
-      const date = new Date(timestampValue);
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const timeValue = `${hours}:${minutes}`;
+      const timeValue = '11:00';
 
       await step('Open date/time picker', async () => {
         const calendarTrigger = page.getByTestId('start-timestamp-input').getByLabel('Open calendar');
@@ -111,7 +153,7 @@ test.describe('Filter Messages by Timestamp', () => {
   });
 
   test('should accept unix timestamp in seconds and convert to milliseconds in URL', async ({ page }) => {
-    const topicName = `timestamp-unix-${Date.now()}`;
+    const topicName = `timestamp-unix-${crypto.randomUUID()}`;
     const message = 'Test message for unix timestamp input';
 
     const topicPage = new TopicPage(page);
@@ -146,26 +188,9 @@ test.describe('Filter Messages by Timestamp', () => {
       await expect(numberInput).toBeVisible();
 
       // Listen for the API request BEFORE pressing Enter (Enter triggers onChange)
-      const apiRequestPromise = page.waitForRequest((request) => {
-        if (!request.url().includes('ConsoleService/ListMessages') || request.method() !== 'POST') {
-          return false;
-        }
-
-        try {
-          const postData = request.postData();
-          if (!postData) {
-            return false;
-          }
-
-          // Check if the postData contains startOffset -4 and the correct startTimestamp in milliseconds
-          return (
-            postData.includes('"startOffset":"-4"') &&
-            postData.includes(`"startTimestamp":"${timestampInMilliseconds}"`)
-          );
-        } catch {
-          return false;
-        }
-      });
+      const apiRequestPromise = page.waitForRequest((request) =>
+        isTimestampListMessagesRequest(request, timestampInMilliseconds)
+      );
 
       // Fill the number input with the unix timestamp in seconds
       await numberInput.fill(String(timestampInSeconds));
@@ -175,34 +200,15 @@ test.describe('Filter Messages by Timestamp', () => {
       // Wait for the API request with the correct timestamp
       const apiRequest = await apiRequestPromise;
 
-      // Verify the request was made
-      expect(apiRequest).toBeTruthy();
-
-      // Verify the postData contains the expected timestamp in milliseconds
-      const postData = apiRequest.postData();
-      expect(postData).toBeTruthy();
-      expect(postData).toContain('"startOffset":"-4"');
-      expect(postData).toContain(`"startTimestamp":"${timestampInMilliseconds}"`);
-
-      // Verify URL contains timestamp in milliseconds format
-      const currentUrl = page.url();
-      expect(currentUrl).toContain('t=');
-
-      // Extract timestamp from URL
-      const urlParams = new URL(currentUrl).searchParams;
-      const urlTimestamp = urlParams.get('t');
-      expect(urlTimestamp).toBeTruthy();
-
-      // Verify the URL timestamp is in milliseconds and matches our expected value
-      const urlTimestampValue = Number(urlTimestamp);
-      expect(urlTimestampValue).toBe(timestampInMilliseconds);
+      expectTimestampListMessagesRequest(apiRequest, timestampInMilliseconds);
+      expectUrlTimestamp(page.url(), timestampInMilliseconds);
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should remove timestamp parameter from URL when switching to non-timestamp offset type', async ({ page }) => {
-    const topicName = `timestamp-url-removal-${Date.now()}`;
+    const topicName = `timestamp-url-removal-${crypto.randomUUID()}`;
     const message = 'Test message for URL parameter removal';
 
     const topicPage = new TopicPage(page);

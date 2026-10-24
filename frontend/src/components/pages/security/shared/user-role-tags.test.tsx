@@ -28,15 +28,12 @@ rs.mock('@connectrpc/connect-query', () => ({
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  useNavigate: () => rs.fn(),
+  // Real navigate() returns a promise that settles once the route commits.
+  useNavigate: () => rs.fn(() => Promise.resolve()),
 }));
 
 rs.mock('components/redpanda-ui/components/tags', () => ({
-  TagsValue: ({ children, ...props }: { children: ReactNode; [key: string]: unknown }) => (
-    <span data-testid="tag" {...props}>
-      {children}
-    </span>
-  ),
+  TagsValue: MockTagsValue,
 }));
 
 rs.mock('../../../../state/backend-api', () => ({
@@ -53,25 +50,25 @@ rs.mock('../../../../state/supported-features', () => ({
 
 import { UserRoleTags } from './user-role-tags';
 
-describe('UserRoleTags', () => {
+describe('the UserRoleTags', () => {
   beforeEach(() => {
     mockRoleMembers.clear();
     mockListACLsFilter.captured = null;
   });
 
-  test('User principal queries ACLs with User: prefix', () => {
+  test('user principal queries ACLs with User: prefix', () => {
     render(<UserRoleTags userName="alice" />);
 
     expect(mockListACLsFilter.captured).toEqual(expect.objectContaining({ principal: 'User:alice' }));
   });
 
-  test('Group principal queries ACLs with Group: prefix', () => {
+  test('group principal queries ACLs with Group: prefix', () => {
     render(<UserRoleTags principalType="Group" userName="engineering" />);
 
     expect(mockListACLsFilter.captured).toEqual(expect.objectContaining({ principal: 'Group:engineering' }));
   });
 
-  test('User principal shows role memberships for User members', () => {
+  test('user principal shows role memberships for User members', () => {
     mockRoleMembers.set('viewer', [{ name: 'alice', principalType: 'User' }]);
 
     render(<UserRoleTags userName="alice" />);
@@ -79,7 +76,7 @@ describe('UserRoleTags', () => {
     expect(screen.getByText('RedpandaRole:viewer')).toBeInTheDocument();
   });
 
-  test('Group principal does NOT show roles that contain a User with the same name', () => {
+  test('group principal does NOT show roles that contain a User with the same name', () => {
     // Role has a User member named "engineering" — should NOT match Group:engineering
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'User' }]);
 
@@ -88,7 +85,7 @@ describe('UserRoleTags', () => {
     expect(screen.queryByText('RedpandaRole:admin')).not.toBeInTheDocument();
   });
 
-  test('Group principal shows roles that contain a Group member with matching name', () => {
+  test('group principal shows roles that contain a Group member with matching name', () => {
     // Role has a Group member named "engineering" — SHOULD match
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'Group' }]);
 
@@ -106,3 +103,11 @@ describe('UserRoleTags', () => {
     expect(screen.getByText('RedpandaRole:viewer')).toBeInTheDocument();
   });
 });
+
+function MockTagsValue({ children, ...props }: { children: ReactNode; [key: string]: unknown }) {
+  return (
+    <span data-testid="tag" {...props}>
+      {children}
+    </span>
+  );
+}

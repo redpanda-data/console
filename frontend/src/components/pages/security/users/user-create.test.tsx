@@ -142,9 +142,38 @@ function buildTransport(overrides?: {
   };
 }
 
+type Transport = ReturnType<typeof buildTransport>['transport'];
+
+const listRolesReturning = (...names: string[]) =>
+  rs
+    .fn()
+    .mockReturnValue(create(ListRolesResponseSchema, { roles: names.map((name) => ({ name })), nextPageToken: '' }));
+
+async function selectRole(user: ReturnType<typeof userEvent.setup>, roleName: string) {
+  await waitFor(() => {
+    expect(screen.getByText('Assign roles')).toBeInTheDocument();
+  });
+  await user.click(screen.getByText('Select roles...'));
+  await waitFor(() => {
+    expect(screen.getByText(roleName)).toBeInTheDocument();
+  });
+  await user.click(screen.getByText(roleName));
+}
+
+/** Renders the page, types the username, optionally picks a role, and submits. */
+async function fillFormAndSubmit(transport: Transport, { username, role }: { username: string; role?: string }) {
+  const user = userEvent.setup();
+  renderWithFileRoutes(<UserCreatePage />, { transport });
+  await user.type(await screen.findByTestId('create-user-name'), username);
+  if (role) {
+    await selectRole(user, role);
+  }
+  await user.click(screen.getByTestId('create-user-submit'));
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-describe('UserCreatePage', () => {
+describe('the UserCreatePage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mockRolesApiEnabled = false;
@@ -163,15 +192,9 @@ describe('UserCreatePage', () => {
   });
 
   test('calls createUser gRPC on submit without role assignment', async () => {
-    const user = userEvent.setup();
     const { transport, createUserMock, updateRoleMembershipMock } = buildTransport();
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'test-user');
-
-    await user.click(screen.getByTestId('create-user-submit'));
+    await fillFormAndSubmit(transport, { username: 'test-user' });
 
     await waitFor(() => {
       expect(createUserMock).toHaveBeenCalledTimes(1);
@@ -187,15 +210,9 @@ describe('UserCreatePage', () => {
   });
 
   test('shows confirmation screen on success', async () => {
-    const user = userEvent.setup();
     const { transport } = buildTransport();
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'new-user');
-
-    await user.click(screen.getByTestId('create-user-submit'));
+    await fillFormAndSubmit(transport, { username: 'new-user' });
 
     await waitFor(() => {
       expect(screen.getByText('User created')).toBeInTheDocument();
@@ -203,18 +220,12 @@ describe('UserCreatePage', () => {
   });
 
   test('stays on form when createUser fails', async () => {
-    const user = userEvent.setup();
     const createUserMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
     const { transport } = buildTransport({ createUserMock });
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'fail-user');
-
-    await user.click(screen.getByTestId('create-user-submit'));
+    await fillFormAndSubmit(transport, { username: 'fail-user' });
 
     // Should stay on the form (not navigate to confirmation)
     await waitFor(() => {
@@ -225,35 +236,12 @@ describe('UserCreatePage', () => {
 
   test('calls updateRoleMembership gRPC for each selected role', async () => {
     mockRolesApiEnabled = true;
-    const user = userEvent.setup();
-    const listRolesMock = rs.fn().mockReturnValue(
-      create(ListRolesResponseSchema, {
-        roles: [{ name: 'admin' }, { name: 'viewer' }],
-        nextPageToken: '',
-      })
-    );
-    const { transport, createUserMock, updateRoleMembershipMock } = buildTransport({ listRolesMock });
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'role-user');
-
-    // Wait for roles to load and select them
-    await waitFor(() => {
-      expect(screen.getByText('Assign roles')).toBeInTheDocument();
+    const { transport, createUserMock, updateRoleMembershipMock } = buildTransport({
+      listRolesMock: listRolesReturning('admin', 'viewer'),
     });
 
-    // Open the roles selector and pick a role
-    const roleSelect = screen.getByText('Select roles...');
-    await user.click(roleSelect);
-
-    await waitFor(() => {
-      expect(screen.getByText('admin')).toBeInTheDocument();
-    });
-    await user.click(screen.getByText('admin'));
-
-    await user.click(screen.getByTestId('create-user-submit'));
+    // Waits for the roles to load, then opens the roles selector and picks one
+    await fillFormAndSubmit(transport, { username: 'role-user', role: 'admin' });
 
     await waitFor(() => {
       expect(createUserMock).toHaveBeenCalledTimes(1);
@@ -271,34 +259,15 @@ describe('UserCreatePage', () => {
 
   test('shows confirmation even when role assignment fails', async () => {
     mockRolesApiEnabled = true;
-    const user = userEvent.setup();
-    const listRolesMock = rs.fn().mockReturnValue(
-      create(ListRolesResponseSchema, {
-        roles: [{ name: 'admin' }],
-        nextPageToken: '',
-      })
-    );
     const updateRoleMembershipMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
-    const { transport, createUserMock } = buildTransport({ listRolesMock, updateRoleMembershipMock });
-
-    renderWithFileRoutes(<UserCreatePage />, { transport });
-
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'partial-user');
-
-    // Select a role
-    await waitFor(() => {
-      expect(screen.getByText('Assign roles')).toBeInTheDocument();
+    const { transport, createUserMock } = buildTransport({
+      listRolesMock: listRolesReturning('admin'),
+      updateRoleMembershipMock,
     });
-    await user.click(screen.getByText('Select roles...'));
-    await waitFor(() => {
-      expect(screen.getByText('admin')).toBeInTheDocument();
-    });
-    await user.click(screen.getByText('admin'));
 
-    await user.click(screen.getByTestId('create-user-submit'));
+    await fillFormAndSubmit(transport, { username: 'partial-user', role: 'admin' });
 
     // User creation succeeds
     await waitFor(() => {

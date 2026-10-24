@@ -19,7 +19,7 @@ const PROBLEMS: PipelineProblem[] = [
   { key: 'p1', message: 'field required', nodeId: 'input-0', nodeLabel: 'kafka_franz', target: { kind: 'input' } },
 ];
 
-describe('PipelineProblemsPanel', () => {
+describe('the PipelineProblemsPanel', () => {
   test('renders nothing without problems or missing secrets', () => {
     render(<PipelineProblemsPanel onSelectProblem={rs.fn()} problems={[]} />);
     expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();

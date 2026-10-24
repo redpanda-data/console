@@ -4,12 +4,58 @@ import { step } from '../../shared/e2e';
 // seed: tests/seed.spec.ts
 
 import fs from 'node:fs';
-import { expect, test } from '../../shared/e2e';
+import { type Download, expect, type Page, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('Message Actions and Export', () => {
+/** Opens the topic, expands its first message and opens the message export dialog. */
+const openFirstMessageExportDialog = async (page: Page, topicName: string) => {
+  await page.goto(`/topics/${topicName}`);
+
+  // Expand message
+  await page.getByLabel('Expand row').first().click();
+
+  // Click download/export button
+  await page.getByText('Download Record').click();
+};
+
+/** Clicks the export dialog's save button and resolves with the download it starts. */
+const downloadExport = async (page: Page, saveButtonName: RegExp) => {
+  const downloadPromise = page.waitForEvent('download');
+  await page
+    .getByRole('dialog', { name: /save message/i })
+    .getByRole('button', { name: saveButtonName })
+    .click();
+  return downloadPromise;
+};
+
+/** Saves the download to `tempFilePath`, reads it back, and removes the file. */
+const readDownload = async (download: Download, tempFilePath: string) => {
+  await download.saveAs(tempFilePath);
+  const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
+  // Cleanup
+  fs.unlinkSync(tempFilePath);
+  return fileContent;
+};
+
+/** Saves the download to `tempFilePath`, measures it in bytes, and removes the file. */
+const readDownloadSize = async (download: Download, tempFilePath: string) => {
+  await download.saveAs(tempFilePath);
+  const { size } = fs.statSync(tempFilePath);
+  // Cleanup
+  fs.unlinkSync(tempFilePath);
+  return size;
+};
+
+const loadLargeMessagesIfPrompted = async (page: Page) => {
+  const loadButton = page.getByTestId('load-anyway-button');
+  if (await loadButton.isVisible()) {
+    await loadButton.click();
+  }
+};
+
+test.describe('message Actions and Export', () => {
   test('should copy message value to clipboard', async ({ page }) => {
-    const topicName = `copy-clipboard-${Date.now()}`;
+    const topicName = `copy-clipboard-${crypto.randomUUID()}`;
     const messageValue = 'Copy this message to clipboard';
 
     const topicPage = new TopicPage(page);
@@ -38,7 +84,7 @@ test.describe('Message Actions and Export', () => {
   });
 
   test('should export single message as JSON', async ({ page }) => {
-    const topicName = `export-json-${Date.now()}`;
+    const topicName = `export-json-${crypto.randomUUID()}`;
     const messageValue = 'Export this message as JSON';
 
     const topicPage = new TopicPage(page);
@@ -46,44 +92,26 @@ test.describe('Message Actions and Export', () => {
     await topicPage.produceMessage(topicName, messageValue);
 
     await step('Export message as JSON', async () => {
-      await page.goto(`/topics/${topicName}`);
-
-      // Expand message
-      await page.getByLabel('Expand row').first().click();
-
-      // Click download/export button
-      await page.getByText('Download Record').click();
+      await openFirstMessageExportDialog(page, topicName);
 
       // JSON format is selected by default, no need to click
 
       // Start download
-      const downloadPromise = page.waitForEvent('download');
-      await page
-        .getByRole('dialog', { name: /save message/i })
-        .getByRole('button', { name: /save/i })
-        .click();
-
-      const download = await downloadPromise;
+      const download = await downloadExport(page, /save/i);
 
       // Verify download
       expect(download.suggestedFilename()).toMatch(/\.json$/);
 
       // Save and verify content
-      const tempFilePath = `/tmp/test-${download.suggestedFilename()}`;
-      await download.saveAs(tempFilePath);
-
-      const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
+      const fileContent = await readDownload(download, `/tmp/test-${download.suggestedFilename()}`);
       expect(fileContent).toContain(messageValue);
-
-      // Cleanup
-      fs.unlinkSync(tempFilePath);
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should export single message as CSV', async ({ page }) => {
-    const topicName = `export-csv-${Date.now()}`;
+    const topicName = `export-csv-${crypto.randomUUID()}`;
     const messageValue = 'Export this message as CSV';
 
     const topicPage = new TopicPage(page);
@@ -91,45 +119,27 @@ test.describe('Message Actions and Export', () => {
     await topicPage.produceMessage(topicName, messageValue);
 
     await step('Export message as CSV', async () => {
-      await page.goto(`/topics/${topicName}`);
-
-      // Expand message
-      await page.getByLabel('Expand row').first().click();
-
-      // Click download/export button
-      await page.getByText('Download Record').click();
+      await openFirstMessageExportDialog(page, topicName);
 
       // Select CSV format
       await page.getByTestId('csv_field').click();
 
       // Start download
-      const downloadPromise = page.waitForEvent('download');
-      await page
-        .getByRole('dialog', { name: /save message/i })
-        .getByRole('button', { name: /save messages/i })
-        .click();
-
-      const download = await downloadPromise;
+      const download = await downloadExport(page, /save messages/i);
 
       // Verify download
       expect(download.suggestedFilename()).toMatch('messages.csv');
 
       // Save and verify content
-      const tempFilePath = `/tmp/test-${download.suggestedFilename()}`;
-      await download.saveAs(tempFilePath);
-
-      const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
+      const fileContent = await readDownload(download, `/tmp/test-${download.suggestedFilename()}`);
       expect(fileContent).toContain(messageValue);
-
-      // Cleanup
-      fs.unlinkSync(tempFilePath);
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should export message with special characters', async ({ page }) => {
-    const topicName = `export-special-${Date.now()}`;
+    const topicName = `export-special-${crypto.randomUUID()}`;
     const messageValue = 'Message with "quotes", commas, and émojis 🎉';
 
     const topicPage = new TopicPage(page);
@@ -137,39 +147,21 @@ test.describe('Message Actions and Export', () => {
     await topicPage.produceMessage(topicName, messageValue);
 
     await step('Export and verify special characters', async () => {
-      await page.goto(`/topics/${topicName}`);
-
-      // Expand message
-      await page.getByLabel('Expand row').first().click();
-
       // Export as JSON
-      await page.getByText('Download Record').click();
-
-      const downloadPromise = page.waitForEvent('download');
-      await page
-        .getByRole('dialog', { name: /save message/i })
-        .getByRole('button', { name: /save/i })
-        .click();
-
-      const download = await downloadPromise;
-      const tempFilePath = `/tmp/test-special-${Date.now()}.json`;
-      await download.saveAs(tempFilePath);
-
-      const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
+      await openFirstMessageExportDialog(page, topicName);
+      const download = await downloadExport(page, /save/i);
+      const fileContent = await readDownload(download, `/tmp/test-special-${crypto.randomUUID()}.json`);
 
       // Verify special characters are preserved
       expect(fileContent).toContain('quotes');
       expect(fileContent).toContain('émojis');
-
-      // Cleanup
-      fs.unlinkSync(tempFilePath);
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should open and cancel export dialog', async ({ page }) => {
-    const topicName = `cancel-export-${Date.now()}`;
+    const topicName = `cancel-export-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -201,7 +193,7 @@ test.describe('Message Actions and Export', () => {
   });
 
   test('should handle message with large payload export', async ({ page }) => {
-    const topicName = `large-export-${Date.now()}`;
+    const topicName = `large-export-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -224,40 +216,25 @@ test.describe('Message Actions and Export', () => {
       await page.goto(`/topics/${topicName}`);
 
       // May need to click "Load anyway" for large message
-      const loadButton = page.getByTestId('load-anyway-button');
-      if (await loadButton.isVisible()) {
-        await loadButton.click();
-      }
+      await loadLargeMessagesIfPrompted(page);
 
       // Expand message
       await page.getByLabel('Expand row').first().click();
 
       // Export as JSON
       await page.getByText('Download Record').click();
-
-      const downloadPromise = page.waitForEvent('download');
-      await page
-        .getByRole('dialog', { name: /save message/i })
-        .getByRole('button', { name: /save/i })
-        .click();
-
-      const download = await downloadPromise;
-      const tempFilePath = `/tmp/test-large-${Date.now()}.json`;
-      await download.saveAs(tempFilePath);
+      const download = await downloadExport(page, /save/i);
 
       // Verify file size
-      const stats = fs.statSync(tempFilePath);
-      expect(stats.size).toBeGreaterThan(1000); // Should be larger than 1KB
-
-      // Cleanup
-      fs.unlinkSync(tempFilePath);
+      const fileSize = await readDownloadSize(download, `/tmp/test-large-${crypto.randomUUID()}.json`);
+      expect(fileSize).toBeGreaterThan(1000); // Should be larger than 1KB
     });
 
     await topicPage.deleteTopic(topicName);
   });
 
   test('should view message metadata', async ({ page }) => {
-    const topicName = `metadata-${Date.now()}`;
+    const topicName = `metadata-${crypto.randomUUID()}`;
     const messageValue = 'Message for metadata viewing';
 
     const topicPage = new TopicPage(page);

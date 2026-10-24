@@ -19,7 +19,7 @@ rs.mock('@tanstack/react-router', () => ({
 
 import { RouteError } from './route-error';
 
-describe('RouteError', () => {
+describe('the RouteError', () => {
   test('shows a real Error message', () => {
     render(<RouteError error={new Error('boom')} />);
 

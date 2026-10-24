@@ -10,11 +10,12 @@
  */
 
 import { afterEach, describe, expect, rs, test } from '@rstest/core';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { config } from 'config';
 import { connectQueryWrapper } from 'test-utils';
 
-import { useLegacyListTopicsQuery } from './topic';
+import { useLegacyListTopicsQuery, useUpdateTopicConfigMutation } from './topic';
+import { useApiStore } from '../../state/backend-api';
 
 // Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
@@ -25,11 +26,11 @@ const jsonResponse = (body: unknown, init?: ResponseInit) =>
     ...init,
   });
 
-describe('useLegacyListTopicsQuery', () => {
-  afterEach(() => {
-    rs.restoreAllMocks();
-  });
+afterEach(() => {
+  rs.restoreAllMocks();
+});
 
+describe('useLegacyListTopicsQuery', () => {
   test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
     // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
     // so without an explicit response.ok check the query settles as a success and the
@@ -56,4 +57,29 @@ describe('useLegacyListTopicsQuery', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
   });
+});
+
+function renderUpdatingTopic() {
+  const refreshed = Promise.withResolvers<void>();
+  const { queryClient, queryClientWrapper } = connectQueryWrapper(NO_RETRY);
+  rs.spyOn(useApiStore.getState(), 'changeTopicConfig').mockResolvedValue(undefined);
+  const invalidate = rs.spyOn(queryClient, 'invalidateQueries').mockReturnValue(refreshed.promise);
+  const hook = renderHook(() => useUpdateTopicConfigMutation(), { wrapper: queryClientWrapper });
+  return { ...hook, refreshed, invalidate };
+}
+
+test('topic updates remain pending until their configuration cache refresh completes', async () => {
+  const { result, refreshed, invalidate } = renderUpdatingTopic();
+  let update: Promise<unknown> | undefined;
+  act(() => {
+    update = result.current.mutateAsync({ topicName: 'orders', configs: [] });
+  });
+  await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['topicConfig', 'orders'] }));
+  await act(() => undefined);
+  expect(result.current.isPending).toBe(true);
+  await act(async () => {
+    refreshed.resolve();
+    await update;
+  });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
 });

@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { RefreshCwIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { ReadScopePopover, type ReadScopePopoverProps } from './read-scope-popover';
+import { TonedIcon } from '../../../shared/toned-icon';
 
 export type MessagesToolbarProps = {
   scopeProps: ReadScopePopoverProps;
@@ -27,6 +28,8 @@ export type MessagesToolbarProps = {
   isLive: boolean;
   onRefresh: () => void;
 };
+
+const refreshLabel = (isLive: boolean) => (isLive ? 'Streaming live…' : 'Reload records');
 
 export const MessagesToolbar = ({
   scopeProps,
@@ -42,15 +45,17 @@ export const MessagesToolbar = ({
     {actionsSlot}
     {/* icon-lg matches the filter bar's min-h-10; the svg override keeps the glyph at the
         16px the toolbar's other icons use rather than icon-lg's 24px default. */}
-    <Button
-      className="shrink-0 [&_svg]:size-4"
-      onClick={onRefresh}
-      size="icon-lg"
-      testId="messages-refresh"
-      title={isLive ? 'Streaming live…' : 'Reload records'}
-      variant="outline"
-    >
-      <RefreshCwIcon className={cn((isRefreshing || isLive) && 'animate-spin')} />
-    </Button>
+    <ElementTooltip content={refreshLabel(isLive)}>
+      <Button
+        aria-label={refreshLabel(isLive)}
+        className="shrink-0 [&_svg]:size-4"
+        onClick={onRefresh}
+        size="icon-lg"
+        testId="messages-refresh"
+        variant="outline"
+      >
+        <TonedIcon icon={RefreshCwIcon} spin={isRefreshing || isLive} />
+      </Button>
+    </ElementTooltip>
   </div>
 );

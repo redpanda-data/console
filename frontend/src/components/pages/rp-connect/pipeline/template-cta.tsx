@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -41,7 +42,7 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
         >
           <button
             aria-label="Start from a template"
-            className="nodrag nopan group pointer-events-auto flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-border border-dashed bg-card px-3 py-2.5 text-left shadow-sm transition-all hover:border-brand/50 hover:bg-muted/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2"
+            className="nodrag nopan group pointer-events-auto flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-left shadow-sm transition-all hover:border-brand/50 hover:bg-muted/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             data-testid="browse-templates-cta"
             onClick={onBrowseTemplates}
             type="button"
@@ -50,13 +51,12 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
               <Sparkles className="size-3.5" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="font-medium text-body text-foreground">Start from a template</span>
+              <span className="text-body font-medium text-foreground">Start from a template</span>
               <span className="text-body-sm text-muted-foreground">Skip the YAML — fill a short form</span>
             </div>
-            <ArrowRight
-              aria-hidden
-              className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand"
-            />
+            <span className="inline-flex shrink-0 transition-transform group-hover:translate-x-0.5">
+              <TonedIcon aria-hidden className="size-4" icon={ArrowRight} tone="muted" />
+            </span>
           </button>
           {hint ? (
             <p className="pointer-events-none mt-2 flex items-center justify-center gap-1.5 text-center text-body-sm text-muted-foreground">

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import {
@@ -22,6 +21,7 @@ import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
+import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import {
@@ -35,9 +35,8 @@ import {
   TasksColumn,
 } from './helper';
 import { isEmbedded, isServerless } from '../../../config';
-import { ListSecretScopesRequestSchema } from '../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../state/app-global';
-import { api, rpcnSecretManagerApi } from '../../../state/backend-api';
+import { api } from '../../../state/backend-api';
 import type { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo } from '../../../state/rest-interfaces';
 import { Features, useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
@@ -122,27 +121,15 @@ class KafkaConnectOverview extends PageComponent<{
     p.title = 'Connect';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
-    this.initializeData();
-    appGlobal.onRefresh = async () => await this.refreshData();
+    this.refreshData();
+    appGlobal.onRefresh = () => this.refreshData();
   }
 
-  private async initializeData(): Promise<void> {
-    try {
-      await this.checkRPCNSecretEnable();
-      await this.refreshData();
-    } catch {
-      // Error during initialization - component will show error state
-    }
-  }
-
-  async checkRPCNSecretEnable() {
-    if (Features.pipelinesApi) {
-      await rpcnSecretManagerApi.checkScope(create(ListSecretScopesRequestSchema));
-    }
-  }
-
-  async refreshData() {
-    await api.refreshConnectClusters();
+  // HTTP errors land in api.connectConnectorsError; this reports requests that fail outright.
+  refreshData() {
+    api.refreshConnectClusters().catch((error: unknown) => {
+      toast.error('Failed to load Kafka Connect clusters', { description: String(error) });
+    });
   }
 
   render() {
@@ -432,7 +419,7 @@ const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
       // biome-ignore lint/a11y/noStaticElementInteractions: pre-existing behavior
       // biome-ignore lint/a11y/noNoninteractiveElementInteractions: pre-existing behavior
       <div
-        className="hoverLink whitespace-break-spaces break-words text-body"
+        className="hoverLink text-body wrap-break-word whitespace-break-spaces"
         onClick={() =>
           appGlobal.historyPush(
             `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.connectorName)}`

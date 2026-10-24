@@ -62,20 +62,18 @@ export function summarizeComponentChanges(
   const edited = componentNodesById(editedYaml);
   const unmatchedEdited = changedIds.filter((id) => edited.has(id));
   const unmatchedSaved = new Set(changedNodeIds(editedYaml, savedYaml).filter((id) => saved.has(id)));
-  const changes: ComponentChange[] = [];
-
-  for (const id of unmatchedEdited) {
-    changes.push(describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added'));
-  }
-  for (const id of unmatchedSaved) {
-    if (!unmatchedEdited.includes(id)) {
-      changes.push(describe(id, saved.get(id), 'removed'));
-    }
-  }
-
-  return changes.sort(
-    (a, b) => a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true })
+  const editedChanges = unmatchedEdited.map((id) =>
+    describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
   );
+  const removedChanges = [...unmatchedSaved]
+    .filter((id) => !unmatchedEdited.includes(id))
+    .map((id) => describe(id, saved.get(id), 'removed'));
+
+  return [...editedChanges, ...removedChanges].sort(compareBySectionThenId);
+}
+
+function compareBySectionThenId(a: ComponentChange, b: ComponentChange): number {
+  return a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true });
 }
 
 export const UNSAVED_CHANGES_LANE_LABEL = 'Unsaved changes';

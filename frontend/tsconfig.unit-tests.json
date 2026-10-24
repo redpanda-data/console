@@ -2,9 +2,10 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "types": ["bun", "node", "@rstest/core/globals"],
-    "incremental": false
+    "incremental": false,
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "rstest.setup.ts", "tests/**/*.test.ts"],
+  "include": ["src", "rstest.setup.ts", "tests/**/*.test.ts", "lint-rules/**/*.ts"],
   "exclude": [
     "node_modules",
     "**/*.test.tsx",

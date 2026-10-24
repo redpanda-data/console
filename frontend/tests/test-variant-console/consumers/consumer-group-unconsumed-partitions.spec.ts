@@ -20,8 +20,8 @@ import { execRpk, getRedpandaContainerId } from '../../shared/rpk.utils';
  *     "No committed offsets".
  */
 
-const TOPIC_NAME = `e2e-unconsumed-${Date.now()}`;
-const GROUP_NAME = `e2e-unconsumed-group-${Date.now()}`;
+const TOPIC_NAME = `e2e-unconsumed-${crypto.randomUUID()}`;
+const GROUP_NAME = `e2e-unconsumed-group-${crypto.randomUUID()}`;
 
 /** Column indices (0-based td positions within a data row) */
 const COL = {
@@ -63,7 +63,7 @@ async function expectNoCommittedOffsetTooltip(page: Page, partitionId: number) {
   await expect(page.getByRole('tooltip')).toBeHidden();
 }
 
-test.describe('Consumer Group Details - Unconsumed Partitions', () => {
+test.describe('consumer Group Details - Unconsumed Partitions', () => {
   test.beforeAll(async () => {
     const { exec } = await import('node:child_process');
     const { promisify } = await import('node:util');
@@ -75,12 +75,17 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
     // 1. Create topic with 3 partitions
     await execRpk(`topic create ${TOPIC_NAME} --partitions 3`);
 
-    // 2. Produce one message to each partition (stdin pipe requires docker exec -i)
-    for (const partition of [0, 1, 2]) {
-      await execAsync(
-        `echo "msg-p${partition}" | docker exec -i ${containerId} rpk topic produce ${TOPIC_NAME} -p ${partition} ${authFlags}`
-      );
-    }
+    // 2. Produce one message to each partition (stdin pipe requires docker exec -i).
+    // Chained in partition order: step 3 relies on the messages arriving in that order.
+    await [0, 1, 2].reduce<Promise<unknown>>(
+      (previousProduce, partition) =>
+        previousProduce.then(() =>
+          execAsync(
+            `echo "msg-p${partition}" | docker exec -i ${containerId} rpk topic produce ${TOPIC_NAME} -p ${partition} ${authFlags}`
+          )
+        ),
+      Promise.resolve()
+    );
 
     // 3. Consume 2 messages — commits offsets on partitions 0 and 1 (in order)
     await execAsync(
@@ -119,9 +124,7 @@ test.describe('Consumer Group Details - Unconsumed Partitions', () => {
     });
 
     await step('All 3 partitions are visible in the table', async () => {
-      for (const partitionId of [0, 1, 2]) {
-        await expect(rowByPartition(page, partitionId)).toBeVisible();
-      }
+      await Promise.all([0, 1, 2].map((partitionId) => expect(rowByPartition(page, partitionId)).toBeVisible()));
     });
 
     await step('Partition 0 shows a numeric Group Offset (committed)', async () => {

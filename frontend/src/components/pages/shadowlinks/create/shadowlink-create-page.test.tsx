@@ -115,6 +115,101 @@ type CreateAction =
   | { type: 'enableSchemaRegistrySync' };
 
 /**
+ * Set an input's value directly and let the async form validation settle
+ */
+const fillInputValue = async (input: HTMLElement, value: string) => {
+  // Value-only — tests assert submitted payload shape, not keystroke behaviour.
+  fireEvent.input(input, { target: { value } });
+  // mode: 'onChange' kicks off the async zodResolver, which re-renders the
+  // form fields once it settles. Await that settle so it lands inside act().
+  await waitFor(() => {
+    expect((input as HTMLInputElement).value).toBe(value);
+  });
+};
+
+// Map certificate type to its file path input testId suffix
+const CERTIFICATE_PATH_TEST_ID_SUFFIX: Record<CertificateType, string> = {
+  ca: 'ca',
+  clientCert: 'client-cert',
+  clientKey: 'client-key',
+};
+
+/**
+ * Expand the disclosure that owns this cert type. CA lives under the CA disclosure;
+ * clientCert/clientKey live under the mTLS disclosure.
+ */
+const openCertificateDisclosure = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  certType: CertificateType
+) => {
+  const trigger = scr.getByTestId(certType === 'ca' ? 'tls-ca-disclosure-trigger' : 'tls-mtls-disclosure-trigger');
+  if (trigger.getAttribute('data-state') !== 'open') {
+    await user.click(trigger);
+  }
+};
+
+const addCertificateFilePath = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  certType: CertificateType,
+  filePath: string
+) => {
+  await openCertificateDisclosure(user, scr, certType);
+
+  // The mode picker only renders once a disclosure is open. Switch to file path.
+  await waitFor(
+    () => {
+      expect(scr.getByTestId('mtls-mode-file-path-tab')).toBeInTheDocument();
+    },
+    { timeout: 200 }
+  );
+  await user.click(scr.getByTestId('mtls-mode-file-path-tab'));
+
+  const testIdSuffix = CERTIFICATE_PATH_TEST_ID_SUFFIX[certType];
+
+  // Wait for the file path input to appear
+  await waitFor(
+    () => {
+      expect(scr.getByTestId(`mtls-${testIdSuffix}-path-input`)).toBeInTheDocument();
+    },
+    { timeout: 200 }
+  );
+  await user.type(scr.getByTestId(`mtls-${testIdSuffix}-path-input`), filePath);
+};
+
+/**
+ * Expand the disclosure that owns this cert type, then drop a file directly into
+ * the inline upload row. No modal, no save step.
+ */
+const uploadCertificatePem = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  certType: CertificateType,
+  pemContent: string
+) => {
+  await openCertificateDisclosure(user, scr, certType);
+
+  await waitFor(
+    () => {
+      expect(scr.getByTestId(`add-${certType}-button`)).toBeInTheDocument();
+    },
+    { timeout: 200 }
+  );
+
+  const input = scr.getByTestId(`add-${certType}-button`).querySelector('input[type="file"]');
+  const file = new File([pemContent], `${certType}.pem`, { type: 'application/x-pem-file' });
+
+  if (input) {
+    await user.upload(input as HTMLInputElement, file);
+  }
+
+  await waitFor(() => {
+    expect(scr.getByTestId(`${certType}-status`)).toBeInTheDocument();
+  });
+};
+
+/**
  * Perform action for create form
  */
 const performCreateAction = async (
@@ -123,117 +218,30 @@ const performCreateAction = async (
   action: CreateAction
 ): Promise<void> => {
   switch (action.type) {
-    case 'fillName': {
-      const nameInput = scr.getByPlaceholderText('my-shadow-link');
-      // Value-only — tests assert submitted payload shape, not keystroke behaviour.
-      fireEvent.input(nameInput, { target: { value: action.value } });
-      // mode: 'onChange' kicks off the async zodResolver, which re-renders the
-      // form fields once it settles. Await that settle so it lands inside act().
-      await waitFor(() => {
-        expect((nameInput as HTMLInputElement).value).toBe(action.value);
-      });
+    case 'fillName':
+      await fillInputValue(scr.getByPlaceholderText('my-shadow-link'), action.value);
       break;
-    }
-    case 'fillBootstrapServer': {
-      const serverInput = scr.getByTestId(`bootstrap-server-input-${action.index}`);
-      fireEvent.input(serverInput, { target: { value: action.value } });
-      await waitFor(() => {
-        expect((serverInput as HTMLInputElement).value).toBe(action.value);
-      });
+    case 'fillBootstrapServer':
+      await fillInputValue(scr.getByTestId(`bootstrap-server-input-${action.index}`), action.value);
       break;
-    }
     case 'addBootstrapServer':
       await addBootstrapServer(user, scr, action.value);
       break;
-    case 'fillScramUsername': {
-      const usernameInput = scr.getByTestId('scram-username-input');
-      fireEvent.input(usernameInput, { target: { value: action.value } });
-      await waitFor(() => {
-        expect((usernameInput as HTMLInputElement).value).toBe(action.value);
-      });
+    case 'fillScramUsername':
+      await fillInputValue(scr.getByTestId('scram-username-input'), action.value);
       break;
-    }
-    case 'fillScramPassword': {
-      const passwordInput = scr.getByTestId('scram-password-input');
-      fireEvent.input(passwordInput, { target: { value: action.value } });
-      await waitFor(() => {
-        expect((passwordInput as HTMLInputElement).value).toBe(action.value);
-      });
+    case 'fillScramPassword':
+      await fillInputValue(scr.getByTestId('scram-password-input'), action.value);
       break;
-    }
     case 'enableTLS':
       await enableTLS(user, scr);
       break;
-    case 'addCertificateFilePath': {
-      // Expand the disclosure that owns this cert type. CA lives under the CA disclosure;
-      // clientCert/clientKey live under the mTLS disclosure.
-      const triggerTestId = action.certType === 'ca' ? 'tls-ca-disclosure-trigger' : 'tls-mtls-disclosure-trigger';
-      const trigger = scr.getByTestId(triggerTestId);
-      if (trigger.getAttribute('data-state') !== 'open') {
-        await user.click(trigger);
-      }
-
-      // The mode picker only renders once a disclosure is open. Switch to file path.
-      await waitFor(
-        () => {
-          expect(scr.getByTestId('mtls-mode-file-path-tab')).toBeInTheDocument();
-        },
-        { timeout: 200 }
-      );
-
-      const filePathTab = scr.getByTestId('mtls-mode-file-path-tab');
-      await user.click(filePathTab);
-
-      // Map certificate type to testId suffix
-      let testIdSuffix = 'client-key';
-      if (action.certType === 'ca') {
-        testIdSuffix = 'ca';
-      } else if (action.certType === 'clientCert') {
-        testIdSuffix = 'client-cert';
-      }
-
-      // Wait for the file path input to appear
-      await waitFor(
-        () => {
-          expect(scr.getByTestId(`mtls-${testIdSuffix}-path-input`)).toBeInTheDocument();
-        },
-        { timeout: 200 }
-      );
-
-      const filePathInput = scr.getByTestId(`mtls-${testIdSuffix}-path-input`);
-      await user.type(filePathInput, action.filePath);
-
+    case 'addCertificateFilePath':
+      await addCertificateFilePath(user, scr, action.certType, action.filePath);
       break;
-    }
-    case 'addCertificatePEM': {
-      // Expand the disclosure that owns this cert type, then drop a file directly into
-      // the inline Dropzone. No modal, no save step.
-      const pemTriggerTestId = action.certType === 'ca' ? 'tls-ca-disclosure-trigger' : 'tls-mtls-disclosure-trigger';
-      const pemTrigger = scr.getByTestId(pemTriggerTestId);
-      if (pemTrigger.getAttribute('data-state') !== 'open') {
-        await user.click(pemTrigger);
-      }
-
-      await waitFor(
-        () => {
-          expect(scr.getByTestId(`add-${action.certType}-button`)).toBeInTheDocument();
-        },
-        { timeout: 200 }
-      );
-
-      const dropzone = scr.getByTestId(`add-${action.certType}-button`);
-      const input = dropzone.querySelector('input[type="file"]');
-      const file = new File([action.pemContent], `${action.certType}.pem`, { type: 'application/x-pem-file' });
-
-      if (input) {
-        await user.upload(input as HTMLInputElement, file);
-      }
-
-      await waitFor(() => {
-        expect(scr.getByTestId(`${action.certType}-status`)).toBeInTheDocument();
-      });
+    case 'addCertificatePEM':
+      await uploadCertificatePem(user, scr, action.certType, action.pemContent);
       break;
-    }
     case 'navigateToConfiguration':
       await navigateToConfigurationStep(user, scr);
       break;
@@ -249,14 +257,93 @@ const performCreateAction = async (
     case 'addRoleFilterCreate':
       await addRoleFilterCreate(user, scr, action.name);
       break;
-    case 'enableSchemaRegistrySync': {
-      const schemaRegistrySwitch = scr.getByTestId('sr-enable-switch');
-      await user.click(schemaRegistrySwitch);
+    case 'enableSchemaRegistrySync':
+      await user.click(scr.getByTestId('sr-enable-switch'));
       break;
-    }
     default:
       throw new Error(`Unknown action type: ${JSON.stringify(action)}`);
   }
+};
+
+/**
+ * Connection step values shared by most cases, ending on the configuration step
+ */
+const CONNECTION_STEP_ACTIONS: CreateAction[] = [
+  { type: 'fillName', value: 'test-shadow-link' },
+  { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
+  { type: 'fillScramUsername', value: 'admin' },
+  { type: 'fillScramPassword', value: 'admin-secret' },
+  { type: 'navigateToConfiguration' },
+];
+
+/**
+ * Render the page, wait for the connection step, then run the actions in sequence
+ */
+const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, actions: CreateAction[]) => {
+  renderCreatePage();
+
+  // Wait for the form to load and the connection step to render
+  await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+
+  // Each action drives the same form and may move to another step, so chain them in order.
+  await actions.reduce<Promise<void>>(
+    (previous, action) => previous.then(() => performCreateAction(user, screen, action)),
+    Promise.resolve()
+  );
+};
+
+/**
+ * Submit the form and return the request passed to the create mutation
+ */
+const submitCreateForm = async (
+  user: ReturnType<typeof userEvent.setup>,
+  mockMutateAsync: ReturnType<typeof rs.fn>
+) => {
+  await user.click(screen.getByRole('button', { name: 'Create shadow link' }));
+
+  // Verify mutateAsync was called
+  await waitFor(
+    () => {
+      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+    },
+    { timeout: 5000 }
+  );
+
+  return mockMutateAsync.mock.calls[0][0];
+};
+
+/**
+ * The submit succeeds asynchronously: after mutateAsync resolves, the
+ * onSuccess callback fires toast.success and navigate(). Those land as a
+ * late RHF/router re-render of the still-mounted form fields. Await the
+ * settled side effect so any final update is flushed inside act() before
+ * the test ends.
+ */
+const waitForCreateSuccess = async () => {
+  await waitFor(() => {
+    expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+  });
+};
+
+/**
+ * Switch Schema Registry sync to the API mode and fill its URL and HTTP Basic credentials
+ */
+const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByTestId('sr-mode-api-tab'));
+  await waitFor(() => {
+    expect(screen.getByTestId('sr-source-url-input')).toBeInTheDocument();
+  });
+
+  fireEvent.input(screen.getByTestId('sr-source-url-input'), {
+    target: { value: 'https://schema-registry.example.com:8081' },
+  });
+
+  await user.click(screen.getByTestId('sr-auth-basic-tab'));
+  await waitFor(() => {
+    expect(screen.getByTestId('sr-basic-username-input')).toBeInTheDocument();
+  });
+  fireEvent.input(screen.getByTestId('sr-basic-username-input'), { target: { value: 'sr-replicator' } });
+  fireEvent.input(screen.getByTestId('sr-basic-password-input'), { target: { value: 'p@ssw0rd!' } });
 };
 
 /**
@@ -466,7 +553,7 @@ const testCases: CreateTestCase[] = [
   },
 ];
 
-describe('ShadowLinkCreatePage', () => {
+describe('the ShadowLinkCreatePage', () => {
   const mockMutateAsync = rs.fn();
 
   beforeEach(() => {
@@ -514,41 +601,14 @@ describe('ShadowLinkCreatePage', () => {
   test.each(testCases)('$description', async ({ actions, verify }) => {
     const user = userEvent.setup();
 
-    renderCreatePage();
+    await renderAndPerform(user, actions);
 
-    // Wait for the form to load and the connection step to render
-    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
-
-    // Execute all actions in sequence
-    for (const action of actions) {
-      await performCreateAction(user, screen, action);
-    }
-
-    // Submit the form
-    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
-    await user.click(createButton);
-
-    // Verify mutateAsync was called
-    await waitFor(
-      () => {
-        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 5000 }
-    );
-
-    const createRequest = mockMutateAsync.mock.calls[0][0];
+    const createRequest = await submitCreateForm(user, mockMutateAsync);
 
     // Run custom verification function
     verify(createRequest, expect);
 
-    // The submit succeeds asynchronously: after mutateAsync resolves, the
-    // onSuccess callback fires toast.success and navigate(). Those land as a
-    // late RHF/router re-render of the still-mounted form fields. Await the
-    // settled side effect so any final update is flushed inside act() before
-    // the test ends.
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
-    });
+    await waitForCreateSuccess();
   });
 
   test('hides the roles card and omits role sync options when the cluster does not support role sync', async () => {
@@ -556,46 +616,22 @@ describe('ShadowLinkCreatePage', () => {
 
     const user = userEvent.setup();
 
-    renderCreatePage();
-
-    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
-
-    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
-    await performCreateAction(user, screen, {
-      type: 'fillBootstrapServer',
-      index: 0,
-      value: 'server1.example.com:9092',
-    });
-    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
-    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
-    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     // The whole roles card is gated out
     expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
     expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
 
-    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
-    await user.click(createButton);
-
-    await waitFor(
-      () => {
-        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 5000 }
-    );
-
     // Not even the default include-all filter may be sent to a cluster
     // that predates role sync
-    const createRequest = mockMutateAsync.mock.calls[0][0];
+    const createRequest = await submitCreateForm(user, mockMutateAsync);
     expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
 
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
-    });
+    await waitForCreateSuccess();
   });
 });
 
-describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
+describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
   const mockMutateAsync = rs.fn();
 
   beforeEach(() => {
@@ -640,107 +676,51 @@ describe('ShadowLinkCreatePage - Schema Registry sync over API', () => {
   test('submits api mode with raw basic auth password and TLS enabled', async () => {
     const user = userEvent.setup();
 
-    renderCreatePage();
-
-    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
-
-    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
-    await performCreateAction(user, screen, {
-      type: 'fillBootstrapServer',
-      index: 0,
-      value: 'server1.example.com:9092',
-    });
-    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
-    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
-    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     // The redesigned section replaces the legacy switch
     expect(screen.queryByTestId('sr-enable-switch')).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId('sr-mode-api-tab'));
-    await waitFor(() => {
-      expect(screen.getByTestId('sr-source-url-input')).toBeInTheDocument();
-    });
+    await fillSchemaRegistryApiConnection(user);
 
-    fireEvent.input(screen.getByTestId('sr-source-url-input'), {
-      target: { value: 'https://schema-registry.example.com:8081' },
-    });
-
-    await user.click(screen.getByTestId('sr-auth-basic-tab'));
-    await waitFor(() => {
-      expect(screen.getByTestId('sr-basic-username-input')).toBeInTheDocument();
-    });
-    fireEvent.input(screen.getByTestId('sr-basic-username-input'), { target: { value: 'sr-replicator' } });
-    fireEvent.input(screen.getByTestId('sr-basic-password-input'), { target: { value: 'p@ssw0rd!' } });
-
-    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
-    await user.click(createButton);
-
-    await waitFor(
-      () => {
-        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 5000 }
+    const createRequest = await submitCreateForm(user, mockMutateAsync);
+    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode).toMatchObject(
+      {
+        case: 'shadowSchemaRegistryApi',
+        value: {
+          sourceUrl: 'https://schema-registry.example.com:8081',
+          authOptions: {
+            authOptions: {
+              case: 'basic',
+              // Raw password, never a secret reference
+              value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
+            },
+          },
+          tlsSettings: { enabled: true },
+        },
+      }
     );
 
-    const createRequest = mockMutateAsync.mock.calls[0][0];
-    const syncOptions = createRequest.shadowLink.configurations.schemaRegistrySyncOptions;
-    expect(syncOptions.schemaRegistryShadowingMode.case).toBe('shadowSchemaRegistryApi');
-
-    const apiOptions = syncOptions.schemaRegistryShadowingMode.value;
-    expect(apiOptions.sourceUrl).toBe('https://schema-registry.example.com:8081');
-    expect(apiOptions.authOptions.authOptions.case).toBe('basic');
-    expect(apiOptions.authOptions.authOptions.value.username).toBe('sr-replicator');
-    // Raw password, never a secret reference
-    expect(apiOptions.authOptions.authOptions.value.password).toBe('p@ssw0rd!');
-    expect(apiOptions.tlsSettings.enabled).toBe(true);
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
-    });
+    await waitForCreateSuccess();
   });
 
   test('keeps the legacy topic payload when _schemas topic mode is selected', async () => {
     const user = userEvent.setup();
 
-    renderCreatePage();
-
-    await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
-
-    await performCreateAction(user, screen, { type: 'fillName', value: 'test-shadow-link' });
-    await performCreateAction(user, screen, {
-      type: 'fillBootstrapServer',
-      index: 0,
-      value: 'server1.example.com:9092',
-    });
-    await performCreateAction(user, screen, { type: 'fillScramUsername', value: 'admin' });
-    await performCreateAction(user, screen, { type: 'fillScramPassword', value: 'admin-secret' });
-    await performCreateAction(user, screen, { type: 'navigateToConfiguration' });
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     await user.click(screen.getByTestId('sr-mode-topic-tab'));
 
-    const createButton = screen.getByRole('button', { name: 'Create shadow link' });
-    await user.click(createButton);
-
-    await waitFor(
-      () => {
-        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 5000 }
-    );
-
-    const createRequest = mockMutateAsync.mock.calls[0][0];
+    const createRequest = await submitCreateForm(user, mockMutateAsync);
     expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
       'shadowSchemaRegistryTopic'
     );
 
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith('Shadow link created');
-    });
+    await waitForCreateSuccess();
   });
 });
 
-describe('ShadowLinkCreatePage - Embedded Mode Redirect', () => {
+describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
   const mockMutateAsync = rs.fn();
   const originalLocation = window.location;
 

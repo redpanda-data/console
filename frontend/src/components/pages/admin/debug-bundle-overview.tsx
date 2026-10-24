@@ -8,13 +8,14 @@ import {
   type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
 } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { api } from '../../../state/backend-api';
+import { TonedIcon } from '../shared/toned-icon';
 
 const StatusIcons: Record<DebugBundleStatus_Status, React.ReactElement> = {
-  [DebugBundleStatus_Status.UNSPECIFIED]: <ErrorIcon className="text-success" size={16} />,
-  [DebugBundleStatus_Status.SUCCESS]: <CheckCircleIcon className="text-success" size={16} />,
+  [DebugBundleStatus_Status.UNSPECIFIED]: <TonedIcon icon={ErrorIcon} size={16} tone="success" />,
+  [DebugBundleStatus_Status.SUCCESS]: <TonedIcon icon={CheckCircleIcon} size={16} tone="success" />,
   [DebugBundleStatus_Status.RUNNING]: <Spinner />,
-  [DebugBundleStatus_Status.ERROR]: <ErrorIcon className="text-destructive" size={16} />,
-  [DebugBundleStatus_Status.EXPIRED]: <ErrorIcon className="text-destructive" size={16} />,
+  [DebugBundleStatus_Status.ERROR]: <TonedIcon icon={ErrorIcon} size={16} tone="destructive" />,
+  [DebugBundleStatus_Status.EXPIRED]: <TonedIcon icon={ErrorIcon} size={16} tone="destructive" />,
 };
 
 const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] }> = ({

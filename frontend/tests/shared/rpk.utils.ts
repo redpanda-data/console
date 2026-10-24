@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const execAsync = promisify(exec);
+const SASL_FLAGS = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256';
 
 /**
  * Get the Redpanda container ID from testcontainers state file
@@ -28,7 +29,19 @@ export function getRedpandaContainerId(variantName = 'console'): string {
  */
 export async function execRpk(command: string, variantName = 'console'): Promise<string> {
   const containerId = getRedpandaContainerId(variantName);
-  const rpkCommand = `docker exec ${containerId} rpk ${command} -X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256`;
+  const rpkCommand = `docker exec ${containerId} rpk ${command} ${SASL_FLAGS}`;
   const { stdout } = await execAsync(rpkCommand);
+  return stdout;
+}
+
+/**
+ * Produce one record to a specific partition. `rpk topic produce` reads stdin, which needs `docker exec -i`.
+ * @param value - Record value; test-controlled text without quotes
+ */
+export async function produceToPartition(topic: string, partition: number, value: string, variantName = 'console') {
+  const containerId = getRedpandaContainerId(variantName);
+  const { stdout } = await execAsync(
+    `echo "${value}" | docker exec -i ${containerId} rpk topic produce ${topic} -p ${partition} ${SASL_FLAGS}`
+  );
   return stdout;
 }

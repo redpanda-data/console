@@ -1,9 +1,9 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { buttonVariants } from 'components/redpanda-ui/components/button';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
   coreHasEnterpriseFeatures,
@@ -14,16 +14,20 @@ import {
   MS_IN_DAY,
   prettyLicenseType,
 } from './license-utils';
-import { License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import { type License, License_Source, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const LicenseNotification = () => {
-  const licenses = useApiStoreHook((s) => s.licenses);
-  const licensesLoaded = useApiStoreHook((s) => s.licensesLoaded);
-  const licenseViolation = useApiStoreHook((s) => s.licenseViolation);
-  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
+  const { licenses, licensesLoaded, licenseViolation, enterpriseFeaturesUsed } = useApiStoreHook(
+    useShallow((state) => ({
+      licenses: state.licenses,
+      licensesLoaded: state.licensesLoaded,
+      licenseViolation: state.licenseViolation,
+      enterpriseFeaturesUsed: state.enterpriseFeaturesUsed,
+    }))
+  );
   const location = useLocation();
 
   useEffect(() => {
@@ -32,51 +36,19 @@ export const LicenseNotification = () => {
     });
   }, []);
 
-  // This Global License Notification banner is used only for Enterprise licenses
-  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
-  // Community Licenses can't expire at all.
-  const enterpriseLicenses = licenses.filter((license) => license.type === License_Type.ENTERPRISE);
+  const { showSomeLicenseExpirationInfo, visibleSoonToExpireLicenses, visibleExpiredLicenses, isWarning } =
+    getLicenseExpirationInfo(licenses, licenseViolation);
 
-  const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
-  const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
-
-  const showSomeLicenseExpirationInfo =
-    (visibleExpiredEnterpriseLicenses.length > 0 && licenseViolation) || soonToExpireLicenses.length;
-
-  if (licensesLoaded === undefined) {
-    return null;
-  }
-
-  // For these paths, we don't need to show a notification banner because the pages themselves handle license management
-  if (location.pathname === '/upload-license' || location.pathname === '/trial-expired') {
-    return null;
-  }
-
-  if (!showSomeLicenseExpirationInfo) {
+  if (
+    licensesLoaded === undefined ||
+    location.pathname === '/upload-license' ||
+    location.pathname === '/trial-expired' ||
+    !showSomeLicenseExpirationInfo
+  ) {
     return null;
   }
 
   const activeEnterpriseFeatures = enterpriseFeaturesUsed.filter((x) => x.enabled);
-
-  const visibleSoonToExpireLicenses =
-    soonToExpireLicenses.length > 1 && new Set(soonToExpireLicenses.map((x) => x.expiresAt)).size === 1
-      ? soonToExpireLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
-      : soonToExpireLicenses;
-
-  const visibleExpiredLicenses =
-    visibleExpiredEnterpriseLicenses.length > 1 &&
-    new Set(visibleExpiredEnterpriseLicenses.map((x) => x.expiresAt)).size === 1
-      ? visibleExpiredEnterpriseLicenses.filter((x) => x.source === License_Source.REDPANDA_CORE)
-      : visibleExpiredEnterpriseLicenses;
-
-  const isWarning =
-    visibleExpiredLicenses.length > 0 ||
-    licenseViolation ||
-    soonToExpireLicenses.some((license) => {
-      const WARNING_THRESHOLD_DAYS = 15;
-      const msToExpiration = getMillisecondsToExpiration(license);
-      return msToExpiration > -1 && msToExpiration < WARNING_THRESHOLD_DAYS * MS_IN_DAY;
-    });
 
   return (
     <div data-testid="license-notification">
@@ -129,21 +101,15 @@ export const LicenseNotification = () => {
             )}
           </p>
 
-          {/* Both CTAs navigate, so they stay anchors and keep the link role; Button would impose
-              role="button". AlertDescription puts `[&_a]:link-inline` on every descendant anchor, so
-              the button-styled ones need to opt out. `rounded-md` because the radius lives on the
-              Button component, not in `buttonVariants`. */}
-          <div className="[&_a]:!no-underline my-2 flex gap-2">
+          {/* Both CTAs navigate, preserving link semantics. */}
+          <div className="my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
-              <Link
-                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-md')}
-                to="/upload-license"
-              >
+              <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
                 Upload license
               </Link>
             )}
             <a
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-md')}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
               href="https://support.redpanda.com/"
               rel="noopener noreferrer"
               target="_blank"
@@ -156,3 +122,36 @@ export const LicenseNotification = () => {
     </div>
   );
 };
+
+function preferCoreLicenseForSharedExpiry(licenses: License[]): License[] {
+  return licenses.length > 1 && new Set(licenses.map((license) => license.expiresAt)).size === 1
+    ? licenses.filter((license) => license.source === License_Source.REDPANDA_CORE)
+    : licenses;
+}
+
+function getLicenseExpirationInfo(licenses: License[], licenseViolation: boolean | undefined) {
+  // This Global License Notification banner is used only for Enterprise licenses
+  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
+  // Community Licenses can't expire at all.
+  const enterpriseLicenses = licenses.filter((license) => license.type === License_Type.ENTERPRISE);
+
+  const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];
+  const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
+
+  const showSomeLicenseExpirationInfo =
+    (visibleExpiredEnterpriseLicenses.length > 0 && licenseViolation) || soonToExpireLicenses.length;
+
+  const visibleSoonToExpireLicenses = preferCoreLicenseForSharedExpiry(soonToExpireLicenses);
+  const visibleExpiredLicenses = preferCoreLicenseForSharedExpiry(visibleExpiredEnterpriseLicenses);
+
+  const isWarning =
+    visibleExpiredLicenses.length > 0 ||
+    licenseViolation ||
+    soonToExpireLicenses.some((license) => {
+      const WARNING_THRESHOLD_DAYS = 15;
+      const msToExpiration = getMillisecondsToExpiration(license);
+      return msToExpiration > -1 && msToExpiration < WARNING_THRESHOLD_DAYS * MS_IN_DAY;
+    });
+
+  return { showSomeLicenseExpirationInfo, visibleSoonToExpireLicenses, visibleExpiredLicenses, isWarning };
+}

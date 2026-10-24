@@ -12,11 +12,13 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { type AclDetail, getRuleDataTestId, parsePrincipal } from '../shared/acl-model';
+import { ExpandedDetailRow } from '../shared/expanded-detail-row';
 import { OperationsBadge } from '../shared/operations-badge';
 
 type UserAclsCardProps = {
@@ -34,7 +36,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
   const navigate = useNavigate({ from: '/security/users/$userName/details' });
 
   return [
-    <TableRow className="hover:bg-surface-subtle" key={`acl-${rowKey}`}>
+    <TableRow key={`acl-${rowKey}`}>
       <TableCell testId={`acl-principal-${rowKey}`}>{acl.sharedConfig.principal}</TableCell>
       <TableCell testId={`acl-host-${acl.sharedConfig.host}`}>{acl.sharedConfig.host}</TableCell>
       <TableCell align="right">
@@ -49,6 +51,8 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
                 to: '/security/acls/$aclName/details',
                 params: { aclName: parsePrincipal(acl.sharedConfig.principal).name },
                 search: { host: acl.sharedConfig.host },
+              }).catch((error: unknown) => {
+                toast.error('Failed to navigate', { description: String(error) });
               });
             }}
             size="sm"
@@ -61,22 +65,20 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
       </TableCell>
     </TableRow>,
     isExpanded && (
-      <TableRow key={`acl-${rowKey}-expanded`}>
-        <TableCell className="bg-surface-subtle p-6" colSpan={3}>
-          <div className="space-y-4">
-            <div className="font-semibold text-body text-foreground">ACL Rules ({acl.rules.length})</div>
-            {acl.rules.map((rule) => (
-              <div
-                className="rounded-lg border border-border bg-card p-4"
-                data-testid={`rule-${getRuleDataTestId(rule)}`}
-                key={rule.id}
-              >
-                <OperationsBadge rule={rule} />
-              </div>
-            ))}
-          </div>
-        </TableCell>
-      </TableRow>
+      <ExpandedDetailRow colSpan={3} key={`acl-${rowKey}-expanded`}>
+        <div className="space-y-4">
+          <div className="text-body font-semibold text-foreground">ACL Rules ({acl.rules.length})</div>
+          {acl.rules.map((rule) => (
+            <div
+              className="rounded-lg border border-border bg-card p-4"
+              data-testid={`rule-${getRuleDataTestId(rule)}`}
+              key={rule.id}
+            >
+              <OperationsBadge rule={rule} />
+            </div>
+          ))}
+        </div>
+      </ExpandedDetailRow>
     ),
   ];
 };
@@ -108,6 +110,8 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
                 navigate({
                   to: '/security/acls/create',
                   search: { principalType: undefined, principalName: undefined },
+                }).catch((error: unknown) => {
+                  toast.error('Failed to navigate', { description: String(error) });
                 });
               }}
               testId="create-acl-button"

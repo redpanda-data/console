@@ -66,7 +66,27 @@ const TestWrapper = ({
   );
 };
 
-describe('SourceConnectionSection', () => {
+/** Renders the section and records the latest form values on every change. */
+const renderTrackingFormValues = () => {
+  const user = userEvent.setup();
+  const latest: { values?: FormValues } = {};
+
+  render(
+    <TestWrapper
+      onFormChange={(values) => {
+        latest.values = values;
+      }}
+    />
+  );
+  return { user, latest };
+};
+
+const uploadToDropzone = async (user: ReturnType<typeof userEvent.setup>, dropzoneTestId: string, file: File) => {
+  const input = screen.getByTestId(dropzoneTestId).querySelector('input[type="file"]');
+  await user.upload(input as HTMLInputElement, file);
+};
+
+describe('the SourceConnectionSection', () => {
   test('should render the source URL field and default to no authentication', () => {
     render(<TestWrapper />);
 
@@ -109,7 +129,7 @@ describe('SourceConnectionSection', () => {
     });
   });
 
-  describe('HTTP Basic password in embedded mode (Cloud)', () => {
+  describe('the HTTP Basic password in embedded mode (Cloud)', () => {
     beforeEach(() => {
       rs.mocked(isEmbedded).mockReturnValue(true);
     });
@@ -182,16 +202,7 @@ describe('SourceConnectionSection', () => {
   });
 
   test('should upload client key and certificate through the mTLS dropzones', async () => {
-    const user = userEvent.setup();
-    let formValues: FormValues | undefined;
-
-    render(
-      <TestWrapper
-        onFormChange={(values) => {
-          formValues = values;
-        }}
-      />
-    );
+    const { user, latest } = renderTrackingFormValues();
 
     await user.click(screen.getByTestId('sr-tls-mtls-disclosure-trigger'));
 
@@ -199,32 +210,34 @@ describe('SourceConnectionSection', () => {
       expect(screen.getByTestId('add-sr-clientKey-button')).toBeInTheDocument();
     });
 
-    const keyDropzone = screen.getByTestId('add-sr-clientKey-button');
-    const keyInput = keyDropzone.querySelector('input[type="file"]');
-    const keyFile = new File(['-----BEGIN PRIVATE KEY-----\nKEY'], 'client.key', { type: 'application/x-pkcs12' });
-    await user.upload(keyInput as HTMLInputElement, keyFile);
+    await uploadToDropzone(
+      user,
+      'add-sr-clientKey-button',
+      new File(['-----BEGIN PRIVATE KEY-----\nKEY'], 'client.key', { type: 'application/x-pkcs12' })
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('sr-clientKey-status')).toBeInTheDocument();
-      expect(formValues?.schemaRegistry?.mtls?.clientKey?.pemContent).toBe('-----BEGIN PRIVATE KEY-----\nKEY');
+      expect(latest.values?.schemaRegistry?.mtls?.clientKey?.pemContent).toBe('-----BEGIN PRIVATE KEY-----\nKEY');
     });
 
-    const certDropzone = screen.getByTestId('add-sr-clientCert-button');
-    const certInput = certDropzone.querySelector('input[type="file"]');
-    const certFile = new File(['-----BEGIN CERTIFICATE-----\nCERT'], 'client.pem', {
-      type: 'application/x-pem-file',
-    });
-    await user.upload(certInput as HTMLInputElement, certFile);
+    await uploadToDropzone(
+      user,
+      'add-sr-clientCert-button',
+      new File(['-----BEGIN CERTIFICATE-----\nCERT'], 'client.pem', {
+        type: 'application/x-pem-file',
+      })
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('sr-clientCert-status')).toBeInTheDocument();
-      expect(formValues?.schemaRegistry?.mtls?.clientCert?.pemContent).toBe('-----BEGIN CERTIFICATE-----\nCERT');
+      expect(latest.values?.schemaRegistry?.mtls?.clientCert?.pemContent).toBe('-----BEGIN CERTIFICATE-----\nCERT');
     });
 
     // Removing the key clears it from form state again
     await user.click(screen.getByTestId('remove-sr-clientKey-button'));
     await waitFor(() => {
-      expect(formValues?.schemaRegistry?.mtls?.clientKey).toBeUndefined();
+      expect(latest.values?.schemaRegistry?.mtls?.clientKey).toBeUndefined();
     });
   });
 });

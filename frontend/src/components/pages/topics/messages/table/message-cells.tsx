@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import clsx from 'clsx';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
@@ -28,13 +30,16 @@ export type ValuePreviewConfig = {
 /** Max characters of the one-line JSON preview shown in key/value cells (mirrors the mock's ~92ch). */
 const PREVIEW_MAX_CHARS = 92;
 
+// The hover hint shows more than the cell without covering the table; the detail panel has the rest.
+const PAYLOAD_HINT_MAX_CHARS = 300;
+
 const truncate = (text: string, max = PREVIEW_MAX_CHARS) => (text.length > max ? `${text.slice(0, max)}…` : text);
 
 export const OffsetCell = ({ offset }: { offset: number }) =>
   offset < 0 ? (
     <span className="text-muted-foreground">Loading…</span>
   ) : (
-    <span className="font-mono text-[13px] tabular-nums">{offset.toLocaleString()}</span>
+    <span className="font-mono text-body tabular-nums">{offset.toLocaleString()}</span>
   );
 
 export const TimestampCell = ({ timestamp, format }: { timestamp: number; format: TimestampDisplayFormat }) => (
@@ -44,20 +49,23 @@ export const TimestampCell = ({ timestamp, format }: { timestamp: number; format
 );
 
 export const SizeCell = ({ size }: { size: number }) => (
-  <span className="whitespace-nowrap font-mono text-[13px] text-muted-foreground">{prettyBytes(size)}</span>
+  <span className="font-mono text-body whitespace-nowrap text-muted-foreground">{prettyBytes(size)}</span>
 );
 
-const payloadText = (
-  payload: Payload,
-  json: string,
-  hexPreview: string
-): { text: string; muted: boolean; error?: boolean } => {
+type PayloadText = { text: string; muted: boolean; error?: boolean };
+
+/** Payloads with nothing to preview inline: a null record, or one too large to have been fetched. */
+const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
   if (payload.isPayloadNull) {
     return { text: 'null', muted: true };
   }
   if (payload.isPayloadTooLarge) {
     return { text: 'Payload too large to display — open the message to load it', muted: true };
   }
+};
+
+/** The best decoded form: JSON, then the hex preview, then a deserialization-failure hint. */
+const decodedPayloadText = (payload: Payload, json: string, hexPreview: string): PayloadText => {
   if (json) {
     return { text: json, muted: false };
   }
@@ -70,16 +78,19 @@ const payloadText = (
   return { text: '', muted: true };
 };
 
+const payloadText = (payload: Payload, json: string, hexPreview: string): PayloadText =>
+  unavailablePayloadText(payload) ?? decodedPayloadText(payload, json, hexPreview);
+
 /**
  * Meta row shown under key/value content in `detailed` density:
  * the decoder badge and payload byte size, per the design mock.
  */
 const PayloadMeta = ({ payload }: { payload: Payload }) => (
   <span className="mt-0.5 flex items-center gap-2">
-    <Badge className="font-mono text-[10px] uppercase" size="sm" tone="default" variant="subtle">
+    <Badge size="sm" tone="default" variant="subtle">
       {payload.encoding}
     </Badge>
-    <span className="text-[11px] text-muted-foreground">{prettyBytes(payload.size)}</span>
+    <span className="text-body-sm text-muted-foreground">{prettyBytes(payload.size)}</span>
   </span>
 );
 
@@ -98,15 +109,22 @@ export const PayloadCell = ({
 }) => {
   const { text, muted, error } = payloadText(payload, json, hexPreview);
   return (
-    <span className={`flex min-w-0 flex-col ${className ?? ''}`}>
-      <span
-        className={`block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[13px] ${
-          muted ? 'text-muted-foreground italic' : ''
-        } ${error ? 'text-destructive' : ''}`}
-        title={muted ? undefined : text}
+    <span className={clsx('flex min-w-0 flex-col', className ?? '')}>
+      <ElementTooltip
+        content={
+          muted ? undefined : <span className="font-mono break-all">{truncate(text, PAYLOAD_HINT_MAX_CHARS)}</span>
+        }
       >
-        {truncate(text)}
-      </span>
+        <span
+          className={clsx(
+            'block overflow-hidden font-mono text-body text-ellipsis whitespace-nowrap',
+            muted ? 'text-muted-foreground italic' : '',
+            error ? 'text-destructive' : ''
+          )}
+        >
+          {truncate(text)}
+        </span>
+      </ElementTooltip>
       {density === 'detailed' && !payload.isPayloadNull && <PayloadMeta payload={payload} />}
     </span>
   );
@@ -142,7 +160,13 @@ export const ValueCell = ({
     }
     return (
       <span className="flex min-w-0 flex-col">
-        <span className={`previewTags previewTags-${preview.displayMode} font-mono text-[12.5px]`}>
+        <span
+          className={clsx('previewTags font-mono text-body-sm', {
+            'previewTags-single': preview.displayMode === 'single',
+            'previewTags-wrap': preview.displayMode === 'wrap',
+            'previewTags-rows': preview.displayMode === 'rows',
+          })}
+        >
           {chips.length > 0 ? chips : <span className="text-muted-foreground italic">no preview match</span>}
         </span>
         {density === 'detailed' && <PayloadMeta payload={msg.value} />}

@@ -62,7 +62,7 @@ export const SchemaContextSelect = ({ id, value, onChange, contexts, disabled, t
       onValueChange={(v) => onChange(v === AUTO_OPTION ? AUTO_SCHEMA_CONTEXT : v)}
       value={value === AUTO_SCHEMA_CONTEXT ? AUTO_OPTION : value}
     >
-      <SelectTrigger className="w-full" testId={id} title={title}>
+      <SelectTrigger className="w-full" id={id} testId={id} title={title}>
         <SelectValue>{(v: unknown) => options.find((o) => o.value === v)?.label}</SelectValue>
       </SelectTrigger>
       <SelectContent>

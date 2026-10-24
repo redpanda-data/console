@@ -36,40 +36,14 @@ rs.mock('@tanstack/react-router', () => {
 
   return {
     ...actual,
-    Link: ({
-      children,
-      params: _params,
-      search: _search,
-      to,
-      ...props
-    }: {
-      children: ReactNode;
-      params?: unknown;
-      search?: unknown;
-      to?: string;
-      [key: string]: unknown;
-    }) => (
-      <a href={to ?? ''} {...props}>
-        {children}
-      </a>
-    ),
-    useNavigate: () => rs.fn(),
+    Link: MockLink,
+    // Real navigate() returns a promise that settles once the route commits.
+    useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
 
 rs.mock('../shared/delete-role-confirm-modal', () => ({
-  DeleteRoleConfirmModal: ({
-    onConfirm,
-    roleName,
-  }: {
-    onConfirm: () => Promise<void> | void;
-    roleName: string;
-    [key: string]: unknown;
-  }) => (
-    <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
-      Confirm delete
-    </button>
-  ),
+  DeleteRoleConfirmModal: MockDeleteRoleConfirmModal,
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
@@ -135,11 +109,11 @@ rs.mock('../../../../state/supported-features', () => {
 });
 
 rs.mock('../../../license/feature-license-notification', () => ({
-  FeatureLicenseNotification: () => null,
+  FeatureLicenseNotification: MockFeatureLicenseNotification,
 }));
 
 rs.mock('../../../misc/null-fallback-boundary', () => ({
-  NullFallbackBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  NullFallbackBoundary: MockNullFallbackBoundary,
 }));
 
 rs.mock('../../../misc/section', () => ({
@@ -147,7 +121,7 @@ rs.mock('../../../misc/section', () => ({
 }));
 
 rs.mock('../shared/security-tabs-nav', () => ({
-  SecurityTabsNav: () => null,
+  SecurityTabsNav: MockSecurityTabsNav,
 }));
 
 rs.mock('react-query/api/security', () => ({
@@ -166,7 +140,7 @@ rs.mock('react-query/api/security', () => ({
 
 import { RolesTab } from './roles-tab';
 
-describe('RolesTab role navigation', () => {
+describe('the RolesTab role navigation', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
@@ -189,3 +163,50 @@ describe('RolesTab role navigation', () => {
     );
   });
 });
+
+function MockLink({
+  children,
+  params: _params,
+  search: _search,
+  to,
+  ...props
+}: {
+  children: ReactNode;
+  params?: unknown;
+  search?: unknown;
+  to?: string;
+  [key: string]: unknown;
+}) {
+  return (
+    <a href={to ?? ''} {...props}>
+      {children}
+    </a>
+  );
+}
+
+function MockDeleteRoleConfirmModal({
+  onConfirm,
+  roleName,
+}: {
+  onConfirm: () => Promise<void> | void;
+  roleName: string;
+  [key: string]: unknown;
+}) {
+  return (
+    <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
+      Confirm delete
+    </button>
+  );
+}
+
+function MockFeatureLicenseNotification() {
+  return null;
+}
+
+function MockNullFallbackBoundary({ children }: { children?: ReactNode }) {
+  return <>{children}</>;
+}
+
+function MockSecurityTabsNav() {
+  return null;
+}

@@ -29,6 +29,31 @@ const RESOURCE_TYPE_BY_PREFIX: Record<string, string> = {
   consumers: 'consumer groups',
 };
 
+const FILTER_TABS = {
+  'include-specific': { patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+  'include-prefix': { patternType: PatternType.PREFIX, filterType: FilterType.INCLUDE },
+  'exclude-specific': { patternType: PatternType.LITERAL, filterType: FilterType.EXCLUDE },
+  'exclude-prefix': { patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
+} as const;
+
+type FilterTab = keyof typeof FILTER_TABS;
+
+const isFilterTab = (value: string): value is FilterTab => value in FILTER_TABS;
+
+const getFilterTab = (patternType: unknown, filterType: unknown): FilterTab =>
+  (Object.keys(FILTER_TABS) as FilterTab[]).find(
+    (tab) => FILTER_TABS[tab].patternType === patternType && FILTER_TABS[tab].filterType === filterType
+  ) ?? 'include-specific';
+
+const getFilterFieldNames = <TFieldValues extends FieldValues>(prefix: string, index: number) => ({
+  pattern: `${prefix}.${index}.patternType` as FieldPath<TFieldValues>,
+  filter: `${prefix}.${index}.filterType` as FieldPath<TFieldValues>,
+  name: `${prefix}.${index}.name` as FieldPath<TFieldValues>,
+});
+
+const testIdFor = (dataTestId: string | undefined, suffix: string) =>
+  dataTestId ? `${dataTestId}-${suffix}` : undefined;
+
 type FilterItemProps<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>;
   index: number;
@@ -40,6 +65,95 @@ type FilterItemProps<TFieldValues extends FieldValues> = {
   errorMessage?: string; // Error message to display in resume/summary view
 };
 
+type FilterItemSummaryProps = {
+  filterLabel: string;
+  nameValue: unknown;
+  errorMessage?: string;
+};
+
+// Resume/summary view (non-editable)
+const FilterItemSummary = ({ filterLabel, nameValue, errorMessage }: FilterItemSummaryProps) => (
+  <div>
+    <Item>
+      <div className="text-body font-medium">{filterLabel}</div>
+      <div className="flex flex-wrap gap-2">
+        {nameValue ? (
+          <Badge size="sm" tone="informative" variant="subtle">
+            {String(nameValue)}
+          </Badge>
+        ) : (
+          <Badge size="sm" tone="default" variant="subtle">
+            (empty)
+          </Badge>
+        )}
+      </div>
+      {Boolean(errorMessage) && (
+        <p className="mt-1 text-body text-destructive" data-slot="form-message">
+          {errorMessage}
+        </p>
+      )}
+    </Item>
+  </div>
+);
+
+type FilterItemEditorProps = {
+  tab: FilterTab;
+  onTabChange: (tab: string) => void;
+  onRemove: () => void;
+  resourceType: string;
+  showMatchAllMessage: boolean;
+  dataTestId?: string;
+  children: React.ReactNode;
+};
+
+const FilterItemEditor = ({
+  tab,
+  onTabChange,
+  onRemove,
+  resourceType,
+  showMatchAllMessage,
+  dataTestId,
+  children,
+}: FilterItemEditorProps) => (
+  <FormItem className="flex-1" spacing="loose">
+    <div className="flex items-center justify-between gap-4">
+      <Tabs onValueChange={onTabChange} value={tab}>
+        <TabsList data-testid={testIdFor(dataTestId, 'filter-type')}>
+          <TabsTrigger data-testid={testIdFor(dataTestId, 'include-specific')} value="include-specific">
+            Include specific {resourceType}
+          </TabsTrigger>
+          <TabsTrigger data-testid={testIdFor(dataTestId, 'include-prefix')} value="include-prefix">
+            Include starting with
+          </TabsTrigger>
+          <TabsTrigger data-testid={testIdFor(dataTestId, 'exclude-specific')} value="exclude-specific">
+            Exclude specific
+          </TabsTrigger>
+          <TabsTrigger data-testid={testIdFor(dataTestId, 'exclude-prefix')} value="exclude-prefix">
+            Exclude starting with
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <Button
+        data-testid={testIdFor(dataTestId, 'delete')}
+        onClick={onRemove}
+        size="icon"
+        type="button"
+        variant="ghost"
+      >
+        <Trash className="h-3 w-3" />
+      </Button>
+    </div>
+    {children}
+    <FormMessage />
+    {Boolean(showMatchAllMessage) && (
+      <Alert variant="warning">
+        <Info className="h-4 w-4" />
+        <AlertDescription>This filter will match all {resourceType}.</AlertDescription>
+      </Alert>
+    )}
+  </FormItem>
+);
+
 export const FilterItem = <TFieldValues extends FieldValues>({
   control,
   index,
@@ -50,153 +164,53 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   'data-testid': dataTestId,
   errorMessage,
 }: FilterItemProps<TFieldValues>) => {
-  const patternFieldName = `${fieldNamePrefix}.${index}.patternType` as FieldPath<TFieldValues>;
-  const filterFieldName = `${fieldNamePrefix}.${index}.filterType` as FieldPath<TFieldValues>;
-  const nameFieldName = `${fieldNamePrefix}.${index}.name` as FieldPath<TFieldValues>;
+  const fieldNames = getFilterFieldNames<TFieldValues>(fieldNamePrefix, index);
+  const patternValue = useWatch({ control, name: fieldNames.pattern });
+  const filterValue = useWatch({ control, name: fieldNames.filter });
+  const nameValue = useWatch({ control, name: fieldNames.name });
+  const resourceType = RESOURCE_TYPE_BY_PREFIX[fieldNamePrefix] ?? 'consumer groups';
 
-  const patternValue = useWatch({ control, name: patternFieldName });
-  const filterValue = useWatch({ control, name: filterFieldName });
-  const nameValue = useWatch({ control, name: nameFieldName });
+  if (!viewType) {
+    return (
+      <FilterItemSummary
+        errorMessage={errorMessage}
+        filterLabel={getFilterTypeLabel(patternValue, filterValue, resourceType)}
+        nameValue={nameValue}
+      />
+    );
+  }
 
   const showMatchAllMessage =
     patternValue === PatternType.LITERAL && filterValue === FilterType.INCLUDE && nameValue === '*';
 
-  const resourceType = RESOURCE_TYPE_BY_PREFIX[fieldNamePrefix] ?? 'consumer groups';
-
-  // Resume/summary view (non-editable)
-  if (!viewType) {
-    const filterLabel = getFilterTypeLabel(patternValue, filterValue, resourceType);
-
-    return (
-      <div>
-        <Item>
-          <div className="font-medium text-body">{filterLabel}</div>
-          <div className="flex flex-wrap gap-2">
-            {nameValue ? (
-              <Badge size="sm" tone="informative" variant="subtle">
-                {nameValue}
-              </Badge>
-            ) : (
-              <Badge size="sm" tone="default" variant="subtle">
-                (empty)
-              </Badge>
-            )}
-          </div>
-          {Boolean(errorMessage) && (
-            <p className="mt-1 text-body text-destructive" data-slot="form-message">
-              {errorMessage}
-            </p>
-          )}
-        </Item>
-      </div>
-    );
-  }
-
   // Editable view (full form)
   return (
-    <Card className="gap-0" data-testid={dataTestId} size="full" variant="elevated">
+    <Card data-testid={dataTestId} size="full" variant="elevated">
       <CardContent>
         <FormField
           control={control}
-          name={patternFieldName}
+          name={fieldNames.pattern}
           render={({ field: patternField }) => (
             <FormField
               control={control}
-              name={filterFieldName}
-              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-              render={({ field: filterField }) => {
-                // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-                const getTabValue = () => {
-                  if (patternField.value === PatternType.LITERAL && filterField.value === FilterType.INCLUDE) {
-                    return 'include-specific';
-                  }
-                  if (patternField.value === PatternType.PREFIX && filterField.value === FilterType.INCLUDE) {
-                    return 'include-prefix';
-                  }
-                  if (patternField.value === PatternType.LITERAL && filterField.value === FilterType.EXCLUDE) {
-                    return 'exclude-specific';
-                  }
-                  if (patternField.value === PatternType.PREFIX && filterField.value === FilterType.EXCLUDE) {
-                    return 'exclude-prefix';
-                  }
-                  return 'include-specific';
-                };
-
-                const handleTabChange = (value: string) => {
-                  switch (value) {
-                    case 'include-specific':
-                      patternField.onChange(PatternType.LITERAL);
-                      filterField.onChange(FilterType.INCLUDE);
-                      break;
-                    case 'include-prefix':
-                      patternField.onChange(PatternType.PREFIX);
-                      filterField.onChange(FilterType.INCLUDE);
-                      break;
-                    case 'exclude-specific':
-                      patternField.onChange(PatternType.LITERAL);
-                      filterField.onChange(FilterType.EXCLUDE);
-                      break;
-                    case 'exclude-prefix':
-                      patternField.onChange(PatternType.PREFIX);
-                      filterField.onChange(FilterType.EXCLUDE);
-                      break;
-                    default:
-                      break;
-                  }
-                };
-
-                return (
-                  <FormItem className="flex-1 space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <Tabs onValueChange={handleTabChange} value={getTabValue()}>
-                        <TabsList data-testid={dataTestId ? `${dataTestId}-filter-type` : undefined}>
-                          <TabsTrigger
-                            data-testid={dataTestId ? `${dataTestId}-include-specific` : undefined}
-                            value="include-specific"
-                          >
-                            Include specific {resourceType}
-                          </TabsTrigger>
-                          <TabsTrigger
-                            data-testid={dataTestId ? `${dataTestId}-include-prefix` : undefined}
-                            value="include-prefix"
-                          >
-                            Include starting with
-                          </TabsTrigger>
-                          <TabsTrigger
-                            data-testid={dataTestId ? `${dataTestId}-exclude-specific` : undefined}
-                            value="exclude-specific"
-                          >
-                            Exclude specific
-                          </TabsTrigger>
-                          <TabsTrigger
-                            data-testid={dataTestId ? `${dataTestId}-exclude-prefix` : undefined}
-                            value="exclude-prefix"
-                          >
-                            Exclude starting with
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                      <Button
-                        data-testid={dataTestId ? `${dataTestId}-delete` : undefined}
-                        onClick={onRemove}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Trash className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    {children}
-                    <FormMessage />
-                    {Boolean(showMatchAllMessage) && (
-                      <Alert variant="warning">
-                        <Info className="h-4 w-4" />
-                        <AlertDescription>This filter will match all {resourceType}.</AlertDescription>
-                      </Alert>
-                    )}
-                  </FormItem>
-                );
-              }}
+              name={fieldNames.filter}
+              render={({ field: filterField }) => (
+                <FilterItemEditor
+                  dataTestId={dataTestId}
+                  onRemove={onRemove}
+                  onTabChange={(value) => {
+                    if (isFilterTab(value)) {
+                      patternField.onChange(FILTER_TABS[value].patternType);
+                      filterField.onChange(FILTER_TABS[value].filterType);
+                    }
+                  }}
+                  resourceType={resourceType}
+                  showMatchAllMessage={showMatchAllMessage}
+                  tab={getFilterTab(patternField.value, filterField.value)}
+                >
+                  {children}
+                </FilterItemEditor>
+              )}
             />
           )}
         />

@@ -31,12 +31,15 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 // emit "width(0) and height(0) of chart should be greater than 0" on every
 // chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
 // so the inner LineChart gets a positive layout and the warning stops.
+function MockResponsiveContainer({ children }: { children: React.ReactNode }) {
+  return React.createElement('div', { style: { width: 800, height: 600 } }, children);
+}
+
 rs.mock('recharts', () => {
   const actual = rs.requireActual<typeof import('recharts')>('recharts');
   return {
     ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
-      React.createElement('div', { style: { width: 800, height: 600 } }, children),
+    ResponsiveContainer: MockResponsiveContainer,
   };
 });
 
@@ -69,7 +72,27 @@ rs.mock('state/app-global', () => ({
 
 import ObservabilityPage from './observability-page';
 
-describe('ObservabilityPage', () => {
+// Two data points an hour apart, so the chart has a line to draw.
+function createLastHourTimeSeries() {
+  const now = Date.UTC(2026, 0, 15, 12);
+  const oneHourAgo = now - 60 * 60 * 1000;
+
+  return create(TimeSeriesSchema, {
+    name: 'default',
+    values: [
+      create(DataPointSchema, {
+        timestamp: timestampFromMs(oneHourAgo),
+        value: 50.5,
+      }),
+      create(DataPointSchema, {
+        timestamp: timestampFromMs(now),
+        value: 75.2,
+      }),
+    ],
+  });
+}
+
+describe('the ObservabilityPage', () => {
   test('should display metrics queries when data is loaded', async () => {
     const query1 = create(QueryMetadataSchema, {
       name: 'cpu_usage',
@@ -91,23 +114,7 @@ describe('ObservabilityPage', () => {
       queries: [query1, query2],
     });
 
-    // Create mock time series data
-    const now = Date.now();
-    const oneHourAgo = now - 60 * 60 * 1000;
-
-    const mockTimeSeries = create(TimeSeriesSchema, {
-      name: 'default',
-      values: [
-        create(DataPointSchema, {
-          timestamp: timestampFromMs(oneHourAgo),
-          value: 50.5,
-        }),
-        create(DataPointSchema, {
-          timestamp: timestampFromMs(now),
-          value: 75.2,
-        }),
-      ],
-    });
+    const mockTimeSeries = createLastHourTimeSeries();
 
     const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
     const executeRangeQueryMock = rs.fn().mockImplementation((request) => {

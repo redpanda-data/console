@@ -14,7 +14,7 @@ import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
-import React, { Component, type CSSProperties, type JSX, useEffect, useState } from 'react';
+import React, { Component, type CSSProperties, type JSX, useEffect, useId, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
@@ -34,7 +34,6 @@ export function numberToThousandsString(n: number): JSX.Element {
   }
 
   const parts = n.toLocaleString(defaultLocale).split(thousandsSeperator);
-  const separator = nbsp;
 
   const result: JSX.Element[] = [];
   for (let i = 0; i < parts.length; i++) {
@@ -47,7 +46,7 @@ export function numberToThousandsString(n: number): JSX.Element {
     if (!last) {
       result.push(
         <span className="noSelect nbspSeparator" key={`${i}.`}>
-          {separator}
+          {nbsp}
         </span>
       );
     }
@@ -104,7 +103,7 @@ type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 // [ { key: 'a', value: 'b' } ]
 // { 'key1': 'value1', 'key2': 'value2' }
 // [ ['a', 'b'] ]
-export function QuickTable(
+export function quickTable(
   data:
     | [React.ReactNode, React.ReactNode][]
     | { [key: string]: React.ReactNode }
@@ -112,7 +111,7 @@ export function QuickTable(
   options?: QuickTableOptions
 ): JSX.Element;
 
-export function QuickTable(
+export function quickTable(
   data:
     | { key: React.ReactNode; value: React.ReactNode }[]
     | { [key: string]: React.ReactNode }
@@ -124,10 +123,7 @@ export function QuickTable(
   // plain object?
   if (typeof data === 'object' && !Array.isArray(data)) {
     // Convert to array of key value objects
-    entries = [];
-    for (const [k, v] of Object.entries(data)) {
-      entries.push({ key: k, value: v });
-    }
+    entries = Object.entries(data).map(([key, value]) => ({ key, value }));
   }
   // array of [any, any] ?
   else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -185,7 +181,7 @@ export function toSafeString(x: unknown): string {
   return toJson(x);
 }
 
-export function ObjToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
+export function objToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
   const ar = [] as { key: string; value: unknown }[];
   for (const k in obj) {
     if (Object.hasOwn(obj, k)) {
@@ -193,6 +189,14 @@ export function ObjToKv(obj: Record<string, unknown>): { key: string; value: unk
     }
   }
   return ar;
+}
+
+function withChildId(child: React.ReactNode, id: string): React.ReactElement {
+  // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
+  const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
+  newChild.props = {};
+  Object.assign(newChild.props, (child as { props?: Record<string, unknown> }).props, { id });
+  return newChild as React.ReactElement;
 }
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
@@ -203,15 +207,15 @@ export const Label = (p: {
   style?: CSSProperties;
   children?: React.ReactNode;
   required?: boolean;
+  /** Id of the labellable control inside `children`. When set, the child is rendered as-is. */
+  htmlFor?: string;
 }) => {
-  const [id] = useState(() => simpleUniqueId(p.text));
+  const [generatedId] = useState(() => simpleUniqueId(p.text));
+  const id = p.htmlFor ?? generatedId;
 
   const child: React.ReactNode = p.children ?? <React.Fragment />;
 
-  // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
-  const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
-  newChild.props = {};
-  Object.assign(newChild.props, (child as { props?: Record<string, unknown> }).props, { id });
+  const renderedChild = p.htmlFor === undefined ? withChildId(child, id) : child;
 
   const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
@@ -223,11 +227,9 @@ export const Label = (p: {
   return (
     <div className={p.className} style={divStyle}>
       <div className={labelClasses.join(' ')}>
-        <label htmlFor={id}>
-          {p.text} {p.textSuffix}
-        </label>
+        <label htmlFor={id}>{p.text}</label> {p.textSuffix}
       </div>
-      <div>{newChild as React.ReactElement}</div>
+      <div>{renderedChild}</div>
     </div>
   );
 };
@@ -254,8 +256,7 @@ export const InfoText = (p: {
   const size = p.iconSize ?? '14px';
   const gap = p.gap ?? '4px';
 
-  const gray = 'var(--color-subtle)';
-  const color = p.iconColor ?? gray;
+  const color = p.iconColor ?? 'var(--color-subtle)';
   const placement = p.placement ?? 'top';
 
   const icon = (
@@ -296,21 +297,24 @@ export const InfoText = (p: {
   );
 };
 
-export class OptionGroup<T extends string> extends Component<{
+export function OptionGroup<T extends string>(p: {
   label: string;
   options: { [key: string]: string };
   value: T;
   onChange: (value: T) => void;
   children?: never;
   style?: CSSProperties;
-}> {
-  render() {
-    const p = this.props;
+}) {
+  const captionId = useId();
 
-    return (
-      <Label text={p.label}>
+  return (
+    <div>
+      <div className="labelText" id={captionId}>
+        {p.label}
+      </div>
+      <div>
         <ToggleGroup
-          aria-label={p.label}
+          aria-labelledby={captionId}
           onValueChange={([next]) => {
             // Single-select: ignore the deselect that toggling the active segment reports.
             if (next !== undefined && next !== p.value) {
@@ -320,15 +324,15 @@ export class OptionGroup<T extends string> extends Component<{
           value={[p.value]}
           variant="outline"
         >
-          {ObjToKv(p.options).map((kv) => (
+          {objToKv(p.options).map((kv) => (
             <ToggleGroupItem key={kv.key} value={String(kv.value)}>
               {kv.key}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </Label>
-    );
-  }
+      </div>
+    </div>
+  );
 }
 
 type StatusIndicatorProps = {
@@ -432,10 +436,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
         {showCounters ? (
           <span className="flex justify-between font-semibold">
             <span className="inline-flex items-center gap-2">
-              <DownloadIcon className="text-brand" size={14} /> {this.props.bytesConsumed}
+              <DownloadIcon color="var(--color-brand)" size={14} /> {this.props.bytesConsumed}
             </span>
             <span className="inline-flex items-center gap-2">
-              <CopyIcon className="text-brand" size={14} /> {this.props.messagesConsumed} messages
+              <CopyIcon color="var(--color-brand)" size={14} /> {this.props.messagesConsumed} messages
             </span>
           </span>
         ) : null}

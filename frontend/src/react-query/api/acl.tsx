@@ -191,55 +191,55 @@ export const useDeleteAclMutation = (
   });
 };
 
+function toAclsWithIds(rules: Rule[], sharedConfig: SharedConfig): ACLWithId[] {
+  return convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map((r) => ({
+    ...r,
+    id: getIdFromCreateACLRequest(r),
+  }));
+}
+
+function deleteRequestForAcl(r: ACLWithId) {
+  return create(DeleteACLsRequestSchema, {
+    filter: {
+      principal: r.principal,
+      resourceType: r.resourceType,
+      resourceName: r.resourceName,
+      host: r.host,
+      operation: r.operation,
+      permissionType: r.permissionType,
+      resourcePatternType: r.resourcePatternType,
+    },
+  });
+}
+
+// One error per status code; `created` is true when at least one request went through.
+function summarizeAclResults(results: PromiseSettledResult<unknown>[]) {
+  const errs = new Map<number, ConnectError>();
+  const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+  for (const result of rejected) {
+    const r = result.reason as ConnectError;
+    errs.set(r.code, r);
+  }
+  return { errors: errs.values().toArray(), created: rejected.length < results.length };
+}
+
 export const useUpdateAclMutation = () => {
   const { mutateAsync: createACLMutation } = useMutation(createACL);
   const { mutateAsync: deleteACLMutation } = useMutation(deleteACLs);
   const { invalid } = useInvalidateAclsList();
 
   const applyUpdates = async (actualRules: Rule[], sharedConfig: SharedConfig, rules: Rule[]) => {
-    const currentRules: ACLWithId[] = convertRulesToCreateACLRequests(
-      actualRules,
-      sharedConfig.principal,
-      sharedConfig.host
-    ).map((r) => ({
-      ...r,
-      id: getIdFromCreateACLRequest(r),
-    }));
-    const newRules: ACLWithId[] = convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map(
-      (r) => ({
-        ...r,
-        id: getIdFromCreateACLRequest(r),
-      })
-    );
+    const currentRules = toAclsWithIds(actualRules, sharedConfig);
+    const newRules = toAclsWithIds(rules, sharedConfig);
 
     const { toCreate, toDelete } = calculateACLDifference(currentRules, newRules);
 
     const createResults = toCreate.map((r) => createACLMutation(r));
-    const deleteResults = toDelete.map((r) =>
-      deleteACLMutation(
-        create(DeleteACLsRequestSchema, {
-          filter: {
-            principal: r.principal,
-            resourceType: r.resourceType,
-            resourceName: r.resourceName,
-            host: r.host,
-            operation: r.operation,
-            permissionType: r.permissionType,
-            resourcePatternType: r.resourcePatternType,
-          },
-        })
-      )
-    );
+    const deleteResults = toDelete.map((r) => deleteACLMutation(deleteRequestForAcl(r)));
 
     const allResults = await Promise.allSettled([...createResults, ...deleteResults]);
-    const errs = new Map<number, ConnectError>();
-    const rejected = allResults.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
-    for (const result of rejected) {
-      const r = result.reason as ConnectError;
-      errs.set(r.code, r);
-    }
     await invalid();
-    return { errors: errs.values().toArray(), created: rejected.length < allResults.length };
+    return summarizeAclResults(allResults);
   };
 
   return { applyUpdates };

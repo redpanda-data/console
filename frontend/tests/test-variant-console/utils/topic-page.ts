@@ -208,9 +208,10 @@ export class TopicPage {
   }
 
   async fillKeyEditor(content: string) {
-    const keyEditor = this.page.getByTestId('produce-key-editor').locator('.monaco-editor').first();
-    await keyEditor.click();
-    await this.page.keyboard.insertText(content);
+    // The key is a single-line input until "Expand" swaps in the code editor.
+    const keyInput = this.page.getByTestId('produce-key-editor').getByRole('textbox');
+    await keyInput.fill(content);
+    await expect(keyInput).toHaveValue(content);
   }
 
   async clickProduceButton() {

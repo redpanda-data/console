@@ -12,7 +12,8 @@
 import { Link, useLocation, useMatchRoute, useRouter } from '@tanstack/react-router';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronLeft } from 'lucide-react';
-import { Fragment, useMemo } from 'react';
+import { Fragment } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { ThemeModeSwitch } from './theme-mode-switch';
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
@@ -80,43 +81,28 @@ function AppPageHeader() {
   const hideTitleRow = useRouteOwnsTitleRow();
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
-  const useNewSidebar = !isEmbedded();
 
-  const pageBreadcrumbs = useUIStateStore((s) => s.pageBreadcrumbs);
-  const pageTitle = useUIStateStore((s) => s._pageTitle);
-  const backLink = useUIStateStore((s) => s.backLink);
-  const selectedClusterName = useUIStateStore((s) => s.selectedClusterName);
-  const shouldHidePageHeader = useUIStateStore((s) => s.shouldHidePageHeader);
-  const breadcrumbItems = useMemo(() => {
-    const items: BreadcrumbEntry[] = [...pageBreadcrumbs];
-
-    if (!isEmbedded() && selectedClusterName) {
-      items.unshift({
-        heading: '',
-        title: 'Cluster',
-        linkTo: '/',
-      });
-    }
-
-    return items;
-  }, [pageBreadcrumbs, selectedClusterName]);
+  const { pageBreadcrumbs, pageTitle, backLink, selectedClusterName, shouldHidePageHeader } = useUIStateStore(
+    useShallow((state) => ({
+      pageBreadcrumbs: state.pageBreadcrumbs,
+      pageTitle: state._pageTitle,
+      backLink: state.backLink,
+      selectedClusterName: state.selectedClusterName,
+      shouldHidePageHeader: state.shouldHidePageHeader,
+    }))
+  );
+  const breadcrumbItems = getBreadcrumbItems(pageBreadcrumbs, selectedClusterName);
 
   const lastBreadcrumb = breadcrumbItems.at(-1);
 
-  if (shouldHideHeader || shouldHidePageHeader) {
-    return null;
-  }
-
-  // Embedded, the breadcrumb row holds nothing (the host draws the breadcrumb, and there is
-  // no sidebar trigger), so without the title row the header is a bare divider.
-  if (hideTitleRow && isEmbedded()) {
+  if (shouldHideHeader || shouldHidePageHeader || (hideTitleRow && isEmbedded())) {
     return null;
   }
 
   return (
     // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
     <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
-      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={useNewSidebar} />
+      <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={!isEmbedded()} />
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
           studio, which carries its own title bar and toolbar). */}
       {!hideTitleRow && (
@@ -124,7 +110,7 @@ function AppPageHeader() {
           <div className="flex flex-col gap-1">
             {backLink && (
               <RegistryButton
-                className="-ml-2 w-fit text-muted-foreground"
+                className="-ml-2 w-fit"
                 render={
                   <Link to={backLink.linkTo}>
                     <ChevronLeft className="h-4 w-4" />
@@ -205,50 +191,26 @@ function useRouteOwnsTitleRow() {
  *
  * @returns {boolean} Indicates whether the refresh button should be shown (true/false).
  */
+const refreshHiddenRoutes = [
+  { to: '/schema-registry/create' },
+  { to: '/topics/$topicName/produce-record' },
+  { to: '/secrets', fuzzy: false },
+  { to: '/security/acls/$aclName/details' },
+  { to: '/security/roles/create' },
+  { to: '/security/roles/$roleName/update' },
+  { to: '/security/roles/$roleName/details' },
+  { to: '/security/users/$userName/details' },
+] as const;
+
 function useShouldShowRefresh() {
   const matchRoute = useMatchRoute();
-
-  const connectClusterMatch = matchRoute({ to: '/connect-clusters/$clusterName/$connector' });
-  const schemaCreateMatch = matchRoute({ to: '/schema-registry/create' });
-  const topicProduceRecordMatch = matchRoute({ to: '/topics/$topicName/produce-record' });
-  const secretsMatch = matchRoute({ to: '/secrets', fuzzy: false });
-
-  // matches acls
-  const aclDetailMatch = matchRoute({ to: '/security/acls/$aclName/details' });
-  const isACLRelated = aclDetailMatch;
-
-  // matches roles
-  const roleCreateMatch = matchRoute({ to: '/security/roles/create' });
-  const roleUpdateMatch = matchRoute({ to: '/security/roles/$roleName/update' });
-  const roleDetailMatch = matchRoute({ to: '/security/roles/$roleName/details' });
-  const isRoleRelated = roleCreateMatch || roleUpdateMatch || roleDetailMatch;
-
-  // matches user detail
-  const userDetailMatch = matchRoute({ to: '/security/users/$userName/details' });
-
-  if (connectClusterMatch && connectClusterMatch.connector === 'create-connector') {
-    return false;
-  }
-  if (schemaCreateMatch) {
-    return false;
-  }
-  if (topicProduceRecordMatch) {
-    return false;
-  }
-  if (secretsMatch) {
-    return false;
-  }
-  if (isACLRelated) {
-    return false;
-  }
-  if (isRoleRelated) {
-    return false;
-  }
-  if (userDetailMatch) {
-    return false;
-  }
-  return true;
+  const connector = matchRoute({ to: '/connect-clusters/$clusterName/$connector' });
+  return !(
+    (connector && connector.connector === 'create-connector') ||
+    refreshHiddenRoutes.some((route) => matchRoute(route))
+  );
 }
+
 function useShouldHideHeader() {
   const { pathname } = useLocation();
   const matchRoute = useMatchRoute();
@@ -277,4 +239,12 @@ function useShouldHideHeader() {
 
   // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));
+}
+
+function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null): BreadcrumbEntry[] {
+  const items = [...pageBreadcrumbs];
+  if (!isEmbedded() && selectedClusterName) {
+    items.unshift({ heading: '', title: 'Cluster', linkTo: '/' });
+  }
+  return items;
 }

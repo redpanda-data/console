@@ -11,7 +11,7 @@
 
 import { waitFor } from '@testing-library/dom';
 
-import { afterAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock, spyOn, test } from 'bun:test';
 import { type api, useApiStore } from '../backend-api';
 import type { ConnectorProperty, ConnectorValidationResult } from '../rest-interfaces';
 import { DataType, PropertyImportance, PropertyWidth } from '../rest-interfaces';
@@ -24,7 +24,7 @@ afterAll(() => {
   mockValidateConnectorConfig.mockRestore();
 });
 
-const { ConnectorPropertiesStore, SecretsStore } = await import('./state');
+const { ConnectClusterStore, ConnectorPropertiesStore, SecretsStore } = await import('./state');
 
 function createMockProperty(overrides: {
   name: string;
@@ -78,7 +78,19 @@ function createMockValidationResult(properties: ConnectorProperty[]): ConnectorV
   };
 }
 
-describe('ConnectorPropertiesStore', () => {
+// Create secrets with various values (simulates PASSWORD fields)
+function secretsStoreWithOneFilledSecret(): InstanceType<typeof SecretsStore> {
+  const store = new SecretsStore();
+  store.getSecret('source.cluster.sasl.password').value = 'my-password';
+
+  store.getSecret('source.cluster.ssl.truststore.certificates');
+  // value remains '' (default)
+
+  store.getSecret('source.cluster.ssl.keystore.key').value = '';
+  return store;
+}
+
+describe('the ConnectorPropertiesStore', () => {
   beforeEach(() => {
     mock.clearAllMocks();
   });
@@ -219,22 +231,10 @@ describe('ConnectorPropertiesStore', () => {
     });
   });
 
-  describe('SecretsStore', () => {
+  describe('the SecretsStore', () => {
     it('filters out secrets with empty values', () => {
-      const store = new SecretsStore();
-
-      // Create secrets with various values (simulates PASSWORD fields)
-      const passwordSecret = store.getSecret('source.cluster.sasl.password');
-      passwordSecret.value = 'my-password';
-
-      store.getSecret('source.cluster.ssl.truststore.certificates');
-      // value remains '' (default)
-
-      const nullSecret = store.getSecret('source.cluster.ssl.keystore.key');
-      nullSecret.value = '';
-
       // Only non-empty secrets should be returned
-      const secrets = store.secrets;
+      const { secrets } = secretsStoreWithOneFilledSecret();
       expect(secrets.size).toBe(1);
       expect(secrets.has('source.cluster.sasl.password')).toBe(true);
       expect(secrets.has('source.cluster.ssl.truststore.certificates')).toBe(false);
@@ -263,5 +263,29 @@ describe('ConnectorPropertiesStore', () => {
       secret.value = '';
       expect(store.secrets.size).toBe(0);
     });
+  });
+});
+
+describe('the ConnectClusterStore', () => {
+  const S3_SINK = 'com.redpanda.kafka.connect.s3.S3SinkConnector';
+  const clusterWithS3Sink = () => {
+    const store = new ConnectClusterStore('local-connect-cluster');
+    store.additionalClusterInfo = {
+      clusterName: 'local-connect-cluster',
+      host: 'http://connect:8083',
+      clusterVersion: '3.9.0',
+      plugins: [{ class: S3_SINK, type: 'sink' }],
+    };
+    return store;
+  };
+
+  // `crud` decides whether secret inputs start read-only behind an Edit button.
+  test('opens a new connector for creating, so its secrets are editable at once', () => {
+    expect(clusterWithS3Sink().getConnector(S3_SINK, null, undefined)?.crud).toBe('create');
+  });
+
+  test('opens an existing connector for updating', () => {
+    const connector = clusterWithS3Sink().getConnector(S3_SINK, 'orders-to-s3', { 'aws.s3.bucket.name': 'orders' });
+    expect(connector?.crud).toBe('update');
   });
 });

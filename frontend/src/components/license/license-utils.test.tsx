@@ -26,8 +26,11 @@ import { LicenseNotification } from './license-notification';
 import { OverviewLicenseNotification } from './overview-license-notification';
 
 const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
-const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 27 days/;
+const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 28 days/;
 const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/;
+// Every expiry below is relative to this instant, which each test pins as the system time.
+const NOW = new Date('2026-01-15T12:00:00Z');
+const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
 const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overview' } }));
 
 /**
@@ -37,7 +40,7 @@ const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overvie
  * @param daysOffset - The number of days to offset (default is 0).
  * @returns Unix timestamp in seconds.
  */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => Math.floor(Date.now() / 1000) + daysOffset * 86_400;
+const getUnixTimestampWithExpiration = (daysOffset = 0): number => NOW_SECONDS + daysOffset * 86_400;
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -96,9 +99,27 @@ rs.mock('../../state/backend-api', () => {
   };
 });
 
-describe('licenseUtils', () => {
-  const origDate = Date.prototype.toLocaleDateString;
+const origDate = Date.prototype.toLocaleDateString;
 
+const mockLicenseCommunity = create(LicenseSchema, {
+  type: License_Type.COMMUNITY,
+  expiresAt: 20_413_210_650n,
+  source: License_Source.REDPANDA_CONSOLE,
+});
+
+const mockLicenseEnterprise = create(LicenseSchema, {
+  type: License_Type.ENTERPRISE,
+  expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 30), // expires in 30 days
+  source: License_Source.REDPANDA_CORE,
+});
+
+const expiredLicense = create(LicenseSchema, {
+  type: License_Type.ENTERPRISE,
+  expiresAt: BigInt(NOW_SECONDS - 60 * 60 * 24), // expired yesterday
+  source: License_Source.REDPANDA_CONSOLE,
+});
+
+describe('licenseUtils', () => {
   beforeAll(() => {
     Object.defineProperty(Date.prototype, 'toLocaleDateString', {
       value() {
@@ -116,6 +137,7 @@ describe('licenseUtils', () => {
   });
 
   beforeEach(() => {
+    rs.setSystemTime(NOW);
     mockLocation.pathname = '/overview';
     api.licensesLoaded = undefined;
     api.licenseViolation = false;
@@ -123,192 +145,179 @@ describe('licenseUtils', () => {
   });
 
   afterEach(() => {
+    rs.useRealTimers();
     rs.resetAllMocks();
     rs.restoreAllMocks();
   });
 
-  const mockLicenseCommunity = create(LicenseSchema, {
-    type: License_Type.COMMUNITY,
-    expiresAt: BigInt(20_413_210_650),
-    source: License_Source.REDPANDA_CONSOLE,
-  });
-
-  const mockLicenseEnterprise = create(LicenseSchema, {
-    type: License_Type.ENTERPRISE,
-    expiresAt: BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30), // expires in 30 days
-    source: License_Source.REDPANDA_CORE,
-  });
-
-  const expiredLicense = create(LicenseSchema, {
-    type: License_Type.ENTERPRISE,
-    expiresAt: BigInt(Math.floor(Date.now() / 1000) - 60 * 60 * 24), // expired yesterday
-    source: License_Source.REDPANDA_CONSOLE,
-  });
-
-  describe('coreHasEnterpriseFeatures', () => {
-    test('should return true when at least one feature is enabled', () => {
-      const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
-      ];
-      expect(coreHasEnterpriseFeatures(features)).toBe(true);
-    });
-
-    test('should return false when no features are enabled', () => {
-      const features: ListEnterpriseFeaturesResponse_Feature[] = [
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
-        create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
-      ];
-      expect(coreHasEnterpriseFeatures(features)).toBe(false);
-    });
-
-    test('should return false for an empty list of features', () => {
-      const features: ListEnterpriseFeaturesResponse_Feature[] = [];
-      expect(coreHasEnterpriseFeatures(features)).toBe(false);
-    });
-  });
-
-  describe('licenseIsExpired', () => {
-    test('should return false for a community license', () => {
-      expect(licenseIsExpired(mockLicenseCommunity)).toBe(false);
-    });
-
-    test('should return true for an expired enterprise license', () => {
-      expect(licenseIsExpired(expiredLicense)).toBe(true);
-    });
-
-    test('should return false for a valid enterprise license', () => {
-      expect(licenseIsExpired(mockLicenseEnterprise)).toBe(false);
-    });
-  });
-
-  describe('licenseSoonToExpire', () => {
-    test('should return true for an enterprise license expiring within the default 30 days', () => {
-      expect(licenseSoonToExpire(mockLicenseEnterprise)).toBe(true);
-    });
-
-    test('should return false for a license not expiring soon', () => {
-      const licenseNotExpiringSoon = create(LicenseSchema, {
-        ...mockLicenseEnterprise,
-        expiresAt: BigInt(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 60), // expires in 60 days
-      });
-      expect(licenseSoonToExpire(licenseNotExpiringSoon)).toBe(false);
-    });
-
-    test('should return false for a community license', () => {
-      expect(licenseSoonToExpire(mockLicenseCommunity)).toBe(false);
-    });
-  });
-
-  describe('coreHasActiveEnterpriseLicense', () => {
-    const coreEnterprise = (daysOffset: number) =>
-      create(LicenseSchema, {
-        source: License_Source.REDPANDA_CORE,
-        type: License_Type.ENTERPRISE,
-        expiresAt: BigInt(getUnixTimestampWithExpiration(daysOffset)),
+  describe('license eligibility', () => {
+    describe('coreHasEnterpriseFeatures', () => {
+      test('should return true when at least one feature is enabled', () => {
+        const features: ListEnterpriseFeaturesResponse_Feature[] = [
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: true }),
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
+        ];
+        expect(coreHasEnterpriseFeatures(features)).toBe(true);
       });
 
-    test('should return true for an unexpired enterprise license on the cluster', () => {
-      expect(coreHasActiveEnterpriseLicense([mockLicenseCommunity, coreEnterprise(90)])).toBe(true);
-    });
-
-    test('should return false when the cluster enterprise license has expired', () => {
-      expect(coreHasActiveEnterpriseLicense([coreEnterprise(-1)])).toBe(false);
-    });
-
-    test('should return false when only Console holds an enterprise license', () => {
-      const consoleEnterprise = create(LicenseSchema, {
-        source: License_Source.REDPANDA_CONSOLE,
-        type: License_Type.ENTERPRISE,
-        expiresAt: BigInt(getUnixTimestampWithExpiration(90)),
+      test('should return false when no features are enabled', () => {
+        const features: ListEnterpriseFeaturesResponse_Feature[] = [
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'rbac', enabled: false }),
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'datalake_iceberg', enabled: false }),
+          create(ListEnterpriseFeaturesResponse_FeatureSchema, { name: 'audit_logging' }),
+        ];
+        expect(coreHasEnterpriseFeatures(features)).toBe(false);
       });
-      expect(coreHasActiveEnterpriseLicense([consoleEnterprise])).toBe(false);
-    });
 
-    test('should return false for a trial on the cluster', () => {
-      const coreTrial = create(LicenseSchema, {
-        source: License_Source.REDPANDA_CORE,
-        type: License_Type.TRIAL,
-        expiresAt: BigInt(getUnixTimestampWithExpiration(30)),
+      test('should return false for an empty list of features', () => {
+        const features: ListEnterpriseFeaturesResponse_Feature[] = [];
+        expect(coreHasEnterpriseFeatures(features)).toBe(false);
       });
-      expect(coreHasActiveEnterpriseLicense([coreTrial])).toBe(false);
-    });
-  });
-
-  describe('prettyLicenseType', () => {
-    test('should return "Community" for community licenses', () => {
-      expect(prettyLicenseType(mockLicenseCommunity)).toBe('Community');
     });
 
-    test('should return "Enterprise" for enterprise licenses', () => {
-      expect(prettyLicenseType(mockLicenseEnterprise)).toBe('Enterprise');
+    describe('licenseIsExpired', () => {
+      test('should return false for a community license', () => {
+        expect(licenseIsExpired(mockLicenseCommunity)).toBe(false);
+      });
+
+      test('should return true for an expired enterprise license', () => {
+        expect(licenseIsExpired(expiredLicense)).toBe(true);
+      });
+
+      test('should return false for a valid enterprise license', () => {
+        expect(licenseIsExpired(mockLicenseEnterprise)).toBe(false);
+      });
     });
 
-    test('should return detailed version with source when showSource is true, console license', () => {
-      expect(prettyLicenseType(mockLicenseEnterprise, true)).toBe('Redpanda Enterprise');
-    });
-  });
+    describe('licenseSoonToExpire', () => {
+      test('should return true for an enterprise license expiring within the default 30 days', () => {
+        expect(licenseSoonToExpire(mockLicenseEnterprise)).toBe(true);
+      });
 
-  describe('prettyExpirationDate', () => {
-    test('should return a formatted expiration date for an expiring license', () => {
-      expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
-    });
+      test('should return false for a license not expiring soon', () => {
+        const licenseNotExpiringSoon = create(LicenseSchema, {
+          ...mockLicenseEnterprise,
+          expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 60), // expires in 60 days
+        });
+        expect(licenseSoonToExpire(licenseNotExpiringSoon)).toBe(false);
+      });
 
-    test('should return an empty string for a community license', () => {
-      expect(prettyExpirationDate(mockLicenseCommunity)).toBe('');
-    });
-  });
-
-  describe('getPrettyTimeToExpiration', () => {
-    test('should return a pretty time string for a license about to expire', () => {
-      expect(getPrettyTimeToExpiration(mockLicenseEnterprise)).toContain('days');
+      test('should return false for a community license', () => {
+        expect(licenseSoonToExpire(mockLicenseCommunity)).toBe(false);
+      });
     });
 
-    test('should return "License has expired" for an expired license', () => {
-      expect(getPrettyTimeToExpiration(expiredLicense)).toBe('License has expired');
-    });
-  });
-
-  describe('licensesToSimplifiedPreview', () => {
-    test('should group multiple licenses of the same type and show the earliest expiration', () => {
-      const licenses = [
+    describe('coreHasActiveEnterpriseLicense', () => {
+      const coreEnterprise = (daysOffset: number) =>
         create(LicenseSchema, {
-          type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(2_041_321_065),
-          source: License_Source.REDPANDA_CONSOLE,
-        }),
-        create(LicenseSchema, {
-          type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4_813_575_088),
           source: License_Source.REDPANDA_CORE,
-        }),
-      ];
+          type: License_Type.ENTERPRISE,
+          expiresAt: BigInt(getUnixTimestampWithExpiration(daysOffset)),
+        });
 
-      const result = licensesToSimplifiedPreview(licenses);
-      expect(result).toEqual([{ name: 'Enterprise', expiresAt: '09/08/2034', isExpired: false }]); // Based on the earlier expiration timestamp
+      test('should return true for an unexpired enterprise license on the cluster', () => {
+        expect(coreHasActiveEnterpriseLicense([mockLicenseCommunity, coreEnterprise(90)])).toBe(true);
+      });
+
+      test('should return false when the cluster enterprise license has expired', () => {
+        expect(coreHasActiveEnterpriseLicense([coreEnterprise(-1)])).toBe(false);
+      });
+
+      test('should return false when only Console holds an enterprise license', () => {
+        const consoleEnterprise = create(LicenseSchema, {
+          source: License_Source.REDPANDA_CONSOLE,
+          type: License_Type.ENTERPRISE,
+          expiresAt: BigInt(getUnixTimestampWithExpiration(90)),
+        });
+        expect(coreHasActiveEnterpriseLicense([consoleEnterprise])).toBe(false);
+      });
+
+      test('should return false for a trial on the cluster', () => {
+        const coreTrial = create(LicenseSchema, {
+          source: License_Source.REDPANDA_CORE,
+          type: License_Type.TRIAL,
+          expiresAt: BigInt(getUnixTimestampWithExpiration(30)),
+        });
+        expect(coreHasActiveEnterpriseLicense([coreTrial])).toBe(false);
+      });
+    });
+  });
+
+  describe('license display', () => {
+    describe('prettyLicenseType', () => {
+      test('should return "Community" for community licenses', () => {
+        expect(prettyLicenseType(mockLicenseCommunity)).toBe('Community');
+      });
+
+      test('should return "Enterprise" for enterprise licenses', () => {
+        expect(prettyLicenseType(mockLicenseEnterprise)).toBe('Enterprise');
+      });
+
+      test('should return detailed version with source when showSource is true, console license', () => {
+        expect(prettyLicenseType(mockLicenseEnterprise, true)).toBe('Redpanda Enterprise');
+      });
     });
 
-    test('should handle licenses with different types separately', () => {
-      const licenses = [
-        create(LicenseSchema, {
-          type: License_Type.COMMUNITY,
-          expiresAt: BigInt(2_041_321_065),
-          source: License_Source.REDPANDA_CONSOLE,
-        }),
-        create(LicenseSchema, {
-          type: License_Type.ENTERPRISE,
-          expiresAt: BigInt(4_813_575_088),
-          source: License_Source.REDPANDA_CORE,
-        }),
-      ];
+    describe('prettyExpirationDate', () => {
+      test('should return a formatted expiration date for an expiring license', () => {
+        expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
+      });
 
-      const result = licensesToSimplifiedPreview(licenses);
-      expect(result).toEqual([
-        { name: 'Console Community', expiresAt: '', isExpired: false },
-        { name: 'Redpanda Enterprise', expiresAt: '07/15/2122', isExpired: false }, // Based on the expiration timestamp
-      ]);
+      test('should return an empty string for a community license', () => {
+        expect(prettyExpirationDate(mockLicenseCommunity)).toBe('');
+      });
+    });
+
+    describe('getPrettyTimeToExpiration', () => {
+      test('should return a pretty time string for a license about to expire', () => {
+        expect(getPrettyTimeToExpiration(mockLicenseEnterprise)).toContain('days');
+      });
+
+      test('should return "License has expired" for an expired license', () => {
+        expect(getPrettyTimeToExpiration(expiredLicense)).toBe('License has expired');
+      });
+    });
+
+    describe('licensesToSimplifiedPreview', () => {
+      test('should group multiple licenses of the same type and show the earliest expiration', () => {
+        const licenses = [
+          create(LicenseSchema, {
+            type: License_Type.ENTERPRISE,
+            expiresAt: 2_041_321_065n,
+            source: License_Source.REDPANDA_CONSOLE,
+          }),
+          create(LicenseSchema, {
+            type: License_Type.ENTERPRISE,
+            expiresAt: 4_813_575_088n,
+            source: License_Source.REDPANDA_CORE,
+          }),
+        ];
+
+        const result = licensesToSimplifiedPreview(licenses);
+        expect(result).toEqual([{ name: 'Enterprise', expiresAt: '09/08/2034', isExpired: false }]); // Based on the earlier expiration timestamp
+      });
+
+      test('should handle licenses with different types separately', () => {
+        const licenses = [
+          create(LicenseSchema, {
+            type: License_Type.COMMUNITY,
+            expiresAt: 2_041_321_065n,
+            source: License_Source.REDPANDA_CONSOLE,
+          }),
+          create(LicenseSchema, {
+            type: License_Type.ENTERPRISE,
+            expiresAt: 4_813_575_088n,
+            source: License_Source.REDPANDA_CORE,
+          }),
+        ];
+
+        const result = licensesToSimplifiedPreview(licenses);
+        expect(result).toEqual([
+          { name: 'Console Community', expiresAt: '', isExpired: false },
+          { name: 'Redpanda Enterprise', expiresAt: '07/15/2122', isExpired: false }, // Based on the expiration timestamp
+        ]);
+      });
     });
   });
 
@@ -344,7 +353,7 @@ describe('licenseUtils', () => {
     });
   });
 
-  describe('LicenseNotification Banner', () => {
+  describe('the LicenseNotification Banner', () => {
     test('render null on routes related to licensing', () => {
       api.licensesLoaded = 'loaded';
       api.licenseViolation = true;
@@ -362,18 +371,11 @@ describe('licenseUtils', () => {
       expect(overviewScreen.getByTestId('license-notification')).toBeVisible();
       overviewScreen.unmount();
 
-      mockLocation.pathname = '/upload-license';
-      const uploadLicenseScreen = renderWithRouter(<LicenseNotification />, {
-        route: '/upload-license',
-      });
-      expect(uploadLicenseScreen.queryByTestId('license-notification')).toBeNull();
-      uploadLicenseScreen.unmount();
-
-      mockLocation.pathname = '/trial-expired';
-      const trialExpiredScreen = renderWithRouter(<LicenseNotification />, {
-        route: '/trial-expired',
-      });
-      expect(trialExpiredScreen.queryByTestId('license-notification')).toBeNull();
+      for (const route of ['/upload-license', '/trial-expired']) {
+        const view = renderNotificationOnRoute(route);
+        expect(view.queryByTestId('license-notification')).toBeNull();
+        view.unmount();
+      }
     });
 
     test('render null if license information is not loaded yet', () => {
@@ -438,7 +440,7 @@ describe('licenseUtils', () => {
     });
   });
 
-  describe('OverviewLicenseNotification Banner', () => {
+  describe('the OverviewLicenseNotification Banner', () => {
     const bakedInTrial = (source: License_Source, daysOffset = 30) =>
       create(LicenseSchema, {
         source,
@@ -480,3 +482,8 @@ describe('licenseUtils', () => {
     });
   });
 });
+
+function renderNotificationOnRoute(route: string) {
+  mockLocation.pathname = route;
+  return renderWithRouter(<LicenseNotification />, { route });
+}

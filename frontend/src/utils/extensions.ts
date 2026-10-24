@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-String.prototype.removePrefix = function (this: string, prefix: string) {
+String.prototype.removePrefix = function removePrefix(this: string, prefix: string) {
   if (prefix.length === 0) {
     return this;
   }
@@ -30,7 +30,7 @@ String.prototype.removePrefix = function (this: string, prefix: string) {
   return this;
 };
 
-String.prototype.removeSuffix = function (this: string, suffix: string) {
+String.prototype.removeSuffix = function removeSuffix(this: string, suffix: string) {
   if (suffix.length === 0) {
     return this;
   }

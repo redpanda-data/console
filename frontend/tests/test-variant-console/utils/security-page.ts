@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: this is a test */
 import { type Page, step } from '../../shared/e2e';
 
 /**

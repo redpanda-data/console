@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, rs, test } from '@rstest/core';
+import { afterEach, describe, expect, type MockInstance, rs, test } from '@rstest/core';
 
 import { retryAssertion, step } from './shared/assertions';
 
@@ -6,7 +6,12 @@ afterEach(() => {
   rs.useRealTimers();
 });
 
-describe('E2E assertion retries', () => {
+async function expectCallsAfterAdvancing(assertion: MockInstance, milliseconds: number, calls: number) {
+  await rs.advanceTimersByTimeAsync(milliseconds);
+  expect(assertion).toHaveBeenCalledTimes(calls);
+}
+
+describe('e2E assertion retries', () => {
   test('preserves each retry interval and returns the successful assertion result', async () => {
     rs.useFakeTimers();
     const assertion = rs
@@ -15,12 +20,9 @@ describe('E2E assertion retries', () => {
       .mockRejectedValueOnce(new Error('second'))
       .mockResolvedValue('ready');
     const pending = retryAssertion(assertion, { timeout: 1000, intervals: [100, 250] });
-    await rs.advanceTimersByTimeAsync(99);
-    expect(assertion).toHaveBeenCalledTimes(1);
-    await rs.advanceTimersByTimeAsync(1);
-    expect(assertion).toHaveBeenCalledTimes(2);
-    await rs.advanceTimersByTimeAsync(249);
-    expect(assertion).toHaveBeenCalledTimes(2);
+    await expectCallsAfterAdvancing(assertion, 99, 1);
+    await expectCallsAfterAdvancing(assertion, 1, 2);
+    await expectCallsAfterAdvancing(assertion, 249, 2);
     await rs.advanceTimersByTimeAsync(1);
     await expect(pending).resolves.toBe('ready');
     expect(assertion).toHaveBeenCalledTimes(3);
@@ -40,7 +42,13 @@ describe('E2E assertion retries', () => {
   test('bounds an in-flight assertion by the original overall deadline', async () => {
     rs.useFakeTimers();
     const settled = rs.fn();
-    const pending = retryAssertion(() => new Promise<void>(() => undefined), { timeout: 350 });
+    const pending = retryAssertion(
+      () =>
+        new Promise<void>(() => {
+          // Intentionally pending: verify the outer retry deadline bounds the assertion.
+        }),
+      { timeout: 350 }
+    );
     pending.then(settled, settled);
     await rs.advanceTimersByTimeAsync(350);
     expect(settled).toHaveBeenCalledTimes(1);

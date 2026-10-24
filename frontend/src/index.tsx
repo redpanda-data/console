@@ -11,7 +11,4 @@
 
 export {};
 
-import('react');
-import('react-dom');
-
-import('./bootstrap');
+Promise.all([import('react'), import('react-dom'), import('./bootstrap')]).catch(reportError);

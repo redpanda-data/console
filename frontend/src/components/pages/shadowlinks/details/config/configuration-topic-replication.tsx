@@ -53,7 +53,25 @@ const CATEGORY_PROPERTIES_MAP: Record<string, string[]> = {
   Compression: ['compression.type'],
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+const OTHER_CATEGORY = 'Other';
+
+const findCategory = (property: string) =>
+  Object.entries(CATEGORY_PROPERTIES_MAP).find(([, properties]) => properties.includes(property))?.[0] ??
+  OTHER_CATEGORY;
+
+/** Groups properties by their first matching category, in map order, with uncategorized ones last under "Other". */
+const groupPropertiesByCategory = (properties: string[]) => {
+  const grouped = new Map<string, string[]>();
+  for (const property of properties) {
+    const category = findCategory(property);
+    grouped.set(category, [...(grouped.get(category) ?? []), property]);
+  }
+  return [...Object.keys(CATEGORY_PROPERTIES_MAP), OTHER_CATEGORY].flatMap((category) => {
+    const categoryProperties = grouped.get(category);
+    return categoryProperties ? [{ category, properties: categoryProperties }] : [];
+  });
+};
+
 export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopicReplicationProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const excludeDefault = topicSyncOptions?.excludeDefault ?? false;
@@ -62,44 +80,10 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
   // Combine default properties (if not excluded) with synced properties
   const allProperties = excludeDefault ? syncedProperties : [...new Set([...DEFAULT_PROPERTIES, ...syncedProperties])];
 
-  // Group properties by category based on the map
-  const categorizedProperties: Record<string, string[]> = {};
-  const uncategorizedProperties: string[] = [];
-
-  for (const property of allProperties) {
-    let found = false;
-    for (const [category, properties] of Object.entries(CATEGORY_PROPERTIES_MAP)) {
-      if (properties.includes(property)) {
-        if (!categorizedProperties[category]) {
-          categorizedProperties[category] = [];
-        }
-        categorizedProperties[category].push(property);
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      uncategorizedProperties.push(property);
-    }
-  }
-
-  // Add uncategorized properties to "Other" category if any exist
-  if (uncategorizedProperties.length > 0) {
-    categorizedProperties.Other = uncategorizedProperties;
-  }
-
-  // Get categories in the order they appear in CATEGORY_PROPERTIES_MAP, plus Other at the end
-  const sortedCategories = [
-    ...Object.keys(CATEGORY_PROPERTIES_MAP).filter((category) => categorizedProperties[category]),
-    ...(categorizedProperties.Other ? ['Other'] : []),
-  ];
-
   if (allProperties.length === 0) {
     return (
       <Card size="full" testId="topic-replication-placeholder-card">
-        <CardContent className="py-8 text-center">
-          <div className="text-body text-muted-foreground">No topic properties configured for shadowing</div>
-        </CardContent>
+        <CardContent>No topic properties configured for shadowing</CardContent>
       </Card>
     );
   }
@@ -109,20 +93,19 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
       <h2 className="text-heading-lg" data-testid="shadowing-title">
         Topic config shadow
       </h2>
-      {sortedCategories.map((category) => {
-        const properties = categorizedProperties[category];
+      {groupPropertiesByCategory(allProperties).map(({ category, properties }) => {
         const categoryKey = category.toLowerCase().replace(/\s+/g, '-');
 
         return (
           <Card key={categoryKey} size="full" testId={`category-${categoryKey}-card`}>
-            <CardContent className="p-0">
+            <CardContent>
               <Accordion defaultValue={[categoryKey]}>
                 <AccordionItem value={categoryKey}>
-                  <AccordionTrigger className="py-4" data-testid={`category-${categoryKey}-trigger`}>
+                  <AccordionTrigger data-testid={`category-${categoryKey}-trigger`}>
                     <h3 className="text-heading-md">{category}</h3>
                   </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-4" data-testid={`category-${categoryKey}-content`}>
-                    <div className="flex flex-col">
+                  <AccordionContent data-testid={`category-${categoryKey}-content`}>
+                    <div className="flex flex-col px-6">
                       {properties.map((property, index) => (
                         <div key={`${categoryKey}-${property}`}>
                           <div className="flex items-center justify-between py-3">

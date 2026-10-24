@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Kbd } from 'components/redpanda-ui/components/kbd';
 import { Lightbulb } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
@@ -25,44 +26,41 @@ const Key = ({ children }: { children: ReactNode }) => (
   </Kbd>
 );
 
-function tipsFor(
-  context: TipContext,
-  { slashMenuEnabled, readOnly }: { slashMenuEnabled: boolean; readOnly: boolean }
-): Tip[] {
-  if (context === 'visual') {
-    const tips: Tip[] = [
-      { id: 'select', content: <>Click a node to {readOnly ? 'inspect' : 'edit'} it</> },
-      {
-        id: 'zoom',
-        content: (
-          <>
-            Drag to pan, hold <Key>Z</Key> / <Key>{formatShortcut(altKey(), 'Z')}</Key> and click to zoom
-          </>
-        ),
-      },
-      {
-        id: 'palette',
-        content: (
-          <>
-            <Key>/</Key> to search nodes and actions
-          </>
-        ),
-      },
-    ];
-    if (!readOnly) {
-      tips.push({
-        id: 'history',
-        content: (
-          <>
-            <Key>{formatShortcut(modKey(), 'Z')}</Key> to undo, <Key>{formatShortcut(modKey(), shiftKey(), 'Z')}</Key>{' '}
-            to redo
-          </>
-        ),
-      });
-    }
-    return tips;
+function visualTips(readOnly: boolean): Tip[] {
+  const tips: Tip[] = [
+    { id: 'select', content: <>Click a node to {readOnly ? 'inspect' : 'edit'} it</> },
+    {
+      id: 'zoom',
+      content: (
+        <>
+          Drag to pan, hold <Key>Z</Key> / <Key>{formatShortcut(altKey(), 'Z')}</Key> and click to zoom
+        </>
+      ),
+    },
+    {
+      id: 'palette',
+      content: (
+        <>
+          <Key>/</Key> to search nodes and actions
+        </>
+      ),
+    },
+  ];
+  if (!readOnly) {
+    tips.push({
+      id: 'history',
+      content: (
+        <>
+          <Key>{formatShortcut(modKey(), 'Z')}</Key> to undo, <Key>{formatShortcut(modKey(), shiftKey(), 'Z')}</Key> to
+          redo
+        </>
+      ),
+    });
   }
+  return tips;
+}
 
+function yamlTips({ slashMenuEnabled, readOnly }: { slashMenuEnabled: boolean; readOnly: boolean }): Tip[] {
   const tips: Tip[] = [];
   if (slashMenuEnabled && !readOnly) {
     tips.push({
@@ -87,6 +85,10 @@ function tipsFor(
   return tips;
 }
 
+function tipsFor(context: TipContext, options: { slashMenuEnabled: boolean; readOnly: boolean }): Tip[] {
+  return context === 'visual' ? visualTips(options.readOnly) : yamlTips(options);
+}
+
 /** Full-width strip of contextual usage tips beneath the editor (different sets for YAML vs. visual). */
 export function EditorTipsBar({
   context,
@@ -107,7 +109,7 @@ export function EditorTipsBar({
       aria-label="Editor tips"
       className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-1.5 text-body-sm text-muted-foreground"
     >
-      <Lightbulb className="size-3.5 shrink-0 text-muted-foreground/70" />
+      <TonedIcon className="size-3.5 shrink-0" icon={Lightbulb} tone="muted" />
       {tips.map((tip, i) => (
         <Fragment key={tip.id}>
           {i > 0 ? (

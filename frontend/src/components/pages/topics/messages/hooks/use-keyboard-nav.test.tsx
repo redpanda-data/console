@@ -52,7 +52,7 @@ describe('useKeyboardNav', () => {
     expect(writeText).toHaveBeenCalledWith('copy-text-for-a');
   });
 
-  test("Cmd+C / Ctrl+C / Alt+C do not hijack the browser's own copy shortcut", async () => {
+  test("cmd+C / Ctrl+C / Alt+C do not hijack the browser's own copy shortcut", async () => {
     const { getCopyText } = renderNav();
     await userEvent.keyboard('{Meta>}c{/Meta}');
     await userEvent.keyboard('{Control>}c{/Control}');

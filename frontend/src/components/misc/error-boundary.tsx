@@ -19,7 +19,7 @@ import { envVarDebugAr } from '../../utils/env';
 import { isClipboardAvailable } from '../../utils/feature-detection';
 import { toJson } from '../../utils/json-utils';
 import { showToast } from '../../utils/toast.utils';
-import { navigatorClipboardErrorHandler, ObjToKv } from '../../utils/tsx-utils';
+import { navigatorClipboardErrorHandler, objToKv } from '../../utils/tsx-utils';
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
@@ -58,84 +58,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 19 - extensive error parsing for multiple info types (stack, components, environment)
   componentDidCatch(error: Error | null, errorInfo: object) {
-    const infoItems: InfoItem[] = [];
-
-    // Type
-    if (error?.name && error.name.toLowerCase() !== 'error') {
-      infoItems.push({ name: 'Type', value: error.name });
-    }
-
-    // Message
-    if (error?.message) {
-      infoItems.push({ name: 'Message', value: error.message });
-    } else {
-      infoItems.push({ name: 'Message', value: '(no message)' });
-    }
-
-    // Call Stack - placeholder for decoded stack
-    const decodedStackIndex = infoItems.length;
-    infoItems.push({
-      name: 'Stack (Decoded)',
-      value: 'Decoding stack trace, please wait...',
-    });
-
-    // Normal stack trace
-    if (error?.stack) {
-      let s = error.stack;
-      // remove "Error: " prefix
-      s = s.removePrefix('error:').trim();
-      // remove the error message as well, leaving only the stack trace
-      if (error.message && s.startsWith(error.message)) {
-        s = s.slice(error.message.length).trimStart();
-      }
-      infoItems.push({ name: 'Stack (Raw)', value: s });
-    }
-
-    // Component Stack
-    if (errorInfo && typeof errorInfo === 'object' && 'componentStack' in errorInfo) {
-      infoItems.push({
-        name: 'Components',
-        value: String((errorInfo as { componentStack: unknown }).componentStack),
-      });
-    } else {
-      infoItems.push({
-        name: 'Components',
-        value: errorInfo
-          ? `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`
-          : '(errorInfo was not set)',
-      });
-    }
-
-    // EnvVars
-    try {
-      const padLength = envVarDebugAr.max((e) => e.name.length);
-      infoItems.push({
-        name: 'Environment',
-        value: envVarDebugAr.map((e) => `${e.name.padEnd(padLength)}: ${e.value}`).join('\n'),
-      });
-    } catch (_ex) {
-      infoItems.push({ name: 'Environment', value: '(error retreiving env list)' });
-    }
-
-    // Location
-    try {
-      const locationItems = ObjToKv({
-        Protocol: window?.location?.protocol ?? '<null>',
-        Path: window?.location?.pathname ?? '<null>',
-        Search: window?.location?.search ?? '<null>',
-        Hash: window?.location?.hash ?? '<null>',
-      });
-      const padLength = locationItems.max((e) => e.key.length);
-      infoItems.push({
-        name: 'Location',
-        value: locationItems.map((e) => `${e.key.padEnd(padLength)}: ${e.value}`).join('\n'),
-      });
-    } catch (_ex) {
-      infoItems.push({
-        name: 'Location',
-        value: '(error printing location, please include the url in your bug report)',
-      });
-    }
+    const { infoItems, decodedStackIndex } = getInitialErrorInfo(error, errorInfo);
 
     this.setState({
       hasError: true,
@@ -276,7 +199,66 @@ function InfoItemDisplay({ data }: { data: InfoItem }) {
   return (
     <div>
       <h2>{title}</h2>
-      <pre className="wrap-anywhere whitespace-pre-wrap rounded-xs bg-surface-recess p-4 text-body-sm">{content}</pre>
+      <pre className="rounded-xs bg-surface-recess p-4 text-body-sm wrap-anywhere whitespace-pre-wrap">{content}</pre>
     </div>
   );
+}
+
+function getInitialErrorInfo(error: Error | null, errorInfo: object) {
+  const infoItems: InfoItem[] = [];
+  if (error?.name && error.name.toLowerCase() !== 'error') {
+    infoItems.push({ name: 'Type', value: error.name });
+  }
+  infoItems.push({ name: 'Message', value: error?.message || '(no message)' });
+  const decodedStackIndex = infoItems.length;
+  infoItems.push({ name: 'Stack (Decoded)', value: 'Decoding stack trace, please wait...' });
+  if (error?.stack) {
+    infoItems.push({ name: 'Stack (Raw)', value: getRawErrorStack(error) });
+  }
+  infoItems.push(getComponentStackInfo(errorInfo), getEnvironmentInfo(), getLocationInfo());
+  return { infoItems, decodedStackIndex };
+}
+
+function getRawErrorStack(error: Error): string {
+  const stack = (error.stack ?? '').removePrefix('error:').trim();
+  return error.message && stack.startsWith(error.message) ? stack.slice(error.message.length).trimStart() : stack;
+}
+
+function getComponentStackInfo(errorInfo: object): InfoItem {
+  return {
+    name: 'Components',
+    value:
+      errorInfo && typeof errorInfo === 'object' && 'componentStack' in errorInfo
+        ? String(errorInfo.componentStack)
+        : errorInfo
+          ? `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`
+          : '(errorInfo was not set)',
+  };
+}
+
+function getEnvironmentInfo(): InfoItem {
+  try {
+    const padLength = envVarDebugAr.max((entry) => entry.name.length);
+    return {
+      name: 'Environment',
+      value: envVarDebugAr.map((entry) => `${entry.name.padEnd(padLength)}: ${entry.value}`).join('\n'),
+    };
+  } catch {
+    return { name: 'Environment', value: '(error retreiving env list)' };
+  }
+}
+
+function getLocationInfo(): InfoItem {
+  try {
+    const items = objToKv({
+      Protocol: window?.location?.protocol ?? '<null>',
+      Path: window?.location?.pathname ?? '<null>',
+      Search: window?.location?.search ?? '<null>',
+      Hash: window?.location?.hash ?? '<null>',
+    });
+    const padLength = items.max((item) => item.key.length);
+    return { name: 'Location', value: items.map((item) => `${item.key.padEnd(padLength)}: ${item.value}`).join('\n') };
+  } catch {
+    return { name: 'Location', value: '(error printing location, please include the url in your bug report)' };
+  }
 }

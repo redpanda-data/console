@@ -8,6 +8,51 @@ export type CreateSchemaOptions = {
   keyOrValue?: 'KEY' | 'VALUE';
 };
 
+/** Replaces the Monaco editor's content with `text`. */
+const replaceEditorText = async (page: Page, text: string) => {
+  const editor = page.locator('.monaco-editor').first();
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Meta+A'); // For Mac
+  await page.keyboard.press('Backspace');
+  await page.keyboard.insertText(text);
+};
+
+const validateSchemaText = async (page: Page) => {
+  await page.getByRole('button', { name: 'Validate' }).click();
+  await expect(page.getByText('Schema is valid')).toBeVisible({ timeout: 5000 });
+};
+
+const selectFormatAndSubject = async (
+  page: Page,
+  {
+    subjectName,
+    schemaFormat,
+    strategy,
+    keyOrValue,
+  }: Required<Omit<CreateSchemaOptions, 'schemaText' | 'keyOrValue'>> & Pick<CreateSchemaOptions, 'keyOrValue'>
+) => {
+  // Select schema format
+  if (schemaFormat !== 'AVRO') {
+    await page.getByTestId('schema-format-select').click();
+    await page.getByText(schemaFormat).click();
+  }
+
+  // Select naming strategy
+  await page.getByTestId('naming-strategy-select').click();
+  await page.getByText(strategy).click();
+
+  // If strategy requires key/value selection
+  if (strategy !== 'CUSTOM' && keyOrValue) {
+    await page.getByLabel(keyOrValue === 'KEY' ? 'Key' : 'Value').check();
+  }
+
+  // Fill subject name for CUSTOM strategy
+  if (strategy === 'CUSTOM') {
+    await page.getByTestId('subject-name-input').fill(subjectName);
+  }
+};
+
 export const createSchema = async (
   page: Page,
   { subjectName, schemaFormat = 'AVRO', schemaText, strategy = 'CUSTOM', keyOrValue }: CreateSchemaOptions
@@ -19,37 +64,11 @@ export const createSchema = async (
     // Wait for create page to load
     await expect(page).toHaveURL('/schema-registry/create');
 
-    // Select schema format
-    if (schemaFormat !== 'AVRO') {
-      await page.getByTestId('schema-format-select').click();
-      await page.getByText(schemaFormat).click();
-    }
-
-    // Select naming strategy
-    await page.getByTestId('naming-strategy-select').click();
-    await page.getByText(strategy).click();
-
-    // If strategy requires key/value selection
-    if (strategy !== 'CUSTOM' && keyOrValue) {
-      await page.getByLabel(keyOrValue === 'KEY' ? 'Key' : 'Value').check();
-    }
-
-    // Fill subject name for CUSTOM strategy
-    if (strategy === 'CUSTOM') {
-      await page.getByTestId('subject-name-input').fill(subjectName);
-    }
+    await selectFormatAndSubject(page, { subjectName, schemaFormat, strategy, keyOrValue });
 
     // Fill schema text in Monaco editor
-    const editor = page.locator('.monaco-editor').first();
-    await editor.click();
-    await page.keyboard.press('Control+A');
-    await page.keyboard.press('Meta+A'); // For Mac
-    await page.keyboard.press('Backspace');
-    await page.keyboard.insertText(schemaText);
-
-    // Validate schema
-    await page.getByRole('button', { name: 'Validate' }).click();
-    await expect(page.getByText('Schema is valid')).toBeVisible({ timeout: 5000 });
+    await replaceEditorText(page, schemaText);
+    await validateSchemaText(page);
 
     // Create schema
     await page.getByRole('button', { name: 'Create' }).click();
@@ -93,16 +112,8 @@ export const addSchemaVersion = async (
     );
 
     // Update schema text in Monaco editor
-    const editor = page.locator('.monaco-editor').first();
-    await editor.click();
-    await page.keyboard.press('Control+A');
-    await page.keyboard.press('Meta+A'); // For Mac
-    await page.keyboard.press('Backspace');
-    await page.keyboard.insertText(schemaText);
-
-    // Validate schema
-    await page.getByRole('button', { name: 'Validate' }).click();
-    await expect(page.getByText('Schema is valid')).toBeVisible({ timeout: 5000 });
+    await replaceEditorText(page, schemaText);
+    await validateSchemaText(page);
 
     // Create new version
     await page.getByRole('button', { name: 'Create' }).click();

@@ -15,11 +15,7 @@ const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, ...props }: { children: React.ReactNode; to: string }) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
+  Link: MockLink,
   useLocation: () => mockLocation,
   useRouter: () => mockRouter,
 }));
@@ -30,7 +26,7 @@ rs.mock('../../config', () => ({
 
 import { NotFoundPage } from './not-found-page';
 
-describe('NotFoundPage', () => {
+describe('the NotFoundPage', () => {
   beforeEach(() => {
     mockConfig.clusterId = 'cluster-123';
     mockLocation.pathname = '/agents/agent-123';
@@ -60,3 +56,11 @@ describe('NotFoundPage', () => {
     expect(screen.queryByRole('link', { name: 'Open Redpanda AI' })).not.toBeInTheDocument();
   });
 });
+
+function MockLink({ children, to, ...props }: { children: React.ReactNode; to: string }) {
+  return (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  );
+}

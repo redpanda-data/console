@@ -80,13 +80,12 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     setIsSubmitting(true);
     setFieldErrors({}); // Clear previous field errors
 
-    const companyName = data.companyName || 'unknown';
     try {
       await signupMutation.mutateAsync({
         givenName: data.givenName,
         familyName: data.familyName,
         email: data.email,
-        companyName,
+        companyName: data.companyName || 'unknown',
       });
 
       // Refresh licenses after successful registration
@@ -94,27 +93,15 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
 
       // Show success state
       setIsSuccess(true);
-      setIsSubmitting(false);
     } catch (error) {
-      setIsSubmitting(false);
-      // Handle field-level errors from the API response
-      const isConnectError = error instanceof ConnectError;
-      if (isConnectError) {
-        const connectError = error as ConnectError;
-        const newFieldErrors: Record<string, string> = {};
-        const details = connectError.details ?? [];
-        for (const detail of details) {
-          if (isBadRequest(detail)) {
-            for (const violation of detail.debug.fieldViolations) {
-              newFieldErrors[violation.field] = violation.description;
-            }
-          }
-        }
-        setFieldErrors(newFieldErrors);
+      if (error instanceof ConnectError) {
+        setFieldErrors(getRegistrationFieldErrors(error));
       }
 
       // biome-ignore lint/suspicious/noConsole: error logging for debugging registration failures
       console.error('Registration failed:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,10 +117,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
       api.listLicenses();
     }
   };
-
-  const givenNameError = errors.givenName?.message || fieldErrors.givenName;
-  const familyNameError = errors.familyName?.message || fieldErrors.familyName;
-  const emailError = errors.email?.message || fieldErrors.email;
 
   return (
     <Dialog
@@ -152,7 +135,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
           {isSuccess ? (
             <div className="flex flex-col items-center gap-6 py-4">
               <div className="flex size-20 items-center justify-center rounded-full bg-success-wash">
-                <CheckIcon className="text-success" size={40} />
+                <CheckIcon color="var(--color-success)" size={40} />
               </div>
               <div className="flex flex-col items-center gap-2">
                 <div className="text-center text-heading-sm">Cluster registered</div>
@@ -175,7 +158,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
 
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="mb-4 flex gap-4">
-                  <Field data-invalid={Boolean(givenNameError) || undefined}>
+                  <Field data-invalid={Boolean(errors.givenName?.message || fieldErrors.givenName) || undefined}>
                     <FieldLabel htmlFor="register-given-name">First name</FieldLabel>
                     <Controller
                       control={control}
@@ -199,10 +182,10 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                    <FieldError>{givenNameError}</FieldError>
+                    <FieldError>{errors.givenName?.message || fieldErrors.givenName}</FieldError>
                   </Field>
 
-                  <Field data-invalid={Boolean(familyNameError) || undefined}>
+                  <Field data-invalid={Boolean(errors.familyName?.message || fieldErrors.familyName) || undefined}>
                     <FieldLabel htmlFor="register-family-name">Last name</FieldLabel>
                     <Controller
                       control={control}
@@ -231,11 +214,11 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         },
                       }}
                     />
-                    <FieldError>{familyNameError}</FieldError>
+                    <FieldError>{errors.familyName?.message || fieldErrors.familyName}</FieldError>
                   </Field>
                 </div>
 
-                <Field className="mb-4" data-invalid={Boolean(emailError) || undefined}>
+                <Field className="mb-4" data-invalid={Boolean(errors.email?.message || fieldErrors.email) || undefined}>
                   <FieldLabel htmlFor="register-email">Email address</FieldLabel>
                   <Controller
                     control={control}
@@ -257,7 +240,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       },
                     }}
                   />
-                  <FieldError>{emailError}</FieldError>
+                  <FieldError>{errors.email?.message || fieldErrors.email}</FieldError>
                 </Field>
 
                 <div className="mb-4 text-body-sm text-subtle">
@@ -304,3 +287,15 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     </Dialog>
   );
 };
+
+function getRegistrationFieldErrors(error: ConnectError): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const detail of error.details ?? []) {
+    if (isBadRequest(detail)) {
+      for (const violation of detail.debug.fieldViolations) {
+        fieldErrors[violation.field] = violation.description;
+      }
+    }
+  }
+  return fieldErrors;
+}

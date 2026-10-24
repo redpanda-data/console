@@ -17,14 +17,39 @@ import {
 } from './test-environment-state.mjs';
 import { describe, expect, mock, test } from 'bun:test';
 
+function trackBothBackends() {
+  const state = createEnvironmentState();
+  const sourceBackend = { getId: () => 'source-id' };
+  const destinationBackend = { getId: () => 'destination-id' };
+
+  rememberContainer(state, 'sourceBackend', sourceBackend);
+  rememberContainer(state, 'backend', destinationBackend);
+
+  return { state, sourceBackend, destinationBackend };
+}
+
+function createDeferredStopFixture() {
+  const state = createEnvironmentState();
+  let finishFirst: (() => void) | undefined;
+  const firstStop = mock(
+    () =>
+      new Promise<void>((resolve) => {
+        finishFirst = resolve;
+      })
+  );
+  const secondStop = mock().mockResolvedValue(undefined);
+  const networkStop = mock().mockResolvedValue(undefined);
+
+  rememberContainer(state, 'redpanda', { getId: () => 'redpanda-id', stop: firstStop });
+  rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
+  Object.assign(state, { network: { stop: networkStop } });
+
+  return { state, firstStop, secondStop, networkStop, finishFirst: () => finishFirst?.() };
+}
+
 describe('test environment state', () => {
   test('tracks source and destination backends independently', () => {
-    const state = createEnvironmentState();
-    const sourceBackend = { getId: () => 'source-id' };
-    const destinationBackend = { getId: () => 'destination-id' };
-
-    rememberContainer(state, 'sourceBackend', sourceBackend);
-    rememberContainer(state, 'backend', destinationBackend);
+    const { state, sourceBackend, destinationBackend } = trackBothBackends();
 
     if (!('sourceBackendContainer' in state && 'backendContainer' in state)) {
       throw new Error('Expected both live container handles');
@@ -36,20 +61,7 @@ describe('test environment state', () => {
   });
 
   test('stops containers in parallel before removing the network', async () => {
-    const state = createEnvironmentState();
-    let finishFirst: (() => void) | undefined;
-    const firstStop = mock(
-      () =>
-        new Promise<void>((resolve) => {
-          finishFirst = resolve;
-        })
-    );
-    const secondStop = mock().mockResolvedValue(undefined);
-    const networkStop = mock().mockResolvedValue(undefined);
-
-    rememberContainer(state, 'redpanda', { getId: () => 'redpanda-id', stop: firstStop });
-    rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
-    Object.assign(state, { network: { stop: networkStop } });
+    const { state, firstStop, secondStop, networkStop, finishFirst } = createDeferredStopFixture();
 
     const cleanup = cleanupStartedResources(state);
 
@@ -57,7 +69,7 @@ describe('test environment state', () => {
     expect(secondStop).toHaveBeenCalledTimes(1);
     expect(networkStop).not.toHaveBeenCalled();
 
-    finishFirst?.();
+    finishFirst();
     await cleanup;
 
     expect(networkStop).toHaveBeenCalledTimes(1);

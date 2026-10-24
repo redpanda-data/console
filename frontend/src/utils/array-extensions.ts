@@ -234,18 +234,8 @@ Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefine
 };
 
 Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number; added: number } {
-  // Early out, compare both arrays
-  if (this.length === newData.length) {
-    let same = true;
-    for (let i = 0; i < this.length; i++) {
-      if (this[i] !== newData[i]) {
-        same = false;
-        break;
-      }
-    }
-    if (same) {
-      return { removed: 0, added: 0 };
-    }
+  if (haveSameArrayItems(this, newData)) {
+    return { removed: 0, added: 0 };
   }
 
   const added = newData.except(this);
@@ -347,8 +337,7 @@ Array.prototype.genericJoin = function genericJoin<T>(
 
     const separator = getSeparator(last, current, i);
 
-    ar.push(last);
-    ar.push(separator);
+    ar.push(last, separator);
   }
 
   // add final element
@@ -417,3 +406,15 @@ Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item:
 
   return result;
 };
+
+function haveSameArrayItems<T>(current: T[], next: T[]): boolean {
+  if (current.length !== next.length) {
+    return false;
+  }
+  for (let index = 0; index < current.length; index++) {
+    if (current[index] !== next[index]) {
+      return false;
+    }
+  }
+  return true;
+}

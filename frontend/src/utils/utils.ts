@@ -135,51 +135,37 @@ export const alwaysChanging = () => {
   return refreshCounter;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
-    if (!Object.hasOwn(source, key)) {
+    if (!Object.hasOwn(source, key) || key === '__proto__' || key === 'constructor') {
       continue;
     }
-    if (key === '__proto__' || key === 'constructor') {
-      continue;
-    }
+    assignDeepValue(target, key, source[key]);
+  }
+}
 
-    const value = source[key];
-    const existing = key in target ? target[key] : undefined;
-
-    // if (existing === undefined && onlySetExisting) {
-    // 	console.log('skipping key ' + key + ' because it doesnt exist in the target');
-    // 	continue;
-    // }
-
-    if (typeof value === 'function' || typeof value === 'symbol') {
-      //console.log('skipping key ' + key + ' because its type is ' + typeof value);
-      continue;
-    }
-
-    if (typeof value === 'object') {
-      // Arrays are replaced wholesale, never merged index-by-index: an
-      // index-wise merge mutates the existing (possibly shared) elements in
-      // place, which corrupts reordered arrays — moving an element then reads
-      // an already-overwritten object and duplicates it (observed with
-      // message-column drag reordering synced through updateSettings).
-      if (Array.isArray(value) || !existing || typeof existing !== 'object') {
-        target[key] = value;
-      } else {
-        assignDeep(target[key] as Record<string, unknown>, value as Record<string, unknown>);
-      }
-
-      continue;
-    }
-
-    if (existing === value) {
-      continue;
-    }
-
-    // console.log(`Key ["${key}"]:  ${JSON.stringify(existing)} ->  ${JSON.stringify(value)}`);
-
+function assignDeepValue(target: Record<string, unknown>, key: string, value: unknown) {
+  const existing = key in target ? target[key] : undefined;
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    return;
+  }
+  if (typeof value === 'object') {
+    assignDeepObject(target, key, value, existing);
+    return;
+  }
+  if (existing !== value) {
     target[key] = value;
+  }
+}
+
+function assignDeepObject(target: Record<string, unknown>, key: string, value: object | null, existing: unknown) {
+  // Replacing arrays preserves shared element identities when settings reorder them.
+  if (Array.isArray(value) || !existing || typeof existing !== 'object') {
+    target[key] = value;
+    return;
+  }
+  if (value !== null) {
+    assignDeep(existing as Record<string, unknown>, value as Record<string, unknown>);
   }
 }
 
@@ -220,131 +206,78 @@ export function collectElements(
   return ctx.results;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
   for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
-      const value = obj[key];
-
-      // property match?
-      const isMatch = ctx.isMatch(key, ctx.currentPath, value);
-
-      if (isMatch) {
-        const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({ propertyName: key, path: clonedPath, value });
-
-        if (ctx.returnFirstResult) {
-          return 'abort';
-        }
-      }
-
-      // descend into object
-      if (typeof value === 'object' && value !== null) {
-        ctx.currentPath.push(key);
-        const childResult = collectElementsRecursive(ctx, value as Record<string, unknown>);
-        ctx.currentPath.pop();
-
-        if (childResult === 'abort') {
-          return 'abort';
-        }
-      }
+    if (Object.hasOwn(obj, key) && collectMatchingProperty(ctx, key, obj[key]) === 'abort') {
+      return 'abort';
     }
   }
+  return 'continue';
+}
 
+function collectMatchingProperty(ctx: PropertySearchExContext, key: string, value: unknown): PropertySearchResult {
+  if (ctx.isMatch(key, ctx.currentPath, value)) {
+    ctx.results.push({ propertyName: key, path: Object.assign([], ctx.currentPath), value });
+    if (ctx.returnFirstResult) {
+      return 'abort';
+    }
+  }
+  if (typeof value === 'object' && value !== null) {
+    ctx.currentPath.push(key);
+    const result = collectElementsRecursive(ctx, value as Record<string, unknown>);
+    ctx.currentPath.pop();
+    return result;
+  }
   return 'continue';
 }
 
 type IsMatchFunc = (pathElement: string, propertyName: string, value: unknown) => boolean;
 export type CollectedProperty = { path: string[]; value: unknown };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 37, refactor later
 export function collectElements2(
   targetObject: Record<string, unknown>,
-
-  // "**" collectes all current and nested properties
-  // "*" collects all current properties
-  // anything else is passed to "isMatch"
   path: string[],
   isMatch: IsMatchFunc
 ): CollectedProperty[] {
-  // Explore set
-  let currentExplore: CollectedProperty[] = [{ path: [], value: targetObject }];
-  let nextExplore: CollectedProperty[] = [];
+  let explore: CollectedProperty[] = [{ path: [], value: targetObject }];
+  for (let index = 0; index < path.length; index++) {
+    const next = explore.flatMap((property) => collectPathSegment(property, path[index], isMatch));
+    if (index === path.length - 1) {
+      return next;
+    }
+    explore = next;
+  }
+  return [];
+}
+
+function collectPathSegment(property: CollectedProperty, segment: string, isMatch: IsMatchFunc): CollectedProperty[] {
+  if (segment !== '**') {
+    return collectDirectProperties(property, segment, isMatch);
+  }
+  const nested = collectElements(property.value, (_key, _path, value) => typeof value === 'object', false);
+  return [
+    ...nested.map((child) => ({ path: [...property.path, ...child.path, child.propertyName], value: child.value })),
+    { path: [...property.path], value: property.value },
+  ];
+}
+
+function collectDirectProperties(
+  property: CollectedProperty,
+  segment: string,
+  isMatch: IsMatchFunc
+): CollectedProperty[] {
   const results: CollectedProperty[] = [];
-
-  for (let i = 0; i < path.length; i++) {
-    const segment = path[i];
-    const isLast = i === path.length - 1;
-    const targetList = isLast ? results : nextExplore;
-
-    for (const foundProp of currentExplore) {
-      const currentObj = foundProp.value;
-
-      switch (segment) {
-        case '**': {
-          // And all their nested objects are a result
-          const allNested = collectElements(currentObj, (_key, _path, value) => typeof value === 'object', false);
-
-          for (const n of allNested) {
-            targetList.push({
-              path: [...foundProp.path, ...n.path, n.propertyName],
-              value: n.value,
-            });
-          }
-
-          // Also explore this object again as well (because '**' also includes the current props)
-          targetList.push({
-            path: [...foundProp.path],
-            value: currentObj,
-          });
-
-          break;
-        }
-
-        case '*':
-          // Explore all properties
-          for (const key in currentObj as Record<string, unknown>) {
-            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
-              const value = (currentObj as Record<string, unknown>)[key];
-              if (value === null || typeof value === 'function') {
-                continue;
-              }
-
-              targetList.push({
-                path: [...foundProp.path, key],
-                value,
-              });
-            }
-          }
-          break;
-
-        default:
-          // Some user defined string
-          for (const key in currentObj as Record<string, unknown>) {
-            if (Object.hasOwn(currentObj as Record<string, unknown>, key)) {
-              const value = (currentObj as Record<string, unknown>)[key];
-              if (value === null || typeof value === 'function') {
-                continue;
-              }
-
-              const match = isMatch(segment, key, value);
-              if (match) {
-                targetList.push({
-                  path: [...foundProp.path, key],
-                  value,
-                });
-              }
-            }
-          }
-          break;
+  for (const key in property.value as Record<string, unknown>) {
+    if (Object.hasOwn(property.value as Record<string, unknown>, key)) {
+      const value = (property.value as Record<string, unknown>)[key];
+      if (value === null || typeof value === 'function') {
+        continue;
+      }
+      if (segment === '*' || isMatch(segment, key, value)) {
+        results.push({ path: [...property.path, key], value });
       }
     }
-
-    // use the next array as the current one
-    currentExplore = nextExplore;
-    nextExplore = [];
   }
-
   return results;
 }
 
@@ -385,58 +318,43 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
-function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): PropertySearchResult {
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): void {
   const isArray = Array.isArray(obj);
-  let result = 'continue' as PropertySearchResult;
-
   const pathToHere = ctx.currentFullPath;
-
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
-      const value = obj[key];
-
-      ctx.currentPath.push(key);
-      const currentFullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
-      ctx.currentFullPath = currentFullPath;
-
-      if (!isArray) {
-        // add result, but only for object properties
-        const isNewPath = !ctx.existingPaths.has(currentFullPath);
-        if (isNewPath) {
-          // and only if its a new path
-          ctx.existingPaths.add(currentFullPath);
-
-          const clonedPath = Object.assign([], ctx.currentPath);
-          ctx.results.push({
-            propertyName: key,
-            path: clonedPath, // all the keys
-            fullPath: currentFullPath,
-          });
-        }
-      }
-
-      // descend into object
-      if (typeof value === 'object' && value !== null) {
-        const childResult = getAllKeysRecursive(ctx, value as Record<string, unknown>);
-
-        if (childResult === 'abort') {
-          result = 'abort';
-        }
-      }
-
-      ctx.currentPath.pop();
-      ctx.currentFullPath = currentFullPath;
-
-      if (result === 'abort') {
-        break;
-      }
+      collectMessageKey(ctx, obj[key], key, pathToHere, isArray);
     }
   }
-
   ctx.currentFullPath = pathToHere;
+}
 
-  return result;
+function collectMessageKey(
+  ctx: GetAllKeysContext,
+  value: unknown,
+  key: string,
+  pathToHere: string,
+  isArray: boolean
+): void {
+  ctx.currentPath.push(key);
+  const fullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
+  ctx.currentFullPath = fullPath;
+  if (!isArray) {
+    recordMessageKey(ctx, key, fullPath);
+  }
+  if (typeof value === 'object' && value !== null) {
+    getAllKeysRecursive(ctx, value as Record<string, unknown>);
+  }
+  ctx.currentPath.pop();
+  ctx.currentFullPath = fullPath;
+}
+
+function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string): void {
+  if (ctx.existingPaths.has(fullPath)) {
+    return;
+  }
+  ctx.existingPaths.add(fullPath);
+  ctx.results.push({ propertyName: key, path: Object.assign([], ctx.currentPath), fullPath });
 }
 
 const secToMs = 1000;
@@ -502,73 +420,38 @@ function isUInt64Maximum(str: string) {
   return false;
 }
 
-export const prettyBytes = (n: number | string | null | undefined, options?: PrettyValueOptions) => {
-  if (typeof n === 'undefined' || n === null) {
-    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+function parsePrettyString(value: string): number | string {
+  if (value === '') {
+    return 'N/A';
   }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : String(parsed);
+}
 
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
+function parsePrettyValue(value: number | string | null | undefined, options?: PrettyValueOptions): number | string {
+  if (value === undefined || value === null) {
+    return options?.showNullAs ?? 'N/A';
+  }
+  if (options?.showLargeAsInfinite && isUInt64Maximum(String(value))) {
     return 'Infinite';
   }
-
-  if (typeof n !== 'number') {
-    if (typeof n === 'string') {
-      // string
-      if (n === '') {
-        return 'N/A'; // empty -> N/A
-      }
-
-      const parsed = Number.parseFloat(String(n));
-
-      if (!Number.isFinite(parsed)) {
-        return String(parsed); // "NaN" or "Infinity"
-      }
-
-      // number parsed, fall through
-      return prettyBytesOriginal(parsed, { binary: true });
-    }
-    // something else: object, function, ...
-    return 'NaN';
+  if (typeof value === 'string') {
+    return parsePrettyString(value);
   }
+  return typeof value === 'number' ? value : 'NaN';
+}
 
-  // n is a finite number
-  return prettyBytesOriginal(n, { binary: true });
+export const prettyBytes = (n: number | string | null | undefined, options?: PrettyValueOptions) => {
+  const value = parsePrettyValue(n, options);
+  return typeof value === 'string' ? value : prettyBytesOriginal(value, { binary: true });
 };
 
 export const prettyMilliseconds = (n: number | string, options?: PrettyMillisecondsOptions & PrettyValueOptions) => {
-  if (typeof n === 'undefined' || n === null) {
-    return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
+  const value = parsePrettyValue(n, options);
+  if (typeof value === 'string') {
+    return value;
   }
-
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(n))) {
-    return 'Infinite';
-  }
-
-  if (typeof n !== 'number') {
-    if (typeof n === 'string') {
-      // string
-      if (n === '') {
-        return 'N/A'; // empty -> N/A
-      }
-
-      const parsed = Number.parseFloat(String(n));
-
-      if (!Number.isFinite(parsed)) {
-        return String(parsed); // "NaN" or "Infinity"
-      }
-
-      // number parsed, fall through
-      return prettyMillisecondsOriginal(parsed, options);
-    }
-    // something else: object, function, ...
-    return 'NaN';
-  }
-  if (!Number.isFinite(n)) {
-    return 'N/A';
-  }
-
-  // n is a finite number
-  return prettyMillisecondsOriginal(n, options);
+  return Number.isFinite(value) ? prettyMillisecondsOriginal(value, options) : 'N/A';
 };
 
 const ONE_THOUSAND = 1000;
@@ -723,44 +606,29 @@ export function base64ToUInt8Array(base64: string) {
   return Base64.toUint8Array(base64);
 }
 
+function binaryStringToBytes(binary: string): Uint8Array {
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function formatHexBytes(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(' ');
+}
+
 export function base64ToHexString(base64: string): string {
-  const HEX_RADIX = 16;
   try {
-    const binary = Base64.atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    let hex = '';
-    for (let i = 0; i < bytes.length; i++) {
-      const b = bytes[i].toString(HEX_RADIX);
-      hex += b.length === 1 ? `0${b}` : b;
-
-      if (i < bytes.length - 1) {
-        hex += ' ';
-      }
-    }
-
-    return hex;
+    return formatHexBytes(binaryStringToBytes(Base64.atob(base64)));
   } catch (_err) {
     return '<<Unable to decode message>>';
   }
 }
 
 export function uint8ArrayToHexString(ar: Uint8Array): string {
-  const HEX_RADIX = 16;
   try {
-    let hex = '';
-    for (let i = 0; i < ar.length; i++) {
-      const b = ar[i].toString(HEX_RADIX);
-      hex += b.length === 1 ? `0${b}` : b;
-
-      if (i < ar.length - 1) {
-        hex += ' ';
-      }
-    }
-
-    return hex;
+    return formatHexBytes(ar);
   } catch (_err) {
     return '<<Unable to convert uint8Array to hex>>';
   }

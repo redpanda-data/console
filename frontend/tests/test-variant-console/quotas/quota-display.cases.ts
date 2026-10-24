@@ -2,11 +2,11 @@ import { expect, step, test } from '../../shared/e2e';
 import { createClientIdQuota, createUserQuota, deleteClientIdQuota, deleteUserQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
-test.describe('Quotas - Display and Data Verification', () => {
+test.describe('quotas - Display and Data Verification', () => {
   test('should display quota with all rate types configured', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `display-all-rates-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `display-all-rates-${suffix}`;
 
     await step('Create quota with all rate types', async () => {
       await createClientIdQuota({
@@ -39,8 +39,8 @@ test.describe('Quotas - Display and Data Verification', () => {
 
   test('should display quota with only producer rate configured', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `producer-only-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `producer-only-${suffix}`;
 
     await step('Create quota with only producer rate', async () => {
       await createClientIdQuota({
@@ -66,8 +66,8 @@ test.describe('Quotas - Display and Data Verification', () => {
 
   test('should display quota with only consumer rate configured', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `consumer-only-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `consumer-only-${suffix}`;
 
     await step('Create quota with only consumer rate', async () => {
       await createClientIdQuota({
@@ -89,8 +89,8 @@ test.describe('Quotas - Display and Data Verification', () => {
 
   test('should handle quotas with large byte values correctly', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `large-values-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `large-values-${suffix}`;
 
     await step('Create quota with large byte values', async () => {
       await createClientIdQuota({
@@ -132,8 +132,8 @@ test.describe('Quotas - Display and Data Verification', () => {
 
   test('should reload page and maintain quota visibility', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const quotaClientId = `reload-test-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const quotaClientId = `reload-test-${suffix}`;
 
     await step('Create quota', async () => {
       await createClientIdQuota({
@@ -161,9 +161,9 @@ test.describe('Quotas - Display and Data Verification', () => {
 
   test('should display multiple quotas with different entity types', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
-    const timestamp = Date.now();
-    const clientQuota = `multi-type-client-${timestamp}`;
-    const userQuota = `multi-type-user-${timestamp}`;
+    const suffix = crypto.randomUUID();
+    const clientQuota = `multi-type-client-${suffix}`;
+    const userQuota = `multi-type-user-${suffix}`;
 
     await step('Create quotas with different entity types', async () => {
       await createClientIdQuota({

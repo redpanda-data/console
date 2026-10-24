@@ -131,16 +131,21 @@ const collectPaths = (obj: unknown, prefix: string, depth: number, out: Set<stri
   }
 };
 
-/** Dotted paths that exist under the decoded value payloads of the loaded rows. */
-export function valuePaths(messages: TopicMessage[], filter = ''): string[] {
+/** Sorted dotted paths under the decoded value payloads of the first 50 loaded rows. */
+const loadedValuePaths = (messages: TopicMessage[]): string[] => {
   const paths = new Set<string>();
   for (const msg of messages.slice(0, 50)) {
     if (!msg.value.isPayloadNull) {
       collectPaths(msg.value.payload, '', 0, paths);
     }
   }
+  return [...paths].sort();
+};
+
+/** Dotted paths that exist under the decoded value payloads of the loaded rows. */
+export function valuePaths(messages: TopicMessage[], filter = ''): string[] {
+  const all = loadedValuePaths(messages);
   const needle = filter.toLowerCase();
-  const all = [...paths].sort();
   if (!needle) {
     return all;
   }

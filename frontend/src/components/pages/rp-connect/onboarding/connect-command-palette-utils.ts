@@ -124,14 +124,19 @@ function nameContainsToken(name: string, fragment: string): boolean {
     if (at === -1) {
       return false;
     }
-    const boundedBefore = at === 0 || name[at - 1] === '_';
-    const end = at + fragment.length;
-    const boundedAfter = end === name.length || name[end] === '_';
-    if (boundedBefore && boundedAfter) {
+    if (isTokenBoundedAt(name, at, fragment.length)) {
       return true;
     }
     from = at + 1;
   }
+}
+
+// Is the `length`-char match at `at` bounded by `_` or a string edge on both sides?
+function isTokenBoundedAt(name: string, at: number, length: number): boolean {
+  const end = at + length;
+  const boundedBefore = at === 0 || name[at - 1] === '_';
+  const boundedAfter = end === name.length || name[end] === '_';
+  return boundedBefore && boundedAfter;
 }
 
 // Every alias key whose fragments the name contains as a token ("queue" matches `kafka_franz`).

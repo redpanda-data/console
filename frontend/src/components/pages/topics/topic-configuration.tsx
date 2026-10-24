@@ -1,4 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
+import clsx from 'clsx';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -11,7 +12,8 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
-import { Input } from 'components/redpanda-ui/components/input';
+import { Group } from 'components/redpanda-ui/components/group';
+import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import {
   InputGroup,
   InputGroupAddon,
@@ -33,7 +35,7 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -111,46 +113,30 @@ function categoryForEntry(entry: ConfigEntryExtended): string {
   return entry.category && ALLOWED_CATEGORIES.has(entry.category) ? entry.category : 'Other';
 }
 
-const ConfigEditorForm: FC<{
-  editedEntry: ConfigEntryExtended;
-  onClose: () => void;
-  onSuccess: () => void;
-  targetTopic: string;
-}> = ({ editedEntry, onClose, targetTopic, onSuccess }) => {
-  const [globalError, setGlobalError] = useState<string | null>(null);
+function getDefaultValueType(entry: ConfigEntryExtended): Inputs['valueType'] {
+  if (!entry.isExplicitlySet) {
+    return 'default';
+  }
+  return entryHasInfiniteValue(entry) ? 'infinite' : 'custom';
+}
 
-  const defaultValueType = (() => {
-    if (!editedEntry.isExplicitlySet) {
-      return 'default';
-    }
-    return entryHasInfiniteValue(editedEntry) ? 'infinite' : 'custom';
-  })();
-  const defaultConfigSynonym = getDefaultConfigSynonym(editedEntry);
-  const explicitCustomValue =
-    editedEntry.isExplicitlySet && !entryHasInfiniteValue(editedEntry) ? editedEntry.value : '';
+function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
+  const defaultConfigSynonym = getDefaultConfigSynonym(entry);
+  const explicitCustomValue = entry.isExplicitlySet && !entryHasInfiniteValue(entry) ? entry.value : '';
   // Seed Custom from the resolved/inherited value (explicit override → current effective
   // value → inherited default) so opening Custom and saving without touching the control
   // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
   // first enum option when nothing is resolved, so the dropdown still shows a concrete choice.
-  const resolvedValue = explicitCustomValue || editedEntry.value || defaultConfigSynonym?.value || '';
-  const defaultCustomValue = resolvedValue || getFirstSelectOption(editedEntry) || '';
+  const resolvedValue = explicitCustomValue || entry.value || defaultConfigSynonym?.value || '';
+  return {
+    valueType: getDefaultValueType(entry),
+    customValue: resolvedValue || getFirstSelectOption(entry) || '',
+  };
+}
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    formState: { isSubmitting },
-  } = useForm<Inputs>({
-    defaultValues: {
-      valueType: defaultValueType,
-      customValue: defaultCustomValue,
-    },
-  });
-
+function getValueTypeOptions(entry: ConfigEntryExtended): Array<{ label: string; value: Inputs['valueType'] }> {
   const hasInfiniteValue =
-    editedEntry.frontendFormat &&
-    ['BYTE_SIZE', 'DURATION'].includes(editedEntry.frontendFormat) &&
-    !editedEntry.noInfiniteValue;
+    entry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(entry.frontendFormat) && !entry.noInfiniteValue;
   const valueTypeOptions: Array<{
     label: string;
     value: Inputs['valueType'];
@@ -169,18 +155,45 @@ const ConfigEditorForm: FC<{
     label: 'Custom',
     value: 'custom',
   });
+  return valueTypeOptions;
+}
 
-  const onSubmit: SubmitHandler<Inputs> = async ({ valueType: submittedValueType, customValue }) => {
-    const operation = submittedValueType === 'infinite' || submittedValueType === 'custom' ? 'SET' : 'DELETE';
+function resolveConfigChange(entry: ConfigEntryExtended, { valueType, customValue }: Inputs) {
+  const operation = valueType === 'infinite' || valueType === 'custom' ? 'SET' : 'DELETE';
 
-    let value: number | string | undefined | null;
-    if (submittedValueType === 'infinite') {
-      value = getInfiniteValueForEntry(editedEntry);
-    } else if (submittedValueType === 'custom') {
-      value = customValue;
-    }
+  let value: number | string | undefined | null;
+  if (valueType === 'infinite') {
+    value = getInfiniteValueForEntry(entry);
+  } else if (valueType === 'custom') {
+    value = customValue;
+  }
 
-    const configValue = operation === 'SET' ? String(value) : undefined;
+  return { operation, configValue: operation === 'SET' ? String(value) : undefined } as const;
+}
+
+const ConfigEditorForm: FC<{
+  editedEntry: ConfigEntryExtended;
+  onClose: () => void;
+  onSuccess: () => void;
+  targetTopic: string;
+}> = ({ editedEntry, onClose, targetTopic, onSuccess }) => {
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const fieldId = useId();
+  const defaultConfigSynonym = getDefaultConfigSynonym(editedEntry);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<Inputs>({
+    defaultValues: getEditorDefaultValues(editedEntry),
+  });
+
+  const valueTypeOptions = getValueTypeOptions(editedEntry);
+
+  const onSubmit: SubmitHandler<Inputs> = async (inputs) => {
+    const { operation, configValue } = resolveConfigChange(editedEntry, inputs);
     try {
       await api.changeTopicConfig(targetTopic, [
         {
@@ -229,12 +242,14 @@ const ConfigEditorForm: FC<{
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label>{editedEntry.name}</Label>
+                <p className="text-label" id={`${fieldId}-value-type`}>
+                  {editedEntry.name}
+                </p>
                 <Controller
                   control={control}
                   name="valueType"
                   render={({ field: { onChange, value } }) => (
-                    <RadioGroup onValueChange={onChange} value={value}>
+                    <RadioGroup aria-labelledby={`${fieldId}-value-type`} onValueChange={onChange} value={value}>
                       {valueTypeOptions.map((opt) => (
                         <div className="flex items-center gap-2" key={opt.value}>
                           <RadioGroupItem id={`value-type-${opt.value}`} value={opt.value} />
@@ -247,13 +262,20 @@ const ConfigEditorForm: FC<{
               </div>
               {valueType === 'custom' && (
                 <div className="flex flex-col gap-1.5">
-                  <Label>{`Set a custom ${editedEntry.name} value for this topic`}</Label>
+                  <Label
+                    htmlFor={`${fieldId}-custom-value`}
+                  >{`Set a custom ${editedEntry.name} value for this topic`}</Label>
                   <div className="w-fit">
                     <Controller
                       control={control}
                       name="customValue"
                       render={({ field: { onChange, value } }) => (
-                        <ConfigEntryEditorController entry={editedEntry} onChange={onChange} value={value} />
+                        <ConfigEntryEditorController
+                          entry={editedEntry}
+                          id={`${fieldId}-custom-value`}
+                          onChange={onChange}
+                          value={value}
+                        />
                       )}
                     />
                   </div>
@@ -308,17 +330,64 @@ type ConfigSection = {
   modifiedCount: number;
 };
 
-const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
+function useConfigSearchParams() {
   const navigate = useNavigate({ from: '/topics/$topicName/' });
   const { configFilter = '', configScope = 'all' } = useSearch({ from: '/topics/$topicName/' });
-  const scope = configScope;
-  const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
 
-  // The sections render in their own scroll container; clicking a sidebar category
-  // scrolls to its section *within this panel* (not by filtering, and without
-  // scrolling the whole page).
+  const setFilter = (value: string) => {
+    navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true }).catch(
+      (error: unknown) => {
+        toast.error('Failed to update configuration filter', { description: String(error) });
+      }
+    );
+  };
+
+  const setScope = (value: 'all' | 'modified') => {
+    navigate({
+      search: (prev) => ({ ...prev, configScope: value === 'all' ? undefined : value }),
+      replace: true,
+    }).catch((error: unknown) => {
+      toast.error('Failed to update configuration scope', { description: String(error) });
+    });
+  };
+
+  return { configFilter, scope: configScope, setFilter, setScope };
+}
+
+function useConfigSections(entries: ConfigEntryExtended[], query: string, scope: 'all' | 'modified') {
+  const totalModifiedCount = useMemo(() => entries.filter(isConfigModified).length, [entries]);
+
+  const sections = useMemo<ConfigSection[]>(() => {
+    const matchesQuery = (e: ConfigEntryExtended) =>
+      !query || e.name.toLowerCase().includes(query) || (e.documentation ?? '').toLowerCase().includes(query);
+
+    return CONFIG_CATEGORIES.map(({ name, blurb }) => {
+      const rows = entries.filter(
+        (e) => categoryForEntry(e) === name && matchesQuery(e) && (scope === 'all' || isConfigModified(e))
+      );
+      return { name, blurb, rows, modifiedCount: rows.filter(isConfigModified).length };
+    }).filter((s) => s.rows.length > 0);
+  }, [entries, query, scope]);
+
+  // Sidebar is a stable index of the topic's categories — not subject to the
+  // search/scope filter, so it never reflows as you type or toggle Modified.
+  const sidebarCategories = useMemo(
+    () =>
+      CONFIG_CATEGORIES.map(({ name }) => {
+        const categoryEntries = entries.filter((e) => categoryForEntry(e) === name);
+        return { name, count: categoryEntries.length, modifiedCount: categoryEntries.filter(isConfigModified).length };
+      }).filter((c) => c.count > 0),
+    [entries]
+  );
+
+  return { totalModifiedCount, sections, sidebarCategories };
+}
+
+// The sections render in their own scroll container; clicking a sidebar category
+// scrolls to its section *within this panel* (not by filtering, and without
+// scrolling the whole page).
+function useConfigScrollSpy(sections: ConfigSection[]) {
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
@@ -332,43 +401,6 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
     container.scrollTo({ top, behavior: 'smooth' });
     setActiveCategory(name);
   };
-
-  const topic = props.targetTopic;
-  const hasEditPermissions = topic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
-
-  const setFilter = (value: string) => {
-    navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true });
-  };
-
-  const setScope = (value: 'all' | 'modified') => {
-    navigate({ search: (prev) => ({ ...prev, configScope: value === 'all' ? undefined : value }), replace: true });
-  };
-
-  const query = configFilter.toLowerCase();
-  const totalModifiedCount = useMemo(() => props.entries.filter(isConfigModified).length, [props.entries]);
-
-  const sections = useMemo<ConfigSection[]>(() => {
-    const matchesQuery = (e: ConfigEntryExtended) =>
-      !query || e.name.toLowerCase().includes(query) || (e.documentation ?? '').toLowerCase().includes(query);
-
-    return CONFIG_CATEGORIES.map(({ name, blurb }) => {
-      const rows = props.entries.filter(
-        (e) => categoryForEntry(e) === name && matchesQuery(e) && (scope === 'all' || isConfigModified(e))
-      );
-      return { name, blurb, rows, modifiedCount: rows.filter(isConfigModified).length };
-    }).filter((s) => s.rows.length > 0);
-  }, [props.entries, query, scope]);
-
-  // Sidebar is a stable index of the topic's categories — not subject to the
-  // search/scope filter, so it never reflows as you type or toggle Modified.
-  const sidebarCategories = useMemo(
-    () =>
-      CONFIG_CATEGORIES.map(({ name }) => {
-        const categoryEntries = props.entries.filter((e) => categoryForEntry(e) === name);
-        return { name, count: categoryEntries.length, modifiedCount: categoryEntries.filter(isConfigModified).length };
-      }).filter((c) => c.count > 0),
-    [props.entries]
-  );
 
   // Scroll-spy: highlight the sidebar category whose section is at the top of the
   // scroll container as the user scrolls. Re-attaches whenever the rendered section
@@ -398,6 +430,22 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
     return () => observer.disconnect();
   }, [sections]);
 
+  return { activeCategory, sectionsContainerRef, sectionRefs, scrollToCategory };
+}
+
+const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
+  const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
+  const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
+  const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
+  const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
+
+  const { totalModifiedCount, sections, sidebarCategories } = useConfigSections(
+    props.entries,
+    configFilter.toLowerCase(),
+    scope
+  );
+  const { activeCategory, sectionsContainerRef, sectionRefs, scrollToCategory } = useConfigScrollSpy(sections);
+
   return (
     <div className="grid grid-cols-[240px_1fr] gap-6" data-testid="config-group-table">
       {editedEntry !== null && (
@@ -416,9 +464,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
             return (
               <button
                 aria-current={active ? 'true' : undefined}
-                className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body transition-colors ${
+                className={clsx(
+                  'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body transition-colors',
                   active ? 'bg-muted font-medium' : 'hover:bg-muted/50'
-                }`}
+                )}
                 key={c.name}
                 onClick={() => scrollToCategory(c.name)}
                 type="button"
@@ -497,7 +546,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                 }}
               >
                 <div className="mb-3 flex flex-col">
-                  <h3 className="font-semibold text-heading-md" id={`config-section-${s.name}`}>
+                  <h3 className="text-heading-md font-semibold" id={`config-section-${s.name}`}>
                     {s.name}
                   </h3>
                   <p className="text-body text-muted-foreground">{s.blurb}</p>
@@ -552,7 +601,7 @@ const ConfigRow: FC<{
   );
 
   return (
-    <div className={`flex items-start justify-between gap-4 px-4 py-3 ${modified ? 'bg-muted/30' : ''}`}>
+    <div className={clsx('flex items-start justify-between gap-4 px-4 py-3', modified ? 'bg-muted/30' : '')}>
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           {entry.documentation ? (
@@ -640,13 +689,15 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
   value: T;
   onChange: (e: T) => void;
   className?: string;
+  /** Id for the entry's primary labellable control. */
+  id?: string;
 }) => {
   const { entry, value, onChange } = p;
   switch (entry.frontendFormat) {
     case 'BOOLEAN':
       return (
         <Select onValueChange={(v) => onChange(v as T)} value={String(value)}>
-          <SelectTrigger>
+          <SelectTrigger id={p.id}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -659,7 +710,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
     case 'SELECT':
       return (
         <Select onValueChange={(v) => onChange(v as T)} value={String(value)}>
-          <SelectTrigger className={p.className}>
+          <SelectTrigger className={p.className} id={p.id}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -673,25 +724,35 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
       );
 
     case 'BYTE_SIZE':
-      return <DataSizeSelect onChange={(e) => onChange(Math.round(e) as T)} valueBytes={Number(value ?? 0)} />;
+      return (
+        <DataSizeSelect id={p.id} onChange={(e) => onChange(Math.round(e) as T)} valueBytes={Number(value ?? 0)} />
+      );
 
     case 'DURATION':
-      return <DurationSelect onChange={(e) => onChange(Math.round(e) as T)} valueMilliseconds={Number(value ?? 0)} />;
+      return (
+        <DurationSelect
+          id={p.id}
+          onChange={(e) => onChange(Math.round(e) as T)}
+          valueMilliseconds={Number(value ?? 0)}
+        />
+      );
 
     case 'PASSWORD':
-      return <Input onChange={(x) => onChange(x.target.value as T)} type="password" value={String(value ?? '')} />;
+      return (
+        <Input id={p.id} onChange={(x) => onChange(x.target.value as T)} type="password" value={String(value ?? '')} />
+      );
 
     case 'RATIO':
-      return <RatioInput onChange={(x) => onChange(x as T)} value={Number(value || entry.value)} />;
+      return <RatioInput id={p.id} onChange={(x) => onChange(x as T)} value={Number(value || entry.value)} />;
 
     case 'INTEGER':
-      return <NumInput onChange={(e) => onChange(Math.round(e ?? 0) as T)} value={Number(value)} />;
+      return <NumInput id={p.id} onChange={(e) => onChange(Math.round(e ?? 0) as T)} value={Number(value)} />;
 
     case 'DECIMAL':
-      return <NumInput onChange={(e) => onChange(e as T)} value={Number(value)} />;
+      return <NumInput id={p.id} onChange={(e) => onChange(e as T)} value={Number(value)} />;
 
     default:
-      return <Input onChange={(e) => onChange(e.target.value as T)} value={String(value)} />;
+      return <Input id={p.id} onChange={(e) => onChange(e.target.value as T)} value={String(value)} />;
   }
 };
 
@@ -719,6 +780,7 @@ function NumInput(p: {
   max?: number;
   disabled?: boolean;
   addonAfter?: ReactNode;
+  id?: string;
 }) {
   const [editValue, setEditValue] = useState(p.value === undefined ? undefined : String(p.value));
   useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
@@ -740,8 +802,9 @@ function NumInput(p: {
 
   const input = (
     <Input
-      className={p.addonAfter ? 'flex-1 rounded-r-none border-r-0' : undefined}
+      className={p.addonAfter ? 'flex-1' : undefined}
       disabled={p.disabled}
+      id={p.id}
       onBlur={() => {
         if (!editValue) {
           commit(undefined);
@@ -775,11 +838,12 @@ function NumInput(p: {
   if (!p.addonAfter) {
     return input;
   }
+  // An attached group joins the input and its addon into one control.
   return (
-    <div className="flex">
+    <Group attached>
       {input}
       {p.addonAfter}
-    </div>
+    </Group>
   );
 }
 
@@ -787,10 +851,12 @@ function UnitInput<U extends string>({
   baseValue,
   unitFactors,
   onChange,
+  id,
 }: {
   baseValue: number;
   unitFactors: Readonly<Record<U, number>>;
   onChange: (v: number) => void;
+  id?: string;
 }) {
   const getInitialUnit = (): U => {
     const pairs = (Object.entries(unitFactors) as [U, number][])
@@ -806,7 +872,7 @@ function UnitInput<U extends string>({
     <NumInput
       addonAfter={
         <Select onValueChange={(u) => setUnit(u as U)} value={unit}>
-          <SelectTrigger className="w-[100px] rounded-l-none">
+          <SelectTrigger className="w-[100px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -818,6 +884,7 @@ function UnitInput<U extends string>({
           </SelectContent>
         </Select>
       }
+      id={id}
       min={0}
       onChange={(x) => onChange((x ?? 0) * unitFactors[unit])}
       value={unitValue}
@@ -841,22 +908,27 @@ const durationFactors = {
   days: 86_400_000,
 } as const;
 
-function DataSizeSelect(p: { valueBytes: number; onChange: (v: number) => void }) {
-  return <UnitInput baseValue={p.valueBytes} onChange={p.onChange} unitFactors={dataSizeFactors} />;
+function DataSizeSelect(p: { valueBytes: number; onChange: (v: number) => void; id?: string }) {
+  return <UnitInput baseValue={p.valueBytes} id={p.id} onChange={p.onChange} unitFactors={dataSizeFactors} />;
 }
 
-function DurationSelect(p: { valueMilliseconds: number; onChange: (v: number) => void }) {
-  return <UnitInput baseValue={p.valueMilliseconds} onChange={p.onChange} unitFactors={durationFactors} />;
+function DurationSelect(p: { valueMilliseconds: number; onChange: (v: number) => void; id?: string }) {
+  return <UnitInput baseValue={p.valueMilliseconds} id={p.id} onChange={p.onChange} unitFactors={durationFactors} />;
 }
 
-function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
+function RatioInput(p: { value: number; onChange: (ratio: number) => void; id?: string }) {
   const pct = Math.round(p.value * 100);
+  const generatedId = useId();
+  const inputId = p.id ?? `${generatedId}-input`;
+  const captionId = `${generatedId}-caption`;
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <Label className="font-medium text-body text-muted-foreground">Percentage ({pct}%)</Label>
+        <p className="text-label" id={captionId}>
+          Percentage ({pct}%)
+        </p>
         <Slider
-          aria-label="Percentage slider"
+          aria-labelledby={captionId}
           className="w-full"
           max={100}
           min={0}
@@ -866,14 +938,13 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
         />
       </div>
       <div className="flex items-center gap-2">
-        <Label className="whitespace-nowrap font-medium text-body" htmlFor="ratio-input">
+        <Label className="whitespace-nowrap" htmlFor={inputId}>
           Precise value:
         </Label>
-        <div className="relative flex-shrink-0">
+        <div className="relative shrink-0">
           <Input
-            aria-label="Percentage input"
-            className="w-20 pr-6 text-right"
-            id="ratio-input"
+            className="w-20 text-right"
+            id={inputId}
             max={100}
             min={0}
             onChange={(e) => {
@@ -887,10 +958,12 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void }) {
             }}
             type="number"
             value={pct}
-          />
-          <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-body text-muted-foreground">
-            %
-          </span>
+          >
+            {/* The end slot pads the input to fit the unit. */}
+            <InputEnd>
+              <span className="text-body text-muted-foreground">%</span>
+            </InputEnd>
+          </Input>
         </div>
       </div>
     </div>

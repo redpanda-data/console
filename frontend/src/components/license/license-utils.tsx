@@ -300,7 +300,6 @@ export const UploadLicenseButton = () =>
 export const UpgradeButton = () => (
   <Button
     as="a"
-    className="no-underline"
     href={getEnterpriseCTALink('upgrade')}
     rel="noopener noreferrer"
     size="sm"

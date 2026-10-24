@@ -71,12 +71,11 @@ export const TagChipInput = ({ value, onChange, placeholder, testId, mono = fals
     >
       {value.map((item) => (
         <TagsValue
-          className={cn(mono && 'font-mono')}
           key={item}
           onRemove={() => onChange(value.filter((existing) => existing !== item))}
           testId={`${testId}-chip-${item}`}
         >
-          {item}
+          {mono ? <code>{item}</code> : <span>{item}</span>}
         </TagsValue>
       ))}
       <input

@@ -14,6 +14,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { MessagesTable, type MessagesTableProps } from './messages-table';
+import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
 import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
 
 const baseProps: MessagesTableProps = {
@@ -34,7 +35,7 @@ const baseProps: MessagesTableProps = {
   newKeys: new Set(),
 };
 
-describe('MessagesTable — error state', () => {
+describe('the MessagesTable — error state', () => {
   test('a set error renders the error state, not the empty state', () => {
     render(<MessagesTable {...baseProps} error="request timed out" />);
     expect(screen.getByTestId('messages-error')).toBeInTheDocument();
@@ -62,7 +63,7 @@ describe('MessagesTable — error state', () => {
   });
 });
 
-describe('MessagesTable — column sorting is keyboard-accessible', () => {
+describe('the MessagesTable — column sorting is keyboard-accessible', () => {
   test('a sortable header renders as a focusable button', () => {
     render(<MessagesTable {...baseProps} />);
     expect(screen.getByRole('button', { name: 'Timestamp' })).toBeInTheDocument();
@@ -82,4 +83,55 @@ describe('MessagesTable — column sorting is keyboard-accessible', () => {
     render(<MessagesTable {...baseProps} />);
     expect(screen.queryByRole('button', { name: 'Key' })).not.toBeInTheDocument();
   });
+});
+
+const message = (offset: number): TopicMessage => ({
+  partitionID: 0,
+  offset,
+  timestamp: offset,
+  compression: CompressionType.Uncompressed,
+  isTransactional: false,
+  headers: [],
+  key: { payload: `key-${offset}`, isPayloadNull: false, encoding: 'text', schemaId: 0, size: 5 },
+  value: { payload: `value-${offset}`, isPayloadNull: false, encoding: 'text', schemaId: 0, size: 7 },
+  keyJson: `key-${offset}`,
+  valueJson: `value-${offset}`,
+  keyBinHexPreview: '',
+  valueBinHexPreview: '',
+});
+
+describe('messagesTable — new rows and the corner actions', () => {
+  test('a freshly arrived row flashes in every cell; an older row does not', () => {
+    render(<MessagesTable {...baseProps} messages={[message(1), message(2)]} newKeys={new Set(['0-2'])} />);
+    const [olderRow, newRow] = screen.getAllByTestId('messages-table-row');
+
+    expect(newRow.querySelectorAll('.animate-message-flash')).toHaveLength(newRow.querySelectorAll('td').length);
+    expect(olderRow.querySelector('.animate-message-flash')).toBeNull();
+  });
+
+  test('only the last header title keeps clear of the floating corner actions', () => {
+    render(<MessagesTable {...baseProps} />);
+    const headers = screen.getAllByRole('columnheader');
+
+    expect(headers.at(-1)?.firstElementChild).toHaveClass('mr-16');
+    expect(headers[0].firstElementChild).not.toHaveClass('mr-16');
+  });
+});
+
+// Checks prop-to-preset wiring, not computed pixels.
+test.each([
+  ['compact', 'h-14'],
+  ['detailed', 'h-16'],
+] as const)('selects the %s row-height preset', (density, height) => {
+  render(<MessagesTable {...baseProps} density={density} messages={[message(1)]} />);
+  expect(screen.getByTestId('messages-table-row')).toHaveClass(height);
+});
+
+test('detailed density shows payload metadata; compact density hides it', () => {
+  const { rerender } = render(<MessagesTable {...baseProps} density="detailed" messages={[message(1)]} />);
+  expect(screen.getAllByText('text')).toHaveLength(2);
+  expect(screen.getByText('7 B')).toBeInTheDocument();
+  rerender(<MessagesTable {...baseProps} density="compact" messages={[message(1)]} />);
+  expect(screen.queryByText('text')).toBeNull();
+  expect(screen.queryByText('7 B')).toBeNull();
 });

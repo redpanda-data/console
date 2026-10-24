@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -83,7 +84,7 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
           <DialogTitle>JavaScript filtering</DialogTitle>
         </DialogHeader>
         <DialogBody spacing="lg">
-          <div className="text-muted-foreground text-sm">
+          <div className="text-sm text-muted-foreground">
             <InlineCode>return true</InlineCode> allows messages, <InlineCode>return false</InlineCode> discards them.
             Available params: <InlineCode>offset</InlineCode>, <InlineCode>partitionID</InlineCode>,{' '}
             <InlineCode>key</InlineCode>, <InlineCode>value</InlineCode>, <InlineCode>headers</InlineCode>,{' '}
@@ -104,8 +105,8 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label>Filter code</Label>
+          <fieldset className="flex min-w-0 flex-col gap-1.5">
+            <legend className="mb-1.5 text-label">Filter code</legend>
             <div className="overflow-hidden rounded-md border">
               <FilterEditor
                 onValueChange={(code, transpiled) =>
@@ -114,27 +115,27 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
                 value={draft.code}
               />
             </div>
-          </div>
+          </fieldset>
 
-          <div className="flex flex-col gap-1.5">
-            <Label>Examples</Label>
+          <fieldset className="flex min-w-0 flex-col gap-1.5">
+            <legend className="mb-1.5 text-label">Examples</legend>
             <div className="flex flex-wrap gap-1.5">
               {EXAMPLES.map((example) => (
-                <button
-                  className="whitespace-nowrap rounded-md border bg-background px-2.5 py-1 font-mono text-xs hover:bg-muted"
-                  key={example.code}
-                  onClick={() => setDraft((prev) => ({ ...prev, code: example.code, transpiledCode: example.code }))}
-                  title={example.note}
-                  type="button"
-                >
-                  {example.code}
-                </button>
+                <ElementTooltip content={example.note} key={example.code}>
+                  <button
+                    className="rounded-md border bg-background px-2.5 py-1 font-mono text-xs whitespace-nowrap hover:bg-muted"
+                    onClick={() => setDraft((prev) => ({ ...prev, code: example.code, transpiledCode: example.code }))}
+                    type="button"
+                  >
+                    {example.code}
+                  </button>
+                </ElementTooltip>
               ))}
             </div>
-          </div>
+          </fieldset>
         </DialogBody>
         <DialogFooter>
-          <span className="mr-auto text-muted-foreground text-xs">
+          <span className="mr-auto text-xs text-muted-foreground">
             <Kbd>⌘⏎</Kbd> apply
           </span>
           <Button onClick={onClose} testId="js-filter-cancel" variant="outline">

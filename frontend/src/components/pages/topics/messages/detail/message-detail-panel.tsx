@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Accordion } from 'components/redpanda-ui/components/accordion';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
@@ -87,26 +88,22 @@ function ExpandedMessageActions({
 
   return (
     <Fragment ref={actionsRef}>
-      <Button
-        aria-label="Collapse back to panel"
-        onClick={onCollapse}
-        size="icon-xs"
-        testId="detail-collapse"
-        title="Collapse back to panel"
-        variant="ghost"
-      >
-        <Minimize2Icon />
-      </Button>
-      <Button
-        aria-label="Close"
-        onClick={onClose}
-        size="icon-xs"
-        testId="detail-sheet-close"
-        title="Close"
-        variant="ghost"
-      >
-        <XIcon />
-      </Button>
+      <ElementTooltip content="Collapse back to panel">
+        <Button
+          aria-label="Collapse back to panel"
+          onClick={onCollapse}
+          size="icon-xs"
+          testId="detail-collapse"
+          variant="ghost"
+        >
+          <Minimize2Icon />
+        </Button>
+      </ElementTooltip>
+      <ElementTooltip content="Close">
+        <Button aria-label="Close" onClick={onClose} size="icon-xs" testId="detail-sheet-close" variant="ghost">
+          <XIcon />
+        </Button>
+      </ElementTooltip>
     </Fragment>
   );
 }
@@ -205,7 +202,7 @@ export const MessageDetailPanel = ({
           >
             <div className="flex h-full min-h-0 flex-col bg-background shadow-lg" data-testid="message-detail-sheet">
               <div className="flex shrink-0 items-center gap-1 border-b px-4 py-2.5">
-                <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
+                <span className="min-w-0 flex-1 text-label font-semibold">Message</span>
                 <ExpandedMessageActions
                   expandButtonRef={expandButtonRef}
                   fallbackFocusRef={fallbackFocusRef}
@@ -230,21 +227,24 @@ export const MessageDetailPanel = ({
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border bg-card" data-testid="message-detail-panel">
       <div className="flex shrink-0 items-center gap-1 border-b px-3 py-2">
-        <span className="min-w-0 flex-1 font-semibold text-label">Message</span>
-        <Button
-          aria-label="Expand"
-          onClick={() => onExpandedChange(true)}
-          ref={expandButtonRef}
-          size="icon-xs"
-          testId="detail-expand"
-          title="Expand"
-          variant="ghost"
-        >
-          <Maximize2Icon />
-        </Button>
-        <Button aria-label="Close" onClick={onClose} size="icon-xs" testId="detail-close" title="Close" variant="ghost">
-          <XIcon />
-        </Button>
+        <span className="min-w-0 flex-1 text-label font-semibold">Message</span>
+        <ElementTooltip content="Expand">
+          <Button
+            aria-label="Expand"
+            onClick={() => onExpandedChange(true)}
+            ref={expandButtonRef}
+            size="icon-xs"
+            testId="detail-expand"
+            variant="ghost"
+          >
+            <Maximize2Icon />
+          </Button>
+        </ElementTooltip>
+        <ElementTooltip content="Close">
+          <Button aria-label="Close" onClick={onClose} size="icon-xs" testId="detail-close" variant="ghost">
+            <XIcon />
+          </Button>
+        </ElementTooltip>
       </div>
       <DetailBody
         loadLargeMessage={loadLargeMessage}

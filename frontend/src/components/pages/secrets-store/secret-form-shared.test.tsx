@@ -8,7 +8,7 @@
  * use of this software will be governed by the Apache License, Version 2.0
  */
 
-import { beforeAll, describe, expect, it } from '@rstest/core';
+import { beforeAll, describe, expect, it, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -22,7 +22,7 @@ import {
 } from 'components/redpanda-ui/components/multi-select';
 import { useControllableState } from 'components/redpanda-ui/lib/use-controllable-state';
 
-import { SCOPE_OPTIONS } from './secret-form-shared';
+import { labelsToMap, SCOPE_OPTIONS } from './secret-form-shared';
 
 // cmdk calls scrollIntoView which is not available in Happy DOM
 beforeAll(() => {
@@ -60,7 +60,43 @@ function ScopeMultiSelect({ defaultValue = EMPTY_SCOPES }: { defaultValue?: stri
   );
 }
 
-describe('SCOPE_OPTIONS labels', () => {
+type ScopeOption = (typeof SCOPE_OPTIONS)[number];
+
+const [FIRST_SCOPE, SECOND_SCOPE] = SCOPE_OPTIONS;
+
+/** The trigger shows the human-readable label, and not the raw enum value as standalone text. */
+function expectLabelWithoutRawValue(trigger: HTMLElement, option: ScopeOption) {
+  expect(trigger).toHaveTextContent(option.label);
+  const triggerText = trigger.textContent ?? '';
+  const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`);
+  if (!option.label.includes(option.value)) {
+    expect(triggerText).not.toMatch(rawNumberPattern);
+  }
+}
+
+describe('labelsToMap', () => {
+  test('maps complete label rows by key', () => {
+    expect(
+      labelsToMap([
+        { key: 'env', value: 'production' },
+        { key: 'team', value: 'data' },
+      ])
+    ).toEqual({ env: 'production', team: 'data' });
+  });
+
+  test('skips rows with an empty key or value', () => {
+    expect(
+      labelsToMap([
+        { key: '', value: '' },
+        { key: 'env', value: '' },
+        { key: '', value: 'orphan' },
+        { key: 'team', value: 'data' },
+      ])
+    ).toEqual({ team: 'data' });
+  });
+});
+
+describe('the SCOPE_OPTIONS labels', () => {
   it('all labels are plain strings, not JSX or raw enum numbers', () => {
     for (const option of SCOPE_OPTIONS) {
       expect(typeof option.label).toBe('string');
@@ -88,7 +124,7 @@ describe('SCOPE_OPTIONS labels', () => {
   });
 });
 
-describe('Scope MultiSelect trigger', () => {
+describe('scope MultiSelect trigger', () => {
   it('shows placeholder when no scopes are selected', () => {
     render(<ScopeMultiSelect />);
 
@@ -106,19 +142,10 @@ describe('Scope MultiSelect trigger', () => {
     await user.click(trigger);
 
     // Click the first option ("AI Gateway")
-    const firstOption = SCOPE_OPTIONS[0];
-    const optionEl = await screen.findByText(firstOption.label);
-    await user.click(optionEl);
+    await user.click(await screen.findByText(FIRST_SCOPE.label));
 
-    // The trigger should now show the human-readable label text
-    expect(trigger).toHaveTextContent(firstOption.label);
-
-    // It should NOT show the raw enum value as standalone text
-    const triggerText = trigger.textContent ?? '';
-    const rawNumberPattern = new RegExp(`(^|\\s)${firstOption.value}(\\s|$)`);
-    if (!firstOption.label.includes(firstOption.value)) {
-      expect(triggerText).not.toMatch(rawNumberPattern);
-    }
+    // The trigger should now show the human-readable label text, not the raw enum value
+    expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
   });
 
   it('displays plain text labels for multiple selected scopes', async () => {
@@ -131,26 +158,14 @@ describe('Scope MultiSelect trigger', () => {
     // Open dropdown and select two options
     await user.click(trigger);
 
-    const first = SCOPE_OPTIONS[0];
-    const second = SCOPE_OPTIONS[1];
-
-    await user.click(await screen.findByText(first.label));
-    await user.click(await screen.findByText(second.label));
+    await user.click(await screen.findByText(FIRST_SCOPE.label));
+    await user.click(await screen.findByText(SECOND_SCOPE.label));
 
     // Close the dropdown
     await user.keyboard('{Escape}');
 
-    // Both labels should appear in the trigger
-    expect(trigger).toHaveTextContent(first.label);
-    expect(trigger).toHaveTextContent(second.label);
-
-    // Raw numeric enum values should not appear as standalone text
-    const triggerText = trigger.textContent ?? '';
-    for (const option of [first, second]) {
-      const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`);
-      if (!option.label.includes(option.value)) {
-        expect(triggerText).not.toMatch(rawNumberPattern);
-      }
-    }
+    // Both labels should appear in the trigger, and raw numeric enum values should not appear as standalone text
+    expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
+    expectLabelWithoutRawValue(trigger, SECOND_SCOPE);
   });
 });

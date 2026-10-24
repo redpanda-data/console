@@ -1,6 +1,7 @@
 {
   "scope": "full",
   "deadCode": false,
+  "adoptExistingLintConfig": false,
   "ignore": {
     "files": [
       "src/components/ui/**",

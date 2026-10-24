@@ -108,45 +108,10 @@ const useHostShellFit = () => {
 
     const hostWrappers = chainToBody(layoutEl.parentElement);
 
-    // Both writes resize the wrappers being observed, so only write on change.
-    let lastMargin = '';
-    let lastMinHeight = '';
-    const applyFit = () => {
-      let left = 0;
-      let right = 0;
-      let bottom = 0;
-      for (const el of hostWrappers) {
-        const style = getComputedStyle(el);
-        left += Number.parseFloat(style.paddingLeft) || 0;
-        right += Number.parseFloat(style.paddingRight) || 0;
-        bottom += Number.parseFloat(style.paddingBottom) || 0;
-      }
-
-      const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
-      if (margin !== lastMargin) {
-        lastMargin = margin;
-        layoutEl.style.margin = margin;
-      }
-      // dvh, so viewport changes need no JS; only the offset from the top can move.
-      const minHeight = `calc(100dvh - ${documentTop(layoutEl)}px)`;
-      if (minHeight !== lastMinHeight) {
-        lastMinHeight = minHeight;
-        layoutEl.style.minHeight = minHeight;
-      }
-    };
+    const applyFit = createHostShellUpdater(layoutEl, hostWrappers);
 
     applyFit();
-    // Padding changes alter a wrapper's content box even at a fixed outer size.
-    const observer = new ResizeObserver(applyFit);
-    observer.observe(document.documentElement);
-    for (const el of hostWrappers) {
-      observer.observe(el);
-    }
-    return () => {
-      observer.disconnect();
-      layoutEl.style.margin = '';
-      layoutEl.style.minHeight = '';
-    };
+    return observeHostShell(layoutEl, hostWrappers, applyFit);
   }, []);
 
   return layoutRef;
@@ -189,4 +154,52 @@ function FederatedAppContent() {
       <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
+}
+
+function getHostPadding(wrappers: HTMLElement[]) {
+  let left = 0;
+  let right = 0;
+  let bottom = 0;
+  for (const element of wrappers) {
+    const style = getComputedStyle(element);
+    left += Number.parseFloat(style.paddingLeft) || 0;
+    right += Number.parseFloat(style.paddingRight) || 0;
+    bottom += Number.parseFloat(style.paddingBottom) || 0;
+  }
+  return { left, right, bottom };
+}
+
+function createHostShellUpdater(layoutEl: HTMLDivElement, hostWrappers: HTMLElement[]) {
+  // Both writes resize the wrappers being observed, so only write on change.
+  let lastMargin = '';
+  let lastMinHeight = '';
+  return () => {
+    const { left, right, bottom } = getHostPadding(hostWrappers);
+
+    const margin = `0px ${-right}px ${-bottom}px ${-left}px`;
+    if (margin !== lastMargin) {
+      lastMargin = margin;
+      layoutEl.style.margin = margin;
+    }
+    // dvh, so viewport changes need no JS; only the offset from the top can move.
+    const minHeight = `calc(100dvh - ${documentTop(layoutEl)}px)`;
+    if (minHeight !== lastMinHeight) {
+      lastMinHeight = minHeight;
+      layoutEl.style.minHeight = minHeight;
+    }
+  };
+}
+
+function observeHostShell(layoutEl: HTMLDivElement, hostWrappers: HTMLElement[], applyFit: () => void) {
+  // Padding changes alter a wrapper's content box even at a fixed outer size.
+  const observer = new ResizeObserver(applyFit);
+  observer.observe(document.documentElement);
+  for (const el of hostWrappers) {
+    observer.observe(el);
+  }
+  return () => {
+    observer.disconnect();
+    layoutEl.style.margin = '';
+    layoutEl.style.minHeight = '';
+  };
 }
