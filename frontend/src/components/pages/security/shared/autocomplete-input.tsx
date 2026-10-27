@@ -63,7 +63,7 @@ export function AutocompleteInput({
 
       {showSuggestions && filteredSuggestions.length > 0 && (
         <div className="absolute top-full right-0 left-0 z-50 mt-1">
-          <Command className="rounded-lg border bg-card shadow-md">
+          <Command>
             <CommandList>
               <CommandGroup>
                 {filteredSuggestions.map((suggestion) => (

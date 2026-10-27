@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useNavigate } from '@tanstack/react-router';
 import { InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -22,12 +21,19 @@ import {
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
-import { SchemaNotConfiguredPage } from './schema-not-configured';
+import {
+  decodeSchemaEditTarget,
+  type SchemaEditPageKind,
+  type SchemaEditTarget,
+  schemaEditPageStatus,
+  useSchemaEditClose,
+  useSchemaEditPageHeader,
+} from './schema-edit-page';
+import { SchemaEditPageFallback } from './schema-edit-page-fallback';
 import {
   useSchemaCompatibilityQuery,
   useSchemaDetailsQuery,
@@ -46,8 +52,8 @@ import {
   type SchemaRegistryVersionedSchema,
 } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { uiState } from '../../../state/ui-state';
 import PageContent from '../../misc/page-content';
+import { TonedIcon } from '../shared/toned-icon';
 
 const DEFAULT_OPTION = {
   value: SchemaRegistryCompatibilityModes.DEFAULT,
@@ -102,15 +108,15 @@ const COMPATIBILITY_OPTIONS: {
   },
 ];
 
-const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: string }> = ({
-  subjectName: subjectNameEncoded,
-  contextName: contextNameEncoded,
-}) => {
-  const navigate = useNavigate();
-  const subjectName = subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined;
-  const contextName = contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined;
-  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+const EDIT_COMPATIBILITY_PAGE: SchemaEditPageKind = {
+  pageTitle: 'Edit Schema Compatibility',
+  crumbTitle: 'Edit Compatibility',
+  segment: 'edit-compatibility',
+};
 
+// The global mode and compatibility, plus the subject's details or the
+// context's compatibility when the page edits one of those.
+function useEditCompatibilityData({ subjectName, contextName }: SchemaEditTarget) {
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
@@ -123,85 +129,80 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: stri
     [contexts, contextName]
   );
 
-  useEffect(() => {
-    uiState.pageTitle = 'Edit Schema Compatibility';
-    uiState.pageBreadcrumbs = [{ title: 'Schema Registry', linkTo: '/schema-registry' }];
+  return {
+    schemaMode,
+    schemaCompatibility,
+    schemaDetails,
+    contextCompatibility,
+    isLoading: Boolean(
+      isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading) || (contextName && isContextsLoading)
+    ),
+  };
+}
 
-    if (contextName) {
-      uiState.pageBreadcrumbs.push({
-        title: 'Edit Compatibility',
-        linkTo: `/schema-registry/contexts/${encodeURIComponent(contextName)}/edit-compatibility`,
-      });
-    } else if (subjectName) {
-      uiState.pageBreadcrumbs.push({
-        title: subjectName,
-        linkTo: `/schema-registry/subjects/${subjectName}`,
-      });
-      uiState.pageBreadcrumbs.push({
-        title: 'Edit Compatibility',
-        linkTo: `/schema-registry/subjects/${subjectName}/edit-compatibility`,
-      });
-    } else {
-      uiState.pageBreadcrumbs.push({
-        title: 'Edit Compatibility',
-        linkTo: '/schema-registry/edit-compatibility',
-      });
-    }
-  }, [subjectName, contextName]);
+const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: string }> = ({
+  subjectName: subjectNameEncoded,
+  contextName: contextNameEncoded,
+}) => {
+  const target = decodeSchemaEditTarget(subjectNameEncoded, contextNameEncoded);
+  const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+  const { schemaMode, schemaCompatibility, schemaDetails, contextCompatibility, isLoading } =
+    useEditCompatibilityData(target);
+  const onClose = useSchemaEditClose(target);
+  useSchemaEditPageHeader(target, EDIT_COMPATIBILITY_PAGE);
 
-  const onClose = useCallback(() => {
-    if (subjectName) {
-      navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` });
-    } else if (contextName) {
-      navigate({ to: '/schema-registry', search: { context: contextName } });
-    } else {
-      navigate({ to: '/schema-registry' });
-    }
-  }, [subjectName, contextName, navigate]);
-
-  if (contextName && !schemaRegistryContextsSupported) {
-    return <ContextsNotSupportedPage />;
-  }
-
-  if (
-    isModeLoading ||
-    isCompatibilityLoading ||
-    (subjectName && isDetailsLoading) ||
-    (contextName && isContextsLoading)
-  ) {
-    return (
-      <PageContent>
-        <SkeletonGroup direction="vertical" spacing="lg">
-          <Skeleton variant="heading" width="lg" />
-          <Skeleton variant="text" width="full" />
-          <Skeleton size="xl" width="full" />
-          <Skeleton size="xl" width="full" />
-          <Skeleton size="xl" width="full" />
-        </SkeletonGroup>
-      </PageContent>
-    );
-  }
-
-  if (schemaMode === null) {
-    return <SchemaNotConfiguredPage />;
+  const status = schemaEditPageStatus({
+    contextsUnsupported: Boolean(target.contextName) && !schemaRegistryContextsSupported,
+    isLoading,
+    schemaMode,
+  });
+  if (status !== 'ready') {
+    return <SchemaEditPageFallback status={status} />;
   }
 
   return (
     <PageContent>
       <EditSchemaCompatibility
         contextCompatibility={contextCompatibility}
-        contextName={contextName}
+        contextName={target.contextName}
         onClose={onClose}
         schemaCompatibility={schemaCompatibility}
         schemaDetails={schemaDetails}
         schemaMode={schemaMode}
-        subjectName={subjectName}
+        subjectName={target.subjectName}
       />
     </PageContent>
   );
 };
 
 export default EditSchemaCompatibilityPage;
+
+// Saves the compatibility for the context, the subject, or (neither) the global config.
+function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, onClose: () => void) {
+  const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
+  const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
+  const updateContextMutation = useUpdateContextCompatibilityMutation();
+
+  return (configMode: SchemaRegistryCompatibilityModeWithDefault) => {
+    const callbacks = {
+      onSuccess: () => {
+        toast.success(`Compatibility mode updated to ${configMode}`);
+        onClose();
+      },
+      onError: (err: Error) => {
+        toast.error('Failed to update compatibility mode', { description: String(err) });
+      },
+    };
+
+    if (contextName) {
+      updateContextMutation.mutate({ contextName, mode: configMode }, callbacks);
+    } else if (subjectName) {
+      updateSubjectMutation.mutate({ subjectName, mode: configMode }, callbacks);
+    } else {
+      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, callbacks);
+    }
+  };
+}
 
 function EditSchemaCompatibility(p: {
   subjectName?: string;
@@ -213,9 +214,7 @@ function EditSchemaCompatibility(p: {
   onClose: () => void;
 }) {
   const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
-  const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
-  const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();
-  const updateContextMutation = useUpdateContextCompatibilityMutation();
+  const saveCompatibility = useSaveCompatibility({ subjectName, contextName }, p.onClose);
 
   const schema = schemaDetails?.schemas.first(
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
@@ -242,25 +241,7 @@ function EditSchemaCompatibility(p: {
     );
   }
 
-  const onSave = () => {
-    const callbacks = {
-      onSuccess: () => {
-        toast.success(`Compatibility mode updated to ${configMode}`);
-        p.onClose();
-      },
-      onError: (err: Error) => {
-        toast.error('Failed to update compatibility mode', { description: String(err) });
-      },
-    };
-
-    if (contextName) {
-      updateContextMutation.mutate({ contextName, mode: configMode }, callbacks);
-    } else if (subjectName) {
-      updateSubjectMutation.mutate({ subjectName, mode: configMode }, callbacks);
-    } else {
-      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, callbacks);
-    }
-  };
+  const onSave = () => saveCompatibility(configMode);
 
   const allOptions: { value: string; title: string; description: string }[] =
     subjectName || contextName ? [DEFAULT_OPTION, ...COMPATIBILITY_OPTIONS] : COMPATIBILITY_OPTIONS;
@@ -270,8 +251,8 @@ function EditSchemaCompatibility(p: {
       <div className="flex-1">
         {!!contextName && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
-            <InfoIcon aria-hidden="true" className="size-4 text-muted-foreground" />
-            <div className="font-bold text-heading-md">
+            <TonedIcon aria-hidden="true" className="size-4" icon={InfoIcon} tone="muted" />
+            <div className="text-heading-md font-bold">
               Editing compatibility for context: <span className="text-muted-foreground">{contextName}</span>
             </div>
           </div>
@@ -291,11 +272,7 @@ function EditSchemaCompatibility(p: {
             value={configMode}
           >
             {allOptions.map((option) => (
-              <ChoiceboxItem
-                className={`max-w-full ${configMode === option.value ? 'bg-accent' : ''}`}
-                key={option.value}
-                value={option.value}
-              >
+              <ChoiceboxItem className="max-w-full" key={option.value} value={option.value}>
                 <ChoiceboxItemHeader>
                   <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
@@ -331,12 +308,12 @@ function EditSchemaCompatibility(p: {
       {!!subjectName && schema && (
         <div className="flex-1">
           <div
-            className="whitespace-pre-wrap break-words font-bold text-heading-md"
+            className="text-heading-md font-bold wrap-break-word whitespace-pre-wrap"
             data-testid="edit-compatibility-subject-name"
           >
             {subjectName}
           </div>
-          <div className="mt-8 mb-4 font-bold text-heading-md">Schema</div>
+          <div className="mt-8 mb-4 text-heading-md font-bold">Schema</div>
           <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
         </div>
       )}

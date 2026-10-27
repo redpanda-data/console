@@ -171,11 +171,7 @@ export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToa
 
   let result = `Failed to ${action} ${entity}: ${baseMessage}`;
 
-  for (const info of error.findDetails(ErrorInfoSchema)) {
-    if (info.reason) {
-      result += ` (reason: ${info.reason})`;
-    }
-  }
+  result += formatErrorReasons(error);
 
   const details = collectErrorDetails(error);
   if (details.length > 0) {
@@ -183,4 +179,12 @@ export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToa
   }
 
   return result;
+}
+
+function formatErrorReasons(error: ConnectError): string {
+  return error
+    .findDetails(ErrorInfoSchema)
+    .filter((info) => info.reason)
+    .map((info) => ` (reason: ${info.reason})`)
+    .join('');
 }

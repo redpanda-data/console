@@ -9,7 +9,6 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import type { JSX, ReactNode } from 'react';
 import { toast } from 'sonner';
 
 const UNDERSCORE_REGEX = /_/g;
@@ -119,9 +118,6 @@ export const operationSets: Record<ResourceType, Record<string, OperationType>> 
 export type SharedConfigProps = {
   sharedConfig: SharedConfig;
   setSharedConfig: (config: { principal: string; host: string }) => void;
-  openMatchingSections: Record<string, boolean>;
-  setOpenMatchingSections: (setter: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
-  getSectionKey: (ruleId: number, section: string) => string;
   edit: boolean;
 };
 
@@ -144,13 +140,6 @@ export type AclRulesProps = {
   handleResourceTypeChange: (ruleId: number, resourceType: ResourceType) => void;
   handlePermissionModeChange: (ruleId: number, mode: string) => void;
   handleOperationChange: (ruleId: number, operation: string, value: string) => void;
-  setOpenMatchingSections: (setter: (prev: Record<string, boolean>) => Record<string, boolean>) => void;
-  getSubjectTooltipText: () => string;
-  getSchemaRegistryTooltipText: () => string;
-  getPermissionIcon: (value: string) => JSX.Element;
-  getPermissionDescription: (operation: string, resourceType: string) => ReactNode;
-  getSectionKey: (ruleId: number, section: string) => string;
-  openMatchingSections: Record<string, boolean>;
   schemaRegistryEnabled: boolean;
 };
 
@@ -165,8 +154,6 @@ export type ResourceTypeSelectionProps = {
   isClusterDisabledForRule: (ruleId: number) => boolean;
   isSubjectDisabledForRule: (ruleId: number) => boolean;
   isSchemaRegistryDisabledForRule: (ruleId: number) => boolean;
-  getSubjectTooltipText: () => string;
-  getSchemaRegistryTooltipText: () => string;
   ruleIndex: number;
   isSchemaRegistryEnabled: boolean;
 };
@@ -356,38 +343,42 @@ const initializeHostsMap = (resources: ListACLsResponse['resources']): Map<strin
   return hostsMap;
 };
 
+type RuleTarget = Pick<Rule, 'resourceType' | 'selectorType' | 'selectorValue'>;
+
+// The host's rule for this resource selector, created with the host's next rule id on first use.
+const getOrCreateRule = (hostData: HostData, ruleKey: string, target: RuleTarget): Rule => {
+  const existing = hostData.rulesMap.get(ruleKey);
+  if (existing) {
+    return existing;
+  }
+  const rule: Rule = {
+    id: hostData.ruleIdCounter,
+    resourceType: target.resourceType,
+    mode: ModeCustom,
+    selectorType: target.selectorType,
+    selectorValue: target.selectorValue,
+    operations: {},
+  };
+  hostData.rulesMap.set(ruleKey, rule);
+  hostData.ruleIdCounter += 1;
+  return rule;
+};
+
 // Helper function to process a single resource and update hostsMap
 const processResourceAcls = (resource: ListACLsResponse['resources'][number], hostsMap: Map<string, HostData>) => {
-  const resourceType = getResourceTypeFromGRPC(resource.resourceType);
-  const selectorType = getResourcePatternTypeFromGRPC(resource.resourcePatternType);
-  const selectorValue = resource.resourceName;
+  const target: RuleTarget = {
+    resourceType: getResourceTypeFromGRPC(resource.resourceType),
+    selectorType: getResourcePatternTypeFromGRPC(resource.resourcePatternType),
+    selectorValue: resource.resourceName,
+  };
+  const ruleKey = `${target.resourceType}-${target.selectorType}-${target.selectorValue}`;
 
   for (const acl of resource.acls) {
     const hostData = hostsMap.get(acl.host);
-    if (!hostData) {
-      continue;
+    if (hostData) {
+      const rule = getOrCreateRule(hostData, ruleKey, target);
+      rule.operations[getOperationNameFromGRPC(acl.operation)] = getOperationTypeFromGRPC(acl.permissionType);
     }
-
-    const { rulesMap } = hostData;
-    const ruleKey = `${resourceType}-${selectorType}-${selectorValue}`;
-
-    if (!rulesMap.has(ruleKey)) {
-      rulesMap.set(ruleKey, {
-        id: hostData.ruleIdCounter,
-        resourceType,
-        mode: ModeCustom,
-        selectorType,
-        selectorValue,
-        operations: {},
-      });
-      hostData.ruleIdCounter += 1;
-    }
-
-    // biome-ignore lint/style/noNonNullAssertion: in the previous lines we ensured the key exists
-    const rule = rulesMap.get(ruleKey)!;
-    const operationName = getOperationNameFromGRPC(acl.operation);
-    const operationType = getOperationTypeFromGRPC(acl.permissionType);
-    rule.operations[operationName] = operationType;
   }
 };
 

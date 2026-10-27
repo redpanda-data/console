@@ -36,27 +36,26 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-describe('TopicsStep', () => {
-  describe('Multiple filters', () => {
+/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
+const renderExpandedTopicsStep = async (topics: FormValues['topics']) => {
+  const user = userEvent.setup();
+  render(<TestWrapper defaultValues={{ ...initialValues, topicsMode: 'specify', topics }} />);
+
+  // Need to open the collapsible to see the editable filters
+  await user.click(screen.getByTestId('topics-toggle-button'));
+  return user;
+};
+
+describe('the TopicsStep', () => {
+  describe('multiple filters', () => {
     test('should create multiple topic filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        topicsMode: 'specify',
-        topics: [
-          {
-            name: '',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('topics-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedTopicsStep([
+        {
+          name: '',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();
@@ -76,31 +75,20 @@ describe('TopicsStep', () => {
     });
   });
 
-  describe('Deleting filters', () => {
+  describe('deleting filters', () => {
     test('should delete topic filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        topicsMode: 'specify',
-        topics: [
-          {
-            name: 'topic-1',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-          {
-            name: 'topic-2',
-            patternType: PatternType.PREFIX,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('topics-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedTopicsStep([
+        {
+          name: 'topic-1',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+        {
+          name: 'topic-2',
+          patternType: PatternType.PREFIX,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();

@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { RefreshCw } from 'lucide-react';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
 import { SHORT_LIVED_CACHE_STALE_TIME } from '../../../../react-query/react-query.utils';
@@ -19,19 +21,41 @@ import { type UnifiedShadowLink, type UnifiedShadowLinkState, UnifiedShadowLinkS
 
 const getStateDisplay = (state: UnifiedShadowLinkState): string => UnifiedShadowLinkStateLabel[state] || 'Unknown';
 
+// Revealed while the card is hovered or the button has focus, so it stays out of the way of the value.
 const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolean; onRefresh: () => void }) =>
   isFetching ? (
-    <Loader2 className="absolute top-2 right-2 h-4 w-4 animate-spin text-muted-foreground" />
+    <span className="absolute top-2 right-2 flex">
+      <TonedIcon icon={Spinner} tone="muted" />
+    </span>
   ) : (
-    <Button
-      className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
-      onClick={onRefresh}
-      size="icon"
-      variant="ghost"
-    >
-      <RefreshCw className="h-4 w-4" />
-    </Button>
+    <span className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none">
+      <Button aria-label="Refresh metrics" onClick={onRefresh} size="icon" variant="ghost">
+        <RefreshCw className="h-4 w-4" />
+      </Button>
+    </span>
   );
+
+type MetricCardProps = {
+  metric: string;
+  label: string;
+  value: string;
+  isFetching: boolean;
+  onRefresh: () => void;
+};
+
+const MetricCard = ({ metric, label, value, isFetching, onRefresh }: MetricCardProps) => (
+  <Card className="group" testId={`shadow-link-metric-${metric}`}>
+    <CardContent className="relative">
+      <MetricCardRefreshButton isFetching={isFetching} onRefresh={onRefresh} />
+      <div className="text-body text-muted-foreground" data-testid={`metric-label-${metric}`}>
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-semibold" data-testid={`metric-value-${metric}`}>
+        {value}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 type ShadowLinkMetricsProps = {
   shadowLink: UnifiedShadowLink;
@@ -48,66 +72,45 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
   if (error) {
     return (
       <Card testId="shadow-link-metrics-error">
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="text-body text-destructive">Failed to load metrics: {error.message}</div>
         </CardContent>
       </Card>
     );
   }
 
+  const onRefresh = () => refetch();
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* State */}
-      <Card className="group" testId="shadow-link-metric-state">
-        <CardContent className="relative pt-6">
-          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <div className="text-body text-muted-foreground" data-testid="metric-label-state">
-            State
-          </div>
-          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-state">
-            {getStateDisplay(shadowLink.state)}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Replicated topics */}
-      <Card className="group" testId="shadow-link-metric-replicated">
-        <CardContent className="relative pt-6">
-          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <div className="text-body text-muted-foreground" data-testid="metric-label-replicated">
-            Replicated topics
-          </div>
-          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-replicated">
-            {metricsData?.totalTopicsReplicated?.toString() ?? '-'}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Failed over topics */}
-      <Card className="group" testId="shadow-link-metric-failedover">
-        <CardContent className="relative pt-6">
-          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <div className="text-body text-muted-foreground" data-testid="metric-label-failedover">
-            Failed over topics
-          </div>
-          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-failedover">
-            {metricsData?.failedOverTopics?.toString() ?? '-'}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Errored topics */}
-      <Card className="group" testId="shadow-link-metric-error">
-        <CardContent className="relative pt-6">
-          <MetricCardRefreshButton isFetching={isFetching} onRefresh={() => refetch()} />
-          <div className="text-body text-muted-foreground" data-testid="metric-label-error">
-            Errored topics
-          </div>
-          <div className="mt-2 font-semibold text-2xl" data-testid="metric-value-error">
-            {metricsData?.errorTopics?.toString() ?? '-'}
-          </div>
-        </CardContent>
-      </Card>
+      <MetricCard
+        isFetching={isFetching}
+        label="State"
+        metric="state"
+        onRefresh={onRefresh}
+        value={getStateDisplay(shadowLink.state)}
+      />
+      <MetricCard
+        isFetching={isFetching}
+        label="Replicated topics"
+        metric="replicated"
+        onRefresh={onRefresh}
+        value={metricsData?.totalTopicsReplicated?.toString() ?? '-'}
+      />
+      <MetricCard
+        isFetching={isFetching}
+        label="Failed over topics"
+        metric="failedover"
+        onRefresh={onRefresh}
+        value={metricsData?.failedOverTopics?.toString() ?? '-'}
+      />
+      <MetricCard
+        isFetching={isFetching}
+        label="Errored topics"
+        metric="error"
+        onRefresh={onRefresh}
+        value={metricsData?.errorTopics?.toString() ?? '-'}
+      />
     </div>
   );
 };

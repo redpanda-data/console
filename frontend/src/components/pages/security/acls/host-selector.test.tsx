@@ -14,7 +14,7 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { HostSelector } from './host-selector';
 
-describe('HostSelector', () => {
+describe('the HostSelector', () => {
   const defaultProps = {
     principalName: 'test-user',
     hosts: [
@@ -25,7 +25,7 @@ describe('HostSelector', () => {
     baseUrl: '/security/acls/test-user/details',
   };
 
-  describe('Navigation', () => {
+  describe('navigation', () => {
     test('should navigate with correct query parameter when clicking a host row', async () => {
       const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);

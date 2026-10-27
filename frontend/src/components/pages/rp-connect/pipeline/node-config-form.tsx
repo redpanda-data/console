@@ -9,10 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
+import { Field, useFieldContext } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -95,25 +98,24 @@ const ChildItemRow = ({
   const condText = childItemConditionText(item);
   return (
     <button
-      className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left outline-none transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left transition-colors outline-none hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       onClick={() => onSelect(item)}
       type="button"
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {condText ? (
-          <span
-            className={cn('truncate font-medium font-mono text-caption', childItemCondColor(item))}
-            title={condText}
-          >
-            {condText}
-          </span>
+          <ElementTooltip content={condText}>
+            <span className={cn('truncate font-mono text-caption font-medium', childItemCondColor(item))}>
+              {condText}
+            </span>
+          </ElementTooltip>
         ) : null}
-        <span className="truncate font-medium text-body" title={item.name}>
-          {item.name}
-        </span>
+        <ElementTooltip content={item.name}>
+          <span className="truncate text-body font-medium">{item.name}</span>
+        </ElementTooltip>
       </div>
       {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      <TonedIcon className="size-4 shrink-0" icon={ChevronRight} tone="muted" />
     </button>
   );
 };
@@ -129,7 +131,7 @@ export const ChildItemsList = ({
 }) => (
   // A heading, not a <label>: the rows are buttons with their own accessible text; nothing for htmlFor.
   <div className="flex flex-col gap-1.5">
-    <div className="font-medium text-body">{label}</div>
+    <div className="text-body font-medium">{label}</div>
     <div className="flex flex-col gap-1.5">
       {items.map((item) => (
         <ChildItemRow item={item} key={item.id} onSelect={onSelect} />
@@ -282,20 +284,25 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
     return Boolean(raw);
   }
   const text = String(raw);
+  if (spec.type === 'int' || spec.type === 'float') {
+    return coerceNumericText(text, spec.type === 'int');
+  }
+  return text;
+}
+
+// '' when the literal doesn't parse, which the save path drops.
+function coerceNumericText(text: string, integer: boolean): string | number {
   // Interpolations (`${ENV}`, secrets, Bloblang) are valid even in numeric fields — keep verbatim
   // rather than coercing to NaN (→ '' → dropped on commit). Matches numericHint.
-  if ((spec.type === 'int' || spec.type === 'float') && text.includes('${')) {
+  if (text.includes('${')) {
     return text;
   }
-  if (spec.type === 'int') {
+  if (integer) {
     const n = Number.parseInt(text, 10);
     return Number.isNaN(n) ? '' : n;
   }
-  if (spec.type === 'float') {
-    const n = Number(text);
-    return text === '' || Number.isNaN(n) ? '' : n;
-  }
-  return text;
+  const n = Number(text);
+  return text === '' || Number.isNaN(n) ? '' : n;
 }
 
 const arrayFieldLines = (text: string): string[] =>
@@ -313,28 +320,31 @@ function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
 }
 
 type Leaf = { spec: RawFieldSpec; path: string[]; key: string };
+type Leaves = { scalars: Leaf[]; arrays: Leaf[] };
 
 /** All scalar + scalar-array leaves (recursing into object groups), keyed by path. */
-function collectLeaves(fields: RawFieldSpec[], base: string[] = []): { scalars: Leaf[]; arrays: Leaf[] } {
-  const scalars: Leaf[] = [];
-  const arrays: Leaf[] = [];
+function collectLeaves(fields: RawFieldSpec[], base: string[] = []): Leaves {
+  const leaves: Leaves = { scalars: [], arrays: [] };
   for (const f of fields) {
-    if (f.deprecated) {
-      continue;
-    }
-    const path = [...base, f.name];
-    const leaf: Leaf = { spec: f, path, key: path.join('/') };
-    if (isScalarField(f)) {
-      scalars.push(leaf);
-    } else if (isScalarArrayField(f)) {
-      arrays.push(leaf);
-    } else if (isObjectGroupField(f)) {
-      const nested = collectLeaves(f.children ?? [], path);
-      scalars.push(...nested.scalars);
-      arrays.push(...nested.arrays);
+    if (!f.deprecated) {
+      collectFieldLeaves(f, [...base, f.name], leaves);
     }
   }
-  return { scalars, arrays };
+  return leaves;
+}
+
+// Files one field under its leaf kind, or recurses into it when it is an object group.
+function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves): void {
+  const leaf: Leaf = { spec: field, path, key: path.join('/') };
+  if (isScalarField(field)) {
+    leaves.scalars.push(leaf);
+  } else if (isScalarArrayField(field)) {
+    leaves.arrays.push(leaf);
+  } else if (isObjectGroupField(field)) {
+    const nested = collectLeaves(field.children ?? [], path);
+    leaves.scalars.push(...nested.scalars);
+    leaves.arrays.push(...nested.arrays);
+  }
 }
 
 // Paths of the nested object groups the form renders as collapsible sections (tls, batching, …).
@@ -374,11 +384,13 @@ const FieldLintErrorsContext = createContext<FieldLintErrors>(new Map());
 // it, and the message describes the SAVED value, not what they're typing.
 const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: boolean }) => {
   const errors = useContext(FieldLintErrorsContext).get(fieldKey);
+  // Inside an invalid registry Field, this list is what the control's aria-describedby points at.
+  const { errorId } = useFieldContext();
   if (!errors || errors.length === 0 || dirty) {
     return null;
   }
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1" id={errorId}>
       {errors.map((message, i) => (
         // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
         <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
@@ -440,7 +452,7 @@ type BuildArgs = {
   /** The full component entry being edited, e.g. `{ label, switch: [...] }`. */
   value: Record<string, unknown>;
   inner: Record<string, unknown>;
-  leaves: { scalars: Leaf[]; arrays: Leaf[] };
+  leaves: Leaves;
   rawKeys: string[];
   showRaw: boolean;
   data: FormValues;
@@ -482,27 +494,49 @@ function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: 
   }
 }
 
+function applyRawEdits(config: Record<string, unknown>, { rawKeys, showRaw, data, dirty }: BuildArgs): void {
+  if (!(showRaw && dirty.raw)) {
+    return;
+  }
+  const parsedRaw = parseRawSection(showRaw, data.raw);
+  // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows the error).
+  if (!parsedRaw) {
+    return;
+  }
+  for (const key of rawKeys) {
+    delete config[key];
+  }
+  Object.assign(config, parsedRaw);
+}
+
+// The entry's `label`, as an object to start the entry from (`{}` when there is none).
+function entryLabel({ data, value, requireLabel }: BuildArgs): Record<string, unknown> {
+  const typed = data.label.trim();
+  if (typed) {
+    return { label: typed };
+  }
+  // Clearing a resource's label would strand its `resource:` references — keep the saved label.
+  if (requireLabel && typeof value.label === 'string' && value.label) {
+    return { label: value.label };
+  }
+  return {};
+}
+
+// The existing config with the user's edits overlaid: raw section first, then the form fields.
+function editedConfig(args: BuildArgs): Record<string, unknown> {
+  const config: Record<string, unknown> = structuredClone(args.inner);
+  applyRawEdits(config, args);
+  applyScalarEdits(config, args.leaves.scalars, args.data, args.dirty);
+  applyArrayEdits(config, args.leaves.arrays, args.data, args.dirty);
+  pruneEmptyObjects(config);
+  return config;
+}
+
 // Assemble the component entry: start from the existing config (so unrendered and untouched
 // fields round-trip byte-for-byte) and overlay only the fields the user actually changed.
-function buildComponentEntry({
-  componentName,
-  value,
-  inner,
-  leaves,
-  rawKeys,
-  showRaw,
-  data,
-  dirty,
-  requireLabel,
-}: BuildArgs): Record<string, unknown> {
-  const next: Record<string, unknown> = {};
-  if (data.label.trim()) {
-    next.label = data.label.trim();
-  } else if (requireLabel && typeof value.label === 'string' && value.label) {
-    // Clearing a resource's label would strand its `resource:` references — keep the saved label.
-    next.label = value.label;
-  }
-
+function buildComponentEntry(args: BuildArgs): Record<string, unknown> {
+  const { componentName, value } = args;
+  const next = entryLabel(args);
   const original = value[componentName];
   // A list/scalar-valued component (switch/try/catch/for_each): preserve the value verbatim and only
   // patch the label — rebuilding would write `{}` over the array and drop the children.
@@ -510,45 +544,32 @@ function buildComponentEntry({
     next[componentName] = original ?? {};
     return next;
   }
-
-  const config: Record<string, unknown> = structuredClone(inner);
-  if (showRaw && dirty.raw) {
-    const parsedRaw = parseRawSection(showRaw, data.raw);
-    // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows the error).
-    if (parsedRaw) {
-      for (const key of rawKeys) {
-        delete config[key];
-      }
-      Object.assign(config, parsedRaw);
-    }
-  }
-
-  applyScalarEdits(config, leaves.scalars, data, dirty);
-  applyArrayEdits(config, leaves.arrays, data, dirty);
-  pruneEmptyObjects(config);
-
-  next[componentName] = config;
+  next[componentName] = editedConfig(args);
   return next;
 }
 
 const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string }) => (
   <div className="flex items-center gap-2">
-    <Label className="shrink-0 font-medium text-body" htmlFor={htmlFor}>
+    <Label className="shrink-0" htmlFor={htmlFor}>
       {spec.name}
     </Label>
     {checkRequired(spec) ? (
-      <span aria-hidden className="shrink-0 text-body-sm text-destructive" title="Required">
-        *
-      </span>
+      <ElementTooltip content="Required">
+        <span aria-hidden className="shrink-0 text-body-sm text-destructive">
+          *
+        </span>
+      </ElementTooltip>
     ) : null}
     {spec.type && spec.type !== 'string' ? (
       <span className="shrink-0 text-body-sm text-muted-foreground">{spec.type}</span>
     ) : null}
     {spec.defaultValue ? (
       // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
-      <span className="min-w-0 truncate text-body-sm text-muted-foreground" title={`default: ${spec.defaultValue}`}>
-        default: <span className="font-mono">{spec.defaultValue}</span>
-      </span>
+      <ElementTooltip content={`default: ${spec.defaultValue}`}>
+        <span className="min-w-0 truncate text-body-sm text-muted-foreground">
+          default: <span className="font-mono">{spec.defaultValue}</span>
+        </span>
+      </ElementTooltip>
     ) : null}
   </div>
 );
@@ -599,34 +620,42 @@ const CreateTopicButton = () => {
 // custom value (interpolations, `topic:partition`), or create a new topic. Typed text propagates
 // per keystroke (onInputValueChange): the combobox itself only fires onChange on Enter/selection,
 // which would let a blur-commit save stale YAML while the field still displays the typed text.
+// The combobox forwards no aria props, so a registry Field marks its input invalid and describes it
+// by the lint messages rendered inside; `invalid` must be set exactly when those messages render.
 const TopicScalarControl = ({
   id,
   value,
   onChange,
   invalid,
+  fieldKey,
+  dirty,
 }: {
   id?: string;
   value: string;
   onChange: (value: unknown) => void;
-  invalid?: boolean;
+  invalid: boolean;
+  fieldKey: string;
+  dirty: boolean;
 }) => {
   const { options, isLoading } = useTopicOptions();
   return (
-    <div className="flex flex-col gap-2">
-      <Combobox
-        className={invalid ? 'ring-1 ring-destructive' : undefined}
-        creatable
-        createLabel="value"
-        id={id}
-        isLoading={isLoading}
-        onChange={onChange}
-        onInputValueChange={onChange}
-        options={options}
-        placeholder="Select or enter a topic…"
-        value={value}
-      />
-      <CreateTopicButton />
-    </div>
+    <Field data-invalid={invalid}>
+      <div className="flex flex-col gap-2">
+        <Combobox
+          creatable
+          createLabel="value"
+          id={id}
+          isLoading={isLoading}
+          onChange={onChange}
+          onInputValueChange={onChange}
+          options={options}
+          placeholder="Select or enter a topic…"
+          value={value}
+        />
+        <CreateTopicButton />
+      </div>
+      <FieldLintErrorList dirty={dirty} fieldKey={fieldKey} />
+    </Field>
   );
 };
 
@@ -702,21 +731,28 @@ const OptionsSelect = ({
   </Select>
 );
 
-const ScalarControl = ({
-  spec,
-  value,
-  onChange,
-  id,
-  invalid,
-}: {
+type ScalarControlProps = {
   spec: RawFieldSpec;
   value: string | boolean;
   onChange: (value: unknown) => void;
   id?: string;
   invalid?: boolean;
-}) => {
-  const { componentResourceKind, clusterTopicFields } = useContext(ResourceFieldContext);
-  const required = checkRequired(spec);
+};
+
+// Whether a scalar gets the cluster topic picker: a topic-named field on a Redpanda connector that
+// ScalarControl would otherwise free-type (not a switch, resource reference, or enum select).
+function usesTopicPicker(spec: RawFieldSpec, { clusterTopicFields, componentResourceKind }: ResourceFieldContextValue) {
+  return (
+    Boolean(clusterTopicFields) &&
+    isTopicField(spec.name ?? '') &&
+    spec.type !== 'bool' &&
+    !resolveResourceKind(spec, componentResourceKind) &&
+    !fieldHasOptions(spec)
+  );
+}
+
+const ScalarControl = ({ spec, value, onChange, id, invalid }: ScalarControlProps) => {
+  const { componentResourceKind } = useContext(ResourceFieldContext);
   if (spec.type === 'bool') {
     return <Switch aria-label={spec.name} checked={Boolean(value)} id={id} onCheckedChange={onChange} />;
   }
@@ -725,11 +761,14 @@ const ScalarControl = ({
     return <ResourceReferenceSelect id={id} kind={resourceKind} onChange={onChange} value={String(value ?? '')} />;
   }
   if (fieldHasOptions(spec)) {
-    return <OptionsSelect id={id} onChange={onChange} required={required} spec={spec} value={value} />;
+    return <OptionsSelect id={id} onChange={onChange} required={checkRequired(spec)} spec={spec} value={value} />;
   }
-  if (clusterTopicFields && isTopicField(spec.name ?? '')) {
-    return <TopicScalarControl id={id} invalid={invalid} onChange={onChange} value={String(value ?? '')} />;
-  }
+  return <TypedScalarControl id={id} invalid={invalid} onChange={onChange} spec={spec} value={value} />;
+};
+
+// A free-typed scalar other than a cluster topic: a masked credential, or plain text.
+const TypedScalarControl = ({ spec, value, onChange, id, invalid }: ScalarControlProps) => {
+  const required = checkRequired(spec);
   if (isSecretField(spec)) {
     return <SecretInput id={id} onChange={onChange} required={required} value={String(value ?? '')} />;
   }
@@ -793,8 +832,9 @@ const SECRET_REF_EXAMPLE = getSecretSyntax('MY_SECRET');
 const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues> }) => {
   const inputId = useId();
   const lintErrors = useContext(FieldLintErrorsContext);
-  const { fieldDocsUrl } = useContext(ResourceFieldContext);
-  const docsUrl = fieldDocsUrl?.(leaf.path);
+  const resourceFields = useContext(ResourceFieldContext);
+  const docsUrl = resourceFields.fieldDocsUrl?.(leaf.path);
+  const topicPicker = usesTopicPicker(leaf.spec, resourceFields);
   return (
     <Controller
       control={control}
@@ -806,15 +846,28 @@ const ScalarField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValue
         return (
           <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor={inputId} spec={leaf.spec} />
-            <ScalarControl
-              id={inputId}
-              invalid={Boolean(hint) || hasLintError}
-              onChange={field.onChange}
-              spec={leaf.spec}
-              value={field.value as string | boolean}
-            />
-            {hint ? <div className="text-body-sm text-destructive">{hint}</div> : null}
-            <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
+            {topicPicker ? (
+              <TopicScalarControl
+                dirty={fieldState.isDirty}
+                fieldKey={leaf.key}
+                id={inputId}
+                invalid={hasLintError}
+                onChange={field.onChange}
+                value={String(field.value ?? '')}
+              />
+            ) : (
+              <>
+                <ScalarControl
+                  id={inputId}
+                  invalid={Boolean(hint) || hasLintError}
+                  onChange={field.onChange}
+                  spec={leaf.spec}
+                  value={field.value as string | boolean}
+                />
+                {hint ? <div className="text-body-sm text-destructive">{hint}</div> : null}
+                <FieldLintErrorList dirty={fieldState.isDirty} fieldKey={leaf.key} />
+              </>
+            )}
             {showSecretTip ? (
               <div className="text-body-sm text-muted-foreground">
                 Tip: reference a secret (<span className="font-mono">{SECRET_REF_EXAMPLE}</span>) instead of a literal
@@ -847,7 +900,6 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
             <Textarea
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
-              className="font-mono text-body"
               id={inputId}
               onChange={field.onChange}
               placeholder="One value per line"
@@ -884,16 +936,23 @@ const FieldGroup = ({
       setOpen(true);
     }
   }, [forceOpenSignal]);
+  // The registry Collapsible is unstyled: the frame, header padding, and body layout are this group's own boxes.
   return (
-    <Collapsible className="rounded-md border border-border/60" onOpenChange={setOpen} open={open}>
-      <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
-        <div className="font-medium text-body">{label}</div>
-        <ChevronDown
-          className={cn('size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180')}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</CollapsibleContent>
-    </Collapsible>
+    <div className="rounded-md border border-border/60">
+      <Collapsible onOpenChange={setOpen} open={open}>
+        <CollapsibleTrigger className="group flex w-full text-left">
+          <span className="flex flex-1 items-center justify-between px-3 py-2">
+            <span className="text-body font-medium">{label}</span>
+            <span className="inline-flex transition-transform group-data-[panel-open]:rotate-180">
+              <TonedIcon className="size-4" icon={ChevronDown} tone="muted" />
+            </span>
+          </span>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="flex flex-col gap-4 px-3 pt-1 pb-3">{children}</div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   );
 };
 
@@ -1017,50 +1076,49 @@ type NodeConfigFormProps = {
 
 const NO_FIELD_ERRORS: FieldLintErrors = new Map();
 
-export function NodeConfigForm({
-  spec,
-  componentName,
-  value,
-  resourceLabels,
-  onCreateResource,
-  headerSlot,
-  childItems,
-  onSelectChild,
-  onConfigChange,
-  onCommitField,
-  fieldErrors,
-  onCreateTopic,
-  requireLabel,
-}: NodeConfigFormProps) {
-  const labelId = useId();
-  const hasChildList = Boolean(childItems && childItems.length > 0 && onSelectChild);
-  const fields = spec.config?.children ?? [];
-  const componentValue = value[componentName];
+// What the form edits, derived from the schema and the saved component value.
+type FormModel = {
+  inner: Record<string, unknown>;
   // A list-valued component (switch/try/catch/for_each) is edited on the canvas, not via object
   // fields — rendering them would mislead and saving would clobber the array. Show a hint instead.
-  const isListValued = Array.isArray(componentValue);
-  const inner =
-    componentValue && typeof componentValue === 'object' && !isListValued
-      ? (componentValue as Record<string, unknown>)
-      : {};
+  isListValued: boolean;
+  leaves: Leaves;
+  rawKeys: string[];
+  showRaw: boolean;
+  rawObject: Record<string, unknown>;
+};
 
-  const { required, optional, advanced } = groupFormFields(fields);
-  // Nested-component fields are their own canvas nodes — offered as a clickable "Steps" list, never inline.
-  const componentFields = fields.filter(isComponentField);
-
-  // Leaves drive form defaults + assembly. Complex schema fields and unknown keys go to the
-  // raw-YAML fallback; nested-component fields are preserved untouched (the form clones the config).
-  const leaves = collectLeaves(fields);
+// Keys the raw-YAML fallback owns: complex (or deprecated) schema fields and keys the schema
+// doesn't know. Nested-component fields are preserved untouched (the form clones the config).
+function rawSectionKeys(fields: RawFieldSpec[], inner: Record<string, unknown>): string[] {
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
   const complexSchemaKeys = fields
     .filter((f) => f.name && (f.deprecated || !(isFormField(f) || isComponentField(f))))
     .map((f) => f.name);
   const unknownKeys = Object.keys(inner).filter((k) => !schemaKeys.has(k));
-  const rawKeys = [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
-  const showRaw = rawKeys.length > 0;
-  const rawObject = Object.fromEntries(rawKeys.map((k) => [k, inner[k]]));
+  return [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
+}
 
-  const buildFormValues = (): FormValues => ({
+// Leaves drive form defaults + assembly; everything else round-trips through the raw section.
+function deriveFormModel(fields: RawFieldSpec[], componentValue: unknown): FormModel {
+  const isListValued = Array.isArray(componentValue);
+  const inner =
+    componentValue && typeof componentValue === 'object' && !isListValued
+      ? (componentValue as Record<string, unknown>)
+      : {};
+  const rawKeys = rawSectionKeys(fields, inner);
+  return {
+    inner,
+    isListValued,
+    leaves: collectLeaves(fields),
+    rawKeys,
+    showRaw: rawKeys.length > 0,
+    rawObject: Object.fromEntries(rawKeys.map((k) => [k, inner[k]])),
+  };
+}
+
+function buildFormValues(value: Record<string, unknown>, { inner, leaves, showRaw, rawObject }: FormModel): FormValues {
+  return {
     label: typeof value.label === 'string' ? value.label : '',
     raw: showRaw ? yamlStringify(rawObject) : '',
     fields: Object.fromEntries(leaves.scalars.map((l) => [l.key, initialScalar(l.spec, getInObj(inner, l.path))])),
@@ -1070,9 +1128,45 @@ export function NodeConfigForm({
         return [l.key, Array.isArray(v) ? v.join('\n') : ''];
       })
     ),
-  });
+  };
+}
 
-  const { control, formState, getValues, reset } = useForm<FormValues>({ defaultValues: buildFormValues() });
+// The values a successful commit leaves as the form's baseline. Edits the save path deliberately
+// skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the baseline so they
+// stay dirty — otherwise the clean-form resync would silently revert them.
+function committedBaseline(current: FormValues, { inner, leaves, showRaw, rawObject }: FormModel): FormValues {
+  const committed: FormValues = { ...current, fields: { ...current.fields } };
+  for (const leaf of leaves.scalars) {
+    if (numericHint(leaf.spec, current.fields[leaf.key])) {
+      committed.fields[leaf.key] = initialScalar(leaf.spec, getInObj(inner, leaf.path));
+    }
+  }
+  if (showRaw && current.raw.trim() !== '' && parseRawSection(true, current.raw) === null) {
+    committed.raw = yamlStringify(rawObject);
+  }
+  return committed;
+}
+
+type NodeConfigDraftArgs = Pick<
+  NodeConfigFormProps,
+  'componentName' | 'value' | 'onConfigChange' | 'onCommitField' | 'requireLabel'
+> & {
+  model: FormModel;
+};
+
+// The form state behind NodeConfigForm: re-syncs from external writes, reports the assembled
+// draft, and flushes it per field.
+function useNodeConfigDraft({
+  componentName,
+  value,
+  model,
+  onConfigChange,
+  onCommitField,
+  requireLabel,
+}: NodeConfigDraftArgs) {
+  const { control, formState, getValues, reset } = useForm<FormValues>({
+    defaultValues: buildFormValues(value, model),
+  });
 
   // Read dirtyFields/isDirty during render so react-hook-form subscribes to (and
   // keeps updating) them — otherwise they stay empty and every field looks untouched.
@@ -1088,7 +1182,7 @@ export function NodeConfigForm({
   useEffect(() => {
     if (!isDirty && syncedValueRef.current !== serializedValue) {
       syncedValueRef.current = serializedValue;
-      reset(buildFormValues());
+      reset(buildFormValues(value, model));
     }
   }, [serializedValue, isDirty]);
 
@@ -1102,10 +1196,10 @@ export function NodeConfigForm({
         ? buildComponentEntry({
             componentName,
             value,
-            inner,
-            leaves,
-            rawKeys,
-            showRaw,
+            inner: model.inner,
+            leaves: model.leaves,
+            rawKeys: model.rawKeys,
+            showRaw: model.showRaw,
             data: getValues(),
             dirty: dirtyFields,
             requireLabel,
@@ -1115,28 +1209,29 @@ export function NodeConfigForm({
   }, [watched, isDirty, getValues, onConfigChange, serializedValue]);
 
   // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the committed values
-  // become the form's new baseline in place — no remount, focus and scroll survive. Edits the save
-  // path deliberately skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the
-  // baseline so they stay dirty — otherwise the clean-form resync would silently revert them.
+  // become the form's new baseline in place — no remount, focus and scroll survive.
   const commitNow = () => {
     if (!(onCommitField && isDirty && onCommitField())) {
       return;
     }
-    const current = getValues();
-    const committed: FormValues = { ...current, fields: { ...current.fields } };
-    for (const leaf of leaves.scalars) {
-      if (numericHint(leaf.spec, current.fields[leaf.key])) {
-        committed.fields[leaf.key] = initialScalar(leaf.spec, getInObj(inner, leaf.path));
-      }
-    }
-    if (showRaw && current.raw.trim() !== '' && parseRawSection(true, current.raw) === null) {
-      committed.raw = yamlStringify(rawObject);
-    }
-    reset(committed, { keepDirtyValues: true });
+    reset(committedBaseline(getValues(), model), { keepDirtyValues: true });
   };
 
+  return { control, isDirty, commitNow };
+}
+
+function resourceFieldContextFor({
+  spec,
+  componentName,
+  resourceLabels,
+  onCreateResource,
+  onCreateTopic,
+}: Pick<
+  NodeConfigFormProps,
+  'spec' | 'componentName' | 'resourceLabels' | 'onCreateResource' | 'onCreateTopic'
+>): ResourceFieldContextValue {
   const clusterTopicFields = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
-  const resourceCtx: ResourceFieldContextValue = {
+  return {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
     onCreateResource,
     componentResourceKind: resourceKindForComponentName(componentName),
@@ -1144,14 +1239,162 @@ export function NodeConfigForm({
     onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
     fieldDocsUrl: (path) => getFieldDocsUrl(spec.type, componentName, path),
   };
+}
 
-  const advancedLintSignature = advanced
-    .map((f) => lintErrorSignatureUnder(fieldErrors ?? NO_FIELD_ERRORS, f.name))
+// The lint errors anchored anywhere under these fields, as one signature (see lintErrorSignatureUnder).
+function lintErrorSignatureUnderFields(errors: FieldLintErrors, fields: RawFieldSpec[]): string {
+  return fields
+    .map((f) => lintErrorSignatureUnder(errors, f.name))
     .filter(Boolean)
     .join('\n');
+}
+
+// A control-flow component's direct children, when there are any and a way to open them.
+type ChildList = { items: InspectorChildItem[]; onSelect: (item: InspectorChildItem) => void };
+
+const LabelField = ({ control, requireLabel }: { control: Control<FormValues>; requireLabel?: boolean }) => {
+  const labelId = useId();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={labelId}>label</Label>
+      <Controller
+        control={control}
+        name="label"
+        render={({ field, fieldState }) => (
+          <>
+            <Input
+              aria-required={requireLabel || undefined}
+              id={labelId}
+              onChange={field.onChange}
+              placeholder={
+                requireLabel
+                  ? 'Name other nodes use to reference this resource'
+                  : 'Optional identifier for this component'
+              }
+              value={field.value}
+            />
+            {requireLabel && !field.value.trim() ? (
+              <div className="text-body-sm text-destructive">
+                A resource needs a label — nodes reference it by name. The saved label is kept.
+              </div>
+            ) : null}
+            <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
+          </>
+        )}
+      />
+    </div>
+  );
+};
+
+// A list-valued component's items are edited on the canvas: list them, or say where they live.
+const ListValuedItems = ({ childList }: { childList?: ChildList }) =>
+  childList ? (
+    <ChildItemsList {...childList} label="Cases" />
+  ) : (
+    <div className="rounded-md border border-dashed border-border/60 px-3 py-2">
+      <div className="text-body-sm text-muted-foreground">
+        This component's items (cases / processors) are edited on the canvas — select one to edit it.
+      </div>
+    </div>
+  );
+
+const RawSettingsGroup = ({ control }: { control: Control<FormValues> }) => (
+  <FieldGroup defaultOpen={false} label="Other settings (YAML)">
+    <Controller
+      control={control}
+      name="raw"
+      render={({ field }) => {
+        const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
+        return (
+          <div className="flex flex-col gap-1.5">
+            <div className="h-[450px] overflow-hidden rounded-md border border-border">
+              <YamlEditor
+                onChange={(v) => field.onChange(v || '')}
+                options={{ minimap: { enabled: false } }}
+                transparentBackground
+                value={field.value}
+              />
+            </div>
+            {invalid ? (
+              <div className="text-body-sm text-destructive">
+                Invalid YAML — these settings won't be saved until fixed.
+              </div>
+            ) : null}
+          </div>
+        );
+      }}
+    />
+  </FieldGroup>
+);
+
+// Required fields, then Optional and Advanced groups, nested-component Steps, and the raw-YAML
+// fallback. A fragment: the sections are direct children of the scroll area's vertical rhythm.
+const SchemaSections = ({
+  control,
+  fields,
+  childList,
+  showRaw,
+}: {
+  control: Control<FormValues>;
+  fields: RawFieldSpec[];
+  childList?: ChildList;
+  showRaw: boolean;
+}) => {
+  const errors = useContext(FieldLintErrorsContext);
+  const { required, optional, advanced } = groupFormFields(fields);
+  // Nested-component fields are their own canvas nodes — offered as a clickable "Steps" list, never inline.
+  const hasComponentFields = fields.some(isComponentField);
+  return (
+    <>
+      {required.map((f) => (
+        <SchemaField control={control} key={f.name} path={[]} spec={f} />
+      ))}
+      <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
+      {advanced.length > 0 ? (
+        <FieldGroup
+          defaultOpen={false}
+          forceOpenSignal={lintErrorSignatureUnderFields(errors, advanced)}
+          label="Advanced"
+        >
+          {advanced.map((f) => (
+            <SchemaField control={control} key={f.name} path={[]} spec={f} />
+          ))}
+        </FieldGroup>
+      ) : null}
+      {hasComponentFields && childList ? <ChildItemsList {...childList} label="Steps" /> : null}
+      {showRaw ? <RawSettingsGroup control={control} /> : null}
+    </>
+  );
+};
+
+// Edits normally apply on field blur; this is the visible pending state plus a manual trigger
+// (and ⌘⏎) for applying without moving focus.
+const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
+  <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-muted/40 px-4 py-2">
+    <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
+      <span aria-hidden className="size-1.5 rounded-full bg-informative" />
+      Unsaved edits
+    </span>
+    <ElementTooltip content="Apply now (⌘⏎) — edits also apply when you leave a field">
+      <Button onClick={onApply} size="sm" type="button" variant="primary">
+        Apply
+      </Button>
+    </ElementTooltip>
+  </div>
+);
+
+const isCommitShortcut = (e: React.KeyboardEvent) => (e.metaKey || e.ctrlKey) && e.key === 'Enter';
+
+export function NodeConfigForm(props: NodeConfigFormProps) {
+  const { spec, componentName, value, headerSlot, childItems, onSelectChild, onCommitField, fieldErrors } = props;
+  const fields = spec.config?.children ?? [];
+  const model = deriveFormModel(fields, value[componentName]);
+  const childList: ChildList | undefined =
+    childItems && childItems.length > 0 && onSelectChild ? { items: childItems, onSelect: onSelectChild } : undefined;
+  const { control, isDirty, commitNow } = useNodeConfigDraft({ ...props, model });
 
   return (
-    <ResourceFieldContext.Provider value={resourceCtx}>
+    <ResourceFieldContext.Provider value={resourceFieldContextFor(props)}>
       <FieldLintErrorsContext.Provider value={fieldErrors ?? NO_FIELD_ERRORS}>
         {/* Committing per FIELD (not per node): the container listens for focus leaving any field
             (bubbled focusout) and ⌘⏎, flushing the draft so the canvas card and lint react while
@@ -1164,7 +1407,7 @@ export function NodeConfigForm({
           onKeyDown={
             onCommitField
               ? (e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  if (isCommitShortcut(e)) {
                     e.preventDefault();
                     commitNow();
                   }
@@ -1175,124 +1418,14 @@ export function NodeConfigForm({
           <ScrollShadow contentClassName="space-y-4 px-4 py-4">
             {/* Full-bleed to the scroll edges; padded fields follow. */}
             {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
-            <div className="flex flex-col gap-1.5">
-              <Label className="font-medium text-body" htmlFor={labelId}>
-                label
-              </Label>
-              <Controller
-                control={control}
-                name="label"
-                render={({ field, fieldState }) => (
-                  <>
-                    <Input
-                      aria-required={requireLabel || undefined}
-                      id={labelId}
-                      onChange={field.onChange}
-                      placeholder={
-                        requireLabel
-                          ? 'Name other nodes use to reference this resource'
-                          : 'Optional identifier for this component'
-                      }
-                      value={field.value}
-                    />
-                    {requireLabel && !field.value.trim() ? (
-                      <div className="text-body-sm text-destructive">
-                        A resource needs a label — nodes reference it by name. The saved label is kept.
-                      </div>
-                    ) : null}
-                    <FieldLintErrorList dirty={fieldState.isDirty} fieldKey="label" />
-                  </>
-                )}
-              />
-            </div>
-
-            {isListValued && hasChildList ? (
-              <ChildItemsList
-                items={childItems as InspectorChildItem[]}
-                label="Cases"
-                onSelect={onSelectChild as (item: InspectorChildItem) => void}
-              />
-            ) : null}
-            {isListValued && !hasChildList ? (
-              <div className="rounded-md border border-border/60 border-dashed px-3 py-2">
-                <div className="text-body-sm text-muted-foreground">
-                  This component's items (cases / processors) are edited on the canvas — select one to edit it.
-                </div>
-              </div>
-            ) : null}
-
-            {isListValued
-              ? null
-              : required.map((f) => <SchemaField control={control} key={f.name} path={[]} spec={f} />)}
-
-            {isListValued ? null : (
-              <OptionalFieldsSection control={control} fields={optional} hasRequired={required.length > 0} />
+            <LabelField control={control} requireLabel={props.requireLabel} />
+            {model.isListValued ? (
+              <ListValuedItems childList={childList} />
+            ) : (
+              <SchemaSections childList={childList} control={control} fields={fields} showRaw={model.showRaw} />
             )}
-
-            {!isListValued && advanced.length > 0 ? (
-              <FieldGroup defaultOpen={false} forceOpenSignal={advancedLintSignature} label="Advanced">
-                {advanced.map((f) => (
-                  <SchemaField control={control} key={f.name} path={[]} spec={f} />
-                ))}
-              </FieldGroup>
-            ) : null}
-
-            {!isListValued && componentFields.length > 0 && hasChildList ? (
-              <ChildItemsList
-                items={childItems as InspectorChildItem[]}
-                label="Steps"
-                onSelect={onSelectChild as (item: InspectorChildItem) => void}
-              />
-            ) : null}
-
-            {!isListValued && showRaw ? (
-              <FieldGroup defaultOpen={false} label="Other settings (YAML)">
-                <Controller
-                  control={control}
-                  name="raw"
-                  render={({ field }) => {
-                    const invalid = field.value.trim() !== '' && parseRawSection(true, field.value) === null;
-                    return (
-                      <div className="flex flex-col gap-1.5">
-                        <div className="h-[450px] overflow-hidden rounded-md border border-border">
-                          <YamlEditor
-                            onChange={(v) => field.onChange(v || '')}
-                            options={{ minimap: { enabled: false } }}
-                            transparentBackground
-                            value={field.value}
-                          />
-                        </div>
-                        {invalid ? (
-                          <div className="text-body-sm text-destructive">
-                            Invalid YAML — these settings won't be saved until fixed.
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  }}
-                />
-              </FieldGroup>
-            ) : null}
           </ScrollShadow>
-          {/* Edits normally apply on field blur; this is the visible pending state plus a manual
-            trigger (and ⌘⏎) for applying without moving focus. */}
-          {onCommitField && isDirty ? (
-            <div className="flex shrink-0 items-center justify-between gap-2 border-border border-t bg-muted/40 px-4 py-2">
-              <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
-                <span aria-hidden className="size-1.5 rounded-full bg-informative" />
-                Unsaved edits
-              </span>
-              <Button
-                onClick={commitNow}
-                size="sm"
-                title="Apply now (⌘⏎) — edits also apply when you leave a field"
-                type="button"
-                variant="primary"
-              >
-                Apply
-              </Button>
-            </div>
-          ) : null}
+          {onCommitField && isDirty ? <PendingEditsBar onApply={commitNow} /> : null}
         </div>
       </FieldLintErrorsContext.Provider>
     </ResourceFieldContext.Provider>

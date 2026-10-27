@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { LoaderIcon } from 'components/icons';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 
 /**
  * Default pending component for route transitions.
@@ -18,7 +18,7 @@ import { LoaderIcon } from 'components/icons';
 export const RoutePending = () => (
   <div className="flex items-center justify-center py-12">
     <output aria-label="Loading page" className="flex items-center gap-2 text-muted-foreground">
-      <LoaderIcon className="h-4 w-4 animate-spin" />
+      <Spinner />
       <span>Loading...</span>
     </output>
   </div>

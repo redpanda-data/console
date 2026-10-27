@@ -50,7 +50,7 @@ const baseProps: MessagesFooterProps = {
   elapsedMs: null,
 };
 
-describe('MessagesFooter — scroll-triggered pagination', () => {
+describe('the MessagesFooter — scroll-triggered pagination', () => {
   beforeEach(() => {
     MockIntersectionObserver.instances = [];
     rs.stubGlobal('IntersectionObserver', MockIntersectionObserver);

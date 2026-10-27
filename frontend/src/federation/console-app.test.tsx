@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { act, render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // Mock TanStack Router before any imports
 rs.mock('@tanstack/react-router', () => {
@@ -20,7 +21,7 @@ rs.mock('@tanstack/react-router', () => {
       subscribe: rs.fn(() => rs.fn()), // Returns unsubscribe function
       load: rs.fn().mockResolvedValue(undefined),
       state: { location: { pathname: '/topics', searchStr: '' } },
-      navigate: rs.fn(),
+      navigate: rs.fn().mockResolvedValue(undefined),
     })),
     createMemoryHistory: rs.fn(() => ({
       location: { pathname: '/topics' },
@@ -28,9 +29,7 @@ rs.mock('@tanstack/react-router', () => {
       push: rs.fn(),
       replace: rs.fn(),
     })),
-    RouterProvider: ({ children }: { children?: React.ReactNode }) => (
-      <div data-testid="router-provider">{children}</div>
-    ),
+    RouterProvider: MockRouterProvider,
   };
 });
 
@@ -53,7 +52,7 @@ rs.mock('../routeTree.gen', () => ({
 }));
 
 rs.mock('../components/misc/not-found-page', () => ({
-  NotFoundPage: () => <div>Not Found</div>,
+  NotFoundPage: MockNotFoundPage,
 }));
 
 rs.mock('./token-manager', () => ({
@@ -78,25 +77,24 @@ import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
 
-describe('ConsoleApp', () => {
-  const mockGetAccessToken = rs.fn();
-  const mockOnRouteChange = rs.fn();
-  const mockOnSidebarItemsChange = rs.fn();
-  const mockOnBreadcrumbsChange = rs.fn();
-  const mockOnError = rs.fn();
+const mockGetAccessToken = rs.fn();
+const mockOnRouteChange = rs.fn();
+const mockOnSidebarItemsChange = rs.fn();
+const mockOnBreadcrumbsChange = rs.fn();
+const mockOnError = rs.fn();
+const defaultProps: ConsoleAppProps = {
+  getAccessToken: mockGetAccessToken,
+  clusterId: 'test-cluster-id',
+  initialPath: '/topics',
+  onRouteChange: mockOnRouteChange,
+  onSidebarItemsChange: mockOnSidebarItemsChange,
+  onBreadcrumbsChange: mockOnBreadcrumbsChange,
+  onError: mockOnError,
+  config: {},
+  featureFlags: {},
+};
 
-  const defaultProps: ConsoleAppProps = {
-    getAccessToken: mockGetAccessToken,
-    clusterId: 'test-cluster-id',
-    initialPath: '/topics',
-    onRouteChange: mockOnRouteChange,
-    onSidebarItemsChange: mockOnSidebarItemsChange,
-    onBreadcrumbsChange: mockOnBreadcrumbsChange,
-    onError: mockOnError,
-    config: {},
-    featureFlags: {},
-  };
-
+describe('the ConsoleApp', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mockGetAccessToken.mockResolvedValue('test-token-123');
@@ -104,119 +102,187 @@ describe('ConsoleApp', () => {
     config.jwt = undefined;
   });
 
-  test('shows nothing while loading', async () => {
-    // Use a deferred promise so the component stays in its loading branch
-    // for the duration of the assertion. This prevents the async
-    // initialize() useEffect from flushing a second state update (which
-    // would trigger "update was not wrapped in act(...)" since the render()
-    // call wasn't awaited).
-    const tokenPromise = new Promise<string>(() => {
-      // never resolves
-    });
-    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
-
-    const { container } = render(<ConsoleApp {...defaultProps} />);
-
-    // Component returns null while initializing
-    expect(container.firstChild).toBeNull();
-
-    // Let any queued microtasks settle inside act() so React's scheduler
-    // doesn't log a deferred-update warning after the test completes.
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(container.firstChild).toBeNull();
-  });
-
-  test('calls getAccessToken on mount', async () => {
-    render(<ConsoleApp {...defaultProps} />);
-
-    await waitFor(() => {
+  describe('initialization', () => {
+    test('updates the host error callback without restarting initialization', async () => {
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
+      await act(() => {
+        rerender(<ConsoleApp {...defaultProps} onError={rs.fn()} />);
+      });
       expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
     });
-  });
 
-  test('stores token in config.jwt after getAccessToken', async () => {
-    render(<ConsoleApp {...defaultProps} />);
+    test('retries a failed initialization without reloading the host', async () => {
+      const user = userEvent.setup();
+      mockGetAccessToken.mockRejectedValueOnce(new Error('Token service unavailable'));
+      render(<ConsoleApp {...defaultProps} />);
 
-    await waitFor(() => {
-      expect(config.jwt).toBe('test-token-123');
+      await user.click(await screen.findByRole('button', { name: 'Try again' }));
+
+      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
+      expect(mockGetAccessToken).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+    test('keeps the mounted app while updated configuration waits for a token', async () => {
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
+      const mounted = screen.getByTestId('router-provider');
+      const token = Promise.withResolvers<string>();
+      mockGetAccessToken.mockReturnValueOnce(token.promise);
+      rerender(<ConsoleApp {...defaultProps} config={{ urlOverride: { grpc: 'https://updated.example.com' } }} />);
+      expect(mounted.isConnected).toBe(true);
+      await act(async () => {
+        token.resolve('updated-token');
+        await token.promise;
+      });
+      expect(screen.getByTestId('router-provider')).toBe(mounted);
     });
   });
 
-  test('calls setup with correct arguments', async () => {
-    const customConfig = {
-      urlOverride: {
-        grpc: 'http://custom-grpc:9090',
-      },
-    };
+  describe('initialization lifecycle', () => {
+    test('reports token initialization failures to the host and the user', async () => {
+      const error = new Error('Token service unavailable');
+      mockGetAccessToken.mockRejectedValueOnce(error);
+      render(<ConsoleApp {...defaultProps} />);
 
-    render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enablePipelineDiagrams: true }} />);
-
-    await waitFor(() => {
-      expect(setup).toHaveBeenCalledWith(
-        expect.objectContaining({
-          jwt: 'test-token-123',
-          clusterId: 'test-cluster-id',
-          setSidebarItems: mockOnSidebarItemsChange,
-          setBreadcrumbs: mockOnBreadcrumbsChange,
-          featureFlags: { enablePipelineDiagrams: true },
-          urlOverride: { grpc: 'http://custom-grpc:9090' },
-        })
-      );
-    });
-  });
-
-  test('stays in loading state while token refresh is pending', async () => {
-    // Create a deferred promise that never resolves during this test
-    const tokenPromise = new Promise<string>(() => {});
-    mockGetAccessToken.mockReturnValueOnce(tokenPromise);
-
-    const { container } = render(<ConsoleApp {...defaultProps} />);
-
-    // Component should be in loading state (return null) while waiting
-    expect(container.firstChild).toBeNull();
-
-    // Verify it stays in loading state
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(container.firstChild).toBeNull();
-  });
-
-  test('uses default initialPath when not provided', async () => {
-    const propsWithoutInitialPath = {
-      ...defaultProps,
-      initialPath: undefined,
-    };
-
-    // Should not throw
-    render(<ConsoleApp {...propsWithoutInitialPath} />);
-
-    await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
-    });
-  });
-
-  test('passes clusterId to setup', async () => {
-    render(<ConsoleApp {...defaultProps} clusterId="custom-cluster-xyz" />);
-
-    await waitFor(() => {
-      expect(setup).toHaveBeenCalledWith(
-        expect.objectContaining({
-          clusterId: 'custom-cluster-xyz',
-        })
-      );
-    });
-  });
-
-  test('clears QueryClient cache on unmount', async () => {
-    const { unmount } = render(<ConsoleApp {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
+      expect(await screen.findByRole('alert')).toHaveTextContent('Token service unavailable');
+      expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object));
+      expect(setup).not.toHaveBeenCalled();
     });
 
-    // Unmount should not throw
-    unmount();
+    test('does not initialize after unmount while token refresh is pending', async () => {
+      const token = Promise.withResolvers<string>();
+      mockGetAccessToken.mockReturnValueOnce(token.promise);
+      const { unmount } = render(<ConsoleApp {...defaultProps} />);
+      unmount();
+
+      await act(async () => {
+        token.resolve('late-token');
+        await token.promise;
+      });
+      expect(setup).not.toHaveBeenCalled();
+    });
+
+    test('shows nothing while loading', async () => {
+      // Use a deferred promise so the component stays in its loading branch
+      // for the duration of the assertion. This prevents the async
+      // initialize() useEffect from flushing a second state update (which
+      // would trigger "update was not wrapped in act(...)" since the render()
+      // call wasn't awaited).
+      const tokenPromise = new Promise<string>(() => {
+        // never resolves
+      });
+      mockGetAccessToken.mockReturnValueOnce(tokenPromise);
+
+      const { container } = render(<ConsoleApp {...defaultProps} />);
+
+      // Component returns null while initializing
+      expect(container.firstChild).toBeNull();
+
+      // Let any queued microtasks settle inside act() so React's scheduler
+      // doesn't log a deferred-update warning after the test completes.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(container.firstChild).toBeNull();
+    });
+
+    test('calls getAccessToken on mount', async () => {
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    test('stores token in config.jwt after getAccessToken', async () => {
+      render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(config.jwt).toBe('test-token-123');
+      });
+    });
+
+    test('calls setup with correct arguments', async () => {
+      const customConfig = {
+        urlOverride: {
+          grpc: 'http://custom-grpc:9090',
+        },
+      };
+
+      render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enablePipelineDiagrams: true }} />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            jwt: 'test-token-123',
+            clusterId: 'test-cluster-id',
+            setSidebarItems: mockOnSidebarItemsChange,
+            setBreadcrumbs: mockOnBreadcrumbsChange,
+            featureFlags: { enablePipelineDiagrams: true },
+            urlOverride: { grpc: 'http://custom-grpc:9090' },
+          })
+        );
+      });
+    });
+
+    test('stays in loading state while token refresh is pending', async () => {
+      const token = Promise.withResolvers<string>();
+      mockGetAccessToken.mockReturnValueOnce(token.promise);
+      const { container } = render(<ConsoleApp {...defaultProps} />);
+      await waitFor(() => expect(mockGetAccessToken).toHaveBeenCalledTimes(1));
+
+      // Initialization is parked on the token: no setup, nothing rendered.
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(setup).not.toHaveBeenCalled();
+      expect(container.firstChild).toBeNull();
+
+      // Control: the same app initializes as soon as the token arrives.
+      await act(async () => {
+        token.resolve('late-token');
+        await token.promise;
+      });
+      await waitFor(() => expect(container.firstChild).not.toBeNull());
+    });
+
+    test('uses default initialPath when not provided', async () => {
+      const propsWithoutInitialPath = {
+        ...defaultProps,
+        initialPath: undefined,
+      };
+
+      // Should not throw
+      render(<ConsoleApp {...propsWithoutInitialPath} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+    });
+
+    test('passes clusterId to setup', async () => {
+      render(<ConsoleApp {...defaultProps} clusterId="custom-cluster-xyz" />);
+
+      await waitFor(() => {
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({
+            clusterId: 'custom-cluster-xyz',
+          })
+        );
+      });
+    });
+
+    test('clears QueryClient cache on unmount', async () => {
+      const { unmount } = render(<ConsoleApp {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockGetAccessToken).toHaveBeenCalled();
+      });
+
+      // Unmount should not throw
+      unmount();
+    });
   });
 
   test('accepts navigateTo prop', async () => {
@@ -239,7 +305,7 @@ describe('ConsoleApp', () => {
     unmount();
   });
 
-  describe('Feature Flags', () => {
+  describe('feature Flags', () => {
     test('passes feature flags to setup()', async () => {
       const flags = { enableRpcnTemplateGallery: false, enablePipelineDiagrams: true };
       render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
@@ -277,7 +343,7 @@ describe('ConsoleApp', () => {
     });
   });
 
-  describe('Router Stability', () => {
+  describe('router Stability', () => {
     test('does not recreate router when initialPath prop changes', async () => {
       const { createRouter, createMemoryHistory } = await import('@tanstack/react-router');
 
@@ -320,7 +386,7 @@ describe('ConsoleApp', () => {
     });
   });
 
-  describe('Search Params Handling', () => {
+  describe('search Params Handling', () => {
     test('onRouteChange includes searchStr when route resolves with search params', async () => {
       // Get a reference to the subscribe callback so we can invoke it manually
       const { createRouter } = await import('@tanstack/react-router');
@@ -333,7 +399,7 @@ describe('ConsoleApp', () => {
         }),
         load: rs.fn().mockResolvedValue(undefined),
         state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: rs.fn(),
+        navigate: rs.fn().mockResolvedValue(undefined),
       } as unknown as ReturnType<typeof createRouter>);
 
       render(<ConsoleApp {...defaultProps} />);
@@ -353,7 +419,7 @@ describe('ConsoleApp', () => {
 
     test('navigateTo with search params triggers router navigation', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn();
+      const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
       rs.mocked(createRouter).mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
@@ -378,7 +444,7 @@ describe('ConsoleApp', () => {
 
     test('navigateTo without search params still works (backwards compat)', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn();
+      const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
       rs.mocked(createRouter).mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
@@ -403,7 +469,7 @@ describe('ConsoleApp', () => {
 
     test('navigateTo matching current path + searchStr is a no-op', async () => {
       const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn();
+      const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
       rs.mocked(createRouter).mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
@@ -412,22 +478,21 @@ describe('ConsoleApp', () => {
         navigate: mockNavigate,
       } as unknown as ReturnType<typeof createRouter>);
 
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      const { container, rerender } = render(<ConsoleApp {...defaultProps} />);
 
+      // Host navigation only runs once the app is initialized, which is when it first renders.
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(container.firstChild).not.toBeNull();
       });
 
       // navigateTo equals currentPath + currentSearchStr, so navigate should NOT be called
       rerender(<ConsoleApp {...defaultProps} navigateTo="/topics?tab=messages" />);
 
-      // Give it a tick to process the effect
-      await new Promise((resolve) => setTimeout(resolve, 50));
       expect(mockNavigate).not.toHaveBeenCalled();
     });
   });
 
-  describe('Config Overrides', () => {
+  describe('config Overrides', () => {
     test('applies URL overrides from config', async () => {
       const customConfig = {
         urlOverride: { grpc: 'https://custom.api.com' },
@@ -476,3 +541,11 @@ describe('ConsoleApp', () => {
     });
   });
 });
+
+function MockRouterProvider({ children }: { children?: React.ReactNode }) {
+  return <div data-testid="router-provider">{children}</div>;
+}
+
+function MockNotFoundPage() {
+  return <div>Not Found</div>;
+}

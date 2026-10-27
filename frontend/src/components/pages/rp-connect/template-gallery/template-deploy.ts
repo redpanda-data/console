@@ -70,6 +70,42 @@ const substituteScalar = (
   return text.replaceAll(SLOT_TOKEN_PATTERN, (_match, id: string) => resolved.get(id) ?? '');
 };
 
+/** The slot id of a sequence item that is exactly `${slot.X}` for a list slot X. */
+const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>): string | undefined => {
+  const tokenId =
+    isScalar(item) && typeof item.value === 'string' ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1] : undefined;
+  const slot = tokenId ? slotMap.get(tokenId) : undefined;
+  return slot?.kind === 'string' && slot.list ? tokenId : undefined;
+};
+
+/** One item per comma-separated entry of a list slot's value; none when the slot resolves to a drop. */
+const listSlotEntries = (slot: TemplateSlot | undefined, raw: string, pipelineName: string): Scalar[] => {
+  const resolved = resolveSlotToken(slot, raw, pipelineName);
+  // No explicit style: the serializer quotes any entry that would parse as a non-string.
+  return resolved === null ? [] : splitListValue(resolved).map((entry) => new Scalar(entry));
+};
+
+/** The sequence's items with each list-slot item expanded, or `null` when it holds none. */
+const expandListSlotItems = (
+  items: unknown[],
+  slotMap: Map<string, TemplateSlot>,
+  values: SlotValues,
+  pipelineName: string
+): unknown[] | null => {
+  let changed = false;
+  const expanded: unknown[] = [];
+  for (const item of items) {
+    const tokenId = listSlotItemId(item, slotMap);
+    if (tokenId === undefined) {
+      expanded.push(item);
+    } else {
+      changed = true;
+      expanded.push(...listSlotEntries(slotMap.get(tokenId), values[tokenId] ?? '', pipelineName));
+    }
+  }
+  return changed ? expanded : null;
+};
+
 /**
  * Render `baseYaml` with the user's form values via structure-aware substitution:
  * blank optional fields drop their whole key/sequence-item (and any sequence emptied as a result),
@@ -95,30 +131,9 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
     // blank optional list slot drops its item (and the emptied sequence's pair, below). Tokens
     // embedded in longer text fall through to plain inline substitution.
     Seq(_, seq) {
-      let changed = false;
-      const items: typeof seq.items = [];
-      for (const item of seq.items) {
-        const tokenId =
-          isScalar(item) && typeof item.value === 'string'
-            ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1]
-            : undefined;
-        const slot = tokenId ? slotMap.get(tokenId) : undefined;
-        if (!(tokenId && slot?.kind === 'string' && slot.list)) {
-          items.push(item);
-          continue;
-        }
-        changed = true;
-        const resolved = resolveSlotToken(slot, values[tokenId] ?? '', pipelineName);
-        if (resolved === null) {
-          continue;
-        }
-        // No explicit style: the serializer quotes any entry that would parse as a non-string.
-        for (const entry of splitListValue(resolved)) {
-          items.push(new Scalar(entry));
-        }
-      }
-      if (changed) {
-        seq.items = items;
+      const expanded = expandListSlotItems(seq.items, slotMap, values, pipelineName);
+      if (expanded) {
+        seq.items = expanded;
       }
     },
     Scalar(_, node) {

@@ -31,15 +31,19 @@ export class TokenManager {
    * @returns Promise resolving to the new access token
    * @throws Error if token refresh fails
    */
-  async refresh(): Promise<string> {
+  refresh(): Promise<string> {
     // Return existing promise if refresh is in progress
     if (this.refreshPromise !== null) {
       return this.refreshPromise;
     }
 
-    this.refreshPromise = this.getAccessToken().finally(() => {
-      this.refreshPromise = null;
-    });
+    try {
+      this.refreshPromise = this.getAccessToken().finally(() => {
+        this.refreshPromise = null;
+      });
+    } catch (error) {
+      return Promise.reject(error);
+    }
 
     return this.refreshPromise;
   }

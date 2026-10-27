@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { clsx } from 'clsx';
 import { ChevronRightIcon } from 'components/icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import React, { Component, type JSX } from 'react';
+import React, { Component } from 'react';
 
 import { api, brokerMap } from '../../state/backend-api';
 import type { Broker, Partition } from '../../state/rest-interfaces';
@@ -29,95 +30,12 @@ export class BrokerList extends Component<BrokerListProps> {
   }
 
   render() {
-    let leaderId: number;
-    let sortedIds: number[];
-    const offlineIds: number[] = [];
-    let addedIds: number[] = [];
-    let removedIds: number[] = [];
-
-    if ('partition' in this.props) {
-      const { partition } = this.props;
-      leaderId = partition.leader;
-      sortedIds = partition.replicas.distinct().sort((a, b) => a - b);
-      if (partition.offlineReplicas) {
-        offlineIds.push(...partition.offlineReplicas);
-      }
-    } else {
-      if (!this.props.brokerIds) {
-        return null;
-      }
-
-      sortedIds = this.props.brokerIds.distinct().sort((a, b) => a - b);
-      addedIds = this.props.addedIds ?? [];
-      removedIds = this.props.removedIds ?? [];
-      leaderId = this.props.leaderId ?? -1;
+    const state = getBrokerListState(this.props);
+    if (!state) {
+      return null;
     }
-
     const brokers = brokerMap.get();
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 20 - nested conditionals for broker tag styling and tooltip content
-    const tags = sortedIds.map((id) => {
-      const broker = brokers?.get(id);
-
-      let classNames = 'broker-tag';
-      if (id === leaderId) {
-        classNames += ' leader';
-      }
-      if (offlineIds.includes(id)) {
-        classNames += ' offline';
-      }
-      if (brokers && !broker) {
-        classNames += ' missing';
-      }
-
-      const isAdding = addedIds.includes(id);
-      if (isAdding) {
-        classNames += ' added';
-      }
-
-      const isRemoving = removedIds.includes(id);
-      if (isRemoving) {
-        classNames += ' removed';
-      }
-
-      const tag = (
-        <div className={classNames}>
-          <span>{id ?? '?'}</span>
-        </div>
-      );
-      if (!broker) {
-        return tag;
-      }
-
-      const additionalContent: JSX.Element[] = [];
-      if (id === leaderId) {
-        additionalContent.push(
-          <div key="leader" style={{ marginTop: '5px' }}>
-            <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />
-            This broker is the leader for this partition
-          </div>
-        );
-      }
-      if (isAdding) {
-        additionalContent.push(
-          <div key="added" style={{ color: 'var(--color-success)', marginTop: '5px' }}>
-            Partitions are currently being transferred to this broker.
-          </div>
-        );
-      }
-      if (isRemoving) {
-        additionalContent.push(
-          <div key="removed" style={{ color: 'var(--color-warning)', marginTop: '5px' }}>
-            Once the assignment completes, the partitions of the reassignment will be removed from the broker.
-          </div>
-        );
-      }
-
-      return (
-        <BrokerTooltip broker={broker} key={id} tooltipSuffix={additionalContent}>
-          {tag}
-        </BrokerTooltip>
-      );
-    });
+    const tags = state.sortedIds.map((id) => <BrokerTag brokers={brokers} id={id} key={id} state={state} />);
 
     return (
       <span style={{ cursor: 'pointer' }}>
@@ -147,5 +65,96 @@ function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; toolt
       <TooltipTrigger render={p.children} />
       <TooltipContent side="top">{tooltipContent}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function getBrokerListState(props: BrokerListProps) {
+  if ('partition' in props) {
+    return {
+      leaderId: props.partition.leader,
+      sortedIds: props.partition.replicas.distinct().sort((a, b) => a - b),
+      offlineIds: props.partition.offlineReplicas ?? [],
+      addedIds: [] as number[],
+      removedIds: [] as number[],
+    };
+  }
+  if (!props.brokerIds) {
+    return null;
+  }
+  return {
+    leaderId: props.leaderId ?? -1,
+    sortedIds: props.brokerIds.distinct().sort((a, b) => a - b),
+    offlineIds: [] as number[],
+    addedIds: props.addedIds ?? [],
+    removedIds: props.removedIds ?? [],
+  };
+}
+
+function BrokerTag({
+  id,
+  state,
+  brokers,
+}: {
+  id: number;
+  state: NonNullable<ReturnType<typeof getBrokerListState>>;
+  brokers: ReturnType<typeof brokerMap.get>;
+}) {
+  const broker = brokers?.get(id);
+  const isLeader = id === state.leaderId;
+  const isAdding = state.addedIds.includes(id);
+  const isRemoving = state.removedIds.includes(id);
+  const className = clsx('broker-tag', {
+    leader: isLeader,
+    offline: state.offlineIds.includes(id),
+    missing: brokers && !broker,
+    added: isAdding,
+    removed: isRemoving,
+  });
+  const tag = (
+    <div className={className}>
+      <span>{id ?? '?'}</span>
+    </div>
+  );
+  if (!broker) {
+    return tag;
+  }
+  return (
+    <BrokerTooltip
+      broker={broker}
+      tooltipSuffix={<BrokerTransferDetails isAdding={isAdding} isLeader={isLeader} isRemoving={isRemoving} />}
+    >
+      {tag}
+    </BrokerTooltip>
+  );
+}
+
+function BrokerTransferDetails({
+  isLeader,
+  isAdding,
+  isRemoving,
+}: {
+  isLeader: boolean;
+  isAdding: boolean;
+  isRemoving: boolean;
+}) {
+  return (
+    <>
+      {isLeader ? (
+        <div style={{ marginTop: '5px' }}>
+          <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />
+          This broker is the leader for this partition
+        </div>
+      ) : null}
+      {isAdding ? (
+        <div style={{ color: 'var(--color-success)', marginTop: '5px' }}>
+          Partitions are currently being transferred to this broker.
+        </div>
+      ) : null}
+      {isRemoving ? (
+        <div style={{ color: 'var(--color-warning)', marginTop: '5px' }}>
+          Once the assignment completes, the partitions of the reassignment will be removed from the broker.
+        </div>
+      ) : null}
+    </>
   );
 }

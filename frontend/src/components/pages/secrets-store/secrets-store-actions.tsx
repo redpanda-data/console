@@ -8,8 +8,8 @@
  * use of this software will be governed by the Apache License, Version 2.0
  */
 
+import { CopyIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +42,13 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
 
   const resources = resourcesData?.resources || [];
 
-  const handleCopySuccess = () => {
-    toast.success('Secret ID copied to clipboard');
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(secret.id);
+      toast.success('Secret ID copied to clipboard');
+    } catch {
+      toast.error('Could not copy the secret ID');
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -55,27 +60,20 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button
-              className="h-8 w-8 data-[popup-open]:bg-muted"
-              data-testid="secret-actions-menu-trigger"
-              size="icon"
-              variant="ghost"
-            >
+            <Button className="h-8 w-8" data-testid="secret-actions-menu-trigger" size="icon" variant="ghost">
               <MoreHorizontal className="h-4 w-4" />
               <span className="sr-only">Open menu</span>
             </Button>
           }
         />
         <DropdownMenuContent align="end" className="w-[200px]">
-          <CopyButton
-            className="[&]:transform-none! w-full justify-start gap-4 rounded-sm px-2 py-1.5 font-normal text-body hover:bg-accent [&]:scale-100! [&_svg]:size-4"
-            content={secret.id}
-            data-testid="secret-copy-id-button"
-            onCopy={handleCopySuccess}
-            variant="ghost"
-          >
-            Copy ID
-          </CopyButton>
+          {/* Stays open after copying, as the copy button it replaced did. */}
+          <DropdownMenuItem closeOnClick={false} data-testid="secret-copy-id-button" onClick={handleCopyId}>
+            <div className="flex items-center gap-4">
+              <CopyIcon className="h-4 w-4" />
+              Copy ID
+            </div>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem data-testid="secret-edit-menu-item" onClick={() => onEdit(secret.id)}>
             <div className="flex items-center gap-4">

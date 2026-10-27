@@ -58,7 +58,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
         <ul className="flex flex-col gap-3">
           {[...new Set(api.errors.map(formatError))].map((message) => (
             <li className="flex items-center gap-2" key={message}>
-              <WarningIcon className="shrink-0 text-destructive" />
+              <WarningIcon className="shrink-0" color="var(--color-destructive)" />
               {message}
             </li>
           ))}

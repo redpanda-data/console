@@ -14,7 +14,8 @@ import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
 
-const mockNavigate = rs.fn();
+// Real navigate() resolves once the route commits.
+const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
 const mockMutateContext = rs.fn();
@@ -88,7 +89,7 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import EditSchemaCompatibilityPage from './edit-compatibility';
 
-describe('EditSchemaCompatibilityPage', () => {
+describe('the EditSchemaCompatibilityPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
@@ -97,7 +98,7 @@ describe('EditSchemaCompatibilityPage', () => {
     rs.restoreAllMocks();
   });
 
-  describe('Global compatibility (no subjectName)', () => {
+  describe('global compatibility (no subjectName)', () => {
     test('calls global mutation on save', async () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
@@ -138,7 +139,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
   });
 
-  describe('Per-subject compatibility (with subjectName)', () => {
+  describe('per-subject compatibility (with subjectName)', () => {
     const subjectName = 'my-test-subject';
 
     beforeEach(() => {
@@ -197,7 +198,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
   });
 
-  describe('Per-context compatibility (with contextName)', () => {
+  describe('per-context compatibility (with contextName)', () => {
     beforeEach(() => {
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
     });
@@ -335,7 +336,7 @@ describe('EditSchemaCompatibilityPage', () => {
     });
   });
 
-  describe('Loading and edge cases', () => {
+  describe('loading and edge cases', () => {
     test('shows skeleton while loading mode', () => {
       rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: undefined,

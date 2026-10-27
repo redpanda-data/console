@@ -50,7 +50,7 @@ rs.mock('../../state/backend-api', () => ({
 import { RouterSync } from './router-sync';
 import { config, isEmbedded } from '../../config';
 
-describe('RouterSync', () => {
+describe('the RouterSync', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     config.jwt = undefined;

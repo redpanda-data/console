@@ -23,14 +23,7 @@ function loginHandling(): JSX.Element | null {
     return null;
   }
 
-  const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   const path = window.location.pathname.removePrefix(getBasePath() ?? '');
-  const devPrint = (str: string) => {
-    if (IsDev) {
-      // biome-ignore lint/suspicious/noConsole: dev logging
-      console.log(`loginHandling (${path}): ${str}`);
-    }
-  };
 
   if (path.startsWith('/login')) {
     return null; // already in login process, don't interrupt!
@@ -46,38 +39,22 @@ function loginHandling(): JSX.Element | null {
     return null;
   }
 
+  return renderAuthenticatedState(path);
+}
+
+function renderAuthenticatedState(path: string): JSX.Element | null {
+  const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   if (api.userData === null && !path.startsWith('/login')) {
-    devPrint('known not logged in, hard redirect');
+    logLoginState(path, 'known not logged in, hard redirect');
     window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
     return preLogin;
   }
 
   if (api.userData === undefined) {
-    devPrint('user is undefined (probably a fresh page load)');
-
-    // Check if there was a transient server error (5xx)
-    // Show error UI instead of loading or redirecting to prevent infinite loops
-    if (api.userDataError) {
-      devPrint(`user data error: ${api.userDataError.message}`);
-      return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;
-    }
-
-    const client = appConfig.authenticationClient;
-    if (!client) {
-      throw new Error('security client is not initialized');
-    }
-
-    // Only fetch if not already fetching to prevent redirect loops
-    if (!api.isUserDataFetchInProgress) {
-      api.refreshUserData().catch(() => {
-        // Intentionally ignore errors during initial load
-      });
-    }
-
-    return preLogin;
+    return renderInitialLoginState(path, preLogin);
   }
   if (!uiState.isUsingDebugUserLogin) {
-    devPrint(`user is set: ${JSON.stringify(api.userData)}`);
+    logLoginState(path, `user is set: ${JSON.stringify(api.userData)}`);
   }
   return null;
 }
@@ -114,3 +91,39 @@ const FeatureErrorCheck = () => {
 };
 
 export default RequireAuth;
+
+function logLoginState(path: string, message: string) {
+  if (IsDev) {
+    // biome-ignore lint/suspicious/noConsole: dev logging
+    console.log(`loginHandling (${path}): ${message}`);
+  }
+}
+
+function requestInitialUserData() {
+  const client = appConfig.authenticationClient;
+  if (!client) {
+    throw new Error('security client is not initialized');
+  }
+
+  // Only fetch if not already fetching to prevent redirect loops
+  if (!api.isUserDataFetchInProgress) {
+    api.refreshUserData().catch(() => {
+      // Intentionally ignore errors during initial load
+    });
+  }
+}
+
+function renderInitialLoginState(path: string, preLogin: JSX.Element): JSX.Element {
+  logLoginState(path, 'user is undefined (probably a fresh page load)');
+
+  // Check if there was a transient server error (5xx)
+  // Show error UI instead of loading or redirecting to prevent infinite loops
+  if (api.userDataError) {
+    logLoginState(path, `user data error: ${api.userDataError.message}`);
+    return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;
+  }
+
+  requestInitialUserData();
+
+  return preLogin;
+}

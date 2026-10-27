@@ -8,9 +8,9 @@ import { TopicPage } from '../utils/topic-page';
 
 const MESSAGES_TAB_CONTENT = /No messages found|Partition|Offset/i;
 
-test.describe('Topic Details - Navigation and Tabs', () => {
+test.describe('topic Details - Navigation and Tabs', () => {
   test('should navigate to topic details and view basic information', async ({ page }) => {
-    const topicName = `nav-test-${Date.now()}`;
+    const topicName = `nav-test-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -33,7 +33,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
   });
 
   test('should view messages tab as default', async ({ page }) => {
-    const topicName = `messages-tab-${Date.now()}`;
+    const topicName = `messages-tab-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -55,7 +55,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
   });
 
   test('should navigate to tab via URL hash', async ({ page }) => {
-    const topicName = `url-hash-${Date.now()}`;
+    const topicName = `url-hash-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -78,7 +78,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
   });
 
   test('should view configuration tab with grouped settings', async ({ page }) => {
-    const topicName = `config-groups-${Date.now()}`;
+    const topicName = `config-groups-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -106,7 +106,8 @@ test.describe('Topic Details - Navigation and Tabs', () => {
   });
 
   test('should open produce record with non-default max results in the URL', async ({ page }) => {
-    const topicName = `produce-nav-${Date.now()}`;
+    const topicName = `produce-nav-${crypto.randomUUID()}`;
+    await page.clock.install();
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
@@ -119,7 +120,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
 
       // A queued messages-tab URL update used to bounce straight back to the topic (UX-1514).
-      await page.waitForTimeout(1000);
+      await page.clock.runFor(1000);
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
     });
 
@@ -127,7 +128,7 @@ test.describe('Topic Details - Navigation and Tabs', () => {
   });
 
   test('should navigate back to topics list via breadcrumb', async ({ page }) => {
-    const topicName = `breadcrumb-${Date.now()}`;
+    const topicName = `breadcrumb-${crypto.randomUUID()}`;
 
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);

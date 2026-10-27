@@ -308,7 +308,44 @@ const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadow
   });
 };
 
-describe('ShadowLinkEditPage', () => {
+/**
+ * Mock the edit hook with this shadow link and render the page
+ */
+const renderEditPageFor = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadowLink: ShadowLink) => {
+  mockEditHook(mockUpdateShadowLink, mockShadowLink);
+  renderEditPage(mockShadowLink);
+};
+
+/**
+ * Save the form and build the dataplane update request from the submitted form values
+ */
+const saveAndBuildUpdateRequest = async (
+  user: ReturnType<typeof userEvent.setup>,
+  mockUpdateShadowLink: ReturnType<typeof rs.fn>,
+  mockShadowLink: ShadowLink
+) => {
+  await user.click(screen.getByText('Save'));
+
+  // Verify updateShadowLink was called
+  await waitFor(() => {
+    expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
+  });
+
+  // The hook builds the request internally from the submitted form values, so build it
+  // here too to verify the update request structure
+  const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
+  const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
+  return buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
+    roleSyncSupported: true,
+  });
+};
+
+const replaceInputValue = async (user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string) => {
+  await user.clear(input);
+  await user.type(input, value);
+};
+
+describe('the ShadowLinkEditPage', () => {
   const mockUpdateShadowLink = rs.fn();
 
   beforeEach(() => {
@@ -325,9 +362,7 @@ describe('ShadowLinkEditPage', () => {
   test.each(testCases)('$description', async ({ actions, expectedFieldMaskPaths, verify }) => {
     const user = userEvent.setup();
     const mockShadowLink = createMockShadowLink();
-    mockEditHook(mockUpdateShadowLink, mockShadowLink);
-
-    renderEditPage(mockShadowLink);
+    renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
 
     // Wait for the form to load
     await waitFor(() => {
@@ -337,34 +372,16 @@ describe('ShadowLinkEditPage', () => {
     // Wait for the source tab content to be visible
     await screen.findByTestId('bootstrap-server-input-0', {}, { timeout: 5000 });
 
-    // Execute all actions in sequence
-    for (const action of actions) {
-      await performAction(user, screen, action);
-    }
+    // Each action edits the same form and later actions read its state, so chain them in order.
+    await actions.reduce<Promise<void>>(
+      (previous, action) => previous.then(() => performAction(user, screen, action)),
+      Promise.resolve()
+    );
 
-    // Submit the form
-    const saveButton = screen.getByText('Save');
-    await user.click(saveButton);
-
-    // Verify updateShadowLink was called
-    await waitFor(() => {
-      expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
-    });
-
-    const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
-
-    // The test verifies form values, but the hook now builds the request internally
-    // We need to build the request from form values to verify the update request structure
-    const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-    const updateRequest = buildDataplaneUpdateRequest('test-shadow-link', formValuesArg, mockShadowLink, {
-      roleSyncSupported: true,
-    });
+    const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
 
     // Verify field mask includes all expected paths
-    const fieldMaskPaths = updateRequest?.updateMask?.paths;
-    for (const expectedPath of expectedFieldMaskPaths) {
-      expect(fieldMaskPaths).toContain(expectedPath);
-    }
+    expect(updateRequest?.updateMask?.paths).toEqual(expect.arrayContaining(expectedFieldMaskPaths));
 
     // Run custom verification function
     verify(updateRequest, expect);
@@ -403,14 +420,18 @@ describe('ShadowLinkEditPage', () => {
       await screen.findByTestId('sr-tail-interval-input');
     };
 
-    test('edits an api-mode link with a retyped password and emits only the SR mask', async () => {
+    // With the SR gate open, render an api-mode link and open its sync behavior fields
+    const renderApiModeSyncBehavior = async () => {
       setSchemaRegistrySyncGateSupported(true);
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
-      mockEditHook(mockUpdateShadowLink, mockShadowLink);
-
-      renderEditPage(mockShadowLink);
+      renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
       await openSrSyncBehavior(user);
+      return { user, mockShadowLink };
+    };
+
+    test('edits an api-mode link with a retyped password and emits only the SR mask', async () => {
+      const { user, mockShadowLink } = await renderApiModeSyncBehavior();
 
       // The topic tab is locked for an api-mode link.
       expect(screen.getByTestId('sr-mode-topic-tab')).toHaveAttribute('aria-disabled', 'true');
@@ -418,48 +439,29 @@ describe('ShadowLinkEditPage', () => {
 
       const tailInput = screen.getByTestId('sr-tail-interval-input');
       expect(tailInput).toHaveValue('10s');
-      await user.clear(tailInput);
-      await user.type(tailInput, '30s');
+      await replaceInputValue(user, tailInput, '30s');
       await user.type(screen.getByTestId('sr-basic-password-input'), 'retyped-secret');
 
-      await user.click(screen.getByText('Save'));
-
-      await waitFor(() => {
-        expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
-      });
-
-      const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
-      const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
-        roleSyncSupported: true,
-      });
+      const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
 
       expect(updateRequest.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
-      const mode = updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
-      expect(mode?.case).toBe('shadowSchemaRegistryApi');
-      if (mode?.case === 'shadowSchemaRegistryApi') {
-        expect(mode.value.tailInterval).toMatchObject({ seconds: 30n });
-        expect(mode.value.authOptions?.authOptions?.case).toBe('basic');
-        if (mode.value.authOptions?.authOptions?.case === 'basic') {
-          expect(mode.value.authOptions.authOptions.value.password).toBe('retyped-secret');
-        }
-        // paused was hydrated and must survive the rebuild
-        expect(mode.value.paused).toBe(true);
-      }
+      expect(
+        updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
+      ).toMatchObject({
+        case: 'shadowSchemaRegistryApi',
+        value: {
+          tailInterval: { seconds: 30n },
+          authOptions: { authOptions: { case: 'basic', value: { password: 'retyped-secret' } } },
+          // paused was hydrated and must survive the rebuild
+          paused: true,
+        },
+      });
     });
 
     test('blocks saving an api-mode link until the password is re-entered', async () => {
-      setSchemaRegistrySyncGateSupported(true);
-      const user = userEvent.setup();
-      const mockShadowLink = createApiModeShadowLink();
-      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+      const { user } = await renderApiModeSyncBehavior();
 
-      renderEditPage(mockShadowLink);
-      await openSrSyncBehavior(user);
-
-      const tailInput = screen.getByTestId('sr-tail-interval-input');
-      await user.clear(tailInput);
-      await user.type(tailInput, '30s');
+      await replaceInputValue(user, screen.getByTestId('sr-tail-interval-input'), '30s');
 
       await user.click(screen.getByText('Save'));
 
@@ -487,23 +489,12 @@ describe('ShadowLinkEditPage', () => {
       // read-only card, so its validation must not block the rest of the form.
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
-      mockEditHook(mockUpdateShadowLink, mockShadowLink);
+      renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
 
-      renderEditPage(mockShadowLink);
       await screen.findByTestId('bootstrap-server-input-0');
       await addTopicFilter(user, screen, 'unrelated-topic');
 
-      await user.click(screen.getByText('Save'));
-
-      await waitFor(() => {
-        expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
-      });
-
-      const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
-      const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-      const updateRequest = buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
-        roleSyncSupported: true,
-      });
+      const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
 
       // Only the topic change goes out; the untouched SR slice emits no mask.
       expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);

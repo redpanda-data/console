@@ -36,7 +36,7 @@ import {
 } from './template-form-panel';
 import { TemplateGalleryGrid } from './template-gallery-grid';
 import { AddTopicStep } from '../onboarding/add-topic-step';
-import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
+import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
@@ -90,8 +90,24 @@ const StepBackHeader = ({
   </DialogHeader>
 );
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: state-machine UI with four distinct render branches (gallery / form / addSecret / createTopic) — extracting further would obscure the rendered tree.
-export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
+// The sub-steps hold a single small form; xl dimensions would leave them floating in dead
+// space, so the dialog steps down to a compact content-hugging size (auto height animates
+// via DialogContent's useAnimatedAutoHeight) and back up on return.
+const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | null) => {
+  const isFormViewActive = view.kind === 'form';
+  const isAddSecretViewActive = view.kind === 'addSecret';
+  const isCreateTopicViewActive = view.kind === 'createTopic';
+  return {
+    isFormViewActive,
+    isAddSecretViewActive,
+    isCreateTopicViewActive,
+    isFormMounted: selectedTemplate !== null && (isFormViewActive || isAddSecretViewActive || isCreateTopicViewActive),
+    isStepView: isAddSecretViewActive || isCreateTopicViewActive,
+  };
+};
+
+/** The dialog's current step, the template being filled in, and what the steps hand to each other. */
+const useTemplateDialogSteps = (open: boolean) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
   // Slot write requested by an in-dialog step; the form panel consumes it via
@@ -101,13 +117,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
   const addTopicStepRef = useRef<BaseStepRef<AddTopicFormData> | null>(null);
-  const formId = useId();
-
-  const isFormViewActive = view.kind === 'form';
-  const isAddSecretViewActive = view.kind === 'addSecret';
-  const isCreateTopicViewActive = view.kind === 'createTopic';
-  const isFormMounted =
-    selectedTemplate !== null && (isFormViewActive || isAddSecretViewActive || isCreateTopicViewActive);
 
   const resetToGallery = () => {
     setView({ kind: 'gallery' });
@@ -116,12 +125,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     setIsCreatingTopic(false);
     formHandleRef.current = null;
     addTopicStepRef.current = null;
-  };
-
-  const closeWithStash = () => {
-    const stashed = isFormMounted && formHandleRef.current?.isDirty() ? formHandleRef.current.getCurrentYaml() : null;
-    onClose(stashed);
-    resetToGallery();
   };
 
   // Reset to the gallery when the parent closes the dialog directly (e.g. after
@@ -137,11 +140,53 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     }
   }, [open]);
 
+  return {
+    view,
+    setView,
+    selectedTemplate,
+    setSelectedTemplate,
+    applySlotValue,
+    setApplySlotValue,
+    isCreatingTopic,
+    setIsCreatingTopic,
+    formHandleRef,
+    addTopicStepRef,
+    resetToGallery,
+  };
+};
+
+const useExistingSecretIds = (open: boolean) => {
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
-  const existingSecrets = useMemo(
-    () => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean),
-    [secretsResponse]
+  return useMemo(() => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean), [secretsResponse]);
+};
+
+export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
+  const {
+    view,
+    setView,
+    selectedTemplate,
+    setSelectedTemplate,
+    applySlotValue,
+    setApplySlotValue,
+    isCreatingTopic,
+    setIsCreatingTopic,
+    formHandleRef,
+    addTopicStepRef,
+    resetToGallery,
+  } = useTemplateDialogSteps(open);
+  const formId = useId();
+  const { isFormViewActive, isAddSecretViewActive, isCreateTopicViewActive, isFormMounted, isStepView } = viewFlagsFor(
+    view,
+    selectedTemplate
   );
+
+  const closeWithStash = () => {
+    const stashed = isFormMounted && formHandleRef.current?.isDirty() ? formHandleRef.current.getCurrentYaml() : null;
+    onClose(stashed);
+    resetToGallery();
+  };
+
+  const existingSecrets = useExistingSecretIds(open);
 
   const handleSecretsCreated = (names: string[]) => {
     const created = names[0];
@@ -151,32 +196,30 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     setView({ kind: 'form' });
   };
 
+  const applyCreatedTopic = (slotId: string, result: StepSubmissionResult<AddTopicFormData>) => {
+    if (result.success && result.data?.topicName) {
+      setApplySlotValue({ slotId, value: result.data.topicName, requestId: Date.now() });
+      setView({ kind: 'form' });
+      return;
+    }
+    if (!result.success && result.error) {
+      // AddTopicStep shows field-level validation in its own form; only toast
+      // the higher-level failure.
+      toast.error(result.message ?? result.error);
+    }
+  };
+
   const handleCreateTopicSubmit = async () => {
     if (view.kind !== 'createTopic' || !addTopicStepRef.current) {
       return;
     }
     setIsCreatingTopic(true);
     try {
-      const result = await addTopicStepRef.current.triggerSubmit();
-      if (result.success && result.data?.topicName) {
-        setApplySlotValue({ slotId: view.slotId, value: result.data.topicName, requestId: Date.now() });
-        setView({ kind: 'form' });
-        return;
-      }
-      if (!result.success && result.error) {
-        // AddTopicStep shows field-level validation in its own form; only toast
-        // the higher-level failure.
-        toast.error(result.message ?? result.error);
-      }
+      applyCreatedTopic(view.slotId, await addTopicStepRef.current.triggerSubmit());
     } finally {
       setIsCreatingTopic(false);
     }
   };
-
-  // The sub-steps hold a single small form; xl dimensions would leave them floating in dead
-  // space, so the dialog steps down to a compact content-hugging size (auto height animates
-  // via DialogContent's useAnimatedAutoHeight) and back up on return.
-  const isStepView = isAddSecretViewActive || isCreateTopicViewActive;
 
   return (
     <Dialog

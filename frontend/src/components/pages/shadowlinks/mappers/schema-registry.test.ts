@@ -77,233 +77,239 @@ describe('formatDurationForInput', () => {
 });
 
 describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
-  test('maps absent options and unset mode to none defaults', () => {
-    for (const options of [
-      undefined,
-      create(SchemaRegistrySyncOptionsSchema, { schemaRegistryShadowingMode: { case: undefined } }),
-    ]) {
-      const result = mapSchemaRegistrySyncOptionsToFormValues(options);
-      expect(result.enableSchemaRegistrySync).toBe(false);
-      expect(result.schemaRegistry).toEqual(initialValues.schemaRegistry);
-    }
-  });
-
-  test('maps topic mode to the legacy switch plus topic tab', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      create(SchemaRegistrySyncOptionsSchema, {
-        schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
-      })
-    );
-    expect(result.enableSchemaRegistrySync).toBe(true);
-    expect(result.schemaRegistry).toEqual({ ...initialValues.schemaRegistry, mode: SCHEMA_REGISTRY_MODE.TOPIC });
-  });
-
-  test('maps a minimal api message to api defaults', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(apiSyncOptions({ sourceUrl: 'http://sr.example.com' }));
-    expect(result.enableSchemaRegistrySync).toBe(false);
-    expect(result.schemaRegistry).toEqual({
-      ...initialValues.schemaRegistry,
-      mode: SCHEMA_REGISTRY_MODE.API,
-      sourceUrl: 'http://sr.example.com',
-      useTls: false,
+  describe('modes and auth', () => {
+    test('maps absent options and unset mode to none defaults', () => {
+      for (const options of [
+        undefined,
+        create(SchemaRegistrySyncOptionsSchema, { schemaRegistryShadowingMode: { case: undefined } }),
+      ]) {
+        const result = mapSchemaRegistrySyncOptionsToFormValues(options);
+        expect(result.enableSchemaRegistrySync).toBe(false);
+        expect(result.schemaRegistry).toEqual(initialValues.schemaRegistry);
+      }
     });
-  });
 
-  test('hydrates basic auth without seeding the password', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'http://sr.example.com',
-        authOptions: {
-          authOptions: {
-            case: 'basic',
-            value: { username: 'sr-replicator', password: 'should-never-appear', passwordSet: true },
-          },
-        },
-      })
-    );
-    expect(result.schemaRegistry.authMethod).toBe(SR_AUTH_METHOD.BASIC);
-    expect(result.schemaRegistry.basicCredentials).toEqual({ username: 'sr-replicator', password: '' });
-  });
-
-  test('hydrates returned PEMs and marks the redacted key as kept server-side', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'https://sr.example.com',
-        tlsSettings: {
-          enabled: true,
-          tlsSettings: {
-            case: 'tlsPemSettings',
-            value: { ca: 'CA_PEM', cert: 'CERT_PEM', key: '', keyFingerprint: 'abc123=' },
-          },
-        },
-      })
-    );
-    expect(result.schemaRegistry.useTls).toBe(true);
-    expect(result.schemaRegistry.mtls.ca).toEqual({ pemContent: 'CA_PEM', fileName: '' });
-    expect(result.schemaRegistry.mtls.clientCert).toEqual({ pemContent: 'CERT_PEM', fileName: '' });
-    expect(result.schemaRegistry.mtls.clientKey).toBeUndefined();
-    expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
-    expect(result.schemaRegistry.mtls.existingKeyFingerprint).toBe('abc123=');
-  });
-
-  test('marks a kept key from the cert alone when the fingerprint is missing', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'https://sr.example.com',
-        tlsSettings: {
-          enabled: true,
-          tlsSettings: { case: 'tlsPemSettings', value: { cert: 'CERT_PEM' } },
-        },
-      })
-    );
-    expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
-    expect(result.schemaRegistry.mtls.existingKeyFingerprint).toBe('');
-  });
-
-  test('hydrates a returned key directly instead of the kept marker', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'https://sr.example.com',
-        tlsSettings: {
-          enabled: true,
-          tlsSettings: { case: 'tlsPemSettings', value: { cert: 'CERT_PEM', key: 'KEY_PEM' } },
-        },
-      })
-    );
-    expect(result.schemaRegistry.mtls.clientKey).toEqual({ pemContent: 'KEY_PEM', fileName: '' });
-    expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
-  });
-
-  test('hydrates file-path TLS settings verbatim', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'https://sr.example.com',
-        tlsSettings: {
-          enabled: true,
-          tlsSettings: {
-            case: 'tlsFileSettings',
-            value: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
-          },
-        },
-      })
-    );
-    expect(result.schemaRegistry.mtls.filePaths).toEqual({
-      caPath: '/etc/tls/ca.pem',
-      keyPath: '/etc/tls/client.key',
-      certPath: '/etc/tls/client.pem',
-    });
-    expect(result.schemaRegistry.mtls.ca).toBeUndefined();
-    expect(result.schemaRegistry.mtls.clientCert).toBeUndefined();
-    expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
-  });
-
-  test('round-trips doNotSetSniHostname', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'https://sr.example.com',
-        tlsSettings: { doNotSetSniHostname: true, enabled: true },
-      })
-    );
-    expect(result.schemaRegistry.mtls.doNotSetSniHostname).toBe(true);
-  });
-
-  test('infers useTls from an https scheme when TLS settings are absent', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(apiSyncOptions({ sourceUrl: 'https://sr.example.com' }));
-    expect(result.schemaRegistry.useTls).toBe(true);
-  });
-
-  test('keeps TLS on with system trust store when the oneof is unset', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({ sourceUrl: 'https://sr.example.com', tlsSettings: { enabled: true } })
-    );
-    expect(result.schemaRegistry.useTls).toBe(true);
-    expect(result.schemaRegistry.mtls).toEqual(initialValues.schemaRegistry.mtls);
-  });
-
-  test('maps a present-but-empty source filter to the entire registry', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({ sourceUrl: 'http://sr.example.com', sourceFilter: { contexts: [], subjects: [] } })
-    );
-    expect(result.schemaRegistry.scopeMode).toBe('all');
-    expect(result.schemaRegistry.contexts).toEqual([]);
-  });
-
-  test('maps a populated source filter to specify scope', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'http://sr.example.com',
-        sourceFilter: { contexts: ['.prod'], subjects: ['orders-value', ':.prod:orders-value'] },
-      })
-    );
-    expect(result.schemaRegistry.scopeMode).toBe('specify');
-    expect(result.schemaRegistry.contexts).toEqual(['.prod']);
-    expect(result.schemaRegistry.subjects).toEqual(['orders-value', ':.prod:orders-value']);
-  });
-
-  test('maps identity, unset, and empty-exact destinations to preserve', () => {
-    const destinations: Parameters<typeof apiSyncOptions>[0]['destination'][] = [
-      undefined,
-      { mapping: { case: 'identity' as const, value: {} } },
-      { mapping: { case: 'exact' as const, value: { mappings: [] } } },
-    ];
-    for (const destination of destinations) {
+    test('maps topic mode to the legacy switch plus topic tab', () => {
       const result = mapSchemaRegistrySyncOptionsToFormValues(
-        apiSyncOptions({ sourceUrl: 'http://sr.example.com', destination })
+        create(SchemaRegistrySyncOptionsSchema, {
+          schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
+        })
       );
-      expect(result.schemaRegistry.destinationContextsMode).toBe('preserve');
-      expect(result.schemaRegistry.contextMappings).toEqual([]);
-    }
-  });
+      expect(result.enableSchemaRegistrySync).toBe(true);
+      expect(result.schemaRegistry).toEqual({ ...initialValues.schemaRegistry, mode: SCHEMA_REGISTRY_MODE.TOPIC });
+    });
 
-  test('maps exact destination mappings to map rows', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
+    test('maps a minimal api message to api defaults', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(apiSyncOptions({ sourceUrl: 'http://sr.example.com' }));
+      expect(result.enableSchemaRegistrySync).toBe(false);
+      expect(result.schemaRegistry).toEqual({
+        ...initialValues.schemaRegistry,
+        mode: SCHEMA_REGISTRY_MODE.API,
         sourceUrl: 'http://sr.example.com',
-        destination: {
-          mapping: { case: 'exact', value: { mappings: [{ source: '.prod', destination: '.dr' }] } },
-        },
-      })
-    );
-    expect(result.schemaRegistry.destinationContextsMode).toBe('map');
-    expect(result.schemaRegistry.contextMappings).toEqual([{ source: '.prod', destination: '.dr' }]);
-  });
+        useTls: false,
+      });
+    });
 
-  test('maps sync behavior fields including cluster defaults', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({
-        sourceUrl: 'http://sr.example.com',
-        tailInterval: duration(10),
-        fullSyncInterval: duration(300),
-        maxSourceRequestsPerSecond: 30,
-        unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
-      })
-    );
-    expect(result.schemaRegistry.syncBehavior).toEqual({
-      tailInterval: '10s',
-      fullSyncInterval: '5m',
-      maxSourceRequestRate: '30',
-      unsupportedSchemaFeatures: 'remove',
+    test('hydrates basic auth without seeding the password', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'http://sr.example.com',
+          authOptions: {
+            authOptions: {
+              case: 'basic',
+              value: { username: 'sr-replicator', password: 'should-never-appear', passwordSet: true },
+            },
+          },
+        })
+      );
+      expect(result.schemaRegistry.authMethod).toBe(SR_AUTH_METHOD.BASIC);
+      expect(result.schemaRegistry.basicCredentials).toEqual({ username: 'sr-replicator', password: '' });
     });
   });
 
-  test('maps zero rate and unspecified policy to the fail default', () => {
-    for (const policy of [UnsupportedSchemaFeaturePolicy.UNSPECIFIED, UnsupportedSchemaFeaturePolicy.FAIL]) {
+  describe('tls', () => {
+    test('hydrates returned PEMs and marks the redacted key as kept server-side', () => {
       const result = mapSchemaRegistrySyncOptionsToFormValues(
-        apiSyncOptions({ sourceUrl: 'http://sr.example.com', unsupportedSchemaFeaturePolicy: policy })
+        apiSyncOptions({
+          sourceUrl: 'https://sr.example.com',
+          tlsSettings: {
+            enabled: true,
+            tlsSettings: {
+              case: 'tlsPemSettings',
+              value: { ca: 'CA_PEM', cert: 'CERT_PEM', key: '', keyFingerprint: 'abc123=' },
+            },
+          },
+        })
+      );
+      expect(result.schemaRegistry.useTls).toBe(true);
+      expect(result.schemaRegistry.mtls.ca).toEqual({ pemContent: 'CA_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.clientCert).toEqual({ pemContent: 'CERT_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.clientKey).toBeUndefined();
+      expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
+      expect(result.schemaRegistry.mtls.existingKeyFingerprint).toBe('abc123=');
+    });
+
+    test('marks a kept key from the cert alone when the fingerprint is missing', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'https://sr.example.com',
+          tlsSettings: {
+            enabled: true,
+            tlsSettings: { case: 'tlsPemSettings', value: { cert: 'CERT_PEM' } },
+          },
+        })
+      );
+      expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
+      expect(result.schemaRegistry.mtls.existingKeyFingerprint).toBe('');
+    });
+
+    test('hydrates a returned key directly instead of the kept marker', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'https://sr.example.com',
+          tlsSettings: {
+            enabled: true,
+            tlsSettings: { case: 'tlsPemSettings', value: { cert: 'CERT_PEM', key: 'KEY_PEM' } },
+          },
+        })
+      );
+      expect(result.schemaRegistry.mtls.clientKey).toEqual({ pemContent: 'KEY_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
+    });
+
+    test('hydrates file-path TLS settings verbatim', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'https://sr.example.com',
+          tlsSettings: {
+            enabled: true,
+            tlsSettings: {
+              case: 'tlsFileSettings',
+              value: { caPath: '/etc/tls/ca.pem', keyPath: '/etc/tls/client.key', certPath: '/etc/tls/client.pem' },
+            },
+          },
+        })
+      );
+      expect(result.schemaRegistry.mtls.filePaths).toEqual({
+        caPath: '/etc/tls/ca.pem',
+        keyPath: '/etc/tls/client.key',
+        certPath: '/etc/tls/client.pem',
+      });
+      expect(result.schemaRegistry.mtls.ca).toBeUndefined();
+      expect(result.schemaRegistry.mtls.clientCert).toBeUndefined();
+      expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
+    });
+
+    test('round-trips doNotSetSniHostname', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'https://sr.example.com',
+          tlsSettings: { doNotSetSniHostname: true, enabled: true },
+        })
+      );
+      expect(result.schemaRegistry.mtls.doNotSetSniHostname).toBe(true);
+    });
+
+    test('infers useTls from an https scheme when TLS settings are absent', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(apiSyncOptions({ sourceUrl: 'https://sr.example.com' }));
+      expect(result.schemaRegistry.useTls).toBe(true);
+    });
+
+    test('keeps TLS on with system trust store when the oneof is unset', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({ sourceUrl: 'https://sr.example.com', tlsSettings: { enabled: true } })
+      );
+      expect(result.schemaRegistry.useTls).toBe(true);
+      expect(result.schemaRegistry.mtls).toEqual(initialValues.schemaRegistry.mtls);
+    });
+  });
+
+  describe('scope, destination, and sync behavior', () => {
+    test('maps a present-but-empty source filter to the entire registry', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({ sourceUrl: 'http://sr.example.com', sourceFilter: { contexts: [], subjects: [] } })
+      );
+      expect(result.schemaRegistry.scopeMode).toBe('all');
+      expect(result.schemaRegistry.contexts).toEqual([]);
+    });
+
+    test('maps a populated source filter to specify scope', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'http://sr.example.com',
+          sourceFilter: { contexts: ['.prod'], subjects: ['orders-value', ':.prod:orders-value'] },
+        })
+      );
+      expect(result.schemaRegistry.scopeMode).toBe('specify');
+      expect(result.schemaRegistry.contexts).toEqual(['.prod']);
+      expect(result.schemaRegistry.subjects).toEqual(['orders-value', ':.prod:orders-value']);
+    });
+
+    test('maps identity, unset, and empty-exact destinations to preserve', () => {
+      const destinations: Parameters<typeof apiSyncOptions>[0]['destination'][] = [
+        undefined,
+        { mapping: { case: 'identity' as const, value: {} } },
+        { mapping: { case: 'exact' as const, value: { mappings: [] } } },
+      ];
+      for (const destination of destinations) {
+        const result = mapSchemaRegistrySyncOptionsToFormValues(
+          apiSyncOptions({ sourceUrl: 'http://sr.example.com', destination })
+        );
+        expect(result.schemaRegistry.destinationContextsMode).toBe('preserve');
+        expect(result.schemaRegistry.contextMappings).toEqual([]);
+      }
+    });
+
+    test('maps exact destination mappings to map rows', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'http://sr.example.com',
+          destination: {
+            mapping: { case: 'exact', value: { mappings: [{ source: '.prod', destination: '.dr' }] } },
+          },
+        })
+      );
+      expect(result.schemaRegistry.destinationContextsMode).toBe('map');
+      expect(result.schemaRegistry.contextMappings).toEqual([{ source: '.prod', destination: '.dr' }]);
+    });
+
+    test('maps sync behavior fields including cluster defaults', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({
+          sourceUrl: 'http://sr.example.com',
+          tailInterval: duration(10),
+          fullSyncInterval: duration(300),
+          maxSourceRequestsPerSecond: 30,
+          unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
+        })
       );
       expect(result.schemaRegistry.syncBehavior).toEqual({
-        tailInterval: '',
-        fullSyncInterval: '',
-        maxSourceRequestRate: '',
-        unsupportedSchemaFeatures: 'fail',
+        tailInterval: '10s',
+        fullSyncInterval: '5m',
+        maxSourceRequestRate: '30',
+        unsupportedSchemaFeatures: 'remove',
       });
-    }
-  });
+    });
 
-  test('round-trips paused', () => {
-    const result = mapSchemaRegistrySyncOptionsToFormValues(
-      apiSyncOptions({ sourceUrl: 'http://sr.example.com', paused: true })
-    );
-    expect(result.schemaRegistry.paused).toBe(true);
+    test('maps zero rate and unspecified policy to the fail default', () => {
+      for (const policy of [UnsupportedSchemaFeaturePolicy.UNSPECIFIED, UnsupportedSchemaFeaturePolicy.FAIL]) {
+        const result = mapSchemaRegistrySyncOptionsToFormValues(
+          apiSyncOptions({ sourceUrl: 'http://sr.example.com', unsupportedSchemaFeaturePolicy: policy })
+        );
+        expect(result.schemaRegistry.syncBehavior).toEqual({
+          tailInterval: '',
+          fullSyncInterval: '',
+          maxSourceRequestRate: '',
+          unsupportedSchemaFeatures: 'fail',
+        });
+      }
+    });
+
+    test('round-trips paused', () => {
+      const result = mapSchemaRegistrySyncOptionsToFormValues(
+        apiSyncOptions({ sourceUrl: 'http://sr.example.com', paused: true })
+      );
+      expect(result.schemaRegistry.paused).toBe(true);
+    });
   });
 });

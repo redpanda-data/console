@@ -28,7 +28,7 @@ rs.mock('../../../../state/ui-state', () => ({
 }));
 
 rs.mock('../shared/acls-card', () => ({
-  AclsCard: () => null,
+  AclsCard: MockAclsCard,
 }));
 
 rs.mock('../../../../react-query/api/acl', () => ({
@@ -53,7 +53,7 @@ const renderPage = () =>
     </TooltipProvider>
   );
 
-describe('RoleDetailPageNew principal assignment', () => {
+describe('the RoleDetailPageNew principal assignment', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
@@ -85,3 +85,7 @@ describe('RoleDetailPageNew principal assignment', () => {
     });
   });
 });
+
+function MockAclsCard() {
+  return null;
+}

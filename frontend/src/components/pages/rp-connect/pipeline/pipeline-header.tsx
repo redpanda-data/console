@@ -12,6 +12,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { getUserTagEntries } from 'components/constants';
 import { ArrowLeftIcon, EditIcon } from 'components/icons';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -76,7 +78,7 @@ const MetaStrip = ({ items }: { items: MetaEntry[] }) => {
       {visible.map((item, i) => (
         <Fragment key={item.key}>
           {i > 0 ? (
-            <span aria-hidden className="mx-2.5 select-none text-muted-foreground/50">
+            <span aria-hidden className="mx-2.5 text-muted-foreground/50 select-none">
               ·
             </span>
           ) : null}
@@ -98,15 +100,17 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
-    <p
-      className={cn(
-        'max-w-prose whitespace-pre-wrap break-words text-foreground leading-relaxed',
-        clamp && 'line-clamp-2'
-      )}
-      title={text}
-    >
-      {text}
-    </p>
+    {/* Only a clamped description hides text worth a tooltip. */}
+    <ElementTooltip content={clamp ? text : undefined}>
+      <p
+        className={cn(
+          'max-w-prose leading-relaxed wrap-break-word whitespace-pre-wrap text-foreground',
+          clamp && 'line-clamp-2'
+        )}
+      >
+        {text}
+      </p>
+    </ElementTooltip>
   </div>
 );
 
@@ -116,7 +120,7 @@ const ComputeUnitsMeta = ({ units }: { units: number }) => (
     compute {units === 1 ? 'unit' : 'units'}
     <Tooltip>
       <TooltipTrigger>
-        <InfoIcon className="size-3 cursor-help text-muted-foreground" />
+        <TonedIcon className="size-3 cursor-help" icon={InfoIcon} tone="muted" />
       </TooltipTrigger>
       <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
     </Tooltip>
@@ -150,22 +154,19 @@ const CopyableMeta = ({
         rel="noopener noreferrer"
         target="_blank"
       >
-        <span className="max-w-[18rem] truncate" title={value}>
-          {value}
-        </span>
+        <ElementTooltip content={value}>
+          <span className="max-w-[18rem] truncate">{value}</span>
+        </ElementTooltip>
         <ExternalLink className="size-3 shrink-0" />
       </a>
     ) : (
-      <span className={cn('max-w-[18rem] truncate text-foreground', mono && 'font-mono')} title={value}>
-        {value}
-      </span>
+      <ElementTooltip content={value}>
+        <span className={cn('max-w-[18rem] truncate text-foreground', mono && 'font-mono')}>{value}</span>
+      </ElementTooltip>
     )}
-    <CopyButton
-      className="shrink-0 opacity-0 transition-opacity group-hover/meta:opacity-100"
-      content={value}
-      size="sm"
-      variant="ghost"
-    />
+    <span className="inline-flex shrink-0 opacity-0 transition-opacity group-hover/meta:opacity-100">
+      <CopyButton content={value} size="sm" variant="ghost" />
+    </span>
   </span>
 );
 
@@ -200,17 +201,18 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 );
 
 const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
-  <Button
-    aria-label="Delete draft"
-    className="shrink-0"
-    onClick={onClick}
-    size="icon"
-    testId="delete-draft"
-    title="Delete draft"
-    variant="ghost"
-  >
-    <Trash2 />
-  </Button>
+  <ElementTooltip content="Delete draft">
+    <Button
+      aria-label="Delete draft"
+      className="shrink-0"
+      onClick={onClick}
+      size="icon"
+      testId="delete-draft"
+      variant="ghost"
+    >
+      <Trash2 />
+    </Button>
+  </ElementTooltip>
 );
 
 // Expanded mode insets the header while the panel below it goes flush.
@@ -229,7 +231,7 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
           aria-invalid={fieldState.invalid}
           aria-label="Pipeline name"
           className={cn(
-            'field-sizing-content min-w-[12rem] max-w-full truncate border-transparent border-b bg-transparent py-0.5 text-heading-xl leading-none tracking-heading',
+            'field-sizing-content max-w-full min-w-[12rem] truncate border-b border-transparent bg-transparent py-0.5 text-heading-xl leading-none tracking-heading',
             'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
             fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
           )}
@@ -311,9 +313,9 @@ export function PipelineViewHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2">
           <BackButton onClick={onBack} />
-          <h1 className="min-w-0 truncate text-heading-xl" title={name}>
-            {name}
-          </h1>
+          <ElementTooltip content={name}>
+            <h1 className="min-w-0 truncate text-heading-xl">{name}</h1>
+          </ElementTooltip>
           <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
           <Button
             aria-label="View pipeline details"
@@ -473,14 +475,15 @@ export function PipelineEditHeader({
             </Button>
             <SaveActions context={saveContext} disabled={isSaveBlocked} isSaving={isSaving} onSave={onSave} />
             {hasUnsavedChanges ? (
-              <span
-                className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-body-sm text-muted-foreground"
-                role="status"
-                title={UNSAVED_CHANGES_PILL_TOOLTIP}
-              >
-                <span aria-hidden className="size-2 rounded-full bg-informative" />
-                Unsaved changes
-              </span>
+              <ElementTooltip content={UNSAVED_CHANGES_PILL_TOOLTIP}>
+                <span
+                  className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 text-body-sm whitespace-nowrap text-muted-foreground"
+                  role="status"
+                >
+                  <span aria-hidden className="size-2 rounded-full bg-informative" />
+                  Unsaved changes
+                </span>
+              </ElementTooltip>
             ) : null}
           </div>
         </div>

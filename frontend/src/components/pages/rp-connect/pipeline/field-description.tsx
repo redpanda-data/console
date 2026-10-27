@@ -21,7 +21,7 @@ const CLAMP_OVER_CHARS = 200;
 
 // Field prose sits under its control: headings get no more weight than the body.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
-  <div className="mt-1 font-medium text-body-sm text-foreground">{children}</div>
+  <div className="mt-1 text-body-sm font-medium text-foreground">{children}</div>
 );
 
 const MARKDOWN_COMPONENTS: Components = {
@@ -32,10 +32,11 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body-sm text-muted-foreground">{children}</div>,
-  // Markdown can produce an anchor with no destination, which is text rather than a link.
+  // Markdown can produce an anchor with no destination, which is text rather than a link. Every block an
+  // anchor lands in already sets `text-body-sm`, so the link takes its size from the prose around it.
   a: ({ href, children }) =>
     href ? (
-      <Link className="text-body-sm" href={href} rel="noopener noreferrer" target="_blank">
+      <Link href={href} rel="noopener noreferrer" target="_blank">
         {children}
       </Link>
     ) : (
@@ -43,7 +44,9 @@ const MARKDOWN_COMPONENTS: Components = {
     ),
   code: ({ children }) => (
     // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
-    <code className="break-words rounded bg-muted px-1 py-0.5 font-mono text-body-sm text-foreground">{children}</code>
+    <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm wrap-break-word text-foreground">
+      {children}
+    </code>
   ),
   ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-body-sm text-muted-foreground">{children}</ul>,
   ol: ({ children }) => (
@@ -67,13 +70,12 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
 
 /**
  * Link to the field's own heading on the connector's docs page. Inline, not inline-flex: a flex box
- * baselines on the icon's bottom edge, which drops the word below the prose it follows. The underline
- * is on the word alone so it doesn't rule through the icon.
+ * baselines on the icon's bottom edge, which drops the word below the prose it follows. `tone="current"`
+ * takes the muted help-text ink of whichever block it sits in.
  */
 const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
   <Link
     aria-label={fieldName ? `${fieldName} documentation` : 'Field documentation'}
-    className="group whitespace-nowrap text-body-sm text-muted-foreground no-underline hover:text-foreground"
     href={href}
     rel="noopener noreferrer"
     target="_blank"
@@ -81,7 +83,7 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
   >
     {/* size-3 is the text's own rung; -0.15em centres it on the cap height. */}
     <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
-    <span className="underline decoration-dotted underline-offset-[3px] group-hover:decoration-solid">Docs</span>
+    Docs
   </Link>
 );
 
@@ -125,7 +127,7 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>
-      <div className="flex items-baseline gap-3">
+      <div className="flex items-baseline gap-3 text-body-sm text-muted-foreground">
         <button
           aria-controls={bodyId}
           aria-expanded={expanded}
@@ -153,7 +155,7 @@ export const FieldDescription = ({ spec, docsUrl }: { spec: RawFieldSpec; docsUr
   }
   const description = spec.description?.trim();
   if (!description) {
-    return docsLink;
+    return docsLink ? <div className="text-body-sm text-muted-foreground">{docsLink}</div> : null;
   }
   return <LongDescription docsLink={docsLink} source={description} />;
 };

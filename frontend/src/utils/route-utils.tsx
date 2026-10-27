@@ -160,28 +160,15 @@ function routeVisibility(
   requiredAppFeatures?: AppFeature[]
 ): () => MenuItemState {
   return () => {
-    let v = typeof visible === 'boolean' ? visible : visible();
-    const disabledReasons: DisabledReason[] = [];
-
+    const isVisible = typeof visible === 'boolean' ? visible : visible();
     const [shouldHide, featureReason] = checkFeatureSupport(requiredFeatures);
-    if (shouldHide) {
-      v = false;
-    }
-    if (featureReason !== null) {
-      disabledReasons.push(featureReason);
-    }
+    const disabledReasons = [
+      featureReason,
+      checkPermissions(requiredPermissions),
+      checkAppFeatures(requiredAppFeatures),
+    ].filter((reason): reason is DisabledReason => reason !== null);
 
-    const permReason = checkPermissions(requiredPermissions);
-    if (permReason !== null) {
-      disabledReasons.push(permReason);
-    }
-
-    const appFeatureReason = checkAppFeatures(requiredAppFeatures);
-    if (appFeatureReason !== null) {
-      disabledReasons.push(appFeatureReason);
-    }
-
-    return { visible: v, disabledReasons };
+    return { visible: !shouldHide && isVisible, disabledReasons };
   };
 }
 
@@ -402,12 +389,7 @@ export function getEmbeddedAvailableRoutes(): SidebarItem[] {
       }
       return true;
     })
-    .filter((x) => {
-      if (isServerless() && routesIgnoredInServerless.includes(x.path)) {
-        return false;
-      }
-      return true;
-    });
+    .filter((x) => !(isServerless() && routesIgnoredInServerless.includes(x.path)));
 }
 
 // Re-export types for backwards compatibility

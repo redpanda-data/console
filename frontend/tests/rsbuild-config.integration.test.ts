@@ -4,7 +4,7 @@ import { describe, expect, test } from '@rstest/core';
 
 import rsbuildConfig from '../rsbuild.config';
 
-describe('Rsbuild production config', () => {
+describe('rsbuild production config', () => {
   test('uses the optimized compiler and chunking pipeline', async () => {
     const rsbuild = await createRsbuild({
       config: rsbuildConfig,

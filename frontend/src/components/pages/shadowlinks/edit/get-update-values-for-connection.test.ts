@@ -65,7 +65,7 @@ describe('getUpdateValuesForConnection', () => {
     expect(result.fieldMaskPaths).toEqual([]);
   });
 
-  describe('Bootstrap servers changes', () => {
+  describe('bootstrap servers changes', () => {
     test.each<{
       description: string;
       originalServers: Parameters<typeof getUpdateValuesForConnection>[0]['bootstrapServers'];
@@ -117,7 +117,7 @@ describe('getUpdateValuesForConnection', () => {
     });
   });
 
-  describe('TLS settings changes', () => {
+  describe('the TLS settings changes', () => {
     test.each([
       {
         description: 'TLS enabled',
@@ -216,7 +216,7 @@ describe('getUpdateValuesForConnection', () => {
     });
   });
 
-  describe('Authentication changes', () => {
+  describe('authentication changes', () => {
     test.each([
       {
         description: 'SCRAM enabled',
@@ -311,7 +311,7 @@ describe('getUpdateValuesForConnection', () => {
     });
   });
 
-  describe('Advanced client options changes', () => {
+  describe('advanced client options changes', () => {
     test.each([
       {
         field: 'metadataMaxAgeMs',
@@ -371,7 +371,7 @@ describe('getUpdateValuesForConnection', () => {
     });
   });
 
-  describe('Multiple changes', () => {
+  describe('multiple changes', () => {
     test('should detect multiple field changes with bootstrap change using parent path', () => {
       const original = {
         ...baseFormValues,
@@ -433,18 +433,22 @@ describe('getUpdateValuesForConnection', () => {
 
       const result = getUpdateValuesForConnection(updated, original);
 
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.metadata_max_age_ms');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.connection_timeout_ms');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.retry_backoff_ms');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.fetch_wait_max_ms');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.fetch_min_bytes');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.fetch_max_bytes');
-      expect(result.fieldMaskPaths).toContain('configurations.client_options.fetch_partition_max_bytes');
+      expect(result.fieldMaskPaths).toEqual(
+        expect.arrayContaining([
+          'configurations.client_options.metadata_max_age_ms',
+          'configurations.client_options.connection_timeout_ms',
+          'configurations.client_options.retry_backoff_ms',
+          'configurations.client_options.fetch_wait_max_ms',
+          'configurations.client_options.fetch_min_bytes',
+          'configurations.client_options.fetch_max_bytes',
+          'configurations.client_options.fetch_partition_max_bytes',
+        ])
+      );
       expect(result.fieldMaskPaths).toHaveLength(7);
     });
   });
 
-  describe('Schema building', () => {
+  describe('schema building', () => {
     test('should build correct clientOptions schema', () => {
       const values = {
         ...baseFormValues,

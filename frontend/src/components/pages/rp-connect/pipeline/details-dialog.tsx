@@ -39,9 +39,13 @@ type DetailsDialogProps = {
 
 const EMPTY_PLACEHOLDER = '—';
 
-const SectionHeading = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <h3 className={cn('text-heading-md', className)}>{children}</h3>
-);
+const SectionHeading = ({
+  tone = 'default',
+  children,
+}: {
+  tone?: 'default' | 'destructive';
+  children: React.ReactNode;
+}) => <h3 className={cn('text-heading-md', tone === 'destructive' && 'text-destructive')}>{children}</h3>;
 
 type DetailRowProps = {
   label: React.ReactNode;
@@ -69,7 +73,7 @@ const renderValue = (value: string | undefined, children: React.ReactNode | unde
     <div
       className={cn(
         'text-body',
-        wrap ? 'whitespace-pre-wrap break-words' : 'truncate',
+        wrap ? 'wrap-break-word whitespace-pre-wrap' : 'truncate',
         hasValue ? '' : 'text-muted-foreground'
       )}
     >
@@ -88,12 +92,9 @@ const DetailRow = ({ label, value, children, copyable = false, wrap = false }: D
       <div className="flex min-w-0 flex-1 items-start gap-1">
         <div className="min-w-0 flex-1">{renderValue(value, children, wrap)}</div>
         {showCopy ? (
-          <CopyButton
-            className="shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100"
-            content={value as string}
-            size="sm"
-            variant="ghost"
-          />
+          <span className="inline-flex shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100">
+            <CopyButton content={value as string} size="sm" variant="ghost" />
+          </span>
         ) : null}
       </div>
     </div>
@@ -105,7 +106,8 @@ const ComputeUnitsLabel = () => (
     <div className="flex items-center gap-1 text-label text-muted-foreground">
       Compute units
       <TooltipTrigger>
-        <InfoIcon className="-mt-0.5 size-3 cursor-pointer text-muted-foreground" />
+        {/* The trigger is an unstyled button, so the icon inherits the label's muted ink. */}
+        <InfoIcon className="-mt-0.5 size-3 cursor-pointer" />
       </TooltipTrigger>
     </div>
     <TooltipContent>One compute unit = 0.1 CPU and 400 MB memory</TooltipContent>
@@ -200,7 +202,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                 <>
                   <Separator />
                   <section className="flex flex-col gap-3">
-                    <SectionHeading className="text-destructive">Danger zone</SectionHeading>
+                    <SectionHeading tone="destructive">Danger zone</SectionHeading>
                     <div className="text-body text-muted-foreground">
                       Deleting this pipeline is permanent and cannot be undone. Any secrets or resources used by this
                       pipeline will need to be cleaned up manually.

@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { HighlightedInput } from 'components/redpanda-ui/components/highlighted-input';
 import { Listbox, ListboxGroupLabel, ListboxOption } from 'components/redpanda-ui/components/listbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Chip } from 'components/ui/chip';
 import { SearchIcon, XIcon } from 'lucide-react';
-import { type KeyboardEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import {
   buildSuggestions,
@@ -26,6 +27,7 @@ import {
 } from './filter-suggestions';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../../state/ui';
+import { TonedIcon } from '../../../shared/toned-icon';
 import type { FieldFilterToken } from '../types';
 import { formatFilterLine, type LineWord, parseFilterLine, wordRangeAtCaret } from '../utils/filter-line';
 import { formatTokenText, sameFieldTokens, tokenEditText } from '../utils/filter-token';
@@ -127,34 +129,149 @@ const replacementTextFor = (action: SuggestionAction): string | null => {
   }
 };
 
-export const FilterBar = ({
-  messages,
-  quickSearch,
-  onQuickSearchChange,
-  fieldTokens,
-  onFieldTokensChange,
+type TextRange = Pick<LineWord, 'start' | 'end'>;
+
+/** `text` with `range` replaced by `replacement`. */
+const spliceRange = (text: string, range: TextRange, replacement: string) =>
+  text.slice(0, range.start) + replacement + text.slice(range.end);
+
+/** Every setter and callback applying a suggestion touches, gathered per application. */
+type LineEdit = {
+  rawText: string;
+  setRawText: (text: string) => void;
+  deriveAndEmit: (text: string) => void;
+  setOpen: (open: boolean) => void;
+  setNavigated: (navigated: boolean) => void;
+  setActiveIdx: (index: number) => void;
+  setCaretPos: (position: number) => void;
+  recordRecent: (recent: RecentSearch) => void;
+  onEditJsFilter: FilterBarProps['onEditJsFilter'];
+  input: HTMLInputElement | null;
+};
+
+/** Replaces the line's text and reports the pieces it now parses into. */
+const commitLine = (edit: LineEdit, next: string) => {
+  edit.setRawText(next);
+  edit.deriveAndEmit(next);
+};
+
+/** `open-js`: the word under the caret leaves the line and seeds the JavaScript filter dialog instead. */
+const moveWordToJsEditor = (
+  edit: LineEdit,
+  range: TextRange,
+  action: Extract<SuggestionAction, { type: 'open-js' }>
+) => {
+  commitLine(edit, spliceRange(edit.rawText, range, ''));
+  edit.setOpen(false);
+  edit.setNavigated(false);
+  edit.onEditJsFilter(null, action.code, action.name);
+};
+
+/** The line with the suggestion's text spliced over `range`, and the caret position just past it. */
+const spliceSuggestion = (rawText: string, action: SuggestionAction, range: TextRange) => {
+  const replacement = replacementTextFor(action);
+  if (replacement === null) {
+    return null;
+  }
+  // A complete token gets a trailing separator so typing continues naturally into the
+  // next term — unless one is already there (e.g. inserting mid-line, before existing text).
+  const needsSeparator = action.type === 'commit-field' && rawText[range.end] !== ' ';
+  const withSpace = needsSeparator ? `${replacement} ` : replacement;
+  return { next: spliceRange(rawText, range, withSpace), caret: range.start + withSpace.length };
+};
+
+/** A committed field token becomes a recent search; confirming a full-text search closes the popup. */
+const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
+  if (action.type === 'commit-field') {
+    edit.recordRecent({
+      label: formatTokenText({ kind: 'field', field: action.field, op: action.op, value: action.value }),
+      action,
+    });
+  }
+  if (action.type === 'fill-text' && action.commit) {
+    edit.setOpen(false);
+  }
+};
+
+const placeCaret = (edit: LineEdit, caret: number) => {
+  const el = edit.input;
+  el?.focus();
+  // caret placement must wait for the controlled value to render
+  setTimeout(() => el?.setSelectionRange(caret, caret), 0);
+  edit.setCaretPos(caret);
+};
+
+const insertSuggestion = (edit: LineEdit, action: SuggestionAction, range: TextRange) => {
+  const spliced = spliceSuggestion(edit.rawText, action, range);
+  if (spliced === null) {
+    return;
+  }
+  commitLine(edit, spliced.next);
+  noteAppliedAction(edit, action);
+  edit.setActiveIdx(0);
+  edit.setNavigated(false);
+  placeCaret(edit, spliced.caret);
+};
+
+/**
+ * When some piece changed outside the bar: the line to show now and what to treat as last
+ * emitted. Null when every piece is unchanged or still catching up to the bar's own emission.
+ */
+const resyncFromProps = (
+  incoming: EmittedState,
+  prev: EmittedState,
+  last: EmittedState,
+  rawText: string,
+  partitionCount: number | undefined
+): { text: string; emitted: EmittedState } | null => {
+  const external = externalChanges(incoming, prev, last);
+  if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
+    return null;
+  }
+  // Only the genuinely external piece(s) get applied; every other piece is re-derived from
+  // the text already on screen rather than a possibly-still-catching-up prop.
+  const current = parseFilterLine(rawText, { partitionCount });
+  const resynced = mergeExternal(external, incoming, {
+    partitionId: current.partitionId ?? -1,
+    fieldTokens: current.fieldTokens,
+    quickSearch: current.remainder,
+  });
+  return {
+    text: formatFilterLine(resynced.partitionId, resynced.fieldTokens, resynced.quickSearch),
+    emitted: mergeExternal(external, incoming, last),
+  };
+};
+
+type FilterLineOptions = Pick<
+  FilterBarProps,
+  | 'partitionId'
+  | 'fieldTokens'
+  | 'quickSearch'
+  | 'partitionCount'
+  | 'onPartitionIdChange'
+  | 'onFieldTokensChange'
+  | 'onQuickSearchChange'
+  | 'jsFilters'
+  | 'onRemoveJsFilter'
+>;
+
+/**
+ * The free-text line (`rawText` + caret) and its two-way sync with the partition, field-token
+ * and quick-search props it parses into.
+ */
+function useFilterLine({
   partitionId,
-  onPartitionIdChange,
+  fieldTokens,
+  quickSearch,
   partitionCount,
+  onPartitionIdChange,
+  onFieldTokensChange,
+  onQuickSearchChange,
   jsFilters,
-  onEditJsFilter,
   onRemoveJsFilter,
-  canUseJsFilters,
-}: FilterBarProps) => {
-  const [open, setOpen] = useState(false);
-  const [activeIdx, setActiveIdx] = useState(0);
-  // Whether the user explicitly moved the active item with ArrowUp/ArrowDown/hover since it
-  // was last reset — Enter only auto-applies the top suggestion when they typed something
-  // (non-empty query) or explicitly chose it this way; otherwise a stray Enter (e.g. right
-  // after committing, when the caret sits past a trailing space with an empty query) would
-  // silently apply whatever default suggestion happens to be first.
-  const [navigated, setNavigated] = useState(false);
-  const [recents, setRecents] = useState<RecentSearch[]>([]);
+}: FilterLineOptions) {
   const [rawText, setRawText] = useState(() => formatFilterLine(partitionId, fieldTokens, quickSearch));
   const [caretPos, setCaretPos] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listboxId = useId();
   // What we last reported upward, so the resync effect below can tell "the
   // parent just echoed what we told it" apart from a genuinely external
   // change (initial mount, Clear all, browser back/forward) — the former
@@ -170,25 +287,12 @@ export const FilterBar = ({
 
   useEffect(() => {
     const incoming: EmittedState = { partitionId, fieldTokens, quickSearch };
-    const prev = prevPropsRef.current;
-    const last = lastEmittedRef.current;
+    const resync = resyncFromProps(incoming, prevPropsRef.current, lastEmittedRef.current, rawText, partitionCount);
     prevPropsRef.current = incoming;
-
-    const external = externalChanges(incoming, prev, last);
-    if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
-      return;
+    if (resync) {
+      lastEmittedRef.current = resync.emitted;
+      setRawText(resync.text);
     }
-
-    // Only the genuinely external piece(s) get applied; every other piece is re-derived from
-    // the text already on screen rather than a possibly-still-catching-up prop.
-    const current = parseFilterLine(rawText, { partitionCount });
-    lastEmittedRef.current = mergeExternal(external, incoming, last);
-    const resynced = mergeExternal(external, incoming, {
-      partitionId: current.partitionId ?? -1,
-      fieldTokens: current.fieldTokens,
-      quickSearch: current.remainder,
-    });
-    setRawText(formatFilterLine(resynced.partitionId, resynced.fieldTokens, resynced.quickSearch));
   }, [partitionId, fieldTokens, quickSearch, rawText, partitionCount]);
 
   const deriveAndEmit = useCallback(
@@ -224,13 +328,77 @@ export const FilterBar = ({
     ]
   );
 
-  const currentWord = useMemo(() => wordRangeAtCaret(rawText, caretPos), [rawText, caretPos]);
-  const query = currentWord?.text ?? '';
-  const caretAtEnd = caretPos === rawText.length;
+  const highlightRanges = useMemo(
+    () => parseFilterLine(rawText, { partitionCount }).tokenRanges,
+    [rawText, partitionCount]
+  );
 
+  const clearAll = useCallback(() => {
+    setRawText('');
+    lastEmittedRef.current = { partitionId: -1, fieldTokens: [], quickSearch: '' };
+    onFieldTokensChange([]);
+    onPartitionIdChange(-1);
+    onQuickSearchChange('');
+    for (const filter of jsFilters) {
+      onRemoveJsFilter(filter.id);
+    }
+  }, [onFieldTokensChange, onPartitionIdChange, onQuickSearchChange, jsFilters, onRemoveJsFilter]);
+
+  return { rawText, setRawText, caretPos, setCaretPos, deriveAndEmit, highlightRanges, clearAll };
+}
+
+/** The suggestion popup's open state and keyboard cursor; any click outside `containerRef` closes it. */
+function useSuggestionDropdown() {
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  // Whether the user explicitly moved the active item with ArrowUp/ArrowDown/hover since it
+  // was last reset — Enter only auto-applies the top suggestion when they typed something
+  // (non-empty query) or explicitly chose it this way; otherwise a stray Enter (e.g. right
+  // after committing, when the caret sits past a trailing space with an empty query) would
+  // silently apply whatever default suggestion happens to be first.
+  const [navigated, setNavigated] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
+
+  return { open, setOpen, activeIdx, setActiveIdx, navigated, setNavigated, containerRef };
+}
+
+function useRecentSearches() {
+  const [recents, setRecents] = useState<RecentSearch[]>([]);
   const recordRecent = useCallback((recent: RecentSearch) => {
     setRecents((prev) => [recent, ...prev.filter((r) => r.label !== recent.label)].slice(0, MAX_RECENTS));
   }, []);
+  return { recents, recordRecent };
+}
+
+type FilterSuggestionsOptions = Pick<FilterBarProps, 'messages' | 'fieldTokens' | 'partitionId' | 'canUseJsFilters'> & {
+  rawText: string;
+  caretPos: number;
+  recents: RecentSearch[];
+};
+
+/** Suggestions and ghost completion for the word under the caret. */
+function useFilterSuggestions({
+  rawText,
+  caretPos,
+  messages,
+  fieldTokens,
+  partitionId,
+  canUseJsFilters,
+  recents,
+}: FilterSuggestionsOptions) {
+  const currentWord = useMemo(() => wordRangeAtCaret(rawText, caretPos), [rawText, caretPos]);
+  const query = currentWord?.text ?? '';
 
   // Never suggest re-adding something that's already an active filter — besides being a
   // pointless suggestion, it's what let a stray Enter re-insert (duplicate) the filter you
@@ -254,65 +422,64 @@ export const FilterBar = ({
     () => items.filter((i): i is SuggestionItem & { kind: 'item' } => i.kind === 'item'),
     [items]
   );
-  const activeOptionId = open && actionableItems[activeIdx] ? `${listboxId}-option-${activeIdx}` : undefined;
 
-  const highlightRanges = useMemo(
-    () => parseFilterLine(rawText, { partitionCount }).tokenRanges,
-    [rawText, partitionCount]
-  );
+  return { currentWord, query, caretAtEnd: caretPos === rawText.length, heading, items, ghost, actionableItems };
+}
 
-  // Close on outside click
-  useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
-  }, []);
+type SuggestionActionsOptions = {
+  line: ReturnType<typeof useFilterLine>;
+  dropdown: ReturnType<typeof useSuggestionDropdown>;
+  suggestions: ReturnType<typeof useFilterSuggestions>;
+  recordRecent: (recent: RecentSearch) => void;
+  inputRef: RefObject<HTMLInputElement | null>;
+  onEditJsFilter: FilterBarProps['onEditJsFilter'];
+};
+
+/** Applying suggestions (click, Enter, Tab) and the input's keyboard handling. */
+function useSuggestionActions({
+  line,
+  dropdown,
+  suggestions,
+  recordRecent,
+  inputRef,
+  onEditJsFilter,
+}: SuggestionActionsOptions) {
+  const { rawText, setRawText, deriveAndEmit, caretPos, setCaretPos } = line;
+  const { open, setOpen, activeIdx, setActiveIdx, navigated, setNavigated } = dropdown;
+  const { currentWord, query, ghost, caretAtEnd, actionableItems } = suggestions;
 
   const applySuggestionAt = useCallback(
-    (action: SuggestionAction, range: LineWord | Pick<LineWord, 'start' | 'end'>) => {
+    (action: SuggestionAction, range: TextRange) => {
+      const edit: LineEdit = {
+        rawText,
+        setRawText,
+        deriveAndEmit,
+        setOpen,
+        setNavigated,
+        setActiveIdx,
+        setCaretPos,
+        recordRecent,
+        onEditJsFilter,
+        input: inputRef.current,
+      };
       if (action.type === 'open-js') {
-        const next = rawText.slice(0, range.start) + rawText.slice(range.end);
-        setRawText(next);
-        deriveAndEmit(next);
-        setOpen(false);
-        setNavigated(false);
-        onEditJsFilter(null, action.code, action.name);
-        return;
+        moveWordToJsEditor(edit, range, action);
+      } else {
+        insertSuggestion(edit, action, range);
       }
-      const replacement = replacementTextFor(action);
-      if (replacement === null) {
-        return;
-      }
-      // A complete token gets a trailing separator so typing continues naturally into the
-      // next term — unless one is already there (e.g. inserting mid-line, before existing text).
-      const needsSeparator = action.type === 'commit-field' && rawText[range.end] !== ' ';
-      const withSpace = needsSeparator ? `${replacement} ` : replacement;
-      const next = rawText.slice(0, range.start) + withSpace + rawText.slice(range.end);
-      const caret = range.start + withSpace.length;
-      setRawText(next);
-      deriveAndEmit(next);
-      if (action.type === 'commit-field') {
-        recordRecent({
-          label: formatTokenText({ kind: 'field', field: action.field, op: action.op, value: action.value }),
-          action,
-        });
-      }
-      if (action.type === 'fill-text' && action.commit) {
-        setOpen(false);
-      }
-      setActiveIdx(0);
-      setNavigated(false);
-      const el = inputRef.current;
-      el?.focus();
-      // caret placement must wait for the controlled value to render
-      setTimeout(() => el?.setSelectionRange(caret, caret), 0);
-      setCaretPos(caret);
     },
-    [rawText, deriveAndEmit, onEditJsFilter, recordRecent]
+    [
+      rawText,
+      deriveAndEmit,
+      onEditJsFilter,
+      recordRecent,
+      setRawText,
+      setOpen,
+      setNavigated,
+      setActiveIdx,
+      setCaretPos,
+      inputRef,
+    ]
   );
 
   const applySuggestion = useCallback(
@@ -363,39 +530,134 @@ export const FilterBar = ({
           break;
       }
     },
-    [actionableItems, activeIdx, open, query, navigated, applySuggestion, ghost, caretAtEnd]
+    [
+      actionableItems,
+      activeIdx,
+      open,
+      query,
+      navigated,
+      applySuggestion,
+      ghost,
+      caretAtEnd,
+      setOpen,
+      setNavigated,
+      setActiveIdx,
+      inputRef,
+    ]
   );
 
-  const hasChips = jsFilters.length > 0 || fieldTokens.length > 0 || partitionId >= 0 || rawText.length > 0;
+  return { applySuggestion, onKeyDown };
+}
 
-  const clearAll = useCallback(() => {
-    setRawText('');
-    lastEmittedRef.current = { partitionId: -1, fieldTokens: [], quickSearch: '' };
-    onFieldTokensChange([]);
-    onPartitionIdChange(-1);
-    onQuickSearchChange('');
-    for (const filter of jsFilters) {
-      onRemoveJsFilter(filter.id);
-    }
-  }, [onFieldTokensChange, onPartitionIdChange, onQuickSearchChange, jsFilters, onRemoveJsFilter]);
+type SuggestionListProps = {
+  id: string;
+  heading: string;
+  items: SuggestionItem[];
+  activeIdx: number;
+  onApply: (action: SuggestionAction) => void;
+  onHover: (optionIdx: number) => void;
+};
 
-  const placeholder = jsFilters.length > 0 ? 'Add another filter…' : 'Filter — type or pick a field…';
-
+const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: SuggestionListProps) => {
   let itemIdx = -1;
+  return (
+    <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={id}>
+      <ListboxGroupLabel>{heading}</ListboxGroupLabel>
+      {items.map((item, i) => {
+        if (item.kind === 'header') {
+          return <ListboxGroupLabel key={`h-${item.label}-${i}`}>{item.label}</ListboxGroupLabel>;
+        }
+        itemIdx += 1;
+        const optionIdx = itemIdx;
+        const isActive = optionIdx === activeIdx;
+        return (
+          <ListboxOption
+            active={isActive}
+            id={`${id}-option-${optionIdx}`}
+            key={`${item.label}-${i}`}
+            onClick={() => onApply(item.action)}
+            onMouseEnter={() => onHover(optionIdx)}
+          >
+            <span
+              className={cn('rounded-md border bg-background px-2 py-0.5 whitespace-nowrap', FILTER_BADGE_TEXT_CLASS)}
+            >
+              {item.label}
+            </span>
+            {item.sub && (
+              <span className="font-mono text-caption whitespace-nowrap text-muted-foreground">{item.sub}</span>
+            )}
+          </ListboxOption>
+        );
+      })}
+    </Listbox>
+  );
+};
+
+export const FilterBar = ({
+  messages,
+  quickSearch,
+  onQuickSearchChange,
+  fieldTokens,
+  onFieldTokensChange,
+  partitionId,
+  onPartitionIdChange,
+  partitionCount,
+  jsFilters,
+  onEditJsFilter,
+  onRemoveJsFilter,
+  canUseJsFilters,
+}: FilterBarProps) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
+  const line = useFilterLine({
+    partitionId,
+    fieldTokens,
+    quickSearch,
+    partitionCount,
+    onPartitionIdChange,
+    onFieldTokensChange,
+    onQuickSearchChange,
+    jsFilters,
+    onRemoveJsFilter,
+  });
+  const dropdown = useSuggestionDropdown();
+  const { recents, recordRecent } = useRecentSearches();
+  const suggestions = useFilterSuggestions({
+    rawText: line.rawText,
+    caretPos: line.caretPos,
+    messages,
+    fieldTokens,
+    partitionId,
+    canUseJsFilters,
+    recents,
+  });
+  const { applySuggestion, onKeyDown } = useSuggestionActions({
+    line,
+    dropdown,
+    suggestions,
+    recordRecent,
+    inputRef,
+    onEditJsFilter,
+  });
+  const activeOptionId =
+    dropdown.open && suggestions.actionableItems[dropdown.activeIdx]
+      ? `${listboxId}-option-${dropdown.activeIdx}`
+      : undefined;
+  const hasChips = jsFilters.length > 0 || fieldTokens.length > 0 || partitionId >= 0 || line.rawText.length > 0;
 
   return (
-    <div className="relative" data-testid="messages-filter-bar" ref={containerRef}>
+    <div className="relative" data-testid="messages-filter-bar" ref={dropdown.containerRef}>
       <div
         className={cn(
           'flex min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background py-1 pr-2 pl-3 shadow-xs',
-          open && 'border-primary'
+          dropdown.open && 'border-primary'
         )}
         onClick={() => inputRef.current?.focus()}
         onKeyDown={() => {
           // clicks focus the input; keyboard handling lives on the input itself
         }}
       >
-        <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+        <TonedIcon className="size-4 shrink-0" icon={SearchIcon} tone="muted" />
         {jsFilters.map((filter) => (
           <Chip
             className={FILTER_BADGE_TEXT_CLASS}
@@ -411,79 +673,59 @@ export const FilterBar = ({
         <HighlightedInput
           aria-activedescendant={activeOptionId}
           aria-autocomplete="list"
-          aria-controls={open ? listboxId : undefined}
-          aria-expanded={open}
+          aria-controls={dropdown.open ? listboxId : undefined}
+          aria-expanded={dropdown.open}
           className="min-w-24 flex-1"
-          ghostText={ghost && caretAtEnd ? ghost.rest : undefined}
+          ghostText={suggestions.ghost && suggestions.caretAtEnd ? suggestions.ghost.rest : undefined}
           highlightClassName={PILL_HIGHLIGHT_CLASS}
-          highlightRanges={highlightRanges}
+          highlightRanges={line.highlightRanges}
           onChange={(e) => {
             const next = e.target.value;
-            setRawText(next);
-            deriveAndEmit(next);
-            setActiveIdx(0);
-            setNavigated(false);
-            setOpen(true);
-            setCaretPos(e.currentTarget.selectionStart ?? next.length);
+            line.setRawText(next);
+            line.deriveAndEmit(next);
+            dropdown.setActiveIdx(0);
+            dropdown.setNavigated(false);
+            dropdown.setOpen(true);
+            line.setCaretPos(e.currentTarget.selectionStart ?? next.length);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => dropdown.setOpen(true)}
           onKeyDown={onKeyDown}
-          onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+          onSelect={(e) => line.setCaretPos(e.currentTarget.selectionStart ?? 0)}
           overlayTestId="messages-filter-highlight-overlay"
-          placeholder={placeholder}
+          placeholder={jsFilters.length > 0 ? 'Add another filter…' : 'Filter — type or pick a field…'}
           ref={inputRef}
           role="combobox"
           testId="messages-filter-input"
           textClassName={cn('py-1', OVERLAY_FONT_CLASS)}
-          value={rawText}
+          value={line.rawText}
         />
         {hasChips && (
-          <Button className="shrink-0" onClick={clearAll} size="icon-xs" title="Clear all filters" variant="ghost">
-            <XIcon />
-          </Button>
+          <ElementTooltip content="Clear all filters">
+            <Button
+              aria-label="Clear all filters"
+              className="shrink-0"
+              onClick={line.clearAll}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <XIcon />
+            </Button>
+          </ElementTooltip>
         )}
       </div>
 
-      {open && items.length > 0 && (
-        <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={listboxId}>
-          <ListboxGroupLabel>{heading}</ListboxGroupLabel>
-          {items.map((item, i) => {
-            if (item.kind === 'header') {
-              return (
-                <ListboxGroupLabel className="pt-2" key={`h-${item.label}-${i}`}>
-                  {item.label}
-                </ListboxGroupLabel>
-              );
-            }
-            itemIdx += 1;
-            const optionIdx = itemIdx;
-            const isActive = optionIdx === activeIdx;
-            return (
-              <ListboxOption
-                active={isActive}
-                id={`${listboxId}-option-${optionIdx}`}
-                key={`${item.label}-${i}`}
-                onClick={() => applySuggestion(item.action)}
-                onMouseEnter={() => {
-                  setActiveIdx(optionIdx);
-                  setNavigated(true);
-                }}
-              >
-                <span
-                  className={cn(
-                    'whitespace-nowrap rounded-md border bg-background px-2 py-0.5',
-                    FILTER_BADGE_TEXT_CLASS
-                  )}
-                >
-                  {item.label}
-                </span>
-                {item.sub && (
-                  <span className="whitespace-nowrap font-mono text-caption text-muted-foreground">{item.sub}</span>
-                )}
-              </ListboxOption>
-            );
-          })}
-        </Listbox>
+      {dropdown.open && suggestions.items.length > 0 && (
+        <SuggestionList
+          activeIdx={dropdown.activeIdx}
+          heading={suggestions.heading}
+          id={listboxId}
+          items={suggestions.items}
+          onApply={applySuggestion}
+          onHover={(optionIdx) => {
+            dropdown.setActiveIdx(optionIdx);
+            dropdown.setNavigated(true);
+          }}
+        />
       )}
     </div>
   );

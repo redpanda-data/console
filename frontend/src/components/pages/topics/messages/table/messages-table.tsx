@@ -85,7 +85,7 @@ const buildColumn = (
       return {
         ...base,
         accessorKey: 'partitionID',
-        cell: ({ row }) => <span className="font-mono text-[13px] tabular-nums">{row.original.partitionID}</span>,
+        cell: ({ row }) => <span className="font-mono text-body tabular-nums">{row.original.partitionID}</span>,
       };
     case 'timestamp':
       return {
@@ -127,7 +127,7 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
 );
 
 const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
-  <Empty className="py-14" data-testid="messages-error">
+  <Empty data-testid="messages-error">
     <EmptyHeader>
       <EmptyMedia variant="icon">
         <TriangleAlertIcon />
@@ -146,28 +146,37 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => voi
 );
 
 const LiveWaitingState = () => (
-  <Empty className="py-14" data-testid="messages-live-waiting">
+  <Empty data-testid="messages-live-waiting">
     <EmptyHeader>
       <EmptyTitle>Waiting for messages…</EmptyTitle>
       <EmptyDescription>Streaming live from the topic. New records will appear here as they arrive.</EmptyDescription>
     </EmptyHeader>
     <div className="mt-2 flex w-full max-w-lg flex-col gap-2">
-      <Skeleton className="h-3.5 w-full animate-pulse" />
-      <Skeleton className="h-3.5 w-4/5 animate-pulse" />
-      <Skeleton className="h-3.5 w-3/5 animate-pulse" />
+      <Skeleton className="h-3.5 w-full" />
+      <Skeleton className="h-3.5 w-4/5" />
+      <Skeleton className="h-3.5 w-3/5" />
     </div>
   </Empty>
 );
 
+/**
+ * Freshly arrived rows flash green, then fade. The registry row has no flash state, so a native
+ * overlay carries the animation: it fills the cell (made `relative isolate`) and sits behind the
+ * cell's content.
+ */
+const NewRowFlash = () => (
+  <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 animate-message-flash" />
+);
+
 const LiveSeparatorRow = ({ columnCount }: { columnCount: number }) => (
-  <TableRow className="hover:bg-transparent" data-testid="messages-live-separator">
-    <TableCell className="p-0" colSpan={columnCount}>
-      <div className="flex items-center gap-2.5 border-green-200 border-y bg-green-100 px-4 py-1.5 dark:border-green-900 dark:bg-green-950">
-        <span className="flex items-center gap-1.5 font-bold text-[11px] text-green-700 uppercase tracking-wider dark:text-green-400">
-          <span className="inline-block size-1.5 animate-pulse rounded-full bg-green-600" />
+  <TableRow data-testid="messages-live-separator">
+    <TableCell colSpan={columnCount}>
+      <div className="flex items-center gap-2.5 border-y border-success-line bg-success-wash px-4 py-1.5">
+        <span className="flex items-center gap-1.5 text-body-sm font-bold tracking-wider text-success uppercase">
+          <span className="inline-block size-1.5 animate-pulse rounded-full bg-success-strong" />
           Live
         </span>
-        <span className="text-green-700 text-xs dark:text-green-400">New messages appear above as they arrive</span>
+        <span className="text-xs text-success">New messages appear above as they arrive</span>
       </div>
     </TableCell>
   </TableRow>
@@ -231,7 +240,10 @@ export const MessagesTable = ({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
+              {headerGroup.headers.map((header, index) => {
+                // The table-corner action buttons (save / view settings) float over the header's
+                // top-right; a right margin on the last title's content keeps it clear of them.
+                const clearOfCornerActions = index === headerGroup.headers.length - 1 && 'mr-16';
                 const canSort = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
                 const label = (
@@ -244,9 +256,6 @@ export const MessagesTable = ({
                 return (
                   <TableHead
                     aria-sort={sortDir ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                    // The table-corner action buttons (save / view settings) float over the
-                    // header's top-right — keep the last column's title clear of them.
-                    className="last:pr-20"
                     key={header.id}
                     title={
                       sortingDisabled && header.column.id === 'timestamp'
@@ -256,14 +265,17 @@ export const MessagesTable = ({
                   >
                     {canSort ? (
                       <button
-                        className="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className={cn(
+                          'inline-flex cursor-pointer items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-primary',
+                          clearOfCornerActions
+                        )}
                         onClick={header.column.getToggleSortingHandler()}
                         type="button"
                       >
                         {label}
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5">{label}</span>
+                      <span className={cn('inline-flex items-center gap-1.5', clearOfCornerActions)}>{label}</span>
                     )}
                   </TableHead>
                 );
@@ -275,22 +287,22 @@ export const MessagesTable = ({
           {!error && isLoading && rows.length === 0 && <LoadingRows columnCount={visibleColumnCount} />}
           {rows.map((row) => {
             const key = messageKey(row.original);
+            const isNew = newKeys.has(key);
             return (
               <Fragment key={key}>
                 {liveSeparatorKey === key && <LiveSeparatorRow columnCount={visibleColumnCount} key={`${key}-sep`} />}
                 <TableRow
-                  className={cn(
-                    'cursor-pointer',
-                    selectedKey === key && 'bg-selected-wash',
-                    newKeys.has(key) && 'animate-message-flash'
-                  )}
+                  // Row heights are floors; detailed payload metadata may expand them.
+                  // The registry row paints `data-state=selected` with the selection wash.
+                  className={cn('cursor-pointer', density === 'compact' ? 'h-14' : 'h-16')}
                   data-state={selectedKey === key ? 'selected' : undefined}
                   data-testid="messages-table-row"
                   key={key}
                   onClick={() => onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell className={cn(density === 'compact' ? 'py-1.5' : 'py-2.5')} key={cell.id}>
+                    <TableCell className={cn(isNew && 'relative isolate')} key={cell.id}>
+                      {isNew && <NewRowFlash />}
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
@@ -303,7 +315,7 @@ export const MessagesTable = ({
       {error ? <ErrorState message={error} onRetry={onRetry} /> : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
-        <Empty className="py-14" data-testid="messages-empty">
+        <Empty data-testid="messages-empty">
           <EmptyHeader>
             <EmptyTitle>{hasActiveFilter ? 'No messages match your filter.' : 'No messages'}</EmptyTitle>
             <EmptyDescription>

@@ -26,6 +26,14 @@ const paintGround = (): string => {
   return painted;
 };
 
+/** One pixel is all a single colour needs to rasterise. */
+const createPixelCanvas = (): HTMLCanvasElement => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  return canvas;
+};
+
 /**
  * Canvas rather than a regex: a computed colour can come back as `rgb()`, `color(srgb …)` from a
  * `color-mix()`, or `oklch()` verbatim, and reading the first three numbers out of the last two
@@ -33,9 +41,7 @@ const paintGround = (): string => {
  * back sRGB bytes for every format. Null when there is no canvas, as in jsdom.
  */
 const toSrgb = (painted: string): Srgb | null => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
+  const canvas = createPixelCanvas();
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!(context && painted)) {
     return null;

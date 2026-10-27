@@ -9,23 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpanda-ui/components/dropzone';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
-import { Check, ChevronRight, Trash2, UploadCloud } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
+import { CertificateUploadRow, ConfiguredBadge, UploadedFileName } from '../../certificate-upload';
 import { extractSecretId, toSecretReference } from '../../connection/secret-reference';
+import { DisclosureRow } from '../../disclosure-row';
 import { type FormValues, hasSrCertificate, hasSrClientKeyMaterial, type SchemaRegistryFormValues } from '../../model';
 
 const TLS_DOCS_URL = docsLinks.selfManaged.shadowingNetworkSetup;
@@ -41,13 +40,6 @@ const SR_CLIENT_KEY_SECRET_TEXT: SecretSelectorCustomText = {
   emptyStateDescription: 'Create a secret to securely store your Schema Registry mTLS client private key',
 };
 
-const CERTIFICATE_ACCEPT = {
-  'application/x-pem-file': ['.pem'],
-  'application/x-x509-ca-cert': ['.crt', '.cer'],
-  'application/pkix-cert': ['.crt', '.cer'],
-  'application/x-pkcs12': ['.key'],
-};
-
 const CERTIFICATE_LABELS: Record<SrCertificateType, string> = {
   ca: 'CA certificate',
   clientCert: 'Client certificate',
@@ -59,6 +51,12 @@ const CERTIFICATE_LABELS: Record<SrCertificateType, string> = {
 const CERTIFICATE_PAIR_SIBLING: Partial<Record<SrCertificateType, SrCertificateType>> = {
   clientCert: 'clientKey',
   clientKey: 'clientCert',
+};
+
+// trigger() runs detached from these handlers and rejects only if the resolver
+// itself throws; report that instead of dropping it.
+const reportRevalidationError = (error: unknown) => {
+  toast.error('Failed to validate the form', { description: String(error) });
 };
 
 /**
@@ -98,10 +96,6 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
   // PEMs hydrated from the API carry no file name; show a generic label.
   const fileName = hasCert ? cert?.fileName || 'Configured certificate' : undefined;
 
-  // Placeholder File so DropzoneContent renders — the real PEM bytes live in
-  // form state.
-  const src = useMemo(() => (fileName ? [new File([], fileName)] : undefined), [fileName]);
-
   const handleDrop = useCallback(
     (files: File[]) => {
       const file = files[0];
@@ -123,7 +117,7 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
         );
         const sibling = CERTIFICATE_PAIR_SIBLING[certType];
         if (sibling) {
-          trigger(`schemaRegistry.mtls.${sibling}`);
+          trigger(`schemaRegistry.mtls.${sibling}`).catch(reportRevalidationError);
         }
       };
       reader.onerror = () => {
@@ -143,37 +137,23 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
     setValue(`schemaRegistry.mtls.${certType}`, undefined, { shouldValidate: true, shouldDirty: true });
     const sibling = CERTIFICATE_PAIR_SIBLING[certType];
     if (sibling) {
-      trigger(`schemaRegistry.mtls.${sibling}`);
+      trigger(`schemaRegistry.mtls.${sibling}`).catch(reportRevalidationError);
     }
   }, [certType, setValue, trigger]);
 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-1.5">
-        <span className="font-medium text-body">{label}</span>
+        <span className="text-body font-medium">{label}</span>
         {optional && <span className="text-body-sm text-muted-foreground">· optional</span>}
       </div>
       <div className="relative">
-        <Dropzone
-          accept={CERTIFICATE_ACCEPT}
-          className={cn('justify-start! h-auto! flex-row! gap-2.5! p-2! text-body', hasCert && 'bg-primary/5!')}
-          maxFiles={1}
+        <CertificateUploadRow
+          fileName={fileName}
           onDrop={handleDrop}
           onError={handleUploadError}
-          src={src}
           testId={hasCert ? `sr-${certType}-status` : `add-sr-${certType}-button`}
-        >
-          <DropzoneEmptyState className="items-center! justify-start! my-0! w-full! flex-row! gap-2! text-muted-foreground">
-            <UploadCloud className="h-4 w-4 shrink-0" />
-            <span className="flex-1 text-left">Upload file</span>
-          </DropzoneEmptyState>
-          <DropzoneContent>
-            <div className="flex w-full items-center gap-2">
-              <Check className="h-4 w-4 shrink-0 text-success" />
-              <span className="flex-1 truncate text-left font-medium text-foreground">{fileName}</span>
-            </div>
-          </DropzoneContent>
-        </Dropzone>
+        />
         {hasCert && (
           <RemoveMaterialButton
             label={`Remove ${label}`}
@@ -190,12 +170,6 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
     </div>
   );
 }
-
-const ConfiguredBadge = () => (
-  <Badge size="sm" tone="success" variant="subtle">
-    Configured
-  </Badge>
-);
 
 const SrCaConfiguredBadge = () => {
   const { control } = useFormContext<FormValues>();
@@ -230,19 +204,18 @@ const ExistingKeyRow = () => {
     setValue('schemaRegistry.mtls.existingKeyConfigured', false, { shouldDirty: true });
     setValue('schemaRegistry.mtls.existingKeyFingerprint', '', { shouldDirty: true });
     // The pair error for a now-keyless cert lands on the clientKey field.
-    trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']);
+    trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(reportRevalidationError);
   };
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="font-medium text-body">{CERTIFICATE_LABELS.clientKey}</span>
+      <span className="text-body font-medium">{CERTIFICATE_LABELS.clientKey}</span>
       <div className="relative">
         <div
           className="flex items-center gap-2.5 rounded-lg border bg-primary/5 p-2 text-body"
           data-testid="sr-clientKey-existing-status"
         >
-          <Check className="h-4 w-4 shrink-0 text-success" />
-          <span className="flex-1 truncate text-left font-medium text-foreground">Configured</span>
+          <UploadedFileName>Configured</UploadedFileName>
         </div>
         <RemoveMaterialButton
           label="Remove client private key"
@@ -294,7 +267,9 @@ const SrClientKeySecretField = () => {
               onChange={(secretId) => {
                 field.onChange(secretId ? { pemContent: toSecretReference(secretId), fileName: '' } : undefined);
                 // The cert/key pair error lives on the sibling field too.
-                trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']);
+                trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(
+                  reportRevalidationError
+                );
               }}
               placeholder="Select or create client key secret"
               scopes={[Scope.REDPANDA_CLUSTER]}
@@ -332,7 +307,7 @@ const SrTlsFilePathsNotice = ({
   filePaths: NonNullable<SchemaRegistryFormValues['mtls']['filePaths']>;
 }) => (
   <div className="rounded-md border bg-muted/30 p-4" data-testid="sr-tls-file-settings-readonly">
-    <div className="font-medium text-body">TLS certificate file paths</div>
+    <div className="text-body font-medium">TLS certificate file paths</div>
     <p className="mt-1 text-body-sm text-muted-foreground">
       TLS for this link is configured with certificate file paths (for example via rpk). Console preserves these
       settings as-is; use rpk or the Admin API to change them.
@@ -353,54 +328,6 @@ const SrTlsFilePathsNotice = ({
     </div>
   </div>
 );
-
-type DisclosureRowProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  label: string;
-  description: string;
-  badge: React.ReactNode;
-  testId: string;
-  triggerTestId: string;
-  children: React.ReactNode;
-};
-
-function DisclosureRow({
-  open,
-  onOpenChange,
-  label,
-  description,
-  badge,
-  testId,
-  triggerTestId,
-  children,
-}: DisclosureRowProps) {
-  return (
-    <Collapsible onOpenChange={onOpenChange} open={open} testId={testId}>
-      <CollapsibleTrigger
-        render={
-          <button
-            className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
-            data-testid={triggerTestId}
-            type="button"
-          >
-            <ChevronRight
-              className={cn('mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')}
-            />
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-body">{label}</span>
-                {!open && badge}
-              </div>
-              <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
-            </div>
-          </button>
-        }
-      />
-      <CollapsibleContent className="mt-2 ml-6 rounded-md border bg-muted/30 p-4">{children}</CollapsibleContent>
-    </Collapsible>
-  );
-}
 
 export const SrTlsConfiguration = () => {
   const { control, getValues, trigger } = useFormContext<FormValues>();
@@ -427,7 +354,7 @@ export const SrTlsConfiguration = () => {
         control={control}
         name="schemaRegistry.useTls"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center gap-3">
+          <FormItem layout="horizontal">
             <FormLabel>Enable TLS</FormLabel>
             <FormControl>
               <Switch
@@ -436,7 +363,7 @@ export const SrTlsConfiguration = () => {
                   field.onChange(checked);
                   // The https-required error lives on the source URL field, so
                   // toggling TLS must refresh it or a stale error lingers.
-                  trigger('schemaRegistry.sourceUrl');
+                  trigger('schemaRegistry.sourceUrl').catch(reportRevalidationError);
                 }}
                 testId="sr-tls-toggle"
               />

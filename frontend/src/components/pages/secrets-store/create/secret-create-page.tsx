@@ -12,6 +12,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -36,7 +37,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { initialValues, SecretCreateFormSchema, type SecretCreateFormValues } from './secret-create-form-schema';
-import { SCOPE_OPTIONS } from '../secret-form-shared';
+import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
 
 export const SecretCreatePage = () => {
   const navigate = useNavigate();
@@ -66,24 +67,20 @@ export const SecretCreatePage = () => {
   }, []);
 
   const onSubmit = async (values: SecretCreateFormValues) => {
-    const labelsMap: { [key: string]: string } = {};
-    for (const label of values.labels) {
-      if (label.key && label.value) {
-        labelsMap[label.key] = label.value;
-      }
-    }
-
     const request = create(CreateSecretRequestSchema, {
       id: values.id,
       secretData: base64ToUInt8Array(encodeBase64(values.value)),
       scopes: values.scopes,
-      labels: labelsMap,
+      labels: labelsToMap(values.labels),
     });
 
     try {
       await createSecret({ request });
       toast.success('Secret created');
-      navigate({ to: '/secrets' });
+      // Handled here so a navigation failure is not reported as a failed create.
+      navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
+        toast.error('Failed to navigate', { description: String(navigationError) });
+      });
     } catch (error) {
       const connectError = ConnectError.from(error);
       toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'secret' }));
@@ -186,7 +183,7 @@ export const SecretCreatePage = () => {
           >
             {isCreating ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <TonedIcon className="h-4 w-4" icon={Loader2} spin />
                 Creating...
               </>
             ) : (

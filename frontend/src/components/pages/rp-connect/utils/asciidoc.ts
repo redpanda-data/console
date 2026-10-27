@@ -72,36 +72,49 @@ function flattenTables(text: string): string {
   if (!text.includes('|')) {
     return text;
   }
-  let inFence = false;
-  let separator = TABLE_CELL_SEPARATOR;
+  const state: TableState = { inFence: false, separator: TABLE_CELL_SEPARATOR };
   const lines: string[] = [];
   for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (TABLE_FENCE.test(trimmed)) {
-      inFence = !inFence;
-      if (!inFence) {
-        separator = TABLE_CELL_SEPARATOR;
-      }
-      continue;
+    const flattened = flattenTableLine(line, state);
+    if (flattened !== undefined) {
+      lines.push(flattened);
     }
-    if (!inFence && DSV_TABLE_ATTRIBUTE.test(trimmed)) {
-      separator = DSV_CELL_SEPARATOR;
-      lines.push(line);
-      continue;
-    }
-    const isRow = inFence || (trimmed.startsWith('|') && trimmed.endsWith('|'));
-    if (!isRow) {
-      lines.push(line);
-      continue;
-    }
-    // A Markdown header rule (`|---|---|`) carries no content; inside a fence it could be a row.
-    if (!inFence && TABLE_RULE_ROW.test(trimmed)) {
-      continue;
-    }
-    const cells = trimmed.replace(TABLE_CELL_MARKERS, '');
-    lines.push(cells ? `- ${cells.split(separator).join(' — ')}` : '');
   }
   return lines.join('\n');
+}
+
+type TableState = { inFence: boolean; separator: RegExp };
+
+// What one line becomes, undefined to drop it; tracks the enclosing `|===` fence in `state`.
+function flattenTableLine(line: string, state: TableState): string | undefined {
+  const trimmed = line.trim();
+  if (TABLE_FENCE.test(trimmed)) {
+    toggleTableFence(state);
+    return;
+  }
+  if (!state.inFence && DSV_TABLE_ATTRIBUTE.test(trimmed)) {
+    state.separator = DSV_CELL_SEPARATOR;
+    return line;
+  }
+  const isRow = state.inFence || (trimmed.startsWith('|') && trimmed.endsWith('|'));
+  return isRow ? tableRowBullet(trimmed, state) : line;
+}
+
+// Closing a fence resets the cell separator a DSV attribute may have switched.
+function toggleTableFence(state: TableState): void {
+  state.inFence = !state.inFence;
+  if (!state.inFence) {
+    state.separator = TABLE_CELL_SEPARATOR;
+  }
+}
+
+function tableRowBullet(trimmed: string, state: TableState): string | undefined {
+  // A Markdown header rule (`|---|---|`) carries no content; inside a fence it could be a row.
+  if (!state.inFence && TABLE_RULE_ROW.test(trimmed)) {
+    return;
+  }
+  const cells = trimmed.replace(TABLE_CELL_MARKERS, '');
+  return cells ? `- ${cells.split(state.separator).join(' — ')}` : '';
 }
 
 /** Escapes `<placeholder>` outside code: remark reads it as inline HTML and, with HTML off, drops it. */

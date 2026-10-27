@@ -16,7 +16,39 @@ if (!bunExecutable) {
   throw new Error('Run these integration tests through bun run');
 }
 
-describe('Console build analysis', () => {
+function expectNoReportsInDist(directory: string) {
+  expect(existsSync(join(directory, 'dist/rsdoctor-report.html'))).toBe(false);
+  expect(existsSync(join(directory, 'dist/rsdoctor-data.json'))).toBe(false);
+}
+
+async function expectCompressedAssetSizes(dataFile: string) {
+  const report: unknown = JSON.parse(await readFile(dataFile, 'utf8'));
+  expect(report).toMatchObject({
+    data: {
+      chunkGraph: {
+        assets: expect.arrayContaining([
+          expect.objectContaining({
+            path: 'fixture.js',
+            gzipSize: expect.any(Number),
+            brotliSize: expect.any(Number),
+          }),
+        ]),
+      },
+    },
+  });
+}
+
+async function listChunksWithAgent(executable: string, dataFile: string, signal: AbortSignal) {
+  const { stdout } = await execute(executable, ['run', 'analyze:agent', 'chunks', 'list', '--data-file', dataFile], {
+    cwd: frontendDirectory,
+    signal,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  const analysis: unknown = JSON.parse(stdout);
+  return analysis;
+}
+
+describe('console build analysis', () => {
   let directory: string;
 
   beforeEach(async () => {
@@ -40,46 +72,22 @@ describe('Console build analysis', () => {
   test('keeps analysis reports out of normal builds', async ({ signal }) => {
     await build(false, signal);
     expect(existsSync(join(directory, 'dist/fixture.js'))).toBe(true);
-    expect(existsSync(join(directory, 'dist/rsdoctor-report.html'))).toBe(false);
-    expect(existsSync(join(directory, 'dist/rsdoctor-data.json'))).toBe(false);
+    expectNoReportsInDist(directory);
     expect(existsSync(join(directory, 'build-stats/rsdoctor'))).toBe(false);
-  }, 120_000);
+  });
 
   test('emits offline and agent reports with gzip and Brotli sizes', async ({ signal }) => {
     await build(true, signal);
-    expect(existsSync(join(directory, 'dist/rsdoctor-report.html'))).toBe(false);
-    expect(existsSync(join(directory, 'dist/rsdoctor-data.json'))).toBe(false);
+    expectNoReportsInDist(directory);
     const reportDirectory = join(directory, 'build-stats/rsdoctor');
     expect(existsSync(join(reportDirectory, 'rsdoctor-report.html'))).toBe(true);
     const dataFile = join(reportDirectory, 'rsdoctor-data.json');
-    const report: unknown = JSON.parse(await readFile(dataFile, 'utf8'));
-    expect(report).toMatchObject({
-      data: {
-        chunkGraph: {
-          assets: expect.arrayContaining([
-            expect.objectContaining({
-              path: 'fixture.js',
-              gzipSize: expect.any(Number),
-              brotliSize: expect.any(Number),
-            }),
-          ]),
-        },
-      },
-    });
+    await expectCompressedAssetSizes(dataFile);
 
-    const { stdout } = await execute(
-      bunExecutable,
-      ['run', 'analyze:agent', 'chunks', 'list', '--data-file', dataFile],
-      {
-        cwd: frontendDirectory,
-        signal,
-        maxBuffer: 10 * 1024 * 1024,
-      }
-    );
-    const analysis: unknown = JSON.parse(stdout);
+    const analysis = await listChunksWithAgent(bunExecutable, dataFile, signal);
     expect(analysis).toMatchObject({
       ok: true,
       data: { total: 1, items: [{ name: 'main', assets: [{ name: 'fixture.js' }] }] },
     });
-  }, 120_000);
+  });
 });

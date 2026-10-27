@@ -10,7 +10,7 @@
  */
 
 import { useApiStoreHook } from '../../../state/backend-api';
-import type { ConfigEntry, Topic } from '../../../state/rest-interfaces';
+import type { ConfigEntry, Partition, Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -21,6 +21,7 @@ import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
 import { numberToThousandsString } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
+import { TonedIcon } from '../shared/toned-icon';
 
 const CLEANUP_POLICY_LABELS: Record<CleanupPolicyType, string> = {
   compact: 'Compact',
@@ -31,34 +32,40 @@ const CLEANUP_POLICY_LABELS: Record<CleanupPolicyType, string> = {
 const ESTIMATE_HINT =
   'The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages.';
 
+function formatMessageSum(partitions: Partition[] | null | undefined): ReactNode {
+  if (partitions === undefined) {
+    return '...'; // no response yet
+  }
+  if (partitions === null) {
+    return 'N/A'; // explicit null -> not allowed
+  }
+  const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
+  return numberToThousandsString(totalMessages);
+}
+
+function findQuickInfoEntries(entries: ConfigEntry[] | null | undefined) {
+  const find = (name: string) => entries?.find((e) => e.name === name);
+  return {
+    retentionMs: find('retention.ms'),
+    retentionBytes: find('retention.bytes'),
+    segmentMs: find('segment.ms'),
+    segmentBytes: find('segment.bytes'),
+  };
+}
+
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
   // Messages
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
-
-  let messageSum: ReactNode;
-
-  if (partitions === undefined) {
-    messageSum = '...'; // no response yet
-  } else if (partitions === null) {
-    messageSum = 'N/A'; // explicit null -> not allowed
-  } else {
-    const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
-    messageSum = numberToThousandsString(totalMessages);
-  }
+  const messageSum = formatMessageSum(partitions);
 
   // Config Entries / Separator
   const configEntries = useApiStoreHook((s) => s.topicConfig.get(topic.topicName))?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
-
-  const retentionMs = filteredConfigEntries?.find((e) => e.name === 'retention.ms');
-  const retentionBytes = filteredConfigEntries?.find((e) => e.name === 'retention.bytes');
-
-  const segmentMs = filteredConfigEntries?.find((e) => e.name === 'segment.ms');
-  const segmentBytes = filteredConfigEntries?.find((e) => e.name === 'segment.bytes');
+  const { retentionMs, retentionBytes, segmentMs, segmentBytes } = findQuickInfoEntries(filteredConfigEntries);
 
   if (!(configEntries && filteredConfigEntries && cleanupPolicy)) {
     return null;
@@ -74,7 +81,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
             {messageSum}
             <Tooltip>
               <TooltipTrigger
-                render={<InfoIcon className="size-3.5 text-muted-foreground" data-testid="estimate-hint" />}
+                render={<TonedIcon className="size-3.5" data-testid="estimate-hint" icon={InfoIcon} tone="muted" />}
               />
               <TooltipContent className="max-w-sm">{ESTIMATE_HINT}</TooltipContent>
             </Tooltip>

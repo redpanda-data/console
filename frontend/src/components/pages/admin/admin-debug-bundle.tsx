@@ -56,7 +56,9 @@ import { CircleAlertIcon, InfoIcon } from 'lucide-react';
 import {
   type CreateDebugBundleRequest,
   CreateDebugBundleRequestSchema,
+  type DebugBundleStatus,
   DebugBundleStatus_Status,
+  type GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
   LabelSelectorSchema,
   type SCRAMAuth,
   SCRAMAuth_Mechanism,
@@ -222,55 +224,56 @@ export class AdminDebugBundle extends PageComponent {
   }
 }
 
+type BrokerBundleStatus = GetDebugBundleStatusResponse_DebugBundleBrokerStatus;
+
+const isBundleIn = (status: DebugBundleStatus_Status) => (s: BrokerBundleStatus) =>
+  s.value.case === 'bundleStatus' && s.value.value.status === status;
+
+// A running job on any broker outranks every finished state; the others need at least one broker.
+const summarizeBundleStatuses = (statuses: BrokerBundleStatus[]) => {
+  const isInProgress = statuses.some(isBundleIn(DebugBundleStatus_Status.RUNNING));
+  const isSettled = statuses.length > 0 && !isInProgress;
+  return {
+    isInProgress,
+    isExpired: isSettled && statuses.some(isBundleIn(DebugBundleStatus_Status.EXPIRED)),
+    isError: isSettled && statuses.every(isBundleIn(DebugBundleStatus_Status.ERROR)),
+    canDownload: isSettled && statuses.some(isBundleIn(DebugBundleStatus_Status.SUCCESS)),
+    current: pickCurrentStatus(statuses.flatMap((s) => (s.value.case === 'bundleStatus' ? [s.value.value] : []))),
+  };
+};
+
+const DebugBundleInProgress: FC<{ status?: DebugBundleStatus }> = ({ status }) => {
+  const jobId = status?.jobId;
+  return (
+    <div>
+      <Header />
+      {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
+          Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
+      {jobId ? (
+        <Link
+          className={cn(buttonVariants({ variant: 'link' }), 'mt-4')}
+          params={{ jobId }}
+          to="/debug-bundle/progress/$jobId"
+        >
+          Bundle generation in progress...
+        </Link>
+      ) : (
+        <div className="mt-4">Generating bundle...</div>
+      )}
+      {status?.createdAt ? <div>Started {timestampDate(status.createdAt).toLocaleString()}</div> : null}
+    </div>
+  );
+};
+
 const AdminDebugBundleContent: FC = () => {
   const statuses = useApiStoreHook((s) => s.debugBundleStatuses);
   const hasDebugProcess = useApiStoreHook((s) => s.hasDebugProcess);
   const [submitInProgress, setSubmitInProgress] = useState(false);
   const [createBundleError, setCreateBundleError] = useState<ErrorResponse | undefined>(undefined);
-
-  const isInProgress = statuses.some(
-    (s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.RUNNING
-  );
-  const isExpired =
-    statuses.length > 0 &&
-    !isInProgress &&
-    statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.EXPIRED);
-  const isError =
-    statuses.length > 0 &&
-    !isInProgress &&
-    statuses.every((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.ERROR);
-  const canDownload =
-    statuses.length > 0 &&
-    !isInProgress &&
-    statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.SUCCESS);
-
-  const debugBundleStatus = pickCurrentStatus(
-    statuses.flatMap((s) => (s.value.case === 'bundleStatus' ? [s.value.value] : []))
-  );
+  const { isInProgress, isExpired, isError, canDownload, current } = summarizeBundleStatuses(statuses);
 
   if (isInProgress) {
-    const jobId = debugBundleStatus?.jobId;
-    return (
-      <div>
-        <Header />
-        {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
-            Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
-        {jobId ? (
-          <Link
-            className={cn(buttonVariants({ variant: 'link' }), 'mt-4 px-0')}
-            params={{ jobId }}
-            to="/debug-bundle/progress/$jobId"
-          >
-            Bundle generation in progress...
-          </Link>
-        ) : (
-          <div className="mt-4">Generating bundle...</div>
-        )}
-        {debugBundleStatus?.createdAt ? (
-          <div>Started {timestampDate(debugBundleStatus.createdAt).toLocaleString()}</div>
-        ) : null}
-      </div>
-    );
+    return <DebugBundleInProgress status={current} />;
   }
 
   return (
@@ -713,7 +716,6 @@ const NewDebugBundleForm: FC<{
           <div className="flex items-center gap-1">
             or
             <Button
-              className="px-0"
               data-testid="switch-to-default-debug-bundle-form"
               onClick={() => {
                 setAdvancedForm(false);

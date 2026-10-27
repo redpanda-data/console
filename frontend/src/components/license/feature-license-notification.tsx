@@ -68,110 +68,121 @@ const getLicenseAlertContentForFeature = (
   }
 
   // Redpanda
-  if (api.isRedpanda) {
-    if (
-      msToExpiration > 15 * MS_IN_DAY &&
-      msToExpiration < 30 * MS_IN_DAY &&
-      coreHasEnterpriseFeatures(enterpriseFeaturesUsed)
-    ) {
-      return {
-        message: (
-          <div>
-            <p>This is an enterprise feature, active until {getPrettyExpirationDate(license)}.</p>
-            <div className="my-2 flex gap-2">
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </div>
-          </div>
-        ),
-        variant: 'informative',
-      };
-    }
-    if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
-      return {
-        message: (
-          <div>
-            <p>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
-                enterprise features
-              </Link>{' '}
-              will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
-                contact us
-              </Link>
-              .
-            </p>
-            <div className="my-2 flex gap-2">
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </div>
-          </div>
-        ),
-        variant: 'destructive',
-      };
-    }
-  } else {
-    // Kafka
-    if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
-      if (license.type === License_Type.TRIAL) {
-        return {
-          message: (
-            <div>
-              <p>This is an enterprise feature. Your trial is active until {getPrettyExpirationDate(license)}</p>
-              <div className="my-2 flex gap-2">
-                <UploadLicenseButton />
-                <UpgradeButton />
-              </div>
-            </div>
-          ),
-          variant: 'informative',
-        };
-      }
-      return {
-        message: (
-          <div>
-            <p>
-              This is a Redpanda Enterprise feature. Try it with our{' '}
-              <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
-                Redpanda Enterprise Trial
-              </Link>
-              .
-            </p>
-          </div>
-        ),
-        variant: 'informative',
-      };
-    }
-    if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
-      return {
-        message: (
-          <div>
-            <p>
-              Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
-              <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
-                enterprise features
-              </Link>{' '}
-              will become unavailable. To get a full Redpanda Enterprise license,{' '}
-              <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
-                contact us
-              </Link>
-              .
-            </p>
-            <div className="my-2 flex gap-2">
-              <UploadLicenseButton />
-              <UpgradeButton />
-            </div>
-          </div>
-        ),
-        variant: 'destructive',
-      };
-    }
-  }
-
-  return null;
+  return api.isRedpanda
+    ? getRedpandaFeatureAlert(license, msToExpiration, enterpriseFeaturesUsed)
+    : getKafkaFeatureAlert(license, msToExpiration);
 };
 
+function getRedpandaFeatureAlert(
+  license: License,
+  msToExpiration: number,
+  enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]
+): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
+  if (
+    msToExpiration > 15 * MS_IN_DAY &&
+    msToExpiration < 30 * MS_IN_DAY &&
+    coreHasEnterpriseFeatures(enterpriseFeaturesUsed)
+  ) {
+    return {
+      message: (
+        <div>
+          <p>This is an enterprise feature, active until {getPrettyExpirationDate(license)}.</p>
+          <div className="my-2 flex gap-2">
+            <UploadLicenseButton />
+            <UpgradeButton />
+          </div>
+        </div>
+      ),
+      variant: 'informative',
+    };
+  }
+  if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
+    return {
+      message: (
+        <div>
+          <p>
+            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
+              enterprise features
+            </Link>{' '}
+            will become unavailable. To get a full Redpanda Enterprise license,{' '}
+            <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
+              contact us
+            </Link>
+            .
+          </p>
+          <div className="my-2 flex gap-2">
+            <UploadLicenseButton />
+            <UpgradeButton />
+          </div>
+        </div>
+      ),
+      variant: 'destructive',
+    };
+  }
+  return null;
+}
+function getKafkaFeatureAlert(
+  license: License,
+  msToExpiration: number
+): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
+  // Kafka
+  if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
+    if (license.type === License_Type.TRIAL) {
+      return {
+        message: (
+          <div>
+            <p>This is an enterprise feature. Your trial is active until {getPrettyExpirationDate(license)}</p>
+            <div className="my-2 flex gap-2">
+              <UploadLicenseButton />
+              <UpgradeButton />
+            </div>
+          </div>
+        ),
+        variant: 'informative',
+      };
+    }
+    return {
+      message: (
+        <div>
+          <p>
+            This is a Redpanda Enterprise feature. Try it with our{' '}
+            <Link href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
+              Redpanda Enterprise Trial
+            </Link>
+            .
+          </p>
+        </div>
+      ),
+      variant: 'informative',
+    };
+  }
+  if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
+    return {
+      message: (
+        <div>
+          <p>
+            Your Redpanda Enterprise trial is expiring in {getPrettyTimeToExpiration(license)}; at that point, your{' '}
+            <Link href={ENTERPRISE_FEATURES_DOCS_LINK} rel="noopener noreferrer" target="_blank">
+              enterprise features
+            </Link>{' '}
+            will become unavailable. To get a full Redpanda Enterprise license,{' '}
+            <Link href={getEnterpriseCTALink('upgrade')} rel="noopener noreferrer" target="_blank">
+              contact us
+            </Link>
+            .
+          </p>
+          <div className="my-2 flex gap-2">
+            <UploadLicenseButton />
+            <UpgradeButton />
+          </div>
+        </div>
+      ),
+      variant: 'destructive',
+    };
+  }
+  return null;
+}
 export const FeatureLicenseNotification: FC<{
   featureName: 'reassignPartitions' | 'rbac';
 }> = ({ featureName }) => {
@@ -198,11 +209,10 @@ export const FeatureLicenseNotification: FC<{
   // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
-  const enterpriseFeaturesUsed = api.enterpriseFeaturesUsed;
   const alertContent = getLicenseAlertContentForFeature(
     featureName,
     license,
-    enterpriseFeaturesUsed,
+    api.enterpriseFeaturesUsed,
     bakedInTrial,
     () => {
       setIsRegisterModalOpen(true);
@@ -210,15 +220,7 @@ export const FeatureLicenseNotification: FC<{
   );
 
   // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
-  if (api.clusterOverview === null) {
-    return null;
-  }
-
-  if (!license) {
-    return null;
-  }
-
-  if (alertContent === null) {
+  if (api.clusterOverview === null || !license || alertContent === null) {
     return null;
   }
 

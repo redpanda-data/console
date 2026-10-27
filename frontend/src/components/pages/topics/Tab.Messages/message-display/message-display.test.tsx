@@ -29,8 +29,8 @@ rs.mock('../../../../../state/backend-api', () => ({
 }));
 
 rs.mock('components/icons', () => ({
-  WarningIcon: () => <span data-testid="warning-icon" />,
-  InfoIcon: () => <span data-testid="info-icon" />,
+  WarningIcon: MockWarningIcon,
+  InfoIcon: MockInfoIcon,
 }));
 
 rs.mock('../preview-settings', () => ({
@@ -38,22 +38,19 @@ rs.mock('../preview-settings', () => ({
 }));
 
 rs.mock('../../../../misc/kowl-json-view', () => ({
-  KowlJsonView: (props: { srcObj: object | string | null | undefined }) => {
-    kowlJsonViewSpy(props);
-    return <div data-testid="mock-kowl-json-view" />;
-  },
+  KowlJsonView: MockKowlJsonView,
 }));
 
 rs.mock('./message-headers', () => ({
-  MessageHeaders: () => <div data-testid="message-headers" />,
+  MessageHeaders: MockMessageHeaders,
 }));
 
 rs.mock('./message-meta-data', () => ({
-  MessageMetaData: () => <div data-testid="message-meta-data" />,
+  MessageMetaData: MockMessageMetaData,
 }));
 
 rs.mock('./troubleshoot-report-viewer', () => ({
-  TroubleshootReportViewer: () => null,
+  TroubleshootReportViewer: MockTroubleshootReportViewer,
 }));
 
 function buildPayload(overrides: Partial<Payload> = {}): Payload {
@@ -194,3 +191,28 @@ describe('topic message rendering', () => {
     expect(kowlJsonViewSpy).toHaveBeenCalledTimes(2);
   });
 });
+
+function MockWarningIcon() {
+  return <span data-testid="warning-icon" />;
+}
+
+function MockInfoIcon() {
+  return <span data-testid="info-icon" />;
+}
+
+function MockKowlJsonView(props: { srcObj: object | string | null | undefined }) {
+  kowlJsonViewSpy(props);
+  return <div data-testid="mock-kowl-json-view" />;
+}
+
+function MockMessageHeaders() {
+  return <div data-testid="message-headers" />;
+}
+
+function MockMessageMetaData() {
+  return <div data-testid="message-meta-data" />;
+}
+
+function MockTroubleshootReportViewer() {
+  return null;
+}

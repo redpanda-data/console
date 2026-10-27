@@ -54,6 +54,36 @@ const getCachedPrincipals = (queryClient: ReturnType<typeof connectQueryWrapper>
   return entries.flatMap(([, data]) => data?.pages.flatMap((p) => p.members.map((m) => m.principal)) ?? []);
 };
 
+/** A transport whose update call stays pending until `unblock` is called, so the cache can be inspected mid-flight. */
+const blockedUpdateTransport = () => {
+  let unblock!: () => void;
+  const blocked = new Promise<void>((res) => {
+    unblock = res;
+  });
+
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(updateRoleMembership, async () => {
+      await blocked;
+      return create(UpdateRoleMembershipResponseSchema, {});
+    });
+  });
+  return { transport, unblock };
+};
+
+/** Renders the mutation hook over a listRoleMembers cache seeded with `principals`. */
+const renderWithSeededMembers = (transport: ReturnType<typeof createRouterTransport>, principals: string[]) => {
+  const { wrapper, queryClient } = connectQueryWrapper({}, transport);
+
+  const cacheKey = createConnectQueryKey({
+    schema: SecurityService.method.listRoleMembers,
+    cardinality: 'infinite',
+  });
+  queryClient.setQueryData(cacheKey, makeInfiniteData(principals));
+
+  const { result } = renderHook(() => useUpdateRoleMembershipMutation(), { wrapper });
+  return { result, queryClient };
+};
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -65,28 +95,10 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
 
   test('optimistically adds a member to the list before the API responds', async () => {
     // Freeze the API call so we can inspect the cache while it is pending
-    let unblock!: () => void;
-    const blocked = new Promise<void>((res) => {
-      unblock = res;
-    });
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(updateRoleMembership, async () => {
-        await blocked;
-        return create(UpdateRoleMembershipResponseSchema, {});
-      });
-    });
-
-    const { wrapper, queryClient } = connectQueryWrapper({}, transport);
+    const { transport, unblock } = blockedUpdateTransport();
 
     // Seed the cache with one existing member
-    const cacheKey = createConnectQueryKey({
-      schema: SecurityService.method.listRoleMembers,
-      cardinality: 'infinite',
-    });
-    queryClient.setQueryData(cacheKey, makeInfiniteData(['User:alice']));
-
-    const { result } = renderHook(() => useUpdateRoleMembershipMutation(), { wrapper });
+    const { result, queryClient } = renderWithSeededMembers(transport, ['User:alice']);
 
     // Trigger the mutation — don't await; the API is frozen
     result.current.mutate({
@@ -109,27 +121,8 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
   });
 
   test('optimistically removes a member from the list before the API responds', async () => {
-    let unblock!: () => void;
-    const blocked = new Promise<void>((res) => {
-      unblock = res;
-    });
-
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(updateRoleMembership, async () => {
-        await blocked;
-        return create(UpdateRoleMembershipResponseSchema, {});
-      });
-    });
-
-    const { wrapper, queryClient } = connectQueryWrapper({}, transport);
-
-    const cacheKey = createConnectQueryKey({
-      schema: SecurityService.method.listRoleMembers,
-      cardinality: 'infinite',
-    });
-    queryClient.setQueryData(cacheKey, makeInfiniteData(['User:alice', 'User:bob']));
-
-    const { result } = renderHook(() => useUpdateRoleMembershipMutation(), { wrapper });
+    const { transport, unblock } = blockedUpdateTransport();
+    const { result, queryClient } = renderWithSeededMembers(transport, ['User:alice', 'User:bob']);
 
     result.current.mutate({
       roleName: 'test-role',

@@ -102,10 +102,7 @@ describe('useTopicSettingsStore messages view settings', () => {
 
     for (let i = 0; i < 5; i++) {
       const current = useTopicSettingsStore.getState().getMessageColumns('topic-a');
-      const next = [...current];
-      const [moved] = next.splice(0, 1);
-      next.splice(3, 0, moved);
-      useTopicSettingsStore.getState().setMessageColumns('topic-a', next);
+      useTopicSettingsStore.getState().setMessageColumns('topic-a', moveFirstColumn(current));
 
       const ids = useTopicSettingsStore
         .getState()
@@ -118,22 +115,7 @@ describe('useTopicSettingsStore messages view settings', () => {
 
   test('resetViewSettings restores view defaults including deserializers', () => {
     const store = useTopicSettingsStore.getState();
-    store.setRowDensity('topic-a', 'compact');
-    store.setMessageColumns('topic-a', [{ id: 'offset', visible: true }]);
-    store.setPreviewTags('topic-a', [
-      {
-        id: '1',
-        isActive: true,
-        pattern: 'a.*',
-        searchInMessageHeaders: false,
-        searchInMessageKey: false,
-        searchInMessageValue: true,
-      },
-    ]);
-    store.setSearchParams('topic-a', {
-      keyDeserializer: PayloadEncoding.AVRO,
-      valueDeserializer: PayloadEncoding.JSON,
-    });
+    configureCustomMessageView(store);
 
     useTopicSettingsStore.getState().resetViewSettings('topic-a');
 
@@ -145,3 +127,29 @@ describe('useTopicSettingsStore messages view settings', () => {
     expect(state.getSearchParams('topic-a')?.valueDeserializer).toBe(PayloadEncoding.UNSPECIFIED);
   });
 });
+
+function moveFirstColumn(current: ReturnType<ReturnType<typeof useTopicSettingsStore.getState>['getMessageColumns']>) {
+  const next = [...current];
+  const [moved] = next.splice(0, 1);
+  next.splice(3, 0, moved);
+  return next;
+}
+
+function configureCustomMessageView(store: ReturnType<typeof useTopicSettingsStore.getState>) {
+  store.setRowDensity('topic-a', 'compact');
+  store.setMessageColumns('topic-a', [{ id: 'offset', visible: true }]);
+  store.setPreviewTags('topic-a', [
+    {
+      id: '1',
+      isActive: true,
+      pattern: 'a.*',
+      searchInMessageHeaders: false,
+      searchInMessageKey: false,
+      searchInMessageValue: true,
+    },
+  ]);
+  store.setSearchParams('topic-a', {
+    keyDeserializer: PayloadEncoding.AVRO,
+    valueDeserializer: PayloadEncoding.JSON,
+  });
+}

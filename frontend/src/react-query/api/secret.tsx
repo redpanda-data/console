@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
+import type { Transport } from '@connectrpc/connect';
 import {
   callUnaryMethod,
   createConnectQueryKey,
@@ -12,6 +13,7 @@ import {
   GetSecretRequestSchema,
   type GetSecretResponse,
   ListSecretsRequestSchema,
+  type ListSecretsResponse,
   SecretService,
 } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
@@ -43,6 +45,63 @@ export const SECRETS_LIST_PAGE_SIZE = 50;
 // non-empty nextPageToken indefinitely.
 export const SECRETS_LIST_MAX_PAGES = 200;
 
+function listSecretsPageRequest(pageToken: string, nameContains: string | undefined) {
+  return create(ListSecretsRequestSchema, {
+    request: create(ListSecretsRequestSchemaDataPlane, {
+      pageSize: SECRETS_LIST_PAGE_SIZE,
+      pageToken,
+      filter: nameContains ? create(ListSecretsFilterSchema, { nameContains }) : undefined,
+    }),
+  });
+}
+
+// The token of the page after this one, or null when this was the last page.
+function nextSecretsPageToken(response: ListSecretsResponse, pageToken: string): string | null {
+  const next = response.response?.nextPageToken ?? '';
+  if (!next) {
+    return null;
+  }
+  // Guard against a server that returns the same token twice — would otherwise loop forever.
+  if (next === pageToken) {
+    throw new Error('ListSecrets returned a non-advancing nextPageToken; aborting to avoid infinite loop');
+  }
+  return next;
+}
+
+async function fetchSecretsPage(
+  transport: Transport,
+  pageToken: string,
+  nameContains: string | undefined,
+  signal: AbortSignal | undefined
+): Promise<{ secrets: Secret[]; next: string | null }> {
+  if (signal?.aborted) {
+    throw signal.reason ?? new Error('ListSecrets query aborted');
+  }
+  const request = listSecretsPageRequest(pageToken, nameContains);
+  const response = await callUnaryMethod(transport, listSecrets, request, { signal });
+  return {
+    secrets: (response.response?.secrets ?? []).filter(Boolean),
+    next: nextSecretsPageToken(response, pageToken),
+  };
+}
+
+function listAllSecrets(transport: Transport, nameContains: string | undefined, signal: AbortSignal | undefined) {
+  const secrets: Secret[] = [];
+  // Each request depends on the preceding response's token; never start pages concurrently.
+  const nextPage = async (pageToken: string, iteration: number): Promise<{ secrets: Secret[] }> => {
+    if (iteration >= SECRETS_LIST_MAX_PAGES) {
+      throw new Error(`ListSecrets exceeded ${SECRETS_LIST_MAX_PAGES} pages; aborting to avoid runaway pagination`);
+    }
+    const page = await fetchSecretsPage(transport, pageToken, nameContains, signal);
+    secrets.push(...page.secrets);
+    if (page.next === null) {
+      return { secrets };
+    }
+    return nextPage(page.next, iteration + 1);
+  };
+  return nextPage('', 0);
+}
+
 export const useListSecretsQuery = (
   input?: MessageInit<ListSecretsRequestDataPlane>,
   options?: { enabled?: boolean }
@@ -62,38 +121,7 @@ export const useListSecretsQuery = (
     // Our queryFn throws intentionally on pagination safety violations (non-advancing token,
     // max-pages exceeded). Retrying would multiply the server round-trips for no benefit.
     retry: false,
-    queryFn: async ({ signal }) => {
-      const secrets: Secret[] = [];
-      let pageToken = '';
-      for (let iteration = 0; iteration < SECRETS_LIST_MAX_PAGES; iteration++) {
-        if (signal?.aborted) {
-          throw signal.reason ?? new Error('ListSecrets query aborted');
-        }
-        const request = create(ListSecretsRequestSchema, {
-          request: create(ListSecretsRequestSchemaDataPlane, {
-            pageSize: SECRETS_LIST_PAGE_SIZE,
-            pageToken,
-            filter: nameContains ? create(ListSecretsFilterSchema, { nameContains }) : undefined,
-          }),
-        });
-        const response = await callUnaryMethod(transport, listSecrets, request, { signal });
-        for (const secret of response.response?.secrets ?? []) {
-          if (secret) {
-            secrets.push(secret);
-          }
-        }
-        const next = response.response?.nextPageToken ?? '';
-        if (!next) {
-          return { secrets };
-        }
-        // Guard against a server that returns the same token twice — would otherwise loop forever.
-        if (next === pageToken) {
-          throw new Error('ListSecrets returned a non-advancing nextPageToken; aborting to avoid infinite loop');
-        }
-        pageToken = next;
-      }
-      throw new Error(`ListSecrets exceeded ${SECRETS_LIST_MAX_PAGES} pages; aborting to avoid runaway pagination`);
-    },
+    queryFn: ({ signal }) => listAllSecrets(transport, nameContains, signal),
   });
 };
 

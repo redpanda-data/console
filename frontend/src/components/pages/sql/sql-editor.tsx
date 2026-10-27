@@ -21,12 +21,25 @@ import { EditorState, type Extension, Prec } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import { useThemeAppearance } from 'hooks/use-theme-appearance';
+import { type ThemeAppearance, useThemeAppearance } from 'hooks/use-theme-appearance';
 import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react';
-import { forwardRef, type MouseEvent, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+  type Dispatch,
+  type ForwardedRef,
+  forwardRef,
+  type MouseEvent,
+  type RefObject,
+  type SetStateAction,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { isMacOS } from 'utils/platform';
 import { z } from 'zod';
 
@@ -237,11 +250,44 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
   };
 }
 
+// A `catalog=>` or `catalog.` reference ending at the cursor whose name is a
+// known catalog, with nothing identifier-like glued on before it.
+function catalogRefAtCursor(before: string, catalogs: Catalog[]): { catalog: Catalog; ref: RegExpExecArray } | null {
+  const ref = CATALOG_REF_RE.exec(before);
+  if (!ref) {
+    return null;
+  }
+  const cleanStart = !CATALOG_REF_BOUNDARY_RE.test(before[ref.index - 1] ?? '');
+  const catalog = cleanStart ? catalogs.find((c) => c.name === ref[1]) : undefined;
+  return catalog ? { catalog, ref } : null;
+}
+
+// Catalog names, offered while typing a word, on an explicit request, or once
+// the caller is right after FROM/JOIN even with no partial typed yet, so the
+// auto-trigger in the editor can pop `catalog=>`.
+function catalogNameCompletion(
+  context: CompletionContext,
+  catalogs: Catalog[],
+  lineFrom: number,
+  before: string
+): CompletionResult | null {
+  const word = context.matchBefore(COMPLETION_IDENTIFIER_RE);
+  const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
+  if (!(word || context.explicit || afterFromClause)) {
+    return null;
+  }
+  // Skip when completing a dotted member (schema completion's territory).
+  const wordFrom = word ? word.from : context.pos;
+  if (before[wordFrom - lineFrom - 1] === '.') {
+    return null;
+  }
+  return catalogNameCompletionResult(catalogs, wordFrom, before);
+}
+
 // Completion for Oxla's `catalog=>table` notation (which the generic schema
 // completion can't model): catalog names after FROM/JOIN, then the catalog's
 // tables, rewriting a typed `catalog.` to `=>`.
 function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CodeMirror completion context handling is branchy by API shape.
   return (context) => {
     const nodeName = syntaxTree(context.state).resolveInner(context.pos, -1).name;
     if (COMMENT_OR_STRING_NODE_RE.test(nodeName)) {
@@ -250,26 +296,11 @@ function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) =
     const line = context.state.doc.lineAt(context.pos);
     const before = line.text.slice(0, context.pos - line.from);
 
-    const ref = CATALOG_REF_RE.exec(before);
-    const cleanStart = ref ? !CATALOG_REF_BOUNDARY_RE.test(before[ref.index - 1] ?? '') : false;
-    const catalog = ref && cleanStart ? catalogs.find((c) => c.name === ref[1]) : undefined;
-    if (ref && catalog) {
-      return catalogTableCompletionResult(catalog, ref, context.pos);
+    const tableRef = catalogRefAtCursor(before, catalogs);
+    if (tableRef) {
+      return catalogTableCompletionResult(tableRef.catalog, tableRef.ref, context.pos);
     }
-
-    // Offer catalogs once the caller is right after FROM/JOIN even with no
-    // partial typed yet, so the auto-trigger below can pop `catalog=>`.
-    const word = context.matchBefore(COMPLETION_IDENTIFIER_RE);
-    const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
-    if (!(word || context.explicit || afterFromClause)) {
-      return null;
-    }
-    // Skip when completing a dotted member (schema completion's territory).
-    const wordFrom = word ? word.from : context.pos;
-    if (before[wordFrom - line.from - 1] === '.') {
-      return null;
-    }
-    return catalogNameCompletionResult(catalogs, wordFrom, before);
+    return catalogNameCompletion(context, catalogs, line.from, before);
   };
 }
 
@@ -302,146 +333,180 @@ function useNextTabId(initialId: number) {
   }, []);
 }
 
+type EditorRef = RefObject<ReactCodeMirrorRef | null>;
+
+// Editor tabs, plus the imperative handle the workspace uses to open a query in a new tab.
+function useEditorTabs(
+  initialQuery: string | undefined,
+  editorRef: EditorRef,
+  handleRef: ForwardedRef<SqlEditorHandle>
+) {
+  const [tabs, setTabs] = useState<Tab[]>([{ id: 1, name: 'Query 1', sql: initialQuery ?? DEFAULT_QUERY }]);
+  const [activeId, setActiveId] = useState(1);
+  const nextTabId = useNextTabId(2);
+
+  const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      setQuery: (queryText: string, tabName?: string) => {
+        const id = nextTabId();
+        setTabs((prev) => [...prev, { id, name: tabName ?? `Query ${id}`, sql: queryText }]);
+        setActiveId(id);
+        requestAnimationFrame(() => editorRef.current?.view?.focus());
+      },
+    }),
+    // editorRef is a stable ref object; listed because it arrives as a parameter here.
+    [nextTabId, editorRef]
+  );
+
+  const updateSql = (queryText: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, sql: queryText } : t)));
+  };
+
+  const addTab = () => {
+    const id = nextTabId();
+    setTabs((prev) => [...prev, { id, name: `Query ${id}`, sql: '' }]);
+    setActiveId(id);
+  };
+
+  const closeTab = (id: number, e: MouseEvent) => {
+    e.stopPropagation();
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.id === id);
+      const nextTabs = prev.filter((t) => t.id !== id);
+      if (nextTabs.length === 0) {
+        const nid = nextTabId();
+        setActiveId(nid);
+        return [{ id: nid, name: `Query ${nid}`, sql: '' }];
+      }
+      if (id === activeId) {
+        setActiveId(nextTabs[Math.max(0, idx - 1)].id);
+      }
+      return nextTabs;
+    });
+  };
+
+  return { tabs, active, setActiveId, updateSql, addTab, closeTab };
+}
+
+// Running statements from the editor, recording each in the browser-local history.
+function useEditorRun(editorRef: EditorRef, activeSql: string, runQuery: (sql: string) => void) {
+  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+  // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
+  // catalog/theme change, not per render).
+  const runRef = useRef<() => void>(() => undefined);
+
+  const runText = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return;
+    }
+    const entry: HistoryEntry = { sql: trimmed, at: Date.now() };
+    const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
+    setHistory(nh);
+    saveHistory(nh);
+    runQuery(trimmed);
+  };
+
+  // Run the current selection if any, else the whole tab.
+  const doRun = () => {
+    const state = editorRef.current?.view?.state;
+    const sel = state?.selection.main;
+    if (state && sel && !sel.empty) {
+      runText(state.sliceDoc(sel.from, sel.to));
+      return;
+    }
+    runText(activeSql);
+  };
+
+  // Keeps the keymap's run callback current without rebuilding the extensions.
+  runRef.current = doRun;
+
+  const runSelection = () => {
+    const state = editorRef.current?.view?.state;
+    const sel = state?.selection.main;
+    if (state && sel && !sel.empty) {
+      runText(state.sliceDoc(sel.from, sel.to));
+    }
+  };
+
+  return { history, runRef, doRun, runSelection };
+}
+
+// CodeMirror extensions: SQL language, catalog-aware completion, theme and keymap.
+function useSqlExtensions(
+  catalogs: Catalog[],
+  appearance: ThemeAppearance,
+  runRef: RefObject<() => void>,
+  setHasSel: Dispatch<SetStateAction<boolean>>
+) {
+  // runRef (a ref object) and setHasSel (a state setter) are stable, so only catalogs and theme rebuild these.
+  return useMemo(() => {
+    // No `schema` here — schemaColumnSource adds it back for dotted members only.
+    const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
+    return [
+      // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              runRef.current();
+              return true;
+            },
+          },
+          // Tab accepts an open completion (Monaco muscle memory); falls
+          // through to the default Tab behavior when no popup is open.
+          { key: 'Tab', run: acceptCompletion },
+          {
+            key: 'Shift-Alt-f',
+            run: (view) => {
+              formatDocument(view).catch(() => undefined);
+              return true;
+            },
+          },
+        ])
+      ),
+      sqlSupport,
+      sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
+      sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
+      appearance === 'dark' ? DARK_THEME : LIGHT_THEME,
+      EditorView.updateListener.of((update) => {
+        if (update.selectionSet) {
+          setHasSel(!update.state.selection.main.empty);
+        }
+        // Auto-open the catalog helper right after a typed `FROM `/`JOIN `
+        // (typing events only, so formatting/seeding don't re-trigger it).
+        if (update.docChanged && update.transactions.some((tr) => tr.isUserEvent('input.type'))) {
+          const pos = update.state.selection.main.head;
+          const lineText = update.state.doc.lineAt(pos);
+          if (FROM_JOIN_TRIGGER_RE.test(lineText.text.slice(0, pos - lineText.from))) {
+            startCompletion(update.view);
+          }
+        }
+      }),
+      indentUnit.of('  '),
+      EditorState.tabSize.of(2),
+    ];
+  }, [catalogs, appearance, runRef, setHasSel]);
+}
+
 export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
   function SqlEditorComponent(editorProps, forwardedRef) {
     const { onRun: runQuery, catalogs, initialQuery } = editorProps;
-    const [tabs, setTabs] = useState<Tab[]>([{ id: 1, name: 'Query 1', sql: initialQuery ?? DEFAULT_QUERY }]);
-    const [activeId, setActiveId] = useState(1);
-    const nextTabId = useNextTabId(2);
-    const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
+    const editorRef = useRef<ReactCodeMirrorRef | null>(null);
+    const { tabs, active, setActiveId, updateSql, addTab, closeTab } = useEditorTabs(
+      initialQuery,
+      editorRef,
+      forwardedRef
+    );
+    const { history, runRef, doRun, runSelection } = useEditorRun(editorRef, active.sql, runQuery);
     const [histOpen, setHistOpen] = useState(false);
     const [hasSel, setHasSel] = useState(false);
     const appearance = useThemeAppearance();
-
-    const editorRef = useRef<ReactCodeMirrorRef | null>(null);
-    // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
-    // catalog/theme change, not per render).
-    const runRef = useRef<() => void>(() => undefined);
-
-    const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
-
-    useImperativeHandle(
-      forwardedRef,
-      () => ({
-        setQuery: (queryText: string, tabName?: string) => {
-          const id = nextTabId();
-          setTabs((prev) => [...prev, { id, name: tabName ?? `Query ${id}`, sql: queryText }]);
-          setActiveId(id);
-          requestAnimationFrame(() => editorRef.current?.view?.focus());
-        },
-      }),
-      [nextTabId]
-    );
-
-    const updateSql = (queryText: string) => {
-      setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, sql: queryText } : t)));
-    };
-
-    const runText = (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) {
-        return;
-      }
-      const entry: HistoryEntry = { sql: trimmed, at: Date.now() };
-      const nh = [entry, ...history.filter((h) => h.sql !== entry.sql)].slice(0, 40);
-      setHistory(nh);
-      saveHistory(nh);
-      runQuery(trimmed);
-    };
-
-    // Run the current selection if any, else the whole tab.
-    const doRun = () => {
-      const state = editorRef.current?.view?.state;
-      const sel = state?.selection.main;
-      if (state && sel && !sel.empty) {
-        runText(state.sliceDoc(sel.from, sel.to));
-        return;
-      }
-      runText(active.sql);
-    };
-
-    // Keeps the keymap's run callback current without rebuilding the extensions.
-    runRef.current = doRun;
-
-    const runSelection = () => {
-      const state = editorRef.current?.view?.state;
-      const sel = state?.selection.main;
-      if (state && sel && !sel.empty) {
-        runText(state.sliceDoc(sel.from, sel.to));
-      }
-    };
-
-    const extensions = useMemo(() => {
-      // No `schema` here — schemaColumnSource adds it back for dotted members only.
-      const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
-      return [
-        // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
-        Prec.highest(
-          keymap.of([
-            {
-              key: 'Mod-Enter',
-              run: () => {
-                runRef.current();
-                return true;
-              },
-            },
-            // Tab accepts an open completion (Monaco muscle memory); falls
-            // through to the default Tab behavior when no popup is open.
-            { key: 'Tab', run: acceptCompletion },
-            {
-              key: 'Shift-Alt-f',
-              run: (view) => {
-                formatDocument(view).catch(() => undefined);
-                return true;
-              },
-            },
-          ])
-        ),
-        sqlSupport,
-        sqlSupport.language.data.of({ autocomplete: catalogArrowSource(catalogs) }),
-        sqlSupport.language.data.of({ autocomplete: schemaColumnSource(catalogs) }),
-        appearance === 'dark' ? DARK_THEME : LIGHT_THEME,
-        EditorView.updateListener.of((update) => {
-          if (update.selectionSet) {
-            setHasSel(!update.state.selection.main.empty);
-          }
-          // Auto-open the catalog helper right after a typed `FROM `/`JOIN `
-          // (typing events only, so formatting/seeding don't re-trigger it).
-          if (update.docChanged && update.transactions.some((tr) => tr.isUserEvent('input.type'))) {
-            const pos = update.state.selection.main.head;
-            const lineText = update.state.doc.lineAt(pos);
-            if (FROM_JOIN_TRIGGER_RE.test(lineText.text.slice(0, pos - lineText.from))) {
-              startCompletion(update.view);
-            }
-          }
-        }),
-        indentUnit.of('  '),
-        EditorState.tabSize.of(2),
-      ];
-    }, [catalogs, appearance]);
-
-    const addTab = () => {
-      const id = nextTabId();
-      setTabs((prev) => [...prev, { id, name: `Query ${id}`, sql: '' }]);
-      setActiveId(id);
-    };
-
-    const closeTab = (id: number, e: MouseEvent) => {
-      e.stopPropagation();
-      setTabs((prev) => {
-        const idx = prev.findIndex((t) => t.id === id);
-        const nextTabs = prev.filter((t) => t.id !== id);
-        if (nextTabs.length === 0) {
-          const nid = nextTabId();
-          setActiveId(nid);
-          return [{ id: nid, name: `Query ${nid}`, sql: '' }];
-        }
-        if (id === activeId) {
-          setActiveId(nextTabs[Math.max(0, idx - 1)].id);
-        }
-        return nextTabs;
-      });
-    };
+    const extensions = useSqlExtensions(catalogs, appearance, runRef, setHasSel);
 
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-background">
@@ -450,40 +515,46 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             <TabsList className="overflow-x-auto" variant="underline">
               {tabs.map((t) => (
                 <TabsTrigger
-                  className="w-auto shrink-0 gap-1.5 px-3 text-body-sm"
+                  className="w-auto shrink-0"
                   key={t.id}
                   render={<div />}
                   value={String(t.id)}
                   variant="underline"
                 >
-                  <FileText size={13} />
-                  <span>{t.name}</span>
-                  <Button
-                    aria-label={`Close ${t.name}`}
-                    onClick={(e) => closeTab(t.id, e)}
-                    size="icon-xs"
-                    variant="ghost"
-                  >
-                    <X />
-                  </Button>
+                  <span className="flex items-center gap-1.5">
+                    <FileText size={13} />
+                    <span>{t.name}</span>
+                    <Button
+                      aria-label={`Close ${t.name}`}
+                      onClick={(e) => closeTab(t.id, e)}
+                      size="icon-xs"
+                      variant="ghost"
+                    >
+                      <X />
+                    </Button>
+                  </span>
                 </TabsTrigger>
               ))}
-              <Button aria-label="New query" onClick={addTab} size="icon-sm" title="New query" variant="ghost">
-                <Plus />
-              </Button>
+              <ElementTooltip content="New query">
+                <Button aria-label="New query" onClick={addTab} size="icon-sm" variant="ghost">
+                  <Plus />
+                </Button>
+              </ElementTooltip>
             </TabsList>
           </Tabs>
           <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
             <Popover onOpenChange={setHistOpen} open={histOpen}>
-              <PopoverTrigger
-                render={
-                  <Button size="sm" title="Query history (this browser)" variant="ghost">
-                    <History /> History
-                  </Button>
-                }
-              />
-              <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto p-1">
-                <div className="px-2 py-1.5 font-semibold text-body-sm text-muted-foreground uppercase tracking-wider">
+              <ElementTooltip content="Query history (this browser)">
+                <PopoverTrigger
+                  render={
+                    <Button size="sm" variant="ghost">
+                      <History /> History
+                    </Button>
+                  }
+                />
+              </ElementTooltip>
+              <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto">
+                <div className="px-2 py-1.5 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
                   Recent queries · this browser
                 </div>
                 {history.length === 0 ? (
@@ -506,19 +577,20 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                 ))}
               </PopoverContent>
             </Popover>
-            <Button
-              onClick={() => {
-                const view = editorRef.current?.view;
-                if (view) {
-                  formatDocument(view).catch(() => undefined);
-                }
-              }}
-              size="sm"
-              title="Format SQL"
-              variant="ghost"
-            >
-              <Wand2 /> Format
-            </Button>
+            <ElementTooltip content="Format SQL">
+              <Button
+                onClick={() => {
+                  const view = editorRef.current?.view;
+                  if (view) {
+                    formatDocument(view).catch(() => undefined);
+                  }
+                }}
+                size="sm"
+                variant="ghost"
+              >
+                <Wand2 /> Format
+              </Button>
+            </ElementTooltip>
             <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
               Run selection
             </Button>

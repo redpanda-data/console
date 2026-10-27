@@ -98,54 +98,49 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
   return { value, unit: best.unit };
 };
 
+type TopicConfigEntries = { configEntries?: Array<{ name: string; value: string | null }> };
+
+// A retention entry's value: -1 = infinite, otherwise the best-fitting unit; defaults when unset.
+function parseRetention<Unit extends string>(
+  raw: string | null | undefined,
+  defaults: { value: number; unit: Unit },
+  findBestUnit: (amount: number) => { value: number; unit: Unit }
+): { value: number; unit: Unit | 'infinite' } {
+  const amount = raw ? Number.parseInt(raw, 10) : 0;
+  if (amount === -1) {
+    return { value: defaults.value, unit: 'infinite' };
+  }
+  return amount > 0 ? findBestUnit(amount) : defaults;
+}
+
 export const parseTopicConfigFromExisting = (
   topic: { topicName: string; partitionCount?: number; replicationFactor?: number },
-  config: { configEntries?: Array<{ name: string; value: string | null }> }
+  config: TopicConfigEntries
 ) => {
-  const retentionMs = config?.configEntries?.find((entry) => entry.name === 'retention.ms');
-  const retentionBytes = config?.configEntries?.find((entry) => entry.name === 'retention.bytes');
-
-  let retentionTimeMs = DEFAULT_RETENTION_TIME_MS;
-  let retentionTimeUnit: RetentionTimeUnit = DEFAULT_RETENTION_TIME_UNIT;
-  let retentionSize = DEFAULT_RETENTION_SIZE;
-  let retentionSizeUnit: RetentionSizeUnit = DEFAULT_RETENTION_SIZE_UNIT;
-
-  // Parse retention.ms (-1 = infinite, otherwise find best unit)
-  if (retentionMs?.value && retentionMs.value !== null) {
-    const ms = Number.parseInt(retentionMs.value, 10);
-    if (ms === -1) {
-      retentionTimeUnit = 'infinite';
-    } else if (ms > 0) {
-      const { value, unit } = findBestRetentionTimeUnit(ms);
-      retentionTimeMs = value;
-      retentionTimeUnit = unit;
-    }
-  }
-
-  // Parse retention.bytes (-1 = infinite, otherwise find best unit)
-  if (retentionBytes?.value && retentionBytes.value !== null) {
-    const bytes = Number.parseInt(retentionBytes.value, 10);
-    if (bytes === -1) {
-      retentionSizeUnit = 'infinite';
-    } else if (bytes > 0) {
-      const { value, unit } = findBestRetentionSizeUnit(bytes);
-      retentionSize = value;
-      retentionSizeUnit = unit;
-    }
-  }
+  const entryValue = (name: string) => config?.configEntries?.find((entry) => entry.name === name)?.value;
+  const retentionTime = parseRetention(
+    entryValue('retention.ms'),
+    { value: DEFAULT_RETENTION_TIME_MS, unit: DEFAULT_RETENTION_TIME_UNIT },
+    findBestRetentionTimeUnit
+  );
+  const retentionSize = parseRetention(
+    entryValue('retention.bytes'),
+    { value: DEFAULT_RETENTION_SIZE, unit: DEFAULT_RETENTION_SIZE_UNIT },
+    findBestRetentionSizeUnit
+  );
 
   return {
     topicName: topic.topicName,
     partitions: topic.partitionCount || TOPIC_FORM_DEFAULTS.partitions,
     replicationFactor: topic.replicationFactor || TOPIC_FORM_DEFAULTS.replicationFactor,
-    retentionTimeMs,
-    retentionTimeUnit,
-    retentionSize,
-    retentionSizeUnit,
+    retentionTimeMs: retentionTime.value,
+    retentionTimeUnit: retentionTime.unit,
+    retentionSize: retentionSize.value,
+    retentionSizeUnit: retentionSize.unit,
   };
 };
 
-export const parseRetentionFromConfig = (config: { configEntries?: Array<{ name: string; value: string | null }> }) =>
+export const parseRetentionFromConfig = (config: TopicConfigEntries) =>
   parseTopicConfigFromExisting({ topicName: '' }, config);
 
 // Form helper functions for input handling

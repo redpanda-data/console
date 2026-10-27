@@ -11,7 +11,7 @@ import { definePlaywrightOptions } from '../shared/playwright-options';
  * Blocked on: new view-only auth fixture (playwright/.auth/view-only.json) — see UX-1209.
  */
 
-import { test as base, expect } from '../shared/e2e';
+import { test as base, expect, type Locator } from '../shared/e2e';
 
 const test = base.extend({ playwright: definePlaywrightOptions({ storageState: 'playwright/.auth/view-only.json' }) });
 
@@ -19,7 +19,25 @@ const test = base.extend({ playwright: definePlaywrightOptions({ storageState: '
 // ready; only the seeded role and storageState are missing.
 const VIEW_ONLY_FIXTURE_READY = false;
 
-test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Users page (view-only role)', () => {
+/** Structural: the control is either absent or disabled — both acceptable. */
+const expectHiddenOrDisabled = async (control: Locator) => {
+  const isVisible = await control.isVisible().catch(() => false);
+  if (isVisible) {
+    await expect(control).toBeDisabled();
+  } else {
+    await expect(control).not.toBeVisible();
+  }
+};
+
+/** The control may be hidden entirely; when it is rendered, it must be disabled. */
+const expectDisabledIfShown = async (control: Locator) => {
+  const isVisible = await control.isVisible().catch(() => false);
+  if (isVisible) {
+    await expect(control).toBeDisabled();
+  }
+};
+
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('authorization - Users page (view-only role)', () => {
   test('users list renders for view-only role', async ({ page }) => {
     await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
 
@@ -35,23 +53,13 @@ test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Users page (view
     await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
 
     // Structural: the Create button is either absent or disabled — both acceptable.
-    const createButton = page.getByTestId('create-user-button');
-    const isVisible = await createButton.isVisible().catch(() => false);
-    if (isVisible) {
-      await expect(createButton).toBeDisabled();
-    } else {
-      await expect(createButton).not.toBeVisible();
-    }
+    await expectHiddenOrDisabled(page.getByTestId('create-user-button'));
 
     // Direct navigation: /security/users/create should NOT show a working create form.
     // The form may either be hidden entirely (route redirect) or rendered with the submit
     // disabled (inline permission gate) — both are acceptable view-only behaviors.
     await page.goto('/security/users/create', { waitUntil: 'domcontentloaded' });
-    const submitButton = page.getByTestId('create-user-submit');
-    const submitVisible = await submitButton.isVisible().catch(() => false);
-    if (submitVisible) {
-      await expect(submitButton).toBeDisabled();
-    }
+    await expectDisabledIfShown(page.getByTestId('create-user-submit'));
   });
 
   test('delete user button is not available on details page for view-only role', async ({ page }) => {
@@ -65,40 +73,24 @@ test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Users page (view
     await firstUserLink.click();
 
     // Structural: Delete button is hidden or disabled.
-    const deleteBtn = page.getByRole('button', { name: 'Delete user' });
-    const deleteVisible = await deleteBtn.isVisible().catch(() => false);
-    if (deleteVisible) {
-      await expect(deleteBtn).toBeDisabled();
-    } else {
-      await expect(deleteBtn).not.toBeVisible();
-    }
+    await expectHiddenOrDisabled(page.getByRole('button', { name: 'Delete user' }));
   });
 });
 
-test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - ACLs page (view-only role)', () => {
-  test('ACLs list is visible but Create ACL is blocked', async ({ page }) => {
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('authorization - ACLs page (view-only role)', () => {
+  test('aCLs list is visible but Create ACL is blocked', async ({ page }) => {
     await page.goto('/security/acls', { waitUntil: 'domcontentloaded' });
     expect(page.url()).toContain('/security/acls');
 
     // Structural: Create ACL button hidden or disabled.
-    const createAcl = page.getByTestId('create-acls');
-    const createVisible = await createAcl.isVisible().catch(() => false);
-    if (createVisible) {
-      await expect(createAcl).toBeDisabled();
-    } else {
-      await expect(createAcl).not.toBeVisible();
-    }
+    await expectHiddenOrDisabled(page.getByTestId('create-acls'));
 
     // Direct-nav: /security/acls/create should not present a working form.
     await page.goto('/security/acls/create', { waitUntil: 'domcontentloaded' });
-    const principalInput = page.getByTestId('shared-principal-input');
-    const principalVisible = await principalInput.isVisible().catch(() => false);
-    if (principalVisible) {
-      await expect(principalInput).toBeDisabled();
-    }
+    await expectDisabledIfShown(page.getByTestId('shared-principal-input'));
   });
 
-  test('DeleteACLs dropdown items are hidden in permissions list for view-only', async ({ page, skip }) => {
+  test('deleteACLs dropdown items are hidden in permissions list for view-only', async ({ page, skip }) => {
     await page.goto('/security/permissions-list', { waitUntil: 'domcontentloaded' });
 
     // Find any row and open its dropdown.
@@ -111,19 +103,15 @@ test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - ACLs page (view-
     await firstRow.getByRole('button').click();
 
     // Structural: all three delete options are absent or disabled for view-only role.
-    for (const testId of ['delete-user-and-acls', 'delete-user-only', 'delete-acls-only']) {
-      const item = page.getByTestId(testId);
-      const isVisible = await item.isVisible().catch(() => false);
-      if (isVisible) {
-        await expect(item).toBeDisabled();
-      } else {
-        await expect(item).not.toBeVisible();
-      }
-    }
+    await Promise.all(
+      ['delete-user-and-acls', 'delete-user-only', 'delete-acls-only'].map((testId) =>
+        expectHiddenOrDisabled(page.getByTestId(testId))
+      )
+    );
   });
 });
 
-test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('Authorization - Quotas page (view-only role)', () => {
+test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('authorization - Quotas page (view-only role)', () => {
   test('quotas table loads for view-only role', async ({ page }) => {
     await page.goto('/quotas', { waitUntil: 'domcontentloaded' });
 

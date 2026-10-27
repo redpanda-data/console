@@ -20,6 +20,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
+import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
@@ -34,7 +35,7 @@ import { TopicListPagination } from './topic-list-pagination';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import { type Topic, TopicActions } from '../../../state/rest-interfaces';
+import { type Topic, type TopicAction, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
@@ -70,27 +71,13 @@ const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: s
   }
 };
 
-const TopicList: FC = () => {
+type SetPageIndex = (pageIndex: number) => unknown;
+
+// Registers the page header and the global refresh handler for the topic list.
+function useTopicListPage(refetchTopics: () => unknown) {
   useLayoutEffect(() => {
     setPageHeader('Topics', [{ title: 'Topics', linkTo: '/topics' }]);
   }, []);
-
-  const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
-  const [showInternalTopics, setShowInternalTopics] = useQueryStateWithCallback<boolean>(
-    {
-      onUpdate: (val) => {
-        uiSettings.topicList.hideInternalTopics = val;
-      },
-      getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
-    },
-    'showInternal',
-    parseAsBoolean
-  );
-
-  const { data, isLoading, isError, error, refetch: refetchTopics } = useLegacyListTopicsQuery();
-  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
-  const [deletionPending, setDeletionPending] = useState(false);
-  const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
 
   const refreshData = useCallback(() => {
     api.refreshClusterOverview();
@@ -102,6 +89,26 @@ const TopicList: FC = () => {
     appGlobal.onRefresh = refreshData;
   }, [refreshData]);
 
+  return refreshData;
+}
+
+function useShowInternalTopics() {
+  return useQueryStateWithCallback<boolean>(
+    {
+      onUpdate: (val) => {
+        uiSettings.topicList.hideInternalTopics = val;
+      },
+      getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
+    },
+    'showInternal',
+    parseAsBoolean
+  );
+}
+
+function useDeleteTopic(onDeleted: () => void) {
+  const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
+  const [deletionPending, setDeletionPending] = useState(false);
+
   const handleDeleteTopic = (topicName: string) => {
     setDeletionPending(true);
     api
@@ -111,7 +118,7 @@ const TopicList: FC = () => {
           description: `Topic "${topicName}" has been deleted.`,
         });
         setTopicToDelete(null);
-        refreshData();
+        onDeleted();
       })
       .catch((err: Error) => {
         toast.error('Failed to delete topic', { description: err.message });
@@ -119,13 +126,17 @@ const TopicList: FC = () => {
       .finally(() => setDeletionPending(false));
   };
 
+  return { topicToDelete, setTopicToDelete, deletionPending, handleDeleteTopic };
+}
+
+function useVisibleTopics(topics: Topic[] | undefined, showInternalTopics: boolean | null) {
   const allTopics = useMemo(() => {
-    let filtered = data.topics ?? [];
+    let filtered = topics ?? [];
     if (!showInternalTopics) {
       filtered = filtered.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
     return filtered;
-  }, [data.topics, showInternalTopics]);
+  }, [topics, showInternalTopics]);
 
   const statistics = useMemo(
     () => ({
@@ -136,6 +147,10 @@ const TopicList: FC = () => {
     [allTopics]
   );
 
+  return { allTopics, statistics };
+}
+
+function useTopicListPagination() {
   const [pageIndex, setPageIndex] = useQueryState('page', parseAsInteger.withDefault(0));
 
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
@@ -149,6 +164,18 @@ const TopicList: FC = () => {
     parseAsInteger.withDefault(DEFAULT_TABLE_PAGE_SIZE)
   );
 
+  const pagination: PaginationState = { pageIndex, pageSize };
+
+  const handlePaginationChange = (updater: Updater<PaginationState>) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater;
+    void setPageIndex(next.pageIndex);
+    setPageSize(next.pageSize);
+  };
+
+  return { pageIndex, setPageIndex, pagination, handlePaginationChange };
+}
+
+function useTopicListSorting(setPageIndex: SetPageIndex) {
   const [sortId, setSortId] = useQueryStateWithCallback<string>(
     {
       onUpdate: (val) => {
@@ -184,17 +211,15 @@ const TopicList: FC = () => {
     }
     void setPageIndex(0);
   };
+
+  return { sorting, handleSortingChange };
+}
+
+function useTopicNameFilter(setPageIndex: SetPageIndex) {
+  const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     searchValue ? [{ id: 'topicName', value: searchValue }] : []
   );
-
-  const pagination: PaginationState = { pageIndex, pageSize };
-
-  const handlePaginationChange = (updater: Updater<PaginationState>) => {
-    const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
-  };
 
   const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
@@ -204,7 +229,11 @@ const TopicList: FC = () => {
     setSearchValue((nameFilter?.value as string) || null);
   };
 
-  const columns: DataTableColumnDef<Topic>[] = [
+  return { columnFilters, handleColumnFiltersChange };
+}
+
+function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColumnDef<Topic>[] {
+  return [
     {
       accessorKey: 'topicName',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -213,7 +242,7 @@ const TopicList: FC = () => {
       cell: ({ row: { original: topic } }) => (
         <div className="flex items-start gap-2">
           <Link
-            className="wrap-anywhere min-w-0 whitespace-normal text-inherit no-underline hover:no-underline"
+            className="min-w-0 wrap-anywhere whitespace-normal"
             data-testid={`topic-link-${topic.topicName}`}
             params={{ topicName: encodeURIComponent(topic.topicName) }}
             search={{} as never}
@@ -275,7 +304,7 @@ const TopicList: FC = () => {
               disabled={!hasDeletePrivilege() || undefined}
               onClick={(e) => {
                 e.stopPropagation();
-                setTopicToDelete(topic);
+                onDeleteTopic(topic);
               }}
               variant="destructive"
             >
@@ -287,9 +316,24 @@ const TopicList: FC = () => {
       ),
     },
   ];
+}
+
+function useTopicListTable({
+  topics,
+  onDeleteTopic,
+  isReady,
+}: {
+  topics: Topic[];
+  onDeleteTopic: (topic: Topic) => void;
+  isReady: boolean;
+}) {
+  const { pageIndex, setPageIndex, pagination, handlePaginationChange } = useTopicListPagination();
+  const { sorting, handleSortingChange } = useTopicListSorting(setPageIndex);
+  const { columnFilters, handleColumnFiltersChange } = useTopicNameFilter(setPageIndex);
+  const columns = buildTopicColumns(onDeleteTopic);
 
   const table = useDataTable({
-    data: allTopics,
+    data: topics,
     columns,
     enableHiding: false,
     enableRowSelection: false,
@@ -303,7 +347,7 @@ const TopicList: FC = () => {
   const pageCount = table.getPageCount();
   useEffect(
     function clampPageIndex() {
-      if (isLoading || isError) {
+      if (!isReady) {
         return;
       }
       const lastPageIndex = Math.max(0, pageCount - 1);
@@ -311,8 +355,98 @@ const TopicList: FC = () => {
         void setPageIndex(Math.max(0, Math.min(pageIndex, lastPageIndex)));
       }
     },
-    [isLoading, isError, pageCount, pageIndex, setPageIndex]
+    [isReady, pageCount, pageIndex, setPageIndex]
   );
+
+  return {
+    table,
+    columnCount: columns.length,
+    isFiltered: columnFilters.length > 0,
+    pageIndex,
+    pageCount,
+    setPageIndex,
+  };
+}
+
+type TopicTableBodyProps = {
+  table: ReturnType<typeof useTopicListTable>['table'];
+  columnCount: number;
+  showSkeleton: boolean;
+  isFiltered: boolean;
+  onCreateTopic: () => void;
+};
+
+const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreateTopic }: TopicTableBodyProps) => {
+  if (showSkeleton) {
+    return [0, 1, 2, 3, 4].map((i) => (
+      <TableRow key={i}>
+        {Array.from({ length: columnCount }, (_col, colIdx) => (
+          <TableCell key={colIdx}>
+            <Skeleton variant="text" width="md" />
+          </TableCell>
+        ))}
+      </TableRow>
+    ));
+  }
+
+  if (table.getRowModel().rows.length) {
+    return table.getRowModel().rows.map((row) => (
+      <TableRow key={row.id}>
+        {row.getVisibleCells().map((cell) => {
+          const meta = readColumnMeta(cell.column.columnDef.meta);
+          return (
+            <TableCell
+              align={meta?.align}
+              className={cell.column.id === 'topicName' ? 'max-w-0 min-w-48' : undefined}
+              key={cell.id}
+              testId="data-table-cell"
+            >
+              {<table.FlexRender cell={cell} />}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    ));
+  }
+
+  return (
+    <TableRow>
+      <TableCell colSpan={columnCount}>
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <DatabaseIcon />
+            </EmptyMedia>
+            <EmptyTitle>{isFiltered ? 'No topics match your search' : 'No topics yet'}</EmptyTitle>
+            <EmptyDescription>
+              {isFiltered
+                ? 'Try adjusting your search term.'
+                : 'Create your first topic to start publishing and consuming messages.'}
+            </EmptyDescription>
+          </EmptyHeader>
+          {!isFiltered && (
+            <EmptyContent>
+              <Button onClick={onCreateTopic}>Create topic</Button>
+            </EmptyContent>
+          )}
+        </Empty>
+      </TableCell>
+    </TableRow>
+  );
+};
+
+const TopicList: FC = () => {
+  const { data, isLoading, isError, error, refetch: refetchTopics } = useLegacyListTopicsQuery();
+  const refreshData = useTopicListPage(refetchTopics);
+  const [showInternalTopics, setShowInternalTopics] = useShowInternalTopics();
+  const { allTopics, statistics } = useVisibleTopics(data.topics, showInternalTopics);
+  const { topicToDelete, setTopicToDelete, deletionPending, handleDeleteTopic } = useDeleteTopic(refreshData);
+  const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
+  const { table, columnCount, isFiltered, pageIndex, pageCount, setPageIndex } = useTopicListTable({
+    topics: allTopics,
+    onDeleteTopic: setTopicToDelete,
+    isReady: !(isLoading || isError),
+  });
 
   if (isError && error) {
     return (
@@ -322,66 +456,6 @@ const TopicList: FC = () => {
       </Alert>
     );
   }
-
-  const renderBody = () => {
-    if (isLoading || (pageCount > 0 && (pageIndex < 0 || pageIndex >= pageCount))) {
-      return [0, 1, 2, 3, 4].map((i) => (
-        <TableRow key={i}>
-          {columns.map((_col, colIdx) => (
-            <TableCell key={colIdx}>
-              <Skeleton variant="text" width="md" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ));
-    }
-
-    if (table.getRowModel().rows.length) {
-      return table.getRowModel().rows.map((row) => (
-        <TableRow key={row.id}>
-          {row.getVisibleCells().map((cell) => {
-            const meta = readColumnMeta(cell.column.columnDef.meta);
-            return (
-              <TableCell
-                align={meta?.align}
-                className={cell.column.id === 'topicName' ? 'min-w-48 max-w-0' : undefined}
-                key={cell.id}
-                testId="data-table-cell"
-              >
-                {<table.FlexRender cell={cell} />}
-              </TableCell>
-            );
-          })}
-        </TableRow>
-      ));
-    }
-
-    const isFiltered = columnFilters.length > 0;
-    return (
-      <TableRow className="hover:bg-transparent">
-        <TableCell colSpan={columns.length}>
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <DatabaseIcon />
-              </EmptyMedia>
-              <EmptyTitle>{isFiltered ? 'No topics match your search' : 'No topics yet'}</EmptyTitle>
-              <EmptyDescription>
-                {isFiltered
-                  ? 'Try adjusting your search term.'
-                  : 'Create your first topic to start publishing and consuming messages.'}
-              </EmptyDescription>
-            </EmptyHeader>
-            {!isFiltered && (
-              <EmptyContent>
-                <Button onClick={() => setIsCreateTopicModalOpen(true)}>Create topic</Button>
-              </EmptyContent>
-            )}
-          </Empty>
-        </TableCell>
-      </TableRow>
-    );
-  };
 
   return (
     <>
@@ -420,7 +494,7 @@ const TopicList: FC = () => {
             ] as const
           ).map(({ label, value }) => (
             <div className="flex flex-col gap-0.5" key={label}>
-              <div className="font-semibold text-2xl tabular-nums">{value}</div>
+              <div className="text-2xl font-semibold tabular-nums">{value}</div>
               <div className="text-body text-muted-foreground">{label}</div>
             </div>
           ))}
@@ -434,31 +508,33 @@ const TopicList: FC = () => {
           }
         >
           <div className="relative">
-            {!(table.getColumn('topicName')?.getFilterValue() as string) && (
-              <span
-                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground"
-                data-testid="search-field-search-icon"
-              >
-                <Search className="h-4 w-4" />
-              </span>
-            )}
+            {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
             <ListLayoutSearchInput
-              className={(table.getColumn('topicName')?.getFilterValue() as string) ? 'pr-8' : 'pl-8'}
               data-testid="search-field-input"
               onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
               placeholder="Filter by name (regexp)..."
               value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
-            />
-            {(table.getColumn('topicName')?.getFilterValue() as string) && (
-              <button
-                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                data-testid="search-field-reset-icon"
-                onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
-                type="button"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            >
+              <InputStart>
+                {!(table.getColumn('topicName')?.getFilterValue() as string) && (
+                  <span className="text-muted-foreground" data-testid="search-field-search-icon">
+                    <Search className="h-4 w-4" />
+                  </span>
+                )}
+              </InputStart>
+              <InputEnd className="pointer-events-auto">
+                {(table.getColumn('topicName')?.getFilterValue() as string) && (
+                  <button
+                    className="text-muted-foreground hover:text-foreground"
+                    data-testid="search-field-reset-icon"
+                    onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
+                    type="button"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </InputEnd>
+            </ListLayoutSearchInput>
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-body">
             <Checkbox
@@ -488,7 +564,15 @@ const TopicList: FC = () => {
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>{renderBody()}</TableBody>
+          <TableBody>
+            <TopicTableBody
+              columnCount={columnCount}
+              isFiltered={isFiltered}
+              onCreateTopic={() => setIsCreateTopicModalOpen(true)}
+              showSkeleton={isLoading || (pageCount > 0 && (pageIndex < 0 || pageIndex >= pageCount))}
+              table={table}
+            />
+          </TableBody>
         </Table>
 
         <TopicListPagination table={table} />
@@ -551,6 +635,16 @@ const iconClosedEye = (
   </span>
 );
 
+function countMissingActions(actions: TopicAction[]): number {
+  let missing = 0;
+  for (const a of TopicActions) {
+    if (!actions.includes(a)) {
+      missing += 1;
+    }
+  }
+  return missing;
+}
+
 const TopicName = ({ topic }: { topic: Topic }) => {
   const actions = topic.allowedActions;
 
@@ -558,14 +652,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
     return <>{topic.topicName}</>;
   }
 
-  let missing = 0;
-  for (const a of TopicActions) {
-    if (!actions.includes(a)) {
-      missing += 1;
-    }
-  }
-
-  if (missing === 0) {
+  if (countMissingActions(actions) === 0) {
     return <>{topic.topicName}</>;
   }
 
@@ -577,7 +664,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
       <div className="flex flex-col gap-0.5">
         {TopicActions.map((a) => (
           <div className="flex items-center justify-between gap-4" key={a}>
-            <span className="font-semibold text-body-sm capitalize">{a}</span>
+            <span className="text-body-sm font-semibold capitalize">{a}</span>
             {actions.includes(a) ? iconAllowed : iconForbidden}
           </div>
         ))}
@@ -590,7 +677,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
       <Tooltip>
         <TooltipTrigger
           render={
-            <span className="whitespace-break-spaces break-words">
+            <span className="wrap-break-word whitespace-break-spaces">
               {topic.topicName}
               {iconClosedEye}
             </span>

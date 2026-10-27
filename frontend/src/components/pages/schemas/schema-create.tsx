@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { TrashIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -45,8 +45,15 @@ import {
   contextNameToId,
   deriveContexts,
   isNamedContext,
-  parseSubjectContext,
 } from './schema-context-utils';
+import {
+  addVersionEditorState,
+  deriveSchemaEditorState,
+  type NamingStrategy,
+  type SchemaEditorStateData,
+  type SchemaEditorStateHelper,
+  subjectOptionsByContext,
+} from './schema-create-state';
 import {
   useListSchemasQuery,
   useSchemaRegistryContextsQuery,
@@ -54,45 +61,13 @@ import {
 } from '../../../react-query/api/schema-registry';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import {
-  type SchemaRegistryValidateSchemaResponse,
-  SchemaType,
-  type SchemaTypeType,
-} from '../../../state/rest-interfaces';
+import type { SchemaRegistryValidateSchemaResponse, SchemaTypeType } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
-
-// Regex for extracting record names from schema text
-const JSON_NAME_REGEX = /"name"\s*:\s*"(.*)"/;
-const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(\S+)\s*\{/;
-
-type NamingStrategy =
-  | 'TOPIC' // only topic name
-  | 'RECORD_NAME' // take name from the record
-  | 'TOPIC_RECORD_NAME' // both topic and record name
-  | 'CUSTOM'; // essentially no strategy / arbitrary name
-
-type SchemaEditorStateData = {
-  strategy: NamingStrategy;
-  userInput: string; // holds either topicName or custom input
-  keyOrValue: 'KEY' | 'VALUE' | undefined;
-  format: 'AVRO' | 'PROTOBUF' | 'JSON';
-  schemaText: string;
-  references: { id: string; name: string; subject: string; version: number; context: string }[];
-  normalize: boolean;
-  metadataProperties: { id: string; key: string; value: string }[];
-  context: string;
-};
-
-type SchemaEditorStateHelper = SchemaEditorStateData & {
-  computedMetadata: { properties: Record<string, string> } | undefined;
-  isInvalidKeyOrValue: boolean;
-  computedSubjectName: string;
-  qualifiedSubjectName: string;
-};
+import { TonedIcon } from '../shared/toned-icon';
 
 type SetSchemaState = Dispatch<SetStateAction<SchemaEditorStateData>>;
 
@@ -108,66 +83,6 @@ function createInitialSchemaState(): SchemaEditorStateData {
     metadataProperties: [{ id: crypto.randomUUID(), key: '', value: '' }],
     context: '',
   };
-}
-
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-function computeRecordName(state: SchemaEditorStateData): string {
-  if (state.format === 'AVRO' || state.format === 'JSON') {
-    try {
-      const obj = JSON.parse(state.schemaText);
-      const name = obj.name;
-      return name;
-    } catch {
-      // no op - schema may be incomplete during editing
-    }
-    const ar = JSON_NAME_REGEX.exec(state.schemaText);
-    if (!ar) {
-      return '';
-    }
-    if (ar.length < 2) {
-      return '';
-    }
-    return ar[1];
-  }
-  const ar = PROTOBUF_MESSAGE_NAME_REGEX.exec(state.schemaText);
-  if (!ar) {
-    return '';
-  }
-  if (ar.length < 2) {
-    return '';
-  }
-  return ar[1];
-}
-
-function deriveSchemaEditorState(state: SchemaEditorStateData): SchemaEditorStateHelper {
-  const properties: Record<string, string> = {};
-  for (const prop of state.metadataProperties) {
-    if (prop.key && prop.value) {
-      properties[prop.key] = prop.value;
-    }
-  }
-  const computedMetadata = Object.keys(properties).length > 0 ? { properties } : undefined;
-
-  const isInvalidKeyOrValue = state.strategy === 'TOPIC' && state.userInput.length > 0 && !state.keyOrValue;
-
-  const recordName = computeRecordName(state);
-  let subjectName = '';
-  if (state.strategy === 'TOPIC') {
-    subjectName = state.userInput;
-  } else if (state.strategy === 'RECORD_NAME') {
-    subjectName = recordName;
-  } else if (state.strategy === 'TOPIC_RECORD_NAME') {
-    subjectName = `${state.userInput}-${recordName}`;
-  } else {
-    subjectName = state.userInput;
-  }
-  if (state.strategy !== 'CUSTOM' && state.keyOrValue !== undefined && subjectName) {
-    subjectName += `-${state.keyOrValue.toLowerCase()}`;
-  }
-
-  const qualifiedSubjectName = buildQualifiedSubjectName(state.context, subjectName);
-
-  return { ...state, computedMetadata, isInvalidKeyOrValue, computedSubjectName: subjectName, qualifiedSubjectName };
 }
 
 export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
@@ -276,46 +191,8 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
       return;
     }
 
-    const schemaText =
-      schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON
-        ? JSON.stringify(JSON.parse(schema.schema), undefined, 4)
-        : schema.schema;
-
-    const metadataProperties: SchemaEditorStateData['metadataProperties'] = schema.metadata?.properties
-      ? [
-          ...Object.entries(schema.metadata.properties).map(([key, value]) => ({
-            id: crypto.randomUUID(),
-            key,
-            value,
-          })),
-          { id: crypto.randomUUID(), key: '', value: '' },
-        ]
-      : [{ id: crypto.randomUUID(), key: '', value: '' }];
-
-    let userInput: string;
-    let contextId: string;
-    if (srContextsEnabled) {
-      const parsed = parseSubjectContext(subject.name);
-      contextId = contextNameToId(parsed.context);
-      userInput = parsed.displayName;
-    } else {
-      contextId = '';
-      userInput = subject.name;
-    }
-
-    queueMicrotask(() =>
-      setStateData({
-        strategy: 'CUSTOM',
-        userInput,
-        keyOrValue: undefined,
-        format: schema.type as 'AVRO' | 'PROTOBUF',
-        schemaText,
-        references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID(), context: contextId })),
-        normalize: false,
-        metadataProperties,
-        context: contextId,
-      })
-    );
+    const nextState = addVersionEditorState(subject.name, schema, srContextsEnabled);
+    queueMicrotask(() => setStateData(nextState));
   }, [subject, stateData, srContextsEnabled]);
 
   if (!subject || stateData === null) {
@@ -408,33 +285,7 @@ const SchemaPageButtons = (p: {
 
             // try to create the schema
             setCreating(true);
-            try {
-              const subjectName = editorState.qualifiedSubjectName;
-              await api
-                .createSchema(subjectName, {
-                  schemaType: editorState.format as SchemaTypeType,
-                  schema: editorState.schemaText,
-                  references: buildQualifiedReferences(editorState.references, editorState.context),
-                  metadata: editorState.computedMetadata,
-                  params: {
-                    normalize: editorState.normalize,
-                  },
-                })
-                .finally(() => setCreating(false));
-
-              await Promise.all([
-                api.refreshSchemaDetails(subjectName, true),
-                // Invalidate React Query cache so details page shows latest data
-                queryClient.invalidateQueries({
-                  queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
-                }),
-              ]);
-
-              // success: navigate to details with "latest" so it picks up the new version
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
-            } catch (err) {
-              toast.error('Error creating schema', { description: String(err) });
-            }
+            await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
           }}
           testId="schema-create-save-btn"
           variant="primary"
@@ -495,6 +346,42 @@ const SchemaPageButtons = (p: {
   );
 };
 
+// Registers the schema, refreshes its cached details, and opens the subject at
+// its latest version; `onSettled` runs once the create request settles.
+async function createSchemaAndOpen(
+  editorState: SchemaEditorStateHelper,
+  queryClient: QueryClient,
+  onSettled: () => void
+): Promise<void> {
+  try {
+    const subjectName = editorState.qualifiedSubjectName;
+    await api
+      .createSchema(subjectName, {
+        schemaType: editorState.format as SchemaTypeType,
+        schema: editorState.schemaText,
+        references: buildQualifiedReferences(editorState.references, editorState.context),
+        metadata: editorState.computedMetadata,
+        params: {
+          normalize: editorState.normalize,
+        },
+      })
+      .finally(onSettled);
+
+    await Promise.all([
+      api.refreshSchemaDetails(subjectName, true),
+      // Invalidate React Query cache so details page shows latest data
+      queryClient.invalidateQueries({
+        queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
+      }),
+    ]);
+
+    // success: navigate to details with "latest" so it picks up the new version
+    appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
+  } catch (err) {
+    toast.error('Error creating schema', { description: String(err) });
+  }
+}
+
 async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
   errorDetails?: string; // details about why the schema is not valid
@@ -528,27 +415,29 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   };
 }
 
-const SchemaEditor = (p: {
-  state: SchemaEditorStateHelper;
-  mode: 'CREATE' | 'ADD_VERSION';
-  onStateChange: SetSchemaState;
-}) => {
+const BASE_FORMAT_OPTIONS = [
+  { value: 'AVRO', label: 'Avro' },
+  { value: 'PROTOBUF', label: 'Protobuf' },
+];
+const JSON_FORMAT_OPTION = { value: 'JSON', label: 'JSON' };
+
+// Schema formats the registry accepts; JSON only when it reports support for it.
+function useSchemaFormatOptions() {
   const { data: schemaTypes } = useSchemaTypesQuery();
-  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
-  const { data: subjects } = useListSchemasQuery();
 
   useEffect(() => {
     api.refreshSchemaTypes(true);
   }, []);
 
-  const { state, mode } = p;
-  const isAddVersion = mode === 'ADD_VERSION';
-  const [contextWarning, setContextWarning] = useState('');
-  const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
-  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
-  // Only surface "required" errors after the user has interacted with a field, not on mount.
-  const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
+  const supportsJson = schemaTypes?.includes('JSON') || api.schemaTypes?.includes('JSON');
+  return supportsJson ? [...BASE_FORMAT_OPTIONS, JSON_FORMAT_OPTION] : BASE_FORMAT_OPTIONS;
+}
+
+// Existing contexts (without the synthetic "All"), as options keyed by label
+// for the context combobox and by id for the reference context selects.
+function useSchemaEditorContexts(srContextsEnabled: boolean) {
+  const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
+  const { data: subjects } = useListSchemasQuery();
 
   const availableContexts = useMemo(() => {
     if (!(srContextsEnabled && apiContexts && subjects)) {
@@ -567,17 +456,111 @@ const SchemaEditor = (p: {
     [availableContexts]
   );
 
+  return { contextOptions, contextSelectOptions };
+}
+
+// Switching format replaces the schema text, so a picked format waits for confirmation.
+function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
+  const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
+  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+
+  return {
+    switchFormatOpen,
+    setSwitchFormatOpen,
+    requestFormat: (format: string | undefined) => {
+      if (!format || currentFormat === format) {
+        return;
+      }
+      // Let user confirm
+      setPendingFormat(format);
+      setSwitchFormatOpen(true);
+    },
+    confirmFormat: () => {
+      if (pendingFormat) {
+        onStateChange((prev) => ({
+          ...prev,
+          format: pendingFormat as 'AVRO' | 'PROTOBUF' | 'JSON',
+          schemaText: exampleSchema[pendingFormat as SchemaTypeType],
+        }));
+        setPendingFormat(null);
+      }
+    },
+  };
+}
+
+// Context picker for a new subject: pick an existing context or create one.
+function ContextField({
+  state,
+  onStateChange,
+  contextOptions,
+  showRequired,
+  onTouched,
+}: {
+  state: SchemaEditorStateHelper;
+  onStateChange: SetSchemaState;
+  contextOptions: { value: string; label: string }[];
+  showRequired: boolean;
+  onTouched: () => void;
+}) {
+  const [contextWarning, setContextWarning] = useState('');
+
+  return (
+    <Field data-invalid={showRequired || undefined}>
+      <FieldLabel>Context</FieldLabel>
+      <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
+      <Combobox
+        // index.scss's base `svg` rule offsets the icons.
+        className="[&_svg]:block!"
+        creatable
+        createLabel="context"
+        onChange={(value) => {
+          const contextId = contextLabelToId(value);
+          onTouched();
+          setContextWarning('');
+          onStateChange((prev) => ({
+            ...prev,
+            context: contextId,
+            references: prev.references.map((r) => ({ ...r, context: contextId })),
+          }));
+        }}
+        onCreateOption={(value) => {
+          if (value.startsWith('.')) {
+            setContextWarning('');
+          } else {
+            setContextWarning('Context name must start with a dot (for example, ".staging")');
+          }
+        }}
+        options={contextOptions}
+        placeholder="Select or create a context..."
+        testId="schema-create-context-select"
+        value={contextIdToLabel(state.context)}
+      />
+      {contextWarning && <div className="mt-1 text-body text-destructive">{contextWarning}</div>}
+      {showRequired && <FieldError>Context is required</FieldError>}
+    </Field>
+  );
+}
+
+const SchemaEditor = (p: {
+  state: SchemaEditorStateHelper;
+  mode: 'CREATE' | 'ADD_VERSION';
+  onStateChange: SetSchemaState;
+}) => {
+  const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+  const formatOptions = useSchemaFormatOptions();
+  const { contextOptions, contextSelectOptions } = useSchemaEditorContexts(srContextsEnabled);
+
+  const { state, mode } = p;
+  const isAddVersion = mode === 'ADD_VERSION';
+  const { switchFormatOpen, setSwitchFormatOpen, requestFormat, confirmFormat } = useFormatSwitch(
+    state.format,
+    p.onStateChange
+  );
+  // Only surface "required" errors after the user has interacted with a field, not on mount.
+  const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
+
   const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
   const isCustom = state.strategy === 'CUSTOM';
-
-  const formatOptions = [
-    { value: 'AVRO', label: 'Avro' },
-    { value: 'PROTOBUF', label: 'Protobuf' },
-  ];
-
-  if (schemaTypes?.includes('JSON') || api.schemaTypes?.includes('JSON')) {
-    formatOptions.push({ value: 'JSON', label: 'JSON' });
-  }
 
   return (
     <>
@@ -592,39 +575,13 @@ const SchemaEditor = (p: {
       )}
       <div className="flex max-w-[650px] flex-col gap-8">
         {srContextsEnabled && !isAddVersion && (
-          <Field data-invalid={(touched.context && !state.context) || undefined}>
-            <FieldLabel>Context</FieldLabel>
-            <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
-            <Combobox
-              // index.scss's base `svg` rule offsets the icons; pl-8 clears the search icon.
-              className="[&_svg]:block! [&_input]:pl-8!"
-              creatable
-              createLabel="context"
-              onChange={(value) => {
-                const contextId = contextLabelToId(value);
-                setTouched((t) => ({ ...t, context: true }));
-                setContextWarning('');
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  context: contextId,
-                  references: prev.references.map((r) => ({ ...r, context: contextId })),
-                }));
-              }}
-              onCreateOption={(value) => {
-                if (value.startsWith('.')) {
-                  setContextWarning('');
-                } else {
-                  setContextWarning('Context name must start with a dot (for example, ".staging")');
-                }
-              }}
-              options={contextOptions}
-              placeholder="Select or create a context..."
-              testId="schema-create-context-select"
-              value={contextIdToLabel(state.context)}
-            />
-            {contextWarning && <div className="mt-1 text-body text-destructive">{contextWarning}</div>}
-            {touched.context && !state.context && <FieldError>Context is required</FieldError>}
-          </Field>
+          <ContextField
+            contextOptions={contextOptions}
+            onStateChange={p.onStateChange}
+            onTouched={() => setTouched((t) => ({ ...t, context: true }))}
+            showRequired={touched.context && !state.context}
+            state={state}
+          />
         )}
 
         {srContextsEnabled && isAddVersion && (
@@ -736,7 +693,7 @@ const SchemaEditor = (p: {
           <>
             <Separator />
             <div className="flex flex-col gap-0.5">
-              <div className="font-medium text-body-sm uppercase">Subject name</div>
+              <div className="text-body-sm font-medium uppercase">Subject name</div>
               <div className="font-mono text-body">{state.computedSubjectName}</div>
             </div>
           </>
@@ -746,7 +703,7 @@ const SchemaEditor = (p: {
           state.qualifiedSubjectName &&
           state.qualifiedSubjectName !== state.computedSubjectName && (
             <div className="flex flex-col gap-0.5">
-              <div className="font-medium text-body-sm uppercase">Qualified subject name</div>
+              <div className="text-body-sm font-medium uppercase">Qualified subject name</div>
               <div className="font-mono text-body">
                 {isNamedContext(state.context) ? (
                   <>
@@ -765,22 +722,15 @@ const SchemaEditor = (p: {
         <Field>
           <FieldLabel>Format</FieldLabel>
           <ToggleGroup
-            className="w-fit! divide-x divide-border p-0"
+            className="w-fit!"
             data-testid="schema-create-format-radio"
             disabled={isAddVersion}
-            onValueChange={([e]) => {
-              if (!e || state.format === e) {
-                return;
-              }
-              // Let user confirm
-              setPendingFormat(e);
-              setSwitchFormatOpen(true);
-            }}
+            onValueChange={([e]) => requestFormat(e)}
             value={[state.format]}
             variant="outline"
           >
             {formatOptions.map((opt) => (
-              <ToggleGroupItem className="px-4" disabled={isAddVersion} key={opt.value} value={opt.value}>
+              <ToggleGroupItem disabled={isAddVersion} key={opt.value} value={opt.value}>
                 {opt.label}
               </ToggleGroupItem>
             ))}
@@ -803,7 +753,7 @@ const SchemaEditor = (p: {
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger render={<InfoIcon className="h-4 w-4 cursor-help text-subtle" />} />
+                <TooltipTrigger render={<TonedIcon className="h-4 w-4 cursor-help" icon={InfoIcon} tone="muted" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions
@@ -840,20 +790,7 @@ const SchemaEditor = (p: {
         </div>
         <MetadataPropertiesEditor onStateChange={p.onStateChange} state={state} />
       </div>
-      <SwitchSchemaFormatDialog
-        onConfirm={() => {
-          if (pendingFormat) {
-            p.onStateChange((prev) => ({
-              ...prev,
-              format: pendingFormat as 'AVRO' | 'PROTOBUF' | 'JSON',
-              schemaText: exampleSchema[pendingFormat as SchemaTypeType],
-            }));
-            setPendingFormat(null);
-          }
-        }}
-        onOpenChange={setSwitchFormatOpen}
-        open={switchFormatOpen}
-      />
+      <SwitchSchemaFormatDialog onConfirm={confirmFormat} onOpenChange={setSwitchFormatOpen} open={switchFormatOpen} />
     </>
   );
 };
@@ -866,23 +803,16 @@ const ReferencesEditor = (p: {
   contextSelectOptions: { value: string; label: string }[];
 }) => {
   const refs = p.state.references;
+  // Subscribed, so the subject options follow the list as it loads.
+  const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
 
   const subjectsByContext = useMemo(() => {
-    const allSubjects = api.schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
+    const allSubjects = schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
     if (!p.srContextsEnabled) {
       return new Map([['__all__', allSubjects.map((x) => ({ value: x.name }))]]);
     }
-
-    const map = new Map<string, { value: string }[]>();
-    for (const s of allSubjects) {
-      const parsed = parseSubjectContext(s.name);
-      const key = contextNameToId(parsed.context);
-      const list = map.get(key) ?? [];
-      list.push({ value: parsed.displayName });
-      map.set(key, list);
-    }
-    return map;
-  }, [p.srContextsEnabled, api.schemaSubjects]);
+    return subjectOptionsByContext(allSubjects);
+  }, [p.srContextsEnabled, schemaSubjects]);
 
   const getSubjectsForContext = (contextId: string) => {
     if (!p.srContextsEnabled) {

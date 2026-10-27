@@ -21,7 +21,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
-import { AlertCircle, ArrowRight, PlusIcon, Sparkles } from 'lucide-react';
+import { AlertCircle, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
@@ -71,31 +71,26 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
 
 export default RpConnectPipelinesCreate;
 
-const RpConnectPipelinesCreateContent = () => {
-  const [fileName, setFileName] = useState('');
-  const [description, setDescription] = useState('');
-  const [tasks, setTasks] = useState(MIN_TASKS);
-  // The field holds what was typed; `tasks` stays clamped.
-  const [tasksDraft, setTasksDraft] = useState(String(MIN_TASKS));
-  const [editorContent, setEditorContent] = useState(exampleContent);
+type PipelineCreateInput = {
+  configYaml: string;
+  description: string;
+  displayName: string;
+  tasks: number;
+};
+
+/** Creates the pipeline, reports the outcome in a toast, and returns to the pipeline list on success. */
+const useCreatePipeline = () => {
   const [isCreating, setIsCreating] = useState(false);
-  const isTemplateGalleryEnabled = isFeatureFlagEnabled('enableRpcnTemplateGallery');
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const isEditorPristine = editorContent.trim() === '';
 
-  const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
-  const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
-  const isNameEmpty = fileName.trim().length === 0;
-
-  const createPipeline = () => {
+  const createPipeline = ({ configYaml, description, displayName, tasks }: PipelineCreateInput) => {
     setIsCreating(true);
 
     pipelinesApi
       .createPipeline(
         create(PipelineCreateSchema, {
-          configYaml: editorContent,
+          configYaml,
           description,
-          displayName: fileName,
+          displayName,
           resources: {
             cpuShares: tasksToCPU(tasks) || '0',
             memoryShares: '0', // still required by API but unused
@@ -123,6 +118,20 @@ const RpConnectPipelinesCreateContent = () => {
         setIsCreating(false);
       });
   };
+
+  return { isCreating, createPipeline };
+};
+
+const RpConnectPipelinesCreateContent = () => {
+  const [fileName, setFileName] = useState('');
+  const [description, setDescription] = useState('');
+  const [tasks, setTasks] = useState(MIN_TASKS);
+  const [editorContent, setEditorContent] = useState(exampleContent);
+  const { isCreating, createPipeline } = useCreatePipeline();
+
+  const secrets = rpcnSecretManagerApi.secrets?.map((s) => s.id) ?? [];
+  const alreadyExists = (pipelinesApi.pipelines ?? []).some((x) => x.id === fileName);
+  const isNameEmpty = fileName.trim().length === 0;
 
   return (
     <PageContent>
@@ -175,61 +184,19 @@ const RpConnectPipelinesCreateContent = () => {
             value={description}
           />
         </Field>
-        <Field className="w-[500px]">
-          <FieldLabel htmlFor="pipelineTasks">Compute units</FieldLabel>
-          <Input
-            className="max-w-[150px]"
-            id="pipelineTasks"
-            max={MAX_TASKS}
-            min={MIN_TASKS}
-            onBlur={() => {
-              setTasksDraft(String(clampTasks(tasksDraft)));
-            }}
-            onChange={(e) => {
-              // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
-              setTasksDraft(e.target.value);
-              setTasks(clampTasks(e.target.value));
-            }}
-            showStepControls
-            type="number"
-            value={tasksDraft}
-          />
-          <FieldDescription>
-            One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume
-            pipelines.
-          </FieldDescription>
-        </Field>
+        <ComputeUnitsField onChange={setTasks} />
       </div>
 
-      <AnimatePresence>
-        {isTemplateGalleryEnabled && isEditorPristine ? (
-          <motion.button
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="group mt-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border-2 border-primary/30 border-dashed bg-primary/5 px-5 py-4 text-left transition-all hover:border-primary/60 hover:bg-primary/10 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
-            data-testid="template-gallery-cta"
-            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
-            initial={{ opacity: 0, y: 12, scale: 0.96 }}
-            onClick={() => setIsTemplateDialogOpen(true)}
-            transition={{ duration: 0.3, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            type="button"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div className="flex flex-1 flex-col">
-              <span className="font-semibold text-foreground">Start from a template</span>
-              <span className="text-body text-muted-foreground">
-                Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
-                directly.
-              </span>
-            </div>
-            <ArrowRight
-              aria-hidden
-              className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-            />
-          </motion.button>
-        ) : null}
-      </AnimatePresence>
+      <TemplateGalleryStart
+        editorContent={editorContent}
+        onApplyTemplate={({ pipelineName, yaml }) => {
+          setEditorContent(yaml);
+          if (!fileName) {
+            setFileName(pipelineName);
+          }
+        }}
+        onRestoreYaml={setEditorContent}
+      />
 
       <div className="mt-4">
         <PipelineEditor
@@ -242,7 +209,11 @@ const RpConnectPipelinesCreateContent = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button disabled={alreadyExists || isNameEmpty || isCreating} onClick={createPipeline} variant="primary">
+        <Button
+          disabled={alreadyExists || isNameEmpty || isCreating}
+          onClick={() => createPipeline({ configYaml: editorContent, description, displayName: fileName, tasks })}
+          variant="primary"
+        >
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
@@ -250,27 +221,100 @@ const RpConnectPipelinesCreateContent = () => {
           <Button variant="link">Cancel</Button>
         </Link>
       </div>
-
-      {isTemplateGalleryEnabled ? (
-        <TemplateGalleryDialog
-          onClose={(stashedYaml) => {
-            if (stashedYaml) {
-              setEditorContent(stashedYaml);
-            }
-            setIsTemplateDialogOpen(false);
-          }}
-          onSubmit={({ pipelineName, yaml }) => {
-            setEditorContent(yaml);
-            if (!fileName) {
-              setFileName(pipelineName);
-            }
-            setIsTemplateDialogOpen(false);
-            toast.success('Template applied — review the YAML and click Create to deploy.');
-          }}
-          open={isTemplateDialogOpen}
-        />
-      ) : null}
     </PageContent>
+  );
+};
+
+/** The compute-units field. It holds what was typed; `onChange` only ever receives a clamped value. */
+const ComputeUnitsField = ({ onChange }: { onChange: (tasks: number) => void }) => {
+  const [tasksDraft, setTasksDraft] = useState(String(MIN_TASKS));
+
+  return (
+    <Field className="w-[500px]">
+      <FieldLabel htmlFor="pipelineTasks">Compute units</FieldLabel>
+      <Input
+        className="max-w-[150px]"
+        id="pipelineTasks"
+        max={MAX_TASKS}
+        min={MIN_TASKS}
+        onBlur={() => {
+          setTasksDraft(String(clampTasks(tasksDraft)));
+        }}
+        onChange={(e) => {
+          // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
+          setTasksDraft(e.target.value);
+          onChange(clampTasks(e.target.value));
+        }}
+        showStepControls
+        type="number"
+        value={tasksDraft}
+      />
+      <FieldDescription>
+        One compute unit is equivalent to 0.1 CPU and 400 MB of memory. This is enough to experiment with low-volume
+        pipelines.
+      </FieldDescription>
+    </Field>
+  );
+};
+
+type TemplateGalleryStartProps = {
+  editorContent: string;
+  onApplyTemplate: (template: { pipelineName: string; yaml: string }) => void;
+  onRestoreYaml: (yaml: string) => void;
+};
+
+/** The "Start from a template" call to action, shown while the editor is empty, and the gallery it opens. */
+const TemplateGalleryStart = ({ editorContent, onApplyTemplate, onRestoreYaml }: TemplateGalleryStartProps) => {
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+
+  if (!isFeatureFlagEnabled('enableRpcnTemplateGallery')) {
+    return null;
+  }
+
+  return (
+    <>
+      <AnimatePresence>
+        {editorContent.trim() === '' ? (
+          <motion.div
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="mt-4"
+            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            transition={{ duration: 0.3, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="flex flex-wrap items-center gap-4">
+              <Button
+                icon={<Sparkles />}
+                onClick={() => setIsTemplateDialogOpen(true)}
+                testId="template-gallery-cta"
+                variant="primary-dashed"
+              >
+                Start from a template
+              </Button>
+              <p className="text-body text-muted-foreground">
+                Pre-paired source-and-sink patterns. Fill in a short form, or bail out anytime to keep editing YAML
+                directly.
+              </p>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <TemplateGalleryDialog
+        onClose={(stashedYaml) => {
+          if (stashedYaml) {
+            onRestoreYaml(stashedYaml);
+          }
+          setIsTemplateDialogOpen(false);
+        }}
+        onSubmit={(template) => {
+          onApplyTemplate(template);
+          setIsTemplateDialogOpen(false);
+          toast.success('Template applied — review the YAML and click Create to deploy.');
+        }}
+        open={isTemplateDialogOpen}
+      />
+    </>
   );
 };
 

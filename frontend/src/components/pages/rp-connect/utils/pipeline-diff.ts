@@ -9,8 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import type { Document } from 'yaml';
+
 import { parseEditableNodes } from './pipeline-flow-parser';
-import { editTargetPath } from './yaml';
+import { type EditTarget, editTargetPath } from './yaml';
 
 export type NodeSignatures = {
   // Signature of each editable node's config, keyed by node id, for node-by-node comparison.
@@ -19,27 +21,70 @@ export type NodeSignatures = {
   parentOf: Map<string, string | undefined>;
 };
 
+// The JSON of the config an edit target addresses, so equal configs sign equally.
+function editTargetSignature(doc: Document, target: EditTarget): string {
+  const value = doc.getIn(editTargetPath(target)) as { toJSON?: () => unknown } | undefined;
+  return JSON.stringify(value?.toJSON?.() ?? value ?? null);
+}
+
+function collectNodeSignatures(yaml: string, out: NodeSignatures): void {
+  const { doc, nodes } = parseEditableNodes(yaml);
+  for (const node of nodes) {
+    out.parentOf.set(node.id, node.parentId);
+    if (node.editTarget) {
+      out.signatures.set(node.id, editTargetSignature(doc, node.editTarget));
+    }
+  }
+}
+
 // Exported so callers diffing many documents against one baseline can sign the baseline once.
 export function nodeConfigSignatures(yaml: string): NodeSignatures {
-  const signatures = new Map<string, string>();
-  const parentOf = new Map<string, string | undefined>();
+  const result: NodeSignatures = { signatures: new Map(), parentOf: new Map() };
   if (!yaml) {
-    return { signatures, parentOf };
+    return result;
   }
   try {
-    const { doc, nodes } = parseEditableNodes(yaml);
-    for (const node of nodes) {
-      parentOf.set(node.id, node.parentId);
-      if (!node.editTarget) {
-        continue;
-      }
-      const value = doc.getIn(editTargetPath(node.editTarget)) as { toJSON?: () => unknown } | undefined;
-      signatures.set(node.id, JSON.stringify(value?.toJSON?.() ?? value ?? null));
-    }
+    collectNodeSignatures(yaml, result);
   } catch {
     // Malformed YAML — nothing to compare.
   }
-  return { signatures, parentOf };
+  return result;
+}
+
+// Occurrence count of each signature, consumed by `takeSignature` as matches are found.
+function signatureMultiset(signatures: Iterable<string>): Map<string, number> {
+  const available = new Map<string, number>();
+  for (const signature of signatures) {
+    available.set(signature, (available.get(signature) ?? 0) + 1);
+  }
+  return available;
+}
+
+// Consumes one occurrence of `signature`, reporting whether one was left.
+function takeSignature(available: Map<string, number>, signature: string): boolean {
+  const left = available.get(signature) ?? 0;
+  if (left <= 0) {
+    return false;
+  }
+  available.set(signature, left - 1);
+  return true;
+}
+
+// Consumes the counterpart of every same-id, same-signature node; returns the ids left to match.
+function consumeUnmovedSignatures(
+  prev: Map<string, string>,
+  next: Map<string, string>,
+  available: Map<string, number>
+): string[] {
+  const moved: string[] = [];
+  for (const [id, signature] of next) {
+    if (prev.get(id) === signature) {
+      takeSignature(available, signature);
+    } else {
+      moved.push(id);
+    }
+  }
+  return moved;
 }
 
 // Node ids in `next` whose signature has no counterpart left in `prev`'s multiset. Ids are positional
@@ -48,30 +93,12 @@ export function nodeConfigSignatures(yaml: string): NodeSignatures {
 // "edited A into a copy of just-deleted B" reads as "deleted A" — markers err toward under-flagging,
 // and yaml !== initialYaml remains the authoritative dirty signal.
 function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>): Set<string> {
-  const available = new Map<string, number>();
-  for (const signature of prev.values()) {
-    available.set(signature, (available.get(signature) ?? 0) + 1);
-  }
-  const take = (signature: string): boolean => {
-    const left = available.get(signature) ?? 0;
-    if (left <= 0) {
-      return false;
-    }
-    available.set(signature, left - 1);
-    return true;
-  };
-  const moved: string[] = [];
+  const available = signatureMultiset(prev.values());
+  const moved = consumeUnmovedSignatures(prev, next, available);
   const changed = new Set<string>();
-  for (const [id, signature] of next) {
-    if (prev.get(id) === signature) {
-      take(signature);
-    } else {
-      moved.push(id);
-    }
-  }
   for (const id of moved) {
     const signature = next.get(id);
-    if (signature !== undefined && !take(signature)) {
+    if (signature !== undefined && !takeSignature(available, signature)) {
       changed.add(id);
     }
   }

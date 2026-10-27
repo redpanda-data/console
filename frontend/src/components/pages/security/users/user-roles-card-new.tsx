@@ -135,7 +135,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                 testId={`remove-role-${r.principalName}`}
                 variant="ghost"
               >
-                <Trash2Icon className="h-4 w-4 text-muted-foreground" />
+                <Trash2Icon className="h-4 w-4" />
               </Button>
             )}
             <Button
@@ -145,7 +145,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                   search={{ host: undefined }}
                   to="/security/roles/$roleName/details"
                 >
-                  <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
+                  <ExternalLinkIcon className="h-4 w-4" />
                 </Link>
               }
               size="icon-sm"
@@ -160,7 +160,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
 
   return (
     <>
-      <ListLayout className="my-4 min-h-0 gap-3 py-0">
+      <ListLayout className="my-4 min-h-0">
         <ListLayoutFilters
           actions={
             userName ? (

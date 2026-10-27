@@ -72,31 +72,10 @@ export function generateDefaultFromJsonSchema(
       return isRequired ? 0 : undefined;
     case 'boolean':
       return isRequired ? false : undefined;
-    case 'array': {
-      // Always start arrays with at least 1 item to reduce user clicks
-      if (!schema.items) {
-        return [];
-      }
-      const defaultItem = generateDefaultFromJsonSchema(schema.items);
-      return [defaultItem];
-    }
-    case 'object': {
-      if (!schema.properties) {
-        return {};
-      }
-
-      const obj: JsonObject = {};
-      // Only include properties that are required according to the schema's required array
-      for (const [key, prop] of Object.entries(schema.properties)) {
-        if (isPropertyRequired(key, schema)) {
-          const value = generateDefaultFromJsonSchema(prop, key, schema);
-          if (value !== undefined) {
-            obj[key] = value;
-          }
-        }
-      }
-      return obj;
-    }
+    case 'array':
+      return schema.items ? [generateDefaultFromJsonSchema(schema.items)] : [];
+    case 'object':
+      return generateObjectDefault(schema);
     case 'null':
       return null;
     default:
@@ -112,4 +91,17 @@ export function generateDefaultFromJsonSchema(
  */
 export function isPropertyRequired(propertyName: string, schema: JsonSchemaType): boolean {
   return schema.required?.includes(propertyName) ?? false;
+}
+
+function generateObjectDefault(schema: JsonSchemaType): JsonObject {
+  const result: JsonObject = {};
+  for (const [key, property] of Object.entries(schema.properties ?? {})) {
+    if (isPropertyRequired(key, schema)) {
+      const value = generateDefaultFromJsonSchema(property, key, schema);
+      if (value !== undefined) {
+        result[key] = value;
+      }
+    }
+  }
+  return result;
 }

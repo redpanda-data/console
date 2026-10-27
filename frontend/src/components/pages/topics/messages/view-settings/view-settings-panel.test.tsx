@@ -38,7 +38,7 @@ const renderPanel = (overrides: Partial<ViewSettingsPanelProps> = {}) => {
   return props;
 };
 
-describe('ViewSettingsPanel', () => {
+describe('the ViewSettingsPanel', () => {
   beforeEach(() => {
     useTopicSettingsStore.setState({ perTopicSettings: [] });
   });
@@ -62,11 +62,24 @@ describe('ViewSettingsPanel', () => {
     expect(screen.getByText('3 of 7')).toBeInTheDocument();
   });
 
-  test('each column visibility checkbox has an accessible name from its label', () => {
-    renderPanel();
-    expect(screen.getByRole('checkbox', { name: /Timestamp/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /^Key$/i })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /^Value$/i })).toBeInTheDocument();
+  describe('accessible labels', () => {
+    test('each column visibility checkbox has an accessible name from its label', () => {
+      renderPanel();
+      expect(screen.getByRole('checkbox', { name: /Timestamp/i })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Key$/i })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Value$/i })).toBeInTheDocument();
+    });
+
+    test.each([
+      ['timestamp', 'Display format'],
+      ['key', 'Deserializer'],
+      ['value', 'Deserializer'],
+    ])('names the %s configuration control from its visible label', async (column, label) => {
+      const user = userEvent.setup();
+      renderPanel();
+      await user.click(screen.getByTestId(`column-config-${column}`));
+      expect(screen.getByRole('combobox', { name: label })).toBeVisible();
+    });
   });
 
   test('preview field editor adds a pattern row', async () => {

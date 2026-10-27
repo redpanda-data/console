@@ -38,6 +38,22 @@ import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
+function getFreeId(tags: PreviewTagV2[]): string {
+  let i = 1;
+  while (tags.any((t) => t.id === String(i))) {
+    i += 1;
+  }
+  return String(i);
+}
+
+// add ids to elements that don't have any
+function assignFreeIds(tags: PreviewTagV2[]) {
+  const filteredTags = tags.filter((t) => t.id);
+  for (const tag of filteredTags) {
+    tag.id = getFreeId(tags);
+  }
+}
+
 export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
   const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
   const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
@@ -51,19 +67,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
   // Access perTopicSettings to trigger re-render when it changes
   const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
 
-  // add ids to elements that don't have any
-  const getFreeId = (): string => {
-    let i = 1;
-    while (tags.any((t) => t.id === String(i))) {
-      i += 1;
-    }
-    return String(i);
-  };
-
-  const filteredTags = tags.filter((t) => t.id);
-  for (const tag of filteredTags) {
-    tag.id = getFreeId();
-  }
+  assignFreeIds(tags);
 
   const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
     if (!result.destination) {
@@ -111,7 +115,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
                 <Button
                   onClick={() => {
                     const newTag: PreviewTagV2 = {
-                      id: getFreeId(),
+                      id: getFreeId(tags),
                       isActive: true,
                       pattern: '',
                       searchInMessageHeaders: false,
@@ -213,39 +217,41 @@ const PreviewTagSettings = ({
           }
         />
         {/* PopoverContent is a fixed w-72, so the width is set here to fit the content. */}
-        <PopoverContent align="start" className="flex w-auto flex-col gap-1" side="bottom">
-          <Label style={{ marginBottom: '.5em' }} text="Display Name">
-            <Input
-              autoComplete={randomId()}
-              onChange={(e) => updateTag({ customName: e.target.value })}
-              placeholder="Enter a display name..."
-              size="sm"
-              spellCheck={false}
-              value={tag.customName}
-            />
-          </Label>
+        <PopoverContent align="start" className="w-auto" side="bottom">
+          <div className="flex flex-col gap-1">
+            <Label style={{ marginBottom: '.5em' }} text="Display Name">
+              <Input
+                autoComplete={randomId()}
+                onChange={(e) => updateTag({ customName: e.target.value })}
+                placeholder="Enter a display name..."
+                size="sm"
+                spellCheck={false}
+                value={tag.customName}
+              />
+            </Label>
 
-          {/* The Registry Checkbox does not wire a child label. */}
-          <span className="flex items-center gap-2">
-            <Checkbox
-              checked={tag.searchInMessageKey}
-              id={`search-key-${tag.id}`}
-              onCheckedChange={(checked) => updateTag({ searchInMessageKey: checked === true })}
-            />
-            <CheckboxLabel className="cursor-pointer" htmlFor={`search-key-${tag.id}`}>
-              Search in message key
-            </CheckboxLabel>
-          </span>
-          <span className="flex items-center gap-2">
-            <Checkbox
-              checked={tag.searchInMessageValue}
-              id={`search-value-${tag.id}`}
-              onCheckedChange={(checked) => updateTag({ searchInMessageValue: checked === true })}
-            />
-            <CheckboxLabel className="cursor-pointer" htmlFor={`search-value-${tag.id}`}>
-              Search in message value
-            </CheckboxLabel>
-          </span>
+            {/* The Registry Checkbox does not wire a child label. */}
+            <span className="flex items-center gap-2">
+              <Checkbox
+                checked={tag.searchInMessageKey}
+                id={`search-key-${tag.id}`}
+                onCheckedChange={(checked) => updateTag({ searchInMessageKey: checked === true })}
+              />
+              <CheckboxLabel className="cursor-pointer" htmlFor={`search-key-${tag.id}`}>
+                Search in message key
+              </CheckboxLabel>
+            </span>
+            <span className="flex items-center gap-2">
+              <Checkbox
+                checked={tag.searchInMessageValue}
+                id={`search-value-${tag.id}`}
+                onCheckedChange={(checked) => updateTag({ searchInMessageValue: checked === true })}
+              />
+              <CheckboxLabel className="cursor-pointer" htmlFor={`search-value-${tag.id}`}>
+                Search in message value
+              </CheckboxLabel>
+            </span>
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -274,46 +280,31 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-export function getPreviewTags(
-  targetObject: Record<string, unknown>,
-  tags: PreviewTagV2[],
-  caseSensitive: boolean
-): React.ReactNode[] {
-  const ar: React.ReactNode[] = [];
-  const results: { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string }[] = [];
+type TagMatch = { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string };
 
-  for (const t of tags) {
-    if (t.pattern.length === 0) {
-      continue;
-    }
-
-    const trimmed = t.pattern.trim();
-    const searchPath = parseJsonPath(trimmed);
-    if (searchPath === null) {
-      continue;
-    }
-    if (typeof searchPath === 'string') {
-      continue; // todo: show error to user
-    }
-
-    const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
-      // We'll never get called for '*' or '**' patterns
-      // So we can be sure that the pattern is not just '*'
-      const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'i');
-      return segmentRegex.test(propertyName);
-    });
-
-    for (const p of foundProperties) {
-      results.push({
-        tag: t,
-        prop: p,
-        fullPath: p.path.join('.'),
-      });
-    }
+function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean): TagMatch[] {
+  if (tag.pattern.length === 0) {
+    return [];
   }
 
-  // order results by the tag they were created from, and then their path
-  results.sort((a, b) => {
+  const searchPath = parseJsonPath(tag.pattern.trim());
+  if (searchPath === null || typeof searchPath === 'string') {
+    return []; // todo: show error to user
+  }
+
+  const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
+    // We'll never get called for '*' or '**' patterns
+    // So we can be sure that the pattern is not just '*'
+    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'i');
+    return segmentRegex.test(propertyName);
+  });
+
+  return foundProperties.map((p) => ({ tag, prop: p, fullPath: p.path.join('.') }));
+}
+
+// order results by the tag they were created from, and then their path
+function compareTagMatches(tags: PreviewTagV2[]) {
+  return (a: TagMatch, b: TagMatch) => {
     if (a.tag !== b.tag) {
       const indexA = tags.indexOf(a.tag);
       const indexB = tags.indexOf(b.tag);
@@ -327,10 +318,8 @@ export function getPreviewTags(
     }
 
     // then alphabetically
-    const pathA = a.fullPath;
-    const pathB = b.fullPath;
-    return pathA.localeCompare(
-      pathB,
+    return a.fullPath.localeCompare(
+      b.fullPath,
       undefined, // no locales
       {
         numeric: true,
@@ -338,23 +327,28 @@ export function getPreviewTags(
         sensitivity: 'base',
       }
     );
-  });
+  };
+}
+
+export function getPreviewTags(
+  targetObject: Record<string, unknown>,
+  tags: PreviewTagV2[],
+  caseSensitive: boolean
+): React.ReactNode[] {
+  const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
+  results.sort(compareTagMatches(tags));
 
   // found some properties, create JSX for them
-  for (const r of results) {
+  return results.map((r, index) => {
     const tag = r.tag;
-
     const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
-
-    ar.push(
-      <span className="previewTag" key={`${tag.id}-${r.fullPath}-${ar.length}`}>
+    return (
+      <span className="previewTag" key={`${tag.id}-${r.fullPath}-${index}`}>
         <span className="path">{displayName}</span>
         <span>{toSafeString(r.prop.value)}</span>
       </span>
     );
-  }
-
-  return ar;
+  });
 }
 
 const splitChars = ["'", '"', '.'];
@@ -364,80 +358,93 @@ const splitChars = ["'", '"', '.'];
 // Returns:
 // - String array when the path was parsed correctly
 // - Single string as error reason why the path couldn't be parsed
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 34, refactor later
 function parseJsonPath(str: string): string[] | string {
-  // Collect symbols until we find a dot, single-quote, or double-quote
-  const result: string[] = [];
-
-  let pos = 0;
-  while (pos < str.length) {
-    let c = str[pos];
-    let start: number;
-    let end: number;
-    let match: string;
-    switch (c) {
-      case "'":
-      case '"':
-        // A quote is opened
-        // Find the closing quote and collect everything in-between
-
-        start = pos + 1; // start just after the quote
-        end = str.indexOf(c, start); // and collect until the closing quote
-
-        if (end === -1) {
-          return `missing closing quote, quote was opened at index ${start - 1}`;
-        }
-        match = str.slice(start, end);
-
-        if (match.length > 0) {
-          result.push(match);
-        }
-
-        pos = end === -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
-        break;
-
-      case '.':
-        // A dot, skip over it
-
-        if (pos === 0) {
-          return 'pattern cannot start with a dot';
-        }
-        pos += 1;
-        if (pos >= str.length) {
-          return 'pattern can not end with a dot';
-        }
-        c = str[pos];
-        if (c === '.') {
-          return 'pattern cannot contain more than one dot in a row';
-        }
-        break;
-
-      default:
-        // We're at a simple character, just collect everything until the next dot or quote
-        start = pos; // start here
-        end = indexOfMany(str, splitChars, pos); // collect until dot or quote
-
-        match = end >= 0 ? str.slice(start, end) : str.slice(start, str.length);
-
-        if (match.length > 0) {
-          result.push(match);
-        }
-
-        pos = end === -1 ? str.length : end; // continue after the end
-        break;
-    }
+  const segments = splitPathSegments(str);
+  if (typeof segments === 'string') {
+    return segments;
   }
 
   // '**' is supported anywhere in a path but must be a whole segment: `a.b.**.c` is valid,
   // `a.b**` and `a.**b` are not.
 
-  for (const segment of result) {
+  for (const segment of segments) {
     if (segment !== '**' && segment.includes('**')) {
       return "path segment '**' must not have anything before or after it (except for dots of course)";
     }
   }
 
+  return segments;
+}
+
+type PathStep = { next: number; segment?: string } | { error: string };
+
+// Collect symbols until we find a dot, single-quote, or double-quote
+function splitPathSegments(str: string): string[] | string {
+  const result: string[] = [];
+
+  let pos = 0;
+  while (pos < str.length) {
+    const step = readPathStep(str, pos);
+    if ('error' in step) {
+      return step.error;
+    }
+    if (step.segment) {
+      result.push(step.segment);
+    }
+    pos = step.next;
+  }
+
   return result;
+}
+
+function readPathStep(str: string, pos: number): PathStep {
+  switch (str[pos]) {
+    case "'":
+    case '"':
+      return readQuotedSegment(str, pos);
+    case '.':
+      return skipDot(str, pos);
+    default:
+      return readPlainSegment(str, pos);
+  }
+}
+
+// A quote is opened
+// Find the closing quote and collect everything in-between
+function readQuotedSegment(str: string, pos: number): PathStep {
+  const start = pos + 1; // start just after the quote
+  const end = str.indexOf(str[pos], start); // and collect until the closing quote
+
+  if (end === -1) {
+    return { error: `missing closing quote, quote was opened at index ${start - 1}` };
+  }
+
+  // continue after the end of our string and the closing quote
+  return { next: end + 1, segment: str.slice(start, end) };
+}
+
+// A dot, skip over it
+function skipDot(str: string, pos: number): PathStep {
+  if (pos === 0) {
+    return { error: 'pattern cannot start with a dot' };
+  }
+  const next = pos + 1;
+  if (next >= str.length) {
+    return { error: 'pattern can not end with a dot' };
+  }
+  if (str[next] === '.') {
+    return { error: 'pattern cannot contain more than one dot in a row' };
+  }
+  return { next };
+}
+
+// We're at a simple character, just collect everything until the next dot or quote
+function readPlainSegment(str: string, pos: number): PathStep {
+  const end = indexOfMany(str, splitChars, pos); // collect until dot or quote
+
+  const segment = end >= 0 ? str.slice(pos, end) : str.slice(pos, str.length);
+
+  return { next: end === -1 ? str.length : end, segment }; // continue after the end
 }
 
 function indexOfMany(str: string, matches: string[], position: number): number {

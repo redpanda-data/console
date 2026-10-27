@@ -22,7 +22,10 @@ import {
   isBakedInTrial,
   prettyLicenseType,
 } from 'components/license/license-utils';
-import { ListMessagesRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import {
+  ListMessagesRequestSchema,
+  type ListMessagesResponse,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TransformMetadata } from 'protogen/redpanda/api/dataplane/v1/transform_pb';
 import { useStore } from 'zustand';
 import { createStore as zustandCreate } from 'zustand/vanilla';
@@ -166,7 +169,7 @@ import { toJson } from '../utils/json-utils';
 import { LazyMap } from '../utils/lazy-map';
 import { convertListMessageData } from '../utils/message-converters';
 import { showToast } from '../utils/toast.utils';
-import { ObjToKv } from '../utils/tsx-utils';
+import { objToKv } from '../utils/tsx-utils';
 import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 
 const REST_TIMEOUT_SEC = 25;
@@ -190,12 +193,7 @@ declare const registry: Registry;
  * allow custom fetch or websocket interceptors
  * */
 export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
-  // Add JWT Bearer token if available (same as gRPC addBearerTokenInterceptor)
-  // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
-  const headers = new Headers(requestInit?.headers);
-  if (appConfig.jwt && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${appConfig.jwt}`);
-  }
+  const headers = createRestHeaders(requestInit?.headers);
 
   const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, {
     ...requestInit,
@@ -225,17 +223,7 @@ async function handle401(res: Response) {
   //   Any old/invalid JWT will be cleared by the server
   api.userData = null;
 
-  try {
-    const text = await res.text();
-    const obj = JSON.parse(text);
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.log(`unauthorized message: ${text}`);
-
-    const err = obj as ApiError;
-    uiState.loginError = String(err.message);
-  } catch (err) {
-    uiState.loginError = String(err);
-  }
+  await updateLoginError(res);
 
   // Save current location url
   // store.urlBeforeLogin = window.location.href;
@@ -402,7 +390,206 @@ export async function handleExpiredLicenseError(r: Response) {
 //
 // BackendAPI
 //
-const _apiCreator = (set: any, get: any) => ({
+// Embedded in Cloud, a failed identity call means "no Console permissions", not "log in".
+function embeddedUserData(): UserData {
+  return {
+    displayName: '',
+    avatarUrl: '',
+    authenticationMethod: AuthenticationMethod.UNSPECIFIED,
+    canListAcls: false,
+    canListQuotas: false,
+    canPatchConfigs: false,
+    canReassignPartitions: false,
+    canCreateRoles: false,
+    canViewPermissionsList: false,
+    canManageLicense: false,
+    canManageUsers: false,
+    canCreateSchemas: false,
+    canDeleteSchemas: false,
+    canManageSchemaRegistry: false,
+    canViewSchemas: false,
+    canListTransforms: false,
+    canCreateTransforms: false,
+    canDeleteTransforms: false,
+    canViewDebugBundle: false,
+    canViewConsoleUsers: false,
+  };
+}
+
+type IdentityError = Parameters<typeof getOidcSubject>[0] & { code?: Code };
+
+// Where an identity failure sends the user, or null for a transient error that keeps them on the page.
+function authFailureRedirect(err: IdentityError): string | null {
+  // Authentication failure (401) - redirect to login
+  if (err.code === Code.Unauthenticated) {
+    return '/login';
+  }
+
+  // Permission denied (403) - redirect with error info
+  if (err.code === Code.PermissionDenied) {
+    // TODO - solve typings, provide corresponding Reason type
+    const subject = getOidcSubject(err);
+    return `/login?error_code=permission_denied&oidc_subject=${subject}`;
+  }
+
+  return null;
+}
+
+type PartitionLogDir = Partition['partitionLogDirs'][number];
+
+// Largest size reported by a healthy log dir, used as the partition's replica size.
+function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: PartitionLogDir) => boolean): number {
+  const validLogDirs = logDirs.filter((e) => isHealthy(e) && e.size >= 0);
+  const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
+  return Math.max(replicaSize, 0);
+}
+
+const isLogDirErrorFree = (logDir: PartitionLogDir) => logDir.error === null || logDir.error === '';
+
+// Add some local/cached properties to make working with the data easier
+function annotateTopicPartitions(topicName: string, partitions: Partition[]) {
+  for (const p of partitions) {
+    // topicName
+    p.topicName = topicName;
+
+    // An errored partition is flagged and gets no cached replica size
+    if (p.partitionError || p.waterMarksError) {
+      p.hasErrors = true;
+      continue;
+    }
+
+    p.replicaSize = largestLogDirSize(p.partitionLogDirs, (e) => !e.error);
+  }
+}
+
+type PartitionErrorLists = {
+  partitionErrors: Array<{ id: number; partitionError: string }>;
+  waterMarksErrors: Array<{ id: number; waterMarksError: string }>;
+};
+
+function recordPartitionErrors(p: Partition, lists: PartitionErrorLists) {
+  if (p.partitionError) {
+    lists.partitionErrors.push({
+      id: p.id,
+      partitionError: p.partitionError,
+    });
+  }
+  if (p.waterMarksError) {
+    lists.waterMarksErrors.push({
+      id: p.id,
+      waterMarksError: p.waterMarksError,
+    });
+  }
+}
+
+// Collects every partition's errors; once one has errored, the rest get no cached replica size.
+function collectPartitionErrors(topicName: string, partitions: Partition[]): PartitionErrorLists {
+  const lists: PartitionErrorLists = { partitionErrors: [], waterMarksErrors: [] };
+
+  // Add some local/cached properties to make working with the data easier
+  for (const p of partitions) {
+    // topicName
+    p.topicName = topicName;
+
+    recordPartitionErrors(p, lists);
+    if (lists.partitionErrors.length || lists.waterMarksErrors.length) {
+      continue;
+    }
+
+    // replicaSize
+    p.replicaSize = largestLogDirSize(p.partitionLogDirs, isLogDirErrorFree);
+  }
+
+  return lists;
+}
+
+type TopicPartitionState = {
+  topicPartitions: Map<string, Partition[] | null>;
+  topicPartitionErrors: Map<string, PartitionErrorLists['partitionErrors']>;
+  topicWatermarksErrors: Map<string, PartitionErrorLists['waterMarksErrors']>;
+};
+
+// Without errors the topic's partitions replace its recorded errors; with errors only the errors are recorded.
+function topicPartitionsUpdate(topicName: string, partitions: Partition[], lists: PartitionErrorLists) {
+  if (lists.partitionErrors.length === 0 && lists.waterMarksErrors.length === 0) {
+    // Set partitions
+    return (s: TopicPartitionState) => {
+      const tpe = new Map(s.topicPartitionErrors);
+      tpe.delete(topicName);
+      const twe = new Map(s.topicWatermarksErrors);
+      twe.delete(topicName);
+      return {
+        topicPartitionErrors: tpe,
+        topicWatermarksErrors: twe,
+        topicPartitions: new Map(s.topicPartitions).set(topicName, partitions),
+      };
+    };
+  }
+
+  return (s: TopicPartitionState) => ({
+    topicPartitionErrors: new Map(s.topicPartitionErrors).set(topicName, lists.partitionErrors),
+    topicWatermarksErrors: new Map(s.topicWatermarksErrors).set(topicName, lists.waterMarksErrors),
+  });
+}
+
+function logPartitionErrorLists(topicName: string, lists: PartitionErrorLists) {
+  if (lists.partitionErrors.length > 0 || lists.waterMarksErrors.length > 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error(
+      `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${lists.partitionErrors.length}, w=${lists.waterMarksErrors.length})`
+    );
+  }
+}
+
+type PartitionErrorCounts = { partitionErrors: number; waterMarkErrors: number };
+
+function countPartitionErrors(p: Partition, counts: PartitionErrorCounts) {
+  if (p.partitionError) {
+    counts.partitionErrors += 1;
+  }
+  if (p.waterMarksError) {
+    counts.waterMarkErrors += 1;
+  }
+}
+
+// Flags every partition from the first errored one on, which also keeps their cached replica size unset.
+function flagErroredPartitions(topicName: string, partitions: Partition[]): PartitionErrorCounts {
+  const counts: PartitionErrorCounts = { partitionErrors: 0, waterMarkErrors: 0 };
+
+  // Add some local/cached properties to make working with the data easier
+  for (const p of partitions) {
+    // topicName
+    p.topicName = topicName;
+
+    countPartitionErrors(p, counts);
+    if (counts.partitionErrors || counts.waterMarkErrors) {
+      p.hasErrors = true;
+      continue;
+    }
+
+    // replicaSize
+    p.replicaSize = largestLogDirSize(p.partitionLogDirs, isLogDirErrorFree);
+  }
+
+  return counts;
+}
+
+function warnPartitionErrorCounts(topicName: string, counts: PartitionErrorCounts) {
+  if (counts.partitionErrors > 0 || counts.waterMarkErrors > 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.warn(
+      `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${counts.partitionErrors}, waterMarkErrors=${counts.waterMarkErrors})`
+    );
+  }
+}
+
+// Each store's state is inferred from its creator. The creator's `set` and `get` are typed through
+// non-generic function aliases: `StoreApi<ApiState>` there would make the state reference itself.
+type ApiState = ReturnType<typeof _apiCreator>;
+type SetApiState = (partial: Partial<ApiState> | ((state: ApiState) => Partial<ApiState>)) => void;
+type GetApiState = () => ApiState;
+
+const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   // Data
   endpointCompatibility: null as EndpointCompatibility | null,
 
@@ -545,46 +732,14 @@ const _apiCreator = (set: any, get: any) => ({
 
         if (isEmbedded()) {
           // Create a mocked empty userData with all permissions set to false
-          set({
-            userData: {
-              displayName: '',
-              avatarUrl: '',
-              authenticationMethod: AuthenticationMethod.UNSPECIFIED,
-              canListAcls: false,
-              canListQuotas: false,
-              canPatchConfigs: false,
-              canReassignPartitions: false,
-              canCreateRoles: false,
-              canViewPermissionsList: false,
-              canManageLicense: false,
-              canManageUsers: false,
-              canCreateSchemas: false,
-              canDeleteSchemas: false,
-              canManageSchemaRegistry: false,
-              canViewSchemas: false,
-              canListTransforms: false,
-              canCreateTransforms: false,
-              canDeleteTransforms: false,
-              canViewDebugBundle: false,
-              canViewConsoleUsers: false,
-            },
-          });
+          set({ userData: embeddedUserData() });
           return;
         }
 
-        // Authentication failure (401) - redirect to login
-        if (err.code === Code.Unauthenticated) {
+        const redirect = authFailureRedirect(err);
+        if (redirect) {
           set({ userData: null });
-          appGlobal.historyPush('/login');
-          return;
-        }
-
-        // Permission denied (403) - redirect with error info
-        if (err.code === Code.PermissionDenied) {
-          set({ userData: null });
-          // TODO - solve typings, provide corresponding Reason type
-          const subject = getOidcSubject(err);
-          appGlobal.historyPush(`/login?error_code=permission_denied&oidc_subject=${subject}`);
+          appGlobal.historyPush(redirect);
           return;
         }
 
@@ -634,7 +789,7 @@ const _apiCreator = (set: any, get: any) => ({
         // previous cluster after a remount) don't accumulate for the life of the tab. Pruning to
         // the live set never drops a topic that still exists, so nothing needs re-fetching.
         const validTopicNames = new Set(topics.map((t) => t.topicName));
-        set((s: ReturnType<typeof _apiCreator>) => ({
+        set((s: ApiState) => ({
           topics,
           topicConfig: pruneMapToKeys(s.topicConfig, validTopicNames),
           topicDocumentation: pruneMapToKeys(s.topicDocumentation, validTopicNames),
@@ -657,7 +812,7 @@ const _apiCreator = (set: any, get: any) => ({
       force
     ).then((v) => {
       if (!v) {
-        set((s: any) => {
+        set((s) => {
           const m = new Map(s.topicConfig);
           m.delete(topicName);
           return { topicConfig: m };
@@ -666,7 +821,7 @@ const _apiCreator = (set: any, get: any) => ({
       }
 
       if (v.topicDescription.error) {
-        set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, v.topicDescription) }));
+        set((s) => ({ topicConfig: new Map(s.topicConfig).set(topicName, v.topicDescription) }));
         return;
       }
 
@@ -675,7 +830,7 @@ const _apiCreator = (set: any, get: any) => ({
       // we need 'type' on synonyms as well for filtering
       const topicDescription = v.topicDescription;
       prepareSynonyms(topicDescription.configEntries);
-      set((s: any) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
+      set((s) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
     }, addError); // 403 -> null
     return promise as Promise<void>;
   },
@@ -698,7 +853,7 @@ const _apiCreator = (set: any, get: any) => ({
     ).then((v) => {
       const text = v.documentation.markdown === null ? null : decodeBase64(v.documentation.markdown);
       v.documentation.text = text;
-      set((s: any) => ({ topicDocumentation: new Map(s.topicDocumentation).set(topicName, v.documentation) }));
+      set((s) => ({ topicDocumentation: new Map(s.topicDocumentation).set(topicName, v.documentation) }));
     }, addError);
   },
 
@@ -767,72 +922,23 @@ const _apiCreator = (set: any, get: any) => ({
       if (!response?.topics) {
         return;
       }
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 42, refactor later
-      {
-        const errors: {
-          topicName: string;
-          partitionErrors: { partitionId: number; error: string }[];
-          waterMarkErrors: { partitionId: number; error: string }[];
-        }[] = [];
 
-        const newTopicPartitions = new Map(get().topicPartitions);
+      const newTopicPartitions = new Map(get().topicPartitions);
 
-        for (const t of response.topics) {
-          if (t.error !== null && t.error !== undefined) {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
-            continue;
-          }
-
-          // If any partition has any errors, don't set the result for that topic
-          const partitionErrors: Array<{ partitionId: number; error: string }> = [];
-          const waterMarkErrors: Array<{ partitionId: number; error: string }> = [];
-          for (const p of t.partitions) {
-            // topicName
-            p.topicName = t.topicName;
-
-            let partitionHasError = false;
-            if (p.partitionError) {
-              partitionErrors.push({
-                partitionId: p.id,
-                error: p.partitionError,
-              });
-              partitionHasError = true;
-            }
-            if (p.waterMarksError) {
-              waterMarkErrors.push({
-                partitionId: p.id,
-                error: p.waterMarksError,
-              });
-              partitionHasError = true;
-            }
-            if (partitionHasError) {
-              p.hasErrors = true;
-              continue;
-            }
-
-            // Add some local/cached properties to make working with the data easier
-            const validLogDirs = p.partitionLogDirs.filter((e) => !e.error && e.size >= 0);
-            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-          }
-
-          // Set partition
-          newTopicPartitions.set(t.topicName, t.partitions);
-
-          if (partitionErrors.length === 0 && waterMarkErrors.length === 0) {
-            // no op - no errors to track
-          } else {
-            errors.push({
-              topicName: t.topicName,
-              partitionErrors,
-              waterMarkErrors,
-            });
-          }
+      for (const t of response.topics) {
+        if (t.error !== null && t.error !== undefined) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+          continue;
         }
 
-        set({ topicPartitions: newTopicPartitions });
+        annotateTopicPartitions(t.topicName, t.partitions);
+
+        // Set partition
+        newTopicPartitions.set(t.topicName, t.partitions);
       }
+
+      set({ topicPartitions: newTopicPartitions });
     }, addError);
   },
 
@@ -840,104 +946,26 @@ const _apiCreator = (set: any, get: any) => ({
     cachedApiRequest<GetPartitionsResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`,
       force
-    )
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 46, refactor later
-      .then((response) => {
-        if (response?.partitions) {
-          const partitionErrors: Array<{ id: number; partitionError: string }> = [];
-          const waterMarksErrors: Array<{ id: number; waterMarksError: string }> = [];
+    ).then((response) => {
+      if (!response?.partitions) {
+        // Set null to indicate that we're not allowed to see the partitions
+        set((s: TopicPartitionState) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, null) }));
+        return;
+      }
 
-          // Add some local/cached properties to make working with the data easier
-          for (const p of response.partitions) {
-            // topicName
-            p.topicName = topicName;
+      const errorLists = collectPartitionErrors(topicName, response.partitions);
+      set(topicPartitionsUpdate(topicName, response.partitions, errorLists));
+      logPartitionErrorLists(topicName, errorLists);
 
-            if (p.partitionError) {
-              partitionErrors.push({
-                id: p.id,
-                partitionError: p.partitionError,
-              });
-            }
-            if (p.waterMarksError) {
-              waterMarksErrors.push({
-                id: p.id,
-                waterMarksError: p.waterMarksError,
-              });
-            }
-            if (partitionErrors.length || waterMarksErrors.length) {
-              continue;
-            }
+      const errorCounts = flagErroredPartitions(topicName, response.partitions);
 
-            // replicaSize
-            const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
-            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-          }
+      // Set partitions
+      set((s: TopicPartitionState) => ({
+        topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions),
+      }));
 
-          if (partitionErrors.length === 0 && waterMarksErrors.length === 0) {
-            // Set partitions
-            set((s: any) => {
-              const tpe = new Map(s.topicPartitionErrors);
-              tpe.delete(topicName);
-              const twe = new Map(s.topicWatermarksErrors);
-              twe.delete(topicName);
-              return {
-                topicPartitionErrors: tpe,
-                topicWatermarksErrors: twe,
-                topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions),
-              };
-            });
-          } else {
-            set((s: any) => ({
-              topicPartitionErrors: new Map(s.topicPartitionErrors).set(topicName, partitionErrors),
-              topicWatermarksErrors: new Map(s.topicWatermarksErrors).set(topicName, waterMarksErrors),
-            }));
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error(
-              `refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`
-            );
-          }
-        } else {
-          // Set null to indicate that we're not allowed to see the partitions
-          set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, null) }));
-          return;
-        }
-
-        let partitionErrors = 0;
-        let waterMarkErrors = 0;
-
-        // Add some local/cached properties to make working with the data easier
-        for (const p of response.partitions) {
-          // topicName
-          p.topicName = topicName;
-
-          if (p.partitionError) {
-            partitionErrors += 1;
-          }
-          if (p.waterMarksError) {
-            waterMarkErrors += 1;
-          }
-          if (partitionErrors || waterMarkErrors) {
-            p.hasErrors = true;
-            continue;
-          }
-
-          // replicaSize
-          const validLogDirs = p.partitionLogDirs.filter((e) => (e.error === null || e.error === '') && e.size >= 0);
-          const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
-          p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-        }
-
-        // Set partitions
-        set((s: any) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions) }));
-
-        if (partitionErrors > 0 || waterMarkErrors > 0) {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.warn(
-            `refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`
-          );
-        }
-      }, addError);
+      warnPartitionErrorCounts(topicName, errorCounts);
+    }, addError);
   },
 
   refreshTopicAcls(topicName: string, force?: boolean) {
@@ -952,7 +980,7 @@ const _apiCreator = (set: any, get: any) => ({
         if (v) {
           normalizeAcls(v.aclResources);
         }
-        set((s: any) => ({ topicAcls: new Map(s.topicAcls).set(topicName, v) }));
+        set((s) => ({ topicAcls: new Map(s.topicAcls).set(topicName, v) }));
       })
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
@@ -963,7 +991,7 @@ const _apiCreator = (set: any, get: any) => ({
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`,
       force
     ).then(
-      (v) => set((s: any) => ({ topicConsumers: new Map(s.topicConsumers).set(topicName, v.topicConsumers) })),
+      (v) => set((s) => ({ topicConsumers: new Map(s.topicConsumers).set(topicName, v.topicConsumers) })),
       addError
     );
   },
@@ -1010,9 +1038,10 @@ const _apiCreator = (set: any, get: any) => ({
       throw new Error('Cluster status client is not initialized');
     }
 
-    const requests: Promise<unknown>[] = [
+    // A tuple keeps each response's type; a failed request is logged and stored as null.
+    const [kafkaAuthorizerInfo, consoleInfo, kafka, redpanda, kafkaConnect, schemaRegistry] = await Promise.all([
       client.getKafkaAuthorizerInfo({}).catch((e) => {
-        set((s: any) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: e } }));
+        set((s) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: e } }));
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         console.error(e);
         return null;
@@ -1037,45 +1066,25 @@ const _apiCreator = (set: any, get: any) => ({
         console.error(e);
         return null;
       }),
-    ];
+      // Schema registry info is only requested for users who can view schemas
+      api.userData?.canViewSchemas
+        ? client.getSchemaRegistryInfo({}).catch((e) => {
+            // biome-ignore lint/suspicious/noConsole: intentional console usage
+            console.error(e);
+            return null;
+          })
+        : null,
+    ]);
 
-    // Conditionally add schema registry request
-    if (api.userData?.canViewSchemas) {
-      requests.push(
-        client.getSchemaRegistryInfo({}).catch((e) => {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error(e);
-          return null;
-        })
-      );
-    }
-
-    const responses = await Promise.all(requests);
-
-    const [
-      kafkaAuthorizerInfoResponse,
-      consoleInfoResponse,
-      kafkaResponse,
-      redpandaResponse,
-      kafkaConnectResponse,
-      schemaRegistryResponse = null, // Default to null in case it wasn't requested
-    ] = responses;
-
-    set((s: any) => ({
+    set((s) => ({
       clusterOverview: {
         ...s.clusterOverview,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        kafkaAuthorizerInfo: kafkaAuthorizerInfoResponse as any,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        console: consoleInfoResponse as any,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        kafka: kafkaResponse as any,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        redpanda: redpandaResponse as any,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        schemaRegistry: schemaRegistryResponse as any,
-        // biome-ignore lint/suspicious/noExplicitAny: gRPC response types from Promise.allSettled need explicit casting
-        kafkaConnect: kafkaConnectResponse as any,
+        kafkaAuthorizerInfo,
+        console: consoleInfo,
+        kafka,
+        redpanda,
+        schemaRegistry,
+        kafkaConnect,
       },
     }));
   },
@@ -1114,10 +1123,10 @@ const _apiCreator = (set: any, get: any) => ({
     cachedApiRequest<BrokerConfigResponse>(`${appConfig.restBasePath}/brokers/${brokerId}/config`, force)
       .then((v) => {
         prepareSynonyms(v.brokerConfigs);
-        set((s: any) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, v.brokerConfigs) }));
+        set((s) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, v.brokerConfigs) }));
       })
       .catch((err) => {
-        set((s: any) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, String(err)) }));
+        set((s) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, String(err)) }));
       });
   },
 
@@ -1127,7 +1136,7 @@ const _apiCreator = (set: any, get: any) => ({
       force
     ).then((v) => {
       addFrontendFieldsForConsumerGroup(v.consumerGroup);
-      set((s: any) => ({ consumerGroups: new Map(s.consumerGroups).set(v.consumerGroup.groupId, v.consumerGroup) }));
+      set((s) => ({ consumerGroups: new Map(s.consumerGroups).set(v.consumerGroup.groupId, v.consumerGroup) }));
     }, addError);
   },
 
@@ -1155,7 +1164,7 @@ const _apiCreator = (set: any, get: any) => ({
         if (v) {
           normalizeAcls(v.aclResources);
         }
-        set((s: any) => ({ consumerGroupAcls: new Map(s.consumerGroupAcls).set(groupName, v) }));
+        set((s) => ({ consumerGroupAcls: new Map(s.consumerGroupAcls).set(groupName, v) }));
       })
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       .catch(console.error);
@@ -1292,7 +1301,7 @@ const _apiCreator = (set: any, get: any) => ({
 
     return rq
       .then((details) => {
-        set((s: any) => ({ schemaDetails: new Map(s.schemaDetails).set(subjectName, details) }));
+        set((s) => ({ schemaDetails: new Map(s.schemaDetails).set(subjectName, details) }));
       })
       .catch(addError);
   },
@@ -1320,8 +1329,8 @@ const _apiCreator = (set: any, get: any) => ({
           cleanedReferences.push(ref);
         }
 
-        set((s: any) => {
-          const newOuterMap = new Map(s.schemaReferencedBy as Map<string, Map<number, SchemaReferencedByEntry[]>>);
+        set((s) => {
+          const newOuterMap = new Map(s.schemaReferencedBy);
           const existingInner = newOuterMap.get(subjectName);
           const newInnerMap = new Map<number, SchemaReferencedByEntry[]>(existingInner);
           newInnerMap.set(version, cleanedReferences);
@@ -1346,7 +1355,7 @@ const _apiCreator = (set: any, get: any) => ({
     ).then(
       (r) => {
         if (isSchemaVersionArray(r)) {
-          set((s: any) => ({ schemaUsagesById: new Map(s.schemaUsagesById).set(schemaId, r) }));
+          set((s) => ({ schemaUsagesById: new Map(s.schemaUsagesById).set(schemaId, r) }));
         }
       },
       (err) => {
@@ -1669,11 +1678,11 @@ const _apiCreator = (set: any, get: any) => ({
       force
     ).then((v) => {
       if (v) {
-        set((s: any) => ({
+        set((s) => ({
           connectAdditionalClusterInfo: new Map(s.connectAdditionalClusterInfo).set(clusterName, v),
         }));
       } else {
-        set((s: any) => {
+        set((s) => {
           const m = new Map(s.connectAdditionalClusterInfo);
           m.delete(clusterName);
           return { connectAdditionalClusterInfo: m };
@@ -2025,7 +2034,7 @@ const _apiCreator = (set: any, get: any) => ({
 });
 const useApiStore = zustandCreate(_apiCreator);
 
-type apiStoreType = ReturnType<typeof _apiCreator> & {
+type apiStoreType = ApiState & {
   // Computed properties resolved by the Proxy get handler
   activeRequests: CacheEntry[];
   isRedpanda: boolean;
@@ -2041,12 +2050,78 @@ type apiStoreType = ReturnType<typeof _apiCreator> & {
 
 export type RolePrincipal = { name: string; principalType: 'User' | 'Group' };
 
-const _rolesCreator = (set: any, get: any) => ({
+type SecurityClient = NonNullable<typeof appConfig.securityClient>;
+
+// One page of roles; a failed request is reported and ends the listing like an empty page.
+async function fetchRolesPage(client: SecurityClient, pageToken: string, onError: (error: ConnectError) => void) {
+  const res = await client.listRoles({ request: { pageSize: 500, pageToken } }).catch((error) => {
+    onError(error);
+    return null;
+  });
+  return res?.response;
+}
+
+function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void): Promise<string[]> {
+  const roles: string[] = [];
+  const nextPage = async (pageToken: string): Promise<string[]> => {
+    const page = await fetchRolesPage(client, pageToken, onError);
+    roles.push(...(page?.roles.map((x) => x.name) ?? []));
+    return page?.nextPageToken ? nextPage(page.nextPageToken) : roles;
+  };
+  return nextPage('');
+}
+
+// "User:alice" → { principalType: 'User', name: 'alice' }; anything else is logged and skipped.
+function parseRolePrincipal(roleName: string, principal: string): RolePrincipal | null {
+  const colonIdx = principal.indexOf(':');
+  if (colonIdx < 0) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error('failed to split principal of role', { roleName, principal });
+    return null;
+  }
+  const principalTypeRaw = principal.slice(0, colonIdx);
+  if (principalTypeRaw !== 'User' && principalTypeRaw !== 'Group') {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.warn('unsupported principal type in refreshRoleMembers, skipping', { roleName, principal });
+    return null;
+  }
+  return { principalType: principalTypeRaw, name: principal.slice(colonIdx + 1) };
+}
+
+type GetRoleResult = { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
+
+// The role's name and members, or null when the reply carries no role.
+function roleMembersEntry(res: GetRoleResult): [string, RolePrincipal[]] | null {
+  const { response } = res;
+  const role = response?.role;
+  if (!(response && role)) {
+    return null; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+  }
+  const members = response.members.map((x) => parseRolePrincipal(role.name, x.principal)).filterNull();
+  return [role.name, members];
+}
+
+async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]): Promise<Map<string, RolePrincipal[]>> {
+  const roleMembers = new Map<string, RolePrincipal[]>();
+  const roles = await Promise.all(rolePromises);
+  for (const role of roles) {
+    const entry = roleMembersEntry(role);
+    if (entry) {
+      roleMembers.set(entry[0], entry[1]);
+    }
+  }
+  return roleMembers;
+}
+
+type RolesState = ReturnType<typeof _rolesCreator>;
+type SetRolesState = (partial: Partial<RolesState>) => void;
+type GetRolesState = () => RolesState;
+
+const _rolesCreator = (set: SetRolesState, get: GetRolesState) => ({
   roles: [] as string[],
   roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
   rolesError: null as ConnectError | null,
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async refreshRoles(): Promise<void> {
     set({ rolesError: null });
     const client = appConfig.securityClient;
@@ -2054,32 +2129,7 @@ const _rolesCreator = (set: any, get: any) => ({
       throw new Error('security client is not initialized');
     }
 
-    const roles: string[] = [];
-
-    if (Features.rolesApi) {
-      let nextPageToken = '';
-      while (true) {
-        const res = await client.listRoles({ request: { pageSize: 500, pageToken: nextPageToken } }).catch((error) => {
-          set({ rolesError: error });
-          return null;
-        });
-
-        if (res === null || res.response === null) {
-          break;
-        }
-
-        if (res.response) {
-          const newRoles = res.response?.roles.map((x) => x.name);
-          roles.push(...newRoles);
-
-          if (!res.response?.nextPageToken || res.response?.nextPageToken.length === 0) {
-            break;
-          }
-
-          nextPageToken = res.response?.nextPageToken;
-        }
-      }
-    }
+    const roles = Features.rolesApi ? await listAllRoleNames(client, (error) => set({ rolesError: error })) : [];
 
     set({ roles });
   },
@@ -2090,59 +2140,13 @@ const _rolesCreator = (set: any, get: any) => ({
       throw new Error('security client is not initialized');
     }
 
-    const rolePromises: Promise<unknown>[] = [];
-
-    if (Features.rolesApi) {
-      for (const role of get().roles) {
-        rolePromises.push(client.getRole({ request: { roleName: role } }));
-      }
-    }
+    const rolePromises: Promise<GetRoleResult>[] = Features.rolesApi
+      ? get().roles.map((role: string) => client.getRole({ request: { roleName: role } }))
+      : [];
 
     await Promise.allSettled(rolePromises);
 
-    const roleMembers = new Map<string, RolePrincipal[]>();
-
-    for (const r of rolePromises) {
-      const res = (await r) as { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
-      if (
-        res.response === null ||
-        res.response === undefined ||
-        res.response.role === null ||
-        res.response.role === undefined
-      ) {
-        continue; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
-      }
-      const roleName = res.response.role.name;
-
-      const members = res.response.members
-        .map((x) => {
-          const colonIdx = x.principal.indexOf(':');
-          if (colonIdx < 0) {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error('failed to split principal of role', {
-              roleName,
-              principal: x.principal,
-            });
-            return null;
-          }
-          const principalTypeRaw = x.principal.slice(0, colonIdx);
-          if (principalTypeRaw !== 'User' && principalTypeRaw !== 'Group') {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.warn('unsupported principal type in refreshRoleMembers, skipping', {
-              roleName,
-              principal: x.principal,
-            });
-            return null;
-          }
-          const principalType = principalTypeRaw as RolePrincipal['principalType'];
-          const name = x.principal.slice(colonIdx + 1);
-
-          return { principalType, name };
-        })
-        .filterNull();
-
-      roleMembers.set(roleName, members);
-    }
+    const roleMembers = await collectRoleMembers(rolePromises);
     set({ roleMembers });
   },
 
@@ -2186,17 +2190,20 @@ const _rolesCreator = (set: any, get: any) => ({
 });
 const useRolesStore = zustandCreate(_rolesCreator);
 
-export const rolesApi = new Proxy<ReturnType<typeof _rolesCreator>>({} as ReturnType<typeof _rolesCreator>, {
-  get(_: any, prop: string | symbol) {
-    return (useRolesStore.getState() as any)[prop as string];
+export const rolesApi = new Proxy<RolesState>({} as RolesState, {
+  get(_, prop: string | symbol) {
+    return Reflect.get(useRolesStore.getState(), prop);
   },
-  set(_: any, prop: string | symbol, value: unknown) {
-    useRolesStore.setState({ [prop as string]: value } as any);
+  set(_, prop: string | symbol, value: unknown) {
+    useRolesStore.setState({ [prop]: value });
     return true;
   },
 });
 
-const _pipelinesCreator = (set: any, _get: any) => ({
+type PipelinesState = ReturnType<typeof _pipelinesCreator>;
+type SetPipelinesState = (partial: Partial<PipelinesState>) => void;
+
+const _pipelinesCreator = (set: SetPipelinesState) => ({
   pipelines: undefined as undefined | Pipeline[],
   pipelinesError: null as ConnectError | null,
 
@@ -2206,28 +2213,14 @@ const _pipelinesCreator = (set: any, _get: any) => ({
       throw new Error('pipelines client is not initialized');
     }
 
-    const pipelines: Pipeline[] = [];
     set({ pipelinesError: null });
-
-    let nextPageToken = '';
-    while (true) {
-      const res = await client
-        .listPipelines({ request: { pageSize: 500, pageToken: nextPageToken } })
-        .catch((error: ConnectError) => {
-          set({ pipelinesError: error });
-        });
+    const pipelines = await collectPages(async (pageToken) => {
+      const res = await client.listPipelines({ request: { pageSize: 500, pageToken } }).catch((error: ConnectError) => {
+        set({ pipelinesError: error });
+      });
       const response = res?.response;
-      if (!response) {
-        break;
-      }
-
-      pipelines.push(...response.pipelines);
-
-      if (!response.nextPageToken || response.nextPageToken.length === 0) {
-        break;
-      }
-      nextPageToken = response.nextPageToken;
-    }
+      return response ? { items: response.pipelines, nextPageToken: response.nextPageToken } : undefined;
+    });
 
     set({ pipelines });
   },
@@ -2280,20 +2273,21 @@ const _pipelinesCreator = (set: any, _get: any) => ({
 });
 const usePipelinesStore = zustandCreate(_pipelinesCreator);
 
-export const pipelinesApi = new Proxy<ReturnType<typeof _pipelinesCreator>>(
-  {} as ReturnType<typeof _pipelinesCreator>,
-  {
-    get(_: any, prop: string | symbol) {
-      return (usePipelinesStore.getState() as any)[prop as string];
-    },
-    set(_: any, prop: string | symbol, value: unknown) {
-      usePipelinesStore.setState({ [prop as string]: value } as any);
-      return true;
-    },
-  }
-);
+export const pipelinesApi = new Proxy<PipelinesState>({} as PipelinesState, {
+  get(_, prop: string | symbol) {
+    return Reflect.get(usePipelinesStore.getState(), prop);
+  },
+  set(_, prop: string | symbol, value: unknown) {
+    usePipelinesStore.setState({ [prop]: value });
+    return true;
+  },
+});
 
-const _rpcnSecretManagerCreator = (set: any, get: any) => ({
+type RpcnSecretManagerState = ReturnType<typeof _rpcnSecretManagerCreator>;
+type SetRpcnSecretManagerState = (partial: Partial<RpcnSecretManagerState>) => void;
+type GetRpcnSecretManagerState = () => RpcnSecretManagerState;
+
+const _rpcnSecretManagerCreator = (set: SetRpcnSecretManagerState, get: GetRpcnSecretManagerState) => ({
   secrets: undefined as undefined | Secret[],
   secretsByPipeline: undefined as { secretId: string; pipelines: Pipeline[] }[] | undefined,
   isEnable: true,
@@ -2310,29 +2304,13 @@ const _rpcnSecretManagerCreator = (set: any, get: any) => ({
       .catch(() => []);
     set({ secretsByPipeline });
 
-    const secrets: Secret[] = [];
-
-    let nextPageToken = '';
-    while (true) {
+    const secrets = await collectPages(async (pageToken) => {
       const res = await client.listSecrets({
-        request: create(ListSecretsRequestSchemaDataPlane, {
-          pageToken: nextPageToken,
-          pageSize: 100,
-        }),
+        request: create(ListSecretsRequestSchemaDataPlane, { pageToken, pageSize: 100 }),
       });
-
       const response = res.response;
-      if (!response) {
-        break;
-      }
-
-      secrets.push(...response.secrets);
-
-      if (!res || response.nextPageToken.length === 0) {
-        break;
-      }
-      nextPageToken = response.nextPageToken;
-    }
+      return response ? { items: response.secrets, nextPageToken: response.nextPageToken } : undefined;
+    });
 
     set({ secrets });
   },
@@ -2397,20 +2375,42 @@ const _rpcnSecretManagerCreator = (set: any, get: any) => ({
 });
 const useRpcnSecretManagerStore = zustandCreate(_rpcnSecretManagerCreator);
 
-export const rpcnSecretManagerApi = new Proxy<ReturnType<typeof _rpcnSecretManagerCreator>>(
-  {} as ReturnType<typeof _rpcnSecretManagerCreator>,
-  {
-    get(_: any, prop: string | symbol) {
-      return (useRpcnSecretManagerStore.getState() as any)[prop as string];
-    },
-    set(_: any, prop: string | symbol, value: unknown) {
-      useRpcnSecretManagerStore.setState({ [prop as string]: value } as any);
-      return true;
-    },
-  }
-);
+export const rpcnSecretManagerApi = new Proxy<RpcnSecretManagerState>({} as RpcnSecretManagerState, {
+  get(_, prop: string | symbol) {
+    return Reflect.get(useRpcnSecretManagerStore.getState(), prop);
+  },
+  set(_, prop: string | symbol, value: unknown) {
+    useRpcnSecretManagerStore.setState({ [prop]: value });
+    return true;
+  },
+});
 
-const _transformsCreator = (set: any, _get: any) => ({
+type TransformsClient = NonNullable<typeof appConfig.transformsClient>;
+
+// One page of transforms; a failed request ends the listing like an empty page.
+async function fetchTransformsPage(client: TransformsClient, pageToken: string) {
+  const res: ListTransformsResponse | null = await client
+    .listTransforms({ request: { pageSize: 500, pageToken } })
+    .catch(() => null);
+  return res?.response;
+}
+
+function listAllTransforms(client: TransformsClient): Promise<TransformMetadata[]> {
+  const transforms: TransformMetadata[] = [];
+  const nextPage = async (pageToken: string): Promise<TransformMetadata[]> => {
+    const page = await fetchTransformsPage(client, pageToken);
+    transforms.push(...(page?.transforms ?? []));
+    return page?.nextPageToken ? nextPage(page.nextPageToken) : transforms;
+  };
+  return nextPage('');
+}
+
+type TransformsState = ReturnType<typeof _transformsCreator>;
+type SetTransformsState = (
+  partial: Partial<TransformsState> | ((state: TransformsState) => Partial<TransformsState>)
+) => void;
+
+const _transformsCreator = (set: SetTransformsState) => ({
   transforms: undefined as undefined | TransformMetadata[],
   transformDetails: new Map<string, TransformMetadata>(),
 
@@ -2419,29 +2419,7 @@ const _transformsCreator = (set: any, _get: any) => ({
     if (!client) {
       throw new Error('transforms client is not initialized');
     }
-    const transforms: TransformMetadata[] = [];
-    let nextPageToken = '';
-    while (true) {
-      let res: ListTransformsResponse;
-      try {
-        res = await client.listTransforms({
-          request: { pageSize: 500, pageToken: nextPageToken },
-        });
-      } catch (_err) {
-        break;
-      }
-      const r = res.response;
-      if (!r) {
-        break;
-      }
-
-      transforms.push(...r.transforms);
-
-      if (!r.nextPageToken || r.nextPageToken.length === 0) {
-        break;
-      }
-      nextPageToken = r.nextPageToken;
-    }
+    const transforms = await listAllTransforms(client);
 
     const transformDetails = new Map(transforms.map((t) => [t.name, t]));
     set({ transforms, transformDetails });
@@ -2453,8 +2431,7 @@ const _transformsCreator = (set: any, _get: any) => ({
       throw new Error('transforms client is not initialized');
     }
 
-    const res = await client.getTransform({ request: { name } });
-    const r = res.response;
+    const { response: r } = await client.getTransform({ request: { name } });
     if (!r) {
       throw new Error('got empty response from getTransform');
     }
@@ -2464,7 +2441,7 @@ const _transformsCreator = (set: any, _get: any) => ({
       return;
     }
 
-    set((s: any) => ({ transformDetails: new Map(s.transformDetails).set(transform.name, transform) }));
+    set((s) => ({ transformDetails: new Map(s.transformDetails).set(transform.name, transform) }));
   },
 
   async deleteTransform(name: string) {
@@ -2478,18 +2455,15 @@ const _transformsCreator = (set: any, _get: any) => ({
 });
 const useTransformsStore = zustandCreate(_transformsCreator);
 
-export const transformsApi = new Proxy<ReturnType<typeof _transformsCreator>>(
-  {} as ReturnType<typeof _transformsCreator>,
-  {
-    get(_: any, prop: string | symbol) {
-      return (useTransformsStore.getState() as any)[prop as string];
-    },
-    set(_: any, prop: string | symbol, value: unknown) {
-      useTransformsStore.setState({ [prop as string]: value } as any);
-      return true;
-    },
-  }
-);
+export const transformsApi = new Proxy<TransformsState>({} as TransformsState, {
+  get(_, prop: string | symbol) {
+    return Reflect.get(useTransformsStore.getState(), prop);
+  },
+  set(_, prop: string | symbol, value: unknown) {
+    useTransformsStore.setState({ [prop]: value });
+    return true;
+  },
+});
 
 /**
  * Sliding-window cap for the live-tail / filtered message buffer (`messageSearch.messages`).
@@ -2505,8 +2479,222 @@ const LIVE_TAIL_MAX_MESSAGES = 50_000;
  */
 const LIVE_TAIL_TRIM_SLACK = 1024;
 
+type MessageSearchState = {
+  searchRequest: MessageSearchRequest | null;
+  searchPhase: string | null;
+  elapsedMs: number | null;
+  bytesConsumed: number;
+  totalMessagesConsumed: number;
+  nextPageToken: string | null;
+  isLoadingMore: boolean;
+  abortController: AbortController | null;
+  messages: TopicMessage[];
+};
+
+type ListMessagesControl = ListMessagesResponse['controlMessage'];
+type ConsoleClient = NonNullable<typeof appConfig.consoleClient>;
+
+const SEARCH_TIMEOUT_MS = 30 * 1000;
+const LIVE_TAIL_TIMEOUT_MS = 30 * 60 * 1000;
+
+function requireConsoleClient(): ConsoleClient {
+  // https://connectrpc.com/docs/web/using-clients
+  // https://github.com/connectrpc/connect-es
+  // https://github.com/connectrpc/examples-es
+  const client = appConfig.consoleClient;
+
+  if (!client) {
+    // this shouldn't happen but better to explicitly throw
+    throw new Error('No console client configured');
+  }
+  return client;
+}
+
+function withCloudAccessToken(searchRequest: MessageSearchRequest): MessageSearchRequest {
+  return {
+    ...searchRequest,
+    ...(appConfig.jwt
+      ? {
+          enterprise: {
+            redpandaCloud: {
+              accessToken: appConfig.jwt,
+            },
+          },
+        }
+      : {}),
+  };
+}
+
+function toListMessagesRequest(searchRequest: MessageSearchRequest) {
+  return create(ListMessagesRequestSchema, {
+    topic: searchRequest.topicName,
+    startOffset: BigInt(searchRequest.startOffset),
+    startTimestamp: BigInt(searchRequest.startTimestamp),
+    partitionId: searchRequest.partitionId,
+    maxResults: searchRequest.maxResults,
+    pageToken: searchRequest.pageToken ?? '',
+    pageSize: searchRequest.pageSize ?? 0,
+    filterInterpreterCode: searchRequest.filterInterpreterCode,
+    includeOriginalRawPayload: searchRequest.includeRawPayload ?? false,
+    ignoreMaxSizeLimit: searchRequest.ignoreSizeLimit ?? false,
+    keyDeserializer: searchRequest.keyDeserializer,
+    valueDeserializer: searchRequest.valueDeserializer,
+    schemaContext: searchRequest.schemaContext ?? '',
+  });
+}
+
+// For StartOffset = Newest and any set push-down filter we need to bump the default timeout
+// from 30s to 30 minutes before ending the request gracefully.
+// The same condition marks a live-tail/filtered stream, which appends for the whole window
+// and so needs the sliding-window cap below (normal pagination never enters this branch).
+function isLiveTailSearch(searchRequest: MessageSearchRequest): boolean {
+  return searchRequest.startOffset === PartitionOffsetOrigin.End || searchRequest.filterInterpreterCode !== null;
+}
+
+function beginSearch(
+  search: MessageSearchState,
+  searchRequest: MessageSearchRequest,
+  append: boolean,
+  notify: () => void
+) {
+  search.searchRequest = searchRequest;
+  search.searchPhase = 'Connecting';
+  search.bytesConsumed = 0;
+  search.totalMessagesConsumed = 0;
+  if (!append) {
+    search.messages.length = 0;
+    notify();
+  }
+  search.isLoadingMore = append;
+  search.elapsedMs = null;
+}
+
+function resetSearchProgress(search: MessageSearchState) {
+  search.searchPhase = null;
+  search.bytesConsumed = 0;
+  search.totalMessagesConsumed = 0;
+}
+
+function finishSearch(
+  search: MessageSearchState,
+  done: Extract<ListMessagesControl, { case: 'done' }>['value'],
+  notify: () => void
+) {
+  search.elapsedMs = Number(done.elapsedMs);
+  search.bytesConsumed = Number(done.bytesConsumed);
+  search.nextPageToken = done.nextPageToken || null;
+  search.isLoadingMore = false;
+  search.searchPhase = null;
+  notify();
+}
+
+// error doesn't necessarily mean the whole request is done
+function reportSearchBackendError(message: string) {
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.info(`ws backend error: ${message}`);
+  showToast({
+    title: 'Backend Error',
+    description: message,
+    status: 'error',
+    duration: 5000,
+  });
+}
+
+function appendSearchMessage(search: MessageSearchState, message: TopicMessage, isLiveTail: boolean) {
+  // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream on
+  // a high-volume topic cannot grow the heap without limit. appendWithSlackCap
+  // amortizes the O(n) trim to ~once per LIVE_TAIL_TRIM_SLACK messages.
+  if (isLiveTail) {
+    appendWithSlackCap(search.messages, message, LIVE_TAIL_MAX_MESSAGES, LIVE_TAIL_TRIM_SLACK);
+  } else {
+    search.messages.push(message);
+  }
+}
+
+function applySearchControl(
+  search: MessageSearchState,
+  control: ListMessagesControl,
+  isLiveTail: boolean,
+  notify: () => void
+) {
+  switch (control.case) {
+    case 'phase':
+      search.searchPhase = control.value.phase;
+      break;
+    case 'progress':
+      search.bytesConsumed = Number(control.value.bytesConsumed);
+      search.totalMessagesConsumed = Number(control.value.messagesConsumed);
+      break;
+    case 'done':
+      finishSearch(search, control.value, notify);
+      break;
+    case 'error':
+      reportSearchBackendError(control.value.message);
+      break;
+    case 'data':
+      appendSearchMessage(search, convertListMessageData(control.value), isLiveTail);
+      break;
+    default:
+      break;
+  }
+}
+
+// A malformed frame is logged and skipped, so one bad message doesn't end the stream.
+function applySearchResponse(
+  search: MessageSearchState,
+  res: ListMessagesResponse,
+  isLiveTail: boolean,
+  notify: () => void
+) {
+  try {
+    applySearchControl(search, res.controlMessage, isLiveTail, notify);
+  } catch (e) {
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.error('error in listMessages loop', { error: e });
+  }
+}
+
+// https://connectrpc.com/docs/web/errors
+function failSearch(search: MessageSearchState, abortSignal: AbortSignal, error: unknown) {
+  resetSearchProgress(search);
+  if (abortSignal.aborted) {
+    return; // Do not throw, this is a user cancellation
+  }
+  // biome-ignore lint/suspicious/noConsole: intentional console usage
+  console.error('startMessageSearchNew: error in await loop of client.listMessages', { error });
+  throw error;
+}
+
+async function streamSearchMessages(
+  search: MessageSearchState,
+  client: ConsoleClient,
+  searchRequest: MessageSearchRequest,
+  abortSignal: AbortSignal,
+  notify: () => void
+) {
+  const req = toListMessagesRequest(searchRequest);
+  const isLiveTail = isLiveTailSearch(searchRequest);
+  try {
+    for await (const res of client.listMessages(req, {
+      signal: abortSignal,
+      timeoutMs: isLiveTail ? LIVE_TAIL_TIMEOUT_MS : SEARCH_TIMEOUT_MS,
+    })) {
+      if (abortSignal.aborted) {
+        break;
+      }
+      applySearchResponse(search, res, isLiveTail, notify);
+    }
+  } catch (e) {
+    failSearch(search, abortSignal, e);
+  } finally {
+    // Always cleanup the abort controller reference to prevent memory leaks
+    // This ensures cleanup happens whether the stream completes, errors, or is cancelled
+    search.abortController = null;
+  }
+}
+
 export function createMessageSearch() {
-  const notify = () => useApiStore.setState((s: any) => ({ _msgSearchVersion: (s._msgSearchVersion ?? 0) + 1 }));
+  const notify = () => useApiStore.setState((s) => ({ _msgSearchVersion: s._msgSearchVersion + 1 }));
   const messageSearch = {
     // Parameters last passed to 'startMessageSearch'
     searchRequest: null as MessageSearchRequest | null,
@@ -2527,161 +2715,28 @@ export function createMessageSearch() {
     // Live view of messages, gets updated as new messages arrive
     messages: [] as TopicMessage[],
 
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 64, refactor later
     async startSearch(
       _searchRequest: MessageSearchRequest,
       externalSignal?: AbortSignal,
       append = false
     ): Promise<TopicMessage[]> {
-      // https://connectrpc.com/docs/web/using-clients
-      // https://github.com/connectrpc/connect-es
-      // https://github.com/connectrpc/examples-es
-      const client = appConfig.consoleClient;
-
-      if (!client) {
-        // this shouldn't happen but better to explicitly throw
-        throw new Error('No console client configured');
-      }
+      const client = requireConsoleClient();
 
       if (this.searchPhase) {
         // There is a search running already, abort it
         this.stopSearch('starting a new search');
       }
 
-      const searchRequest = {
-        ..._searchRequest,
-        ...(appConfig.jwt
-          ? {
-              enterprise: {
-                redpandaCloud: {
-                  accessToken: appConfig.jwt,
-                },
-              },
-            }
-          : {}),
-      };
-      this.searchRequest = searchRequest;
-      this.searchPhase = 'Connecting';
-      this.bytesConsumed = 0;
-      this.totalMessagesConsumed = 0;
-      if (!append) {
-        this.messages.length = 0;
-        notify();
-      }
-      this.isLoadingMore = append;
-      this.elapsedMs = null;
+      const searchRequest = withCloudAccessToken(_searchRequest);
+      beginSearch(this, searchRequest, append, notify);
 
       // Links external signal (component control) with internal controller - both can abort the same stream
       // Ensures cleanup works from component unmount AND direct stopSearch() calls
       const linkedController = createLinkedAbortController(externalSignal);
       this.abortController = linkedController;
-      const abortSignal = linkedController.signal;
 
       // do it
-      const req = create(ListMessagesRequestSchema);
-      req.topic = searchRequest.topicName;
-      req.startOffset = BigInt(searchRequest.startOffset);
-      req.startTimestamp = BigInt(searchRequest.startTimestamp);
-      req.partitionId = searchRequest.partitionId;
-      req.maxResults = searchRequest.maxResults;
-      req.pageToken = searchRequest.pageToken ?? '';
-      req.pageSize = searchRequest.pageSize ?? 0;
-      req.filterInterpreterCode = searchRequest.filterInterpreterCode;
-      req.includeOriginalRawPayload = searchRequest.includeRawPayload ?? false;
-      req.ignoreMaxSizeLimit = searchRequest.ignoreSizeLimit ?? false;
-      req.keyDeserializer = searchRequest.keyDeserializer;
-      req.valueDeserializer = searchRequest.valueDeserializer;
-      req.schemaContext = searchRequest.schemaContext ?? '';
-
-      // For StartOffset = Newest and any set push-down filter we need to bump the default timeout
-      // from 30s to 30 minutes before ending the request gracefully.
-      // The same condition marks a live-tail/filtered stream, which appends for the whole window
-      // and so needs the sliding-window cap below (normal pagination never enters this branch).
-      const isLiveTail = searchRequest.startOffset === PartitionOffsetOrigin.End || req.filterInterpreterCode !== null;
-      let timeoutMs = 30 * 1000;
-      if (isLiveTail) {
-        const minuteMs = 60 * 1000;
-        timeoutMs = 30 * minuteMs;
-      }
-
-      try {
-        for await (const res of client.listMessages(req, {
-          signal: abortSignal,
-          timeoutMs,
-        })) {
-          if (abortSignal.aborted) {
-            break;
-          }
-
-          try {
-            switch (res.controlMessage.case) {
-              case 'phase':
-                this.searchPhase = res.controlMessage.value.phase;
-                break;
-              case 'progress':
-                this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                this.totalMessagesConsumed = Number(res.controlMessage.value.messagesConsumed);
-                break;
-              case 'done':
-                this.elapsedMs = Number(res.controlMessage.value.elapsedMs);
-                this.bytesConsumed = Number(res.controlMessage.value.bytesConsumed);
-                this.nextPageToken = res.controlMessage.value.nextPageToken || null;
-                this.isLoadingMore = false;
-                // this.MessageSearchCancelled = msg.isCancelled;
-                this.searchPhase = 'Done';
-                this.searchPhase = null;
-                notify();
-                break;
-              case 'error':
-                // error doesn't necessarily mean the whole request is done
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.info(`ws backend error: ${res.controlMessage.value.message}`);
-                showToast({
-                  title: 'Backend Error',
-                  description: res.controlMessage.value.message,
-                  status: 'error',
-                  duration: 5000,
-                });
-
-                break;
-              case 'data': {
-                const m = convertListMessageData(res.controlMessage.value);
-                // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream on
-                // a high-volume topic cannot grow the heap without limit. appendWithSlackCap
-                // amortizes the O(n) trim to ~once per LIVE_TAIL_TRIM_SLACK messages.
-                if (isLiveTail) {
-                  appendWithSlackCap(this.messages, m, LIVE_TAIL_MAX_MESSAGES, LIVE_TAIL_TRIM_SLACK);
-                } else {
-                  this.messages.push(m);
-                }
-                break;
-              }
-              default:
-                break;
-            }
-          } catch (e) {
-            // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error('error in listMessages loop', { error: e });
-          }
-        }
-      } catch (e) {
-        this.searchPhase = 'Done';
-        this.bytesConsumed = 0;
-        this.totalMessagesConsumed = 0;
-        this.searchPhase = null;
-        // https://connectrpc.com/docs/web/errors
-        if (abortSignal.aborted) {
-          // Do not throw, this is a user cancellation
-        } else {
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          console.error('startMessageSearchNew: error in await loop of client.listMessages', { error: e });
-          throw e;
-        }
-      } finally {
-        // Always cleanup the abort controller reference to prevent memory leaks
-        // This ensures cleanup happens whether the stream completes, errors, or is cancelled
-        this.abortController = null;
-      }
+      await streamSearchMessages(this, client, searchRequest, linkedController.signal, notify);
 
       // one done
       this.stopSearch();
@@ -2695,10 +2750,7 @@ export function createMessageSearch() {
       }
 
       if (this.searchPhase !== null) {
-        this.searchPhase = 'Done';
-        this.bytesConsumed = 0;
-        this.totalMessagesConsumed = 0;
-        this.searchPhase = null;
+        resetSearchProgress(this);
       }
     },
 
@@ -2829,7 +2881,7 @@ function normalizeAcls(acls: AclResource[]) {
 }
 
 export function aclRequestToQuery(request: GetAclsRequest): string {
-  const filters = ObjToKv(request)
+  const filters = objToKv(request)
     .filter((kv) => !!kv.value)
     .map((x) => [x.key, String(x.value)]);
 
@@ -2872,19 +2924,8 @@ export type MessageSearchRequest = {
 };
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
-  let obj: undefined | unknown;
-  let responseText = text;
-  if (responseText === null) {
-    if (response.bodyUsed) {
-      throw new Error('response content already consumed');
-    }
-    responseText = await response.text();
-  }
-  try {
-    obj = JSON.parse(responseText);
-  } catch {
-    // no op - response may not be JSON
-  }
+  const responseText = await readResponseBody(response, text);
+  const obj = parseResponseJson(responseText);
 
   // api error?
   if (isApiError(obj)) {
@@ -2909,13 +2950,13 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
 const MAX_TRACKED_ERRORS = 50;
 
 function addError(err: Error) {
-  useApiStore.setState((s: ReturnType<typeof _apiCreator>) => ({
+  useApiStore.setState((s: ApiState) => ({
     errors: boundedAppend(s.errors, err, MAX_TRACKED_ERRORS),
   }));
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
-function useApiStoreHook<T>(selector: (state: ReturnType<typeof _apiCreator>) => T): T {
+function useApiStoreHook<T>(selector: (state: ApiState) => T): T {
   return useStore(useApiStore, selector);
 }
 
@@ -2929,7 +2970,7 @@ export {
 };
 
 export const api = new Proxy<apiStoreType>({} as apiStoreType, {
-  get(_: any, prop: string | symbol) {
+  get(_, prop: string | symbol) {
     const s = useApiStore.getState();
     switch (prop as string) {
       case 'activeRequests':
@@ -2940,7 +2981,7 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return s.clusterOverview?.redpanda !== null;
       case 'getTopicPartitionArray': {
         const result: string[] = [];
-        s.topicPartitions.forEach((partitions: any, topicName: string) => {
+        s.topicPartitions.forEach((partitions, topicName) => {
           if (partitions !== null) {
             for (const partition of partitions) {
               result.push(`${topicName}/${partition.id}`);
@@ -2953,7 +2994,7 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return (
           s.debugBundleStatuses.length > 0 &&
           !s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
           )
         );
@@ -2961,11 +3002,11 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return (
           s.debugBundleStatuses.length > 0 &&
           !s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.SUCCESS
           )
         );
@@ -2973,11 +3014,11 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return (
           s.debugBundleStatuses.length > 0 &&
           !s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.every(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.ERROR
           )
         );
@@ -2985,32 +3026,92 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return (
           s.debugBundleStatuses.length > 0 &&
           !s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.some(
-            (status: any) =>
+            (status) =>
               status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.EXPIRED
           )
         );
       case 'isDebugBundleInProgress':
         return s.debugBundleStatuses.some(
-          (status: any) =>
+          (status) =>
             status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
         );
       case 'debugBundleStatus': {
         // The running job's status when there is one; other brokers can still report an older bundle.
-        const bundleStatuses: DebugBundleStatus[] = s.debugBundleStatuses
-          .filter((status: any) => status.value.case === 'bundleStatus')
-          .map((x: any) => x.value.value as DebugBundleStatus);
+        const bundleStatuses = s.debugBundleStatuses.flatMap((status) =>
+          status.value.case === 'bundleStatus' ? [status.value.value] : []
+        );
         return bundleStatuses.find((x) => x.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses[0];
       }
       default:
-        return (s as any)[prop as string];
+        return Reflect.get(s, prop);
     }
   },
-  set(_: any, prop: string | symbol, value: unknown) {
-    useApiStore.setState({ [prop as string]: value } as any);
+  set(_, prop: string | symbol, value: unknown) {
+    useApiStore.setState({ [prop]: value });
     return true;
   },
 });
+
+function createRestHeaders(initialHeaders?: HeadersInit): Headers {
+  // Add JWT Bearer token if available (same as gRPC addBearerTokenInterceptor)
+  // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
+  const headers = new Headers(initialHeaders);
+  if (appConfig.jwt && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${appConfig.jwt}`);
+  }
+  return headers;
+}
+
+async function updateLoginError(res: Response): Promise<void> {
+  try {
+    const text = await res.text();
+    const obj = JSON.parse(text);
+    // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.log(`unauthorized message: ${text}`);
+
+    const err = obj as ApiError;
+    uiState.loginError = String(err.message);
+  } catch (err) {
+    uiState.loginError = String(err);
+  }
+}
+
+function readResponseBody(response: Response, text: string | null): Promise<string> {
+  if (text !== null) {
+    return Promise.resolve(text);
+  }
+  if (response.bodyUsed) {
+    return Promise.reject(new Error('response content already consumed'));
+  }
+  return response.text();
+}
+
+function parseResponseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+type PaginatedItems<T> = { items: T[]; nextPageToken?: string };
+
+function collectPages<T>(fetchPage: (pageToken: string) => Promise<PaginatedItems<T> | undefined>): Promise<T[]> {
+  const items: T[] = [];
+  const nextPage = async (pageToken: string): Promise<T[]> => {
+    const page = await fetchPage(pageToken);
+    if (!page) {
+      return items;
+    }
+    items.push(...page.items);
+    if (!page.nextPageToken) {
+      return items;
+    }
+    return nextPage(page.nextPageToken);
+  };
+  return nextPage('');
+}

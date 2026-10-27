@@ -95,7 +95,7 @@ const mockClusterResponse = {
   },
 };
 
-test.describe('Create Topic Modal - Default Values', () => {
+test.describe('create Topic Modal - Default Values', () => {
   test('should display correct default values from cluster configuration', async ({ page }) => {
     // Mock the /api/cluster endpoint to return our test data
     await page.route('**/api/cluster', async (route) => {

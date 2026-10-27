@@ -38,7 +38,7 @@ import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
 import { TopicMessagesTab } from './messages';
 import { TopicQuickInfoStatistic } from './quick-info';
 import AclList from './Tab.Acl/acl-list';
-import { DeleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
+import { deleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
 import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
 import { TopicPartitions } from './tab-partitions';
@@ -47,6 +47,7 @@ import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
+import { TonedIcon } from '../shared/toned-icon';
 
 const TopicDocumentation = lazy(() => import('./tab-docu').then((m) => ({ default: m.TopicDocumentation })));
 
@@ -69,7 +70,7 @@ type TopicTabProps = {
   id: TopicTabId;
   requiredPermission: TopicAction;
   titleText: React.ReactNode;
-  disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[];
+  disableHooks?: TabDisableHook[];
   children: (topic: Topic) => React.ReactNode;
 };
 
@@ -78,19 +79,21 @@ type TopicTabProps = {
 // once outside — so each instance only renders the relevant part.
 const TopicTabModeCtx = React.createContext<'trigger' | 'content'>('content');
 
-const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
-  const mode = React.useContext(TopicTabModeCtx);
+type TabDisableHook = (topic: Topic) => React.ReactNode | undefined;
 
-  let customTitle: React.ReactNode | undefined;
-  if (disableHooks) {
-    for (const h of disableHooks) {
-      const result = h(topic);
-      if (result) {
-        customTitle = result;
-        break;
-      }
+// The first disable hook that returns a title wins; it replaces the tab title and disables the tab.
+function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined): React.ReactNode | undefined {
+  for (const h of disableHooks ?? []) {
+    const result = h(topic);
+    if (result) {
+      return result;
     }
   }
+}
+
+const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
+  const mode = React.useContext(TopicTabModeCtx);
+  const customTitle = findCustomTitle(topic, disableHooks);
 
   const hasPermission =
     !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission);
@@ -115,12 +118,7 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
 
   if (mode === 'trigger') {
     return (
-      <TabsTrigger
-        className="text-body-lg aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[active]:text-foreground"
-        disabled={isDisabled}
-        value={id}
-        variant="underline"
-      >
+      <TabsTrigger className="aria-disabled:cursor-not-allowed" disabled={isDisabled} value={id} variant="underline">
         {title}
       </TabsTrigger>
     );
@@ -154,11 +152,7 @@ function refreshTopicData(topicName: string, force: boolean) {
   // there is no single endpoint to refresh a single topic
   api.refreshTopics(force);
 
-  // Resolve the active tab: prefer the browser URL hash (window.location is always current,
-  // unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
-  // fall back to stored setting.
-  const urlHash = window.location.hash.replace('#', '') as TopicTabId;
-  const activeTab = TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
+  const activeTab = resolveActiveTab();
 
   // consumers are lazy loaded because they're (relatively) expensive
   if (activeTab === 'consumers') {
@@ -175,6 +169,18 @@ function refreshTopicData(topicName: string, force: boolean) {
     // Error handling managed by API layer
   });
 
+  refreshLazyTabData(activeTab, topicName, force);
+}
+
+// Resolve the active tab: prefer the browser URL hash (window.location is always current,
+// unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
+// fall back to stored setting.
+function resolveActiveTab(): TopicTabId | undefined {
+  const urlHash = window.location.hash.replace('#', '') as TopicTabId;
+  return TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
+}
+
+function refreshLazyTabData(activeTab: TopicTabId | undefined, topicName: string, force: boolean) {
   // documentation can be lazy loaded
   if (activeTab === 'documentation') {
     api.refreshTopicDocumentation(topicName, force);
@@ -217,59 +223,57 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 }
 
-const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
-  const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
-
-  // Derived: topicConfig
+// Derived: topicConfig. Also seeds the favourite config entries for the topic's cleanup policy.
+function useModifiedConfigCount(topicName: string): number {
   const config = useApiStoreHook((s) => s.topicConfig.get(topicName));
-  const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
   const topicConfig: ConfigEntry[] | null | undefined =
     config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
 
   setTimeout(() => topicConfig && addBaseFavs(topicConfig));
 
-  const modifiedConfigCount = topicConfig?.filter((e) => e.isExplicitlySet).length ?? 0;
+  return topicConfig?.filter((e) => e.isExplicitlySet).length ?? 0;
+}
 
-  const leaderLessPartitionIds = (api.clusterHealth?.leaderlessPartitions ?? []).find(
-    ({ topicName: tn }) => tn === topicName
-  )?.partitionIds;
-  const underReplicatedPartitionIds = (api.clusterHealth?.underReplicatedPartitions ?? []).find(
-    ({ topicName: tn }) => tn === topicName
-  )?.partitionIds;
+type TopicPartitionIds = { topicName: string; partitionIds: number[] };
 
-  const aclDisableHooks: ((topic: Topic) => React.ReactNode | undefined)[] = [
-    () => {
-      if (
-        AppFeatures.SINGLE_SIGN_ON &&
-        api.userData !== null &&
-        api.userData !== undefined &&
-        !api.userData.canListAcls
-      ) {
-        return (
-          <Popover>
-            <PopoverTrigger
-              render={
-                <div>
-                  <LockIcon size={16} /> ACL
-                </div>
-              }
-            />
-            <PopoverContent>You need the cluster-permission &apos;viewAcl&apos; to view this tab</PopoverContent>
-          </Popover>
-        );
-      }
-    },
-  ];
+function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string): number[] | undefined {
+  return (entries ?? []).find(({ topicName: tn }) => tn === topicName)?.partitionIds;
+}
 
-  const docuDisableHooks: ((topic: Topic) => React.ReactNode | undefined)[] = [
-    (t) => (t.documentation === 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
-    (t) =>
-      t.documentation === 'NOT_EXISTENT'
-        ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
-        : null,
-  ];
+const aclDisableHooks: TabDisableHook[] = [
+  () => {
+    if (
+      AppFeatures.SINGLE_SIGN_ON &&
+      api.userData !== null &&
+      api.userData !== undefined &&
+      !api.userData.canListAcls
+    ) {
+      return (
+        <Popover>
+          <PopoverTrigger
+            render={
+              <div>
+                <LockIcon size={16} /> ACL
+              </div>
+            }
+          />
+          <PopoverContent>You need the cluster-permission &apos;viewAcl&apos; to view this tab</PopoverContent>
+        </Popover>
+      );
+    }
+  },
+];
 
-  const enabledTabIds = new Set<TopicTabId>(
+const docuDisableHooks: TabDisableHook[] = [
+  (t) => (t.documentation === 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null),
+  (t) =>
+    t.documentation === 'NOT_EXISTENT'
+      ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon)
+      : null,
+];
+
+function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
+  return new Set<TopicTabId>(
     [
       isTopicTabEnabled(topic, 'viewMessages') && 'messages',
       isTopicTabEnabled(topic, 'viewConsumers') && 'consumers',
@@ -279,8 +283,18 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
       !isServerless() && isTopicTabEnabled(topic, 'seeTopic', docuDisableHooks) && 'documentation',
     ].filter(Boolean) as TopicTabId[]
   );
+}
 
-  const selectedTabId = getSelectedTabId(enabledTabIds);
+const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
+  const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
+
+  const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
+  const modifiedConfigCount = useModifiedConfigCount(topicName);
+
+  const leaderLessPartitionIds = findTopicPartitionIds(api.clusterHealth?.leaderlessPartitions, topicName);
+  const underReplicatedPartitionIds = findTopicPartitionIds(api.clusterHealth?.underReplicatedPartitions, topicName);
+
+  const selectedTabId = getSelectedTabId(getEnabledTabIds(topic));
 
   const tabElements = (
     <>
@@ -304,7 +318,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
                   <TooltipTrigger
                     render={
                       <div>
-                        <ErrorIcon className="text-destructive" size={18} />
+                        <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />
                       </div>
                     }
                   />
@@ -320,7 +334,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
                   <TooltipTrigger
                     render={
                       <div>
-                        <WarningIcon className="text-warning" size={18} />
+                        <TonedIcon icon={WarningIcon} size={18} tone="warning" />
                       </div>
                     }
                   />
@@ -411,7 +425,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
             >
               Produce Record
             </Button>
-            {DeleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
+            {deleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
               setDeleteRecordsModalAlive(true);
             })}
           </div>
@@ -467,11 +481,7 @@ function addBaseFavs(topicConfig: ConfigEntry[]): void {
   }
 }
 
-function isTopicTabEnabled(
-  topic: Topic,
-  requiredPermission: TopicAction,
-  disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
-): boolean {
+function isTopicTabEnabled(topic: Topic, requiredPermission: TopicAction, disableHooks?: TabDisableHook[]): boolean {
   if (disableHooks) {
     for (const h of disableHooks) {
       if (h(topic)) {

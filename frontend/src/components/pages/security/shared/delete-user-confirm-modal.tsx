@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from '../../../redpanda-ui/components/dialog';
 import { Input } from '../../../redpanda-ui/components/input';
+import { usePendingAction } from '../hooks/use-pending-action';
 
 type DeleteUserConfirmModalProps = {
   userName: string;
@@ -42,21 +43,32 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
 }) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const { run, isPending, errorMessage, clearError } = usePendingAction();
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
   const setOpen = isControlled ? onOpenChange! : setUncontrolledOpen;
 
+  const close = () => {
+    setOpen(false);
+    setConfirmText('');
+    clearError();
+  };
+
+  // Dismissing mid-deletion would hide how it ended, so Escape and outside clicks wait for it to settle.
   const handleOpenChange = (o: boolean) => {
-    setOpen(o);
-    if (!o) {
-      setConfirmText('');
+    if (o) {
+      setOpen(true);
+    } else if (!isPending) {
+      close();
     }
   };
 
-  const handleConfirm = async () => {
-    await onConfirm();
-    handleOpenChange(false);
+  const handleConfirm = () => {
+    run(async () => {
+      await onConfirm();
+      close();
+    });
   };
 
   return (
@@ -78,13 +90,18 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
             testId="txt-confirmation-delete"
             value={confirmText}
           />
+          {errorMessage !== null && (
+            <p className="text-body text-destructive" role="alert">
+              Could not complete the deletion: {errorMessage}
+            </p>
+          )}
         </DialogBody>
         <DialogFooter>
-          <Button onClick={() => handleOpenChange(false)} variant="outline">
+          <Button disabled={isPending} onClick={close} variant="outline">
             Cancel
           </Button>
           <Button
-            disabled={confirmText !== userName}
+            disabled={confirmText !== userName || isPending}
             onClick={handleConfirm}
             testId="test-delete-item"
             variant="destructive"

@@ -8,12 +8,44 @@
  * bookmarks, share links).
  */
 
-import { expect, test } from '../../shared/e2e';
+import { expect, type Page, test } from '../../shared/e2e';
 
 const ACLS_HEADING_NAME = /ACLs/;
 const CACHE_MISS_ERROR_PATTERN = /cannot read|undefined|missing user/i;
 
-test.describe('Security pages deep-link (cold cache)', () => {
+const openAddAclDialog = async (page: Page) => {
+  await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Create ACL' }).first().click();
+  await expect(page.getByRole('dialog', { name: 'Add ACL' })).toBeVisible();
+};
+
+/** Grants `principal` Read on `topicName` through the Permissions List's Add ACL dialog. */
+const seedTopicReadAcl = async (page: Page, principal: string, topicName: string) => {
+  await openAddAclDialog(page);
+
+  await page.getByPlaceholder('Select or type a user...').fill(principal);
+  await page.getByRole('option', { name: `Create "${principal}"` }).click();
+  await page.getByPlaceholder('e.g. my-topic').fill(topicName);
+
+  await page.getByLabel('Operation').click();
+  await page.getByRole('option', { name: 'Read', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Add ACL' }).click();
+  await expect(page.getByRole('dialog', { name: 'Add ACL' })).not.toBeVisible({ timeout: 10_000 });
+};
+
+const expectDeepLinkedAclDetails = async (freshPage: Page, principal: string, topicName: string) => {
+  await freshPage.goto(`/security/acls/User:${principal}/details`, { waitUntil: 'domcontentloaded' });
+
+  // Structural: detail page renders the seeded rule without a prior list visit.
+  await expect(freshPage.getByTestId('acl-rules-length').first()).toHaveText('ACL rules (1)', {
+    timeout: 15_000,
+  });
+  await expect(freshPage.getByText(`Topics matching: "${topicName}"`)).toBeVisible();
+  await expect(freshPage.getByText('Read: allow')).toBeVisible();
+};
+
+test.describe('security pages deep-link (cold cache)', () => {
   test('direct-load /security/users/e2euser/details renders without prior list navigation', async ({ page }) => {
     // Collect console/page errors to guard against cache-miss crashes.
     const consoleErrors: string[] = [];
@@ -43,40 +75,21 @@ test.describe('Security pages deep-link (cold cache)', () => {
     browser,
     playwright,
   }) => {
-    const principal = `deeplink-${Date.now()}`;
+    const principal = `deeplink-${crypto.randomUUID()}`;
     const topicName = 'deeplink-topic';
 
     // Seed: grant a topic-read ACL to a fresh principal via the live Permissions List UI
     // flow so the Connect backend has a real entry to fetch.
-    await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'Create ACL' }).first().click();
-    await expect(page.getByRole('dialog', { name: 'Add ACL' })).toBeVisible();
-
-    await page.getByPlaceholder('Select or type a user...').fill(principal);
-    await page.getByRole('option', { name: `Create "${principal}"` }).click();
-    await page.getByPlaceholder('e.g. my-topic').fill(topicName);
-
-    await page.getByLabel('Operation').click();
-    await page.getByRole('option', { name: 'Read', exact: true }).click();
-
-    await page.getByRole('button', { name: 'Add ACL' }).click();
-    await expect(page.getByRole('dialog', { name: 'Add ACL' })).not.toBeVisible({ timeout: 10_000 });
+    await seedTopicReadAcl(page, principal, topicName);
 
     // Cold-cache simulation: open a fresh page in a new context so Connect Query has no
     // hydrated `getAclsByPrincipal` entry, then deep-link straight to the detail URL.
     const freshContext = await browser.newContext(playwright.contextOptions);
     const freshPage = await freshContext.newPage();
     try {
-      await freshPage.goto(`/security/acls/User:${principal}/details`, { waitUntil: 'domcontentloaded' });
-
-      // Structural: detail page renders the seeded rule without a prior list visit.
-      await expect(freshPage.getByTestId('acl-rules-length').first()).toHaveText('ACL rules (1)', {
-        timeout: 15_000,
-      });
-      await expect(freshPage.getByText(`Topics matching: "${topicName}"`)).toBeVisible();
-      await expect(freshPage.getByText('Read: allow')).toBeVisible();
+      await expectDeepLinkedAclDetails(freshPage, principal, topicName);
     } finally {
       await freshContext.close();
     }
-  }, 180_000);
+  });
 });

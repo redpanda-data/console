@@ -19,14 +19,14 @@ const { getMatchedRoutes, mockPageBreadcrumbs } = rs.hoisted(() => ({
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
+  Link: MockLink,
   useLocation: () => ({ pathname: '/sql' }),
   useMatchRoute: () => () => false,
   useRouter: () => ({ getMatchedRoutes }),
 }));
 
 rs.mock('./theme-mode-switch', () => ({
-  ThemeModeSwitch: () => null,
+  ThemeModeSwitch: MockThemeModeSwitch,
 }));
 
 rs.mock('components/redpanda-ui/lib/utils', () => ({
@@ -34,7 +34,7 @@ rs.mock('components/redpanda-ui/lib/utils', () => ({
 }));
 
 rs.mock('lucide-react', () => ({
-  ChevronLeft: () => null,
+  ChevronLeft: MockChevronLeft,
 }));
 
 rs.mock('../../config', () => ({
@@ -70,21 +70,21 @@ rs.mock('../../utils/env', () => ({ IsDev: false }));
 rs.mock('../misc/buttons/data-refresh/component', () => ({ default: () => null }));
 
 rs.mock('../redpanda-ui/components/breadcrumb', () => ({
-  Breadcrumb: ({ children }: PropsWithChildren) => children,
-  BreadcrumbItem: ({ children }: PropsWithChildren) => children,
-  BreadcrumbLink: ({ render: content }: { render: ReactNode }) => content,
-  BreadcrumbList: ({ children }: PropsWithChildren) => children,
-  BreadcrumbPage: ({ children }: PropsWithChildren) => <span data-testid="breadcrumb-page">{children}</span>,
-  BreadcrumbSeparator: () => null,
+  Breadcrumb: MockBreadcrumb,
+  BreadcrumbItem: MockBreadcrumbItem,
+  BreadcrumbLink: MockBreadcrumbLink,
+  BreadcrumbList: MockBreadcrumbList,
+  BreadcrumbPage: MockBreadcrumbPage,
+  BreadcrumbSeparator: MockBreadcrumbSeparator,
 }));
 
-rs.mock('../redpanda-ui/components/button', () => ({ Button: () => null }));
-rs.mock('../redpanda-ui/components/separator', () => ({ Separator: () => null }));
-rs.mock('../redpanda-ui/components/sidebar', () => ({ SidebarTrigger: () => null }));
+rs.mock('../redpanda-ui/components/button', () => ({ Button: MockButton }));
+rs.mock('../redpanda-ui/components/separator', () => ({ Separator: MockSeparator }));
+rs.mock('../redpanda-ui/components/sidebar', () => ({ SidebarTrigger: MockSidebarTrigger }));
 
 import AppPageHeader from './header';
 
-describe('AppPageHeader', () => {
+describe('the AppPageHeader', () => {
   it('hides the title row when the matched route owns it', () => {
     render(<AppPageHeader />);
 
@@ -106,3 +106,56 @@ describe('AppPageHeader', () => {
     mockPageBreadcrumbs.length = 0;
   });
 });
+
+function MockLink({
+  children,
+  to,
+}: PropsWithChildren<{
+  to: string;
+}>) {
+  return <a href={to}>{children}</a>;
+}
+
+function MockThemeModeSwitch() {
+  return null;
+}
+
+function MockChevronLeft() {
+  return null;
+}
+
+function MockBreadcrumb({ children }: PropsWithChildren) {
+  return children;
+}
+
+function MockBreadcrumbItem({ children }: PropsWithChildren) {
+  return children;
+}
+
+function MockBreadcrumbLink({ render: content }: { render: ReactNode }) {
+  return content;
+}
+
+function MockBreadcrumbList({ children }: PropsWithChildren) {
+  return children;
+}
+
+function MockBreadcrumbPage({ children }: PropsWithChildren) {
+  return <span data-testid="breadcrumb-page">{children}</span>;
+}
+
+function MockBreadcrumbSeparator() {
+  return null;
+}
+
+function MockButton() {
+  return null;
+}
+
+function MockSeparator() {
+  return null;
+}
+
+function MockSidebarTrigger() {
+  return null;
+}

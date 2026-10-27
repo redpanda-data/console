@@ -23,6 +23,11 @@ integration, `.integration.test.ts` covers non-JSX integration, and `.spec.ts` d
 real browser. A test does not become an integration just because its module uses JSX.
 Focused tests and direct legacy runner imports (including subpaths) are lint errors;
 selector helpers such as Ivya and Rstest's transitive internals are not prohibited.
+The focused Console policy check also rejects arbitrary sleeps, hand-written polling,
+uncontrolled wall-clock fixtures, per-test timeout/retry inflation, and static skips
+without a tracking issue and reason. Prefer observable assertions, completion signals,
+and controlled clocks. Real native-animation and service behavior stays in the browser
+and full-stack suites; their shared configuration owns the required time budgets.
 Bun files share a module cache: use scoped spies and restore them instead of `mock.module()`
 replacements of shared modules. The React 18/19 legacy-host lifecycle suite runs in Rstest's
 isolated integration environment. Bun's DOM preload preserves its native networking globals.
@@ -119,6 +124,7 @@ no pixel tolerance or bundle-size assertion was relaxed.
 
 ```sh
 bun run lint:fix
+bun run lint:policy
 bun run type:check
 bun run type:check:tests
 bun run test:coverage

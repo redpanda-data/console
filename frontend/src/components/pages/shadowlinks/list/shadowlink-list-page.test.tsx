@@ -51,7 +51,7 @@ const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinks
     ...overrides,
   }) as unknown as ReturnType<typeof useListShadowLinksQuery>;
 
-describe('ShadowLinkListPage', () => {
+describe('the ShadowLinkListPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });

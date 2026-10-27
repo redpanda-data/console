@@ -77,6 +77,138 @@ export type Action =
   | { type: 'enableSchemaRegistrySync' };
 
 /**
+ * Wait until the element with this test ID renders
+ */
+const waitForTestId = async (scr: typeof import('@testing-library/react').screen, testId: string) => {
+  await waitFor(() => {
+    expect(scr.getByTestId(testId)).toBeInTheDocument();
+  });
+};
+
+/**
+ * Wait for an input to render, then type into it
+ */
+const typeIntoTestId = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  testId: string,
+  text: string
+) => {
+  await waitForTestId(scr, testId);
+  await user.type(scr.getByTestId(testId), text);
+};
+
+/**
+ * Navigate to the Shadowing tab (edit form; may already be there)
+ */
+const clickShadowingTabIfPresent = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen
+) => {
+  const shadowingTab = scr.queryByTestId('tab-shadowing');
+  if (shadowingTab) {
+    await user.click(shadowingTab);
+  }
+};
+
+/**
+ * Expand a filter section (topics, consumers, acls) and switch it to specify mode
+ */
+const expandSectionInSpecifyMode = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  section: 'topics' | 'consumers' | 'acls'
+) => {
+  await waitForTestId(scr, `${section}-toggle-button`);
+
+  // Expand the section
+  await user.click(scr.getByTestId(`${section}-toggle-button`));
+  await waitForTestId(scr, `${section}-specify-tab`);
+
+  // Switch to specify mode
+  await user.click(scr.getByTestId(`${section}-specify-tab`));
+};
+
+/**
+ * Expand advanced options if not already expanded
+ */
+const expandAdvancedOptions = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen
+) => {
+  if (!scr.queryByTestId('advanced-options-content')) {
+    await user.click(scr.getByTestId('advanced-options-toggle'));
+    await waitForTestId(scr, 'advanced-options-content');
+  }
+};
+
+/**
+ * Expand the topics section and switch it to specify mode, skipping steps that are already done
+ */
+const openTopicFiltersInSpecifyMode = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen
+) => {
+  await waitForTestId(scr, 'topics-toggle-button');
+
+  // Expand topics section if not already expanded
+  if (!scr.queryByTestId('topics-filters-container')) {
+    await user.click(scr.getByTestId('topics-toggle-button'));
+  }
+
+  await waitForTestId(scr, 'topics-specify-tab');
+
+  // Switch to specify mode if not already in it
+  const specifyTab = scr.getByTestId('topics-specify-tab');
+  if (specifyTab.getAttribute('data-state') !== 'active') {
+    await user.click(specifyTab);
+  }
+
+  await waitForTestId(scr, 'add-topic-filter-button');
+};
+
+/**
+ * The topic filter to fill: filter 0 while it is the empty one seeded by the mode switch,
+ * otherwise a newly added filter
+ */
+const nextTopicFilterIndex = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen
+) => {
+  const existingNameInputs = scr.queryAllByTestId(TOPIC_FILTER_NAME_PATTERN);
+  const firstValue = (existingNameInputs[0] as HTMLInputElement | undefined)?.value;
+  if (!firstValue) {
+    return 0;
+  }
+
+  // First filter is filled, add a new one
+  await user.click(scr.getByTestId('add-topic-filter-button'));
+  const filterIndex = existingNameInputs.length;
+  await waitForTestId(scr, `topic-filter-${filterIndex}-name`);
+  return filterIndex;
+};
+
+const TOPIC_FILTER_TAB_SUFFIX: Record<string, string> = {
+  [`${FilterType.INCLUDE}-${PatternType.LITERAL}`]: 'include-specific',
+  [`${FilterType.INCLUDE}-${PatternType.PREFIX}`]: 'include-prefix',
+  [`${FilterType.EXCLUDE}-${PatternType.LITERAL}`]: 'exclude-specific',
+  [`${FilterType.EXCLUDE}-${PatternType.PREFIX}`]: 'exclude-prefix',
+};
+
+/**
+ * Pick the filter type tab matching the pattern and filter type
+ */
+const selectTopicFilterType = async (
+  user: ReturnType<typeof userEvent.setup>,
+  scr: typeof import('@testing-library/react').screen,
+  filterIndex: number,
+  { patternType, filterType }: { patternType: PatternType; filterType: FilterType }
+) => {
+  const tabSuffix = TOPIC_FILTER_TAB_SUFFIX[`${filterType}-${patternType}`] ?? '';
+  await user.click(scr.getByTestId(`topic-filter-${filterIndex}-${tabSuffix}`));
+};
+
+/**
  * Add a bootstrap server to the form
  */
 export const addBootstrapServer = async (
@@ -223,20 +355,10 @@ export const updateAdvancedOption = async (
   field: string,
   value: number
 ) => {
-  // Expand advanced options if not already expanded
-  const advancedContent = scr.queryByTestId('advanced-options-content');
-  if (!advancedContent) {
-    const advancedOptionsToggle = scr.getByTestId('advanced-options-toggle');
-    await user.click(advancedOptionsToggle);
-
-    await waitFor(() => {
-      expect(scr.getByTestId('advanced-options-content')).toBeInTheDocument();
-    });
-  }
+  await expandAdvancedOptions(user, scr);
 
   // Get the field container and find the input within it
-  const fieldContainer = scr.getByTestId(`${field}-field`);
-  const fieldInput = fieldContainer.querySelector('input');
+  const fieldInput = scr.getByTestId(`${field}-field`).querySelector('input');
   if (!fieldInput) {
     throw new Error(`No input found in field container: ${field}`);
   }
@@ -253,36 +375,13 @@ export const addTopicFilter = async (
   name: string
 ) => {
   // Navigate to Shadowing tab
-  const shadowingTab = scr.getByTestId('tab-shadowing');
-  await user.click(shadowingTab);
+  await user.click(scr.getByTestId('tab-shadowing'));
 
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand topics section
-  const topicsToggle = scr.getByTestId('topics-toggle-button');
-  await user.click(topicsToggle);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode
-  const topicsSpecifyTab = scr.getByTestId('topics-specify-tab');
-  await user.click(topicsSpecifyTab);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-topic-filter-button')).toBeInTheDocument();
-  });
+  await expandSectionInSpecifyMode(user, scr, 'topics');
+  await waitForTestId(scr, 'add-topic-filter-button');
 
   // Find the first empty filter and fill it
-  await waitFor(() => {
-    expect(scr.getByTestId('topic-filter-0-name')).toBeInTheDocument();
-  });
-
-  const topicFilterInput = scr.getByTestId('topic-filter-0-name');
-  await user.type(topicFilterInput, name);
+  await typeIntoTestId(user, scr, 'topic-filter-0-name', name);
 };
 
 /**
@@ -293,42 +392,13 @@ export const addConsumerFilter = async (
   scr: typeof import('@testing-library/react').screen,
   name: string
 ) => {
-  // Navigate to Shadowing tab (may already be there)
-  const shadowingTab = scr.queryByTestId('tab-shadowing');
-  if (shadowingTab) {
-    await user.click(shadowingTab);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('consumers-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand consumers section
-  const consumersToggle = scr.getByTestId('consumers-toggle-button');
-  await user.click(consumersToggle);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('consumers-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode
-  const consumersSpecifyTab = scr.getByTestId('consumers-specify-tab');
-  await user.click(consumersSpecifyTab);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-consumer-filter-button')).toBeInTheDocument();
-  });
+  await clickShadowingTabIfPresent(user, scr);
+  await expandSectionInSpecifyMode(user, scr, 'consumers');
+  await waitForTestId(scr, 'add-consumer-filter-button');
 
   // Add a consumer filter
-  const addConsumerFilterButton = scr.getByTestId('add-consumer-filter-button');
-  await user.click(addConsumerFilterButton);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('consumer-filter-0-name')).toBeInTheDocument();
-  });
-
-  const consumerFilterInput = scr.getByTestId('consumer-filter-0-name');
-  await user.type(consumerFilterInput, name);
+  await user.click(scr.getByTestId('add-consumer-filter-button'));
+  await typeIntoTestId(user, scr, 'consumer-filter-0-name', name);
 };
 
 /**
@@ -339,42 +409,13 @@ export const addACLFilter = async (
   scr: typeof import('@testing-library/react').screen,
   principal: string
 ) => {
-  // Navigate to Shadowing tab (may already be there)
-  const shadowingTab = scr.queryByTestId('tab-shadowing');
-  if (shadowingTab) {
-    await user.click(shadowingTab);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('acls-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand ACLs section
-  const aclsToggle = scr.getByTestId('acls-toggle-button');
-  await user.click(aclsToggle);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('acls-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode
-  const aclsSpecifyTab = scr.getByTestId('acls-specify-tab');
-  await user.click(aclsSpecifyTab);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-acl-filter-button')).toBeInTheDocument();
-  });
+  await clickShadowingTabIfPresent(user, scr);
+  await expandSectionInSpecifyMode(user, scr, 'acls');
+  await waitForTestId(scr, 'add-acl-filter-button');
 
   // Add an ACL filter
-  const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
-  await user.click(addAclFilterButton);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('acl-filter-0-principal')).toBeInTheDocument();
-  });
-
-  const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
-  await user.type(aclPrincipalInput, principal);
+  await user.click(scr.getByTestId('add-acl-filter-button'));
+  await typeIntoTestId(user, scr, 'acl-filter-0-principal', principal);
 };
 
 /**
@@ -421,75 +462,18 @@ export const addTopicFilterCreate = async (
   scr: typeof import('@testing-library/react').screen,
   name: string,
   options?: { patternType?: PatternType; filterType?: FilterType }
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ) => {
   const { patternType = PatternType.LITERAL, filterType = FilterType.INCLUDE } = options || {};
 
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand topics section if not already expanded
-  const topicsContent = scr.queryByTestId('topics-filters-container');
-  if (!topicsContent) {
-    const topicsToggle = scr.getByTestId('topics-toggle-button');
-    await user.click(topicsToggle);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode if not already in it
-  const specifyTab = scr.getByTestId('topics-specify-tab');
-  if (specifyTab.getAttribute('data-state') !== 'active') {
-    await user.click(specifyTab);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-topic-filter-button')).toBeInTheDocument();
-  });
-
-  // Count existing filters and determine if we need to add a new one
-  const existingNameInputs = scr.queryAllByTestId(TOPIC_FILTER_NAME_PATTERN);
-  let filterIndex = 0;
-
-  // Check if filter 0 exists and is empty (from mode switch)
-  if (existingNameInputs.length > 0) {
-    const firstFilter = existingNameInputs[0];
-    const firstValue = (firstFilter as HTMLInputElement).value;
-
-    if (firstValue) {
-      // First filter is filled, add a new one
-      const addButton = scr.getByTestId('add-topic-filter-button');
-      await user.click(addButton);
-      filterIndex = existingNameInputs.length;
-
-      await waitFor(() => {
-        expect(scr.getByTestId(`topic-filter-${filterIndex}-name`)).toBeInTheDocument();
-      });
-    }
-  }
+  await openTopicFiltersInSpecifyMode(user, scr);
+  const filterIndex = await nextTopicFilterIndex(user, scr);
 
   // Fill in name
-  const nameInput = scr.getByTestId(`topic-filter-${filterIndex}-name`);
-  await user.type(nameInput, name);
+  await user.type(scr.getByTestId(`topic-filter-${filterIndex}-name`), name);
 
   // Set pattern and filter type if not default
   if (patternType !== PatternType.LITERAL || filterType !== FilterType.INCLUDE) {
-    let tabTestId = `topic-filter-${filterIndex}-`;
-    if (filterType === FilterType.INCLUDE && patternType === PatternType.LITERAL) {
-      tabTestId += 'include-specific';
-    } else if (filterType === FilterType.INCLUDE && patternType === PatternType.PREFIX) {
-      tabTestId += 'include-prefix';
-    } else if (filterType === FilterType.EXCLUDE && patternType === PatternType.LITERAL) {
-      tabTestId += 'exclude-specific';
-    } else if (filterType === FilterType.EXCLUDE && patternType === PatternType.PREFIX) {
-      tabTestId += 'exclude-prefix';
-    }
-
-    const patternTab = scr.getByTestId(tabTestId);
-    await user.click(patternTab);
+    await selectTopicFilterType(user, scr, filterIndex, { patternType, filterType });
   }
 
   return filterIndex;
@@ -503,36 +487,12 @@ export const addConsumerFilterCreate = async (
   scr: typeof import('@testing-library/react').screen,
   name: string
 ) => {
-  await waitFor(() => {
-    expect(scr.getByTestId('consumers-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand consumers section
-  const consumersToggle = scr.getByTestId('consumers-toggle-button');
-  await user.click(consumersToggle);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('consumers-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode
-  const consumersSpecifyTab = scr.getByTestId('consumers-specify-tab');
-  await user.click(consumersSpecifyTab);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-consumer-filter-button')).toBeInTheDocument();
-  });
+  await expandSectionInSpecifyMode(user, scr, 'consumers');
+  await waitForTestId(scr, 'add-consumer-filter-button');
 
   // Add a consumer filter
-  const addConsumerFilterButton = scr.getByTestId('add-consumer-filter-button');
-  await user.click(addConsumerFilterButton);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('consumer-filter-0-name')).toBeInTheDocument();
-  });
-
-  const consumerFilterInput = scr.getByTestId('consumer-filter-0-name');
-  await user.type(consumerFilterInput, name);
+  await user.click(scr.getByTestId('add-consumer-filter-button'));
+  await typeIntoTestId(user, scr, 'consumer-filter-0-name', name);
 };
 
 /**
@@ -543,38 +503,16 @@ export const addACLFilterCreate = async (
   scr: typeof import('@testing-library/react').screen,
   principal: string
 ) => {
-  await waitFor(() => {
-    expect(scr.getByTestId('acls-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand ACLs section
-  const aclsToggle = scr.getByTestId('acls-toggle-button');
-  await user.click(aclsToggle);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('acls-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode (auto-expands the card and seeds an empty filter)
-  const aclsSpecifyTab = scr.getByTestId('acls-specify-tab');
-  await user.click(aclsSpecifyTab);
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-acl-filter-button')).toBeInTheDocument();
-  });
+  // Switching to specify mode auto-expands the card and seeds an empty filter
+  await expandSectionInSpecifyMode(user, scr, 'acls');
+  await waitForTestId(scr, 'add-acl-filter-button');
 
   // Only add a filter when the mode switch did not seed one already
   if (!scr.queryByTestId('acl-filter-0-principal')) {
-    const addAclFilterButton = scr.getByTestId('add-acl-filter-button');
-    await user.click(addAclFilterButton);
+    await user.click(scr.getByTestId('add-acl-filter-button'));
   }
 
-  await waitFor(() => {
-    expect(scr.getByTestId('acl-filter-0-principal')).toBeInTheDocument();
-  });
-
-  const aclPrincipalInput = scr.getByTestId('acl-filter-0-principal');
-  await user.type(aclPrincipalInput, principal);
+  await typeIntoTestId(user, scr, 'acl-filter-0-principal', principal);
 };
 
 /**
@@ -616,70 +554,14 @@ export const addTopicFilterWithPattern = async (
     await user.click(currentTab);
   }
 
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-toggle-button')).toBeInTheDocument();
-  });
-
-  // Expand topics section if not already expanded
-  const topicsContent = scr.queryByTestId('topics-filters-container');
-  if (!topicsContent) {
-    const topicsToggle = scr.getByTestId('topics-toggle-button');
-    await user.click(topicsToggle);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('topics-specify-tab')).toBeInTheDocument();
-  });
-
-  // Switch to specify mode if not already in it
-  const specifyTab = scr.getByTestId('topics-specify-tab');
-  if (specifyTab.getAttribute('data-state') !== 'active') {
-    await user.click(specifyTab);
-  }
-
-  await waitFor(() => {
-    expect(scr.getByTestId('add-topic-filter-button')).toBeInTheDocument();
-  });
-
-  // Count existing filters and determine if we need to add a new one or fill an empty one
-  const existingNameInputs = scr.queryAllByTestId(TOPIC_FILTER_NAME_PATTERN);
-  let filterIndex = 0;
-
-  // Check if filter 0 exists and is empty (from mode switch)
-  if (existingNameInputs.length > 0) {
-    const firstFilter = existingNameInputs[0];
-    const firstValue = (firstFilter as HTMLInputElement).value;
-
-    if (firstValue) {
-      // First filter is filled, add a new one
-      const addButton = scr.getByTestId('add-topic-filter-button');
-      await user.click(addButton);
-      filterIndex = existingNameInputs.length;
-
-      await waitFor(() => {
-        expect(scr.getByTestId(`topic-filter-${filterIndex}-name`)).toBeInTheDocument();
-      });
-    }
-  }
+  await openTopicFiltersInSpecifyMode(user, scr);
+  const filterIndex = await nextTopicFilterIndex(user, scr);
 
   // Fill in name
-  const nameInput = scr.getByTestId(`topic-filter-${filterIndex}-name`);
-  await user.type(nameInput, name);
+  await user.type(scr.getByTestId(`topic-filter-${filterIndex}-name`), name);
 
   // Set pattern and filter type
-  let tabTestId = `topic-filter-${filterIndex}-`;
-  if (filterType === FilterType.INCLUDE && patternType === PatternType.LITERAL) {
-    tabTestId += 'include-specific';
-  } else if (filterType === FilterType.INCLUDE && patternType === PatternType.PREFIX) {
-    tabTestId += 'include-prefix';
-  } else if (filterType === FilterType.EXCLUDE && patternType === PatternType.LITERAL) {
-    tabTestId += 'exclude-specific';
-  } else if (filterType === FilterType.EXCLUDE && patternType === PatternType.PREFIX) {
-    tabTestId += 'exclude-prefix';
-  }
-
-  const patternTab = scr.getByTestId(tabTestId);
-  await user.click(patternTab);
+  await selectTopicFilterType(user, scr, filterIndex, { patternType, filterType });
 };
 
 /**

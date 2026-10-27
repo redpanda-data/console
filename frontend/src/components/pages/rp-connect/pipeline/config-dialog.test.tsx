@@ -44,7 +44,7 @@ function TestWrapper({ defaultValues }: { defaultValues?: Partial<FormValues> })
   return <ConfigDialog form={form} mode="create" onOpenChange={() => {}} open />;
 }
 
-describe('ConfigDialog', () => {
+describe('the ConfigDialog', () => {
   it('renders pipeline name input, accepts text', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
@@ -54,7 +54,7 @@ describe('ConfigDialog', () => {
     expect(input).toHaveValue('my-pipeline');
   });
 
-  it('compute units slider and number input stay in sync', async () => {
+  it('compute units slider and number input stay in sync', () => {
     render(<TestWrapper defaultValues={{ computeUnits: 3 }} />);
     const numberInput = screen.getByRole('spinbutton');
     expect(numberInput).toHaveValue(3);

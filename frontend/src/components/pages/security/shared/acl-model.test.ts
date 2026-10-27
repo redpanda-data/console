@@ -21,11 +21,13 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 
 import {
+  type AclDetail,
   getAclFromAclListResponse,
   getInitialRuleIdCounter,
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
+  type OperationType,
   OperationTypeAllow,
   OperationTypeDeny,
   ResourcePatternTypeLiteral,
@@ -34,6 +36,31 @@ import {
   type Rule,
 } from './acl-model';
 import { describe, expect, test } from 'bun:test';
+
+const findHost = (result: AclDetail[], host: string) => result.find((r) => r.sharedConfig.host === host);
+
+/** Asserts the host's principal and the permission of each operation of its first rule (`undefined`: not set). */
+const expectHostOperations = (
+  result: AclDetail[],
+  host: string,
+  principal: string,
+  operations: Record<string, OperationType | undefined>
+) => {
+  const hostResult = findHost(result, host);
+  expect(hostResult).toBeDefined();
+  expect(hostResult?.sharedConfig.principal).toBe(principal);
+  for (const [operation, value] of Object.entries(operations)) {
+    expect(hostResult?.rules[0].operations[operation]).toBe(value);
+  }
+};
+
+const expectHostRuleIds = (result: AclDetail[], host: string, ids: number[]) => {
+  const rules = findHost(result, host)?.rules;
+  expect(rules).toHaveLength(ids.length);
+  for (const [index, id] of ids.entries()) {
+    expect(rules?.[index].id).toBe(id);
+  }
+};
 
 const buildRule = (id: number): Rule => ({
   id,
@@ -45,7 +72,7 @@ const buildRule = (id: number): Rule => ({
 });
 
 describe('getAclFromAclListResponse', () => {
-  describe('Single host scenarios', () => {
+  describe('single host scenarios', () => {
     test('should return single AclDetail for single host', () => {
       const response = create(ListACLsResponseSchema, {
         resources: [
@@ -112,7 +139,7 @@ describe('getAclFromAclListResponse', () => {
     });
   });
 
-  describe('Multiple host scenarios', () => {
+  describe('multiple host scenarios', () => {
     test('should return separate AclDetail for each host', () => {
       const response = create(ListACLsResponseSchema, {
         resources: [
@@ -142,19 +169,8 @@ describe('getAclFromAclListResponse', () => {
 
       expect(result).toHaveLength(2);
 
-      // Check first host
-      const host1Result = result.find((r) => r.sharedConfig.host === '192.168.1.1');
-      expect(host1Result).toBeDefined();
-      expect(host1Result?.sharedConfig.principal).toBe('User:alice');
-      expect(host1Result?.rules[0].operations.READ).toBe(OperationTypeAllow);
-      expect(host1Result?.rules[0].operations.WRITE).toBeUndefined();
-
-      // Check second host
-      const host2Result = result.find((r) => r.sharedConfig.host === '192.168.1.2');
-      expect(host2Result).toBeDefined();
-      expect(host2Result?.sharedConfig.principal).toBe('User:alice');
-      expect(host2Result?.rules[0].operations.WRITE).toBe(OperationTypeDeny);
-      expect(host2Result?.rules[0].operations.READ).toBeUndefined();
+      expectHostOperations(result, '192.168.1.1', 'User:alice', { READ: OperationTypeAllow, WRITE: undefined });
+      expectHostOperations(result, '192.168.1.2', 'User:alice', { WRITE: OperationTypeDeny, READ: undefined });
     });
 
     test('should group multiple resources by host correctly', () => {
@@ -244,7 +260,7 @@ describe('getAclFromAclListResponse', () => {
     });
   });
 
-  describe('Mode detection', () => {
+  describe('mode detection', () => {
     test('should detect ModeAllowAll when ALL operation is ALLOW', () => {
       const response = create(ListACLsResponseSchema, {
         resources: [
@@ -369,7 +385,7 @@ describe('getAclFromAclListResponse', () => {
     });
   });
 
-  describe('Resource types and patterns', () => {
+  describe('resource types and patterns', () => {
     test('should handle CLUSTER resource type', () => {
       const response = create(ListACLsResponseSchema, {
         resources: [
@@ -446,7 +462,7 @@ describe('getAclFromAclListResponse', () => {
     });
   });
 
-  describe('Edge cases', () => {
+  describe('edge cases', () => {
     test('should return empty array for empty response', () => {
       const response = create(ListACLsResponseSchema, {
         resources: [],
@@ -531,15 +547,8 @@ describe('getAclFromAclListResponse', () => {
       expect(result).toHaveLength(2);
 
       // Each host should have 2 rules with IDs 0 and 1
-      const hostA = result.find((r) => r.sharedConfig.host === 'host-a');
-      expect(hostA?.rules).toHaveLength(2);
-      expect(hostA?.rules[0].id).toBe(0);
-      expect(hostA?.rules[1].id).toBe(1);
-
-      const hostB = result.find((r) => r.sharedConfig.host === 'host-b');
-      expect(hostB?.rules).toHaveLength(2);
-      expect(hostB?.rules[0].id).toBe(0);
-      expect(hostB?.rules[1].id).toBe(1);
+      expectHostRuleIds(result, 'host-a', [0, 1]);
+      expectHostRuleIds(result, 'host-b', [0, 1]);
     });
   });
 });

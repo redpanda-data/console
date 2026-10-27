@@ -9,6 +9,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
 
+// Listen on `port` once: calls `onFree` after the listener closes, or `onBusy`
+// when the bind fails.
+function probePort(port, onFree, onBusy) {
+  const srv = net.createServer();
+  srv.unref();
+  srv.once('error', () => onBusy());
+  srv.listen(port, '127.0.0.1', () => {
+    srv.close(() => onFree());
+  });
+}
+
 // Find a free TCP port in a NON-ephemeral range. Binding to :0 returns an
 // ephemeral port (macOS 49152–65535), which the OS may hand to an outbound
 // connection in the gap before Docker binds it (→ "address already in use").
@@ -27,78 +38,102 @@ function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
         tryPort();
         return;
       }
-      const srv = net.createServer();
-      srv.unref();
-      srv.once('error', () => tryPort());
-      srv.listen(port, '127.0.0.1', () => {
-        srv.close(() => {
+      probePort(
+        port,
+        () => {
           taken.add(port);
           resolveP(port);
-        });
-      });
+        },
+        () => tryPort()
+      );
     };
     tryPort();
   });
+}
+
+// Assigns a free port to each key, one key at a time: a probe only records its
+// port in `taken` once it finishes, so concurrent probes could hand two services
+// the same port.
+async function allocatePorts([key, ...remainingKeys], taken, ports = {}) {
+  if (key === undefined) {
+    return ports;
+  }
+  ports[key] = await getFreePort(taken);
+  return allocatePorts(remainingKeys, taken, ports);
 }
 
 // Allocate a fresh free host port for every service the variant exposes, so
 // local runs never collide with whatever is already on the default ports (e.g.
 // a dev Console on :3000). CI keeps the fixed variant.json ports — separate
 // runners, no collisions — unless E2E_DYNAMIC_PORTS=1 is set.
-async function resolveDynamicPorts(variant) {
+function resolveDynamicPorts(variant) {
   const staticPorts = variant.config.ports ?? {};
   const useDynamic =
     process.env.E2E_DYNAMIC_PORTS === '1' || (!process.env.CI && process.env.E2E_DYNAMIC_PORTS !== '0');
   if (!useDynamic) {
-    return null;
+    return Promise.resolve(null);
   }
-  const dynamic = {};
-  const taken = new Set();
-  for (const key of Object.keys(staticPorts)) {
-    dynamic[key] = await getFreePort(taken);
-  }
-  return dynamic;
+  return allocatePorts(Object.keys(staticPorts), new Set());
 }
 
-function printUsage() {
-  console.log('Usage: bun run e2e-test:variant <variant-name> [rstest-options]');
-  console.log('');
+function printAvailableVariants() {
   console.log('Available variants:');
   const variants = discoverVariants();
   for (const variant of variants) {
     console.log(`  - ${variant.name}`);
   }
-  console.log('');
+}
+
+function printExamples() {
   console.log('Examples:');
   console.log('  bun run e2e-test:variant console');
   console.log('  bun run e2e-test:variant console-enterprise --watch');
   console.log('  bun run e2e-test:variant console --watch');
 }
 
-async function runVariant(variantName, rstestArgs = []) {
+function printUsage() {
+  console.log('Usage: bun run e2e-test:variant <variant-name> [rstest-options]');
+  console.log('');
+  printAvailableVariants();
+  console.log('');
+  printExamples();
+}
+
+function printUnknownVariant(variantName) {
+  console.error(`Error: Variant "${variantName}" not found.`);
+  console.log('');
+  printUsage();
+}
+
+// Returns the variant and its Rstest config path, or null after explaining why it cannot run.
+function findRunnableVariant(variantName) {
   const variant = getVariant(variantName);
 
   if (!variant) {
-    console.error(`Error: Variant "${variantName}" not found.`);
-    console.log('');
-    printUsage();
-    process.exit(1);
+    printUnknownVariant(variantName);
+    return null;
   }
 
   const configPath = join(variant.path, 'rstest.config.ts');
 
   if (!existsSync(configPath)) {
     console.error(`Error: Rstest config not found at ${configPath}`);
-    process.exit(1);
+    return null;
   }
 
+  return { variant, configPath };
+}
+
+function printVariantHeader(variant, configPath) {
   console.log(`Running variant: ${variant.name} (${variant.config.displayName})`);
   console.log(`Config: ${configPath}`);
   console.log('');
+}
 
-  // Pick free host ports up front (before Rstest loads its config, so the
-  // config's baseURL can read REACT_APP_ORIGIN). global-setup merges
-  // E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
+// Pick free host ports up front (before Rstest loads its config, so the
+// config's baseURL can read REACT_APP_ORIGIN). global-setup merges
+// E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
+async function resolvePortEnv(variant) {
   const dynamicPorts = await resolveDynamicPorts(variant);
   const portEnv = {};
   if (dynamicPorts) {
@@ -109,10 +144,13 @@ async function runVariant(variantName, rstestArgs = []) {
     console.log(`Using dynamic host ports: ${JSON.stringify(dynamicPorts)}`);
     console.log('');
   }
+  return portEnv;
+}
 
+function spawnRstest(variant, configPath, rstestArgs, portEnv) {
   const args = ['run', 'rstest', ...rstestArgs, '--config', configPath];
 
-  const child = spawn('bun', args, {
+  return spawn('bun', args, {
     stdio: 'inherit',
     cwd: testsDir,
     env: {
@@ -123,7 +161,9 @@ async function runVariant(variantName, rstestArgs = []) {
       ...portEnv,
     },
   });
+}
 
+function waitForSuccessfulExit(child) {
   return new Promise((resolve, reject) => {
     child.on('close', (code) => {
       if (code === 0) {
@@ -136,18 +176,34 @@ async function runVariant(variantName, rstestArgs = []) {
   });
 }
 
+async function runVariant(variantName, rstestArgs = []) {
+  const runnable = findRunnableVariant(variantName);
+
+  if (!runnable) {
+    process.exitCode = 1;
+    return;
+  }
+
+  const { variant, configPath } = runnable;
+  printVariantHeader(variant, configPath);
+
+  const portEnv = await resolvePortEnv(variant);
+  const child = spawnRstest(variant, configPath, rstestArgs, portEnv);
+
+  return waitForSuccessfulExit(child);
+}
+
 // CLI
 const args = process.argv.slice(2);
 
 if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   printUsage();
-  process.exit(0);
+} else {
+  const variantName = args[0];
+  const rstestArgs = args.slice(1);
+
+  runVariant(variantName, rstestArgs).catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 }
-
-const variantName = args[0];
-const rstestArgs = args.slice(1);
-
-runVariant(variantName, rstestArgs).catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});

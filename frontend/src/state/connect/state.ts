@@ -19,6 +19,7 @@ import {
   type ConnectorPossibleStatesLiteral,
   type ConnectorProperty,
   type ConnectorStep,
+  type ConnectorValidationResult,
   DataType,
   PropertyImportance,
   PropertyWidth,
@@ -136,90 +137,81 @@ export class ConnectClusterStore {
   }
 
   // CRUD operations
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async createConnector(pluginClass: string, updatedConfig: Record<string, unknown> = {}) {
     const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
     if (secrets) {
-      try {
-        // Validate cluster name
-        if (!this.clusterName || this.clusterName.trim() === '') {
-          throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
-        }
-
-        // Get connector name from the actual config object (works in both form and JSON mode)
-        const configObj = connector?.getConfigObject() as Record<string, unknown> | undefined;
-        const connectorNameValue = configObj?.name;
-
-        if (connectorNameValue === undefined || connectorNameValue === null) {
-          throw new Error("Connector configuration is missing the 'name' property");
-        }
-
-        if (typeof connectorNameValue !== 'string') {
-          let receivedType: string;
-          if (connectorNameValue === null) {
-            receivedType = 'null';
-          } else if (Array.isArray(connectorNameValue)) {
-            receivedType = 'array';
-          } else {
-            receivedType = typeof connectorNameValue;
-          }
-          throw new Error(`Connector name must be a string, but received ${receivedType}`);
-        }
-
-        if (connectorNameValue.trim() === '') {
-          throw new Error(
-            'Connector name cannot be empty. Please provide a valid connector name before creating secrets.'
-          );
-        }
-
-        for (const [key, secret] of secrets.secrets) {
-          // Skip secrets with empty keys or values (optional PASSWORD fields the user didn't fill)
-          if (!key || key.trim() === '' || !secret.value || secret.value.trim() === '') {
-            continue;
-          }
-
-          // Validate serialized secret data
-          const serializedSecret = secret.serialized;
-          if (!serializedSecret || serializedSecret.trim() === '') {
-            throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);
-          }
-
-          const createSecretResponse = await api.createSecret(this.clusterName, connectorNameValue, serializedSecret);
-
-          if (!createSecretResponse?.secretId) {
-            throw new Error(`Failed to create secret for key "${key}": API response did not include a secretId`);
-          }
-
-          const property = connector?.propsByName.get(key);
-
-          if (property) {
-            property.value = secret.getSecretString(key, createSecretResponse.secretId);
-            updatedConfig[property.name] = property.value;
-          }
-        }
-      } catch (error) {
-        throw new SecretCreationError(String(error));
-      }
+      await this.createConnectorSecrets(connector, secrets, updatedConfig);
     }
     try {
       const configObj = connector?.getConfigObject();
-      const finalProperties: Record<string, unknown> = { ...updatedConfig, ...configObj };
-
-      // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
-      // We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
-      if (secrets) {
-        for (const [key, secret] of secrets.secrets) {
-          if (secret.value) {
-            finalProperties[key] = secret.value;
-          }
-        }
-      }
+      const finalProperties = withSecretValues({ ...updatedConfig, ...configObj }, secrets);
 
       await api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
       this.removePluginState(pluginClass);
     } catch (error) {
       throw new ConnectorCreationError(String(error));
+    }
+  }
+
+  // Stores each filled-in secret and points its property, and `updatedConfig`, at the stored secret.
+  private async createConnectorSecrets(
+    connector: ConnectorPropertiesStore,
+    secrets: SecretsStore,
+    updatedConfig: Record<string, unknown>
+  ) {
+    try {
+      // Validate cluster name
+      if (!this.clusterName || this.clusterName.trim() === '') {
+        throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
+      }
+
+      // Get connector name from the actual config object (works in both form and JSON mode)
+      const connectorName = requireConnectorName(connector.getConfigObject() as Record<string, unknown> | undefined);
+
+      // Stop at the first failure without creating later secrets or mutating their config fields.
+      await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
+        await previous;
+        // Skip secrets with empty keys or values (optional PASSWORD fields the user didn't fill)
+        if (isFilledSecret(key, secret)) {
+          await this.createConnectorSecret({ connector, connectorName, key, secret, updatedConfig });
+        }
+      }, Promise.resolve());
+    } catch (error) {
+      throw new SecretCreationError(String(error));
+    }
+  }
+
+  private async createConnectorSecret({
+    connector,
+    connectorName,
+    key,
+    secret,
+    updatedConfig,
+  }: {
+    connector: ConnectorPropertiesStore;
+    connectorName: string;
+    key: string;
+    secret: Secret;
+    updatedConfig: Record<string, unknown>;
+  }) {
+    // Validate serialized secret data
+    const serializedSecret = secret.serialized;
+    if (!serializedSecret || serializedSecret.trim() === '') {
+      throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);
+    }
+
+    const createSecretResponse = await api.createSecret(this.clusterName, connectorName, serializedSecret);
+
+    if (!createSecretResponse?.secretId) {
+      throw new Error(`Failed to create secret for key "${key}": API response did not include a secretId`);
+    }
+
+    const property = connector.propsByName.get(key);
+
+    if (property) {
+      property.value = secret.getSecretString(key, createSecretResponse.secretId);
+      updatedConfig[property.name] = property.value;
     }
   }
 
@@ -238,32 +230,38 @@ export class ConnectClusterStore {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async updateConnnector(connectorName: string) {
     const remoteConnector = this.getRemoteConnector(connectorName);
 
     const connectorState = this.getConnectorStore(connectorName);
     const newConfigObj = connectorState?.getConfigObject();
-    if (newConfigObj) {
-      const secrets = connectorState?.secrets;
-      if (secrets) {
-        for (const [key, secret] of secrets.secrets) {
-          if (secret.isDirty && secret.id) {
-            await api.updateSecret(this.clusterName, secret.id, secret.serialized);
-            const property = connectorState.propsByName.get(key);
-            if (property) {
-              property.value = secret.getSecretString(key, secret.id);
-            }
-          }
-        }
-      }
-      if (remoteConnector) {
-        const connectorConfigObject = connectorState?.getConfigObject();
-        if (connectorConfigObject) {
-          await api.updateConnector(this.clusterName, connectorName, connectorConfigObject);
-        }
-      }
+    if (!(connectorState && newConfigObj)) {
+      return;
     }
+
+    await this.updateDirtySecrets(connectorState);
+    if (remoteConnector) {
+      await api.updateConnector(this.clusterName, connectorName, connectorState.getConfigObject());
+    }
+  }
+
+  private async updateDirtySecrets(connectorState: ConnectorPropertiesStore) {
+    const { secrets } = connectorState;
+    if (!secrets) {
+      return;
+    }
+
+    // Preserve partial-update order: later secrets stay untouched if an update fails.
+    await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
+      await previous;
+      if (secret.isDirty && secret.id) {
+        await api.updateSecret(this.clusterName, secret.id, secret.serialized);
+        const property = connectorState.propsByName.get(key);
+        if (property) {
+          property.value = secret.getSecretString(key, secret.id);
+        }
+      }
+    }, Promise.resolve());
   }
 
   removePluginState(identifier: string) {
@@ -282,7 +280,8 @@ export class ConnectClusterStore {
       if (connectorType) {
         connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
           secretStore: this.features.secretStore,
-          editing: initialConfig !== null,
+          // Create passes no connector name; only an existing connector is being edited.
+          editing: connectorName !== null,
         });
         this.connectors.set(identifier, connectorStore);
       }
@@ -543,22 +542,9 @@ export class ConnectorPropertiesStore {
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   getConfigObject(): object {
     if (this.viewMode === 'json') {
-      const config = {
-        'connector.class': this.pluginClassName,
-      } as Record<string, unknown>;
-
-      let parsedConfig = {};
-      try {
-        parsedConfig = JSON.parse(this.jsonText);
-      } catch {
-        // no op - JSON may be invalid during editing
-      }
-      Object.assign(config, parsedConfig);
-
-      return config;
+      return { 'connector.class': this.pluginClassName, ...parseConfigJson(this.jsonText) };
     }
 
     const config = {
@@ -568,26 +554,9 @@ export class ConnectorPropertiesStore {
 
     for (const g of this.allGroups) {
       for (const p of g.properties) {
-        if (!p.entry.definition.required) {
-          if (p.value === p.entry.definition.default_value) {
-            // Prevent sending configs set to default when the user has not modified them.
-
-            // let's ignore the default variable if the value is the same as initially rendered
-            // otherwise, user might want to set it back to default
-            if (p.value === p.entry.value.value) {
-              continue;
-            }
-            // let's ignore the variable if the original value is null and the config is not present in current set configs values.
-            if (p.entry.value.value === null && !config[p.name]) {
-              continue;
-            }
-          }
-          if (p.value === false && !p.entry.definition.default_value) {
-            continue; // skip boolean values that default to false
-          }
+        if (isSubmittedProperty(p, config)) {
+          config[p.name] = p.value;
         }
-
-        config[p.name] = p.value;
       }
     }
     return config;
@@ -603,231 +572,177 @@ export class ConnectorPropertiesStore {
     this.notifyChange();
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
   async initConfig() {
-    const { clusterName, pluginClassName } = this;
-
     try {
-      // Validate with empty object to get all properties initially
-      const basicConfig = {
-        'connector.class': pluginClassName,
-        name: '',
-      };
-
-      const validationResult = await api.validateConnectorConfig(
-        clusterName,
-        pluginClassName,
-        this.appliedConfig ?? basicConfig
-      );
+      const validationResult = await this.validateInitialConfig();
       const allProps = this.createCustomProperties(validationResult.configs);
-
-      // Save props to map, so we can quickly find them to set their validation errors
-      for (const p of allProps) {
-        this.propsByName.set(p.name, p);
-      }
-
-      if (this.appliedConfig === undefined) {
-        // Set default values
-        for (const p of allProps) {
-          if (p.entry.definition.custom_default_value !== undefined) {
-            p.value = p.entry.definition.custom_default_value;
-          }
-        }
-
-        // Set last error values, so we know when to show the validation error
-        for (const p of allProps) {
-          if (p.errors.length > 0) {
-            p.lastErrorValue = p.value;
-          }
-        }
-      }
-
-      // Create groups
-      this.allGroups = [];
-      for (const step of validationResult.steps) {
-        for (const groupDef of step.groups) {
-          const groupProps = groupDef.config_keys
-            .map((k) => {
-              const prop = this.propsByName.get(k);
-
-              if (!prop) {
-                // biome-ignore lint/suspicious/noConsole: intentional console usage
-                console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
-                  step: step.name,
-                  group: groupDef,
-                  referencedConfigKey: k,
-                });
-              }
-
-              // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-              return prop!;
-            })
-            .filter((x) => x !== null && x !== undefined);
-
-          this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
-        }
-      }
-
-      // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
-      for (const g of this.allGroups) {
-        for (const p of g.properties) {
-          p.propertyGroup = g;
-        }
-      }
-
-      // Notify groups about errors in their children
-      for (const g of this.allGroups) {
-        g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
-      }
+      this.indexProperties(allProps);
+      this.createGroups(validationResult.steps);
 
       // Update JSON when config changes (manual tracking)
-      let lastConfig: string | null = null;
-      const updateJson = () => {
-        const config = this.getConfigObject();
-        const configStr = JSON.stringify(config);
-        if (configStr !== lastConfig) {
-          lastConfig = configStr;
-          this.jsonText = JSON.stringify(config, undefined, 4);
-        }
-      };
-      updateJson(); // Initial update
-      const unsubJsonUpdate = this.subscribe(() => {
-        setTimeout(updateJson, 100);
+      this.onConfigChange(100, (config) => {
+        this.jsonText = JSON.stringify(config, undefined, 4);
       });
-      this.cleanupFunctions.push(unsubJsonUpdate);
 
       // Validate on changes (manual tracking)
-      let lastValidationConfig: string | null = null;
-      const validateOnChange = () => {
-        const config = this.getConfigObject();
-        const configStr = JSON.stringify(config);
-        if (configStr !== lastValidationConfig) {
-          lastValidationConfig = configStr;
-          // biome-ignore lint/suspicious/noConsole: intentional console usage
-          this.validate(config).catch(console.error);
-        }
-      };
-      validateOnChange(); // Initial validation
-      const unsubValidate = this.subscribe(() => {
-        setTimeout(validateOnChange, 300);
+      this.onConfigChange(300, (config) => {
+        // biome-ignore lint/suspicious/noConsole: intentional console usage
+        this.validate(config).catch(console.error);
       });
-      this.cleanupFunctions.push(unsubValidate);
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error in initConfig', err);
-      if (err instanceof Error) {
-        this.error = err.message;
-      } else {
-        this.error = JSON.stringify(err, undefined, 4);
-      }
+      this.error = err instanceof Error ? err.message : JSON.stringify(err, undefined, 4);
     }
 
     this.initPending = false;
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
+  private validateInitialConfig() {
+    const { clusterName, pluginClassName } = this;
+
+    // Validate with empty object to get all properties initially
+    const basicConfig = {
+      'connector.class': pluginClassName,
+      name: '',
+    };
+
+    return api.validateConnectorConfig(clusterName, pluginClassName, this.appliedConfig ?? basicConfig);
+  }
+
+  private indexProperties(allProps: Property[]) {
+    // Save props to map, so we can quickly find them to set their validation errors
+    for (const p of allProps) {
+      this.propsByName.set(p.name, p);
+    }
+
+    if (this.appliedConfig === undefined) {
+      applyCustomDefaults(allProps);
+    }
+  }
+
+  // Create groups
+  private createGroups(steps: ConnectorStep[]) {
+    this.allGroups = [];
+    for (const step of steps) {
+      for (const groupDef of step.groups) {
+        this.allGroups.push(this.createPropertyGroup(step, groupDef, this.groupProperties(step, groupDef)));
+      }
+    }
+
+    linkPropertiesToGroups(this.allGroups);
+  }
+
+  private groupProperties(step: ConnectorStep, groupDef: ConnectorGroup): Property[] {
+    return groupDef.config_keys
+      .map((k) => {
+        const prop = this.propsByName.get(k);
+
+        if (!prop) {
+          // biome-ignore lint/suspicious/noConsole: intentional console usage
+          console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
+            step: step.name,
+            group: groupDef,
+            referencedConfigKey: k,
+          });
+        }
+
+        // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
+        return prop!;
+      })
+      .filter((x) => x !== null && x !== undefined);
+  }
+
+  // Runs `handle` now, then shortly after every change that alters the serialized config.
+  private onConfigChange(delayMs: number, handle: (config: object) => void) {
+    let lastConfig: string | null = null;
+    const handleIfChanged = () => {
+      const config = this.getConfigObject();
+      const configStr = JSON.stringify(config);
+      if (configStr !== lastConfig) {
+        lastConfig = configStr;
+        handle(config);
+      }
+    };
+    handleIfChanged(); // Initial update
+    const unsubscribe = this.subscribe(() => {
+      setTimeout(handleIfChanged, delayMs);
+    });
+    this.cleanupFunctions.push(unsubscribe);
+  }
+
   async validate(config: object) {
     const { clusterName, pluginClassName } = this;
     try {
       // Validate the current config
       const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
-      const srcProps = this.createCustomProperties(validationResult.configs);
-
-      this.connectorStepDefinitions = validationResult.steps;
-
-      // Remove properties that don't exist anymore
-      const srcNames = new Set(srcProps.map((x) => x.name));
-      const removedProps = [...this.propsByName.keys()].filter((key) => !srcNames.has(key));
-      for (const key of removedProps) {
-        // group names might not be accurate so we check all groups
-        for (const g of this.allGroups) {
-          g.properties.removeAll((x) => x.name === key);
-        }
-
-        // remove from lookup
-        this.propsByName.delete(key);
-      }
-
-      // Remove empty groups
-      this.allGroups.removeAll((x) => x.properties.length === 0);
-
-      // Handle new properties, transfer reported errors and suggested values
-      for (const source of srcProps) {
-        const target = this.propsByName.get(source.name);
-
-        // Property does not exist yet, create it!
-        if (!target) {
-          this.propsByName.set(source.name, source);
-          continue;
-        }
-
-        // Update: recommended values
-        const suggestedSrc = source.entry.value.recommended_values;
-        const suggestedTar = target.entry.value.recommended_values;
-        if (!suggestedSrc.isEqual(suggestedTar)) {
-          suggestedTar.updateWith(suggestedSrc);
-        }
-
-        // Update: field visibility
-        target.entry.value.visible = source.entry.value.visible;
-
-        // Update: errors
-        if (!target.errors.isEqual(source.errors)) {
-          if (source.errors.length > 0) {
-            target.lastErrors = [...source.errors]; // create copy
-          }
-
-          // Update
-          target.errors.updateWith(source.errors);
-
-          target.showErrors = target.errors.length > 0;
-
-          // Show first error
-          target.currentErrorIndex = 0;
-          if (target.errors.length > 1) {
-            // Skip over simple / unhelpful messages
-            const betterStartValue = target.errors.findIndex((x) => !x.includes('which has no default value'));
-            if (betterStartValue > -1) {
-              target.currentErrorIndex = betterStartValue;
-            }
-          }
-
-          // Add or remove from parent group
-          const hasErrors = target.errors.length > 0;
-          if (hasErrors) {
-            target.propertyGroup.propertiesWithErrors.pushDistinct(target);
-          } else {
-            target.propertyGroup.propertiesWithErrors.remove(target);
-          }
-        }
-      }
-
-      // Sort all groups again because order might have changed
-      this.allGroups = this.allGroups.orderBy((x) => {
-        // Find "index" of the group
-        let order = 0;
-        for (const s of validationResult.steps) {
-          for (const g of s.groups) {
-            if (x.group.name === g.name) {
-              return order;
-            }
-            order += 1;
-          }
-        }
-
-        return order;
-      });
-
-      // Set last error values, so we know when to show the validation error
-      for (const g of this.allGroups) {
-        for (const p of g.properties) {
-          p.lastErrorValue = p.value;
-        }
-      }
-      this.notifyChange();
+      this.applyValidationResult(validationResult);
     } catch (err: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('error validating config', err);
+    }
+  }
+
+  private applyValidationResult(validationResult: ConnectorValidationResult) {
+    const srcProps = this.createCustomProperties(validationResult.configs);
+
+    this.connectorStepDefinitions = validationResult.steps;
+
+    this.removeStaleProperties(srcProps);
+
+    // Handle new properties, transfer reported errors and suggested values
+    for (const source of srcProps) {
+      this.mergeValidatedProperty(source);
+    }
+
+    // Sort all groups again because order might have changed
+    this.allGroups = this.allGroups.orderBy((x) => stepGroupOrder(validationResult.steps, x.group.name));
+
+    // Set last error values, so we know when to show the validation error
+    for (const g of this.allGroups) {
+      for (const p of g.properties) {
+        p.lastErrorValue = p.value;
+      }
+    }
+    this.notifyChange();
+  }
+
+  // Remove properties that don't exist anymore
+  private removeStaleProperties(srcProps: Property[]) {
+    const srcNames = new Set(srcProps.map((x) => x.name));
+    const removedProps = [...this.propsByName.keys()].filter((key) => !srcNames.has(key));
+    for (const key of removedProps) {
+      // group names might not be accurate so we check all groups
+      for (const g of this.allGroups) {
+        g.properties.removeAll((x) => x.name === key);
+      }
+
+      // remove from lookup
+      this.propsByName.delete(key);
+    }
+
+    // Remove empty groups
+    this.allGroups.removeAll((x) => x.properties.length === 0);
+  }
+
+  private mergeValidatedProperty(source: Property) {
+    const target = this.propsByName.get(source.name);
+
+    // Property does not exist yet, create it!
+    if (!target) {
+      this.propsByName.set(source.name, source);
+      return;
+    }
+
+    // Update: recommended values
+    syncRecommendedValues(target, source);
+
+    // Update: field visibility
+    target.entry.value.visible = source.entry.value.visible;
+
+    // Update: errors
+    if (!target.errors.isEqual(source.errors)) {
+      updatePropertyErrors(target, source.errors);
     }
   }
 
@@ -849,65 +764,40 @@ export class ConnectorPropertiesStore {
 
     // Create our own properties
     const allProps = properties
-      .map((p) => {
-        const name = p.definition.name;
-        const definitionType = p.definition.type;
-
-        // Fix type of default values
-        const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, definitionType);
-        const initialValue: unknown = sanitizeValue(p.value.value, definitionType);
-        const value: unknown = initialValue ?? defaultValue;
-
-        const property: Property = {
-          name,
-          entry: p,
-          value: value as null | string | number | boolean | string[],
-          isHidden: hiddenProperties.includes(name),
-          errors: p.value.errors ?? [],
-          lastErrors: [],
-          showErrors: p.value.errors.length > 0,
-          currentErrorIndex: 0,
-          lastErrorValue: undefined as unknown,
-          propertyGroup: undefined as unknown as PropertyGroup,
-          crud: this.crud,
-          isDisabled: undefined,
-          notifyChange: () => this.notifyChange(),
-        };
-
-        if (this.appliedConfig?.[name]) {
-          property.value = sanitizeValue(this.appliedConfig[name], definitionType) as
-            | null
-            | string
-            | number
-            | boolean
-            | string[];
-        }
-
-        if (p.definition.type === DataType.Password && this.secrets && p.value.visible) {
-          const secret = this.secrets.getSecret(property.name);
-          secret.extractSecretId(String(property.value));
-
-          // Instead of intercept, we'll use a custom setter pattern
-          // Store original value
-          let currentValue = property.value;
-          Object.defineProperty(property, 'value', {
-            get() {
-              return currentValue;
-            },
-            set(newValue) {
-              currentValue = newValue;
-              secret.value = String(newValue);
-            },
-            enumerable: true,
-            configurable: true,
-          });
-        }
-
-        return property;
-      })
+      .map((p) => this.createProperty(p))
       .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
     return allProps;
+  }
+
+  private createProperty(p: ConnectorProperty): Property {
+    const { name, type: definitionType } = p.definition;
+
+    const property: Property = {
+      name,
+      entry: p,
+      value: initialPropertyValue(p),
+      isHidden: hiddenProperties.includes(name),
+      errors: p.value.errors,
+      lastErrors: [],
+      showErrors: p.value.errors.length > 0,
+      currentErrorIndex: 0,
+      lastErrorValue: undefined as unknown,
+      propertyGroup: undefined as unknown as PropertyGroup,
+      crud: this.crud,
+      isDisabled: undefined,
+      notifyChange: () => this.notifyChange(),
+    };
+
+    if (this.appliedConfig?.[name]) {
+      property.value = sanitizeValue(this.appliedConfig[name], definitionType) as Property['value'];
+    }
+
+    if (p.definition.type === DataType.Password && this.secrets && p.value.visible) {
+      bindSecretValue(property, this.secrets.getSecret(property.name));
+    }
+
+    return property;
   }
 
   dispose() {
@@ -921,6 +811,195 @@ export class ConnectorPropertiesStore {
 const hiddenProperties = [
   'connector.class', // user choses that in the first page of the wizard
 ];
+
+// The connector name the secrets are stored under: it must be a non-blank string.
+function requireConnectorName(configObj: Record<string, unknown> | undefined): string {
+  const connectorNameValue = configObj?.name;
+
+  if (connectorNameValue === undefined || connectorNameValue === null) {
+    throw new Error("Connector configuration is missing the 'name' property");
+  }
+
+  if (typeof connectorNameValue !== 'string') {
+    throw new Error(`Connector name must be a string, but received ${describeValueType(connectorNameValue)}`);
+  }
+
+  if (connectorNameValue.trim() === '') {
+    throw new Error('Connector name cannot be empty. Please provide a valid connector name before creating secrets.');
+  }
+
+  return connectorNameValue;
+}
+
+function describeValueType(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  return typeof value;
+}
+
+function isFilledSecret(key: string, secret: Secret): boolean {
+  return Boolean(key && key.trim() !== '' && secret.value && secret.value.trim() !== '');
+}
+
+// If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
+// We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
+function withSecretValues(
+  properties: Record<string, unknown>,
+  secrets: SecretsStore | null | undefined
+): Record<string, unknown> {
+  if (secrets) {
+    for (const [key, secret] of secrets.secrets) {
+      if (secret.value) {
+        properties[key] = secret.value;
+      }
+    }
+  }
+  return properties;
+}
+
+function parseConfigJson(jsonText: string): Record<string, unknown> {
+  try {
+    return JSON.parse(jsonText);
+  } catch {
+    // no op - JSON may be invalid during editing
+    return {};
+  }
+}
+
+// Whether a property's value goes into the submitted config. Optional values still at their default
+// are left out, so the connector keeps following the default.
+function isSubmittedProperty(p: Property, config: Record<string, unknown>): boolean {
+  if (p.entry.definition.required) {
+    return true;
+  }
+  if (p.value === p.entry.definition.default_value) {
+    // Prevent sending configs set to default when the user has not modified them.
+
+    // let's ignore the default variable if the value is the same as initially rendered
+    // otherwise, user might want to set it back to default
+    if (p.value === p.entry.value.value) {
+      return false;
+    }
+    // let's ignore the variable if the original value is null and the config is not present in current set configs values.
+    if (p.entry.value.value === null && !config[p.name]) {
+      return false;
+    }
+  }
+  // skip boolean values that default to false
+  return !(p.value === false && !p.entry.definition.default_value);
+}
+
+function applyCustomDefaults(allProps: Property[]) {
+  // Set default values
+  for (const p of allProps) {
+    if (p.entry.definition.custom_default_value !== undefined) {
+      p.value = p.entry.definition.custom_default_value;
+    }
+  }
+
+  // Set last error values, so we know when to show the validation error
+  for (const p of allProps) {
+    if (p.errors.length > 0) {
+      p.lastErrorValue = p.value;
+    }
+  }
+}
+
+function linkPropertiesToGroups(groups: PropertyGroup[]) {
+  // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
+  for (const g of groups) {
+    for (const p of g.properties) {
+      p.propertyGroup = g;
+    }
+  }
+
+  // Notify groups about errors in their children
+  for (const g of groups) {
+    g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
+  }
+}
+
+// The group's position across all steps' groups; a group no step lists sorts last.
+function stepGroupOrder(steps: ConnectorStep[], groupName: string | undefined): number {
+  let order = 0;
+  for (const s of steps) {
+    for (const g of s.groups) {
+      if (groupName === g.name) {
+        return order;
+      }
+      order += 1;
+    }
+  }
+
+  return order;
+}
+
+function syncRecommendedValues(target: Property, source: Property) {
+  const suggestedSrc = source.entry.value.recommended_values;
+  const suggestedTar = target.entry.value.recommended_values;
+  if (!suggestedSrc.isEqual(suggestedTar)) {
+    suggestedTar.updateWith(suggestedSrc);
+  }
+}
+
+// Show the first error, skipping over simple / unhelpful messages when there are several.
+function firstHelpfulErrorIndex(errors: string[]): number {
+  if (errors.length <= 1) {
+    return 0;
+  }
+  const betterStartValue = errors.findIndex((x) => !x.includes('which has no default value'));
+  return betterStartValue > -1 ? betterStartValue : 0;
+}
+
+function updatePropertyErrors(target: Property, errors: string[]) {
+  if (errors.length > 0) {
+    target.lastErrors = [...errors]; // create copy
+  }
+
+  // Update
+  target.errors.updateWith(errors);
+
+  target.showErrors = target.errors.length > 0;
+  target.currentErrorIndex = firstHelpfulErrorIndex(target.errors);
+
+  // Add or remove from parent group
+  if (target.errors.length > 0) {
+    target.propertyGroup.propertiesWithErrors.pushDistinct(target);
+  } else {
+    target.propertyGroup.propertiesWithErrors.remove(target);
+  }
+}
+
+// Fix type of default values
+function initialPropertyValue(p: ConnectorProperty): Property['value'] {
+  const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, p.definition.type);
+  const initialValue: unknown = sanitizeValue(p.value.value, p.definition.type);
+  return (initialValue ?? defaultValue) as Property['value'];
+}
+
+// Writes to the property's value also land in its secret.
+function bindSecretValue(property: Property, secret: Secret) {
+  secret.extractSecretId(String(property.value));
+
+  // Instead of intercept, we'll use a custom setter pattern
+  // Store original value
+  let currentValue = property.value;
+  Object.defineProperty(property, 'value', {
+    get() {
+      return currentValue;
+    },
+    set(newValue) {
+      currentValue = newValue;
+      secret.value = String(newValue);
+    },
+    enumerable: true,
+    configurable: true,
+  });
+}
 
 export type PropertyGroup = {
   step: ConnectorStep;

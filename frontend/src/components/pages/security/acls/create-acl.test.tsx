@@ -9,14 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { renderWithFileRoutes, screen } from 'test-utils';
+import userEvent from '@testing-library/user-event';
+import { renderWithFileRoutes, screen, within } from 'test-utils';
 
 import CreateACL from './create-acl';
 import { PrincipalTypeRedpandaRole, PrincipalTypeUser, parsePrincipal } from '../shared/acl-model';
 
-const noop = () => {};
+const noop = () => undefined;
 
-describe('CreateACL - principal field composability', () => {
+describe('the CreateACL - principal field composability', () => {
   describe('default principal field (no renderPrincipal)', () => {
     test('shows the principal type selector when principalType is provided without renderPrincipal', async () => {
       renderWithFileRoutes(<CreateACL edit={false} onCancel={noop} principalType={PrincipalTypeUser} />);
@@ -87,5 +88,20 @@ describe('CreateACL - principal field composability', () => {
 
       expect(await screen.findByTestId('disabled-state')).toHaveTextContent('disabled');
     });
+  });
+});
+
+describe('createACL - rule section names', () => {
+  test('names the resource type, selector, and operations groups of a rule', async () => {
+    renderWithFileRoutes(<CreateACL edit={false} onCancel={noop} principalType={PrincipalTypeUser} />);
+
+    const user = userEvent.setup();
+    const resourceTypes = await screen.findByRole('group', { name: 'Select a resource type' });
+    await user.click(within(resourceTypes).getByRole('button', { name: 'Topic' }));
+
+    expect(screen.getByRole('group', { name: 'Selector' })).toBeVisible();
+    const operations = screen.getByRole('group', { name: 'Operations' });
+    expect(operations).toHaveTextContent('Allow all');
+    expect(operations).toContainElement(screen.getByTestId('operation-select-READ'));
   });
 });

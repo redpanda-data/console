@@ -47,93 +47,101 @@ const itemLabels = (result: ReturnType<typeof buildSuggestions>) =>
   result.items.filter((i) => i.kind === 'item').map((i) => i.label);
 
 describe('buildSuggestions', () => {
-  test('default view groups filters and fields', () => {
-    const result = buildSuggestions(input({}));
-    expect(itemLabels(result)).toEqual(['partition:', 'js:', 'value:', 'key:', 'offset:']);
+  describe('default view', () => {
+    test('default view groups filters and fields', () => {
+      const result = buildSuggestions(input({}));
+      expect(itemLabels(result)).toEqual(['partition:', 'js:', 'value:', 'key:', 'offset:']);
+    });
+
+    test('recents appear first when present', () => {
+      const result = buildSuggestions(
+        input({
+          recents: [
+            { label: 'partition:1', action: { type: 'commit-field', field: 'partition', op: 'eq', value: '1' } },
+          ],
+        })
+      );
+      expect(itemLabels(result)[0]).toBe('partition:1');
+    });
+
+    test('js suggestions are hidden without the permission', () => {
+      const result = buildSuggestions(input({ canUseJsFilters: false }));
+      expect(itemLabels(result)).not.toContain('js:');
+    });
+
+    test('js: prefix routes to the editor', () => {
+      const result = buildSuggestions(input({ query: 'js: value.type === "ORDER"' }));
+      expect(result.heading).toBe('JavaScript');
+      const item = result.items.find((i) => i.kind === 'item');
+      expect(item?.action).toEqual({ type: 'open-js', code: 'value.type === "ORDER"' });
+    });
   });
 
-  test('recents appear first when present', () => {
-    const result = buildSuggestions(
-      input({
-        recents: [{ label: 'partition:1', action: { type: 'commit-field', field: 'partition', op: 'eq', value: '1' } }],
-      })
-    );
-    expect(itemLabels(result)[0]).toBe('partition:1');
+  describe('field values', () => {
+    test('pending partition lists distinct values with counts', () => {
+      const result = buildSuggestions(input({ pendingField: 'partition' }));
+      expect(result.heading).toBe('Value for Partition');
+      const items = result.items.filter((i) => i.kind === 'item');
+      expect(items[0]).toMatchObject({ label: '0', sub: '2 msgs' });
+      expect(items[1]).toMatchObject({ label: '1', sub: '1 msg' });
+    });
+
+    test('typing a bare field: lists its possible values like pending mode', () => {
+      const result = buildSuggestions(input({ query: 'partition:' }));
+      expect(result.heading).toBe('Value for Partition');
+      const items = result.items.filter((i) => i.kind === 'item');
+      expect(items[0]).toMatchObject({ label: '0', sub: '2 msgs' });
+      expect(items[1]).toMatchObject({ label: '1', sub: '1 msg' });
+
+      const keyResult = buildSuggestions(input({ query: 'key:' }));
+      expect(keyResult.heading).toBe('Value for key');
+      expect(itemLabels(keyResult).length).toBeGreaterThan(0);
+    });
+
+    test('typing a bare nested value.<path>: also lists its possible values', () => {
+      const result = buildSuggestions(input({ query: 'value.type:' }));
+      expect(result.heading).toBe('Value for value.type');
+      const items = result.items.filter((i) => i.kind === 'item');
+      expect(items[0]).toMatchObject({ label: 'INVOICE', sub: '2 msgs' });
+      expect(items[1]).toMatchObject({ label: 'ORDER', sub: '1 msg' });
+    });
+
+    test('bare value: is left as a free-text prefix, not an enumerable field', () => {
+      const result = buildSuggestions(input({ query: 'value:' }));
+      expect(result.heading).not.toBe('Value for value');
+    });
   });
 
-  test('js suggestions are hidden without the permission', () => {
-    const result = buildSuggestions(input({ canUseJsFilters: false }));
-    expect(itemLabels(result)).not.toContain('js:');
-  });
-
-  test('pending partition lists distinct values with counts', () => {
-    const result = buildSuggestions(input({ pendingField: 'partition' }));
-    expect(result.heading).toBe('Value for Partition');
-    const items = result.items.filter((i) => i.kind === 'item');
-    expect(items[0]).toMatchObject({ label: '0', sub: '2 msgs' });
-    expect(items[1]).toMatchObject({ label: '1', sub: '1 msg' });
-  });
-
-  test('pending offset with typed value offers comparisons', () => {
-    const result = buildSuggestions(input({ pendingField: 'offset', query: '2' }));
-    expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
-  });
-
-  test('a completed offset:N/offset>N/offset<N word offers all three comparison alternatives', () => {
-    // pendingField is always null in the free-text bar — this is the reachable path
-    for (const query of ['offset:2', 'offset>2', 'offset<2', 'offset=2']) {
-      const result = buildSuggestions(input({ query }));
+  describe('typed tokens', () => {
+    test('pending offset with typed value offers comparisons', () => {
+      const result = buildSuggestions(input({ pendingField: 'offset', query: '2' }));
       expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
-    }
-  });
+    });
 
-  test('value path traversal suggests nested fields', () => {
-    const result = buildSuggestions(input({ query: 'value.add' }));
-    expect(itemLabels(result)).toContain('value.address');
-    expect(itemLabels(result)).toContain('value.address.city');
-  });
+    test('a completed offset:N/offset>N/offset<N word offers all three comparison alternatives', () => {
+      // pendingField is always null in the free-text bar — this is the reachable path
+      for (const query of ['offset:2', 'offset>2', 'offset<2', 'offset=2']) {
+        const result = buildSuggestions(input({ query }));
+        expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
+      }
+    });
 
-  test('js: prefix routes to the editor', () => {
-    const result = buildSuggestions(input({ query: 'js: value.type === "ORDER"' }));
-    expect(result.heading).toBe('JavaScript');
-    const item = result.items.find((i) => i.kind === 'item');
-    expect(item?.action).toEqual({ type: 'open-js', code: 'value.type === "ORDER"' });
-  });
+    test('value path traversal suggests nested fields', () => {
+      const result = buildSuggestions(input({ query: 'value.add' }));
+      expect(itemLabels(result)).toContain('value.address');
+      expect(itemLabels(result)).toContain('value.address.city');
+    });
 
-  test('typing a bare field: lists its possible values like pending mode', () => {
-    const result = buildSuggestions(input({ query: 'partition:' }));
-    expect(result.heading).toBe('Value for Partition');
-    const items = result.items.filter((i) => i.kind === 'item');
-    expect(items[0]).toMatchObject({ label: '0', sub: '2 msgs' });
-    expect(items[1]).toMatchObject({ label: '1', sub: '1 msg' });
-
-    const keyResult = buildSuggestions(input({ query: 'key:' }));
-    expect(keyResult.heading).toBe('Value for key');
-    expect(itemLabels(keyResult).length).toBeGreaterThan(0);
-  });
-
-  test('typing a bare nested value.<path>: also lists its possible values', () => {
-    const result = buildSuggestions(input({ query: 'value.type:' }));
-    expect(result.heading).toBe('Value for value.type');
-    const items = result.items.filter((i) => i.kind === 'item');
-    expect(items[0]).toMatchObject({ label: 'INVOICE', sub: '2 msgs' });
-    expect(items[1]).toMatchObject({ label: 'ORDER', sub: '1 msg' });
-  });
-
-  test('bare value: is left as a free-text prefix, not an enumerable field', () => {
-    const result = buildSuggestions(input({ query: 'value:' }));
-    expect(result.heading).not.toBe('Value for value');
-  });
-
-  test('typed field token shows the parsed filter with match count', () => {
-    const result = buildSuggestions(input({ query: 'partition:1' }));
-    const item = result.items.find((i) => i.kind === 'item');
-    expect(item).toMatchObject({ label: 'partition:1', sub: '1 msg' });
-    expect(item?.kind === 'item' && item.action).toEqual({
-      type: 'commit-field',
-      field: 'partition',
-      op: 'eq',
-      value: '1',
+    test('typed field token shows the parsed filter with match count', () => {
+      const result = buildSuggestions(input({ query: 'partition:1' }));
+      const item = result.items.find((i) => i.kind === 'item');
+      expect(item).toMatchObject({ label: 'partition:1', sub: '1 msg' });
+      expect(item?.kind === 'item' && item.action).toEqual({
+        type: 'commit-field',
+        field: 'partition',
+        op: 'eq',
+        value: '1',
+      });
     });
   });
 });

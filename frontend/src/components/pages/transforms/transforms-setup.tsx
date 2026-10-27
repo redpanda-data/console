@@ -42,18 +42,17 @@ export class TransformsSetup extends PageComponent {
   }
 }
 
-const exampleDir = `${`
-.
+const exampleDir = `.
 |-- go.mod
 |-- go.sum
 |-- README.md
 |-- transform.go
 |-- transform.yaml
-`.trim()}\n`;
+`;
 
 function TabGo(_p: Record<string, never>) {
   return (
-    <List className="flex flex-col gap-2" ordered>
+    <List className="flex flex-col" ordered>
       <ListItem>
         <p className="mt-3 text-body">Create and initialize a data transforms project:</p>
         <SyncCodeBlock code={rpkInitTransform} keepBackground lang="bash" />

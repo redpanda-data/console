@@ -314,6 +314,37 @@ export type UnifiedShadowLinkResult = {
  * data wins but state comes from controlplane; if only controlplane answers, its partial data is
  * returned.
  */
+type DataplaneShadowLink = NonNullable<Parameters<typeof fromDataplaneShadowLink>[0]>;
+type ControlplaneShadowLink = NonNullable<Parameters<typeof fromControlplaneShadowLink>[0]>;
+
+// State and timestamps come from controlplane, which owns them in embedded mode.
+function applyControlplaneOverrides(unifiedData: UnifiedShadowLink, controlplane: ControlplaneShadowLink) {
+  unifiedData.state = mapControlplaneStateToUnified(controlplane.state);
+  unifiedData.shadowRedpandaId = controlplane.shadowRedpandaId;
+  unifiedData.createdAt = controlplane.createdAt ? timestampDate(controlplane.createdAt) : undefined;
+  unifiedData.updatedAt = controlplane.updatedAt ? timestampDate(controlplane.updatedAt) : undefined;
+}
+
+function unifyShadowLink(
+  embedded: boolean,
+  dataplane: DataplaneShadowLink | undefined,
+  controlplane: ControlplaneShadowLink | undefined
+): UnifiedShadowLink | undefined {
+  const unifiedData = dataplane ? fromDataplaneShadowLink(dataplane) : undefined;
+  if (!(embedded && controlplane)) {
+    return unifiedData;
+  }
+
+  // In embedded mode: if dataplane fails but controlplane succeeds, use controlplane data
+  if (!unifiedData) {
+    return fromControlplaneShadowLink(controlplane);
+  }
+
+  // In embedded mode, override state from controlplane
+  applyControlplaneOverrides(unifiedData, controlplane);
+  return unifiedData;
+}
+
 export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
   const embedded = isEmbedded();
 
@@ -323,25 +354,7 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
   // In embedded mode, also fetch controlplane to get the correct state
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
 
-  const shadowLink = dataplaneQuery.data?.shadowLink;
-  let unifiedData = shadowLink ? fromDataplaneShadowLink(shadowLink) : undefined;
-
-  // In embedded mode, override state from controlplane
-  if (embedded && unifiedData && controlplaneQuery.data) {
-    unifiedData.state = mapControlplaneStateToUnified(controlplaneQuery.data.state);
-    unifiedData.shadowRedpandaId = controlplaneQuery.data.shadowRedpandaId;
-    unifiedData.createdAt = controlplaneQuery.data.createdAt
-      ? timestampDate(controlplaneQuery.data.createdAt)
-      : undefined;
-    unifiedData.updatedAt = controlplaneQuery.data.updatedAt
-      ? timestampDate(controlplaneQuery.data.updatedAt)
-      : undefined;
-  }
-
-  // In embedded mode: if dataplane fails but controlplane succeeds, use controlplane data
-  if (embedded && !unifiedData && controlplaneQuery.data) {
-    unifiedData = fromControlplaneShadowLink(controlplaneQuery.data);
-  }
+  const unifiedData = unifyShadowLink(embedded, dataplaneQuery.data?.shadowLink, controlplaneQuery.data);
 
   // Combined error: only error if we have no data at all
   const combinedError = unifiedData ? null : dataplaneQuery.error || controlplaneQuery.error;
@@ -363,30 +376,31 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
 
 /* ==================== EDIT SHADOW LINK HOOK ==================== */
 
-/**
- * Shadow-link editing for both console and controlplane modes, picking the API off embedded mode and
- * bundling the fetch, form values, update mutation and loading/error state.
- */
-export const useEditShadowLink = (
-  name: string
-): {
-  formValues: FormValues | undefined;
-  isLoading: boolean;
-  error: ConnectError | null;
-  isUpdating: boolean;
-  hasData: boolean;
-  updateShadowLink: (values: FormValues) => Promise<unknown>;
-  dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
-  controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
-} => {
-  const embedded = isEmbedded();
+function editFormValues(
+  embedded: boolean,
+  controlplaneShadowLink: ControlplaneShadowLink | undefined,
+  shadowLink: DataplaneShadowLink | undefined
+): FormValues | undefined {
+  if (embedded && controlplaneShadowLink) {
+    return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
+  }
+  if (!embedded && shadowLink) {
+    return buildDefaultFormValues(shadowLink);
+  }
+}
 
-  // Queries - in embedded mode, also fetch controlplane for state override
-  const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });
-  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
-
-  const shadowLink = dataplaneQuery.data?.shadowLink;
-  const controlplaneShadowLink = controlplaneQuery.data;
+// Embedded updates go through controlplane by ID; everything else through dataplane by name.
+function useShadowLinkUpdate({
+  name,
+  embedded,
+  shadowLink,
+  controlplaneShadowLink,
+}: {
+  name: string;
+  embedded: boolean;
+  shadowLink: DataplaneShadowLink | undefined;
+  controlplaneShadowLink: ControlplaneShadowLink | undefined;
+}) {
   const shadowLinkId = controlplaneShadowLink?.id;
 
   // Mutations
@@ -396,16 +410,6 @@ export const useEditShadowLink = (
   // Role sync needs Redpanda >= 26.2.0 (fails closed); on older clusters the
   // update request must not carry role sync options at all.
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
-
-  // Build form values based on data source
-  const formValues = useMemo((): FormValues | undefined => {
-    if (embedded && controlplaneShadowLink) {
-      return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
-    }
-    if (!embedded && shadowLink) {
-      return buildDefaultFormValues(shadowLink);
-    }
-  }, [embedded, controlplaneShadowLink, shadowLink]);
 
   // Unified update function
   const submitUpdate = useCallback(
@@ -436,15 +440,54 @@ export const useEditShadowLink = (
     ]
   );
 
-  // Check if data is available based on mode
-  const hasData = embedded ? !!controlplaneShadowLink : !!shadowLink;
+  return { submitUpdate, dataplaneUpdate, controlplaneUpdate };
+}
+
+/**
+ * Shadow-link editing for both console and controlplane modes, picking the API off embedded mode and
+ * bundling the fetch, form values, update mutation and loading/error state.
+ */
+export const useEditShadowLink = (
+  name: string
+): {
+  formValues: FormValues | undefined;
+  isLoading: boolean;
+  error: ConnectError | null;
+  isUpdating: boolean;
+  hasData: boolean;
+  updateShadowLink: (values: FormValues) => Promise<unknown>;
+  dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
+  controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
+} => {
+  const embedded = isEmbedded();
+
+  // Queries - in embedded mode, also fetch controlplane for state override
+  const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });
+  const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
+
+  const shadowLink = dataplaneQuery.data?.shadowLink;
+  const controlplaneShadowLink = controlplaneQuery.data;
+
+  const { submitUpdate, dataplaneUpdate, controlplaneUpdate } = useShadowLinkUpdate({
+    name,
+    embedded,
+    shadowLink,
+    controlplaneShadowLink,
+  });
+
+  // Build form values based on data source
+  const formValues = useMemo(
+    () => editFormValues(embedded, controlplaneShadowLink, shadowLink),
+    [embedded, controlplaneShadowLink, shadowLink]
+  );
 
   return {
     formValues,
     isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
     error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
     isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
-    hasData,
+    // Check if data is available based on mode
+    hasData: embedded ? !!controlplaneShadowLink : !!shadowLink,
     updateShadowLink: submitUpdate,
     dataplaneUpdate,
     controlplaneUpdate,

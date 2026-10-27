@@ -62,7 +62,7 @@ describe('deepParseJson', () => {
     });
   });
 
-  describe('JSON string parsing', () => {
+  describe('the JSON string parsing', () => {
     test('should parse JSON object strings', () => {
       const result = deepParseJson('{"city":"Singapore","temp":28}');
       expect(result).toEqual({ city: 'Singapore', temp: 28 });

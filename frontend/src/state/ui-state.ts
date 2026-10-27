@@ -206,6 +206,42 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
 
 // Legacy export with Proxy for backward compatibility
 // This allows existing code to access and set properties directly like: uiState.loginError = null
+
+// Handle properties with special setters; writes to any other property are ignored.
+function applyUIStateWrite(store: UIStateStore, prop: string, value: unknown) {
+  switch (prop) {
+    case 'pageTitle':
+      store.setPageTitle(value as string | React.ReactElement);
+      break;
+    case 'pageBreadcrumbs':
+      store.setPageBreadcrumbs(value as BreadcrumbEntry[]);
+      break;
+    case 'shouldHidePageHeader':
+      store.setShouldHidePageHeader(value as boolean);
+      break;
+    case 'pathName':
+      store.setPathName(value as string);
+      break;
+    case 'currentTopicName':
+      store.setCurrentTopicName(value as string | undefined);
+      break;
+    case 'loginError':
+      store.setLoginError(value as string | null);
+      break;
+    case 'isUsingDebugUserLogin':
+      store.setIsUsingDebugUserLogin(value as boolean);
+      break;
+    case 'serverBuildTimestamp':
+      store.setServerBuildTimestamp(value as number | undefined);
+      break;
+    case 'backLink':
+      store.setBackLink(value as BackLink | null);
+      break;
+    default:
+      break;
+  }
+}
+
 export const uiState = new Proxy(
   {} as {
     pageTitle: string | React.ReactElement;
@@ -242,46 +278,7 @@ export const uiState = new Proxy(
       return store[prop as keyof UIStateStore];
     },
     set(_target, prop: string, value: unknown) {
-      const store = useUIStateStore.getState();
-
-      // Handle properties with special setters
-      if (prop === 'pageTitle') {
-        store.setPageTitle(value as string | React.ReactElement);
-        return true;
-      }
-      if (prop === 'pageBreadcrumbs') {
-        store.setPageBreadcrumbs(value as BreadcrumbEntry[]);
-        return true;
-      }
-      if (prop === 'shouldHidePageHeader') {
-        store.setShouldHidePageHeader(value as boolean);
-        return true;
-      }
-      if (prop === 'pathName') {
-        store.setPathName(value as string);
-        return true;
-      }
-      if (prop === 'currentTopicName') {
-        store.setCurrentTopicName(value as string | undefined);
-        return true;
-      }
-      if (prop === 'loginError') {
-        store.setLoginError(value as string | null);
-        return true;
-      }
-      if (prop === 'isUsingDebugUserLogin') {
-        store.setIsUsingDebugUserLogin(value as boolean);
-        return true;
-      }
-      if (prop === 'serverBuildTimestamp') {
-        store.setServerBuildTimestamp(value as number | undefined);
-        return true;
-      }
-      if (prop === 'backLink') {
-        store.setBackLink(value as BackLink | null);
-        return true;
-      }
-
+      applyUIStateWrite(useUIStateStore.getState(), prop, value);
       return true;
     },
   }

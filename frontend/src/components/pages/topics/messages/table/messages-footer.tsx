@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, DownloadIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -51,7 +52,7 @@ const RangeLabel = ({
 >) => {
   if (continuousMode) {
     return (
-      <span className="flex items-center gap-3 text-muted-foreground text-sm">
+      <span className="flex items-center gap-3 text-sm text-muted-foreground">
         Showing {windowSize} in window · {totalLoaded} loaded
         {trimmedCount > 0 && (
           <span className="flex items-center gap-1.5 text-xs">
@@ -63,12 +64,12 @@ const RangeLabel = ({
     );
   }
   if (totalLoaded === 0) {
-    return <span className="text-muted-foreground text-sm">No messages loaded</span>;
+    return <span className="text-sm text-muted-foreground">No messages loaded</span>;
   }
   const start = pageIndex * pageSize + 1;
   const end = Math.min((pageIndex + 1) * pageSize, totalLoaded);
   return (
-    <span className="text-muted-foreground text-sm">
+    <span className="text-sm text-muted-foreground">
       {start}–{end} of {totalLoaded} loaded
     </span>
   );
@@ -143,8 +144,8 @@ export const MessagesFooter = ({
         />
         {continuousMode ? (
           <div className="flex items-center gap-3.5">
-            <span className="flex items-center gap-2 text-muted-foreground text-xs">
-              <span className="inline-block size-2 rounded-full bg-green-600" />
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-block size-2 rounded-full bg-success-strong" />
               {windowSize} in buffer · window {windowCap}
             </span>
             {canLoadMore && (
@@ -190,16 +191,20 @@ export const MessagesFooter = ({
         )}
       </div>
       {showStats && (bytesConsumed > 0 || elapsedMs !== null) && (
-        <div className="flex items-center gap-3.5 text-muted-foreground text-xs" data-testid="messages-stats">
-          <span className="flex items-center gap-1.5" title="Total size fetched">
-            <DownloadIcon className="size-3.5" />
-            {prettyBytes(bytesConsumed)}
-          </span>
-          {elapsedMs !== null && (
-            <span className="flex items-center gap-1.5" title="Fetch latency">
-              <ClockIcon className="size-3.5" />
-              {Math.round(elapsedMs)}ms
+        <div className="flex items-center gap-3.5 text-xs text-muted-foreground" data-testid="messages-stats">
+          <ElementTooltip content="Total size fetched">
+            <span className="flex items-center gap-1.5">
+              <DownloadIcon className="size-3.5" />
+              {prettyBytes(bytesConsumed)}
             </span>
+          </ElementTooltip>
+          {elapsedMs !== null && (
+            <ElementTooltip content="Fetch latency">
+              <span className="flex items-center gap-1.5">
+                <ClockIcon className="size-3.5" />
+                {Math.round(elapsedMs)}ms
+              </span>
+            </ElementTooltip>
           )}
         </div>
       )}

@@ -37,20 +37,22 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-describe('TopicConfigTab', () => {
-  describe('Exclude default properties toggle', () => {
+const renderTopicConfigTab = (overrides: Partial<FormValues>) => {
+  const user = userEvent.setup();
+  render(<TestWrapper defaultValues={{ ...initialValues, ...overrides }} />);
+  return { user, toggle: screen.getByTestId('exclude-default-switch') };
+};
+
+// The form state the wrapper mirrors into the DOM
+const readFormState = () => JSON.parse(screen.getByTestId('form-state').textContent || '{}');
+
+describe('the TopicConfigTab', () => {
+  describe('exclude default properties toggle', () => {
     test('should remove default properties from topicProperties when excludeDefault is enabled', async () => {
-      const user = userEvent.setup();
-      const defaultProps = getDefaultProperties();
-      const customValues: FormValues = {
-        ...initialValues,
+      const { user, toggle } = renderTopicConfigTab({
         excludeDefault: false,
-        topicProperties: [...defaultProps, 'segment.bytes', 'flush.ms'],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      const toggle = screen.getByTestId('exclude-default-switch');
+        topicProperties: [...getDefaultProperties(), 'segment.bytes', 'flush.ms'],
+      });
       expect(toggle).not.toBeChecked();
 
       // Enable exclude default
@@ -61,8 +63,7 @@ describe('TopicConfigTab', () => {
       });
 
       // Check that default properties were removed from topicProperties
-      const formState = screen.getByTestId('form-state');
-      const state = JSON.parse(formState.textContent || '{}');
+      const state = readFormState();
 
       // Only non-default properties should remain
       expect(state.topicProperties).toEqual(['segment.bytes', 'flush.ms']);
@@ -71,16 +72,10 @@ describe('TopicConfigTab', () => {
     });
 
     test('should add default properties to topicProperties when excludeDefault is disabled', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
+      const { user, toggle } = renderTopicConfigTab({
         excludeDefault: true,
         topicProperties: ['segment.bytes', 'flush.ms'],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      const toggle = screen.getByTestId('exclude-default-switch');
+      });
       expect(toggle).toBeChecked();
 
       // Disable exclude default
@@ -91,19 +86,22 @@ describe('TopicConfigTab', () => {
       });
 
       // Check that default properties were added to topicProperties
-      const formState = screen.getByTestId('form-state');
-      const state = JSON.parse(formState.textContent || '{}');
+      const state = readFormState();
 
       // Should contain all default properties plus the existing ones
-      expect(state.topicProperties).toContain('segment.bytes');
-      expect(state.topicProperties).toContain('flush.ms');
-      expect(state.topicProperties).toContain('retention.bytes');
-      expect(state.topicProperties).toContain('retention.ms');
-      expect(state.topicProperties).toContain('delete.retention.ms');
-      expect(state.topicProperties).toContain('min.compaction.lag.ms');
-      expect(state.topicProperties).toContain('max.compaction.lag.ms');
-      expect(state.topicProperties).toContain('replication.factor');
-      expect(state.topicProperties).toContain('compression.type');
+      expect(state.topicProperties).toEqual(
+        expect.arrayContaining([
+          'segment.bytes',
+          'flush.ms',
+          'retention.bytes',
+          'retention.ms',
+          'delete.retention.ms',
+          'min.compaction.lag.ms',
+          'max.compaction.lag.ms',
+          'replication.factor',
+          'compression.type',
+        ])
+      );
     });
   });
 });

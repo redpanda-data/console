@@ -78,9 +78,81 @@ function renderDialog(isOpen = true, onClose = rs.fn()) {
   });
 }
 
+type User = ReturnType<typeof userEvent.setup>;
+
+async function typeTopicName(user: User, name: string) {
+  await user.type(screen.getByTestId('topic-name'), name);
+}
+
+/** Replaces the content of a numeric field and returns the input. */
+async function replaceNumber(user: User, testId: string, value: string) {
+  const input = screen.getByTestId(testId);
+  await user.clear(input);
+  await user.type(input, value);
+  return input;
+}
+
+async function fillCreateForm(
+  user: User,
+  values: { topicName: string; partitions?: string; replicationFactor?: string }
+) {
+  await typeTopicName(user, values.topicName);
+  if (values.partitions !== undefined) {
+    await replaceNumber(user, 'topic-partitions', values.partitions);
+  }
+  if (values.replicationFactor !== undefined) {
+    await replaceNumber(user, 'topic-replication-factor', values.replicationFactor);
+  }
+}
+
+async function submitWhenEnabled(user: User) {
+  await waitFor(() => {
+    expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
+  });
+
+  await user.click(screen.getByTestId('onOk-button'));
+}
+
+/** Pastes an invalid name and leaves the field, so its error renders. */
+async function enterTopicName(user: User, name: string) {
+  const input = screen.getByRole('textbox', { name: TOPIC_NAME_LABEL });
+  await user.click(input);
+  await user.paste(name);
+  await user.tab();
+  return input;
+}
+
+/** Submits the form that owns `input` directly, bypassing the disabled Create button. */
+async function submitOwningForm(input: HTMLElement) {
+  const form = input.closest('form');
+  if (!form) {
+    throw new Error('Topic name must belong to the create form');
+  }
+  await act(() => {
+    fireEvent.submit(form);
+  });
+}
+
+/** Points the api at a Redpanda cluster; returns a restore for the Kafka defaults the other tests expect. */
+async function simulateRedpandaCluster(clusterOverview: unknown) {
+  const { api } = await import('../../../state/backend-api');
+  Object.assign(api, { isRedpanda: true, clusterOverview });
+  return () => {
+    Object.assign(api, { isRedpanda: false, clusterOverview: null });
+  };
+}
+
+async function clickAndExpectPropertyRows(user: User, button: HTMLElement, count: number) {
+  await user.click(button);
+
+  await waitFor(() => {
+    expect(screen.getAllByPlaceholderText('Property Name...')).toHaveLength(count);
+  });
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('CreateTopicDialog', () => {
+describe('the CreateTopicDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mockMutateAsync.mockResolvedValue({
@@ -90,306 +162,253 @@ describe('CreateTopicDialog', () => {
     });
   });
 
-  test('Create button is disabled when topic name is empty', async () => {
-    renderDialog();
+  describe('topic name', () => {
+    test('create button is disabled when topic name is empty', () => {
+      renderDialog();
 
-    const createButton = screen.getByTestId('onOk-button');
-    expect(createButton).toBeDisabled();
-  });
-
-  test.each([
-    ['topic with spaces', 'Topic name cannot contain spaces'],
-    ['orders/', 'Use only letters, numbers, dots, underscores, and hyphens'],
-    ['orders-消費者', 'Use only letters, numbers, dots, underscores, and hyphens'],
-    ['.', 'Topic name cannot be . or ..'],
-    ['..', 'Topic name cannot be . or ..'],
-    ['a'.repeat(250), 'Topic name must be 249 characters or fewer'],
-  ])('rejects invalid topic name %s without sending a request', async (name, message) => {
-    const user = userEvent.setup();
-    renderDialog();
-
-    const input = screen.getByRole('textbox', { name: TOPIC_NAME_LABEL });
-    await user.click(input);
-    await user.paste(name);
-    await user.tab();
-
-    expect(await screen.findByText(message)).toBeInTheDocument();
-    expect(input).toHaveAttribute('aria-invalid', 'true');
-    expect(input).toHaveAccessibleDescription(message);
-    expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
-
-    const form = input.closest('form');
-    if (!form) {
-      throw new Error('Topic name must belong to the create form');
-    }
-    await act(() => {
-      fireEvent.submit(form);
+      const createButton = screen.getByTestId('onOk-button');
+      expect(createButton).toBeDisabled();
     });
-    await waitFor(() => expect(mockMutateAsync).not.toHaveBeenCalled());
-  });
 
-  test('accepts a 249-character topic name and submits it unchanged', async () => {
-    const user = userEvent.setup();
-    const name = `orders.${'a'.repeat(239)}_-9`;
-    renderDialog();
+    test.each([
+      ['topic with spaces', 'Topic name cannot contain spaces'],
+      ['orders/', 'Use only letters, numbers, dots, underscores, and hyphens'],
+      ['orders-消費者', 'Use only letters, numbers, dots, underscores, and hyphens'],
+      ['.', 'Topic name cannot be . or ..'],
+      ['..', 'Topic name cannot be . or ..'],
+      ['a'.repeat(250), 'Topic name must be 249 characters or fewer'],
+    ])('rejects invalid topic name %s without sending a request', async (name, message) => {
+      const user = userEvent.setup();
+      renderDialog();
 
-    await user.click(screen.getByRole('textbox', { name: TOPIC_NAME_LABEL }));
-    await user.paste(name);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Create' })).toBeEnabled());
-    await user.click(screen.getByRole('button', { name: 'Create' }));
+      const input = await enterTopicName(user, name);
 
-    await waitFor(() =>
-      expect(mockMutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          topic: expect.objectContaining({ name }),
-        })
-      )
-    );
-  });
+      expect(await screen.findByText(message)).toBeInTheDocument();
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(input).toHaveAccessibleDescription(message);
+      expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
 
-  test('Create button is enabled when topic name is valid', async () => {
-    const user = userEvent.setup();
-    renderDialog();
+      await submitOwningForm(input);
+      await waitFor(() => expect(mockMutateAsync).not.toHaveBeenCalled());
+    });
 
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'valid-topic-name');
+    test('accepts a 249-character topic name and submits it unchanged', async () => {
+      const user = userEvent.setup();
+      const name = `orders.${'a'.repeat(239)}_-9`;
+      renderDialog();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
+      await user.click(screen.getByRole('textbox', { name: TOPIC_NAME_LABEL }));
+      await user.paste(name);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Create' })).toBeEnabled());
+      await user.click(screen.getByRole('button', { name: 'Create' }));
+
+      await waitFor(() =>
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+          expect.objectContaining({
+            topic: expect.objectContaining({ name }),
+          })
+        )
+      );
+    });
+
+    test('create button is enabled when topic name is valid', async () => {
+      const user = userEvent.setup();
+      renderDialog();
+
+      const topicNameInput = screen.getByTestId('topic-name');
+      await user.type(topicNameInput, 'valid-topic-name');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
+      });
     });
   });
 
-  test('Partitions field shows validation error for values less than 1', async () => {
-    const user = userEvent.setup();
-    renderDialog();
+  describe('numeric fields', () => {
+    test('partitions field shows validation error for values less than 1', async () => {
+      const user = userEvent.setup();
+      renderDialog();
 
-    // Type a valid topic name first so form is otherwise valid
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'valid-topic');
+      // Type a valid topic name first so form is otherwise valid
+      const topicNameInput = screen.getByTestId('topic-name');
+      await user.type(topicNameInput, 'valid-topic');
 
-    const partitionsInput = screen.getByTestId('topic-partitions');
-    await user.clear(partitionsInput);
-    // Type 0 — Zod's min(1) rule rejects it
-    await user.type(partitionsInput, '0');
-    // fireEvent.blur explicitly marks the field as touched so RHF renders the FieldError
-    fireEvent.blur(partitionsInput);
+      const partitionsInput = screen.getByTestId('topic-partitions');
+      await user.clear(partitionsInput);
+      // Type 0 — Zod's min(1) rule rejects it
+      await user.type(partitionsInput, '0');
+      // fireEvent.blur explicitly marks the field as touched so RHF renders the FieldError
+      fireEvent.blur(partitionsInput);
 
-    await waitFor(() => {
-      expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
+      });
+    });
+
+    test('replication factor validation error from validateReplicationFactor (even number on Redpanda)', async () => {
+      // Simulate a Redpanda cluster so superRefine runs the odd-number check
+      const restoreApi = await simulateRedpandaCluster({ kafka: { version: '3.0' } });
+
+      const user = userEvent.setup();
+      renderDialog();
+
+      await typeTopicName(user, 'valid-topic');
+
+      const replicationFactorInput = await replaceNumber(user, 'topic-replication-factor', '2');
+      fireEvent.blur(replicationFactorInput);
+
+      await waitFor(() => {
+        expect(screen.getByText(/replication factor must be an odd number/i)).toBeInTheDocument();
+      });
+
+      expect(screen.getByTestId('onOk-button')).toBeDisabled();
+
+      // Restore api defaults so other tests are not affected
+      restoreApi();
     });
   });
 
-  test('Replication factor validation error from validateReplicationFactor (even number on Redpanda)', async () => {
-    // Override api to simulate a Redpanda cluster so superRefine runs the odd-number check
-    const { api } = await import('../../../state/backend-api');
-    // biome-ignore lint/suspicious/noExplicitAny: test override
-    (api as any).isRedpanda = true;
-    // biome-ignore lint/suspicious/noExplicitAny: test override
-    (api as any).clusterOverview = { kafka: { version: '3.0' } };
+  describe('submission', () => {
+    test('successful submission shows success state with topic name and stats', async () => {
+      const user = userEvent.setup();
+      mockMutateAsync.mockResolvedValue({
+        topicName: 'my-new-topic',
+        partitionCount: 3,
+        replicationFactor: 1,
+      });
 
-    const user = userEvent.setup();
-    renderDialog();
+      renderDialog();
 
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'valid-topic');
+      await typeTopicName(user, 'my-new-topic');
+      await submitWhenEnabled(user);
 
-    const replicationFactorInput = screen.getByTestId('topic-replication-factor');
-    await user.clear(replicationFactorInput);
-    await user.type(replicationFactorInput, '2');
-    fireEvent.blur(replicationFactorInput);
+      await waitFor(() => {
+        // "Topic created" appears in both the dialog title and the success body paragraph
+        const topicCreatedElements = screen.getAllByText('Topic created');
+        expect(topicCreatedElements.length).toBeGreaterThanOrEqual(1);
+      });
 
-    await waitFor(() => {
-      expect(screen.getByText(/replication factor must be an odd number/i)).toBeInTheDocument();
+      // Shows the topic name in the success view
+      expect(screen.getByText('my-new-topic')).toBeInTheDocument();
+
+      // Shows partition count and label
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('Partitions')).toBeInTheDocument();
+
+      // Shows replication factor label
+      expect(screen.getByText('Replication factor')).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId('onOk-button')).toBeDisabled();
+    test('success state falls back to the requested counts when the broker reports -1', async () => {
+      const user = userEvent.setup();
+      // Brokers on CreateTopics response versions < 5 return -1 even for explicit requests
+      mockMutateAsync.mockResolvedValue({
+        topicName: 'my-new-topic',
+        partitionCount: -1,
+        replicationFactor: -1,
+      });
 
-    // Restore api defaults so other tests are not affected
-    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
-    (api as any).isRedpanda = false;
-    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
-    (api as any).clusterOverview = null;
-  });
+      renderDialog();
 
-  test('Successful submission shows success state with topic name and stats', async () => {
-    const user = userEvent.setup();
-    mockMutateAsync.mockResolvedValue({
-      topicName: 'my-new-topic',
-      partitionCount: 3,
-      replicationFactor: 1,
+      await fillCreateForm(user, { topicName: 'my-new-topic', partitions: '5', replicationFactor: '3' });
+      await submitWhenEnabled(user);
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Topic created').length).toBeGreaterThanOrEqual(1);
+      });
+
+      // The values the user asked for, not the broker's -1 placeholders
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.queryByText('—')).not.toBeInTheDocument();
     });
 
-    renderDialog();
+    test('the API error shows inline Alert and form stays open', async () => {
+      const user = userEvent.setup();
+      const apiError = new Error('topic already exists');
+      apiError.name = 'ConnectError';
+      mockMutateAsync.mockRejectedValue(apiError);
 
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'my-new-topic');
+      renderDialog();
 
-    await waitFor(() => {
-      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
-    });
+      await typeTopicName(user, 'duplicate-topic');
+      await submitWhenEnabled(user);
 
-    await user.click(screen.getByTestId('onOk-button'));
+      await waitFor(() => {
+        // Alert title shows the error name
+        expect(screen.getByText('ConnectError')).toBeInTheDocument();
+        // Alert description shows the error message
+        expect(screen.getByText('topic already exists')).toBeInTheDocument();
+      });
 
-    await waitFor(() => {
-      // "Topic created" appears in both the dialog title and the success body paragraph
-      const topicCreatedElements = screen.getAllByText('Topic created');
-      expect(topicCreatedElements.length).toBeGreaterThanOrEqual(1);
-    });
-
-    // Shows the topic name in the success view
-    expect(screen.getByText('my-new-topic')).toBeInTheDocument();
-
-    // Shows partition count and label
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('Partitions')).toBeInTheDocument();
-
-    // Shows replication factor label
-    expect(screen.getByText('Replication factor')).toBeInTheDocument();
-  });
-
-  test('Success state falls back to the requested counts when the broker reports -1', async () => {
-    const user = userEvent.setup();
-    // Brokers on CreateTopics response versions < 5 return -1 even for explicit requests
-    mockMutateAsync.mockResolvedValue({
-      topicName: 'my-new-topic',
-      partitionCount: -1,
-      replicationFactor: -1,
-    });
-
-    renderDialog();
-
-    await user.type(screen.getByTestId('topic-name'), 'my-new-topic');
-    const partitionsInput = screen.getByTestId('topic-partitions');
-    await user.clear(partitionsInput);
-    await user.type(partitionsInput, '5');
-    const replicationFactorInput = screen.getByTestId('topic-replication-factor');
-    await user.clear(replicationFactorInput);
-    await user.type(replicationFactorInput, '3');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByTestId('onOk-button'));
-
-    await waitFor(() => {
-      expect(screen.getAllByText('Topic created').length).toBeGreaterThanOrEqual(1);
-    });
-
-    // The values the user asked for, not the broker's -1 placeholders
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.queryByText('—')).not.toBeInTheDocument();
-  });
-
-  test('API error shows inline Alert and form stays open', async () => {
-    const user = userEvent.setup();
-    const apiError = new Error('topic already exists');
-    apiError.name = 'ConnectError';
-    mockMutateAsync.mockRejectedValue(apiError);
-
-    renderDialog();
-
-    const topicNameInput = screen.getByTestId('topic-name');
-    await user.type(topicNameInput, 'duplicate-topic');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('onOk-button')).not.toBeDisabled();
-    });
-
-    await user.click(screen.getByTestId('onOk-button'));
-
-    await waitFor(() => {
-      // Alert title shows the error name
-      expect(screen.getByText('ConnectError')).toBeInTheDocument();
-      // Alert description shows the error message
-      expect(screen.getByText('topic already exists')).toBeInTheDocument();
-    });
-
-    // Form is still visible — not replaced by the success state
-    expect(screen.getByTestId('topic-name')).toBeInTheDocument();
-    expect(screen.getByTestId('onOk-button')).toBeInTheDocument();
-  });
-
-  test('Shows "Min in-sync replicas" field for Kafka clusters (UX-1460)', async () => {
-    renderDialog();
-
-    expect(screen.getByTestId('topic-min-insync-replicas')).toBeInTheDocument();
-  });
-
-  test('Hides "Min in-sync replicas" field for Redpanda clusters (UX-1460)', async () => {
-    const { api } = await import('../../../state/backend-api');
-    // biome-ignore lint/suspicious/noExplicitAny: test override
-    (api as any).isRedpanda = true;
-    // biome-ignore lint/suspicious/noExplicitAny: test override
-    (api as any).clusterOverview = { kafka: { distribution: 'REDPANDA' } };
-
-    renderDialog();
-
-    expect(screen.queryByTestId('topic-min-insync-replicas')).not.toBeInTheDocument();
-
-    // Restore api defaults so other tests are not affected
-    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
-    (api as any).isRedpanda = false;
-    // biome-ignore lint/suspicious/noExplicitAny: test cleanup
-    (api as any).clusterOverview = null;
-  });
-
-  test('Refreshes cluster overview whenever the dialog opens, so isRedpanda is never stale (UX-1460)', async () => {
-    const { api } = await import('../../../state/backend-api');
-    const onClose = rs.fn();
-
-    // Dialog mounts closed: the unconditional mount effect still fires once.
-    const { rerender } = renderDialog(false, onClose);
-
-    await waitFor(() => {
-      expect(api.refreshClusterOverview).toHaveBeenCalled();
-    });
-
-    (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
-
-    // Reopening the dialog (e.g. after closing it without a page refresh) must
-    // re-fetch the cluster overview rather than relying on a stale cached value.
-    rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
-
-    await waitFor(() => {
-      expect(api.refreshClusterOverview).toHaveBeenCalled();
+      // Form is still visible — not replaced by the success state
+      expect(screen.getByTestId('topic-name')).toBeInTheDocument();
+      expect(screen.getByTestId('onOk-button')).toBeInTheDocument();
     });
   });
 
-  test('Additional config rows can be added and removed', async () => {
-    const user = userEvent.setup();
-    renderDialog();
+  describe('cluster-specific fields', () => {
+    test('shows "Min in-sync replicas" field for Kafka clusters (UX-1460)', () => {
+      renderDialog();
 
-    // Initially one empty row is rendered (from defaultValues)
-    const initialRows = screen.getAllByPlaceholderText('Property Name...');
-    expect(initialRows).toHaveLength(1);
-
-    // Add a second row
-    const addEntryButton = screen.getByRole('button', { name: /add entry/i });
-    await user.click(addEntryButton);
-
-    await waitFor(() => {
-      expect(screen.getAllByPlaceholderText('Property Name...')).toHaveLength(2);
+      expect(screen.getByTestId('topic-min-insync-replicas')).toBeInTheDocument();
     });
 
-    // Add a third row
-    await user.click(addEntryButton);
+    test('hides "Min in-sync replicas" field for Redpanda clusters (UX-1460)', async () => {
+      const restoreApi = await simulateRedpandaCluster({ kafka: { distribution: 'REDPANDA' } });
 
-    await waitFor(() => {
-      expect(screen.getAllByPlaceholderText('Property Name...')).toHaveLength(3);
+      renderDialog();
+
+      expect(screen.queryByTestId('topic-min-insync-replicas')).not.toBeInTheDocument();
+
+      // Restore api defaults so other tests are not affected
+      restoreApi();
     });
 
-    // Remove buttons are ghost buttons that contain only an svg XIcon (no text label)
-    const removeButtons = screen
-      .getAllByRole('button')
-      .filter((btn) => btn.querySelector('svg') !== null && !btn.textContent?.trim());
+    test('refreshes cluster overview whenever the dialog opens, so isRedpanda is never stale (UX-1460)', async () => {
+      const { api } = await import('../../../state/backend-api');
+      const onClose = rs.fn();
 
-    expect(removeButtons.length).toBeGreaterThanOrEqual(1);
-    await user.click(removeButtons[0]);
+      // Dialog mounts closed: the unconditional mount effect still fires once.
+      const { rerender } = renderDialog(false, onClose);
 
-    await waitFor(() => {
-      expect(screen.getAllByPlaceholderText('Property Name...')).toHaveLength(2);
+      await waitFor(() => {
+        expect(api.refreshClusterOverview).toHaveBeenCalled();
+      });
+
+      (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
+
+      // Reopening the dialog (e.g. after closing it without a page refresh) must
+      // re-fetch the cluster overview rather than relying on a stale cached value.
+      rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
+
+      await waitFor(() => {
+        expect(api.refreshClusterOverview).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('additional configuration', () => {
+    test('additional config rows can be added and removed', async () => {
+      const user = userEvent.setup();
+      renderDialog();
+
+      // Initially one empty row is rendered (from defaultValues)
+      const initialRows = screen.getAllByPlaceholderText('Property Name...');
+      expect(initialRows).toHaveLength(1);
+
+      // Add a second row, then a third
+      const addEntryButton = screen.getByRole('button', { name: /add entry/i });
+      await clickAndExpectPropertyRows(user, addEntryButton, 2);
+      await clickAndExpectPropertyRows(user, addEntryButton, 3);
+
+      // Remove buttons are ghost buttons that contain only an svg XIcon (no text label)
+      const removeButtons = screen
+        .getAllByRole('button')
+        .filter((btn) => btn.querySelector('svg') !== null && !btn.textContent?.trim());
+
+      expect(removeButtons.length).toBeGreaterThanOrEqual(1);
+      await clickAndExpectPropertyRows(user, removeButtons[0], 2);
     });
   });
 });

@@ -166,11 +166,12 @@ function multiMemberSpecs(value: unknown): GroupChildSpec[] | undefined {
     return;
   }
   const items = (value as { inputs?: unknown[] }).inputs;
-  if (!Array.isArray(items)) {
-    return;
-  }
-  // Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
-  // matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
+  return Array.isArray(items) ? memberSpecsWithIndices(items) : undefined;
+}
+
+// Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
+// matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
+function memberSpecsWithIndices(items: unknown[]): GroupChildSpec[] {
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
     const key = firstKey(item);
@@ -293,23 +294,27 @@ function outputContainerMembers(
     }));
   }
   if (key === 'switch') {
-    const cases = (value as { cases?: unknown[] } | undefined)?.cases;
-    if (!Array.isArray(cases)) {
-      return [];
-    }
-    const members: OutputMemberSpec[] = enumerateSwitchCases(cases).map(({ index, ordinal, record }) => ({
-      obj: record.output,
-      path: [...path, key, 'cases', index, 'output'],
-      ...caseRouting(record.check),
-      caseEditTarget: { kind: 'switchCase', path: [...path, key, 'cases', index] },
-      caseNumber: ordinal,
-    }));
-    return members;
+    return switchOutputMembers(value, [...path, key]);
   }
   if (key === 'broker') {
     const outputs = (value as { outputs?: unknown[] } | undefined)?.outputs;
     return (Array.isArray(outputs) ? outputs : []).map((obj, i) => ({ obj, path: [...path, key, 'outputs', i] }));
   }
+}
+
+// An output switch's cases, each routing to its `output` (switchPath is the `switch` object's path).
+function switchOutputMembers(value: unknown, switchPath: (string | number)[]): OutputMemberSpec[] {
+  const cases = (value as { cases?: unknown[] } | undefined)?.cases;
+  if (!Array.isArray(cases)) {
+    return [];
+  }
+  return enumerateSwitchCases(cases).map(({ index, ordinal, record }) => ({
+    obj: record.output,
+    path: [...switchPath, 'cases', index, 'output'],
+    ...caseRouting(record.check),
+    caseEditTarget: { kind: 'switchCase', path: [...switchPath, 'cases', index] },
+    caseNumber: ordinal,
+  }));
 }
 
 // The in-place "grow" affordance for an output container: switch appends a `{ check, output }`
@@ -380,39 +385,55 @@ function parseInputNodes(
 
   const childNames = parseMultiInputs(inputKey, inputObj[inputKey]);
   if (childNames && childNames.length > 0) {
-    const groupNodes = buildGroupWithChildren(
-      { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
-      multiMemberSpecs(inputObj[inputKey]) ?? childNames.map((name) => ({ name }))
-    );
-    groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' }, labelText: extractLabel(inputObj) };
-    return groupNodes;
+    return multiInputNodes(inputObj, inputKey, childNames, sectionId);
   }
 
-  const emptyContainer = emptyInputContainerGroup(inputKey, sectionId, extractLabel(inputObj));
-  if (emptyContainer) {
-    return emptyContainer;
-  }
+  return (
+    emptyInputContainerGroup(inputKey, sectionId, extractLabel(inputObj)) ?? [
+      inputLeafNode(inputObj, inputKey, sectionId, config),
+    ]
+  );
+}
 
+// A broker/sequence input: the group (edited as the whole input) followed by its member leaves.
+function multiInputNodes(
+  inputObj: Record<string, unknown>,
+  inputKey: string,
+  childNames: string[],
+  sectionId: string
+): PipelineFlowNode[] {
+  const groupNodes = buildGroupWithChildren(
+    { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId },
+    multiMemberSpecs(inputObj[inputKey]) ?? childNames.map((name) => ({ name }))
+  );
+  groupNodes[0] = { ...groupNodes[0], editTarget: { kind: 'input' }, labelText: extractLabel(inputObj) };
+  return groupNodes;
+}
+
+function inputLeafNode(
+  inputObj: Record<string, unknown>,
+  inputKey: string,
+  sectionId: string,
+  config: ParsedYamlConfig
+): PipelineFlowNode {
   const labelText = extractLabel(inputObj);
   const topics = extractTopics(inputObj[inputKey]);
   const isRedpanda = REDPANDA_COMPONENTS.has(inputKey);
-  return [
-    {
-      id: 'input-0',
-      kind: 'leaf',
-      label: inputKey,
-      labelText,
-      topics,
-      section: 'input',
-      parentId: sectionId,
-      missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(inputKey, inputObj[inputKey], config) ? true : undefined,
-      editTarget: { kind: 'input' },
-      meta: summarizeComponent(inputKey, inputObj[inputKey]),
-      resourceRef: indirectionResourceRef(inputKey, inputObj[inputKey]),
-      resourceRefCandidates: extractRefCandidates(inputObj[inputKey]),
-    },
-  ];
+  return {
+    id: 'input-0',
+    kind: 'leaf',
+    label: inputKey,
+    labelText,
+    topics,
+    section: 'input',
+    parentId: sectionId,
+    missingTopic: isRedpanda && !topics ? true : undefined,
+    missingSasl: isRedpanda && !hasSaslConfig(inputKey, inputObj[inputKey], config) ? true : undefined,
+    editTarget: { kind: 'input' },
+    meta: summarizeComponent(inputKey, inputObj[inputKey]),
+    resourceRef: indirectionResourceRef(inputKey, inputObj[inputKey]),
+    resourceRefCandidates: extractRefCandidates(inputObj[inputKey]),
+  };
 }
 
 const BRANCHING_FIELDS = new Set([
@@ -607,6 +628,13 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[
   }
 }
 
+// The nodes for a processor array's entries, parented and pathed by `ctx`.
+function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext): PipelineFlowNode[] {
+  const nodes: PipelineFlowNode[] = [];
+  pushProcessorChildren(nodes, procs, ctx);
+  return nodes;
+}
+
 const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
 function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
@@ -616,24 +644,18 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
   }
   if (PROCESSORS_FIELD_KEYS.has(key) && fieldValue && typeof fieldValue === 'object') {
     const innerProcs = extractProcessorEntries((fieldValue as Record<string, unknown>).processors);
-    if (innerProcs) {
-      const nodes: PipelineFlowNode[] = [];
-      pushProcessorChildren(nodes, innerProcs, {
-        ...ctx,
-        idPrefix: `${ctx.idPrefix}-${key}`,
-        path: [...ctx.path, key, 'processors'],
-      });
-      return nodes;
-    }
-    return [];
+    return innerProcs
+      ? processorChildNodes(innerProcs, {
+          ...ctx,
+          idPrefix: `${ctx.idPrefix}-${key}`,
+          path: [...ctx.path, key, 'processors'],
+        })
+      : [];
   }
   const procArray = extractProcessorEntries(fieldValue);
-  if (procArray) {
-    const nodes: PipelineFlowNode[] = [];
-    pushProcessorChildren(nodes, procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}`, path: [...ctx.path, key] });
-    return nodes;
-  }
-  return [];
+  return procArray
+    ? processorChildNodes(procArray, { ...ctx, idPrefix: `${ctx.idPrefix}-${key}`, path: [...ctx.path, key] })
+    : [];
 }
 
 function parseBranchingKeys(
@@ -658,28 +680,36 @@ function parseDirectArrayBranching(
   // The component's value array lives at [...ctx.path, componentName].
   const valuePath = [...ctx.path, componentName];
   if (CASE_CONTAINER_LABELS.has(componentName)) {
-    const caseNodes = parseSwitchCases(componentValue, { ...ctx, path: valuePath });
-    const group = makeGroup(componentName, ctx);
-    // Can grow a new case appended to its value array, even with no cases yet.
-    group.addChildSlot = { containerPath: valuePath, section: 'processor' };
-    return [group, ...caseNodes];
+    return caseContainerNodes(componentName, componentValue, ctx, valuePath);
   }
 
   const procArray = extractProcessorEntries(componentValue);
+  const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: valuePath };
   // try/catch/for_each: keep the group (with insert slot) even when empty so a first processor can be added.
   if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
-    const group = makeGroup(componentName, ctx);
-    group.insertSlot = { containerPath: valuePath, accepts: 'processor' };
-    const nodes: PipelineFlowNode[] = [group];
-    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix, path: valuePath });
-    return nodes;
+    return [
+      { ...makeGroup(componentName, ctx), insertSlot: { containerPath: valuePath, accepts: 'processor' } },
+      ...processorChildNodes(procArray, childCtx),
+    ];
   }
   if (procArray && procArray.length > 0) {
-    const nodes: PipelineFlowNode[] = [makeGroup(componentName, ctx)];
-    pushProcessorChildren(nodes, procArray, { ...ctx, parentId: ctx.idPrefix, path: valuePath });
-    return nodes;
+    return [makeGroup(componentName, ctx), ...processorChildNodes(procArray, childCtx)];
   }
   return [makeLeaf(componentName, ctx)];
+}
+
+// A switch/group_by processor: its group, then each case wrapper with its body.
+function caseContainerNodes(
+  componentName: string,
+  cases: unknown[],
+  ctx: BranchContext,
+  valuePath: (string | number)[]
+): PipelineFlowNode[] {
+  const caseNodes = parseSwitchCases(cases, { ...ctx, path: valuePath });
+  const group = makeGroup(componentName, ctx);
+  // Can grow a new case appended to its value array, even with no cases yet.
+  group.addChildSlot = { containerPath: valuePath, section: 'processor' };
+  return [group, ...caseNodes];
 }
 
 function parseComponentWithBranching(
@@ -698,16 +728,25 @@ function parseComponentWithBranching(
   const config = componentValue as Record<string, unknown>;
   const childNodes = parseBranchingKeys(config, ctx, componentName);
   if (childNodes.length === 0) {
-    // An empty branch/while/parallel still accepts children — render a fillable group, not a dead-end leaf.
-    if (NESTED_PROC_CONTAINERS.has(componentName)) {
-      const group = withBranchMeta(makeGroup(componentName, ctx), componentName, config);
-      group.insertSlot = { containerPath: [...ctx.path, componentName, 'processors'], accepts: 'processor' };
-      return [group];
-    }
-    return [makeLeaf(componentName, ctx, componentValue)];
+    return childlessComponentNodes(componentName, config, ctx);
   }
 
   return [withBranchMeta(makeGroup(componentName, ctx), componentName, config), ...childNodes];
+}
+
+// A component with no branching children. An empty branch/while/parallel still accepts children —
+// render a fillable group, not a dead-end leaf; anything else is a plain leaf.
+function childlessComponentNodes(
+  componentName: string,
+  config: Record<string, unknown>,
+  ctx: BranchContext
+): PipelineFlowNode[] {
+  if (!NESTED_PROC_CONTAINERS.has(componentName)) {
+    return [makeLeaf(componentName, ctx, config)];
+  }
+  const group = withBranchMeta(makeGroup(componentName, ctx), componentName, config);
+  group.insertSlot = { containerPath: [...ctx.path, componentName, 'processors'], accepts: 'processor' };
+  return [group];
 }
 
 // A `branch` copies part of the message out (request_map), runs the sub-pipeline, then
@@ -832,21 +871,25 @@ function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): Pipeli
     if (Array.isArray(value)) {
       nodes.push(...parseArrayResource(value, key, sectionId));
     } else {
-      const componentType = SINGLETON_RESOURCE_COMPONENT_TYPE[key];
-      const valueObj = value as Record<string, unknown>;
-      const implName = componentType ? firstKey(valueObj) : undefined;
-      nodes.push({
-        id: `resource-${key}`,
-        kind: 'leaf',
-        label: key,
-        section: 'resource',
-        parentId: sectionId,
-        editTarget: componentType ? { kind: 'path', path: [key], componentType } : undefined,
-        meta: implName ? summarizeComponent(implName, valueObj[implName]) : undefined,
-      });
+      nodes.push(singletonResourceNode(key, value, sectionId));
     }
   }
   return nodes;
+}
+
+function singletonResourceNode(key: string, value: unknown, sectionId: string): PipelineFlowNode {
+  const componentType = SINGLETON_RESOURCE_COMPONENT_TYPE[key];
+  const valueObj = value as Record<string, unknown>;
+  const implName = componentType ? firstKey(valueObj) : undefined;
+  return {
+    id: `resource-${key}`,
+    kind: 'leaf',
+    label: key,
+    section: 'resource',
+    parentId: sectionId,
+    editTarget: componentType ? { kind: 'path', path: [key], componentType } : undefined,
+    meta: implName ? summarizeComponent(implName, valueObj[implName]) : undefined,
+  };
 }
 
 type OutputNodeArgs = {
@@ -867,85 +910,93 @@ type OutputNodeArgs = {
 // Node subtree for an output component: broker/switch/fallback become a fan-out GROUP whose members
 // recurse (nested containers keep editable members + grow affordances); anything else is a leaf.
 function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
-  const { obj, id, parentId, path, editTarget, routing, caseNumber, labelText, config } = args;
-  const key = firstKey(obj);
+  const key = firstKey(args.obj);
   if (!key) {
-    // A check-only switch case (no `output:` body yet) still renders as an empty, condition-editable
-    // case — mirroring processor switches, so a case never silently vanishes from the canvas.
-    if (routing?.caseEditTarget) {
-      return [
-        {
-          id,
-          kind: 'group',
-          label: caseNumber === undefined ? 'case' : `case ${caseNumber}`,
-          section: 'output',
-          parentId,
-          collapsible: true,
-          childFlow: 'sequential',
-          ...routing,
-          isCase: true,
-          editTarget: routing.caseEditTarget,
-        },
-      ];
-    }
+    return checkOnlyOutputCaseNodes(args);
+  }
+  const value = (args.obj as Record<string, unknown>)[key];
+  const members = outputContainerMembers(key, value, args.path);
+  return members ? outputContainerNodes(args, key, members) : [outputLeafNode(args, key, value)];
+}
+
+// A check-only switch case (no `output:` body yet) still renders as an empty, condition-editable
+// case — mirroring processor switches, so a case never silently vanishes from the canvas.
+function checkOnlyOutputCaseNodes({ id, parentId, routing, caseNumber }: OutputNodeArgs): PipelineFlowNode[] {
+  if (!routing?.caseEditTarget) {
     return [];
   }
-  const value = (obj as Record<string, unknown>)[key];
-  const members = outputContainerMembers(key, value, path);
-  if (members) {
-    const group: PipelineFlowNode = {
-      id,
-      kind: 'group',
-      label: key,
-      section: 'output',
-      parentId,
-      collapsible: true,
-      childFlow: 'parallel',
-      editTarget,
-      ...(labelText ? { labelText } : {}),
-      ...routing,
-      ...outputContainerSlot(key, path),
-    };
-    const children = members.flatMap((member, i) =>
-      buildOutputNodes({
-        obj: member.obj,
-        id: `${id}-${i}`,
-        parentId: id,
-        path: member.path,
-        editTarget: pathEditTarget('output', member.path),
-        routing: {
-          condition: member.condition,
-          isDefault: member.isDefault,
-          isErrorPath: member.isErrorPath,
-          caseEditTarget: member.caseEditTarget,
-        },
-        caseNumber: member.caseNumber,
-        config,
-      })
-    );
-    return [group, ...children];
-  }
-
-  const topics = extractTopics(value);
-  const isRedpanda = REDPANDA_COMPONENTS.has(key);
   return [
     {
       id,
-      kind: 'leaf',
-      label: key,
+      kind: 'group',
+      label: caseNumber === undefined ? 'case' : `case ${caseNumber}`,
       section: 'output',
       parentId,
-      ...(labelText ? { labelText } : {}),
-      ...(topics ? { topics } : {}),
-      missingTopic: isRedpanda && !topics ? true : undefined,
-      missingSasl: isRedpanda && !hasSaslConfig(key, value, config) ? true : undefined,
-      editTarget,
-      meta: summarizeComponent(key, value),
-      resourceRef: indirectionResourceRef(key, value),
-      resourceRefCandidates: extractRefCandidates(value),
+      collapsible: true,
+      childFlow: 'sequential',
       ...routing,
+      isCase: true,
+      editTarget: routing.caseEditTarget,
     },
   ];
+}
+
+// A broker/switch/fallback output: a fan-out group whose members recurse into their own subtrees.
+function outputContainerNodes(args: OutputNodeArgs, key: string, members: OutputMemberSpec[]): PipelineFlowNode[] {
+  const { id, parentId, path, editTarget, routing, labelText, config } = args;
+  const group: PipelineFlowNode = {
+    id,
+    kind: 'group',
+    label: key,
+    section: 'output',
+    parentId,
+    collapsible: true,
+    childFlow: 'parallel',
+    editTarget,
+    ...(labelText ? { labelText } : {}),
+    ...routing,
+    ...outputContainerSlot(key, path),
+  };
+  const children = members.flatMap((member, i) =>
+    buildOutputNodes({
+      obj: member.obj,
+      id: `${id}-${i}`,
+      parentId: id,
+      path: member.path,
+      editTarget: pathEditTarget('output', member.path),
+      routing: {
+        condition: member.condition,
+        isDefault: member.isDefault,
+        isErrorPath: member.isErrorPath,
+        caseEditTarget: member.caseEditTarget,
+      },
+      caseNumber: member.caseNumber,
+      config,
+    })
+  );
+  return [group, ...children];
+}
+
+function outputLeafNode(args: OutputNodeArgs, key: string, value: unknown): PipelineFlowNode {
+  const { id, parentId, editTarget, routing, labelText, config } = args;
+  const topics = extractTopics(value);
+  const isRedpanda = REDPANDA_COMPONENTS.has(key);
+  return {
+    id,
+    kind: 'leaf',
+    label: key,
+    section: 'output',
+    parentId,
+    ...(labelText ? { labelText } : {}),
+    ...(topics ? { topics } : {}),
+    missingTopic: isRedpanda && !topics ? true : undefined,
+    missingSasl: isRedpanda && !hasSaslConfig(key, value, config) ? true : undefined,
+    editTarget,
+    meta: summarizeComponent(key, value),
+    resourceRef: indirectionResourceRef(key, value),
+    resourceRefCandidates: extractRefCandidates(value),
+    ...routing,
+  };
 }
 
 function parseOutputNodes(
@@ -1163,25 +1214,22 @@ export function buildResourceRefResolver(resources: PipelineFlowNode[]): Resourc
   };
 }
 
-// Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
-function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
-  const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
-  // Promote candidates that resolve to a real resource label — catches refs in non-`resource`
-  // fields. `resourceRefKind` is set BEFORE probing so `resolve` matches kind-aware, and it stays
-  // set on success so later resolutions (usage counting, layout edges) agree on the target.
-  for (const node of nodes) {
-    if (node.resourceRef || !node.resourceRefCandidates) {
-      continue;
+// Promote the first candidate that resolves to a real resource label — catches refs in non-`resource`
+// fields. `resourceRefKind` is set BEFORE probing so `resolve` matches kind-aware, and it stays
+// set on success so later resolutions (usage counting, layout edges) agree on the target.
+function promoteRefCandidate(node: PipelineFlowNode, resolve: ResourceRefResolver): void {
+  for (const candidate of node.resourceRefCandidates ?? []) {
+    node.resourceRefKind = candidate.kind;
+    if (resolve(node, candidate.label)) {
+      node.resourceRef = candidate.label;
+      return;
     }
-    for (const candidate of node.resourceRefCandidates) {
-      node.resourceRefKind = candidate.kind;
-      if (resolve(node, candidate.label)) {
-        node.resourceRef = candidate.label;
-        break;
-      }
-      node.resourceRefKind = undefined;
-    }
+    node.resourceRefKind = undefined;
   }
+}
+
+// Flags each non-resource node whose ref dangles; returns how many references each resource has.
+function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolver): Map<string, number> {
   const usedBy = new Map<string, number>();
   for (const node of nodes) {
     if (!node.resourceRef || node.section === 'resource') {
@@ -1194,6 +1242,18 @@ function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
       node.danglingRef = true;
     }
   }
+  return usedBy;
+}
+
+// Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
+function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
+  const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
+  for (const node of nodes) {
+    if (!node.resourceRef) {
+      promoteRefCandidate(node, resolve);
+    }
+  }
+  const usedBy = linkResourceRefs(nodes, resolve);
   for (const node of nodes) {
     if (node.section === 'resource' && node.labelText) {
       node.usedByCount = usedBy.get(node.id) ?? 0;

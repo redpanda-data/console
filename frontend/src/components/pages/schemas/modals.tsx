@@ -11,8 +11,9 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
-import type { ReactNode } from 'react';
 import { useState } from 'react';
+
+import { TonedIcon } from '../shared/toned-icon';
 
 export function DeleteDialog(p: {
   open: boolean;
@@ -143,6 +144,58 @@ export function SwitchSchemaFormatDialog(p: {
   );
 }
 
+type CompatibilityError = { errorType: string; description: string };
+
+// Compatibility verdict; only shown once the schema itself parsed.
+function CompatibilityVerdict({ isValid, isCompatible }: { isValid: boolean; isCompatible?: boolean }) {
+  if (isCompatible === undefined || isValid === false) {
+    return null;
+  }
+  if (isCompatible) {
+    return (
+      <Alert variant="success">
+        <AlertTitle>No compatibility issues</AlertTitle>
+      </Alert>
+    );
+  }
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>Compatibility issues found</AlertTitle>
+    </Alert>
+  );
+}
+
+function CompatibilityErrorDetails({ compatibilityError }: { compatibilityError?: CompatibilityError }) {
+  if (!(compatibilityError && (compatibilityError.errorType || compatibilityError.description))) {
+    return null;
+  }
+  return (
+    <div>
+      <p className="mb-2 font-semibold">Compatibility Error Details:</p>
+      <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6">
+        {Boolean(compatibilityError.errorType) && (
+          <p className="mb-2 font-bold text-destructive">Error: {compatibilityError.errorType.replace(/_/g, ' ')}</p>
+        )}
+        {Boolean(compatibilityError.description) && <p className="leading-relaxed">{compatibilityError.description}</p>}
+      </div>
+    </div>
+  );
+}
+
+function ParsingErrorDetails({ errorDetails }: { errorDetails?: string }) {
+  if (!errorDetails) {
+    return null;
+  }
+  return (
+    <div>
+      <p className="mb-2 font-semibold">Parsing Error:</p>
+      <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6 font-mono tracking-tight">
+        {errorDetails?.trim()}
+      </div>
+    </div>
+  );
+}
+
 export function ValidationErrorsDialog(p: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -150,7 +203,7 @@ export function ValidationErrorsDialog(p: {
     isValid: boolean;
     errorDetails?: string | undefined;
     isCompatible?: boolean | undefined;
-    compatibilityError?: { errorType: string; description: string } | undefined;
+    compatibilityError?: CompatibilityError | undefined;
   } | null;
   onClose?: () => void;
 }) {
@@ -159,47 +212,6 @@ export function ValidationErrorsDialog(p: {
   }
 
   const { isValid, errorDetails, isCompatible, compatibilityError } = p.result;
-
-  let compatBox: ReactNode = null;
-  if (isCompatible !== undefined && isValid !== false) {
-    if (isCompatible) {
-      compatBox = (
-        <Alert variant="success">
-          <AlertTitle>No compatibility issues</AlertTitle>
-        </Alert>
-      );
-    } else {
-      compatBox = (
-        <Alert variant="destructive">
-          <AlertTitle>Compatibility issues found</AlertTitle>
-        </Alert>
-      );
-    }
-  }
-
-  const compatErrorBox =
-    compatibilityError && (compatibilityError.errorType || compatibilityError.description) ? (
-      <div>
-        <p className="mb-2 font-semibold">Compatibility Error Details:</p>
-        <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6">
-          {Boolean(compatibilityError.errorType) && (
-            <p className="mb-2 font-bold text-destructive">Error: {compatibilityError.errorType.replace(/_/g, ' ')}</p>
-          )}
-          {Boolean(compatibilityError.description) && (
-            <p className="leading-relaxed">{compatibilityError.description}</p>
-          )}
-        </div>
-      </div>
-    ) : null;
-
-  const errDetailsBox = errorDetails ? (
-    <div>
-      <p className="mb-2 font-semibold">Parsing Error:</p>
-      <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6 font-mono tracking-tight">
-        {errorDetails?.trim()}
-      </div>
-    </div>
-  ) : null;
 
   return (
     <Dialog
@@ -213,17 +225,17 @@ export function ValidationErrorsDialog(p: {
     >
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center text-destructive">
-            <WarningIcon className="mr-3 shrink-0" size={18} />
-            Schema validation error
+          <DialogTitle className="flex items-center">
+            <TonedIcon className="mr-3 shrink-0" icon={WarningIcon} size={18} tone="destructive" />
+            <span className="text-destructive">Schema validation error</span>
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
           <p className="mb-3">Schema validation failed due to the following error.</p>
           <div className="flex flex-col gap-4">
-            {compatBox}
-            {compatErrorBox}
-            {errDetailsBox}
+            <CompatibilityVerdict isCompatible={isCompatible} isValid={isValid} />
+            <CompatibilityErrorDetails compatibilityError={compatibilityError} />
+            <ParsingErrorDetails errorDetails={errorDetails} />
           </div>
         </DialogBody>
         <DialogFooter>

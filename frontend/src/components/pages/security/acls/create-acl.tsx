@@ -1,5 +1,7 @@
 /** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
+import clsx from 'clsx';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Card,
@@ -10,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from 'components/redpanda-ui/components/card';
+import { FieldTitle } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -19,17 +22,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { useApiStoreHook } from 'state/backend-api';
+import { type ReactNode, useId, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 
 import {
+  getPermissionDescription,
+  getSchemaRegistryTooltipText,
+  getSubjectTooltipText,
+  hasConfiguredOperation,
+} from './acl-rule-editing';
+import { useAclRulesEditor } from '../hooks/use-acl-rules-editor';
+import { useAclSharedConfig } from '../hooks/use-acl-shared-config';
+import { useGbacEnabled } from '../hooks/use-gbac-enabled';
+import {
   type AclRulesProps,
   getIdFromRule,
-  getInitialRuleIdCounter,
-  getOperationsForResourceType,
   getRuleDataTestId,
   type HostType,
   HostTypeAllowAllHosts,
@@ -37,8 +47,6 @@ import {
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
-  type ModeType,
-  type OperationType,
   OperationTypeAllow,
   OperationTypeDeny,
   OperationTypeNotSet,
@@ -110,6 +118,19 @@ const getPluralResourceName = (resourceType: ResourceType): string => {
   return pluralNames[resourceType] || resourceType;
 };
 
+const getRuleSelectorSummary = (rule: Rule): string => {
+  if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
+    return getResourceName(rule.resourceType);
+  }
+  if (rule.selectorType === ResourcePatternTypeAny) {
+    return `All ${getPluralResourceName(rule.resourceType)}`;
+  }
+  const matchType = rule.selectorType === ResourcePatternTypeLiteral ? 'matching' : 'starting with';
+  return `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
+};
+
+const getRuleSummaryTitle = (rule: Rule): string => formatSummaryLabel(getRuleSelectorSummary(rule));
+
 function stringToHostType(h: string): HostType {
   switch (h) {
     case '*':
@@ -120,6 +141,42 @@ function stringToHostType(h: string): HostType {
   }
 }
 
+const PermissionIcon = ({ value }: { value: string }) => {
+  switch (value) {
+    case OperationTypeAllow:
+      return <TonedIcon className="h-4 w-4" icon={Check} tone="success" />;
+    case OperationTypeDeny:
+      return <TonedIcon className="h-4 w-4" icon={X} tone="destructive" />;
+    default:
+      return <TonedIcon className="h-4 w-4" icon={Circle} tone="disabled" />;
+  }
+};
+
+// Descriptions hold one API list per line.
+const PermissionDescription = ({ operation, resourceType }: { operation: string; resourceType: string }) => {
+  const description = getPermissionDescription(operation, resourceType);
+  if (!description) {
+    return 'Permission description not available';
+  }
+  return description.split('\n').map((line) => (
+    <span key={line}>
+      {line}
+      <br />
+    </span>
+  ));
+};
+
+const FieldHelp = ({ children, contentClassName }: { children: ReactNode; contentClassName?: string }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex cursor-help text-disabled" />}>
+        <HelpCircle className="h-4 w-4" />
+      </TooltipTrigger>
+      <TooltipContent className={contentClassName}>{children}</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 const ResourceTypeSelection = ({
   rule,
   handleResourceTypeChange,
@@ -127,9 +184,8 @@ const ResourceTypeSelection = ({
   isSchemaRegistryDisabledForRule,
   isSchemaRegistryEnabled,
   ruleIndex,
-  getSchemaRegistryTooltipText,
-  getSubjectTooltipText,
-}: ResourceTypeSelectionProps) => {
+  labelId,
+}: ResourceTypeSelectionProps & { labelId: string }) => {
   const buttons = [
     {
       name: 'Cluster',
@@ -153,54 +209,57 @@ const ResourceTypeSelection = ({
       name: 'Subject',
       resourceType: ResourceTypeSubject,
       disabled: !isSchemaRegistryEnabled,
-      tooltipText: getSubjectTooltipText(),
+      tooltipText: getSubjectTooltipText(isSchemaRegistryEnabled),
     },
     {
       name: 'Schema Registry',
       resourceType: ResourceTypeSchemaRegistry,
       disabled: !isSchemaRegistryEnabled || isSchemaRegistryDisabledForRule(rule.id),
-      tooltipText: getSchemaRegistryTooltipText(),
+      tooltipText: getSchemaRegistryTooltipText(isSchemaRegistryEnabled),
     },
   ];
 
   return (
     <span className="h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle md:inline-flex">
-      {/*TODO: Add tooltip with <p>Only one cluster rule is allowed. A cluster rule already exists.</p>*/}
-      {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
-        <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  className={
-                    rule.resourceType === resourceType
-                      ? 'bg-selected text-selected-foreground shadow-sm hover:bg-selected-hover'
-                      : 'text-subtle hover:bg-accent hover:text-strong'
-                  }
-                  data-testid={`rt-${resourceType}-button-${ruleIndex}`}
-                  disabled={disabled}
-                  key={`rt-${resourceType}-button-${ruleIndex}`}
-                  onClick={() => handleResourceTypeChange(rule.id, resourceType)}
-                  size="sm"
-                  variant={rule.resourceType === resourceType ? 'primary' : 'ghost'}
-                >
-                  {name}
-                </Button>
-              }
-            />
-            <TooltipContent hidden={!disabled}>
-              <p className="max-w-xs">{tooltipText}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ))}
+      <ToggleGroup
+        aria-labelledby={labelId}
+        onValueChange={(values: string[]) => {
+          const [resourceType] = values;
+          if (resourceType) {
+            handleResourceTypeChange(rule.id, resourceType as ResourceType);
+          }
+        }}
+        size="sm"
+        value={[rule.resourceType]}
+      >
+        {buttons.map(({ name, resourceType, disabled, tooltipText }) => (
+          <TooltipProvider key={`rt-${resourceType}-tooltip-${ruleIndex}`}>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <ToggleGroupItem
+                    data-testid={`rt-${resourceType}-button-${ruleIndex}`}
+                    disabled={disabled}
+                    value={resourceType}
+                  >
+                    {name}
+                  </ToggleGroupItem>
+                }
+              />
+              <TooltipContent hidden={!disabled}>
+                <p className="max-w-xs">{tooltipText}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ))}
+      </ToggleGroup>
     </span>
   );
 };
 
 const Summary = ({ sharedConfig, rules }: SummaryProps) => {
   return (
-    <Card className="bg-surface-subtle" size="full">
+    <Card size="full">
       <CardHeader>
         <h3>Summary</h3>
       </CardHeader>
@@ -223,7 +282,6 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
 
         {/* Rules Summary */}
         <div className="space-y-3">
-          {/** biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic */}
           {rules.map((rule) => {
             const ops = Object.entries(rule.operations);
             // Filter out operations that are not set
@@ -257,18 +315,7 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                   className="text-body-sm text-subtle first-letter:uppercase"
                   data-testid={`${getRuleDataTestId(rule)}-title`}
                 >
-                  {(() => {
-                    let text: string;
-                    if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
-                      text = getResourceName(rule.resourceType);
-                    } else if (rule.selectorType === ResourcePatternTypeAny) {
-                      text = `All ${getPluralResourceName(rule.resourceType)}`;
-                    } else {
-                      const matchType = rule.selectorType === ResourcePatternTypeLiteral ? 'matching' : 'starting with';
-                      text = `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
-                    }
-                    return formatSummaryLabel(text);
-                  })()}
+                  {getRuleSummaryTitle(rule)}
                 </p>
 
                 {/* Operations */}
@@ -277,20 +324,22 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                     <div className="flex flex-wrap gap-1">
                       {showSummary ? (
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${
+                          className={clsx(
+                            'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
                             allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
-                          }`}
+                          )}
                         >
                           {allAllow ? 'Allow all' : 'Deny all'}
                         </span>
                       ) : (
                         enabledOperations.map((op) => (
                           <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 font-medium text-body-sm ${
+                            className={clsx(
+                              'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
                               op.value === OperationTypeAllow
                                 ? 'bg-success-wash text-success'
                                 : 'bg-destructive-wash text-destructive'
-                            }`}
+                            )}
                             data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
                             key={op.name}
                           >
@@ -322,23 +371,19 @@ const AclRules = ({
   isClusterDisabledForRule,
   isSchemaRegistryDisabledForRule,
   isSubjectDisabledForRule,
-  getSchemaRegistryTooltipText,
-  getSubjectTooltipText,
   handlePermissionModeChange,
   handleOperationChange,
-  getPermissionIcon,
-  getPermissionDescription,
   schemaRegistryEnabled,
 }: AclRulesProps) => {
+  const labelIdPrefix = useId();
+
   return (
     <Card size={'full'}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="font-medium text-heading-md text-strong">ACL rules</CardTitle>
-            <CardDescription className="text-subtle">
-              Configure permissions for different resource types.
-            </CardDescription>
+            <CardTitle level={3}>ACL rules</CardTitle>
+            <CardDescription>Configure permissions for different resource types.</CardDescription>
           </div>
           <Button data-testid="add-allow-all-operations-button" onClick={addAllowAllOperations} variant="outline">
             Allow all operations
@@ -348,7 +393,6 @@ const AclRules = ({
       <CardContent>
         {rules.map((rule, index) => (
           <Card
-            className={`card-content-rule-${index} px-10`}
             data-testid={`card-content-rule-${getRuleDataTestId(rule)}`}
             key={rule.id}
             size={'full'}
@@ -357,20 +401,21 @@ const AclRules = ({
             <CardContent>
               {/* Resource Type Selection */}
               <div className="flex items-center justify-between">
-                <span>
-                  <Label className="mb-1.5 block font-medium text-body text-foreground">Select a resource type</Label>
+                <div>
+                  <FieldTitle className="mb-1.5" id={`${labelIdPrefix}-${rule.id}-resource-type`}>
+                    Select a resource type
+                  </FieldTitle>
                   <ResourceTypeSelection
-                    getSchemaRegistryTooltipText={getSchemaRegistryTooltipText}
-                    getSubjectTooltipText={getSubjectTooltipText}
                     handleResourceTypeChange={handleResourceTypeChange}
                     isClusterDisabledForRule={isClusterDisabledForRule}
                     isSchemaRegistryDisabledForRule={isSchemaRegistryDisabledForRule}
                     isSchemaRegistryEnabled={schemaRegistryEnabled}
                     isSubjectDisabledForRule={isSubjectDisabledForRule}
+                    labelId={`${labelIdPrefix}-${rule.id}-resource-type`}
                     rule={rule}
                     ruleIndex={index}
                   />
-                </span>
+                </div>
                 <Button
                   data-testid={`remove-rule-button-${getRuleDataTestId(rule)}`}
                   onClick={() => removeRule(rule.id)}
@@ -384,8 +429,8 @@ const AclRules = ({
               {/* Resource Name Selector */}
               {/* Show selector if resource type is not Cluster or SchemaRegistry */}
               {!(rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) && (
-                <div className="mb-6 space-y-2">
-                  <Label className="font-medium text-body text-foreground">Selector</Label>
+                <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-selector`} className="mb-6 space-y-2">
+                  <FieldTitle id={`${labelIdPrefix}-${rule.id}-selector`}>Selector</FieldTitle>
                   <div className="grid grid-cols-4 gap-3">
                     <Select
                       items={{
@@ -420,7 +465,7 @@ const AclRules = ({
                       rule.selectorType === ResourcePatternTypePrefix) && (
                       <div className="col-span-3">
                         <Input
-                          className="flex-1 border-border focus:border-ring focus:ring-ring"
+                          className="flex-1"
                           onChange={(e) =>
                             updateRule(rule.id, {
                               selectorValue: e.target.value,
@@ -431,7 +476,7 @@ const AclRules = ({
                           value={rule.selectorValue}
                         />
                         <p
-                          className={`text-body text-destructive ${!!rule.selectorValue.length && 'hidden'}`}
+                          className={clsx('text-body text-destructive', !!rule.selectorValue.length && 'hidden')}
                           data-testid={`selector-value-error-${index}`}
                         >
                           {rule.selectorType === ResourcePatternTypeLiteral
@@ -441,20 +486,21 @@ const AclRules = ({
                       </div>
                     )}
                   </div>
-                </div>
+                </fieldset>
               )}
 
               {/* Permission Mode */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between">
-                  <Label className="font-medium text-body text-foreground">Operations</Label>
+              <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-operations`}>
+                <div className="mb-3 flex items-center justify-between">
+                  <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
                   <div className="inline-flex h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle">
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={clsx(
+                        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeCustom
                           ? 'bg-background text-strong shadow-sm'
                           : 'text-subtle hover:bg-accent hover:text-strong'
-                      }`}
+                      )}
                       data-testid={`mode-custom-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeCustom)}
                       type="button"
@@ -462,11 +508,12 @@ const AclRules = ({
                       Custom
                     </button>
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={clsx(
+                        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeAllowAll
                           ? 'bg-background text-strong shadow-sm'
                           : 'text-subtle hover:bg-accent hover:text-strong'
-                      }`}
+                      )}
                       data-testid={`mode-allow-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeAllowAll)}
                       type="button"
@@ -474,11 +521,12 @@ const AclRules = ({
                       Allow all
                     </button>
                     <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 font-medium text-body ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                      className={clsx(
+                        'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeDenyAll
                           ? 'bg-background text-strong shadow-sm'
                           : 'text-subtle hover:bg-accent hover:text-strong'
-                      }`}
+                      )}
                       data-testid={`mode-deny-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeDenyAll)}
                       type="button"
@@ -487,70 +535,71 @@ const AclRules = ({
                     </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Operations */}
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                {Object.entries(rule.operations).map(([operation, operationValue]) => (
-                  <div className="flex items-center gap-1" key={operation}>
-                    <Select
-                      onValueChange={(value) => handleOperationChange(rule.id, operation, value)}
-                      value={operationValue}
-                    >
-                      <SelectTrigger
-                        className="h-10 flex-1 justify-between border-border focus:border-ring focus:ring-ring/20"
-                        data-testid={`operation-select-${operation}`}
+                {/* Operations */}
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  {Object.entries(rule.operations).map(([operation, operationValue]) => (
+                    <div className="flex items-center gap-1" key={operation}>
+                      <Select
+                        onValueChange={(value) => handleOperationChange(rule.id, operation, value)}
+                        value={operationValue}
                       >
-                        <div className="flex items-center space-x-2">
-                          {getPermissionIcon(operationValue)}
-                          <span
-                            className={`font-medium text-body ${operationValue === OperationTypeNotSet ? 'text-disabled' : 'text-strong'}`}
+                        <SelectTrigger
+                          className="flex-1 justify-between"
+                          data-testid={`operation-select-${operation}`}
+                          size="lg"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <PermissionIcon value={operationValue} />
+                            <span
+                              className={clsx(
+                                'text-body font-medium',
+                                operationValue === OperationTypeNotSet ? 'text-disabled' : 'text-strong'
+                              )}
+                            >
+                              {formatLabel(operation)}
+                            </span>
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeNotSet)}`}
+                            value={OperationTypeNotSet}
                           >
-                            {formatLabel(operation)}
-                          </span>
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem
-                          data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeNotSet)}`}
-                          value={OperationTypeNotSet}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <Circle className="h-4 w-4 text-disabled" />
-                            <span>Not set</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem
-                          data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeAllow)}`}
-                          value={OperationTypeAllow}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <Check className="h-4 w-4 text-success" />
-                            <span>Allow</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem
-                          data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeDeny)}`}
-                          value={OperationTypeDeny}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <X className="h-4 w-4 text-destructive" />
-                            <span>Deny</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
-                        <TooltipContent>
-                          <p className="max-w-xs">{getPermissionDescription(operation, rule.resourceType)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                ))}
-              </div>
+                            <div className="flex items-center space-x-2">
+                              <PermissionIcon value={OperationTypeNotSet} />
+                              <span>Not set</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem
+                            data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeAllow)}`}
+                            value={OperationTypeAllow}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <PermissionIcon value={OperationTypeAllow} />
+                              <span>Allow</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem
+                            data-testid={`ro-${getIdFromRule(rule, operation, OperationTypeDeny)}`}
+                            value={OperationTypeDeny}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <PermissionIcon value={OperationTypeDeny} />
+                              <span>Deny</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FieldHelp>
+                        <p className="max-w-xs">
+                          <PermissionDescription operation={operation} resourceType={rule.resourceType} />
+                        </p>
+                      </FieldHelp>
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
             </CardContent>
           </Card>
         ))}
@@ -583,14 +632,13 @@ const SharedConfiguration = ({
     propPrincipalType ? propPrincipalType.replace(':', '') : parsePrincipal(sharedConfig.principal).type || RoleTypeUser
   );
   const [hostType, setHostType] = useState<HostType>(() => stringToHostType(sharedConfig.host));
-  const enterpriseFeaturesUsed = useApiStoreHook((s) => s.enterpriseFeaturesUsed);
-  const gbacEnabled = enterpriseFeaturesUsed.some((f) => f.name === 'gbac' && f.enabled);
+  const gbacEnabled = useGbacEnabled();
 
   return (
     <Card size={'full'}>
-      <CardHeader className="pb-4">
-        <CardTitle className="font-medium text-heading-md text-strong">Shared configuration</CardTitle>
-        <CardDescription className="text-subtle">These settings apply to all rules.</CardDescription>
+      <CardHeader>
+        <CardTitle level={3}>Shared configuration</CardTitle>
+        <CardDescription>These settings apply to all rules.</CardDescription>
       </CardHeader>
       <CardContent>
         <CardForm>
@@ -604,25 +652,20 @@ const SharedConfiguration = ({
           ) : (
             <CardField>
               <div className="flex items-center gap-1">
-                <Label className="font-medium text-body text-foreground" htmlFor="principal">
+                <Label htmlFor="principal">
                   {principalType === RoleTypeRedpandaRole ? 'Role name' : 'User / principal'}
                 </Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
-                    <TooltipContent className="max-w-xs">
-                      <div>
-                        <p>
-                          The user getting permissions granted or denied. In Kafka, this user is known as the principal.
-                        </p>
-                        <ul className="mt-2 space-y-1 text-body">
-                          <li>• Use the wildcard * to target all users.</li>
-                          <li>• Do not include the prefix. For example, use my-user instead of User:my-user.</li>
-                        </ul>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <FieldHelp contentClassName="max-w-xs">
+                  <div>
+                    <p>
+                      The user getting permissions granted or denied. In Kafka, this user is known as the principal.
+                    </p>
+                    <ul className="mt-2 space-y-1 text-body">
+                      <li>• Use the wildcard * to target all users.</li>
+                      <li>• Do not include the prefix. For example, use my-user instead of User:my-user.</li>
+                    </ul>
+                  </div>
+                </FieldHelp>
               </div>
               <div className="grid grid-cols-4 gap-3">
                 <Select
@@ -681,20 +724,13 @@ const SharedConfiguration = ({
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center gap-1">
-              <Label className="font-medium text-body text-foreground" htmlFor="host">
-                Host
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger render={<HelpCircle className="h-4 w-4 cursor-help text-disabled" />} />
-                  <TooltipContent className="max-w-xs">
-                    <p>
-                      The IP address or hostname from which the user is allowed or denied access. Use * to allow from
-                      any host.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Label htmlFor="host">Host</Label>
+              <FieldHelp contentClassName="max-w-xs">
+                <p>
+                  The IP address or hostname from which the user is allowed or denied access. Use * to allow from any
+                  host.
+                </p>
+              </FieldHelp>
             </div>
             <div className="flex gap-3">
               <Select
@@ -714,7 +750,7 @@ const SharedConfiguration = ({
                 }}
                 value={hostType}
               >
-                <SelectTrigger className="w-48 focus:border-ring focus:ring-ring/20" data-testid="shared-host-button">
+                <SelectTrigger className="w-48" data-testid="shared-host-button">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -724,7 +760,7 @@ const SharedConfiguration = ({
               </Select>
               {hostType === HostTypeSpecificHost && (
                 <Input
-                  className="flex-1 border-border focus:border-ring focus:ring-ring"
+                  className="flex-1"
                   disabled={edit}
                   id="host"
                   onChange={(e) =>
@@ -766,330 +802,15 @@ export default function CreateACL({
   renderPrincipal,
 }: CreateACLProps) {
   const schemaRegistryEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
-  const [principalError, setPrincipalError] = useState<string>('');
-  const [sharedConfig, setSharedConfig] = useState({
-    principal: propSharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
-    host: propSharedConfig?.host ?? '*',
-  });
-
-  // Sync sharedConfig when props change (e.g., route search params arrive after initial render)
-  useEffect(() => {
-    if (propSharedConfig?.principal) {
-      setSharedConfig((prev) => ({
-        principal: propSharedConfig.principal ?? prev.principal,
-        host: propSharedConfig.host ?? prev.host,
-      }));
-    }
-  }, [propSharedConfig?.principal, propSharedConfig?.host]);
-
-  const ruleIdCounter = useRef(getInitialRuleIdCounter(propRules));
-  const [rules, setRules] = useState<Rule[]>(
-    propRules ?? [
-      {
-        id: 1,
-        resourceType: ResourceTypeCluster,
-        mode: ModeCustom,
-        selectorType: ResourcePatternTypeAny,
-        selectorValue: '',
-        operations: {
-          ALTER: OperationTypeNotSet,
-          ALTER_CONFIGS: OperationTypeNotSet,
-          CLUSTER_ACTION: OperationTypeNotSet,
-          CREATE: OperationTypeNotSet,
-          DESCRIBE: OperationTypeNotSet,
-          DESCRIBE_CONFIGS: OperationTypeNotSet,
-          IDEMPOTENT_WRITE: OperationTypeNotSet,
-        },
-      },
-    ]
+  const { sharedConfig, setSharedConfig, principalError, submitIfPrincipalNamed } = useAclSharedConfig(
+    propSharedConfig,
+    principalType
   );
-
-  const isValidRule = rules.find((r) => Object.entries(r.operations).some(([, o]) => o !== OperationTypeNotSet));
-
-  useEffect(() => {
-    if (parsePrincipal(sharedConfig.principal).type) {
-      queueMicrotask(() => setPrincipalError(''));
-    }
-  }, [sharedConfig.principal]);
-
-  const addRule = () => {
-    // Determine the default resource type for new rules
-    let defaultResourceType = ResourceTypeCluster;
-    if (hasClusterRule()) {
-      defaultResourceType = ResourceTypeTopic;
-    }
-
-    const newRule = {
-      id: ruleIdCounter.current++,
-      resourceType: defaultResourceType as ResourceType,
-      mode: ModeCustom,
-      selectorType: ResourcePatternTypeAny,
-      selectorValue: '',
-      operations: getOperationsForResourceType(defaultResourceType),
-    };
-    setRules([...rules, newRule]);
-  };
-
-  const addAllowAllOperations = () => {
-    const resourceTypes = [
-      ResourceTypeCluster,
-      ResourceTypeTopic,
-      ResourceTypeConsumerGroup,
-      ResourceTypeTransactionalId,
-    ];
-
-    if (schemaRegistryEnabled) {
-      resourceTypes.push(ResourceTypeSubject, ResourceTypeSchemaRegistry);
-    }
-
-    const newRules: Rule[] = [];
-
-    resourceTypes.forEach((resourceType, index) => {
-      const operations = getOperationsForResourceType(resourceType);
-      const allowAllOperations = Object.fromEntries(Object.entries(operations).map(([op]) => [op, OperationTypeAllow]));
-
-      newRules.push({
-        id: Date.now() + index,
-        resourceType,
-        mode: ModeAllowAll,
-        selectorType: ResourcePatternTypeAny,
-        selectorValue: '',
-        operations: {
-          ...allowAllOperations,
-        },
-      });
-    });
-
-    setRules(newRules);
-  };
-
-  const removeRule = (id: number) => {
-    setRules(rules.filter((rule) => rule.id !== id));
-  };
-
-  const updateRule = (id: number, updates: Partial<Rule>) => {
-    setRules(rules.map((rule) => (rule.id === id ? { ...rule, ...updates } : rule)));
-  };
-
-  const handleResourceTypeChange = (ruleId: number, resourceType: ResourceType) => {
-    updateRule(ruleId, {
-      resourceType,
-      selectorType: ResourcePatternTypeAny,
-      selectorValue: '',
-      operations: getOperationsForResourceType(resourceType),
-      mode: ModeCustom,
-    } as Rule);
-  };
-
-  const hasClusterRule = () => rules.some((rule) => rule.resourceType === ResourceTypeCluster);
-
-  const isClusterDisabledForRule = (ruleId: number) => {
-    const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) {
-      return false;
-    }
-
-    // If current rule is already cluster, don't disable it
-    if (currentRule.resourceType === ResourceTypeCluster) {
-      return false;
-    }
-
-    // If there's already a cluster rule, disable cluster for this rule
-    return hasClusterRule();
-  };
-
-  const hasSubjectRule = () => rules.some((rule) => rule.resourceType === ResourceTypeSubject);
-
-  const hasSchemaRegistryRule = () => rules.some((rule) => rule.resourceType === ResourceTypeSchemaRegistry);
-
-  const isSchemaRegistryDisabledForRule = (ruleId: number) => {
-    const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) {
-      return false;
-    }
-
-    // If Schema Registry is not enabled, disable it for all rules except existing schema registry rules
-    if (!schemaRegistryEnabled && currentRule.resourceType !== ResourceTypeSchemaRegistry) {
-      return true;
-    }
-
-    // If current rule is already schemaRegistry, don't disable it
-    if (currentRule.resourceType === ResourceTypeSchemaRegistry) {
-      return false;
-    }
-
-    // If there's already a schemaRegistry rule, disable schemaRegistry for this rule
-    return hasSchemaRegistryRule();
-  };
-
-  const getSchemaRegistryTooltipText = () => {
-    if (!schemaRegistryEnabled) {
-      return 'Schema Registry is not enabled.';
-    }
-    return 'Only one Schema Registry rule is allowed. A Schema Registry rule already exists.';
-  };
-
-  const getSubjectTooltipText = () => {
-    if (!schemaRegistryEnabled) {
-      return 'Schema Registry is not enabled.';
-    }
-    return 'Only one subject rule is allowed. A subject rule already exists.';
-  };
-
-  const isSubjectDisabledForRule = (ruleId: number) => {
-    const currentRule = rules.find((rule) => rule.id === ruleId);
-    if (!currentRule) {
-      return false;
-    }
-
-    // If current rule is already subject, don't disable it
-    if (currentRule.resourceType === ResourceTypeSubject) {
-      return false;
-    }
-
-    // If schema registry is not enabled, disable subject
-    if (!schemaRegistryEnabled) {
-      return true;
-    }
-
-    // If there's already a subject rule, disable subject for this rule
-    return hasSubjectRule();
-  };
-
-  const handlePermissionModeChange = (ruleId: number, mode: string) => {
-    const rule = rules.find((r) => r.id === ruleId);
-    if (!rule) {
-      return;
-    }
-
-    const updatedOperations = Object.fromEntries(
-      Object.entries(rule.operations).map(([op, operationValue]) => {
-        let newValue: OperationType;
-        if (mode === ModeAllowAll) {
-          newValue = OperationTypeAllow;
-        } else if (mode === ModeDenyAll) {
-          newValue = OperationTypeDeny;
-        } else {
-          newValue = operationValue;
-        }
-        return [op, newValue];
-      })
-    ) as Record<string, OperationType>;
-
-    updateRule(ruleId, { mode: mode as ModeType, operations: updatedOperations });
-  };
-
-  const handleOperationChange = (ruleId: number, operation: string, value: string) => {
-    const rule = rules.find((r) => r.id === ruleId);
-    if (!rule) {
-      return;
-    }
-
-    const updatedOperations = {
-      ...rule.operations,
-      [operation]: value as OperationType,
-    };
-
-    // Check if the current mode should be switched to custom
-    let newMode = rule.mode;
-    if (rule.mode === ModeAllowAll && value !== OperationTypeAllow) {
-      newMode = ModeCustom;
-    } else if (rule.mode === ModeDenyAll && value !== OperationTypeDeny) {
-      newMode = ModeCustom;
-    }
-
-    updateRule(ruleId, {
-      operations: updatedOperations,
-      mode: newMode,
-    });
-  };
-
-  const getPermissionIcon = (value: string) => {
-    switch (value) {
-      case OperationTypeAllow:
-        return <Check className="h-4 w-4 text-success" />;
-      case OperationTypeDeny:
-        return <X className="h-4 w-4 text-destructive" />;
-      default:
-        return <Circle className="h-4 w-4 text-disabled" />;
-    }
-  };
-
-  const getPermissionDescription = (operation: string, resourceType: string) => {
-    const descriptions: Record<string, Record<string, string>> = {
-      cluster: {
-        ALTER: 'Edit cluster-level configuration properties.\nAPIs: AlterConfigs, IncrementalAlterConfigs',
-        ALTER_CONFIGS: 'Edit cluster configuration properties.\nAPIs: AlterConfigs, IncrementalAlterConfigs',
-        CLUSTER_ACTION:
-          'Perform administrative operations on the cluster.\nAPIs: ControlledShutdown, LeaderAndIsr, UpdateMetadata, StopReplica, etc.',
-        CREATE: 'Create new topics and cluster-level resources.\nAPIs: CreateTopics, CreateAcls',
-        DESCRIBE: 'View cluster information and metadata.\nAPIs: DescribeCluster, DescribeConfigs',
-        DESCRIBE_CONFIGS: 'View cluster configuration properties.\nAPIs: DescribeConfigs',
-        IDEMPOTENT_WRITE:
-          'Perform idempotent write operations to ensure exactly-once delivery.\nAPIs: Produce (with idempotence)',
-      },
-      topic: {
-        ALTER: 'Edit topic configuration properties.\nAPIs: AlterConfigs, IncrementalAlterConfigs',
-        ALTER_CONFIGS: 'Edit topic configuration properties.\nAPIs: AlterConfigs, IncrementalAlterConfigs',
-        CREATE: 'Create new topics.\nAPIs: CreateTopics',
-        DELETE: 'Delete topics and their data.\nAPIs: DeleteTopics',
-        DESCRIBE: 'View topic metadata and information.\nAPIs: Metadata, ListOffsets, DescribeConfigs',
-        DESCRIBE_CONFIGS: 'View topic configuration properties.\nAPIs: DescribeConfigs',
-        READ: 'View messages from topics.\nAPIs: Fetch, OffsetFetch, ListOffsets',
-        WRITE: 'Produce messages to topics.\nAPIs: Produce',
-      },
-      consumerGroup: {
-        DELETE: 'Delete consumer groups.\nAPIs: DeleteGroups',
-        DESCRIBE: 'View consumer group information and metadata.\nAPIs: DescribeGroups, ListGroups',
-        READ: 'Join consumer groups and view messages.\nAPIs: JoinGroup, SyncGroup, Heartbeat, OffsetCommit, OffsetFetch',
-      },
-      transactionalId: {
-        DESCRIBE: 'View transactional ID information.\nAPIs: DescribeTransactions',
-        WRITE: 'Use transactional ID for exactly-once processing.\nAPIs: InitProducerId, AddPartitionsToTxn, EndTxn',
-      },
-      subject: {
-        READ: 'View schema subjects and their versions.\nAPIs: GET /subjects, GET /subjects/{subject}/versions',
-        WRITE: 'Create and update schema subjects.\nAPIs: POST /subjects/{subject}/versions',
-        REMOVE:
-          'Delete schema subjects and their versions.\nAPIs: DELETE /subjects/{subject}, DELETE /subjects/{subject}/versions/{version}',
-        DESCRIBE_CONFIGS: 'View subject-level configuration properties.\nAPIs: GET /config/{subject}',
-        ALTER_CONFIGS: 'Edit subject-level configuration properties.\nAPIs: PUT /config/{subject}',
-      },
-      schemaRegistry: {
-        DESCRIBE_CONFIGS: 'View Schema Registry configuration properties.\nAPIs: GET /config',
-        ALTER_CONFIGS: 'Edit Schema Registry configuration properties.\nAPIs: PUT /config',
-        DESCRIBE: 'View Schema Registry information and metadata.\nAPIs: GET /subjects, GET /schemas',
-        READ: 'View schemas from the Schema Registry.\nAPIs: GET /schemas/ids/{id}, GET /subjects/{subject}/versions/{version}/schema',
-      },
-    };
-
-    // Render newlines as <br /> in tooltips
-    const desc = descriptions[resourceType]?.[operation];
-    if (!desc) {
-      return 'Permission description not available';
-    }
-    return (
-      <>
-        {desc.split('\n').map((line) => (
-          <span key={line}>
-            {line}
-            <br />
-          </span>
-        ))}
-      </>
-    );
-  };
-
-  // Track open state for each matching section per rule and section type
-  const [openMatchingSections, setOpenMatchingSections] = useState<Record<string, boolean>>({});
-
-  // Helper to get a unique key for each rule and section type
-  const getSectionKey = (ruleId: number, section: string) => `${ruleId}-${section}`;
+  const rulesEditor = useAclRulesEditor(propRules, schemaRegistryEnabled);
+  const { rules } = rulesEditor;
 
   return (
     <div className="relative min-h-screen pb-20">
-      {/* Page Header - Sticky */}
-
       {/* Main Content */}
       <main className="pb-6">
         <div className="mx-auto">
@@ -1100,37 +821,14 @@ export default function CreateACL({
 
               <SharedConfiguration
                 edit={edit}
-                getSectionKey={getSectionKey}
-                openMatchingSections={openMatchingSections}
                 principalError={principalError}
                 principalType={principalType}
                 renderPrincipal={renderPrincipal}
-                setOpenMatchingSections={setOpenMatchingSections}
                 setSharedConfig={setSharedConfig}
                 sharedConfig={sharedConfig}
               />
 
-              <AclRules
-                addAllowAllOperations={addAllowAllOperations}
-                addRule={addRule}
-                getPermissionDescription={getPermissionDescription}
-                getPermissionIcon={getPermissionIcon}
-                getSchemaRegistryTooltipText={getSchemaRegistryTooltipText}
-                getSectionKey={getSectionKey}
-                getSubjectTooltipText={getSubjectTooltipText}
-                handleOperationChange={handleOperationChange}
-                handlePermissionModeChange={handlePermissionModeChange}
-                handleResourceTypeChange={handleResourceTypeChange}
-                isClusterDisabledForRule={isClusterDisabledForRule}
-                isSchemaRegistryDisabledForRule={isSchemaRegistryDisabledForRule}
-                isSubjectDisabledForRule={isSubjectDisabledForRule}
-                openMatchingSections={openMatchingSections}
-                removeRule={removeRule}
-                rules={rules}
-                schemaRegistryEnabled={schemaRegistryEnabled}
-                setOpenMatchingSections={setOpenMatchingSections}
-                updateRule={updateRule}
-              />
+              <AclRules {...rulesEditor} schemaRegistryEnabled={schemaRegistryEnabled} />
             </div>
 
             {/* Right Column - Summary Card */}
@@ -1140,14 +838,10 @@ export default function CreateACL({
                 <div className="mt-4 flex items-center gap-2">
                   <Button
                     data-testid="submit-acl-button"
-                    disabled={!!principalError || !isValidRule}
-                    onClick={() => {
-                      if (parsePrincipal(sharedConfig.principal).name) {
-                        onSubmit?.(sharedConfig.principal, sharedConfig.host, rules);
-                      } else {
-                        setPrincipalError('Principal is required');
-                      }
-                    }}
+                    disabled={!!principalError || !hasConfiguredOperation(rules)}
+                    onClick={() =>
+                      submitIfPrincipalNamed(() => onSubmit?.(sharedConfig.principal, sharedConfig.host, rules))
+                    }
                   >
                     {edit ? 'Save' : 'Create'}
                   </Button>

@@ -6,7 +6,7 @@ import { step } from '../../shared/e2e';
 import { expect, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-test.describe('Topic List - Basic Operations', () => {
+test.describe('topic List - Basic Operations', () => {
   test('should view topics list with all elements visible', async ({ page }) => {
     const topicPage = new TopicPage(page);
     await topicPage.goToTopicsList();
@@ -21,7 +21,7 @@ test.describe('Topic List - Basic Operations', () => {
 
   test('should search topics with exact match', async ({ page }) => {
     const topicPage = new TopicPage(page);
-    const topicName = `search-exact-${Date.now()}`;
+    const topicName = `search-exact-${crypto.randomUUID()}`;
 
     await topicPage.createTopic(topicName);
 
@@ -41,14 +41,16 @@ test.describe('Topic List - Basic Operations', () => {
 
   test('should search topics with regex pattern', async ({ page }) => {
     const topicPage = new TopicPage(page);
-    const prefix = `regex-test-${Date.now()}`;
+    const prefix = `regex-test-${crypto.randomUUID()}`;
     const topic1 = `${prefix}-alpha`;
     const topic2 = `${prefix}-beta`;
-    const topic3 = `other-topic-${Date.now()}`;
+    const topic3 = `other-topic-${crypto.randomUUID()}`;
 
-    await topicPage.createTopic(topic1);
-    await topicPage.createTopic(topic2);
-    await topicPage.createTopic(topic3);
+    await step('Create matching and non-matching topics', async () => {
+      await topicPage.createTopic(topic1);
+      await topicPage.createTopic(topic2);
+      await topicPage.createTopic(topic3);
+    });
 
     await step('Search with regex pattern', async () => {
       // Search for topics starting with prefix using regex
@@ -62,14 +64,16 @@ test.describe('Topic List - Basic Operations', () => {
       await topicPage.verifyTopicNotInList(topic3);
     });
 
-    await topicPage.deleteTopic(topic1);
-    await topicPage.deleteTopic(topic2);
-    await topicPage.deleteTopic(topic3);
+    await step('Delete the topics', async () => {
+      await topicPage.deleteTopic(topic1);
+      await topicPage.deleteTopic(topic2);
+      await topicPage.deleteTopic(topic3);
+    });
   });
 
   test('should clear search filter and show all topics', async ({ page }) => {
     const topicPage = new TopicPage(page);
-    const topicName = `clear-search-${Date.now()}`;
+    const topicName = `clear-search-${crypto.randomUUID()}`;
 
     await topicPage.createTopic(topicName);
 

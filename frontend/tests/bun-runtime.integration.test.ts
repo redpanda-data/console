@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('Bun preload provides DOM globals without replacing native networking', () => {
+test('bun preload provides DOM globals without replacing native networking', () => {
   mkdirSync(resolve('tests/.rstest'), { recursive: true });
   const directory = mkdtempSync(resolve('tests/.rstest/bun-runtime-'));
   try {

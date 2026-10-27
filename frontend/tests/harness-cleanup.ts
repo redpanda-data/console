@@ -44,14 +44,18 @@ export function registerTestTeardown(teardown: () => void): void {
   trackedTeardowns.add(teardown);
 }
 
-export async function cleanupTestHarness(): Promise<void> {
-  const errors: unknown[] = [];
-  const clients = [...trackedQueryClients];
-  trackedQueryClients.clear();
+function collectFailure(errors: unknown[], operation: () => void): void {
+  try {
+    operation();
+  } catch (error) {
+    errors.push(error);
+  }
+}
 
-  // Cancellation is asynchronous. Clearing a QueryClient before its active
-  // ConnectRPC requests settle leaves their AbortSignal races and retry
-  // promises alive after the test has finished.
+// Cancellation is asynchronous. Clearing a QueryClient before its active
+// ConnectRPC requests settle leaves their AbortSignal races and retry
+// promises alive after the test has finished.
+async function cancelQueries(clients: QueryClient[], errors: unknown[]): Promise<void> {
   await Promise.all(
     clients.map(async (client) => {
       try {
@@ -61,33 +65,40 @@ export async function cleanupTestHarness(): Promise<void> {
       }
     })
   );
+}
 
+function releaseQueryClients(clients: QueryClient[], errors: unknown[]): void {
   for (const client of clients) {
-    try {
+    collectFailure(errors, () => {
       client.clear();
       client.unmount();
-    } catch (error) {
-      errors.push(error);
-    }
+    });
   }
+}
 
+function destroyTrackedRouters(errors: unknown[]): void {
   for (const router of trackedRouters) {
-    try {
-      router.history.destroy?.();
-    } catch (error) {
-      errors.push(error);
-    }
+    collectFailure(errors, () => router.history.destroy?.());
   }
   trackedRouters.clear();
+}
 
+function runTrackedTeardowns(errors: unknown[]): void {
   for (const teardown of trackedTeardowns) {
-    try {
-      teardown();
-    } catch (error) {
-      errors.push(error);
-    }
+    collectFailure(errors, teardown);
   }
   trackedTeardowns.clear();
+}
+
+export async function cleanupTestHarness(): Promise<void> {
+  const errors: unknown[] = [];
+  const clients = [...trackedQueryClients];
+  trackedQueryClients.clear();
+
+  await cancelQueries(clients, errors);
+  releaseQueryClients(clients, errors);
+  destroyTrackedRouters(errors);
+  runTrackedTeardowns(errors);
 
   if (errors.length > 0) {
     throw new AggregateError(errors, 'Failed to clean up test harness resources');

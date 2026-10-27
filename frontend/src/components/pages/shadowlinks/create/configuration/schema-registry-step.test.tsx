@@ -47,14 +47,25 @@ const TestWrapper = ({
   );
 };
 
-describe('SchemaRegistryStep', () => {
+const LegacyWrapper = ({ readOnlyApiMode }: { readOnlyApiMode?: boolean }) => {
+  const form = useForm<FormValues>({ resolver: zodResolver(FormSchema), defaultValues: initialValues });
+  return (
+    <Form {...form}>
+      <form>
+        <LegacySchemaRegistrySection readOnlyApiMode={readOnlyApiMode} />
+      </form>
+    </Form>
+  );
+};
+
+describe('the SchemaRegistryStep', () => {
   beforeEach(() => {
     // Reset the shared store before each test. null models the boot fetch not
     // yet having resolved (or having failed and never retried).
     useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkSchemaRegistrySync: false });
   });
 
-  describe('Legacy switch (gate closed)', () => {
+  describe('legacy switch (gate closed)', () => {
     beforeEach(() => {
       setSrSyncSupported(false);
     });
@@ -145,7 +156,7 @@ describe('SchemaRegistryStep', () => {
     });
   });
 
-  describe('Gate states', () => {
+  describe('gate states', () => {
     test('should fall back to the legacy switch while endpoint compatibility has not loaded (or the fetch failed)', () => {
       // store left at its default null by the beforeEach reset
       render(<TestWrapper />);
@@ -182,18 +193,7 @@ describe('SchemaRegistryStep', () => {
     });
   });
 
-  describe('LegacySchemaRegistrySection read-only (edit page, api-mode link)', () => {
-    const LegacyWrapper = ({ readOnlyApiMode }: { readOnlyApiMode?: boolean }) => {
-      const form = useForm<FormValues>({ resolver: zodResolver(FormSchema), defaultValues: initialValues });
-      return (
-        <Form {...form}>
-          <form>
-            <LegacySchemaRegistrySection readOnlyApiMode={readOnlyApiMode} />
-          </form>
-        </Form>
-      );
-    };
-
+  describe('the LegacySchemaRegistrySection read-only (edit page, api-mode link)', () => {
     test('renders a read-only notice and hides the switch so it cannot downgrade api sync', () => {
       render(<LegacyWrapper readOnlyApiMode />);
 

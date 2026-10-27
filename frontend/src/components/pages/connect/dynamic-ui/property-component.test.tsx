@@ -49,6 +49,18 @@ const Form = ({ property }: { property: Property }) => {
   return <PropertyComponent property={property} />;
 };
 
+type User = ReturnType<typeof userEvent.setup>;
+
+async function revealPasswordForEditing(user: User) {
+  await user.click(screen.getByRole('button', { name: 'Edit' }));
+  await user.click(screen.getByRole('button', { name: 'Show password' }));
+}
+
+async function typeReplacementThenUndo(user: User) {
+  await user.type(screen.getByLabelText('Example'), 'replacement');
+  await user.click(screen.getByRole('button', { name: 'Undo' }));
+}
+
 describe('connector property controls', () => {
   test.each(['DOUBLE', 'FLOAT'] as const)('%s steppers preserve fractional configuration values', async (type) => {
     const user = userEvent.setup();
@@ -66,13 +78,11 @@ describe('connector property controls', () => {
     const user = userEvent.setup();
     render(<Form property={makeProperty('PASSWORD', 'update')} />);
     expect(screen.getByLabelText('Example')).toHaveValue('secret');
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-    await user.click(screen.getByRole('button', { name: 'Show password' }));
+    await revealPasswordForEditing(user);
     expect(screen.getByLabelText('Example')).toHaveAttribute('type', 'text');
     await user.click(screen.getByText('Example', { selector: 'label' }));
     expect(screen.getByLabelText('Example')).toHaveFocus();
-    await user.type(screen.getByLabelText('Example'), 'replacement');
-    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    await typeReplacementThenUndo(user);
     expect(screen.getByLabelText('Example')).toHaveValue('secret');
     expect(screen.getByLabelText('Example')).toHaveAttribute('type', 'password');
   });

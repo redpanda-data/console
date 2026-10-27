@@ -30,11 +30,7 @@ test('slash focuses search; Escape clears the filter then blurs', async () => {
   expect(search).toHaveFocus();
   expect(search).toHaveValue('');
   await user.type(search, 'alpha');
-  await user.keyboard('{Escape}');
-  expect(search).toHaveValue('');
-  expect(search).toHaveFocus();
-  await user.keyboard('{Escape}');
-  expect(search).not.toHaveFocus();
+  await expectEscapeClearsThenBlurs(user, search);
 });
 
 test('typing in other controls and modified shortcuts do not steal focus', async () => {
@@ -48,12 +44,13 @@ test('typing in other controls and modified shortcuts do not steal focus', async
       <div aria-label="Editor" contentEditable role="textbox" tabIndex={0} />
     </>
   );
-  for (const name of ['Other input', 'Other text', 'Editor']) {
+  await ['Other input', 'Other text', 'Editor'].reduce(async (previous, name) => {
+    await previous;
     const control = screen.getByRole('textbox', { name });
     await user.click(control);
     await user.keyboard('/{Escape}');
     expect(control).toHaveFocus();
-  }
+  }, Promise.resolve());
   await user.click(document.body);
   await user.keyboard('{Control>}/{/Control}');
   expect(screen.getByRole('textbox', { name: '' })).not.toHaveFocus();
@@ -70,3 +67,11 @@ test('unmount removes the global shortcut listener', async () => {
   await user.keyboard('/');
   expect(screen.getByRole('textbox')).toHaveFocus();
 });
+
+async function expectEscapeClearsThenBlurs(user: ReturnType<typeof userEvent.setup>, search: HTMLElement) {
+  await user.keyboard('{Escape}');
+  expect(search).toHaveValue('');
+  expect(search).toHaveFocus();
+  await user.keyboard('{Escape}');
+  expect(search).not.toHaveFocus();
+}

@@ -13,8 +13,10 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { Link as TanStackRouterLink, useNavigate } from '@tanstack/react-router';
 import type { FilterFn, SortingState } from '@tanstack/react-table';
-import type { ComponentName } from 'assets/connectors/component-logo-map';
+import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { getUserTagEntries } from 'components/constants';
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -59,9 +61,12 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { type Pipeline as APIPipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import {
+  type ComponentType,
   type MouseEvent,
   memo,
   type ReactElement,
+  type ReactNode,
+  type SVGProps,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -287,12 +292,78 @@ const PipelineListSkeleton = () => (
   </div>
 );
 
+type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'];
+type StartMutate = ReturnType<typeof useStartPipelineMutation>['mutate'];
+type StopMutate = ReturnType<typeof useStopPipelineMutation>['mutate'];
+
+const startPipeline = (startMutation: StartMutate, id: string) => {
+  const startRequest = create(StartPipelineRequestSchema, {
+    request: { id },
+  });
+  startMutation(startRequest, {
+    onSuccess: () => {
+      toast.success('Pipeline starting');
+    },
+    onError: (err) => {
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: ConnectError.from(err),
+          action: 'start',
+          entity: 'pipeline',
+        })
+      );
+    },
+  });
+};
+
+const stopPipeline = (stopMutation: StopMutate, id: string) => {
+  const stopRequest = create(StopPipelineRequestSchema, {
+    request: { id },
+  });
+  stopMutation(stopRequest, {
+    onSuccess: () => {
+      toast.success('Pipeline stopping');
+    },
+    onError: (err) => {
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: ConnectError.from(err),
+          action: 'stop',
+          entity: 'pipeline',
+        })
+      );
+    },
+  });
+};
+
+const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: boolean) => {
+  const deleteRequest = create(DeletePipelineRequestSchema, {
+    request: { id },
+  });
+
+  deleteMutation(deleteRequest, {
+    onSuccess: () => {
+      rpcnEditorAutosave.clear(autosaveTargetKey(id));
+      toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
+    },
+    onError: (err) => {
+      toast.error(
+        formatToastErrorMessageGRPC({
+          error: ConnectError.from(err),
+          action: 'delete',
+          entity: 'pipeline',
+        })
+      );
+    },
+  });
+};
+
 type ActionsCellProps = {
   pipeline: Pipeline;
   navigate: ReturnType<typeof useNavigate>;
-  deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
-  startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
-  stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
+  deleteMutation: DeleteMutate;
+  startMutation: StartMutate;
+  stopMutation: StopMutate;
   isDeletingPipeline: boolean;
 };
 
@@ -313,68 +384,6 @@ const ActionsCell = memo(
     const hasUnsavedChanges = useRpcnEditorAutosaveStore(
       (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
     );
-
-    const handleStart = () => {
-      const startRequest = create(StartPipelineRequestSchema, {
-        request: { id: pipeline.id },
-      });
-      startMutation(startRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline starting');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'start',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
-
-    const handleStop = () => {
-      const stopRequest = create(StopPipelineRequestSchema, {
-        request: { id: pipeline.id },
-      });
-      stopMutation(stopRequest, {
-        onSuccess: () => {
-          toast.success('Pipeline stopping');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'stop',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
-
-    const handleDelete = (id: string) => {
-      const deleteRequest = create(DeletePipelineRequestSchema, {
-        request: { id },
-      });
-
-      deleteMutation(deleteRequest, {
-        onSuccess: () => {
-          rpcnEditorAutosave.clear(autosaveTargetKey(id));
-          toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
-        },
-        onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({
-              error: ConnectError.from(err),
-              action: 'delete',
-              entity: 'pipeline',
-            })
-          );
-        },
-      });
-    };
 
     return (
       <div className="flex min-w-[68px] justify-end" data-actions-column>
@@ -403,10 +412,18 @@ const ActionsCell = memo(
                 Start
               </DropdownMenuItem>
             ) : null}
-            {isStarting ? <DropdownMenuItem onClick={handleStart}>Retry start</DropdownMenuItem> : null}
-            {isStopping ? <DropdownMenuItem onClick={handleStop}>Retry stop</DropdownMenuItem> : null}
-            {canStart ? <DropdownMenuItem onClick={handleStart}>Start</DropdownMenuItem> : null}
-            {canStop ? <DropdownMenuItem onClick={handleStop}>Stop</DropdownMenuItem> : null}
+            {isStarting ? (
+              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Retry start</DropdownMenuItem>
+            ) : null}
+            {isStopping ? (
+              <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Retry stop</DropdownMenuItem>
+            ) : null}
+            {canStart ? (
+              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Start</DropdownMenuItem>
+            ) : null}
+            {canStop ? (
+              <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Stop</DropdownMenuItem>
+            ) : null}
             <DropdownMenuSeparator />
             <DeleteResourceMenuItem
               isDeleting={isDeletingPipeline}
@@ -421,14 +438,14 @@ const ActionsCell = memo(
             draftName={pipeline.name}
             hasUnsavedChanges={hasUnsavedChanges}
             isDeleting={isDeletingPipeline}
-            onConfirm={() => handleDelete(pipeline.id)}
+            onConfirm={() => deletePipeline(deleteMutation, pipeline.id, isDraftRow)}
             onOpenChange={setIsDeleteDialogOpen}
             open={isDeleteDialogOpen}
           />
         ) : (
           <DeleteResourceAlertDialog
             isDeleting={isDeletingPipeline}
-            onDelete={handleDelete}
+            onDelete={(id) => deletePipeline(deleteMutation, id, isDraftRow)}
             onOpenChange={setIsDeleteDialogOpen}
             open={isDeleteDialogOpen}
             resourceId={pipeline.id}
@@ -445,33 +462,54 @@ ActionsCell.displayName = 'ActionsCell';
 
 type CreateColumnsOptions = {
   navigate: ReturnType<typeof useNavigate>;
-  deleteMutation: ReturnType<typeof useDeletePipelineMutation>['mutate'];
-  startMutation: ReturnType<typeof useStartPipelineMutation>['mutate'];
-  stopMutation: ReturnType<typeof useStopPipelineMutation>['mutate'];
+  deleteMutation: DeleteMutate;
+  startMutation: StartMutate;
+  stopMutation: StopMutate;
   isDeletingPipeline: boolean;
 };
 
-// Facet options are rebuilt on every drain page and poll tick, and a fresh component type per render
-// remounts every logo in the open popover.
-const connectorIcons = new Map<string, (props: { className?: string }) => ReactElement>();
+type LogoComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
-const connectorIcon = (name: string) => {
-  const cached = connectorIcons.get(name);
-  if (cached) {
-    return cached;
-  }
-  const Icon = (props: { className?: string }) => (
-    <ConnectorLogo fallback={Box} name={name as ComponentName} {...props} />
-  );
-  connectorIcons.set(name, Icon);
-  return Icon;
-};
-
+// Facet options are rebuilt on every drain page and poll tick, so each option's icon is the connector's
+// own logo component: a stable type, where a fresh one per render would remount every logo in the open
+// popover. The facet list sizes it.
 const connectorOption = (name: string) => ({
   value: name,
   label: name,
-  icon: connectorIcon(name),
+  icon: (componentLogoMap[name as ComponentName] as LogoComponent | undefined) ?? Box,
 });
+
+// The wrapper owns the size and the ellipsis, so a long name truncates inside the cell.
+const PipelineNameLink = ({ pipelineId, name }: { pipelineId: string; name: string }) => (
+  <div className="truncate text-body-lg">
+    <Link
+      as={TanStackRouterLink}
+      params={{ pipelineId: encodeURIComponent(pipelineId) }}
+      title={name}
+      to="/rp-connect/$pipelineId"
+    >
+      {name}
+    </Link>
+  </div>
+);
+
+const PipelineNameCell = ({ pipeline, name }: { pipeline: Pipeline; name: string }) => {
+  const { id, isDraft: isDraftRow, editedAt } = pipeline;
+  return (
+    <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
+      <PipelineNameLink name={name} pipelineId={id} />
+      {isDraftRow && editedAt ? (
+        <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
+      ) : null}
+      {!isDraftRow && id !== name ? (
+        // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
+        <ElementTooltip content={id}>
+          <span className="cursor-text truncate font-mono text-body-sm text-muted-foreground select-all">{id}</span>
+        </ElementTooltip>
+      ) : null}
+    </div>
+  );
+};
 
 const createColumns = ({
   navigate,
@@ -484,33 +522,7 @@ const createColumns = ({
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
-    cell: ({ row }) => {
-      const { id, isDraft: isDraftRow, editedAt } = row.original;
-      const name = row.getValue('name') as string;
-      return (
-        <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
-          {/* Rows navigate on click, so the link underlines on hover only. */}
-          <Link
-            as={TanStackRouterLink}
-            className="block truncate text-body-lg text-primary no-underline hover:underline"
-            params={{ pipelineId: encodeURIComponent(id) }}
-            title={name}
-            to="/rp-connect/$pipelineId"
-          >
-            {name}
-          </Link>
-          {isDraftRow && editedAt ? (
-            <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
-          ) : null}
-          {!isDraftRow && id !== name ? (
-            // select-all: one click selects the whole id, and the row's guard keeps it from navigating.
-            <span className="cursor-text select-all truncate font-mono text-body-sm text-muted-foreground" title={id}>
-              {id}
-            </span>
-          ) : null}
-        </div>
-      );
-    },
+    cell: ({ row }) => <PipelineNameCell name={row.getValue('name') as string} pipeline={row.original} />,
   },
   {
     accessorKey: 'inputs',
@@ -604,12 +616,17 @@ const createColumns = ({
   },
 ];
 
-const PipelineListPageContent = () => {
-  const navigate = useNavigate();
-  const resetRpcnWizardStore = useResetRpcnWizardStore();
-  // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
+// Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
+const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined): string | null => {
+  if (!error) {
+    return null;
+  }
+  return hasNextPage
+    ? `Failed to load all pipelines: ${error.message}`
+    : `Couldn't refresh pipelines: ${error.message}`;
+};
 
+const usePipelineListData = () => {
   const {
     data: pipelinesData,
     isLoading,
@@ -618,9 +635,6 @@ const PipelineListPageContent = () => {
   } = useListPipelinesQuery(LIST_WITH_DRAFTS, {
     enableSmartPolling: true,
   });
-  const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
-  const { mutate: startMutation } = useStartPipelineMutation();
-  const { mutate: stopMutation } = useStopPipelineMutation();
   const invalidatePipelineQueries = useInvalidatePipelineQueries();
   useEffect(() => {
     appGlobal.onRefresh = () => {
@@ -639,7 +653,26 @@ const PipelineListPageContent = () => {
   );
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
-  const columns = useMemo(
+  return {
+    pipelines,
+    draftCount,
+    isLoading,
+    error,
+    // isLoading stays true until every page is drained, so render page one and stream the rest in behind
+    // it. A mid-drain error halts the drain for good, so it replaces the spinner.
+    isInitialLoading: isLoading && pipelines.length === 0 && !error,
+    isLoadingMorePages: isLoading && pipelines.length > 0 && !error,
+    listErrorMessage: listErrorMessageFor(error, hasNextPage),
+  };
+};
+
+const usePipelineListColumns = () => {
+  const navigate = useNavigate();
+  const { mutate: deleteMutation, isPending: isDeletingPipeline } = useDeletePipelineMutation();
+  const { mutate: startMutation } = useStartPipelineMutation();
+  const { mutate: stopMutation } = useStopPipelineMutation();
+
+  return useMemo(
     () =>
       createColumns({
         navigate,
@@ -650,19 +683,12 @@ const PipelineListPageContent = () => {
       }),
     [navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline]
   );
+};
 
-  const inputOptions = useMemo(
-    () => [...new Set(pipelines.flatMap((p) => p.inputs))].map(connectorOption),
-    [pipelines]
-  );
-  const outputOptions = useMemo(
-    () => [...new Set(pipelines.flatMap((p) => p.outputs))].map(connectorOption),
-    [pipelines]
-  );
-  const tagOptions = useMemo(
-    () => [...new Set(pipelines.flatMap((p) => p.tags.map(tagFilterValue)))].map((v) => ({ value: v, label: v })),
-    [pipelines]
-  );
+const usePipelinesTable = (pipelines: Pipeline[]) => {
+  const columns = usePipelineListColumns();
+  // Sort by status so error and transitioning pipelines land on page 1 of a large cluster.
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'state', desc: false }]);
 
   const table = useDataTable({
     data: pipelines,
@@ -691,7 +717,7 @@ const PipelineListPageContent = () => {
 
   const pageCount = table.getPageCount();
   useLayoutEffect(() => {
-    const pageIndex = table.state.pagination.pageIndex;
+    const { pageIndex } = table.state.pagination;
     if (pageIndex > 0 && pageIndex >= pageCount) {
       table.setPageIndex(Math.max(pageCount - 1, 0));
     }
@@ -705,8 +731,16 @@ const PipelineListPageContent = () => {
     }
   }, [columnFilters, sorting]);
 
+  return { table, columns };
+};
+
+type PipelinesTable = ReturnType<typeof usePipelinesTable>['table'];
+
+const usePipelineStateTabs = (
+  table: PipelinesTable,
+  { isLoading, draftCount }: { isLoading: boolean; draftCount: number }
+) => {
   const [activeTab, setActiveTab] = useState<PipelineStateTabId>('all');
-  const [search, setSearch] = useState('');
 
   // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
@@ -739,6 +773,14 @@ const PipelineListPageContent = () => {
     }
   }, [isLoading, activeTab, draftCount, handleTabChange]);
 
+  return { activeTab, handleTabChange, tabCounts, visibleTabs };
+};
+
+type PipelineStateTabsState = ReturnType<typeof usePipelineStateTabs>;
+
+const usePipelineNameSearch = (table: PipelinesTable) => {
+  const [search, setSearch] = useState('');
+
   useEffect(() => {
     const timer = setTimeout(() => {
       const column = table.getColumn('name');
@@ -752,9 +794,6 @@ const PipelineListPageContent = () => {
     return () => clearTimeout(timer);
   }, [search, table]);
 
-  // Status tabs are views, not filters. Read `search` directly, not its column filter: that lands
-  // 200ms later, and Clear filters must be clickable as soon as the user has typed.
-  const hasActiveFilters = search.trim() !== '' || columnFilters.some((f) => f.id !== 'state');
   const clearFilters = useCallback(() => {
     setSearch('');
     for (const columnId of ['name', 'inputs', 'outputs', 'tags']) {
@@ -762,163 +801,232 @@ const PipelineListPageContent = () => {
     }
   }, [table]);
 
+  return {
+    search,
+    setSearch,
+    // Status tabs are views, not filters. Read `search` directly, not its column filter: that lands
+    // 200ms later, and Clear filters must be clickable as soon as the user has typed.
+    hasActiveFilters: search.trim() !== '' || table.state.columnFilters.some((f) => f.id !== 'state'),
+    clearFilters,
+  };
+};
+
+type PipelineNameSearchState = ReturnType<typeof usePipelineNameSearch>;
+
+const CreatePipelineButton = () => {
+  const navigate = useNavigate();
+  const resetRpcnWizardStore = useResetRpcnWizardStore();
+
+  const handleCreateClick = useCallback(() => {
+    resetRpcnWizardStore();
+    navigate({ to: '/rp-connect/create', search: { serverless: undefined } }).catch((error: unknown) => {
+      toast.error('Failed to open the pipeline editor', { description: String(error) });
+    });
+  }, [resetRpcnWizardStore, navigate]);
+
+  return <Button onClick={handleCreateClick}>Create a pipeline</Button>;
+};
+
+const PipelineStateTabsBar = ({ tabs }: { tabs: PipelineStateTabsState }) => (
+  <Tabs onValueChange={(value) => tabs.handleTabChange(value as PipelineStateTabId)} value={tabs.activeTab}>
+    <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+      {tabs.visibleTabs.map((tab) => (
+        <TabsTrigger
+          aria-controls={STATUS_PANEL_ID}
+          id={statusTabId(tab.id)}
+          key={tab.id}
+          value={tab.id}
+          variant="underline"
+        >
+          {tab.label}
+          <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-body-sm text-muted-foreground tabular-nums">
+            {tabs.tabCounts[tab.id]}
+          </span>
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  </Tabs>
+);
+
+const PipelineListToolbar = ({
+  pipelines,
+  table,
+  nameSearch,
+}: {
+  pipelines: Pipeline[];
+  table: PipelinesTable;
+  nameSearch: PipelineNameSearchState;
+}) => {
+  const inputOptions = useMemo(
+    () => [...new Set(pipelines.flatMap((p) => p.inputs))].map(connectorOption),
+    [pipelines]
+  );
+  const outputOptions = useMemo(
+    () => [...new Set(pipelines.flatMap((p) => p.outputs))].map(connectorOption),
+    [pipelines]
+  );
+  const tagOptions = useMemo(
+    () => [...new Set(pipelines.flatMap((p) => p.tags.map(tagFilterValue)))].map((v) => ({ value: v, label: v })),
+    [pipelines]
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Input
+        aria-label="Search pipelines by name or ID"
+        className="w-64"
+        onChange={(e) => nameSearch.setSearch(e.target.value)}
+        placeholder="Search by name or ID..."
+        value={nameSearch.search}
+      >
+        <InputStart>
+          <TonedIcon className="h-4 w-4" icon={Search} tone="muted" />
+        </InputStart>
+      </Input>
+      <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
+      <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
+      <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
+      <FadePresence show={nameSearch.hasActiveFilters}>
+        <Button onClick={nameSearch.clearFilters} size="sm" variant="ghost">
+          <X /> Clear filters
+        </Button>
+      </FadePresence>
+    </div>
+  );
+};
+
+// ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link. The registry guard, same one
+// DataTable's rows use, drops clicks on a control in the row, and portaled children (open menus, the
+// delete-confirm backdrop) that bubble outside the <tr>. A mouseup that ends a text selection (copying the
+// id) isn't navigation intent.
+const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>): boolean =>
+  !isModifiedClick(event) &&
+  isRowActivationClick(event.target, event.currentTarget) &&
+  !window.getSelection()?.toString();
+
+const PipelineListTable = ({
+  table,
+  columnCount,
+  emptyContent,
+}: {
+  table: PipelinesTable;
+  columnCount: number;
+  emptyContent: ReactNode;
+}) => {
+  const navigate = useNavigate();
+  const { rows } = table.getRowModel();
+
   const handleRowClick = useCallback(
     (pipelineId: string, event: MouseEvent<HTMLTableRowElement>) => {
-      // ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link.
-      if (isModifiedClick(event)) {
-        return;
+      if (isRowNavigationClick(event)) {
+        navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } }).catch(
+          (error: unknown) => {
+            toast.error('Failed to open the pipeline', { description: String(error) });
+          }
+        );
       }
-      // Registry guard, same one DataTable's rows use: drops clicks on a control in the row, and
-      // portaled children (open menus, the delete-confirm backdrop) that bubble outside the <tr>.
-      if (!isRowActivationClick(event.target, event.currentTarget)) {
-        return;
-      }
-      // A mouseup that ends a text selection (copying the id) isn't navigation intent.
-      if (window.getSelection()?.toString()) {
-        return;
-      }
-      navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } });
     },
     [navigate]
   );
 
-  const handleCreateClick = useCallback(() => {
-    resetRpcnWizardStore();
-    navigate({ to: '/rp-connect/create', search: { serverless: undefined } });
-  }, [resetRpcnWizardStore, navigate]);
+  return (
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id}>
+                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {rows.length === 0 ? (
+          <TableRow>
+            <TableCell className="h-24 text-center" colSpan={columnCount}>
+              {emptyContent}
+            </TableCell>
+          </TableRow>
+        ) : (
+          rows.map((row) => (
+            // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
+            // duplicate it on every row.
+            <TableRow
+              className="cursor-pointer"
+              key={row.id}
+              onClick={(event) => handleRowClick(row.original.id, event)}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>{<table.FlexRender cell={cell} />}</TableCell>
+              ))}
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+};
 
-  // isLoading stays true until every page is drained, so render page one and stream the rest in behind
-  // it. A mid-drain error halts the drain for good, so it replaces the spinner.
-  const isInitialLoading = isLoading && pipelines.length === 0 && !error;
-  const isLoadingMorePages = isLoading && pipelines.length > 0 && !error;
+const PipelineListPageContent = () => {
+  const list = usePipelineListData();
+  const { table, columns } = usePipelinesTable(list.pipelines);
+  const tabs = usePipelineStateTabs(table, list);
+  const nameSearch = usePipelineNameSearch(table);
 
-  if (isInitialLoading) {
+  if (list.isInitialLoading) {
     return <PipelineListSkeleton />;
   }
 
-  if (error && pipelines.length === 0) {
+  if (list.error && list.pipelines.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-destructive">
         <AlertCircle className="h-4 w-4" />
-        Error loading pipelines: {error.message}
+        Error loading pipelines: {list.error.message}
       </div>
     );
   }
 
-  const rows = table.getRowModel().rows;
-
-  // Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
-  let listErrorMessage: string | null = null;
-  if (error) {
-    listErrorMessage = hasNextPage
-      ? `Failed to load all pipelines: ${error.message}`
-      : `Couldn't refresh pipelines: ${error.message}`;
-  }
-
+  const hasRows = table.getRowModel().rows.length > 0;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <Tabs onValueChange={(value) => handleTabChange(value as PipelineStateTabId)} value={activeTab}>
-          <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
-            {visibleTabs.map((tab) => (
-              <TabsTrigger
-                aria-controls={STATUS_PANEL_ID}
-                id={statusTabId(tab.id)}
-                key={tab.id}
-                value={tab.id}
-                variant="underline"
-              >
-                {tab.label}
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-body-sm text-muted-foreground tabular-nums">
-                  {tabCounts[tab.id]}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <Button onClick={handleCreateClick}>Create a pipeline</Button>
+        <PipelineStateTabsBar tabs={tabs} />
+        <CreatePipelineButton />
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          aria-label="Search pipelines by name or ID"
-          className="w-64"
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or ID..."
-          value={search}
-        >
-          <InputStart>
-            <Search className="h-4 w-4 text-muted-foreground" />
-          </InputStart>
-        </Input>
-        <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
-        <DataTableFacetedFilter column={table.getColumn('outputs')} options={outputOptions} title="Output" />
-        <DataTableFacetedFilter column={table.getColumn('tags')} options={tagOptions} title="Tags" />
-        <FadePresence show={hasActiveFilters}>
-          <Button onClick={clearFilters} size="sm" variant="ghost">
-            <X /> Clear filters
-          </Button>
-        </FadePresence>
-      </div>
-      <div aria-labelledby={statusTabId(activeTab)} id={STATUS_PANEL_ID} role="tabpanel">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
-              <TableRow>
-                <TableCell className="h-24 text-center" colSpan={columns.length}>
-                  {isLoadingMorePages ? (
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <Spinner /> Loading pipelines...
-                    </div>
-                  ) : (
-                    pipelineListEmptyText({ hasActiveFilters, activeTab, totalPipelines: pipelines.length })
-                  )}
-                </TableCell>
-              </TableRow>
+      <PipelineListToolbar nameSearch={nameSearch} pipelines={list.pipelines} table={table} />
+      <div aria-labelledby={statusTabId(tabs.activeTab)} id={STATUS_PANEL_ID} role="tabpanel">
+        <PipelineListTable
+          columnCount={columns.length}
+          emptyContent={
+            list.isLoadingMorePages ? (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Spinner /> Loading pipelines...
+              </div>
             ) : (
-              rows.map((row) => (
-                // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
-                // duplicate it on every row.
-                <TableRow
-                  className="cursor-pointer"
-                  key={row.id}
-                  onClick={(event) => handleRowClick(row.original.id, event)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell className="py-3" key={cell.id}>
-                      {<table.FlexRender cell={cell} />}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              pipelineListEmptyText({
+                hasActiveFilters: nameSearch.hasActiveFilters,
+                activeTab: tabs.activeTab,
+                totalPipelines: list.pipelines.length,
+              })
+            )
+          }
+          table={table}
+        />
       </div>
-      <FadePresence
-        className="flex items-center gap-2 text-body text-muted-foreground"
-        show={isLoadingMorePages && rows.length > 0}
-      >
-        <Spinner /> Loading more pipelines...
+      <FadePresence show={list.isLoadingMorePages && hasRows}>
+        <div className="flex items-center gap-2 text-body text-muted-foreground">
+          <Spinner /> Loading more pipelines...
+        </div>
       </FadePresence>
-      <FadePresence
-        className="flex items-center gap-2 text-body text-destructive"
-        show={Boolean(listErrorMessage) && pipelines.length > 0}
-      >
-        <AlertCircle className="h-4 w-4" />
-        {listErrorMessage}
+      <FadePresence show={Boolean(list.listErrorMessage) && list.pipelines.length > 0}>
+        <div className="flex items-center gap-2 text-body text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          {list.listErrorMessage}
+        </div>
       </FadePresence>
-      <ListStatusAnnouncements isLoadingMorePages={isLoadingMorePages} listErrorMessage={listErrorMessage} />
+      <ListStatusAnnouncements isLoadingMorePages={list.isLoadingMorePages} listErrorMessage={list.listErrorMessage} />
       <DataTablePagination table={table} />
     </div>
   );
@@ -973,24 +1081,26 @@ export const PipelineListPage = () => {
             Kafka Connect
           </TabsTrigger>
         </TabsList>
-        <TabsContents className="p-6">
-          {/* keepMounted: panels unmount by default, dropping search/facets/page on a trip to the
-              Kafka Connect tab and back. */}
-          <TabsContent keepMounted value="redpanda-connect">
-            <RedpandaConnectContent />
-          </TabsContent>
-          <TabsContent value="kafka-connect">
-            <div className="flex flex-col gap-6">
-              <div className="text-body">
-                Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data with
-                different data systems.{' '}
-                <Link href={docsLinks.cloud.managedConnectors} rel="noopener noreferrer" target="_blank">
-                  Learn more
-                </Link>
+        <TabsContents>
+          <div className="p-6">
+            {/* keepMounted: panels unmount by default, dropping search/facets/page on a trip to the
+                Kafka Connect tab and back. */}
+            <TabsContent keepMounted value="redpanda-connect">
+              <RedpandaConnectContent />
+            </TabsContent>
+            <TabsContent value="kafka-connect">
+              <div className="flex flex-col gap-6">
+                <div className="text-body">
+                  Kafka Connect is our set of managed connectors. These provide a way to integrate your Redpanda data
+                  with different data systems.{' '}
+                  <Link href={docsLinks.cloud.managedConnectors} rel="noopener noreferrer" target="_blank">
+                    Learn more
+                  </Link>
+                </div>
+                <TabKafkaConnect />
               </div>
-              <TabKafkaConnect />
-            </div>
-          </TabsContent>
+            </TabsContent>
+          </div>
         </TabsContents>
       </Tabs>
     </div>

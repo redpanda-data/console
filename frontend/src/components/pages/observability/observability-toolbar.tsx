@@ -61,7 +61,7 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
             onValueChange={(value) => onTimeRangeChange(value as TimeRange)}
             value={selectedTimeRange}
           >
-            <SelectTrigger className="h-8 w-[145px] text-body">
+            <SelectTrigger className="h-8 w-[145px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -76,17 +76,17 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
         <div className="w-px bg-border" />
         <div>
           <div className="mb-1 text-body-sm text-subtle">FROM</div>
-          <div className="font-medium text-body">{timeRangeDisplay.start}</div>
+          <div className="text-body font-medium">{timeRangeDisplay.start}</div>
         </div>
         <div className="w-px bg-border" />
         <div>
           <div className="mb-1 text-body-sm text-subtle">TO</div>
-          <div className="font-medium text-body">{timeRangeDisplay.end}</div>
+          <div className="text-body font-medium">{timeRangeDisplay.end}</div>
         </div>
         <div className="w-px bg-border" />
         <div>
           <div className="mb-1 text-body-sm text-subtle">TIMEZONE</div>
-          <div className="font-medium text-body">UTC</div>
+          <div className="text-body font-medium">UTC</div>
         </div>
       </div>
     </div>

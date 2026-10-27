@@ -14,14 +14,20 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import type { CSSProperties } from 'react';
 
 type SectionProps = Pick<CardProps, 'children' | 'id' | 'className'> & {
+  padding?: 'compact' | 'normal';
   // Grid placement only; everything else is a class.
   style?: Pick<CSSProperties, 'gridArea'>;
 };
 
-// Legacy page section: block flow and Section's padding on a Card. New pages compose Card directly.
-function Section({ children, id, className, style }: SectionProps) {
+// Legacy block-flow section using the registry's card spacing presets.
+function Section({ children, id, className, style, padding = 'normal' }: SectionProps) {
   return (
-    <Card className={cn('block px-6', className)} id={id} size="full" style={style}>
+    <Card
+      className={cn('block max-w-none', className)}
+      id={id}
+      size={padding === 'compact' ? 'sm' : 'full'}
+      style={style}
+    >
       {children}
     </Card>
   );

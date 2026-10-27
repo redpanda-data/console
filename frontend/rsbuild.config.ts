@@ -167,27 +167,7 @@ export default defineConfig({
         ignored: ['**/routeTree.gen.ts', '**/.playwright-mcp/**'],
       };
 
-      // Monaco workers come from `MonacoEnvironment.getWorker` in src/config.ts.
-      const plugins = [tanstackRouter(tanstackRouterConfig)];
-
-      if (process.env.RSDOCTOR) {
-        plugins.push(
-          new RsdoctorRspackPlugin({
-            disableClientServer: true,
-            supports: {
-              brotli: true,
-            },
-            output: {
-              mode: 'brief',
-              reportDir: fileURLToPath(new URL('./build-stats/rsdoctor', import.meta.url)),
-              options: {
-                type: ['html', 'json'],
-              },
-            },
-          })
-        );
-      }
-      appendPlugins(plugins);
+      appendPlugins(createConsolePlugins());
     },
     bundlerChain: (chain) => {
       // pluginYaml parses `.yaml` into a JS object; exclude `?raw` imports and load
@@ -199,3 +179,26 @@ export default defineConfig({
     },
   },
 });
+
+function createConsolePlugins() {
+  const plugins = [tanstackRouter(tanstackRouterConfig)];
+
+  if (process.env.RSDOCTOR) {
+    plugins.push(
+      new RsdoctorRspackPlugin({
+        disableClientServer: true,
+        supports: {
+          brotli: true,
+        },
+        output: {
+          mode: 'brief',
+          reportDir: fileURLToPath(new URL('./build-stats/rsdoctor', import.meta.url)),
+          options: {
+            type: ['html', 'json'],
+          },
+        },
+      })
+    );
+  }
+  return plugins;
+}

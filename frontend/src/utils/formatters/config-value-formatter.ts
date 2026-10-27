@@ -21,110 +21,75 @@ export const entryHasInfiniteValue = (entry: ConfigEntry) =>
 
 export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
+// Broker configs use both dot and underscore separators. Longer time suffixes
+// deliberately omit the separator so Kafka and Redpanda names both match.
+const TIME_EXTENSIONS: [string, number][] = [
+  ['.ms', 1],
+  ['_ms', 1],
+  ['seconds', 1000],
+  ['minutes', 60 * 1000],
+  ['hours', 60 * 60 * 1000],
+  ['days', 24 * 60 * 60 * 1000],
+];
+const BYTE_EXTENSIONS = [
+  '.bytes',
+  '_bytes',
+  '.buffer.size',
+  '.replication.throttled.rate',
+  '.reassignment.throttled.rate',
+];
+const LISTENER_NAMES = ['advertised.listeners', 'listener.security.protocol.map', 'listeners'];
+
 export function formatConfigValue(
   name: string,
   value: string | null | undefined,
   formatType: 'friendly' | 'raw' | 'both'
 ): string {
-  let suffix: string;
-
   if (value === null || value === undefined) {
     return '';
   }
-
-  switch (formatType) {
-    case 'friendly':
-      suffix = '';
-      break;
-    case 'both':
-      suffix = ` (${value})`;
-      break;
-    default:
-      return value;
-  }
-
-  //
-  // String
-  //
-  if (value && (name === 'advertised.listeners' || name === 'listener.security.protocol.map' || name === 'listeners')) {
-    const listeners = value.split(',');
-    return listeners.join('\n');
-  }
-
-  //
-  // Numeric
-  //
-  const num = Number(value);
-  if (value === null || value === '' || value === '0' || Number.isNaN(num)) {
+  if (formatType !== 'friendly' && formatType !== 'both') {
     return value;
   }
+  if (value && LISTENER_NAMES.includes(name)) {
+    return value.split(',').join('\n');
+  }
+  const num = Number(value);
+  if (value === '' || value === '0' || Number.isNaN(num)) {
+    return value;
+  }
+  return formatNumericConfigValue(name, value, num, formatType === 'both' ? ` (${value})` : '');
+}
 
-  // Special cases
+function formatNumericConfigValue(name: string, value: string, num: number, suffix: string): string {
   if (name === 'flush.messages' && num > 2 ** 60) {
-    return `Never${suffix}`; // messages between each fsync
+    return `Never${suffix}`;
   }
-
   if (name.endsWith('.bytes.per.second')) {
-    if (num >= Number.MAX_SAFE_INTEGER) {
-      return `Infinite${suffix}`;
-    }
-    return `${prettyBytesOrNA(num)}/s${suffix}`;
+    return num >= Number.MAX_SAFE_INTEGER ? `Infinite${suffix}` : `${prettyBytesOrNA(num)}/s${suffix}`;
   }
-
   if (CONFIG_INFINITE_VALUES[name] && num >= CONFIG_INFINITE_VALUES[name]) {
     return `Infinite${suffix}`;
   }
-
-  // Time
-  const timeExtensions: [string, number][] = [
-    // name ending -> conversion to milliseconds
-    ['.ms', 1],
-    ['_ms', 1], // Redpanda broker configs use underscores
-
-    // Redpanda broker configs use underscores rather than dots as a separator.
-    // Because we want to match both configs, we omit the separator (dot vs underscore) for the
-    // following time extensions.
-    // These suffixes seem unique enough (compared to "ms") to not be ambigious with other
-    // config options.
-    ['seconds', 1000],
-    ['minutes', 60 * 1000],
-    ['hours', 60 * 60 * 1000],
-    ['days', 24 * 60 * 60 * 1000],
-  ];
-  for (const [ext, msFactor] of timeExtensions) {
-    if (!name.endsWith(ext)) {
-      continue;
-    }
-    if (num > Number.MAX_SAFE_INTEGER || num === -1) {
-      return `Infinite${suffix}`;
-    }
-
-    const ms = num * msFactor;
-    return prettyMilliseconds(ms, { verbose: true, unitCount: 2 }) + suffix;
+  const timeExtension = TIME_EXTENSIONS.find(([extension]) => name.endsWith(extension));
+  if (timeExtension) {
+    return formatTimeConfigValue(num, timeExtension[1], suffix);
   }
+  return formatByteOrRatioConfigValue(name, value, num, suffix);
+}
 
-  // Bytes
-  if (
-    name.endsWith('.bytes') ||
-    name.endsWith('_bytes') || // Redpanda broker configs use underscores
-    name.endsWith('.buffer.size') ||
-    name.endsWith('.replication.throttled.rate') ||
-    name.endsWith('.reassignment.throttled.rate')
-  ) {
-    const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
-    const uint64Exp = 1.844_674_407_370_955e19; // barely below the point where the number would be rounded up
-    if (value === uint64Max || num >= uint64Exp || num === -1) {
-      return `Infinite${suffix}`;
-    }
+function formatTimeConfigValue(num: number, msFactor: number, suffix: string): string {
+  return num > Number.MAX_SAFE_INTEGER || num === -1
+    ? `Infinite${suffix}`
+    : prettyMilliseconds(num * msFactor, { verbose: true, unitCount: 2 }) + suffix;
+}
 
-    return prettyBytesOrNA(num) + suffix;
+function formatByteOrRatioConfigValue(name: string, value: string, num: number, suffix: string): string {
+  if (BYTE_EXTENSIONS.some((extension) => name.endsWith(extension))) {
+    // uint64 max rounds above the integer boundary when represented as a JS number.
+    const uint64Max = '18446744073709551615';
+    const uint64Exp = 1.844_674_407_370_955e19;
+    return value === uint64Max || num >= uint64Exp || num === -1 ? `Infinite${suffix}` : prettyBytesOrNA(num) + suffix;
   }
-
-  // Ratio
-  if (name.endsWith('.ratio')) {
-    return `${(num * 100).toLocaleString()}%`;
-  }
-
-  return value;
+  return name.endsWith('.ratio') ? `${(num * 100).toLocaleString()}%` : value;
 }

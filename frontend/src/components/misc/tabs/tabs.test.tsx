@@ -33,7 +33,7 @@ const testTabs: Tab[] = [
   },
 ];
 
-describe('Tabs', () => {
+describe('tabs', () => {
   test('renders an initial tab other than the first', () => {
     render(<Tabs selectedTabKey="test2" tabs={testTabs.slice(0, 2)} />);
 

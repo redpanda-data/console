@@ -7,6 +7,34 @@ const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
 
 /**
+ * Reads one test-variant-* directory's config/variant.json
+ * @param {string} dirName - Directory name under tests/ (e.g., "test-variant-console")
+ * @returns {{name: string, dirName: string, path: string, config: object}|null} - null when the config is missing or unreadable
+ */
+function readVariant(dirName) {
+  const variantPath = join(testsDir, dirName);
+  const configPath = join(variantPath, 'config', 'variant.json');
+
+  if (!existsSync(configPath)) {
+    console.warn(`Variant directory ${dirName} is missing config/variant.json`);
+    return null;
+  }
+
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    return {
+      name: config.name,
+      dirName,
+      path: variantPath,
+      config,
+    };
+  } catch (error) {
+    console.error(`Error reading variant config at ${configPath}:`, error.message);
+    return null;
+  }
+}
+
+/**
  * Discovers all test variants by scanning for test-variant-* directories
  * @returns {Array<{name: string, dirName: string, path: string, config: object}>}
  */
@@ -17,23 +45,9 @@ export function discoverVariants() {
 
   for (const entry of entries) {
     if (entry.isDirectory() && entry.name.startsWith('test-variant-')) {
-      const variantPath = join(testsDir, entry.name);
-      const configPath = join(variantPath, 'config', 'variant.json');
-
-      if (existsSync(configPath)) {
-        try {
-          const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-          variants.push({
-            name: config.name,
-            dirName: entry.name,
-            path: variantPath,
-            config,
-          });
-        } catch (error) {
-          console.error(`Error reading variant config at ${configPath}:`, error.message);
-        }
-      } else {
-        console.warn(`Variant directory ${entry.name} is missing config/variant.json`);
+      const variant = readVariant(entry.name);
+      if (variant) {
+        variants.push(variant);
       }
     }
   }

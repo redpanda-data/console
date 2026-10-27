@@ -53,69 +53,73 @@ describe('useSlashCommand', () => {
     rs.restoreAllMocks();
   });
 
-  it('starts with menu closed and no position', () => {
-    const { result } = renderHook(() => useSlashCommand(null));
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.slashPosition).toBeNull();
+  describe('subscribing to the editor', () => {
+    it('starts with menu closed and no position', () => {
+      const { result } = renderHook(() => useSlashCommand(null));
+      expect(result.current.isOpen).toBe(false);
+      expect(result.current.slashPosition).toBeNull();
+    });
+
+    it('does not subscribe when disabled', () => {
+      const { instance } = createMockEditor('/', 2);
+      renderHook(() => useSlashCommand(instance, false));
+      expect((instance.onDidChangeModelContent as ReturnType<typeof rs.fn>).mock.calls.length).toBe(0);
+    });
+
+    it('does not subscribe when editor is null', () => {
+      const { result } = renderHook(() => useSlashCommand(null, true));
+      expect(result.current.isOpen).toBe(false);
+    });
+
+    it('subscribes to content changes when enabled', () => {
+      const { instance } = createMockEditor('/', 2);
+      renderHook(() => useSlashCommand(instance, true));
+      expect(instance.onDidChangeModelContent).toHaveBeenCalledOnce();
+    });
   });
 
-  it('does not subscribe when disabled', () => {
-    const { instance } = createMockEditor('/', 2);
-    renderHook(() => useSlashCommand(instance, false));
-    expect((instance.onDidChangeModelContent as ReturnType<typeof rs.fn>).mock.calls.length).toBe(0);
-  });
+  describe('opening the menu', () => {
+    it('opens menu when / is typed at valid position', () => {
+      const { instance, fireContentChange } = createMockEditor('  /', 4);
+      const { result } = renderHook(() => useSlashCommand(instance, true));
 
-  it('does not subscribe when editor is null', () => {
-    const { result } = renderHook(() => useSlashCommand(null, true));
-    expect(result.current.isOpen).toBe(false);
-  });
+      act(() => fireContentChange('/'));
 
-  it('subscribes to content changes when enabled', () => {
-    const { instance } = createMockEditor('/', 2);
-    renderHook(() => useSlashCommand(instance, true));
-    expect(instance.onDidChangeModelContent).toHaveBeenCalledOnce();
-  });
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
+    });
 
-  it('opens menu when / is typed at valid position', () => {
-    const { instance, fireContentChange } = createMockEditor('  /', 4);
-    const { result } = renderHook(() => useSlashCommand(instance, true));
+    it('does not open menu when / is typed mid-word', () => {
+      const { instance, fireContentChange } = createMockEditor('input/', 6);
+      const { result } = renderHook(() => useSlashCommand(instance, true));
 
-    act(() => fireContentChange('/'));
+      act(() => fireContentChange('/'));
 
-    expect(result.current.isOpen).toBe(true);
-    expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
-  });
+      expect(result.current.isOpen).toBe(false);
+      expect(result.current.slashPosition).toBeNull();
+    });
 
-  it('does not open menu when / is typed mid-word', () => {
-    const { instance, fireContentChange } = createMockEditor('input/', 6);
-    const { result } = renderHook(() => useSlashCommand(instance, true));
+    it('does not open menu on non-slash content changes', () => {
+      const { instance, fireContentChange } = createMockEditor('hello', 6);
+      const { result } = renderHook(() => useSlashCommand(instance, true));
 
-    act(() => fireContentChange('/'));
+      act(() => fireContentChange('o'));
 
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.slashPosition).toBeNull();
-  });
+      expect(result.current.isOpen).toBe(false);
+    });
 
-  it('does not open menu on non-slash content changes', () => {
-    const { instance, fireContentChange } = createMockEditor('hello', 6);
-    const { result } = renderHook(() => useSlashCommand(instance, true));
+    it('ignores content changes while menu is already open', () => {
+      const { instance, fireContentChange } = createMockEditor('  /', 4);
+      const { result } = renderHook(() => useSlashCommand(instance, true));
 
-    act(() => fireContentChange('o'));
+      act(() => fireContentChange('/'));
+      expect(result.current.isOpen).toBe(true);
 
-    expect(result.current.isOpen).toBe(false);
-  });
-
-  it('ignores content changes while menu is already open', () => {
-    const { instance, fireContentChange } = createMockEditor('  /', 4);
-    const { result } = renderHook(() => useSlashCommand(instance, true));
-
-    act(() => fireContentChange('/'));
-    expect(result.current.isOpen).toBe(true);
-
-    // Fire another slash while open — should be ignored
-    act(() => fireContentChange('/'));
-    expect(result.current.isOpen).toBe(true);
-    expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
+      // Fire another slash while open — should be ignored
+      act(() => fireContentChange('/'));
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
+    });
   });
 
   describe('close', () => {

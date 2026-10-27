@@ -44,13 +44,7 @@ app.use('/api/*', async (req, res) => {
   res.statusCode = proxied.status;
   res.statusMessage = proxied.statusText;
 
-  const banned = ['connection', 'content-encoding', 'content-length', 'content-type'];
-  for (const [k, v] of proxied.headers) {
-    if (banned.includes(k.toLowerCase())) {
-      continue;
-    }
-    res.header(k, v);
-  }
+  copyProxyHeaders(proxied.headers, res);
 
   if (proxied.body) {
     const json = await proxied.text();
@@ -68,3 +62,13 @@ app.listen(port, () => {
   console.log(`will serve from directory: ${rootDir}`);
   console.log(`listening on port ${port}`);
 });
+
+function copyProxyHeaders(headers, res) {
+  const banned = ['connection', 'content-encoding', 'content-length', 'content-type'];
+  for (const [k, v] of headers) {
+    if (banned.includes(k.toLowerCase())) {
+      continue;
+    }
+    res.header(k, v);
+  }
+}

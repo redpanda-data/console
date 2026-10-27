@@ -55,14 +55,20 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
 const unexpectedRequests: Error[] = [];
 
 // Record before rejecting: application error handling must not hide a missing fixture.
+// Like the real fetch, failures reach the caller as a rejected promise, never as a synchronous throw.
 if (typeof window !== 'undefined') {
-  globalThis.fetch = Object.assign(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    const method = init?.method ?? (typeof input === 'string' || input instanceof URL ? 'GET' : input.method);
-    const error = new Error(`Unexpected test request: ${method} ${new URL(url, window.location.href).href}`);
-    unexpectedRequests.push(error);
-    throw error;
-  }, globalThis.fetch);
+  globalThis.fetch = Object.assign(
+    (input: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => {
+        const isRequest = typeof input !== 'string' && !(input instanceof URL);
+        const url = isRequest ? input.url : input.toString();
+        const method = init?.method ?? (isRequest ? input.method : 'GET');
+        const error = new Error(`Unexpected test request: ${method} ${new URL(url, window.location.href).href}`);
+        unexpectedRequests.push(error);
+        reject(error);
+      }),
+    globalThis.fetch
+  );
 }
 
 // Polyfill Element/Document.getAnimations — happy-dom doesn't implement them

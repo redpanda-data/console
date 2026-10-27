@@ -45,13 +45,15 @@ rs.mock('state/ui-state', () => ({
 }));
 
 // recharts ResponsiveContainer requires measured dimensions; stub to a simple div
+function ResponsiveContainerStub({ children }: { children: React.ReactNode }) {
+  return <div data-testid="responsive-container">{children}</div>;
+}
+
 rs.mock('recharts', () => {
   const actual = rs.requireActual<typeof import('recharts')>('recharts');
   return {
     ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="responsive-container">{children}</div>
-    ),
+    ResponsiveContainer: ResponsiveContainerStub,
   };
 });
 
@@ -112,7 +114,7 @@ function buildTransport({
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('PipelineThroughputCard', () => {
+describe('the PipelineThroughputCard', () => {
   it('shows calm unavailable state with retry when range queries error', async () => {
     const listQueriesMock = rs
       .fn()
@@ -227,7 +229,7 @@ describe('PipelineThroughputCard', () => {
   });
 
   it('renders chart area when data is returned successfully', async () => {
-    const now = Date.now();
+    const now = Date.UTC(2026, 0, 15, 12);
     const fiveMinAgo = now - 5 * 60 * 1000;
 
     const listQueriesMock = rs

@@ -21,6 +21,8 @@ import { PayloadEncoding } from '../../protogen/redpanda/api/console/v1alpha1/co
 import {
   ListMessagesRequestSchema,
   type ListMessagesResponse,
+  type ListMessagesResponse_DataMessage,
+  type ListMessagesResponse_ProgressMessage,
 } from '../../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { TopicMessage } from '../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../state/ui';
@@ -64,39 +66,29 @@ type UseLogSearchReturn = {
   refresh: () => void;
 };
 
-const LOG_HISTORY_KEY = (pipelineId: string) => ['log-history', pipelineId] as const;
+const logHistoryKey = (pipelineId: string) => ['log-history', pipelineId] as const;
 
 // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op for live mode refresh
 const noop = () => {};
 
+// Serverful clusters filter by pipelineId with a pushdown filter; serverless has none.
+function logsFilterCode(pipelineId: string, serverless: boolean): string {
+  return serverless ? '' : encodeBase64(sanitizeString(`return key == "${pipelineId}";`));
+}
+
 function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
-  const usesPushdownFilter = !serverless;
-
-  const req = create(ListMessagesRequestSchema);
-  req.topic = LOGS_TOPIC;
-  req.partitionId = -1;
-  req.includeOriginalRawPayload = false;
-  req.keyDeserializer = PayloadEncoding.UNSPECIFIED;
-  req.valueDeserializer = PayloadEncoding.UNSPECIFIED;
-
-  if (usesPushdownFilter) {
-    req.filterInterpreterCode = encodeBase64(sanitizeString(`return key == "${pipelineId}";`));
-  } else {
-    req.filterInterpreterCode = '';
-  }
-
-  if (live) {
-    req.startOffset = BigInt(PartitionOffsetOrigin.End);
-    req.startTimestamp = 0n;
-    req.maxResults = LIVE_MAX_RESULTS;
-  } else {
-    // Start at high-water-mark - maxResults so we get the most recent N, not the oldest.
-    req.startOffset = BigInt(PartitionOffsetOrigin.EndMinusResults);
-    req.startTimestamp = 0n;
-    req.maxResults = HISTORY_MAX_RESULTS;
-  }
-
-  return req;
+  return create(ListMessagesRequestSchema, {
+    topic: LOGS_TOPIC,
+    partitionId: -1,
+    includeOriginalRawPayload: false,
+    keyDeserializer: PayloadEncoding.UNSPECIFIED,
+    valueDeserializer: PayloadEncoding.UNSPECIFIED,
+    filterInterpreterCode: logsFilterCode(pipelineId, serverless),
+    // History starts at high-water-mark - maxResults so we get the most recent N, not the oldest.
+    startOffset: BigInt(live ? PartitionOffsetOrigin.End : PartitionOffsetOrigin.EndMinusResults),
+    startTimestamp: 0n,
+    maxResults: live ? LIVE_MAX_RESULTS : HISTORY_MAX_RESULTS,
+  });
 }
 
 // The logs topic is created by the first pipeline that logs, so until then there is nothing to find.
@@ -117,6 +109,22 @@ function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless:
   return msg.keyJson === pipelineId;
 }
 
+function toSearchProgress(p: ListMessagesResponse_ProgressMessage): SearchProgress {
+  return { bytesConsumed: Number(p.bytesConsumed), messagesConsumed: Number(p.messagesConsumed) };
+}
+
+function collectPipelineMessage(
+  data: ListMessagesResponse_DataMessage,
+  pipelineId: string,
+  serverless: boolean,
+  buffer: TopicMessage[] | null
+) {
+  const msg = convertListMessageData(data);
+  if (shouldIncludeMessage(msg, pipelineId, serverless)) {
+    buffer?.push(msg);
+  }
+}
+
 // History streaming (extracted for React Compiler compatibility).
 
 type HistoryStreamOpts = {
@@ -128,39 +136,57 @@ type HistoryStreamOpts = {
   setPhase: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
+// A missing logs topic is expected before any pipeline has logged, so only other failures are toasted.
+function historyStreamError(errMsg: string): Error {
+  if (!isMissingLogsTopic(errMsg)) {
+    sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+  }
+  return new Error(errMsg);
+}
+
 function handleHistoryMessage(res: ListMessagesResponse, opts: HistoryStreamOpts) {
   switch (res.controlMessage.case) {
-    case 'data': {
-      const msg = convertListMessageData(res.controlMessage.value);
-      if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
-        opts.messagesRef.current?.push(msg);
-      }
+    case 'data':
+      collectPipelineMessage(res.controlMessage.value, opts.pipelineId, opts.serverless, opts.messagesRef.current);
       break;
-    }
-    case 'progress': {
-      const p = res.controlMessage.value;
-      opts.progressRef.current = {
-        bytesConsumed: Number(p.bytesConsumed),
-        messagesConsumed: Number(p.messagesConsumed),
-      };
+    case 'progress':
+      opts.progressRef.current = toSearchProgress(res.controlMessage.value);
       break;
-    }
     case 'phase':
       opts.setPhase(res.controlMessage.value.phase);
       break;
     case 'done':
       opts.setPhase(null);
       break;
-    case 'error': {
-      const errMsg = res.controlMessage.value.message;
-      if (!isMissingLogsTopic(errMsg)) {
-        sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-      }
-      throw new Error(errMsg);
-    }
+    case 'error':
+      throw historyStreamError(res.controlMessage.value.message);
     default:
       break;
   }
+}
+
+type ConsoleClient = NonNullable<typeof appConfig.consoleClient>;
+
+async function streamHistory(client: ConsoleClient, opts: HistoryStreamOpts) {
+  const req = buildRequest(opts.pipelineId, false, opts.serverless);
+  for await (const res of client.listMessages(req, {
+    signal: opts.signal,
+    timeoutMs: HISTORY_TIMEOUT_MS,
+  })) {
+    if (opts.signal.aborted) {
+      break;
+    }
+    handleHistoryMessage(res, opts);
+  }
+}
+
+// No logs topic yet means there are no logs to show; anything else is a real failure.
+function settleHistoryFailure(e: unknown, setPhase: HistoryStreamOpts['setPhase']): TopicMessage[] {
+  setPhase(null);
+  if (e instanceof Error && isMissingLogsTopic(e.message)) {
+    return [];
+  }
+  throw e;
 }
 
 async function runHistoryStream(opts: HistoryStreamOpts) {
@@ -169,24 +195,10 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
     throw new Error('Console client not configured');
   }
 
-  const req = buildRequest(opts.pipelineId, false, opts.serverless);
-
   try {
-    for await (const res of client.listMessages(req, {
-      signal: opts.signal,
-      timeoutMs: HISTORY_TIMEOUT_MS,
-    })) {
-      if (opts.signal.aborted) {
-        break;
-      }
-      handleHistoryMessage(res, opts);
-    }
+    await streamHistory(client, opts);
   } catch (e) {
-    opts.setPhase(null);
-    if (e instanceof Error && isMissingLogsTopic(e.message)) {
-      return [];
-    }
-    throw e;
+    return settleHistoryFailure(e, opts.setPhase);
   }
 
   opts.setPhase(null);
@@ -215,7 +227,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   }, [phase]);
 
   const query = useTanstackQuery<TopicMessage[]>({
-    queryKey: LOG_HISTORY_KEY(opts.pipelineId),
+    queryKey: logHistoryKey(opts.pipelineId),
     queryFn: ({ signal }) => {
       messagesRef.current = [];
       progressRef.current = ZERO_PROGRESS;
@@ -305,7 +317,7 @@ export function liveReducer(state: LiveState, action: LiveAction): LiveState {
 }
 
 type LiveStreamOpts = {
-  client: NonNullable<typeof appConfig.consoleClient>;
+  client: ConsoleClient;
   req: ReturnType<typeof buildRequest>;
   abortController: AbortController;
   pipelineId: string;
@@ -315,6 +327,11 @@ type LiveStreamOpts = {
   dispatch: React.Dispatch<LiveAction>;
 };
 
+function reportLiveError(errMsg: string, dispatch: React.Dispatch<LiveAction>) {
+  sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+  dispatch({ type: 'setError', error: errMsg });
+}
+
 function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
   if (!opts.isMountedRef.current) {
     return;
@@ -323,54 +340,42 @@ function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
     case 'phase':
       opts.dispatch({ type: 'setPhase', phase: res.controlMessage.value.phase });
       break;
-    case 'progress': {
-      const p = res.controlMessage.value;
-      opts.dispatch({
-        type: 'setProgress',
-        progress: { bytesConsumed: Number(p.bytesConsumed), messagesConsumed: Number(p.messagesConsumed) },
-      });
+    case 'progress':
+      opts.dispatch({ type: 'setProgress', progress: toSearchProgress(res.controlMessage.value) });
       break;
-    }
-    case 'data': {
-      const msg = convertListMessageData(res.controlMessage.value);
-      if (shouldIncludeMessage(msg, opts.pipelineId, opts.serverless)) {
-        opts.pendingRef.current?.push(msg);
-      }
+    case 'data':
+      collectPipelineMessage(res.controlMessage.value, opts.pipelineId, opts.serverless, opts.pendingRef.current);
       break;
-    }
     case 'done':
       opts.dispatch({ type: 'done' });
       break;
-    case 'error': {
-      const errMsg = res.controlMessage.value.message;
-      sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-      opts.dispatch({ type: 'setError', error: errMsg });
+    case 'error':
+      reportLiveError(res.controlMessage.value.message, opts.dispatch);
       break;
-    }
     default:
       break;
   }
 }
 
+async function streamLive(opts: LiveStreamOpts) {
+  for await (const res of opts.client.listMessages(opts.req, {
+    signal: opts.abortController.signal,
+    timeoutMs: LIVE_TIMEOUT_MS,
+  })) {
+    if (opts.abortController.signal.aborted) {
+      break;
+    }
+    handleLiveMessage(res, opts);
+  }
+}
+
 async function runLiveStream(opts: LiveStreamOpts) {
   try {
-    for await (const res of opts.client.listMessages(opts.req, {
-      signal: opts.abortController.signal,
-      timeoutMs: LIVE_TIMEOUT_MS,
-    })) {
-      if (opts.abortController.signal.aborted) {
-        break;
-      }
-      handleLiveMessage(res, opts);
-    }
+    await streamLive(opts);
   } catch (e) {
-    if (opts.abortController.signal.aborted) {
-      return;
-    }
-    if (opts.isMountedRef.current) {
-      const errMsg = e instanceof Error ? e.message : 'Unknown error';
-      sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
-      opts.dispatch({ type: 'setError', error: errMsg });
+    // An aborted tail was closed on purpose; there is nothing to report.
+    if (!opts.abortController.signal.aborted && opts.isMountedRef.current) {
+      reportLiveError(e instanceof Error ? e.message : 'Unknown error', opts.dispatch);
     }
   } finally {
     if (opts.isMountedRef.current && !opts.abortController.signal.aborted) {
@@ -379,73 +384,114 @@ async function runLiveStream(opts: LiveStreamOpts) {
   }
 }
 
-function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }): LiveState {
-  const [state, dispatch] = useReducer(liveReducer, LIVE_INITIAL_STATE);
+type LiveRefs = {
+  abortControllerRef: React.RefObject<AbortController | null>;
+  isMountedRef: React.RefObject<boolean | null>;
+  pendingRef: React.RefObject<TopicMessage[]>;
+};
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+function stopLiveStream(refs: LiveRefs) {
+  refs.abortControllerRef.current?.abort();
+  refs.pendingRef.current = [];
+}
+
+// Opens a fresh tail in place of any earlier one; returns its controller, or null without a client.
+function startLiveStream(
+  opts: { pipelineId: string; serverless: boolean },
+  refs: LiveRefs,
+  dispatch: React.Dispatch<LiveAction>
+): AbortController | null {
+  stopLiveStream(refs);
+  const abortController = new AbortController();
+  refs.abortControllerRef.current = abortController;
+
+  dispatch({ type: 'start' });
+
+  const client = appConfig.consoleClient;
+  if (!client) {
+    dispatch({ type: 'noClient' });
+    return null;
+  }
+
+  // runLiveStream owns rejection reporting and cancellation; the hook owns only its controller.
+  void runLiveStream({
+    client,
+    req: buildRequest(opts.pipelineId, true, opts.serverless),
+    abortController,
+    pipelineId: opts.pipelineId,
+    serverless: opts.serverless,
+    isMountedRef: refs.isMountedRef,
+    pendingRef: refs.pendingRef,
+    dispatch,
+  });
+  return abortController;
+}
+
+// Tracks whether the hook is mounted, and aborts whichever tail is still open on unmount.
+function useLiveMountedRef(abortControllerRef: LiveRefs['abortControllerRef']) {
   const isMountedRef = useRef(true);
-  const pendingRef = useRef<TopicMessage[]>([]);
-
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
       abortControllerRef.current?.abort();
     };
-  }, []);
+  }, [abortControllerRef]);
+  return isMountedRef;
+}
 
-  // Flush pending messages to state on an interval.
+function flushPendingMessages(pendingRef: LiveRefs['pendingRef'], dispatch: React.Dispatch<LiveAction>) {
+  const pending = pendingRef.current;
+  if (pending.length > 0) {
+    const batch = pending.splice(0);
+    dispatch({ type: 'flushMessages', msgs: batch });
+  }
+}
+
+// Flush pending messages to state on an interval.
+function useLivePendingFlush(
+  enabled: boolean,
+  pendingRef: LiveRefs['pendingRef'],
+  dispatch: React.Dispatch<LiveAction>
+) {
   useEffect(() => {
-    if (!opts.enabled) {
+    if (!enabled) {
       return;
     }
-    const interval = setInterval(() => {
-      const pending = pendingRef.current;
-      if (pending.length > 0) {
-        const batch = pending.splice(0);
-        dispatch({ type: 'flushMessages', msgs: batch });
-      }
-    }, FLUSH_INTERVAL_MS);
+    const interval = setInterval(() => flushPendingMessages(pendingRef, dispatch), FLUSH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [opts.enabled]);
+  }, [enabled, pendingRef, dispatch]);
+}
+
+function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }): LiveState {
+  const [state, dispatch] = useReducer(liveReducer, LIVE_INITIAL_STATE);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useLiveMountedRef(abortControllerRef);
+  const pendingRef = useRef<TopicMessage[]>([]);
+
+  useLivePendingFlush(opts.enabled, pendingRef, dispatch);
 
   useEffect(() => {
+    const refs = { abortControllerRef, isMountedRef, pendingRef };
     if (!opts.enabled) {
-      abortControllerRef.current?.abort();
-      pendingRef.current = [];
+      stopLiveStream(refs);
       dispatch({ type: 'reset' });
       return;
     }
 
-    abortControllerRef.current?.abort();
-    pendingRef.current = [];
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    dispatch({ type: 'start' });
-
-    const client = appConfig.consoleClient;
-    if (!client) {
-      dispatch({ type: 'noClient' });
+    const abortController = startLiveStream(
+      { pipelineId: opts.pipelineId, serverless: opts.serverless },
+      refs,
+      dispatch
+    );
+    if (!abortController) {
       return;
     }
-
-    const req = buildRequest(opts.pipelineId, true, opts.serverless);
-    runLiveStream({
-      client,
-      req,
-      abortController,
-      pipelineId: opts.pipelineId,
-      serverless: opts.serverless,
-      isMountedRef,
-      pendingRef,
-      dispatch,
-    });
-
     return () => {
       abortController.abort();
     };
-  }, [opts.enabled, opts.pipelineId, opts.serverless]);
+  }, [opts.enabled, opts.pipelineId, opts.serverless, isMountedRef]);
 
   return state;
 }

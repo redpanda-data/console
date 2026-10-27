@@ -36,31 +36,30 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-describe('AclsStep', () => {
-  describe('Adding ACL filters', () => {
+const ALLOW_ALL_ACL_FILTER = {
+  resourceType: ACLResource.ACL_RESOURCE_ANY,
+  resourcePattern: ACLPattern.ACL_PATTERN_ANY,
+  resourceName: '',
+  principal: '',
+  operation: ACLOperation.ACL_OPERATION_ANY,
+  permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
+  host: '',
+};
+
+/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
+const renderExpandedAclsStep = async (aclFilters: NonNullable<FormValues['aclFilters']>) => {
+  const user = userEvent.setup();
+  render(<TestWrapper defaultValues={{ ...initialValues, aclsMode: 'specify', aclFilters }} />);
+
+  // Need to open the collapsible to see the editable filters
+  await user.click(screen.getByTestId('acls-toggle-button'));
+  return user;
+};
+
+describe('the AclsStep', () => {
+  describe('adding ACL filters', () => {
     test('should add new ACL filter with default values that match allow all', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        aclsMode: 'specify',
-        aclFilters: [
-          {
-            resourceType: ACLResource.ACL_RESOURCE_ANY,
-            resourcePattern: ACLPattern.ACL_PATTERN_ANY,
-            resourceName: '',
-            principal: '',
-            operation: ACLOperation.ACL_OPERATION_ANY,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
-            host: '',
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('acls-toggle-button');
-      await user.click(toggleButton);
+      await renderExpandedAclsStep([ALLOW_ALL_ACL_FILTER]);
 
       const filter0 = await screen.findByTestId('acl-filter-0');
 
@@ -71,28 +70,7 @@ describe('AclsStep', () => {
     });
 
     test('should create multiple ACL filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        aclsMode: 'specify',
-        aclFilters: [
-          {
-            resourceType: ACLResource.ACL_RESOURCE_ANY,
-            resourcePattern: ACLPattern.ACL_PATTERN_ANY,
-            resourceName: '',
-            principal: '',
-            operation: ACLOperation.ACL_OPERATION_ANY,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
-            host: '',
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('acls-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedAclsStep([ALLOW_ALL_ACL_FILTER]);
 
       expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
 
@@ -108,39 +86,20 @@ describe('AclsStep', () => {
     });
   });
 
-  describe('Deleting ACL filters', () => {
+  describe('deleting ACL filters', () => {
     test('should delete ACL filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        aclsMode: 'specify',
-        aclFilters: [
-          {
-            resourceType: ACLResource.ACL_RESOURCE_ANY,
-            resourcePattern: ACLPattern.ACL_PATTERN_ANY,
-            resourceName: '',
-            principal: '',
-            operation: ACLOperation.ACL_OPERATION_ANY,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ANY,
-            host: '',
-          },
-          {
-            resourceType: ACLResource.ACL_RESOURCE_TOPIC,
-            resourcePattern: ACLPattern.ACL_PATTERN_LITERAL,
-            resourceName: 'test-topic',
-            principal: 'User:test',
-            operation: ACLOperation.ACL_OPERATION_READ,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
-            host: '*',
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('acls-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedAclsStep([
+        ALLOW_ALL_ACL_FILTER,
+        {
+          resourceType: ACLResource.ACL_RESOURCE_TOPIC,
+          resourcePattern: ACLPattern.ACL_PATTERN_LITERAL,
+          resourceName: 'test-topic',
+          principal: 'User:test',
+          operation: ACLOperation.ACL_OPERATION_READ,
+          permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+          host: '*',
+        },
+      ]);
 
       expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();

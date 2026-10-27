@@ -41,9 +41,9 @@ export const ExplicitConfirmModal = (p: {
     >
       {/* `lg` is `sm:max-w-2xl`. */}
       <DialogContent size="lg">
-        {/* Room for DialogContent's close button. */}
-        <DialogHeader className="pr-10">
-          <DialogTitle>{p.title}</DialogTitle>
+        <DialogHeader>
+          {/* Room for DialogContent's close button: the header's own `pr-4` plus `mr-6` is `pr-10`. */}
+          <DialogTitle className="mr-6">{p.title}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           {p.body}

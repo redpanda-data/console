@@ -157,79 +157,81 @@ describe('convertListMessageData', () => {
     expect(result.headers).toEqual([]);
   });
 
-  test('parses JSON key and value payloads', () => {
-    const jsonStr = '{"id":1,"name":"test"}';
-    const msg = makeMessage({
-      key: makePayload(jsonStr, PayloadEncoding.JSON),
-      value: makePayload(jsonStr, PayloadEncoding.JSON),
+  describe('payload content', () => {
+    test('parses JSON key and value payloads', () => {
+      const jsonStr = '{"id":1,"name":"test"}';
+      const msg = makeMessage({
+        key: makePayload(jsonStr, PayloadEncoding.JSON),
+        value: makePayload(jsonStr, PayloadEncoding.JSON),
+      });
+
+      const result = convertListMessageData(msg);
+
+      expect(result.key.payload).toEqual({ id: 1, name: 'test' });
+      expect(result.value.payload).toEqual({ id: 1, name: 'test' });
+      expect(result.keyJson).toBe(jsonStr);
+      expect(result.valueJson).toBe(jsonStr);
     });
 
-    const result = convertListMessageData(msg);
+    test('keeps non-JSON payloads as strings', () => {
+      const plainText = 'hello world';
+      const msg = makeMessage({
+        key: makePayload(plainText, PayloadEncoding.TEXT),
+        value: makePayload(plainText, PayloadEncoding.TEXT),
+      });
 
-    expect(result.key.payload).toEqual({ id: 1, name: 'test' });
-    expect(result.value.payload).toEqual({ id: 1, name: 'test' });
-    expect(result.keyJson).toBe(jsonStr);
-    expect(result.valueJson).toBe(jsonStr);
-  });
+      const result = convertListMessageData(msg);
 
-  test('keeps non-JSON payloads as strings', () => {
-    const plainText = 'hello world';
-    const msg = makeMessage({
-      key: makePayload(plainText, PayloadEncoding.TEXT),
-      value: makePayload(plainText, PayloadEncoding.TEXT),
+      expect(result.key.payload).toBe(plainText);
+      expect(result.value.payload).toBe(plainText);
     });
 
-    const result = convertListMessageData(msg);
+    test('sets isPayloadNull when encoding is NULL', () => {
+      const msg = makeMessage({
+        key: makePayload('', PayloadEncoding.NULL),
+        value: makePayload('', PayloadEncoding.NULL),
+      });
 
-    expect(result.key.payload).toBe(plainText);
-    expect(result.value.payload).toBe(plainText);
-  });
+      const result = convertListMessageData(msg);
 
-  test('sets isPayloadNull when encoding is NULL', () => {
-    const msg = makeMessage({
-      key: makePayload('', PayloadEncoding.NULL),
-      value: makePayload('', PayloadEncoding.NULL),
+      expect(result.key.isPayloadNull).toBe(true);
+      expect(result.value.isPayloadNull).toBe(true);
     });
 
-    const result = convertListMessageData(msg);
+    test('sets isPayloadNull to false for non-NULL encoding', () => {
+      const msg = makeMessage({
+        key: makePayload('x', PayloadEncoding.TEXT),
+        value: makePayload('x', PayloadEncoding.TEXT),
+      });
 
-    expect(result.key.isPayloadNull).toBe(true);
-    expect(result.value.isPayloadNull).toBe(true);
-  });
+      const result = convertListMessageData(msg);
 
-  test('sets isPayloadNull to false for non-NULL encoding', () => {
-    const msg = makeMessage({
-      key: makePayload('x', PayloadEncoding.TEXT),
-      value: makePayload('x', PayloadEncoding.TEXT),
+      expect(result.key.isPayloadNull).toBe(false);
+      expect(result.value.isPayloadNull).toBe(false);
     });
 
-    const result = convertListMessageData(msg);
+    test('sets isPayloadTooLarge from proto field', () => {
+      const msg = makeMessage({
+        key: makePayload('x', PayloadEncoding.TEXT, { isPayloadTooLarge: true }),
+        value: makePayload('x', PayloadEncoding.TEXT, { isPayloadTooLarge: true }),
+      });
 
-    expect(result.key.isPayloadNull).toBe(false);
-    expect(result.value.isPayloadNull).toBe(false);
-  });
+      const result = convertListMessageData(msg);
 
-  test('sets isPayloadTooLarge from proto field', () => {
-    const msg = makeMessage({
-      key: makePayload('x', PayloadEncoding.TEXT, { isPayloadTooLarge: true }),
-      value: makePayload('x', PayloadEncoding.TEXT, { isPayloadTooLarge: true }),
+      expect(result.key.isPayloadTooLarge).toBe(true);
+      expect(result.value.isPayloadTooLarge).toBe(true);
     });
 
-    const result = convertListMessageData(msg);
+    test('sets payload size from payloadSize field', () => {
+      const msg = makeMessage({
+        key: makePayload('x', PayloadEncoding.TEXT, { payloadSize: 512 }),
+        value: makePayload('x', PayloadEncoding.TEXT, { payloadSize: 1024 }),
+      });
 
-    expect(result.key.isPayloadTooLarge).toBe(true);
-    expect(result.value.isPayloadTooLarge).toBe(true);
-  });
+      const result = convertListMessageData(msg);
 
-  test('sets payload size from payloadSize field', () => {
-    const msg = makeMessage({
-      key: makePayload('x', PayloadEncoding.TEXT, { payloadSize: 512 }),
-      value: makePayload('x', PayloadEncoding.TEXT, { payloadSize: 1024 }),
+      expect(result.key.size).toBe(512);
+      expect(result.value.size).toBe(1024);
     });
-
-    const result = convertListMessageData(msg);
-
-    expect(result.key.size).toBe(512);
-    expect(result.value.size).toBe(1024);
   });
 });

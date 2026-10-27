@@ -60,7 +60,12 @@ function renderList(page = 2, pageSize = 10) {
   };
 }
 
-describe('TopicList pagination', () => {
+async function selectRowsPerPage(user: ReturnType<typeof userEvent.setup>, option: string) {
+  await user.click(screen.getByRole('combobox', { name: 'Rows per page' }));
+  await user.click(await screen.findByRole('option', { name: option }));
+}
+
+describe('the TopicList pagination', () => {
   beforeEach(() => {
     response = { topics: topics(21) };
     isLoading = false;
@@ -111,9 +116,24 @@ describe('TopicList pagination', () => {
     await waitFor(() => expect(screen.getByRole('link', { name: 'orders-20' })).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Go to previous page' }));
     await waitFor(() => expect(screen.getByRole('link', { name: 'orders-10' })).toBeInTheDocument());
-    await user.click(screen.getByRole('combobox', { name: 'Rows per page' }));
-    await user.click(await screen.findByRole('option', { name: '50' }));
+    await selectRowsPerPage(user, '50');
     await waitFor(() => expect(screen.getByText('Page 1 of 1')).toBeInTheDocument());
     expect(screen.getAllByRole('link', { name: TOPIC_LINK_NAME })).toHaveLength(21);
+  });
+
+  test('filters by name and clears the filter from the reset button', async () => {
+    const user = userEvent.setup();
+    renderList(0);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'orders-0' })).toBeInTheDocument());
+    expect(screen.getByTestId('search-field-search-icon')).toBeInTheDocument();
+
+    await user.type(screen.getByTestId('search-field-input'), 'orders-20');
+
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'orders-0' })).not.toBeInTheDocument());
+    expect(screen.queryByTestId('search-field-search-icon')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('search-field-reset-icon'));
+
+    await waitFor(() => expect(screen.getByRole('link', { name: 'orders-0' })).toBeInTheDocument());
+    expect(screen.getByTestId('search-field-input')).toHaveValue('');
   });
 });

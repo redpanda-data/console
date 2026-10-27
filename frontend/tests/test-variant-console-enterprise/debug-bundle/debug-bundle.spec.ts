@@ -1,6 +1,8 @@
 import { appURL, expect, test } from '../../shared/e2e';
 import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-page';
 
+const GENERATE_BUTTON = /generate/i;
+
 /**
  * Debug Bundle E2E Tests
  *
@@ -12,7 +14,7 @@ import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-p
  * - Bundle download and deletion
  * - Cancellation workflow
  */
-test.describe('Debug Bundle - Navigation and Display', () => {
+test.describe('debug Bundle - Navigation and Display', () => {
   test('should display debug bundle page with header, generate button, and no in-progress bundle', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
@@ -29,7 +31,7 @@ test.describe('Debug Bundle - Navigation and Display', () => {
   });
 });
 
-test.describe('Debug Bundle - Form Mode Switching', () => {
+test.describe('debug Bundle - Form Mode Switching', () => {
   test('should switch from basic to advanced mode', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
@@ -50,7 +52,7 @@ test.describe('Debug Bundle - Form Mode Switching', () => {
   });
 });
 
-test.describe('Debug Bundle - Generation Progress', () => {
+test.describe('debug Bundle - Generation Progress', () => {
   test('should navigate to progress page after generation starts', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.generateBasicBundle();
@@ -106,7 +108,7 @@ test.describe('Debug Bundle - Generation Progress', () => {
   });
 });
 
-test.describe('Debug Bundle - Download and Deletion', () => {
+test.describe('debug Bundle - Download and Deletion', () => {
   test('should display download link when bundle is ready', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
@@ -155,7 +157,7 @@ test.describe('Debug Bundle - Download and Deletion', () => {
   });
 });
 
-test.describe.skipIf(!!process.env.CI)('Debug Bundle - Error Handling', () => {
+test.describe.skipIf(!!process.env.CI)('debug Bundle - Error Handling', () => {
   test('should display error message if bundle generation fails', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
@@ -188,7 +190,7 @@ test.describe.skipIf(!!process.env.CI)('Debug Bundle - Error Handling', () => {
   });
 });
 
-test.describe('Debug Bundle - Permissions and Access', () => {
+test.describe('debug Bundle - Permissions and Access', () => {
   test('should show debug bundle link in header if user has permissions', async ({ page }) => {
     await page.goto('/');
 
@@ -216,7 +218,7 @@ test.describe('Debug Bundle - Permissions and Access', () => {
   });
 });
 
-test.describe('Debug Bundle - Bundle Expiration', () => {
+test.describe('debug Bundle - Bundle Expiration', () => {
   test('should display expiration indicator for expired bundles', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
@@ -233,37 +235,30 @@ test.describe('Debug Bundle - Bundle Expiration', () => {
   });
 });
 
-// biome-ignore lint/suspicious/noSkippedTests: test disabled pending implementation
-test.skip('Debug Bundle - Confirmation Dialogs', () => {
+test.describe('debug Bundle - Confirmation Dialogs', () => {
   test('should show confirmation dialog when generating bundle if one exists', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
+    // Generate asks before replacing a bundle, so one has to exist first.
+    await debugBundlePage.generateBasicBundle();
     await debugBundlePage.goto();
 
-    await debugBundlePage.generate();
+    await page.getByRole('button', { name: GENERATE_BUTTON }).first().click();
 
-    // Check if confirmation dialog appears
-    const confirmDialog = page.getByRole('dialog').or(page.getByText(/are you sure|confirm|replace/i));
-    const hasConfirm = await confirmDialog.isVisible({ timeout: 2000 }).catch(() => false);
+    const confirmDialog = page.getByRole('alertdialog', { name: 'Generate new debug bundle' });
+    await expect(
+      confirmDialog.getByText(
+        'You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?'
+      )
+    ).toBeVisible();
 
-    if (hasConfirm) {
-      // Verify the confirmation message is visible
-      await expect(
-        page.getByText(
-          'You have an existing debug bundle; generating a new one will delete the previous one. Are you sure?'
-        )
-      ).toBeVisible();
-
-      // Cancel to avoid actually generating
-      const cancelButton = page.getByRole('button', { name: /cancel|no/i });
-      await cancelButton.click();
-
-      // Should still be on main page
-      await expect(page).toHaveURL(appURL('/debug-bundle'));
-    }
+    // Cancel to avoid actually generating
+    await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirmDialog).not.toBeVisible();
+    await expect(page).toHaveURL(appURL('/debug-bundle'));
   });
 });
 
-test.describe('Debug Bundle - SCRAM Authentication', () => {
+test.describe('debug Bundle - SCRAM Authentication', () => {
   test('should display SCRAM authentication fields in advanced mode', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();

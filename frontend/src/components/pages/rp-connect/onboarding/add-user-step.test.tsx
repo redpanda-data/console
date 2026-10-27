@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { createRouterTransport } from '@connectrpc/connect';
+import { createRouterTransport, type Transport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -37,7 +37,7 @@ import {
   SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
-import { useRef } from 'react';
+import { type Ref, useImperativeHandle, useRef } from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import type { UserStepRef } from '../types/wizard';
@@ -67,32 +67,39 @@ rs.mock('utils/password', () => ({
   generatePassword: rs.fn(() => 'mock-generated-password-12345'),
 }));
 
-// Mock ServiceAccountSelector with functional ref
-rs.mock('components/ui/service-account/service-account-selector', () => {
-  const React = require('react');
-  return {
-    ServiceAccountSelector: React.forwardRef((_props: unknown, ref: unknown) => {
-      React.useImperativeHandle(ref, () => ({
-        createServiceAccount: rs.fn().mockResolvedValue({
-          serviceAccountId: 'sa-123',
-          secretName: 'sa-secret',
-        }),
-        isPending: false,
-      }));
-      return React.createElement('div', { 'data-testid': 'service-account-selector' });
+// Mock ServiceAccountSelector with functional ref (React 19 hands a function component its `ref` as a prop)
+function MockServiceAccountSelector({ ref }: { ref?: Ref<unknown> }) {
+  useImperativeHandle(ref, () => ({
+    createServiceAccount: rs.fn().mockResolvedValue({
+      serviceAccountId: 'sa-123',
+      secretName: 'sa-secret',
     }),
-  };
-});
+    isPending: false,
+  }));
+  return <div data-testid="service-account-selector" />;
+}
+
+rs.mock('components/ui/service-account/service-account-selector', () => ({
+  ServiceAccountSelector: MockServiceAccountSelector,
+}));
 
 // Mock TanStack Router Link
+function MockLink(props: { children: unknown }) {
+  const React = require('react');
+  return React.createElement(
+    'a',
+    {
+      href: '#',
+    },
+    props.children
+  );
+}
+
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
-    Link: (props: { children: unknown }) => {
-      const React = require('react');
-      return React.createElement('a', { href: '#' }, props.children);
-    },
+    Link: MockLink,
   };
 });
 
@@ -177,19 +184,108 @@ function buildTransport(overrides?: {
   };
 }
 
+/** Renders the harness and records what `triggerSubmit` resolves to. */
+function renderCapturingResult(props: Record<string, unknown>, transport: Transport) {
+  const captured: { result?: unknown } = {};
+  renderWithFileRoutes(
+    <TestHarness
+      onResult={(r: unknown) => {
+        captured.result = r;
+      }}
+      {...props}
+    />,
+    { transport }
+  );
+  return captured;
+}
+
+/** listUsers returning exactly these users. */
+function listUsersReturning(...names: string[]) {
+  return rs.fn().mockReturnValue(
+    create(ListUsersResponseSchema, {
+      users: names.map((name) => create(ListUsersResponse_UserSchema, { name })),
+      nextPageToken: '',
+    })
+  );
+}
+
+/** listACLs returning one topic resource whose ACLs allow `principal` each of `operations`. */
+function topicAclsAllowing({
+  principal,
+  operations,
+  resourceName = 'my-topic',
+  resourcePatternType = ACL_ResourcePatternType.LITERAL,
+}: {
+  principal: string;
+  operations: ACL_Operation[];
+  resourceName?: string;
+  resourcePatternType?: ACL_ResourcePatternType;
+}) {
+  return rs.fn().mockReturnValue(
+    create(ListACLsResponseSchema, {
+      resources: [
+        create(ListACLsResponse_ResourceSchema, {
+          resourceType: ACL_ResourceType.TOPIC,
+          resourceName,
+          resourcePatternType,
+          acls: operations.map((operation) =>
+            create(ListACLsResponse_PolicySchema, {
+              principal,
+              host: '*',
+              operation,
+              permissionType: ACL_PermissionType.ALLOW,
+            })
+          ),
+        }),
+      ],
+    })
+  );
+}
+
+/** Types `username` into the new-user field and submits the step. */
+async function submitWithUsername(user: ReturnType<typeof userEvent.setup>, username: string) {
+  const usernameInput = await screen.findByPlaceholderText('Enter a username');
+  await user.type(usernameInput, username);
+
+  await user.click(screen.getByTestId('submit'));
+}
+
+function RefCaptureHarness({ onCapture }: { onCapture: (ref: UserStepRef | null) => void }) {
+  const ref = useRef<UserStepRef>(null);
+  return (
+    <>
+      <AddUserStep hideTitle ref={ref} selectionMode="new" />
+      <button data-testid="capture-ref" onClick={() => onCapture(ref.current)} type="button">
+        Capture
+      </button>
+    </>
+  );
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 const ALREADY_EXISTS = /already exists/;
 const HAS_TOPIC_ACCESS = /has required permissions/i;
 
-describe('AddUserStep', () => {
+/** Asserts the grant checkbox is offered (and ticked), or that the user's existing access shows instead. */
+async function expectTopicGrantOffered(offered: boolean) {
+  const checkbox = { name: 'Grant this user full access to my-topic' };
+  if (offered) {
+    expect(await screen.findByRole('checkbox', checkbox)).toBeChecked();
+  } else {
+    expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', checkbox)).toBeNull();
+  }
+}
+
+describe('the AddUserStep', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
 
   // ── SASL path ──────────────────────────────────────────────────────────────
 
-  describe('SASL path', () => {
+  describe('the SASL path', () => {
     test('1. new SASL user calls createUser RPC', async () => {
       const user = userEvent.setup();
       const { transport, createUserMock } = buildTransport();
@@ -279,30 +375,14 @@ describe('AddUserStep', () => {
 
     test('4. existing user skips createUser call', async () => {
       const user = userEvent.setup();
-      const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'existing-user' })];
-
-      const listUsersMock = rs.fn().mockReturnValue(
-        create(ListUsersResponseSchema, {
-          users: existingUsers,
-          nextPageToken: '',
-        })
-      );
-
-      const { transport, createUserMock } = buildTransport({ listUsersMock });
-      let capturedResult: unknown;
+      const { transport, createUserMock, listUsersMock } = buildTransport({
+        listUsersMock: listUsersReturning('existing-user'),
+      });
 
       // Use selectionMode="new" so the component renders an Input instead of Combobox.
       // Type a username that matches an existing user.
       // The component detects the existing user and skips createUser.
-      renderWithFileRoutes(
-        <TestHarness
-          onResult={(r: unknown) => {
-            capturedResult = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
-      );
+      const captured = renderCapturingResult({ selectionMode: 'new' }, transport);
 
       // Wait for the user list to load
       await waitFor(() => {
@@ -310,14 +390,11 @@ describe('AddUserStep', () => {
       });
 
       // Type an existing username into the input
-      const usernameInput = await screen.findByPlaceholderText('Enter a username');
-      await user.type(usernameInput, 'existing-user');
-
-      await user.click(screen.getByTestId('submit'));
+      await submitWithUsername(user, 'existing-user');
 
       await waitFor(() => {
-        expect(capturedResult).toBeDefined();
-        expect((capturedResult as { success: boolean }).success).toBe(true);
+        expect(captured.result).toBeDefined();
+        expect((captured.result as { success: boolean }).success).toBe(true);
       });
 
       // createUser should NOT have been called for existing user
@@ -340,18 +417,7 @@ describe('AddUserStep', () => {
     test('6. consumer group included in submission result', async () => {
       const user = userEvent.setup();
       const { transport, createUserMock } = buildTransport();
-      let capturedResult: unknown;
-
-      renderWithFileRoutes(
-        <TestHarness
-          onResult={(r: unknown) => {
-            capturedResult = r;
-          }}
-          selectionMode="new"
-          showConsumerGroupFields={true}
-        />,
-        { transport }
-      );
+      const captured = renderCapturingResult({ selectionMode: 'new', showConsumerGroupFields: true }, transport);
 
       const usernameInput = await screen.findByPlaceholderText('Enter a username');
       await user.type(usernameInput, 'cg-user');
@@ -366,8 +432,8 @@ describe('AddUserStep', () => {
       });
 
       await waitFor(() => {
-        expect(capturedResult).toBeDefined();
-        const result = capturedResult as { success: boolean; data?: { consumerGroup: string } };
+        expect(captured.result).toBeDefined();
+        const result = captured.result as { success: boolean; data?: { consumerGroup: string } };
         expect(result.success).toBe(true);
         // The consumer group is passed through the mutation, verify createUser was called
         expect(result.data?.consumerGroup).toBe('my-consumer-group');
@@ -377,7 +443,7 @@ describe('AddUserStep', () => {
 
   // An input connecting as this user reads through its consumer group, so starting from the
   // pipeline's group has to end in that group being granted.
-  describe('Consumer group from the pipeline', () => {
+  describe('consumer group from the pipeline', () => {
     test('grants the consumer group the dialog starts with', async () => {
       const user = userEvent.setup();
       const { transport, createACLMock } = buildTransport();
@@ -405,7 +471,7 @@ describe('AddUserStep', () => {
 
   // ── Service Account path ───────────────────────────────────────────────────
 
-  describe('Service Account path', () => {
+  describe('service Account path', () => {
     test('7. SA tab switches auth mode', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
@@ -516,7 +582,7 @@ describe('AddUserStep', () => {
   });
 
   // A component logs in as the user it's given, so an existing one has to work as configured.
-  describe('Existing user', () => {
+  describe('existing user', () => {
     const existingUser = () =>
       rs.fn().mockReturnValue(
         create(ListUsersResponseSchema, {
@@ -577,7 +643,7 @@ describe('AddUserStep', () => {
 
   // ── Permissions ────────────────────────────────────────────────────────────
 
-  describe('Permissions', () => {
+  describe('permissions', () => {
     const userWithoutAccess = () =>
       rs
         .fn()
@@ -595,18 +661,9 @@ describe('AddUserStep', () => {
         const { transport, listACLsMock, createACLMock, createUserMock, createSecretMock } = buildTransport({
           listUsersMock: userWithoutAccess(),
         });
-        let capturedResult: unknown;
-
-        renderWithFileRoutes(
-          <TestHarness
-            defaultUsername="no-perms-user"
-            onResult={(r: unknown) => {
-              capturedResult = r;
-            }}
-            selectionMode={selectionMode}
-            topicName="my-topic"
-          />,
-          { transport }
+        const captured = renderCapturingResult(
+          { defaultUsername: 'no-perms-user', selectionMode, topicName: 'my-topic' },
+          transport
         );
 
         // The topic's ACLs are only fetched once the name resolves to an existing user.
@@ -614,7 +671,7 @@ describe('AddUserStep', () => {
         expect(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeChecked();
         await user.click(screen.getByTestId('submit'));
 
-        await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+        await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
         expect(topicGrants(createACLMock)).toEqual([
           [
             expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }),
@@ -654,56 +711,19 @@ describe('AddUserStep', () => {
 
     test('11. has permissions alert when user has ACLs', async () => {
       const user = userEvent.setup();
-      const existingUsers = [create(ListUsersResponse_UserSchema, { name: 'perms-user' })];
-
-      const listUsersMock = rs.fn().mockReturnValue(
-        create(ListUsersResponseSchema, {
-          users: existingUsers,
-          nextPageToken: '',
-        })
-      );
-
       // Return ACLs with READ and WRITE permissions
-      const listACLsMock = rs.fn().mockReturnValue(
-        create(ListACLsResponseSchema, {
-          resources: [
-            create(ListACLsResponse_ResourceSchema, {
-              resourceType: ACL_ResourceType.TOPIC,
-              resourceName: 'my-topic',
-              resourcePatternType: ACL_ResourcePatternType.LITERAL,
-              acls: [
-                create(ListACLsResponse_PolicySchema, {
-                  principal: 'User:perms-user',
-                  host: '*',
-                  operation: ACL_Operation.READ,
-                  permissionType: ACL_PermissionType.ALLOW,
-                }),
-                create(ListACLsResponse_PolicySchema, {
-                  principal: 'User:perms-user',
-                  host: '*',
-                  operation: ACL_Operation.WRITE,
-                  permissionType: ACL_PermissionType.ALLOW,
-                }),
-              ],
-            }),
-          ],
-        })
-      );
-
-      const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
-      let capturedResult: unknown;
+      const { transport, createACLMock, listUsersMock } = buildTransport({
+        listUsersMock: listUsersReturning('perms-user'),
+        listACLsMock: topicAclsAllowing({
+          principal: 'User:perms-user',
+          operations: [ACL_Operation.READ, ACL_Operation.WRITE],
+        }),
+      });
 
       // Use defaultUsername to pre-fill the existing user selection
-      renderWithFileRoutes(
-        <TestHarness
-          defaultUsername="perms-user"
-          onResult={(r: unknown) => {
-            capturedResult = r;
-          }}
-          selectionMode="existing"
-          topicName="my-topic"
-        />,
-        { transport }
+      const captured = renderCapturingResult(
+        { defaultUsername: 'perms-user', selectionMode: 'existing', topicName: 'my-topic' },
+        transport
       );
 
       // Wait for user list to load
@@ -722,38 +742,22 @@ describe('AddUserStep', () => {
       // Nothing to grant, so nothing is offered or created.
       expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
       await user.click(screen.getByTestId('submit'));
-      await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+      await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
       expect(topicGrants(createACLMock)).toEqual([]);
     });
     test.each([
       ['a prefixed', 'my-', ACL_ResourcePatternType.PREFIXED],
       ['a wildcard', '*', ACL_ResourcePatternType.LITERAL],
     ])('11b. counts %s ACL that covers the topic as access', async (_case, resourceName, resourcePatternType) => {
-      const listUsersMock = rs
-        .fn()
-        .mockReturnValue(
-          create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
-        );
-      const listACLsMock = rs.fn().mockReturnValue(
-        create(ListACLsResponseSchema, {
-          resources: [
-            create(ListACLsResponse_ResourceSchema, {
-              resourceType: ACL_ResourceType.TOPIC,
-              resourceName,
-              resourcePatternType,
-              acls: [
-                create(ListACLsResponse_PolicySchema, {
-                  principal: 'User:perms-user',
-                  host: '*',
-                  operation: ACL_Operation.ALL,
-                  permissionType: ACL_PermissionType.ALLOW,
-                }),
-              ],
-            }),
-          ],
-        })
-      );
-      const { transport } = buildTransport({ listUsersMock, listACLsMock });
+      const { transport, listACLsMock } = buildTransport({
+        listUsersMock: listUsersReturning('perms-user'),
+        listACLsMock: topicAclsAllowing({
+          principal: 'User:perms-user',
+          operations: [ACL_Operation.ALL],
+          resourceName,
+          resourcePatternType,
+        }),
+      });
 
       renderWithFileRoutes(
         <TestHarness defaultUsername="perms-user" onResult={rs.fn()} selectionMode="existing" topicName="my-topic" />,
@@ -779,55 +783,18 @@ describe('AddUserStep', () => {
       '11c. %s, for a component that needs %s access, is offered the grant: %s',
       async (_user, topicAccess, offered, operation) => {
         const user = userEvent.setup();
-        const listUsersMock = rs
-          .fn()
-          .mockReturnValue(
-            create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'perms-user' })] })
-          );
-        const listACLsMock = rs.fn().mockReturnValue(
-          create(ListACLsResponseSchema, {
-            resources: [
-              create(ListACLsResponse_ResourceSchema, {
-                resourceType: ACL_ResourceType.TOPIC,
-                resourceName: 'my-topic',
-                resourcePatternType: ACL_ResourcePatternType.LITERAL,
-                acls: [
-                  create(ListACLsResponse_PolicySchema, {
-                    principal: 'User:perms-user',
-                    host: '*',
-                    operation,
-                    permissionType: ACL_PermissionType.ALLOW,
-                  }),
-                ],
-              }),
-            ],
-          })
-        );
-        const { transport, createACLMock } = buildTransport({ listUsersMock, listACLsMock });
-        let capturedResult: unknown;
-
-        renderWithFileRoutes(
-          <TestHarness
-            defaultUsername="perms-user"
-            onResult={(r: unknown) => {
-              capturedResult = r;
-            }}
-            selectionMode="existing"
-            topicAccess={topicAccess}
-            topicName="my-topic"
-          />,
-          { transport }
+        const { transport, createACLMock } = buildTransport({
+          listUsersMock: listUsersReturning('perms-user'),
+          listACLsMock: topicAclsAllowing({ principal: 'User:perms-user', operations: [operation] }),
+        });
+        const captured = renderCapturingResult(
+          { defaultUsername: 'perms-user', selectionMode: 'existing', topicAccess, topicName: 'my-topic' },
+          transport
         );
 
-        const checkbox = { name: 'Grant this user full access to my-topic' };
-        if (offered) {
-          expect(await screen.findByRole('checkbox', checkbox)).toBeChecked();
-        } else {
-          expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
-          expect(screen.queryByRole('checkbox', checkbox)).toBeNull();
-        }
+        await expectTopicGrantOffered(offered);
         await user.click(screen.getByTestId('submit'));
-        await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
+        await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
         expect(topicGrants(createACLMock)).toHaveLength(offered ? 1 : 0);
       }
     );
@@ -835,31 +802,20 @@ describe('AddUserStep', () => {
 
   // ── Edge cases ─────────────────────────────────────────────────────────────
 
-  describe('Edge cases', () => {
+  describe('edge cases', () => {
     test('12. isPending accessible via ref', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
       let refValue: UserStepRef | null = null;
 
-      function RefCapture() {
-        const ref = useRef<UserStepRef>(null);
-        return (
-          <>
-            <AddUserStep hideTitle ref={ref} selectionMode="new" />
-            <button
-              data-testid="capture-ref"
-              onClick={() => {
-                refValue = ref.current;
-              }}
-              type="button"
-            >
-              Capture
-            </button>
-          </>
-        );
-      }
-
-      renderWithFileRoutes(<RefCapture />, { transport });
+      renderWithFileRoutes(
+        <RefCaptureHarness
+          onCapture={(ref) => {
+            refValue = ref;
+          }}
+        />,
+        { transport }
+      );
 
       // Wait for render
       await screen.findByPlaceholderText('Enter a username');

@@ -44,7 +44,7 @@ function createMemoryStorage(): Storage {
   };
 }
 
-describe('SqlEditor', () => {
+describe('the SqlEditor', () => {
   beforeEach(() => {
     rs.stubGlobal('localStorage', createMemoryStorage());
   });

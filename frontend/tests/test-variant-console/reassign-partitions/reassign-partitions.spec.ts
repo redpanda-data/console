@@ -1,4 +1,4 @@
-import { expect, test } from '../../shared/e2e';
+import { expect, type Page, test } from '../../shared/e2e';
 
 /**
  * Smoke coverage for the reassign-partitions wizard: three steps of shared state.
@@ -16,20 +16,37 @@ import { expect, test } from '../../shared/e2e';
 const SELECT_TOPIC_LABEL = /^Select topic /;
 const SELECT_PARTITION_LABEL = /^Select partition /;
 
-test.describe('Reassign partitions', () => {
+// Select the first topic. Its checkbox has an accessible name of "Select topic <name>".
+const selectFirstTopic = async (page: Page) => {
+  const firstTopicCheckbox = page.getByRole('checkbox', { name: SELECT_TOPIC_LABEL }).first();
+  await firstTopicCheckbox.waitFor({ state: 'visible', timeout: 30_000 });
+  await firstTopicCheckbox.click();
+};
+
+// Step 2 renders the broker table.
+const expectBrokerStep = async (page: Page) => {
+  await expect(page.getByRole('heading', { name: 'Target Brokers' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Select all brokers' })).toBeVisible();
+};
+
+test.describe('reassign partitions', () => {
   test('renders the cluster statistics and the step indicator', async ({ page }) => {
     await page.goto('/reassign-partitions');
 
     const stats = page.getByTestId('cluster-statistics');
-    for (const label of ['Broker Count', 'Leader Partitions', 'Replica Partitions', 'Total Partitions']) {
-      await expect(stats.getByText(label, { exact: true })).toBeVisible();
-    }
+    await Promise.all(
+      ['Broker Count', 'Leader Partitions', 'Replica Partitions', 'Total Partitions'].map((label) =>
+        expect(stats.getByText(label, { exact: true })).toBeVisible()
+      )
+    );
 
     const steps = page.getByRole('list', { name: 'Reassignment steps' });
     await expect(steps).toBeVisible();
-    for (const step of ['Select Partitions', 'Assign to Brokers', 'Review and Confirm']) {
-      await expect(steps.getByText(step, { exact: true })).toBeVisible();
-    }
+    await Promise.all(
+      ['Select Partitions', 'Assign to Brokers', 'Review and Confirm'].map((step) =>
+        expect(steps.getByText(step, { exact: true })).toBeVisible()
+      )
+    );
 
     await expect(page.getByText('Current Reassignments')).toBeVisible();
   });
@@ -42,17 +59,12 @@ test.describe('Reassign partitions', () => {
     // Nothing selected yet, so the wizard will not advance.
     await expect(nextButton).toBeDisabled();
 
-    // Select the first topic. Its checkbox has an accessible name of "Select topic <name>".
-    const firstTopicCheckbox = page.getByRole('checkbox', { name: SELECT_TOPIC_LABEL }).first();
-    await firstTopicCheckbox.waitFor({ state: 'visible', timeout: 30_000 });
-    await firstTopicCheckbox.click();
+    await selectFirstTopic(page);
 
     await expect(nextButton).toBeEnabled();
     await nextButton.click();
 
-    // Step 2 renders the broker table.
-    await expect(page.getByRole('heading', { name: 'Target Brokers' })).toBeVisible();
-    await expect(page.getByRole('checkbox', { name: 'Select all brokers' })).toBeVisible();
+    await expectBrokerStep(page);
 
     // Back returns to step 1 with the selection intact.
     await page.getByRole('button', { name: 'Select Partitions' }).click();

@@ -22,7 +22,7 @@ function renderVisualTips(mac: boolean) {
   render(<EditorTipsBar context="visual" />);
 }
 
-describe('EditorTipsBar — shortcut chip formatting', () => {
+describe('the EditorTipsBar — shortcut chip formatting', () => {
   it('joins keys with "+" and spells out modifiers off macOS (Alt+Z, Ctrl+Z, Ctrl+Shift+Z)', () => {
     renderVisualTips(false);
     expect(screen.getByText('Alt+Z')).toBeInTheDocument();

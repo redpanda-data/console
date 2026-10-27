@@ -54,9 +54,11 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
         ))}
       </TabsList>
       {tabs.map((t) => (
-        // Tab bodies space themselves, so the panel carries padding instead of the registry rhythm.
-        <TabsContent className="space-y-0 pt-2 pb-4" key={t.key} value={t.key}>
-          <TabSlot slot={t.content} />
+        // The body owns its spacing; the registry controls the panel.
+        <TabsContent key={t.key} value={t.key}>
+          <div className="pt-2 pb-4">
+            <TabSlot slot={t.content} />
+          </div>
         </TabsContent>
       ))}
     </RegistryTabs>

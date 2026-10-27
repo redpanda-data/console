@@ -72,17 +72,26 @@ const tabDisplayNames: Record<string, string> = {
   all: 'All',
 };
 
-export const ShadowLinkEditPage = () => {
-  const { name } = useParams({ from: '/shadowlinks/$name/edit' });
+type EditShadowLink = ReturnType<typeof useEditShadowLink>;
+
+const useEditShadowLinkPageTitle = (name: string) => {
+  useEffect(() => {
+    uiState.pageTitle = `Edit Shadow Link: ${name}`;
+    uiState.pageBreadcrumbs = [
+      { title: 'Shadow Links', linkTo: '/shadowlinks' },
+      { title: name, linkTo: `/shadowlinks/${name}` },
+      { title: 'Edit', linkTo: `/shadowlinks/${name}/edit` },
+    ];
+  }, [name]);
+};
+
+/** Toasts the update outcome, and returns to the details page once it succeeds. */
+const useShadowLinkUpdateFeedback = (
+  name: string,
+  dataplaneUpdate: EditShadowLink['dataplaneUpdate'],
+  controlplaneUpdate: EditShadowLink['controlplaneUpdate']
+) => {
   const navigate = useNavigate();
-
-  if (!name) {
-    throw new Error('Shadow link name is required');
-  }
-
-  // Use the unified edit hook that handles embedded/dataplane logic
-  const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
-    useEditShadowLink(name);
 
   // Set up mutation callbacks
   useEffect(() => {
@@ -99,7 +108,9 @@ export const ShadowLinkEditPage = () => {
   useEffect(() => {
     if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
       toast.success('Shadow link updated');
-      navigate({ to: `/shadowlinks/${name}` });
+      navigate({ to: `/shadowlinks/${name}` }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
     }
   }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);
 
@@ -111,6 +122,65 @@ export const ShadowLinkEditPage = () => {
       });
     }
   }, [dataplaneUpdate.error, controlplaneUpdate.error]);
+};
+
+/**
+ * Handle validation errors on form submit
+ * Navigate to the tab containing the first error
+ */
+const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: string) => void) => {
+  // Find the first field with an error
+  const firstErrorField = Object.keys(errors)[0];
+
+  if (firstErrorField) {
+    // Get the tab that contains this field
+    const errorTab = getTabForField(firstErrorField);
+
+    // Navigate to that tab
+    showTab(errorTab);
+
+    // Get error count
+    const errorCount = Object.keys(errors).length;
+
+    // Format tab name for display
+    const tabName = tabDisplayNames[errorTab] || errorTab;
+
+    // Show toast notification with tab information
+    toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
+      description: `Navigated to ${tabName} tab`,
+      testId: 'validation-error-toast',
+    });
+  }
+};
+
+// Load errors (e.g. a timeout while Redpanda aggregates shadow link status
+// on a large cluster) are not the same as a missing shadow link.
+const ShadowLinkEditUnavailable = ({ error }: { error: EditShadowLink['error'] }) => {
+  const navigate = useNavigate();
+
+  if (error && error.code !== Code.NotFound) {
+    return <ShadowLinkLoadErrorState errorMessage={error.message} />;
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 p-8">
+      <div className="text-body-lg">Shadow link not found</div>
+      <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
+        Back to Shadow Links
+      </Button>
+    </div>
+  );
+};
+
+type ShadowLinkEditFormProps = {
+  name: string;
+  formValues: EditShadowLink['formValues'];
+  isUpdating: boolean;
+  updateShadowLink: EditShadowLink['updateShadowLink'];
+};
+
+const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: ShadowLinkEditFormProps) => {
+  const navigate = useNavigate();
 
   // Track current active tab
   const [currentTab, setCurrentTab] = useState<string>('source');
@@ -132,61 +202,6 @@ export const ShadowLinkEditPage = () => {
     await updateShadowLink(values);
   };
 
-  /**
-   * Handle validation errors on form submit
-   * Navigate to the tab containing the first error
-   */
-  const onValidationError = (errors: FieldErrors<FormValues>) => {
-    // Find the first field with an error
-    const firstErrorField = Object.keys(errors)[0];
-
-    if (firstErrorField) {
-      // Get the tab that contains this field
-      const errorTab = getTabForField(firstErrorField);
-
-      // Navigate to that tab
-      setCurrentTab(errorTab);
-
-      // Get error count
-      const errorCount = Object.keys(errors).length;
-
-      // Format tab name for display
-      const tabName = tabDisplayNames[errorTab] || errorTab;
-
-      // Show toast notification with tab information
-      toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
-        description: `Navigated to ${tabName} tab`,
-        testId: 'validation-error-toast',
-      });
-    }
-  };
-
-  useEffect(() => {
-    uiState.pageTitle = `Edit Shadow Link: ${name}`;
-    uiState.pageBreadcrumbs = [
-      { title: 'Shadow Links', linkTo: '/shadowlinks' },
-      { title: name, linkTo: `/shadowlinks/${name}` },
-      { title: 'Edit', linkTo: `/shadowlinks/${name}/edit` },
-    ];
-  }, [name]);
-
-  // Load errors (e.g. a timeout while Redpanda aggregates shadow link status
-  // on a large cluster) are not the same as a missing shadow link.
-  if (!(isLoading || hasData) && error && error.code !== Code.NotFound) {
-    return <ShadowLinkLoadErrorState errorMessage={error.message} />;
-  }
-
-  if (!(isLoading || hasData)) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 p-8">
-        <div className="text-body-lg">Shadow link not found</div>
-        <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
-          Back to Shadow Links
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <div className="text-body text-muted-foreground" data-testid="shadowLink-edit-page-description">
@@ -194,7 +209,7 @@ export const ShadowLinkEditPage = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit, onValidationError)}>
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => reportValidationErrors(errors, setCurrentTab))}>
           <Tabs onValueChange={setCurrentTab} value={currentTab}>
             <TabsList>
               <TabsTrigger data-testid="tab-all" value="all">
@@ -243,5 +258,33 @@ export const ShadowLinkEditPage = () => {
         </form>
       </Form>
     </div>
+  );
+};
+
+export const ShadowLinkEditPage = () => {
+  const { name } = useParams({ from: '/shadowlinks/$name/edit' });
+
+  if (!name) {
+    throw new Error('Shadow link name is required');
+  }
+
+  // Use the unified edit hook that handles embedded/dataplane logic
+  const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
+    useEditShadowLink(name);
+
+  useShadowLinkUpdateFeedback(name, dataplaneUpdate, controlplaneUpdate);
+  useEditShadowLinkPageTitle(name);
+
+  if (!(isLoading || hasData)) {
+    return <ShadowLinkEditUnavailable error={error} />;
+  }
+
+  return (
+    <ShadowLinkEditForm
+      formValues={formValues}
+      isUpdating={isUpdating}
+      name={name}
+      updateShadowLink={updateShadowLink}
+    />
   );
 };

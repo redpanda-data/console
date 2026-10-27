@@ -15,8 +15,12 @@ import { render, screen } from 'test-utils';
 
 import { SqlWizard, type SqlWizardProps, type WizardTopic } from './sql-wizard';
 
+function MockSyncCodeBlock({ code }: { code: string }) {
+  return <div data-testid="sql-preview">{code}</div>;
+}
+
 rs.mock('components/redpanda-ui/components/code-block-dynamic', () => ({
-  SyncCodeBlock: ({ code }: { code: string }) => <div data-testid="sql-preview">{code}</div>,
+  SyncCodeBlock: MockSyncCodeBlock,
 }));
 
 const TOPICS: WizardTopic[] = [
@@ -46,7 +50,7 @@ const pickTopicAndContinue = async (topicName: string) => {
   await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 };
 
-describe('SqlWizard', () => {
+describe('the SqlWizard', () => {
   test('lists topics with details and filters them by search', async () => {
     renderWizard();
 
@@ -87,6 +91,16 @@ describe('SqlWizard', () => {
     expect(screen.getByTestId('sql-preview')).toHaveTextContent(
       "CREATE TABLE default_redpanda_catalog=>cars_telemetry_v1 WITH (topic='cars-telemetry.v1');"
     );
+  });
+
+  test('names the summary rows and the SQL preview', async () => {
+    renderWizard();
+
+    await pickTopicAndContinue('orders');
+
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Catalog', 'Source topic']);
+    expect(screen.getAllByRole('definition')[1]).toHaveTextContent('orders');
+    expect(screen.getByRole('figure', { name: 'This will run' })).toContainElement(screen.getByTestId('sql-preview'));
   });
 
   test('rejects an invalid table name and does not create', async () => {

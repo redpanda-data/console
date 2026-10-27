@@ -47,9 +47,11 @@ export const PreviewFieldsModal: FC<{
         {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
         <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>
-            {/* Room for DialogContent's close button. */}
-            <DialogHeader className="pr-10">
-              <DialogTitle>Preview fields</DialogTitle>
+            <DialogHeader>
+              {/* Room for DialogContent's close button: the header's own padding plus this makes 40px. */}
+              <div className="pr-6">
+                <DialogTitle>Preview fields</DialogTitle>
+              </div>
             </DialogHeader>
             <DialogBody>
               <PreviewSettings messages={messages} topicName={topicName} />

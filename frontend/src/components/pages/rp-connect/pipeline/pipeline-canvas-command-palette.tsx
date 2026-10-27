@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import {
   CommandDialog,
   CommandEmpty,
@@ -105,7 +106,7 @@ export function CanvasCommandPalette({
                 onSelect={() => pick(action.run)}
                 value={`action ${action.label}`}
               >
-                <action.icon className="text-muted-foreground" />
+                <TonedIcon icon={action.icon} tone="muted" />
                 <span>{action.label}</span>
               </CommandItem>
             ))}

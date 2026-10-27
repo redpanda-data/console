@@ -29,7 +29,7 @@ const Harness = ({ erroring = false }: { erroring?: boolean }) => (
 const column = (container: HTMLElement) => container.querySelector('.pt-8') as HTMLElement;
 const readVar = (el: HTMLElement) => el.style.getPropertyValue(PAGE_TOP_VAR);
 
-describe('PageColumn', () => {
+describe('the PageColumn', () => {
   // happy-dom does no layout, so every offsetTop is 0 — the padding is the observable part.
   it("publishes an offset including the column's own top padding", () => {
     const { container } = render(<Harness />);

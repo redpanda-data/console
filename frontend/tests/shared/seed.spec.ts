@@ -2,7 +2,7 @@ import { expect, test } from './e2e';
 
 const REDPANDA_TITLE_REGEX = /Redpanda/;
 
-test.describe('Seed Test for Redpanda Console', () => {
+test.describe('seed Test for Redpanda Console', () => {
   test('seed - application setup and basic navigation', async ({ page }) => {
     // Navigate to Redpanda Console homepage
     await page.goto('/');

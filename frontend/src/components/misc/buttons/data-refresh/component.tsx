@@ -43,19 +43,7 @@ export const DataRefreshButton = () => {
         stateRef.current.maxRequestCount = currentRequests;
       }
 
-      let newRemainingSeconds = 0;
-      if (stateRef.current.isActive && currentRequests === 0) {
-        const timeUntilRefresh = stateRef.current.nextRefresh - Date.now();
-        if (timeUntilRefresh > 0) {
-          newRemainingSeconds = Math.ceil(timeUntilRefresh / 1000);
-        } else {
-          stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
-          appGlobal.onRefresh();
-        }
-      } else if (stateRef.current.isActive && currentRequests > 0) {
-        // Active requests — delay the next refresh
-        stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
-      }
+      const newRemainingSeconds = getRemainingRefreshSeconds(stateRef.current, currentRequests);
 
       setRefreshState({
         activeRequests: currentRequests,
@@ -127,7 +115,7 @@ export const DataRefreshButton = () => {
             </TooltipContent>
           </Tooltip>
         )}
-        <span className="ml-3 select-none text-body text-muted-foreground">
+        <span className="ml-3 text-body text-muted-foreground select-none">
           {isActive && activeRequests === 0 ? <>Refreshing in {remainingSeconds} secs</> : null}
           {activeRequests > 0 ? <>Fetching data... {countStr}</> : null}
         </span>
@@ -137,3 +125,22 @@ export const DataRefreshButton = () => {
 };
 
 export default DataRefreshButton;
+
+function getRemainingRefreshSeconds(
+  state: { isActive: boolean; nextRefresh: number },
+  currentRequests: number
+): number {
+  if (state.isActive && currentRequests === 0) {
+    const timeUntilRefresh = state.nextRefresh - Date.now();
+    if (timeUntilRefresh > 0) {
+      return Math.ceil(timeUntilRefresh / 1000);
+    }
+    state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
+    appGlobal.onRefresh();
+  } else if (state.isActive && currentRequests > 0) {
+    // Active requests — delay the next refresh
+    state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
+  }
+
+  return 0;
+}

@@ -6,7 +6,7 @@ import { expect, test } from '../../shared/e2e';
 const RP_CONNECT_TAB = /Redpanda Connect/;
 const HINT_TEXT = /show the full menu of components available/;
 
-test.describe('Redpanda Connect intro', () => {
+test.describe('redpanda Connect intro', () => {
   test('renders the install steps, the walkthrough and the hint', async ({ page }) => {
     await page.goto('/connect-clusters');
     await page.getByRole('tab', { name: RP_CONNECT_TAB }).click();

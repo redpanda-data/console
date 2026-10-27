@@ -13,7 +13,7 @@ import { Background, type Edge, Handle, type Node, Position, ReactFlow, ReactFlo
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Item, ItemContent, ItemTitle } from 'components/redpanda-ui/components/item';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import type { UnifiedShadowLink } from '../model';
 
@@ -21,32 +21,41 @@ type ShadowLinkDiagramProps = {
   shadowLink: UnifiedShadowLink;
 };
 
+// React Flow draws its dotted grid under every node, so each node sits on an opaque surface.
+const ClusterNodeSurface = ({ children }: { children: ReactNode }) => (
+  <div className="min-w-60 bg-background">{children}</div>
+);
+
 const SourceClusterNode = ({ data }: { data: { brokers: string[] } }) => (
-  <Item className="min-w-60 bg-background" size="sm" variant="outline">
-    <ItemContent>
-      <ItemTitle>Source cluster</ItemTitle>
-      <div className="flex flex-col gap-1 text-body-sm text-muted-foreground">
-        {data.brokers.map((broker) => (
-          <div className="max-w-[240px] truncate text-body text-muted-foreground" key={broker}>
-            {broker}
-          </div>
-        ))}
-      </div>
-    </ItemContent>
-    <Handle position={Position.Right} type="source" />
-  </Item>
+  <ClusterNodeSurface>
+    <Item size="sm" variant="outline">
+      <ItemContent>
+        <ItemTitle>Source cluster</ItemTitle>
+        <div className="flex flex-col gap-1 text-body-sm text-muted-foreground">
+          {data.brokers.map((broker) => (
+            <div className="max-w-[240px] truncate text-body text-muted-foreground" key={broker}>
+              {broker}
+            </div>
+          ))}
+        </div>
+      </ItemContent>
+      <Handle position={Position.Right} type="source" />
+    </Item>
+  </ClusterNodeSurface>
 );
 
 const ShadowClusterNode = () => (
-  <Item className="min-w-60 bg-background" size="sm" variant="outline">
-    <Handle position={Position.Left} type="target" />
-    <ItemContent>
-      <ItemTitle>Shadow cluster</ItemTitle>
-      <div className="text-body-sm text-muted-foreground">
-        <div className="text-body text-muted-foreground">This cluster </div>
-      </div>
-    </ItemContent>
-  </Item>
+  <ClusterNodeSurface>
+    <Item size="sm" variant="outline">
+      <Handle position={Position.Left} type="target" />
+      <ItemContent>
+        <ItemTitle>Shadow cluster</ItemTitle>
+        <div className="text-body-sm text-muted-foreground">
+          <div className="text-body text-muted-foreground">This cluster </div>
+        </div>
+      </ItemContent>
+    </Item>
+  </ClusterNodeSurface>
 );
 
 const nodeTypes = {

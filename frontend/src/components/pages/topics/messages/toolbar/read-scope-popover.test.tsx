@@ -40,86 +40,112 @@ const renderPopover = (overrides: Partial<ReadScopePopoverProps> = {}) => {
   return props;
 };
 
-describe('ReadScopePopover', () => {
-  test('shows the current mode and limit summary on the trigger', () => {
-    renderPopover({ mode: 'oldest', maxResults: 20 });
-    expect(screen.getByTestId('read-scope-button')).toHaveTextContent('Oldest');
-    expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· 20');
+// The Registry tooltip is shown and announced as the element's description, with no native `title` left.
+const expectTooltipHint = async (element: HTMLElement, hint: string) => {
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(hint);
+  expect(element).toHaveAccessibleDescription(hint);
+  expect(element).not.toHaveAttribute('title');
+};
+
+describe('the ReadScopePopover', () => {
+  describe('trigger', () => {
+    test('shows the current mode and limit summary on the trigger', () => {
+      renderPopover({ mode: 'oldest', maxResults: 20 });
+      expect(screen.getByTestId('read-scope-button')).toHaveTextContent('Oldest');
+      expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· 20');
+    });
+
+    test('summary reflects continuous paging', () => {
+      renderPopover({ continuousMode: true, maxResults: 20 });
+      expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· 20/page · continuous');
+    });
+
+    test('onOpenChange reports open/closed so a caller can gate other keyboard shortcuts on it', async () => {
+      const onOpenChange = rs.fn();
+      renderPopover({ onOpenChange });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+      // picking "Live tail" is one of the paths that explicitly closes the popover
+      await userEvent.click(screen.getByTestId('read-scope-mode-live'));
+      expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    });
+
+    test('keyboard focus explains the trigger, and Enter still opens the popover', async () => {
+      const user = userEvent.setup();
+      const onOpenChange = rs.fn();
+      renderPopover({ onOpenChange });
+      await user.tab();
+      const trigger = screen.getByTestId('read-scope-button');
+      expect(trigger).toHaveFocus();
+      await expectTooltipHint(trigger, 'Read scope — where to start reading');
+      await user.keyboard('{Enter}');
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
   });
 
-  test('summary reflects continuous paging', () => {
-    renderPopover({ continuousMode: true, maxResults: 20 });
-    expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· 20/page · continuous');
+  describe('start modes', () => {
+    test('selecting a mode applies immediately', async () => {
+      const props = renderPopover();
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      await userEvent.click(screen.getByTestId('read-scope-mode-oldest'));
+      expect(props.onModeChange).toHaveBeenCalledWith('oldest');
+    });
+
+    test('offset mode exposes the start-offset input', async () => {
+      const props = renderPopover({ mode: 'offset', customOffset: 48_210 });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      const offsetInput = screen.getByTestId('read-scope-offset-input');
+      expect(offsetInput).toHaveValue('48210');
+      await userEvent.type(offsetInput, '7');
+      // The input is controlled by the parent; each keystroke reports the parsed offset
+      expect(props.onCustomOffsetChange).toHaveBeenCalledWith(482_107);
+    });
+
+    test('continuous switch only exists for newest/oldest modes', async () => {
+      renderPopover({ mode: 'timestamp' });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      expect(screen.queryByTestId('read-scope-continuous-switch')).not.toBeInTheDocument();
+    });
+
+    test('picking a start mode stops live tail first', async () => {
+      const props = renderPopover({ liveTail: true });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      await userEvent.click(screen.getByTestId('read-scope-mode-oldest'));
+      expect(props.onLiveTailChange).toHaveBeenCalledWith(false);
+      expect(props.onModeChange).toHaveBeenCalledWith('oldest');
+    });
   });
 
-  test('selecting a mode applies immediately', async () => {
-    const props = renderPopover();
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    await userEvent.click(screen.getByTestId('read-scope-mode-oldest'));
-    expect(props.onModeChange).toHaveBeenCalledWith('oldest');
-  });
+  describe('limits and live tail', () => {
+    test('limit segmented control changes max results', async () => {
+      const props = renderPopover();
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      await userEvent.click(screen.getByTestId('read-scope-limit-100'));
+      expect(props.onMaxResultsChange).toHaveBeenCalledWith(100);
+    });
 
-  test('offset mode exposes the start-offset input', async () => {
-    const props = renderPopover({ mode: 'offset', customOffset: 48_210 });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    const offsetInput = screen.getByTestId('read-scope-offset-input');
-    expect(offsetInput).toHaveValue('48210');
-    await userEvent.type(offsetInput, '7');
-    // The input is controlled by the parent; each keystroke reports the parsed offset
-    expect(props.onCustomOffsetChange).toHaveBeenCalledWith(482_107);
-  });
+    test('live tail is a menu entry and reflects on the trigger', async () => {
+      const props = renderPopover({ liveTail: true });
+      expect(screen.getByTestId('read-scope-button')).toHaveTextContent('Live tail');
+      expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· streaming');
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      await userEvent.click(screen.getByTestId('read-scope-mode-live'));
+      expect(props.onLiveTailChange).toHaveBeenCalledWith(false);
+    });
 
-  test('continuous switch only exists for newest/oldest modes', async () => {
-    renderPopover({ mode: 'timestamp' });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    expect(screen.queryByTestId('read-scope-continuous-switch')).not.toBeInTheDocument();
-  });
+    test('max-results control is disabled while live tail is active, but partition stays live-editable', async () => {
+      renderPopover({ liveTail: true });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
+      expect(screen.getByTestId('read-scope-limit-100')).toBeDisabled();
+    });
 
-  test('limit segmented control changes max results', async () => {
-    const props = renderPopover();
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    await userEvent.click(screen.getByTestId('read-scope-limit-100'));
-    expect(props.onMaxResultsChange).toHaveBeenCalledWith(100);
-  });
-
-  test('live tail is a menu entry and reflects on the trigger', async () => {
-    const props = renderPopover({ liveTail: true });
-    expect(screen.getByTestId('read-scope-button')).toHaveTextContent('Live tail');
-    expect(screen.getByTestId('read-scope-button')).toHaveTextContent('· streaming');
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    await userEvent.click(screen.getByTestId('read-scope-mode-live'));
-    expect(props.onLiveTailChange).toHaveBeenCalledWith(false);
-  });
-
-  test('picking a start mode stops live tail first', async () => {
-    const props = renderPopover({ liveTail: true });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    await userEvent.click(screen.getByTestId('read-scope-mode-oldest'));
-    expect(props.onLiveTailChange).toHaveBeenCalledWith(false);
-    expect(props.onModeChange).toHaveBeenCalledWith('oldest');
-  });
-
-  test('max-results control is disabled while live tail is active, but partition stays live-editable', async () => {
-    renderPopover({ liveTail: true });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
-    expect(screen.getByTestId('read-scope-limit-100')).toBeDisabled();
-  });
-
-  test('partition and max-results controls stay enabled outside live tail', async () => {
-    renderPopover({ liveTail: false });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
-    expect(screen.getByTestId('read-scope-limit-100')).toBeEnabled();
-  });
-
-  test('onOpenChange reports open/closed so a caller can gate other keyboard shortcuts on it', async () => {
-    const onOpenChange = rs.fn();
-    renderPopover({ onOpenChange });
-    await userEvent.click(screen.getByTestId('read-scope-button'));
-    expect(onOpenChange).toHaveBeenLastCalledWith(true);
-    // picking "Live tail" is one of the paths that explicitly closes the popover
-    await userEvent.click(screen.getByTestId('read-scope-mode-live'));
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    test('partition and max-results controls stay enabled outside live tail', async () => {
+      renderPopover({ liveTail: false });
+      await userEvent.click(screen.getByTestId('read-scope-button'));
+      expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
+      expect(screen.getByTestId('read-scope-limit-100')).toBeEnabled();
+    });
   });
 });

@@ -97,7 +97,7 @@ function queryHeading(name: string) {
   return screen.queryByRole('heading', { name, level: 5 });
 }
 
-describe('PipelineCommandMenu', () => {
+describe('the PipelineCommandMenu', () => {
   it('dialog variant renders all category group headings', async () => {
     const transport = createTestTransport({ secretNames: ['API_KEY'], topicNames: ['orders'], userNames: ['svc'] });
 

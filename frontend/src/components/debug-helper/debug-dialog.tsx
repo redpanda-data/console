@@ -10,6 +10,7 @@
  */
 
 import { useRouterState } from '@tanstack/react-router';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
@@ -138,8 +139,8 @@ function PopIn({ children, className }: { children: React.ReactNode; className?:
 
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <Empty className="gap-2 md:p-6">
-      <EmptyDescription className="text-body-sm">{children}</EmptyDescription>
+    <Empty>
+      <EmptyDescription>{children}</EmptyDescription>
     </Empty>
   );
 }
@@ -154,10 +155,10 @@ function DebugSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="w-full max-w-full gap-0 overflow-hidden rounded-md p-0" variant="standard">
-      <CardHeader className="bg-muted/30 px-3 py-2" spacing="tight">
+    <Card className="w-full max-w-full overflow-hidden" size="sm" variant="standard">
+      <CardHeader spacing="tight">
         <CardTitle>
-          <span className="font-medium text-body-sm">{title}</span>
+          <span className="text-body-sm font-medium">{title}</span>
         </CardTitle>
         {description ? (
           <CardDescription>
@@ -165,7 +166,7 @@ function DebugSection({
           </CardDescription>
         ) : null}
       </CardHeader>
-      <CardContent className="border-t p-3">{children}</CardContent>
+      <CardContent>{children}</CardContent>
     </Card>
   );
 }
@@ -384,7 +385,7 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
               }}
             />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <div className="font-medium text-body-sm">{label}</div>
+              <div className="text-body-sm font-medium">{label}</div>
               <div className="text-body-sm text-muted-foreground">{description}</div>
             </div>
           </div>
@@ -413,19 +414,20 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
   const sizeBytes = new Blob([value]).size;
 
   return (
-    <Collapsible className="border-b last:border-0" onOpenChange={setExpanded} open={expanded}>
+    <Collapsible onOpenChange={setExpanded} open={expanded}>
       <div className="flex items-start gap-2 px-3 py-1.5">
         <CollapsibleTrigger
           aria-label={expanded ? 'Collapse value' : 'Expand value'}
-          className="mt-0.5 shrink-0 rounded p-0.5 hover:bg-muted"
+          className="mt-0.5 shrink-0"
+          render={<Button size="icon-xs" variant="ghost" />}
         >
           {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </CollapsibleTrigger>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
-            <code className="min-w-0 flex-1 truncate font-medium font-mono text-body-sm" title={storageKey}>
-              {storageKey}
-            </code>
+            <ElementTooltip content={storageKey}>
+              <code className="min-w-0 flex-1 truncate font-mono text-body-sm font-medium">{storageKey}</code>
+            </ElementTooltip>
             <Badge className="shrink-0" size="sm" tone="default" variant="outline">
               {formatBytes(sizeBytes)}
             </Badge>
@@ -491,7 +493,7 @@ function StorageSection({
     <div className="overflow-hidden rounded-md border">
       <div className="flex items-center justify-between gap-2 border-b bg-muted/30 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
-          <div className="truncate font-medium text-body-sm">{title}</div>
+          <div className="truncate text-body-sm font-medium">{title}</div>
           <Badge className="shrink-0" size="sm" tone="default" variant="outline">
             {storage.length} keys
           </Badge>
@@ -586,10 +588,10 @@ function EnvironmentPanel() {
         <TableBody>
           {Object.entries(info).map(([k, v]) => (
             <TableRow key={k}>
-              <TableCell className="px-3 py-1.5 align-top" weight="medium">
+              <TableCell className="align-top" weight="medium">
                 {k}
               </TableCell>
-              <TableCell className="whitespace-normal break-all px-3 py-1.5">
+              <TableCell className="break-all whitespace-normal">
                 <InlineCode>{String(v)}</InlineCode>
               </TableCell>
             </TableRow>
@@ -622,18 +624,13 @@ function FlagToggle({
   return (
     <div
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 font-medium text-body-sm transition-colors',
+        'inline-flex h-7 items-center gap-1.5 rounded-full border px-2 text-body-sm font-medium transition-colors',
         checked
           ? 'border-success-line bg-success-wash text-success'
           : 'border-border bg-background text-muted-foreground'
       )}
     >
-      <Switch
-        checked={checked}
-        className={cn(checked && 'data-[checked]:bg-success')}
-        id={id}
-        onCheckedChange={onCheckedChange}
-      />
+      <Switch checked={checked} id={id} onCheckedChange={onCheckedChange} />
       <Label className="cursor-pointer" htmlFor={id}>
         {checked ? 'On' : 'Off'}
       </Label>
@@ -694,26 +691,19 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
             const defaultValue = FEATURE_FLAGS[key];
             const effectiveValue = effective[key];
             return (
-              <Item
-                className={cn(
-                  'flex-col items-stretch gap-2 transition-colors',
-                  effectiveValue ? 'border-success-line bg-success-wash/50' : 'bg-muted/40'
-                )}
-                key={key}
-                size="xs"
-                variant="outline"
-              >
+              <Item className="flex-col items-stretch" key={key} size="xs" variant="outline">
                 {/* h-5 matches the badge so the row doesn't grow when it appears */}
                 <div className="flex h-5 min-w-0 items-center gap-1.5">
-                  <code
-                    className={cn(
-                      'min-w-0 flex-1 truncate font-medium font-mono text-body-sm',
-                      !effectiveValue && 'text-muted-foreground'
-                    )}
-                    title={key}
-                  >
-                    {key}
-                  </code>
+                  <ElementTooltip content={key}>
+                    <code
+                      className={cn(
+                        'min-w-0 flex-1 truncate font-mono text-body-sm font-medium',
+                        !effectiveValue && 'text-muted-foreground'
+                      )}
+                    >
+                      {key}
+                    </code>
+                  </ElementTooltip>
                   <AnimatePresence initial={false}>
                     {isOverridden ? (
                       <PopIn className="shrink-0" key="overridden">
@@ -863,18 +853,18 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   ];
 
   return (
-    <ItemGroup className="overflow-hidden rounded-md border">
+    <ItemGroup className="overflow-hidden">
       {rows.map(({ panel, icon, label, value, active }, index) => (
         <Fragment key={panel}>
           {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
-          {index > 0 ? <ItemSeparator className="border-b bg-transparent" /> : null}
+          {index > 0 ? <ItemSeparator /> : null}
           <Item
-            className="cursor-pointer rounded-none border-0 text-left hover:bg-muted/50"
+            className="cursor-pointer text-left"
             render={<button onClick={() => onNavigate(panel)} type="button" />}
             size="sm"
           >
             <ItemMedia variant="icon">{icon}</ItemMedia>
-            <ItemContent className="gap-0.5">
+            <ItemContent>
               <ItemTitle>{label}</ItemTitle>
               <ItemDescription>{value}</ItemDescription>
             </ItemContent>
@@ -887,7 +877,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
                 </PopIn>
               ) : null}
             </AnimatePresence>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0" color="var(--color-muted-foreground)" />
           </Item>
         </Fragment>
       ))}
@@ -933,12 +923,14 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-5xl" height="xl" size="xl">
         <DialogHeader align="left" spacing="tight">
-          <DialogTitle className="flex items-center gap-2">
-            <DebugPanda className="h-5 w-5" />
-            Debug helpers
-            <Badge size="sm" tone="default" variant="outline">
-              dev only
-            </Badge>
+          <DialogTitle>
+            <span className="flex items-center gap-2">
+              <DebugPanda className="h-5 w-5" />
+              Debug helpers
+              <Badge size="sm" tone="default" variant="outline">
+                dev only
+              </Badge>
+            </span>
           </DialogTitle>
         </DialogHeader>
 
@@ -947,7 +939,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-2">
               {NAV_GROUPS.map(({ label, items }) => (
                 <div key={label}>
-                  <div className="px-2 pb-1 font-semibold text-caption text-muted-foreground/70 uppercase tracking-wider">
+                  <div className="px-2 pb-1 text-caption font-semibold tracking-wider text-muted-foreground/70 uppercase">
                     {label}
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -994,7 +986,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
 
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="border-b px-5 pt-4 pb-3">
-              <div className="font-semibold text-body">{title}</div>
+              <div className="text-body font-semibold">{title}</div>
               <div className="text-body-sm text-muted-foreground">{description}</div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
@@ -1023,22 +1015,23 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
   const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
 
   return createPortal(
-    <button
-      aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
-      className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-gradient-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
-      onClick={onClick}
-      title="Debug helpers — ⌃/⌘⇧D"
-      type="button"
-    >
-      <DebugPanda className="h-[22px] w-[22px]" />
-      <AnimatePresence initial={false}>
-        {activeCount > 0 ? (
-          <PopIn className="absolute -top-1 -right-1" key="count">
-            <CountDot count={activeCount} size="sm" variant="warning" />
-          </PopIn>
-        ) : null}
-      </AnimatePresence>
-    </button>,
+    <ElementTooltip content="Debug helpers — ⌃/⌘⇧D">
+      <button
+        aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
+        className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-linear-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
+        onClick={onClick}
+        type="button"
+      >
+        <DebugPanda className="h-[22px] w-[22px]" />
+        <AnimatePresence initial={false}>
+          {activeCount > 0 ? (
+            <PopIn className="absolute -top-1 -right-1" key="count">
+              <CountDot count={activeCount} size="sm" variant="warning" />
+            </PopIn>
+          ) : null}
+        </AnimatePresence>
+      </button>
+    </ElementTooltip>,
     document.body
   );
 }

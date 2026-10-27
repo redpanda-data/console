@@ -180,90 +180,15 @@ export const buildAuthenticationConfiguration = (values: FormValues) => {
 };
 
 /**
- * Get update values for connection category (source/client options)
- * Compares form values with original values and returns schema + field mask paths
+ * Build the client options message from form values
  */
-export const getUpdateValuesForConnection = (
-  values: FormValues,
-  originalValues: FormValues
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => {
-  const fieldMaskPaths: string[] = [];
-
-  // Compare bootstrap servers
-  const bootstrapServersChanged = !arraysEqual(
-    values.bootstrapServers.map((s) => s.value),
-    originalValues.bootstrapServers.map((s) => s.value)
-  );
-
-  if (bootstrapServersChanged) {
-    // If bootstrap servers changed, use parent path which covers all client_options fields
-    fieldMaskPaths.push('configurations.client_options');
-  } else {
-    // If bootstrap servers didn't change, use specific paths for individual field changes
-
-    // Compare TLS settings - include if TLS changed or certificates changed
-    const hasCertificates =
-      values.mtlsMode === TLS_MODE.FILE_PATH
-        ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
-        : Boolean(
-            values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent
-          );
-
-    const tlsChanged =
-      values.useTls !== originalValues.useTls ||
-      values.mtlsMode !== originalValues.mtlsMode ||
-      values.mtls.ca !== originalValues.mtls.ca ||
-      values.mtls.clientCert !== originalValues.mtls.clientCert ||
-      values.mtls.clientKey !== originalValues.mtls.clientKey;
-
-    if (tlsChanged || hasCertificates) {
-      fieldMaskPaths.push('configurations.client_options.tls_settings');
-    }
-
-    // Compare authentication. Only the active branch's credentials count;
-    // the inactive branch may hold scratch values from a tab the user
-    // briefly opened, and those must not trigger a payload update.
-    if (hasAuthChanged(values, originalValues)) {
-      fieldMaskPaths.push('configurations.client_options.authentication_configuration');
-    }
-
-    // Compare advanced client options
-    if (values.advanceClientOptions.metadataMaxAgeMs !== originalValues.advanceClientOptions.metadataMaxAgeMs) {
-      fieldMaskPaths.push('configurations.client_options.metadata_max_age_ms');
-    }
-    if (values.advanceClientOptions.connectionTimeoutMs !== originalValues.advanceClientOptions.connectionTimeoutMs) {
-      fieldMaskPaths.push('configurations.client_options.connection_timeout_ms');
-    }
-    if (values.advanceClientOptions.retryBackoffMs !== originalValues.advanceClientOptions.retryBackoffMs) {
-      fieldMaskPaths.push('configurations.client_options.retry_backoff_ms');
-    }
-    if (values.advanceClientOptions.fetchWaitMaxMs !== originalValues.advanceClientOptions.fetchWaitMaxMs) {
-      fieldMaskPaths.push('configurations.client_options.fetch_wait_max_ms');
-    }
-    if (values.advanceClientOptions.fetchMinBytes !== originalValues.advanceClientOptions.fetchMinBytes) {
-      fieldMaskPaths.push('configurations.client_options.fetch_min_bytes');
-    }
-    if (values.advanceClientOptions.fetchMaxBytes !== originalValues.advanceClientOptions.fetchMaxBytes) {
-      fieldMaskPaths.push('configurations.client_options.fetch_max_bytes');
-    }
-    if (
-      values.advanceClientOptions.fetchPartitionMaxBytes !== originalValues.advanceClientOptions.fetchPartitionMaxBytes
-    ) {
-      fieldMaskPaths.push('configurations.client_options.fetch_partition_max_bytes');
-    }
-  }
-
-  // Build TLS settings
-  const tlsSettings = buildTLSSettings(values);
-
-  // Build client options schema
-  const clientOptions = create(ShadowLinkClientOptionsSchema, {
+export const buildClientOptions = (values: FormValues) =>
+  create(ShadowLinkClientOptionsSchema, {
     bootstrapServers: values.bootstrapServers.map((s) => s.value),
     tlsSettings: values.useTls
       ? create(TLSSettingsSchema, {
           enabled: true,
-          tlsSettings,
+          tlsSettings: buildTLSSettings(values),
         })
       : undefined,
     authenticationConfiguration: buildAuthenticationConfiguration(values),
@@ -276,11 +201,69 @@ export const getUpdateValuesForConnection = (
     fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
 
-  return {
-    value: clientOptions,
-    fieldMaskPaths,
-  };
+// Compare TLS settings - include if TLS changed or certificates changed
+const hasTlsChanged = (values: FormValues, originalValues: FormValues): boolean => {
+  const hasCertificates =
+    values.mtlsMode === TLS_MODE.FILE_PATH
+      ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
+      : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
+
+  const tlsChanged =
+    values.useTls !== originalValues.useTls ||
+    values.mtlsMode !== originalValues.mtlsMode ||
+    values.mtls.ca !== originalValues.mtls.ca ||
+    values.mtls.clientCert !== originalValues.mtls.clientCert ||
+    values.mtls.clientKey !== originalValues.mtls.clientKey;
+
+  return tlsChanged || hasCertificates;
 };
+
+const ADVANCED_CLIENT_OPTION_MASK_PATHS = [
+  ['metadataMaxAgeMs', 'configurations.client_options.metadata_max_age_ms'],
+  ['connectionTimeoutMs', 'configurations.client_options.connection_timeout_ms'],
+  ['retryBackoffMs', 'configurations.client_options.retry_backoff_ms'],
+  ['fetchWaitMaxMs', 'configurations.client_options.fetch_wait_max_ms'],
+  ['fetchMinBytes', 'configurations.client_options.fetch_min_bytes'],
+  ['fetchMaxBytes', 'configurations.client_options.fetch_max_bytes'],
+  ['fetchPartitionMaxBytes', 'configurations.client_options.fetch_partition_max_bytes'],
+] as const;
+
+const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormValues): string[] => {
+  const bootstrapServersChanged = !arraysEqual(
+    values.bootstrapServers.map((s) => s.value),
+    originalValues.bootstrapServers.map((s) => s.value)
+  );
+
+  // If bootstrap servers changed, use parent path which covers all client_options fields
+  if (bootstrapServersChanged) {
+    return ['configurations.client_options'];
+  }
+
+  // If bootstrap servers didn't change, use specific paths for individual field changes
+  return [
+    ...(hasTlsChanged(values, originalValues) ? ['configurations.client_options.tls_settings'] : []),
+    // Compare authentication. Only the active branch's credentials count;
+    // the inactive branch may hold scratch values from a tab the user
+    // briefly opened, and those must not trigger a payload update.
+    ...(hasAuthChanged(values, originalValues) ? ['configurations.client_options.authentication_configuration'] : []),
+    // Compare advanced client options
+    ...ADVANCED_CLIENT_OPTION_MASK_PATHS.filter(
+      ([option]) => values.advanceClientOptions[option] !== originalValues.advanceClientOptions[option]
+    ).map(([, path]) => path),
+  ];
+};
+
+/**
+ * Get update values for connection category (source/client options)
+ * Compares form values with original values and returns schema + field mask paths
+ */
+export const getUpdateValuesForConnection = (
+  values: FormValues,
+  originalValues: FormValues
+): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => ({
+  value: buildClientOptions(values),
+  fieldMaskPaths: getConnectionFieldMaskPaths(values, originalValues),
+});
 
 /**
  * Get update values for topics category
@@ -538,6 +521,54 @@ export const getUpdateValuesForSchemaRegistry = (
   };
 };
 
+type RoleSyncRoundTrip = Pick<NonNullable<ReturnType<typeof getUpdateValuesForRoles>>['value'], 'interval' | 'paused'>;
+
+/**
+ * Get update values for every category, plus the combined field mask paths.
+ * Roles are skipped entirely when the shadow cluster does not support role
+ * sync (Redpanda < 26.2.0): no value, no mask path.
+ */
+const getCategoryUpdates = (
+  values: FormValues,
+  originalValues: FormValues,
+  {
+    roleSyncSupported,
+    originalRoleSyncOptions,
+  }: { roleSyncSupported: boolean; originalRoleSyncOptions?: RoleSyncRoundTrip }
+) => {
+  const connection = getUpdateValuesForConnection(values, originalValues);
+  const topics = getUpdateValuesForTopics(values, originalValues);
+  const consumerGroups = getUpdateValuesForConsumerGroups(values, originalValues);
+  const roles = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
+  const acls = getUpdateValuesForACLs(values, originalValues);
+  const schemaRegistry = getUpdateValuesForSchemaRegistry(values, originalValues);
+
+  // No UI exposes interval/paused: round-trip them from the fetched link so
+  // the whole-message mask path doesn't unpause a paused role sync task or
+  // reset a custom interval
+  if (roles && originalRoleSyncOptions) {
+    roles.value.interval = originalRoleSyncOptions.interval;
+    roles.value.paused = originalRoleSyncOptions.paused;
+  }
+
+  return {
+    connection,
+    topics,
+    consumerGroups,
+    roles,
+    acls,
+    schemaRegistry,
+    fieldMaskPaths: [
+      ...connection.fieldMaskPaths,
+      ...topics.fieldMaskPaths,
+      ...consumerGroups.fieldMaskPaths,
+      ...(roles?.fieldMaskPaths ?? []),
+      ...acls.fieldMaskPaths,
+      ...schemaRegistry.fieldMaskPaths,
+    ],
+  };
+};
+
 /**
  * Build controlplane update request from form values
  * Controlplane uses flat structure with ID (not nested configurations with name)
@@ -555,52 +586,34 @@ export const buildControlplaneUpdateRequest = (
   const originalValues = buildDefaultFormValuesFromControlplane(originalShadowLink);
 
   // Get update values from existing category functions (reuse the logic).
-  // Roles are skipped entirely when the shadow cluster does not support role
-  // sync: the controlplane rejects role_sync_options at admission there.
-  const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
-  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
-  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
-  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
-  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
-  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
-
-  // No UI exposes interval/paused: round-trip them from the fetched link so
-  // the whole-message mask path doesn't unpause a paused role sync task or
-  // reset a custom interval
-  const originalRoleSyncOptions = originalShadowLink.roleSyncOptions;
-  if (rolesUpdate && originalRoleSyncOptions) {
-    rolesUpdate.value.interval = originalRoleSyncOptions.interval;
-    rolesUpdate.value.paused = originalRoleSyncOptions.paused;
-  }
+  // The controlplane rejects role_sync_options at admission on shadow clusters
+  // without role sync, so roles are skipped there.
+  const updates = getCategoryUpdates(values, originalValues, {
+    roleSyncSupported,
+    originalRoleSyncOptions: originalShadowLink.roleSyncOptions,
+  });
 
   // Build flat shadow link update for controlplane (no nested configurations)
   // Use local proto schemas with type assertions to work around proto version
   // differences between local protos and buf packages. Wire format is compatible.
   const shadowLinkUpdate = create(CpShadowLinkUpdateSchema, {
     id: shadowLinkId,
-    clientOptions: create(ShadowLinkClientOptionsSchema, connectionUpdate.value),
-    topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, topicsUpdate.value),
-    consumerOffsetSyncOptions: create(ConsumerOffsetSyncOptionsSchema, consumerGroupsUpdate.value),
-    roleSyncOptions: rolesUpdate ? create(RoleSyncOptionsSchema, rolesUpdate.value) : undefined,
-    securitySyncOptions: create(SecuritySettingsSyncOptionsSchema, aclsUpdate.value),
-    schemaRegistrySyncOptions: schemaRegistryUpdate.value
-      ? create(SchemaRegistrySyncOptionsSchema, schemaRegistryUpdate.value)
+    clientOptions: create(ShadowLinkClientOptionsSchema, updates.connection.value),
+    topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, updates.topics.value),
+    consumerOffsetSyncOptions: create(ConsumerOffsetSyncOptionsSchema, updates.consumerGroups.value),
+    roleSyncOptions: updates.roles ? create(RoleSyncOptionsSchema, updates.roles.value) : undefined,
+    securitySyncOptions: create(SecuritySettingsSyncOptionsSchema, updates.acls.value),
+    schemaRegistrySyncOptions: updates.schemaRegistry.value
+      ? create(SchemaRegistrySyncOptionsSchema, updates.schemaRegistry.value)
       : undefined,
   } as unknown as Parameters<typeof create<typeof CpShadowLinkUpdateSchema>>[1]);
 
   // Remove "configurations." prefix from field mask paths for controlplane
   // Dataplane uses: "configurations.client_options.tls_settings"
   // Controlplane uses: "client_options.tls_settings"
-  const paths = [
-    ...connectionUpdate.fieldMaskPaths,
-    ...topicsUpdate.fieldMaskPaths,
-    ...consumerGroupsUpdate.fieldMaskPaths,
-    ...(rolesUpdate?.fieldMaskPaths ?? []),
-    ...aclsUpdate.fieldMaskPaths,
-    ...schemaRegistryUpdate.fieldMaskPaths,
-  ].map((path) => path.replace(CONFIGURATIONS_PREFIX_REGEX, ''));
-
-  const updateMask = create(FieldMaskSchema, { paths });
+  const updateMask = create(FieldMaskSchema, {
+    paths: updates.fieldMaskPaths.map((path) => path.replace(CONFIGURATIONS_PREFIX_REGEX, '')),
+  });
 
   return create(CpUpdateShadowLinkRequestSchema, {
     shadowLink: shadowLinkUpdate,
@@ -621,32 +634,20 @@ export const buildDataplaneUpdateRequest = (
   // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for all categories. Roles are skipped entirely on
-  // clusters without role sync (Redpanda < 26.2.0): no value, no mask path.
-  const connectionUpdate = getUpdateValuesForConnection(values, originalValues);
-  const topicsUpdate = getUpdateValuesForTopics(values, originalValues);
-  const consumerGroupsUpdate = getUpdateValuesForConsumerGroups(values, originalValues);
-  const rolesUpdate = roleSyncSupported ? getUpdateValuesForRoles(values, originalValues) : undefined;
-  const aclsUpdate = getUpdateValuesForACLs(values, originalValues);
-
-  // No UI exposes interval/paused: round-trip them from the fetched link so
-  // the whole-message mask path doesn't unpause a paused role sync task or
-  // reset a custom interval
-  const originalRoleSyncOptions = originalShadowLink.configurations?.roleSyncOptions;
-  if (rolesUpdate && originalRoleSyncOptions) {
-    rolesUpdate.value.interval = originalRoleSyncOptions.interval;
-    rolesUpdate.value.paused = originalRoleSyncOptions.paused;
-  }
-  const schemaRegistryUpdate = getUpdateValuesForSchemaRegistry(values, originalValues);
+  // Get update values for all categories
+  const updates = getCategoryUpdates(values, originalValues, {
+    roleSyncSupported,
+    originalRoleSyncOptions: originalShadowLink.configurations?.roleSyncOptions,
+  });
 
   // Build configurations with all category values
   const configurations = create(ShadowLinkConfigurationsSchema, {
-    clientOptions: connectionUpdate.value,
-    topicMetadataSyncOptions: topicsUpdate.value,
-    consumerOffsetSyncOptions: consumerGroupsUpdate.value,
-    roleSyncOptions: rolesUpdate?.value,
-    securitySyncOptions: aclsUpdate.value,
-    schemaRegistrySyncOptions: schemaRegistryUpdate.value,
+    clientOptions: updates.connection.value,
+    topicMetadataSyncOptions: updates.topics.value,
+    consumerOffsetSyncOptions: updates.consumerGroups.value,
+    roleSyncOptions: updates.roles?.value,
+    securitySyncOptions: updates.acls.value,
+    schemaRegistrySyncOptions: updates.schemaRegistry.value,
   });
 
   // Build shadow link
@@ -656,16 +657,7 @@ export const buildDataplaneUpdateRequest = (
   });
 
   // Build field mask with all changed field paths from all categories
-  const updateMask = create(FieldMaskSchema, {
-    paths: [
-      ...connectionUpdate.fieldMaskPaths,
-      ...topicsUpdate.fieldMaskPaths,
-      ...consumerGroupsUpdate.fieldMaskPaths,
-      ...(rolesUpdate?.fieldMaskPaths ?? []),
-      ...aclsUpdate.fieldMaskPaths,
-      ...schemaRegistryUpdate.fieldMaskPaths,
-    ],
-  });
+  const updateMask = create(FieldMaskSchema, { paths: updates.fieldMaskPaths });
 
   // Build final request
   return create(UpdateShadowLinkRequestSchema, {

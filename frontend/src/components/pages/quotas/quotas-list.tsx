@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { Link } from 'components/redpanda-ui/components/typography';
 import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useMemo } from 'react';
+import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import {
@@ -44,7 +45,11 @@ import {
   sortingToSearch,
 } from './quotas-list-utils';
 import { useListQuotas } from '../../../hooks/use-list-quotas';
-import { Quota_EntityType, Quota_ValueType } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
+import {
+  type ListQuotasResponse_QuotaEntry,
+  Quota_EntityType,
+  Quota_ValueType,
+} from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import PageContent from '../../misc/page-content';
 
@@ -165,55 +170,98 @@ const columns: DataTableColumnDef<QuotaRow>[] = [
   },
 ];
 
-const QuotasList = () => {
+const toQuotaRow = (quota: ListQuotasResponse_QuotaEntry): QuotaRow => {
+  const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
+  const entityName = quota.entity?.entityName;
+
+  return {
+    entityType: mapEntityTypeToDisplay(entityType),
+    entityName: entityName || undefined,
+    producerRate: getRate(quota.values, Quota_ValueType.PRODUCER_BYTE_RATE),
+    consumerRate: getRate(quota.values, Quota_ValueType.CONSUMER_BYTE_RATE),
+    controllerMutationRate: getRate(quota.values, Quota_ValueType.CONTROLLER_MUTATION_RATE),
+  };
+};
+
+const reportSearchUpdateFailure = (error: unknown) => {
+  toast.error('Failed to update the quotas view', { description: String(error) });
+};
+
+/** Pagination and sorting live in the URL, so a reload or a shared link reopens the same view. */
+const useQuotasTableSearchState = (rowCount: number) => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });
-  const { data, error, isLoading } = useListQuotas();
-
-  const quotasData = useMemo<QuotaRow[]>(() => {
-    if (!data?.quotas) {
-      return [];
-    }
-
-    return data.quotas.map((quota) => {
-      const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
-      const entityName = quota.entity?.entityName;
-
-      return {
-        entityType: mapEntityTypeToDisplay(entityType),
-        entityName: entityName || undefined,
-        producerRate: getRate(quota.values, Quota_ValueType.PRODUCER_BYTE_RATE),
-        consumerRate: getRate(quota.values, Quota_ValueType.CONSUMER_BYTE_RATE),
-        controllerMutationRate: getRate(quota.values, Quota_ValueType.CONTROLLER_MUTATION_RATE),
-      };
-    });
-  }, [data]);
 
   const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
   const pagination: PaginationState = {
     // Clamp the requested page to what the data actually supports, so a stale or
     // bookmarked out-of-range `?page=` can't render a false empty state.
-    pageIndex: clampPageIndex(search.page ?? 0, quotasData.length, pageSize),
+    pageIndex: clampPageIndex(search.page ?? 0, rowCount, pageSize),
     pageSize,
   };
 
   const sorting: SortingState = searchToSorting(search.sortField, search.sortDirection);
 
-  const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+  const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
     navigate({
       search: (prev) => ({ ...prev, page: next.pageIndex, pageSize: next.pageSize }),
       replace: true,
-    });
+    }).catch(reportSearchUpdateFailure);
   };
 
-  const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
+  const onSortingChange: OnChangeFn<SortingState> = (updater) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
     navigate({
       search: (prev) => ({ ...prev, ...sortingToSearch(next) }),
       replace: true,
-    });
+    }).catch(reportSearchUpdateFailure);
   };
+
+  return { pagination, sorting, onPaginationChange, onSortingChange };
+};
+
+const QuotasError = ({ error }: { error: Error }) => {
+  const isPermissionError = error.message.includes('permission') || error.message.includes('forbidden');
+
+  if (isPermissionError) {
+    return (
+      <PageContent>
+        <Empty>
+          <EmptyHeader>
+            <h1 className="text-heading-xl">403</h1>
+            <EmptyTitle>Forbidden</EmptyTitle>
+            <EmptyDescription>
+              You are not allowed to view this page.
+              <br />
+              Contact the administrator if you think this is an error.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Link href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
+              <Button variant="primary">Redpanda Console documentation for roles and permissions</Button>
+            </Link>
+          </EmptyContent>
+        </Empty>
+      </PageContent>
+    );
+  }
+
+  return (
+    <PageContent>
+      <Alert icon={<TriangleAlertIcon />} variant="destructive">
+        <AlertDescription>
+          <div className="text-body">{error.message || 'Failed to load quotas'}</div>
+        </AlertDescription>
+      </Alert>
+    </PageContent>
+  );
+};
+
+const QuotasList = () => {
+  const { data, error, isLoading } = useListQuotas();
+  const quotasData = useMemo<QuotaRow[]>(() => data?.quotas.map(toQuotaRow) ?? [], [data]);
+  const { pagination, sorting, onPaginationChange, onSortingChange } = useQuotasTableSearchState(quotasData.length);
 
   const table = useDataTable({
     data: quotasData,
@@ -221,8 +269,8 @@ const QuotasList = () => {
     enableHiding: false,
     enableRowSelection: false,
     state: { pagination, sorting },
-    onPaginationChange: handlePaginationChange,
-    onSortingChange: handleSortingChange,
+    onPaginationChange,
+    onSortingChange,
     autoResetPageIndex: false,
   });
 
@@ -235,40 +283,7 @@ const QuotasList = () => {
   }
 
   if (error) {
-    const isPermissionError = error.message.includes('permission') || error.message.includes('forbidden');
-
-    if (isPermissionError) {
-      return (
-        <PageContent>
-          <Empty>
-            <EmptyHeader>
-              <h1 className="text-heading-xl">403</h1>
-              <EmptyTitle>Forbidden</EmptyTitle>
-              <EmptyDescription>
-                You are not allowed to view this page.
-                <br />
-                Contact the administrator if you think this is an error.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Link href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
-                <Button variant="primary">Redpanda Console documentation for roles and permissions</Button>
-              </Link>
-            </EmptyContent>
-          </Empty>
-        </PageContent>
-      );
-    }
-
-    return (
-      <PageContent>
-        <Alert icon={<TriangleAlertIcon />} variant="destructive">
-          <AlertDescription>
-            <div className="text-body">{error.message || 'Failed to load quotas'}</div>
-          </AlertDescription>
-        </Alert>
-      </PageContent>
-    );
+    return <QuotasError error={error} />;
   }
 
   const rows = table.getRowModel().rows;
@@ -302,8 +317,8 @@ const QuotasList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell className="h-24 text-center text-muted-foreground" colSpan={columns.length}>
-                  No quotas configured.
+                <TableCell align="center" className="h-24" colSpan={columns.length}>
+                  <span className="text-muted-foreground">No quotas configured.</span>
                 </TableCell>
               </TableRow>
             )}

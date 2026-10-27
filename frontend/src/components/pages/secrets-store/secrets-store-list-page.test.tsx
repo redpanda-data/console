@@ -11,10 +11,10 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import userEvent from '@testing-library/user-event';
-import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
+import { type ListSecretsResponse, ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
-import { Scope, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { Scope, type Secret, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React from 'react';
 import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
@@ -55,7 +55,32 @@ const PAGINATION_SECRETS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
   })
 );
 
-describe('SecretsStoreListPage', () => {
+/** Renders the page against a single-page listSecrets response holding `secrets`. */
+const renderListPage = (secrets: Secret[]) => {
+  const listSecretsMock = rs.fn().mockReturnValue(
+    create(ListSecretsResponseSchema, {
+      response: { secrets, nextPageToken: '' },
+    })
+  );
+  const transport = createListSecretsTransport(listSecretsMock);
+
+  renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+
+  return listSecretsMock;
+};
+
+const getPaginationButtons = () => ({
+  previousButton: screen.getByRole('button', { name: 'Go to previous page' }),
+  nextButton: screen.getByRole('button', { name: 'Go to next page' }),
+});
+
+async function goToNextPage(user: UserEvent, expectedFooter: string) {
+  await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+
+  expect(await screen.findByText(expectedFooter)).toBeVisible();
+}
+
+describe('the SecretsStoreListPage', () => {
   test('should call listSecrets on render and display secret IDs', async () => {
     const secret1 = create(SecretSchema, {
       id: 'test-secret-123',
@@ -163,27 +188,17 @@ describe('SecretsStoreListPage', () => {
   });
 
   test('should display loading state while fetching secrets', async () => {
-    const listSecretsMock = rs.fn().mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(
-              create(ListSecretsResponseSchema, {
-                response: {
-                  secrets: [],
-                  nextPageToken: '',
-                },
-              })
-            );
-          }, 100);
-        })
-    );
+    // The test settles the request itself, so loading lasts exactly until it says so.
+    const pendingList = Promise.withResolvers<ListSecretsResponse>();
+    const listSecretsMock = rs.fn().mockReturnValue(pendingList.promise);
 
     const transport = createListSecretsTransport(listSecretsMock);
 
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
     expect(screen.getByText('Loading secrets...')).toBeVisible();
+
+    pendingList.resolve(create(ListSecretsResponseSchema, { response: { secrets: [], nextPageToken: '' } }));
 
     await waitFor(() => {
       expect(screen.queryByText('Loading secrets...')).not.toBeInTheDocument();
@@ -193,62 +208,39 @@ describe('SecretsStoreListPage', () => {
   test('should update pagination footer and disable next button on the last page', async () => {
     const user = userEvent.setup();
 
-    const listSecretsResponse = create(ListSecretsResponseSchema, {
-      response: {
-        secrets: PAGINATION_SECRETS_FIXTURE,
-        nextPageToken: '',
-      },
-    });
-
-    const listSecretsMock = rs.fn().mockReturnValue(listSecretsResponse);
-    const transport = createListSecretsTransport(listSecretsMock);
-
-    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+    renderListPage(PAGINATION_SECRETS_FIXTURE);
 
     expect(await screen.findByText('Page 1 of 3')).toBeVisible();
 
-    const previousButton = screen.getByRole('button', { name: 'Go to previous page' });
-    const nextButton = screen.getByRole('button', { name: 'Go to next page' });
+    const { previousButton, nextButton } = getPaginationButtons();
 
     expect(previousButton).toBeDisabled();
     expect(nextButton).toBeEnabled();
 
-    await user.click(nextButton);
+    await goToNextPage(user, 'Page 2 of 3');
 
-    expect(await screen.findByText('Page 2 of 3')).toBeVisible();
+    expect(getPaginationButtons().previousButton).toBeEnabled();
 
-    expect(screen.getByRole('button', { name: 'Go to previous page' })).toBeEnabled();
+    await goToNextPage(user, 'Page 3 of 3');
 
-    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
-
-    expect(await screen.findByText('Page 3 of 3')).toBeVisible();
-
-    expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
+    expect(getPaginationButtons().nextButton).toBeDisabled();
   });
 
   test('filters secrets by ID via search input', async () => {
     const user = userEvent.setup();
 
-    const secret1 = create(SecretSchema, {
-      id: 'alpha-secret',
-      labels: {},
-      scopes: [Scope.AI_GATEWAY],
-    });
-
-    const secret2 = create(SecretSchema, {
-      id: 'beta-secret',
-      labels: {},
-      scopes: [Scope.MCP_SERVER],
-    });
-
-    const listSecretsMock = rs.fn().mockReturnValue(
-      create(ListSecretsResponseSchema, {
-        response: { secrets: [secret1, secret2], nextPageToken: '' },
-      })
-    );
-    const transport = createListSecretsTransport(listSecretsMock);
-
-    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+    renderListPage([
+      create(SecretSchema, {
+        id: 'alpha-secret',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+      create(SecretSchema, {
+        id: 'beta-secret',
+        labels: {},
+        scopes: [Scope.MCP_SERVER],
+      }),
+    ]);
 
     await waitFor(() => {
       expect(screen.getByText('alpha-secret')).toBeVisible();
@@ -275,26 +267,18 @@ describe('SecretsStoreListPage', () => {
   test('scope faceted filter filters results', async () => {
     const user = userEvent.setup();
 
-    const secret1 = create(SecretSchema, {
-      id: 'gateway-secret',
-      labels: {},
-      scopes: [Scope.AI_GATEWAY],
-    });
-
-    const secret2 = create(SecretSchema, {
-      id: 'mcp-secret',
-      labels: {},
-      scopes: [Scope.MCP_SERVER],
-    });
-
-    const listSecretsMock = rs.fn().mockReturnValue(
-      create(ListSecretsResponseSchema, {
-        response: { secrets: [secret1, secret2], nextPageToken: '' },
-      })
-    );
-    const transport = createListSecretsTransport(listSecretsMock);
-
-    renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+    renderListPage([
+      create(SecretSchema, {
+        id: 'gateway-secret',
+        labels: {},
+        scopes: [Scope.AI_GATEWAY],
+      }),
+      create(SecretSchema, {
+        id: 'mcp-secret',
+        labels: {},
+        scopes: [Scope.MCP_SERVER],
+      }),
+    ]);
 
     await waitFor(() => {
       expect(screen.getByText('gateway-secret')).toBeVisible();

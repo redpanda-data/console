@@ -104,25 +104,30 @@ function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
  * store hydrated before CloudV2 wrote it (client-side nav, no full reload).
  */
 export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
-  let input = useRpcnWizardStore.getState().input;
-  let output = useRpcnWizardStore.getState().output;
-
-  if (!(input || output)) {
-    try {
-      const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>;
-        input = parsed.input;
-        output = parsed.output;
-        // Sync the store so other consumers see the data.
-        useRpcnWizardStore.getState().setWizardData({ input, output });
-      }
-    } catch {
-      // Ignore malformed session storage.
-    }
+  const { input, output } = useRpcnWizardStore.getState();
+  if (input || output) {
+    return { input, output };
   }
 
-  return { input, output };
+  let connectionData: Pick<OnboardingWizardFormData, 'input' | 'output'> = { input, output };
+  try {
+    const stored = readStoredConnectionData();
+    if (stored) {
+      connectionData = { input: stored.input, output: stored.output };
+      // Sync the store so other consumers see the data.
+      useRpcnWizardStore.getState().setWizardData(connectionData);
+    }
+  } catch {
+    // Ignore malformed session storage.
+  }
+
+  return connectionData;
+}
+
+// What CloudV2 wrote to session storage, or null when it wrote nothing; throws on malformed JSON.
+function readStoredConnectionData(): Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>> | null {
+  const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
+  return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;
 }
 
 /** Imperative API for non-hook contexts (class components, utility functions). */

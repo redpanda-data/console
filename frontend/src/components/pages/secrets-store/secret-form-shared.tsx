@@ -57,3 +57,16 @@ export const createLabelsSchema = () =>
       const keys = labels.filter((l) => l.key).map((l) => l.key);
       return keys.length === new Set(keys).size;
     }, 'Label keys must be unique');
+
+export type LabelRow = { key: string; value: string };
+
+/** Turns the form's label rows into the request's label map, skipping rows with an empty key or value. */
+export const labelsToMap = (labels: LabelRow[]): Record<string, string> => {
+  const labelsMap: Record<string, string> = {};
+  for (const label of labels) {
+    if (label.key && label.value) {
+      labelsMap[label.key] = label.value;
+    }
+  }
+  return labelsMap;
+};

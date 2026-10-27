@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
@@ -39,7 +40,9 @@ import {
 } from 'react';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
 
+import { CAT_LIMIT, namespaceTables } from './catalog-tree-tables';
 import type { Catalog, CatalogEngine, Namespace, SqlRole, TableRef } from './sql-types';
+import { TonedIcon } from '../shared/toned-icon';
 
 export type CatalogTreeProps = {
   /** Catalogs to render. Empty array while loading. */
@@ -59,9 +62,6 @@ export type CatalogTreeProps = {
   /** True while catalogs or tables are being refetched. */
   isRefreshing?: boolean;
 };
-
-// Promote search past this many tables in a namespace.
-const CAT_LIMIT = 20;
 
 // Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
 // subtle hover background. Used by namespace rows and the "Add a topic" row.
@@ -120,7 +120,7 @@ function engineMark(engine: CatalogEngine) {
 function LoadingRow({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-1.75 px-4 py-1.5">
-      <Spinner className="size-3.5 shrink-0 text-muted-foreground" />
+      <TonedIcon className="size-3.5 shrink-0" icon={Spinner} tone="muted" />
       <span className="text-body-sm text-muted-foreground">{label}</span>
     </div>
   );
@@ -130,72 +130,63 @@ function EmptyNote({ children }: { children: ReactNode }) {
   return <div className="px-4 py-1.5 text-body-sm text-disabled">{children}</div>;
 }
 
-// Merge tables seeded on the namespace with tables fetched from ListTables for
-// the catalog. Fetched tables win; seeded names fill in before the fetch lands.
-function tablesForNamespace(namespace: Namespace, fetched: TableRef[]): TableRef[] {
-  const byId = new Map<string, TableRef>();
-  for (const t of namespace.tables) {
-    byId.set(t.id, t);
-  }
-  for (const t of fetched) {
-    if (t.namespaceName === namespace.name) {
-      byId.set(t.id, t);
-    }
-  }
-  return [...byId.values()];
-}
+// The focused treeitem and the enabled rows it moves between, in render order.
+type TreeNav = {
+  current: HTMLButtonElement;
+  rows: HTMLButtonElement[];
+  idx: number;
+};
 
-// Roving keyboard navigation for the tree, per the WAI-ARIA tree pattern:
-// Up/Down move between visible rows, Home/End jump, Right expands (or moves
-// into) a node, Left collapses. Operates on the rendered treeitem buttons so
-// it always matches what's visible.
-function handleTreeKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-  const handled = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-  if (!handled.includes(e.key)) {
-    return;
-  }
+function findTreeNav(e: KeyboardEvent<HTMLDivElement>): TreeNav | null {
   const current = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="treeitem"]');
   if (!current) {
-    return;
+    return null;
   }
   const rows = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="treeitem"]:not(:disabled)'));
   const idx = rows.indexOf(current);
-  if (idx === -1) {
+  return idx === -1 ? null : { current, rows, idx };
+}
+
+// Up/Down move between visible rows, Home/End jump, Right expands (or moves
+// into) a node, Left collapses.
+const TREE_KEY_ACTIONS = new Map<string, (nav: TreeNav) => void>([
+  ['ArrowDown', ({ rows, idx }) => rows[idx + 1]?.focus()],
+  ['ArrowUp', ({ rows, idx }) => rows[idx - 1]?.focus()],
+  ['Home', ({ rows }) => rows[0]?.focus()],
+  ['End', ({ rows }) => rows.at(-1)?.focus()],
+  [
+    'ArrowRight',
+    ({ current, rows, idx }) => {
+      if (current.getAttribute('aria-expanded') === 'false') {
+        current.click();
+      } else {
+        rows[idx + 1]?.focus();
+      }
+    },
+  ],
+  [
+    'ArrowLeft',
+    ({ current }) => {
+      if (current.getAttribute('aria-expanded') === 'true') {
+        current.click();
+      }
+    },
+  ],
+]);
+
+// Roving keyboard navigation for the tree, per the WAI-ARIA tree pattern.
+// Operates on the rendered treeitem buttons so it always matches what's visible.
+function handleTreeKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  const action = TREE_KEY_ACTIONS.get(e.key);
+  if (!action) {
+    return;
+  }
+  const nav = findTreeNav(e);
+  if (!nav) {
     return;
   }
   e.preventDefault();
-
-  const focusRow = (i: number) => rows[i]?.focus();
-  const expanded = current.getAttribute('aria-expanded');
-
-  switch (e.key) {
-    case 'ArrowDown':
-      focusRow(idx + 1);
-      break;
-    case 'ArrowUp':
-      focusRow(idx - 1);
-      break;
-    case 'Home':
-      focusRow(0);
-      break;
-    case 'End':
-      focusRow(rows.length - 1);
-      break;
-    case 'ArrowRight':
-      if (expanded === 'false') {
-        current.click();
-      } else {
-        focusRow(idx + 1);
-      }
-      break;
-    case 'ArrowLeft':
-      if (expanded === 'true') {
-        current.click();
-      }
-      break;
-    default:
-      break;
-  }
+  action(nav);
 }
 
 type ColumnListProps = {
@@ -231,14 +222,14 @@ function FieldRows({
         const body = (
           <>
             {hasNested ? (
-              <FieldChevron className="shrink-0 text-disabled" size={11} />
+              <TonedIcon className="shrink-0" icon={FieldChevron} size={11} tone="disabled" />
             ) : (
               <span aria-hidden="true" className="shrink-0" style={{ width: '11px' }} />
             )}
-            <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-left font-mono">
+            <span className="min-w-0 flex-1 overflow-hidden text-left font-mono text-ellipsis whitespace-nowrap">
               {field.name}
             </span>
-            <span className="shrink-0 whitespace-nowrap font-mono text-2xs text-muted-foreground uppercase tracking-wide">
+            <span className="shrink-0 font-mono text-2xs tracking-wide whitespace-nowrap text-muted-foreground uppercase">
               {field.type}
             </span>
           </>
@@ -298,7 +289,6 @@ type TableRowProps = {
   table: TableRef;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Leaf row combines grant, selection, tiering and query affordance state.
 function TableRow({ catalog, table }: TableRowProps) {
   const { activeTableId, openTables, toggleTable, onQueryTable, rowTabIndex } = useCatalogTree();
   const allowed = table.allowed !== false;
@@ -342,7 +332,7 @@ function TableRow({ catalog, table }: TableRowProps) {
           tabIndex={rowTabIndex(table.id)}
           type="button"
         >
-          <Chevron className="shrink-0 text-disabled" size={13} />
+          <TonedIcon className="shrink-0" icon={Chevron} size={13} tone="disabled" />
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
           {isIceberg || tiered ? (
@@ -355,19 +345,22 @@ function TableRow({ catalog, table }: TableRowProps) {
               Iceberg
             </Badge>
           ) : null}
-          {allowed ? null : <Lock className="ml-0.5 text-disabled" size={12} />}
+          {allowed ? null : <TonedIcon className="ml-0.5" icon={Lock} size={12} tone="disabled" />}
         </button>
         {allowed ? (
-          <Button
-            className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-            onClick={() => onQueryTable(catalog, table)}
-            size="icon-xs"
-            title="Query this table"
-            type="button"
-            variant="ghost"
-          >
-            <Play />
-          </Button>
+          <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
+            <ElementTooltip content="Query this table">
+              <Button
+                aria-label="Query this table"
+                onClick={() => onQueryTable(catalog, table)}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <Play />
+              </Button>
+            </ElementTooltip>
+          </span>
         ) : null}
       </div>
       {isOpen && allowed ? <ColumnList catalogName={catalog.name} tableName={table.name} /> : null}
@@ -382,26 +375,25 @@ type NamespaceNodeProps = {
   isLoading: boolean;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Namespace rendering coordinates search, pagination, loading and admin actions.
 function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: NamespaceNodeProps) {
   const { role, query, open, shown, toggle, loadMore, onAddTable, rowTabIndex } = useCatalogTree();
   const isOpen = open[namespace.id] !== false;
-  const shownCount = shown[namespace.id] ?? CAT_LIMIT;
-
-  const allTables = tablesForNamespace(namespace, fetchedTables);
-  const q = query.trim().toLowerCase();
-  const matched = q ? allTables.filter((t) => t.name.toLowerCase().includes(q)) : allTables;
+  const {
+    all: allTables,
+    matched,
+    visible,
+    paginate,
+    remaining,
+    searching,
+    hidden,
+  } = namespaceTables(namespace, fetchedTables, query, shown[namespace.id] ?? CAT_LIMIT);
 
   // When searching, hide namespaces whose name and tables both miss.
-  if (q && matched.length === 0 && !namespace.name.toLowerCase().includes(q)) {
+  if (hidden) {
     return null;
   }
 
-  const paginate = !q && matched.length > CAT_LIMIT;
-  const visible = paginate ? matched.slice(0, shownCount) : matched;
-  const remaining = paginate ? Math.max(0, matched.length - visible.length) : 0;
-
-  const showAddTopic = role === 'admin' && catalog.engine === 'redpanda' && !q && Boolean(onAddTable);
+  const showAddTopic = role === 'admin' && catalog.engine === 'redpanda' && !searching && Boolean(onAddTable);
 
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
@@ -417,8 +409,8 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
         tabIndex={rowTabIndex(namespace.id)}
         type="button"
       >
-        <NsChevron className="shrink-0 text-disabled" size={14} />
-        <GitBranch className="text-muted-foreground" size={13} />
+        <TonedIcon className="shrink-0" icon={NsChevron} size={14} tone="disabled" />
+        <TonedIcon icon={GitBranch} size={13} tone="muted" />
         <span className={LABEL}>{namespace.name}</span>
       </button>
       {isOpen ? (
@@ -430,30 +422,26 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
           ))}
           {!isLoading && matched.length === 0 && !showAddTopic ? <EmptyNote>No tables</EmptyNote> : null}
           {paginate && remaining > 0 ? (
-            <Button
-              className="w-full justify-start px-2"
-              onClick={() => loadMore(namespace.id)}
-              size="sm"
-              title="Load more tables"
-              type="button"
-              variant="ghost"
-            >
-              <ChevronDown />
-              <span>Load more · {remaining} remaining</span>
-            </Button>
+            <ElementTooltip content="Load more tables">
+              <Button
+                className="w-full justify-start"
+                onClick={() => loadMore(namespace.id)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <ChevronDown />
+                <span>Load more · {remaining} remaining</span>
+              </Button>
+            </ElementTooltip>
           ) : null}
           {showAddTopic ? (
-            <Button
-              className="w-full justify-start px-2"
-              onClick={onAddTable}
-              size="sm"
-              title="Create a SQL table from a Redpanda topic"
-              type="button"
-              variant="ghost"
-            >
-              <Plus className="ml-4.75" />
-              <span className={LABEL}>Add a topic</span>
-            </Button>
+            <ElementTooltip content="Create a SQL table from a Redpanda topic">
+              <Button className="w-full justify-start" onClick={onAddTable} size="sm" type="button" variant="ghost">
+                <Plus className="ml-4.75" />
+                <span className={LABEL}>Add a topic</span>
+              </Button>
+            </ElementTooltip>
           ) : null}
         </div>
       ) : null}
@@ -486,28 +474,31 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
         <button
           aria-expanded={isCatalogOpen}
           aria-level={1}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans font-semibold text-body text-strong"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-body font-semibold text-strong"
           data-tree-id={catalog.name}
           onClick={() => toggle(catalog.name)}
           role="treeitem"
           tabIndex={rowTabIndex(catalog.name)}
           type="button"
         >
-          <CatChevron className="shrink-0 text-disabled" size={14} />
+          <TonedIcon className="shrink-0" icon={CatChevron} size={14} tone="disabled" />
           {engineMark(catalog.engine)}
           <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
         </button>
         {showAdd ? (
-          <Button
-            className="shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-            onClick={onAddTable}
-            size="icon-xs"
-            title="Add a topic to this catalog"
-            type="button"
-            variant="ghost"
-          >
-            <Plus />
-          </Button>
+          <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
+            <ElementTooltip content="Add a topic to this catalog">
+              <Button
+                aria-label="Add a topic to this catalog"
+                onClick={onAddTable}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <Plus />
+              </Button>
+            </ElementTooltip>
+          </span>
         ) : null}
       </div>
       {isCatalogOpen ? (
@@ -576,26 +567,27 @@ export function CatalogTree({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center px-3.5 pt-3.5 pb-2">
-        <span className="font-medium text-body-sm text-muted-foreground uppercase tracking-wider">Catalogs</span>
+        <span className="text-body-sm font-medium tracking-wider text-muted-foreground uppercase">Catalogs</span>
         {onRefresh ? (
-          <Button
-            aria-label="Refresh catalogs"
-            className="ml-auto shrink-0"
-            disabled={isRefreshing}
-            onClick={onRefresh}
-            size="icon-xs"
-            title="Refresh catalogs"
-            type="button"
-            variant="ghost"
-          >
-            <RefreshCw className={cn(isRefreshing && 'animate-spin')} />
-          </Button>
+          <ElementTooltip content="Refresh catalogs">
+            <Button
+              aria-label="Refresh catalogs"
+              className="ml-auto shrink-0"
+              disabled={isRefreshing}
+              onClick={onRefresh}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <TonedIcon icon={RefreshCw} spin={isRefreshing} />
+            </Button>
+          </ElementTooltip>
         ) : null}
       </div>
       <div className="px-3 pb-2.5">
         <Input onChange={(e) => setQuery(e.target.value)} placeholder="Search tables" size="sm" value={query}>
           <InputStart>
-            <Search className="text-muted-foreground" size={15} />
+            <TonedIcon icon={Search} size={15} tone="muted" />
           </InputStart>
         </Input>
       </div>

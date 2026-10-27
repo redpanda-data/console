@@ -35,6 +35,7 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
@@ -192,9 +193,7 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
                 />
               </div>
             </FormControl>
-            <FormDescription className="text-body text-muted-foreground">
-              One compute unit = 0.1 CPU and 400 MB memory
-            </FormDescription>
+            <FormDescription>One compute unit = 0.1 CPU and 400 MB memory</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -220,7 +219,10 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
     // Strip empty tag rows before validation
     const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
     form.setValue('tags', tags);
-    handleSave();
+    // Invalid fields report through FormMessage; this catches a resolver or close handler that throws.
+    handleSave().catch((error: unknown) => {
+      toast.error('Failed to save pipeline settings', { description: String(error) });
+    });
   };
 
   return (

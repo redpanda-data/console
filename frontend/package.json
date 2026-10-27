@@ -17,11 +17,12 @@
     "format": "biome format src/* --write",
     "format:check": "biome format src/*",
     "install:chromium": "playwright install chromium",
-    "lint": "ultracite fix",
-    "lint:check": "ultracite check",
+    "lint": "ultracite fix && bun run lint:policy",
+    "lint:check": "ultracite check && bun run lint:policy",
     "lint:check:file": "ultracite check",
     "lint:file": "ultracite fix",
-    "lint:fix": "ultracite fix",
+    "lint:fix": "ultracite fix && bun run lint:policy",
+    "lint:policy": "oxlint --config .oxlintrc.json",
     "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
     "prepare": "lefthook install",
     "preview": "rsbuild preview",
@@ -138,11 +139,12 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.2",
     "@happy-dom/global-registrator": "21.0.3",
     "@module-federation/enhanced": "^2.9.2",
     "@module-federation/rsbuild-plugin": "^2.9.2",
     "@module-federation/rstest": "2.9.2",
+    "@oxlint/plugins": "1.81.0",
     "@rsbuild/core": "2.2.14",
     "@rsbuild/plugin-node-polyfill": "1.4.6",
     "@rsbuild/plugin-react": "2.1.1",
@@ -172,6 +174,7 @@
     "happy-dom": "^21.0.3",
     "lefthook": "^2.2.2",
     "node-fetch": "^3.3.2",
+    "oxlint": "1.81.0",
     "playwright": "1.64.1",
     "react-doctor": "^0.9.18",
     "tar-stream": "^3.2.2",
@@ -180,11 +183,14 @@
     "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "tw-animate-css": "^1.4.0",
     "typescript": "7.1.0-beta",
-    "ultracite": "8.0.1"
+    "ultracite": "8.0.2"
   },
   "packageManager": "bun@1.4.4",
   "engines": {
     "node": ">=22.22"
+  },
+  "patchedDependencies": {
+    "ultracite@8.0.2": "patches/ultracite@8.0.2.patch"
   },
   "proxy": "http://localhost:9090"
 }

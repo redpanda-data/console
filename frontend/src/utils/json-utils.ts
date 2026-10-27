@@ -118,10 +118,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
     return value;
   }
 
-  let mutableObj = obj;
-  if (obj === null || obj === undefined) {
-    mutableObj = Number.isNaN(Number(path[0])) ? {} : [];
-  }
+  const mutableObj = obj ?? (Number.isNaN(Number(path[0])) ? {} : []);
 
   if (Array.isArray(mutableObj)) {
     return updateArray(mutableObj, path, value);
@@ -141,38 +138,25 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
   const [index, ...restPath] = path;
   const arrayIndex = Number(index);
 
-  if (Number.isNaN(arrayIndex)) {
+  if (Number.isNaN(arrayIndex) || arrayIndex < 0) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`Invalid array index: ${index}`);
+    console.error(
+      Number.isNaN(arrayIndex) ? `Invalid array index: ${index}` : `Array index out of bounds: ${arrayIndex} < 0`
+    );
     return array;
   }
 
-  if (arrayIndex < 0) {
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`Array index out of bounds: ${arrayIndex} < 0`);
-    return array;
-  }
-
-  let newArray: JsonValue[] = [];
-  for (let i = 0; i < array.length; i++) {
-    newArray[i] = i in array ? array[i] : null;
-  }
-
-  if (arrayIndex >= newArray.length) {
-    const extendedArray: JsonValue[] = new Array(arrayIndex).fill(null);
-    // Copy over the existing elements (now guaranteed to be dense)
-    for (let i = 0; i < newArray.length; i++) {
-      extendedArray[i] = newArray[i];
-    }
-    newArray = extendedArray;
-  }
-
-  if (restPath.length === 0) {
-    newArray[arrayIndex] = value;
-  } else {
-    newArray[arrayIndex] = updateValueAtPath(newArray[arrayIndex], restPath, value);
-  }
+  const newArray = copyDenseArray(array, Math.max(array.length, arrayIndex));
+  newArray[arrayIndex] = restPath.length === 0 ? value : updateValueAtPath(newArray[arrayIndex], restPath, value);
   return newArray;
+}
+
+function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
+  const copy: JsonValue[] = new Array(length).fill(null);
+  for (let index = 0; index < array.length; index++) {
+    copy[index] = index in array ? array[index] : null;
+  }
+  return copy;
 }
 
 /**
@@ -193,11 +177,7 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
   if (restPath.length === 0) {
     newObj[key] = value;
   } else {
-    // Ensure key exists
-    if (!(key in newObj)) {
-      newObj[key] = {};
-    }
-    newObj[key] = updateValueAtPath(newObj[key], restPath, value);
+    newObj[key] = updateValueAtPath(key in newObj ? newObj[key] : {}, restPath, value);
   }
   return newObj;
 }
@@ -221,21 +201,22 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
   }
 
   if (Array.isArray(obj)) {
-    const index = Number(first);
-    if (Number.isNaN(index) || index < 0 || index >= obj.length) {
-      return defaultValue;
-    }
-    return getValueAtPath(obj[index], rest, defaultValue);
+    return getArrayValueAtPath(obj, first, rest, defaultValue);
   }
 
-  if (typeof obj === 'object' && obj !== null) {
-    if (!(first in obj)) {
-      return defaultValue;
-    }
-    return getValueAtPath((obj as JsonObject)[first], rest, defaultValue);
+  if (typeof obj === 'object' && first in obj) {
+    return getValueAtPath(obj[first], rest, defaultValue);
   }
 
   return defaultValue;
+}
+
+function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue): JsonValue {
+  const index = Number(key);
+  if (Number.isNaN(index) || index < 0 || index >= array.length) {
+    return defaultValue;
+  }
+  return getValueAtPath(array[index], rest, defaultValue);
 }
 
 /**
@@ -244,12 +225,7 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
  */
 export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
   // Prevent infinite recursion
-  if (depth > maxDepth) {
-    return value;
-  }
-
-  // Handle null and undefined
-  if (value === null || value === undefined) {
+  if (depth > maxDepth || value === null || value === undefined) {
     return value;
   }
 
@@ -260,24 +236,23 @@ export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown
 
   // Handle objects - recursively parse each property
   if (typeof value === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = deepParseJson(val, depth + 1, maxDepth);
-    }
-    return result;
+    return deepParseObject(value, depth, maxDepth);
   }
 
   // Handle strings - attempt to parse as JSON
   if (typeof value === 'string') {
     const parseResult = tryParseJson(value);
-    if (parseResult.success) {
-      // Recursively parse the parsed result (in case it contains nested JSON strings)
-      return deepParseJson(parseResult.data, depth + 1, maxDepth);
-    }
-    // If parsing fails, return original string
-    return value;
+    return parseResult.success ? deepParseJson(parseResult.data, depth + 1, maxDepth) : value;
   }
 
   // For all other types (number, boolean, etc.), return as-is
   return value;
+}
+
+function deepParseObject(value: object, depth: number, maxDepth: number): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value)) {
+    result[key] = deepParseJson(val, depth + 1, maxDepth);
+  }
+  return result;
 }

@@ -35,35 +35,58 @@ export type TlsCertificatesConfigProps = {
   tlsSettings?: UnifiedTLSSettings;
 };
 
+type TlsCertificateSummary = {
+  inputMethod: string;
+  caCertificate: string;
+  clientCertificate: string;
+  clientKey: string;
+  hasClientCertificates: boolean;
+};
+
+const NO_TLS_CERTIFICATES: TlsCertificateSummary = {
+  inputMethod: '-',
+  caCertificate: '-',
+  clientCertificate: '-',
+  clientKey: '-',
+  hasClientCertificates: false,
+};
+
+const summarizeTlsCertificates = (tlsSettings?: UnifiedTLSSettings): TlsCertificateSummary => {
+  const settings = tlsSettings?.tlsSettings;
+  switch (settings?.case) {
+    case 'tlsFileSettings': {
+      const { caPath, certPath, keyPath } = settings.value;
+      return {
+        inputMethod: 'File path',
+        caCertificate: caPath || '-',
+        clientCertificate: certPath || '-',
+        clientKey: keyPath || '-',
+        hasClientCertificates: Boolean(certPath || keyPath),
+      };
+    }
+    case 'tlsPemSettings': {
+      const { cert, key } = settings.value;
+      return {
+        inputMethod: 'Upload',
+        caCertificate: 'ca-cert.pem',
+        clientCertificate: cert ? 'client-cert.pem' : '-',
+        clientKey: key ? 'client-key.pem' : '-',
+        hasClientCertificates: Boolean(cert || key),
+      };
+    }
+    default:
+      return NO_TLS_CERTIFICATES;
+  }
+};
+
 export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProps) => {
-  // CA Certificate
-  let caCertificateLabel = '-';
-  let certificateInputMethod = '-';
-  if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-    const caPath = tlsSettings.tlsSettings.value.caPath;
-    caCertificateLabel = caPath || '-';
-    certificateInputMethod = 'File path';
-  } else if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-    caCertificateLabel = 'ca-cert.pem';
-    certificateInputMethod = 'Upload';
-  }
-
-  // Client certificates
-  let clientCertificateLabel = '-';
-  let clientKeyLabel = '-';
-  let hasClientCertificates = false;
-
-  if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-    const certPath = tlsSettings.tlsSettings.value.certPath;
-    const keyPath = tlsSettings.tlsSettings.value.keyPath;
-    clientCertificateLabel = certPath || '-';
-    clientKeyLabel = keyPath || '-';
-    hasClientCertificates = Boolean(certPath || keyPath);
-  } else if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-    clientCertificateLabel = tlsSettings.tlsSettings.value.cert ? 'client-cert.pem' : '-';
-    clientKeyLabel = tlsSettings.tlsSettings.value.key ? 'client-key.pem' : '-';
-    hasClientCertificates = Boolean(tlsSettings.tlsSettings.value.cert || tlsSettings.tlsSettings.value.key);
-  }
+  const {
+    inputMethod: certificateInputMethod,
+    caCertificate: caCertificateLabel,
+    clientCertificate: clientCertificateLabel,
+    clientKey: clientKeyLabel,
+    hasClientCertificates,
+  } = summarizeTlsCertificates(tlsSettings);
 
   return (
     <>
@@ -73,7 +96,7 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
         testId="ca-certificate"
         value={<CertificateValue isFilePath={certificateInputMethod === 'File path'} value={caCertificateLabel} />}
       />
-      {hasClientCertificates && (
+      {hasClientCertificates ? (
         <>
           <ConfigField
             label="Client certificate"
@@ -88,7 +111,7 @@ export const TlsCertificatesConfig = ({ tlsSettings }: TlsCertificatesConfigProp
             value={<CertificateValue isFilePath={certificateInputMethod === 'File path'} value={clientKeyLabel} />}
           />
         </>
-      )}
+      ) : null}
     </>
   );
 };

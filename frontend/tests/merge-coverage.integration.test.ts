@@ -11,10 +11,10 @@ afterEach(() => {
   }
 });
 
-function coverageProject(include = ['example.ts', 'untested.ts']) {
-  mkdirSync(resolve('tests/.rstest'), { recursive: true });
-  const directory = mkdtempSync(resolve('tests/.rstest/coverage-cli-'));
-  directories.push(directory);
+type CoverageMetric = 'lines' | 'functions' | 'statements' | 'branches';
+type CoverageSummary = { total: Record<CoverageMetric, { total: number; covered: number; pct: number }> };
+
+function writeCoverageSources(directory: string) {
   writeFileSync(
     resolve(directory, 'example.ts'),
     "export function example(value: boolean) { return value ? 'yes' : 'no'; }\n"
@@ -33,6 +33,9 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
     `
     );
   }
+}
+
+function writeCoverageConfig(directory: string, include: string[]) {
   const config = resolve(directory, 'rstest.config.ts');
   writeFileSync(
     config,
@@ -52,6 +55,15 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
     };
   `
   );
+  return config;
+}
+
+function coverageProject(include = ['example.ts', 'untested.ts']) {
+  mkdirSync(resolve('tests/.rstest'), { recursive: true });
+  const directory = mkdtempSync(resolve('tests/.rstest/coverage-cli-'));
+  directories.push(directory);
+  writeCoverageSources(directory);
+  const config = writeCoverageConfig(directory, include);
   const run = (args: string[], report = 'reference') => {
     const result = spawnSync('bun', ['run', 'rstest', ...args, '--config', config], {
       encoding: 'utf8',
@@ -62,6 +74,41 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
     return result;
   };
   return { directory, run };
+}
+
+type CoverageRun = ReturnType<typeof coverageProject>['run'];
+
+function readCoverageSummary(directory: string, report: string): CoverageSummary {
+  return JSON.parse(readFileSync(resolve(directory, `${report}/coverage-summary.json`), 'utf8'));
+}
+
+// Simulates a Bun lcov report in the project that must not leak into Rstest's denominators.
+function writeBunLcovReport(directory: string) {
+  mkdirSync(resolve(directory, 'coverage'));
+  writeFileSync(
+    resolve(directory, 'coverage/lcov.info'),
+    'TN:\nSF:example.ts\nFNF:100\nFNH:100\nLF:100\nLH:100\nend_of_record\n'
+  );
+}
+
+function runBlobShards(run: CoverageRun, directory: string) {
+  for (const shard of ['1/2', '2/2']) {
+    const result = run([`--shard=${shard}`], 'merged');
+    expect(result.status, result.stdout + result.stderr).toBe(0);
+    expect(existsSync(resolve(directory, 'merged/coverage-summary.json'))).toBe(false);
+  }
+}
+
+function mergeShardBlobs(run: CoverageRun, directory: string) {
+  const merged = run(['merge-reports', resolve(directory, 'blobs')], 'merged');
+  expect(merged.status, merged.stdout + merged.stderr).toBe(0);
+  return readCoverageSummary(directory, 'merged');
+}
+
+function expectMatchingTotals(actual: CoverageSummary, expected: CoverageSummary) {
+  for (const metric of ['lines', 'functions', 'statements', 'branches'] as const) {
+    expect(actual.total[metric]).toEqual(expected.total[metric]);
+  }
 }
 
 test('the real integration coverage CLI rejects an uncovered module at the established thresholds', () => {
@@ -75,24 +122,12 @@ test('the real integration coverage CLI rejects an uncovered module at the estab
 
 test('keeps coverage gates on measured Rstest locations rather than mixing Bun denominators', () => {
   const { directory, run } = coverageProject();
-  mkdirSync(resolve(directory, 'coverage'));
-  writeFileSync(
-    resolve(directory, 'coverage/lcov.info'),
-    'TN:\nSF:example.ts\nFNF:100\nFNH:100\nLF:100\nLH:100\nend_of_record\n'
-  );
+  writeBunLcovReport(directory);
   const reference = run([]);
   expect(reference.status, reference.stdout + reference.stderr).toBe(0);
-  const expected = JSON.parse(readFileSync(resolve(directory, 'reference/coverage-summary.json'), 'utf8'));
-  for (const shard of ['1/2', '2/2']) {
-    const result = run([`--shard=${shard}`], 'merged');
-    expect(result.status, result.stdout + result.stderr).toBe(0);
-    expect(existsSync(resolve(directory, 'merged/coverage-summary.json'))).toBe(false);
-  }
-  const merged = run(['merge-reports', resolve(directory, 'blobs')], 'merged');
-  expect(merged.status, merged.stdout + merged.stderr).toBe(0);
-  const actual = JSON.parse(readFileSync(resolve(directory, 'merged/coverage-summary.json'), 'utf8'));
-  for (const metric of ['lines', 'functions', 'statements', 'branches']) {
-    expect(actual.total[metric]).toEqual(expected.total[metric]);
-  }
+  const expected = readCoverageSummary(directory, 'reference');
+  runBlobShards(run, directory);
+  const actual = mergeShardBlobs(run, directory);
+  expectMatchingTotals(actual, expected);
   expect(actual.total.functions).toMatchObject({ total: 2, covered: 1, pct: 50 });
 });

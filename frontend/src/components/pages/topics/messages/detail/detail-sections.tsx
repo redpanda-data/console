@@ -21,6 +21,7 @@ import { TimestampDisplay } from 'utils/tsx-utils';
 import { prettyBytes } from 'utils/utils';
 
 import type { DetailSectionKey } from './detail-view-state';
+import { TonedIcon } from '../../../shared/toned-icon';
 import { PayloadComponent } from '../../Tab.Messages/message-display/payload-component';
 
 /** Accordion section with an uppercase label, optional right-side meta and copy action.
@@ -51,25 +52,23 @@ const DetailSection = ({
     className={cn(
       // `relative` anchors the copy button: it can't live in the trigger's `end` slot
       // (a button inside the trigger button), so it overlays the header row instead.
-      'relative shrink-0 border-b px-3 py-2.5 last:border-b-0',
-      fill && open && 'flex min-h-0 flex-1 flex-col',
-      // The registry panel pins its height to the measured content height
-      // (`h-(--accordion-panel-height)`); the fill presentation needs it to flex-stretch.
+      // The simple accordion variant already draws the item's `border-b`.
+      'relative shrink-0',
       fill &&
         open &&
-        '[&>[data-slot=accordion-content]]:h-auto [&>[data-slot=accordion-content]]:min-h-0 [&>[data-slot=accordion-content]]:flex-1'
+        'flex min-h-0 flex-1 flex-col [&>[data-slot=accordion-content]]:h-auto [&>[data-slot=accordion-content]]:min-h-0 [&>[data-slot=accordion-content]]:flex-1'
     )}
     testId={testId}
     value={value}
   >
     <AccordionTrigger
       chevron={false}
-      className="select-none gap-1.5 py-0 no-underline hover:no-underline"
+      className="select-none"
       end={
         meta ? (
           <span
             className={cn(
-              'whitespace-nowrap font-mono text-caption text-muted-foreground',
+              'font-mono text-caption whitespace-nowrap text-muted-foreground',
               copyContent !== undefined && 'mr-7'
             )}
           >
@@ -78,33 +77,30 @@ const DetailSection = ({
         ) : undefined
       }
       start={
-        <ChevronRightIcon
-          aria-hidden="true"
-          className="size-3 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/accordion-trigger:rotate-90"
-        />
+        <span className="block transition-transform group-data-[panel-open]/accordion-trigger:rotate-90">
+          <TonedIcon aria-hidden="true" className="size-3 shrink-0" icon={ChevronRightIcon} tone="muted" />
+        </span>
       }
     >
-      <span className="font-semibold text-caption text-muted-foreground uppercase tracking-wider">{label}</span>
+      <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">{label}</span>
     </AccordionTrigger>
     {copyContent !== undefined && (
       <CopyButton
         aria-label={`Copy ${label.toLowerCase()}`}
-        className="absolute top-1.5 right-3 z-10 size-6"
+        className="absolute top-4 right-3 z-10 size-6"
         content={copyContent}
         size="sm"
         variant="ghost"
       />
     )}
-    <AccordionContent className={cn('pt-1.5 pb-0', fill && 'flex h-full min-h-0 flex-col')}>
-      {children}
-    </AccordionContent>
+    <AccordionContent className={fill ? 'flex h-full min-h-0 flex-col' : undefined}>{children}</AccordionContent>
   </AccordionItem>
 );
 
 const MetaRow = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="grid grid-cols-[minmax(110px,42%)_1fr] border-b last:border-b-0">
-    <dt className="px-2.5 py-1.5 font-semibold text-caption text-muted-foreground uppercase tracking-wide">{label}</dt>
-    <dd className="min-w-0 break-all border-l px-2.5 py-1.5 font-mono text-body-sm">{children}</dd>
+    <dt className="px-2.5 py-1.5 text-caption font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
+    <dd className="min-w-0 border-l px-2.5 py-1.5 font-mono text-body-sm break-all">{children}</dd>
   </div>
 );
 
@@ -123,7 +119,7 @@ export const MetadataSection = ({ msg }: SectionProps) => (
       <MetaRow label="Offset">{msg.offset.toLocaleString()}</MetaRow>
       <MetaRow label="Headers">{msg.headers.length}</MetaRow>
       <MetaRow label="Compression">
-        <Badge className="font-mono" size="sm" tone="default" variant="subtle">
+        <Badge size="sm" tone="default" variant="subtle">
           {msg.compression}
         </Badge>
       </MetaRow>
@@ -147,7 +143,7 @@ const TroubleshootNote = ({ payload }: { payload: Payload }) => {
       <AlertTitle>Errors were encountered when deserializing this payload</AlertTitle>
       <AlertDescription>
         {report.map((entry) => (
-          <div className="break-words font-mono text-body-sm leading-relaxed" key={entry.serdeName}>
+          <div className="font-mono text-body-sm leading-relaxed wrap-break-word" key={entry.serdeName}>
             <span className="font-semibold capitalize">{entry.serdeName}:</span> {entry.message}
           </div>
         ))}
@@ -171,7 +167,7 @@ export const KeySection = ({ msg }: SectionProps) => (
     testId="detail-key-section"
     value="key"
   >
-    <div className="break-all rounded-md border bg-muted px-2.5 py-1.5 font-mono text-body-sm">
+    <div className="rounded-md border bg-muted px-2.5 py-1.5 font-mono text-body-sm break-all">
       {msg.key.isPayloadNull ? <span className="text-muted-foreground italic">null</span> : msg.keyJson}
     </div>
     <TroubleshootNote payload={msg.key} />
@@ -193,13 +189,13 @@ const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
       <thead>
         <tr className="border-b">
           <th
-            className="w-[42%] px-2.5 py-1 text-left font-semibold text-caption text-muted-foreground uppercase tracking-wide"
+            className="w-[42%] px-2.5 py-1 text-left text-caption font-semibold tracking-wide text-muted-foreground uppercase"
             scope="col"
           >
             Key
           </th>
           <th
-            className="border-l px-2.5 py-1 text-left font-semibold text-caption text-muted-foreground uppercase tracking-wide"
+            className="border-l px-2.5 py-1 text-left text-caption font-semibold tracking-wide text-muted-foreground uppercase"
             scope="col"
           >
             Value
@@ -211,8 +207,8 @@ const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
           const text = headerValueText(header.value);
           return (
             <tr className="border-b font-mono text-body-sm last:border-b-0" key={`${header.key}-${i}`}>
-              <td className="break-all px-2.5 py-1.5 align-top text-primary">{header.key}</td>
-              <td className="break-all border-l px-2.5 py-1.5 align-top">
+              <td className="px-2.5 py-1.5 align-top break-all text-primary">{header.key}</td>
+              <td className="border-l px-2.5 py-1.5 align-top break-all">
                 {text === null ? <span className="sr-only">null</span> : <span>{text}</span>}
               </td>
             </tr>

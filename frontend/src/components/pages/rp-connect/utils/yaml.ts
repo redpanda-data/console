@@ -11,6 +11,7 @@ import {
   parseDocument,
   parse as parseYaml,
   visit,
+  type YAMLMap,
   stringify as yamlStringify,
 } from 'yaml';
 
@@ -134,14 +135,12 @@ const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<Conne
   }
 };
 
-const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
-  const inputNode = doc.get('input') as { toJSON?: () => unknown } | undefined;
-  if (!inputNode) {
-    return;
-  }
+/** The component type configured under the root `input` (e.g. `kafka_franz`), if any. */
+const inputComponentType = (doc: Document.Parsed | Document): string | undefined =>
+  firstKey((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
 
-  const inputObj = (inputNode.toJSON?.() as Record<string, unknown>) || {};
-  const inputType = firstKey(inputObj);
+const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
+  const inputType = inputComponentType(doc);
   if (!inputType) {
     return;
   }
@@ -162,38 +161,38 @@ type DetectedComponentType = 'processor' | 'cache' | 'rate_limit' | 'root' | 'sc
 // must NOT be for the scanner heuristic below to apply).
 const ROOT_SECTION_KEYS = ['input', 'output', 'buffer', 'metrics', 'tracer'] as const;
 
+// Snippet sections that decide the merge on their own, checked in this order.
+const SECTION_COMPONENT_TYPES = [
+  ['pipeline', 'processor'],
+  ['cache_resources', 'cache'],
+  ['rate_limit_resources', 'rate_limit'],
+] as const;
+
+// Single key that isn't a known root section, with an existing input → scanner.
+const isScannerSnippet = (newConfigObject: Partial<ConnectConfigObject>, doc?: Document.Parsed): boolean => {
+  const keys = Object.keys(newConfigObject);
+  return (
+    keys.length === 1 &&
+    Boolean(doc?.has('input')) &&
+    Boolean(keys[0]) &&
+    !(ROOT_SECTION_KEYS as readonly string[]).includes(keys[0])
+  );
+};
+
 const detectComponentType = (
   newConfigObject: Partial<ConnectConfigObject>,
   doc?: Document.Parsed
 ): DetectedComponentType => {
-  if (newConfigObject.pipeline) {
-    return 'processor';
-  }
-
-  if (newConfigObject.cache_resources) {
-    return 'cache';
-  }
-
-  if (newConfigObject.rate_limit_resources) {
-    return 'rate_limit';
+  const section = SECTION_COMPONENT_TYPES.find(([key]) => newConfigObject[key]);
+  if (section) {
+    return section[1];
   }
 
   if (ROOT_SECTION_KEYS.some((key) => newConfigObject[key])) {
     return 'root';
   }
 
-  // Single key that isn't a known root section, with an existing input → scanner.
-  const keys = Object.keys(newConfigObject);
-  if (
-    keys.length === 1 &&
-    doc?.has('input') &&
-    keys[0] &&
-    !(ROOT_SECTION_KEYS as readonly string[]).includes(keys[0])
-  ) {
-    return 'scanner';
-  }
-
-  return 'unknown';
+  return isScannerSnippet(newConfigObject, doc) ? 'scanner' : 'unknown';
 };
 
 const mergeByComponentType = (
@@ -233,31 +232,30 @@ function convertRequiredFieldSentinels(yamlString: string): string {
 
 const keyMatchRegex = /^([^:#\n]+):/;
 
+/** The key of an unindented `key:` line, if the line is one. */
+const rootKeyOf = (line: string): string | undefined => {
+  if (!line.trim() || line.length !== line.trimStart().length || !line.includes(':')) {
+    return;
+  }
+  return line.match(keyMatchRegex)?.[1].trim();
+};
+
 const addRootSpacing = (yamlString: string): string => {
-  const lines = yamlString.split('\n');
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
-  for (const line of lines) {
-    if (!line.trim()) {
-      processedLines.push(line);
-      continue;
-    }
-    const currentIndent = line.length - line.trimStart().length;
-    if (currentIndent === 0 && line.includes(':')) {
-      const keyMatch = line.match(keyMatchRegex);
-      if (keyMatch) {
-        const cleanKey = keyMatch[1].trim();
-        // Blank line before each root component (except the first)
-        if (
-          previousRootKey !== null &&
-          cleanKey !== previousRootKey &&
-          processedLines.length > 0 &&
-          processedLines.at(-1)?.trim() !== ''
-        ) {
-          processedLines.push('');
-        }
-        previousRootKey = cleanKey;
+  for (const line of yamlString.split('\n')) {
+    const rootKey = rootKeyOf(line);
+    if (rootKey !== undefined) {
+      // Blank line before each root component (except the first)
+      if (
+        previousRootKey !== null &&
+        rootKey !== previousRootKey &&
+        processedLines.length > 0 &&
+        processedLines.at(-1)?.trim() !== ''
+      ) {
+        processedLines.push('');
       }
+      previousRootKey = rootKey;
     }
     processedLines.push(line);
   }
@@ -271,6 +269,36 @@ const isBlankConfigText = (text: string): boolean => {
   return trimmed === '' || trimmed === '{}';
 };
 
+const toastMergeFailure = (error: unknown, action: string): void => {
+  toast.error(
+    formatToastErrorMessageGRPC({
+      error: ConnectError.from(error),
+      action,
+      entity: 'mergeConnectConfigs',
+    })
+  );
+};
+
+const parseExistingDocument = (existingYaml: string): Document.Parsed | undefined => {
+  try {
+    return parseDocument(existingYaml);
+  } catch (error) {
+    toastMergeFailure(error, 'Parse existing YAML');
+  }
+};
+
+// Returns false (after a toast) when the merge throws.
+const mergeIntoDocument = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): boolean => {
+  const componentType = detectComponentType(newConfigObject, doc);
+  try {
+    mergeByComponentType(componentType, doc, newConfigObject);
+    return true;
+  } catch (error) {
+    toastMergeFailure(error, 'Merge selected component into existing config');
+    return false;
+  }
+};
+
 export const mergeConnectConfigs = (
   existingYaml: string,
   newConfigObject: Partial<ConnectConfigObject>
@@ -281,32 +309,8 @@ export const mergeConnectConfigs = (
     return newConfigObject;
   }
 
-  let doc: Document.Parsed;
-  try {
-    doc = parseDocument(existingYaml);
-  } catch (error) {
-    toast.error(
-      formatToastErrorMessageGRPC({
-        error: ConnectError.from(error),
-        action: 'Parse existing YAML',
-        entity: 'mergeConnectConfigs',
-      })
-    );
-    return; // Keep existing YAML in editor
-  }
-
-  const componentType = detectComponentType(newConfigObject, doc);
-
-  try {
-    mergeByComponentType(componentType, doc, newConfigObject);
-  } catch (error) {
-    toast.error(
-      formatToastErrorMessageGRPC({
-        error: ConnectError.from(error),
-        action: 'Merge selected component into existing config',
-        entity: 'mergeConnectConfigs',
-      })
-    );
+  const doc = parseExistingDocument(existingYaml);
+  if (!(doc && mergeIntoDocument(doc, newConfigObject))) {
     return; // Keep existing YAML in editor
   }
 
@@ -324,43 +328,39 @@ type YAMLNode = { items?: unknown[]; comment?: string; commentBefore?: string };
 type YAMLKey = { value?: string; comment?: string };
 type YAMLPair = { key?: YAMLKey; value?: YAMLNode };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
-  if (!node.items) {
-    return;
-  }
-
-  if (!spec.children) {
+  if (!(node.items && spec.children)) {
     return;
   }
 
   for (const item of node.items) {
-    const pair = item as YAMLPair;
-    const key = pair?.key?.value;
-    if (!key) {
-      continue;
-    }
+    addPairComments(item as YAMLPair, spec.children);
+  }
+}
 
-    const fieldSpec = spec.children.find((child) => child.name === key);
-    if (!fieldSpec) {
-      continue;
-    }
+function addPairComments(pair: YAMLPair, fields: RawFieldSpec[]): void {
+  const key = pair?.key?.value;
+  const fieldSpec = key ? fields.find((child) => child.name === key) : undefined;
+  if (!fieldSpec) {
+    return;
+  }
 
-    const isParentObject = pair.value?.items && fieldSpec.children;
-    const isArray = pair.value?.items && !fieldSpec.children;
+  if (fieldSpec.comment) {
+    placeFieldComment(pair, fieldSpec, fieldSpec.comment);
+  }
 
-    if (fieldSpec.comment) {
-      // Array → comment on key; leaf → comment on value; parent object → skip (children get it).
-      if (isArray && pair.key) {
-        pair.key.comment = ` ${fieldSpec.comment}`;
-      } else if (!isParentObject && pair.value) {
-        pair.value.comment = ` ${fieldSpec.comment}`;
-      }
-    }
+  if (pair.value?.items && fieldSpec.children) {
+    addCommentsRecursive(pair.value, fieldSpec);
+  }
+}
 
-    if (isParentObject && pair.value) {
-      addCommentsRecursive(pair.value, fieldSpec);
-    }
+// Array → comment on key; leaf → comment on value; parent object → skip (children get it).
+function placeFieldComment(pair: YAMLPair, fieldSpec: RawFieldSpec, comment: string): void {
+  const hasItems = Boolean(pair.value?.items);
+  if (hasItems && !fieldSpec.children && pair.key) {
+    pair.key.comment = ` ${comment}`;
+  } else if (!(hasItems && fieldSpec.children) && pair.value) {
+    pair.value.comment = ` ${comment}`;
   }
 }
 
@@ -372,46 +372,39 @@ function lastArrayIndex(doc: Document.Parsed | Document, path: string[]): string
   return String(length > 0 ? length - 1 : 0);
 }
 
-function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec): void {
-  if (!componentSpec.config) {
-    return;
-  }
-
+/** Where a component's own config object sits in the document, or undefined when it has no place. */
+function componentConfigPath(
+  doc: Document.Parsed | Document,
+  componentSpec: ConnectComponentSpec
+): string[] | undefined {
   const specName = componentSpec.name;
-  let configPath: string[] = [];
-
   switch (componentSpec.type) {
     case 'input':
     case 'output':
     case 'buffer':
     case 'metrics':
     case 'tracer':
-      configPath = [componentSpec.type, specName];
-      break;
+      return [componentSpec.type, specName];
     case 'processor':
-      configPath = ['pipeline', 'processors', lastArrayIndex(doc, ['pipeline', 'processors']), specName];
-      break;
+      return ['pipeline', 'processors', lastArrayIndex(doc, ['pipeline', 'processors']), specName];
     case 'cache':
-    case 'rate_limit': {
-      const resourceKey = componentSpec.type === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-      configPath = [resourceKey, lastArrayIndex(doc, [resourceKey]), specName];
-      break;
-    }
+      return ['cache_resources', lastArrayIndex(doc, ['cache_resources']), specName];
+    case 'rate_limit':
+      return ['rate_limit_resources', lastArrayIndex(doc, ['rate_limit_resources']), specName];
     case 'scanner': {
       // A merged scanner lives at `input.<type>.scanner.<name>` (see mergeScanner).
-      const inputType = firstKey((doc.get('input') as { toJSON?: () => unknown } | undefined)?.toJSON?.());
-      if (!inputType) {
-        return;
-      }
-      configPath = ['input', inputType, 'scanner', specName];
-      break;
+      const inputType = inputComponentType(doc);
+      return inputType ? ['input', inputType, 'scanner', specName] : undefined;
     }
     default:
       return;
   }
+}
 
+// Walks map keys by name and sequence entries by index, stopping at the deepest node reached.
+function nodeAlongPath(doc: Document.Parsed | Document, path: string[]): YAMLNode | undefined {
   let currentNode: YAMLNode | undefined = doc.contents as YAMLNode;
-  for (const segment of configPath) {
+  for (const segment of path) {
     if (!currentNode?.items) {
       break;
     }
@@ -427,11 +420,28 @@ function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: Con
       currentNode = (currentNode.items as YAMLNode[])[Number(segment)];
     }
   }
+  return currentNode;
+}
 
-  if (currentNode && componentSpec.config) {
-    addCommentsRecursive(currentNode, componentSpec.config);
+function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec): void {
+  if (!componentSpec.config) {
+    return;
+  }
+
+  const configPath = componentConfigPath(doc, componentSpec);
+  const configNode = configPath ? nodeAlongPath(doc, configPath) : undefined;
+  if (configNode) {
+    addCommentsRecursive(configNode, componentSpec.config);
   }
 }
+
+const toYamlDocument = (configObject: Document.Parsed | Partial<ConnectConfigObject>): Document.Parsed | Document => {
+  if (typeof (configObject as Document.Parsed).getIn === 'function') {
+    // Merged document: regenerate for consistent structure (fixes navigation for doc.set() nodes).
+    return parseDocument(yamlStringify(configObject, yamlConfig));
+  }
+  return new Document(configObject);
+};
 
 export const configToYaml = (
   configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined,
@@ -442,24 +452,11 @@ export const configToYaml = (
   }
 
   try {
-    let doc: Document.Parsed | Document;
-
-    if (typeof (configObject as Document.Parsed).getIn === 'function') {
-      // Merged document: regenerate for consistent structure (fixes navigation for doc.set() nodes).
-      const tempYaml = yamlStringify(configObject, yamlConfig);
-      doc = parseDocument(tempYaml);
-    } else {
-      doc = new Document(configObject);
-    }
-
+    const doc = toYamlDocument(configObject);
     if (componentSpec) {
       addCommentsFromSpec(doc, componentSpec);
     }
-
-    let yamlString = yamlStringify(doc, yamlConfig);
-    yamlString = convertRequiredFieldSentinels(yamlString);
-    yamlString = addRootSpacing(yamlString);
-    return yamlString;
+    return addRootSpacing(convertRequiredFieldSentinels(yamlStringify(doc, yamlConfig)));
   } catch (error) {
     toast.error(
       formatToastErrorMessageGRPC({
@@ -485,19 +482,11 @@ const yamlHasInput = (yamlContent?: string): boolean => {
   }
 };
 
-export const getConnectTemplate = ({
-  connectionName,
-  connectionType,
-  components,
-  showAdvancedFields,
-  existingYaml,
-}: {
-  connectionName: string;
-  connectionType: string;
-  components: ConnectComponentSpec[];
-  showAdvancedFields?: boolean;
-  existingYaml?: string;
-}) => {
+const findTemplateSpec = (
+  components: ConnectComponentSpec[],
+  connectionName: string,
+  connectionType: string
+): ConnectComponentSpec | undefined => {
   const componentSpec =
     connectionName && connectionType
       ? components.find((comp) => comp.type === connectionType && comp.name === connectionName)
@@ -511,41 +500,66 @@ export const getConnectTemplate = ({
         entity: 'getConnectTemplate',
       })
     );
-    return;
   }
+  return componentSpec;
+};
 
-  const result = schemaToConfig(componentSpec, showAdvancedFields);
+// A scanner isn't a root section — it nests under `input.<type>.scanner` (see mergeScanner).
+// With no input to attach to, it would land as a bogus top-level block, so refuse instead.
+const isScannerWithoutInput = (spec: ConnectComponentSpec, existingYaml?: string): boolean => {
+  if (spec.type !== 'scanner' || yamlHasInput(existingYaml)) {
+    return false;
+  }
+  toast.error(
+    formatToastErrorMessageGRPC({
+      error: new ConnectError('a scanner attaches to an input, and this config has none'),
+      action: 'add scanner',
+      entity: spec.name,
+    })
+  );
+  return true;
+};
+
+// Falls back to the existing YAML when the merge or its serialization fails.
+const mergeTemplateIntoYaml = (
+  existingYaml: string,
+  newConfigObject: Partial<ConnectConfigObject>,
+  spec: ConnectComponentSpec
+): string => {
+  const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
+  if (!mergedConfig) {
+    return existingYaml;
+  }
+  return configToYaml(mergedConfig, spec) || existingYaml;
+};
+
+export const getConnectTemplate = ({
+  connectionName,
+  connectionType,
+  components,
+  showAdvancedFields,
+  existingYaml,
+}: {
+  connectionName: string;
+  connectionType: string;
+  components: ConnectComponentSpec[];
+  showAdvancedFields?: boolean;
+  existingYaml?: string;
+}) => {
+  const componentSpec = findTemplateSpec(components, connectionName, connectionType);
+  const result = componentSpec ? schemaToConfig(componentSpec, showAdvancedFields) : undefined;
   if (!result) {
     return;
   }
 
   const { config: newConfigObject, spec } = result;
-
-  // A scanner isn't a root section — it nests under `input.<type>.scanner` (see mergeScanner).
-  // With no input to attach to, it would land as a bogus top-level block, so refuse instead.
-  if (spec.type === 'scanner' && !yamlHasInput(existingYaml)) {
-    toast.error(
-      formatToastErrorMessageGRPC({
-        error: new ConnectError('a scanner attaches to an input, and this config has none'),
-        action: 'add scanner',
-        entity: spec.name,
-      })
-    );
+  if (isScannerWithoutInput(spec, existingYaml)) {
     return existingYaml;
   }
 
-  if (existingYaml) {
-    const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
-
-    if (!mergedConfig) {
-      return existingYaml;
-    }
-
-    const yamlResult = configToYaml(mergedConfig, spec);
-    return yamlResult || existingYaml;
-  }
-
-  return configToYaml(newConfigObject, spec);
+  return existingYaml
+    ? mergeTemplateIntoYaml(existingYaml, newConfigObject, spec)
+    : configToYaml(newConfigObject, spec);
 };
 
 /** Root sections of a parsed pipeline config document. */
@@ -572,6 +586,18 @@ type ParsedConfigComponents = {
   outputs: string[];
 };
 
+// The component a root section holds, expanded to its children for multi-component wrappers.
+const sectionComponentNames = (
+  sectionObj: Record<string, unknown> | undefined,
+  parseMulti: (key: string, value: unknown) => string[] | undefined
+): string[] => {
+  const key = sectionObj && typeof sectionObj === 'object' ? firstKey(sectionObj) : undefined;
+  if (!(sectionObj && key)) {
+    return [];
+  }
+  return parseMulti(key, sectionObj[key]) ?? [key];
+};
+
 /** Parse a pipeline's configYaml to extract input, processor, and output component names. */
 export const parseConfigComponents = (configYaml: string): ParsedConfigComponents => {
   const empty: ParsedConfigComponents = { inputs: [], processors: [], outputs: [] };
@@ -589,25 +615,11 @@ export const parseConfigComponents = (configYaml: string): ParsedConfigComponent
       ? config.pipeline.processors.map(firstKey).filter((p): p is string => !!p)
       : [];
 
-    const inputObj = config.input;
-    let inputs: string[] = [];
-    if (inputObj && typeof inputObj === 'object') {
-      const inputKey = firstKey(inputObj);
-      if (inputKey) {
-        inputs = parseMultiInputs(inputKey, inputObj[inputKey]) ?? [inputKey];
-      }
-    }
-
-    const outputObj = config.output;
-    let outputs: string[] = [];
-    if (outputObj && typeof outputObj === 'object') {
-      const outputKey = firstKey(outputObj);
-      if (outputKey) {
-        outputs = parseMultiOutputs(outputKey, outputObj[outputKey]) ?? [outputKey];
-      }
-    }
-
-    return { inputs, processors, outputs };
+    return {
+      inputs: sectionComponentNames(config.input, parseMultiInputs),
+      processors,
+      outputs: sectionComponentNames(config.output, parseMultiOutputs),
+    };
   } catch {
     return empty;
   }
@@ -653,52 +665,57 @@ function stripCommentedKeys(yaml: string, keys: string[], section: string, compo
   }
 
   const lines = yaml.split('\n');
+  const block = findComponentBlock(lines, section, componentName);
+  if (!block) {
+    return yaml;
+  }
+
   const keyPattern = keys.map(escapeRegExp).join('|');
   const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
+  return lines.filter((line, i) => i <= block.start || i >= block.end || !commentRegex.test(line)).join('\n');
+}
 
+const isTopLevelLine = (line: string): boolean => line.length > 0 && !line.startsWith(' ') && !line.startsWith('#');
+
+const isSiblingComponentLine = (line: string): boolean =>
+  line.length > 0 && line.startsWith('  ') && !line.startsWith('    ') && !line.startsWith('  #');
+
+/** Line range of `<section>.<componentName>` in serialized YAML: its key line up to the next block. */
+function findComponentBlock(
+  lines: string[],
+  section: string,
+  componentName: string
+): { start: number; end: number } | undefined {
   const sectionRegex = new RegExp(`^${section}:`);
   const sectionStart = lines.findIndex((l) => sectionRegex.test(l));
-  if (sectionStart === -1) {
-    return yaml;
+  const start = sectionStart === -1 ? -1 : findComponentStart(lines, sectionStart, componentName);
+  if (start === -1) {
+    return;
   }
+  return { start, end: findComponentEnd(lines, start) };
+}
 
+function findComponentStart(lines: string[], sectionStart: number, componentName: string): number {
   const componentRegex = new RegExp(`^  ${escapeRegExp(componentName)}:`);
-  let componentStart = -1;
   for (let i = sectionStart + 1; i < lines.length; i++) {
-    if (lines[i].length > 0 && !lines[i].startsWith(' ') && !lines[i].startsWith('#')) {
-      break; // left section
+    if (isTopLevelLine(lines[i])) {
+      return -1; // left section
     }
     if (componentRegex.test(lines[i])) {
-      componentStart = i;
-      break;
+      return i;
     }
   }
-  if (componentStart === -1) {
-    return yaml;
-  }
+  return -1;
+}
 
-  // Component block ends at the next top-level key or next sibling component (2-space indent).
-  let componentEnd = lines.length;
+// Component block ends at the next top-level key or next sibling component (2-space indent).
+function findComponentEnd(lines: string[], componentStart: number): number {
   for (let i = componentStart + 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#')) {
-      componentEnd = i;
-      break;
-    }
-    if (line.length > 0 && line.startsWith('  ') && !line.startsWith('    ') && !line.startsWith('  #')) {
-      componentEnd = i;
-      break;
+    if (isTopLevelLine(lines[i]) || isSiblingComponentLine(lines[i])) {
+      return i;
     }
   }
-
-  return lines
-    .filter((line, i) => {
-      if (i <= componentStart || i >= componentEnd) {
-        return true;
-      }
-      return !commentRegex.test(line);
-    })
-    .join('\n');
+  return lines.length;
 }
 
 // Inputs use `topics` (array), outputs use `topic` (string) — per the Redpanda schemas. An existing
@@ -751,22 +768,32 @@ function ensureOwnConnection(
   if (hasSeedBrokers(resolved)) {
     return [];
   }
+  setGeneratedSeedBrokers(doc, component);
+  return ensureTlsDefault(doc, component, resolved) ? ['seed_brokers', 'tls'] : ['seed_brokers'];
+}
+
+function setGeneratedSeedBrokers(doc: Document.Parsed, component: YAMLMap): void {
   const brokers = doc.createNode([getContextualVariableSyntax('REDPANDA_BROKERS')]);
   if (component.has('seed_brokers')) {
     component.set('seed_brokers', brokers);
   } else {
     component.items.unshift(doc.createPair('seed_brokers', brokers));
   }
-  const added = ['seed_brokers'];
+}
+
+// Cloud's TLS default for generated brokers: enabled unless the component already decides. Returns
+// whether a `tls` key was added.
+function ensureTlsDefault(doc: Document.Parsed, component: YAMLMap, resolved: unknown): boolean {
   const resolvedTls = (resolved as { tls?: unknown } | undefined)?.tls;
-  const tls = component.get('tls', true);
   if (resolvedTls === undefined || resolvedTls === null) {
     component.set('tls', doc.createNode({ enabled: true }));
-    added.push('tls');
-  } else if (isMap(tls) && (resolvedTls as { enabled?: unknown }).enabled === undefined) {
+    return true;
+  }
+  const tls = component.get('tls', true);
+  if (isMap(tls) && (resolvedTls as { enabled?: unknown }).enabled === undefined) {
     tls.set('enabled', true);
   }
-  return added;
+  return false;
 }
 
 export function patchRedpandaConfig(
@@ -779,15 +806,38 @@ export function patchRedpandaConfig(
     return;
   }
 
-  let doc: Document.Parsed;
-  try {
-    doc = parseDocument(existingYaml);
-  } catch {
+  const doc = tryParseDocument(existingYaml);
+  if (!doc) {
     return;
   }
 
-  const patchedKeys: string[] = [];
   const resolved = readComponent(existingYaml, section, componentName).component;
+  const patchedKeys = applyRedpandaPatch(doc, section, componentName, patch, resolved);
+
+  try {
+    return stripCommentedKeys(yamlStringify(doc, yamlConfig), patchedKeys, section, componentName);
+  } catch {
+    // Unserializable document: undefined, as for empty input.
+  }
+}
+
+function tryParseDocument(yamlContent: string): Document.Parsed | undefined {
+  try {
+    return parseDocument(yamlContent);
+  } catch {
+    // Unparseable YAML: nothing to patch.
+  }
+}
+
+/** Write the patch into the component (`resolved` is its alias-resolved form); returns the keys set. */
+function applyRedpandaPatch(
+  doc: Document.Parsed,
+  section: RedpandaSection,
+  componentName: string,
+  patch: RedpandaPatch,
+  resolved: Record<string, unknown> | undefined
+): string[] {
+  const patchedKeys: string[] = [];
 
   if (patch.topicName) {
     patchedKeys.push(patchTopicName(doc, section, componentName, patch.topicName));
@@ -800,22 +850,25 @@ export function patchRedpandaConfig(
   }
 
   if (patch.sasl) {
-    if (componentName === 'redpanda_common') {
-      // redpanda_common keeps SASL in a top-level `redpanda:` block.
-      doc.setIn(['redpanda', 'sasl'], patch.sasl);
-    } else {
-      doc.setIn([section, componentName, 'sasl'], patch.sasl);
-      patchedKeys.push(...ensureOwnConnection(doc, section, componentName, resolved));
-    }
-    patchedKeys.push('sasl');
+    patchedKeys.push(...patchSasl(doc, section, componentName, patch.sasl, resolved));
   }
+  return patchedKeys;
+}
 
-  try {
-    const result = yamlStringify(doc, yamlConfig);
-    return stripCommentedKeys(result, patchedKeys, section, componentName);
-  } catch {
-    // Unserializable document: undefined, as for empty input.
+function patchSasl(
+  doc: Document.Parsed,
+  section: RedpandaSection,
+  componentName: string,
+  sasl: NonNullable<RedpandaPatch['sasl']>,
+  resolved: Record<string, unknown> | undefined
+): string[] {
+  if (componentName === 'redpanda_common') {
+    // redpanda_common keeps SASL in a top-level `redpanda:` block.
+    doc.setIn(['redpanda', 'sasl'], sasl);
+    return ['sasl'];
   }
+  doc.setIn([section, componentName, 'sasl'], sasl);
+  return [...ensureOwnConnection(doc, section, componentName, resolved), 'sasl'];
 }
 
 /** Build a RedpandaPatch and apply it to existing YAML. */
@@ -825,17 +878,11 @@ export function tryPatchRedpandaYaml(
   componentName: string,
   result: RedpandaSetupResultLike
 ): string | undefined {
-  const patch: RedpandaPatch = {};
-  if (result.topicName) {
-    patch.topicName = result.topicName;
-  }
-  if (result.consumerGroup) {
-    patch.consumerGroup = result.consumerGroup;
-  }
-  const sasl = buildSaslPatch(result);
-  if (sasl) {
-    patch.sasl = sasl;
-  }
+  const patch: RedpandaPatch = {
+    topicName: result.topicName || undefined,
+    consumerGroup: result.consumerGroup || undefined,
+    sasl: buildSaslPatch(result),
+  };
   if (!(patch.topicName || patch.consumerGroup || patch.sasl)) {
     return;
   }
@@ -881,13 +928,22 @@ function readComponent(
   } catch {
     return { component: undefined, parseError: true };
   }
+  return { component: componentObjectIn(parsed, section, componentName), parseError: false };
+}
+
+/** `parsed[section][componentName]` when it is an object. */
+function componentObjectIn(
+  parsed: unknown,
+  section: RedpandaSection,
+  componentName: string
+): Record<string, unknown> | undefined {
   const sectionObj = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>)[section] : undefined;
   const component =
     sectionObj && typeof sectionObj === 'object' ? (sectionObj as Record<string, unknown>)[componentName] : undefined;
   if (!component || typeof component !== 'object' || Array.isArray(component)) {
-    return { component: undefined, parseError: false };
+    return;
   }
-  return { component: component as Record<string, unknown>, parseError: false };
+  return component as Record<string, unknown>;
 }
 
 /**
@@ -929,52 +985,54 @@ export function extractAllTopics(yamlContent: string): string[] {
   }
 
   const topics = new Set<string>();
-  // Circular alias configs (`a: &x {b: *x}`) parse to circular objects — guard revisits.
-  const seen = new WeakSet<object>();
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: recursive tree walker
-  function walkForTopics(obj: unknown): void {
-    if (!obj || typeof obj !== 'object') {
-      return;
-    }
-    if (seen.has(obj)) {
-      return;
-    }
-    seen.add(obj);
-
-    if (Array.isArray(obj)) {
-      for (const item of obj) {
-        walkForTopics(item);
-      }
-      return;
-    }
-
-    const record = obj as Record<string, unknown>;
-    for (const [key, value] of Object.entries(record)) {
-      if ((key === 'topic' || key === 'topics') && typeof value === 'string' && value) {
-        topics.add(value);
-      } else if (key === 'topics' && Array.isArray(value)) {
-        for (const t of value) {
-          if (typeof t === 'string' && t) {
-            topics.add(t);
-          }
-        }
-      } else {
-        walkForTopics(value);
-      }
-    }
-  }
-
   try {
     const config = parseYaml(yamlContent, { merge: true }) as Record<string, unknown> | null;
     if (!config) {
       return [];
     }
-    walkForTopics(config);
+    // Circular alias configs (`a: &x {b: *x}`) parse to circular objects — guard revisits.
+    walkForTopics(config, topics, new WeakSet<object>());
   } catch {
     return [];
   }
   return [...topics];
+}
+
+function walkForTopics(obj: unknown, topics: Set<string>, seen: WeakSet<object>): void {
+  if (!obj || typeof obj !== 'object' || seen.has(obj)) {
+    return;
+  }
+  seen.add(obj);
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      walkForTopics(item, topics, seen);
+    }
+    return;
+  }
+
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (!addTopicValue(key, value, topics)) {
+      walkForTopics(value, topics, seen);
+    }
+  }
+}
+
+// Collects a `topic`/`topics` entry's names; false when the entry isn't one, so the walk descends.
+function addTopicValue(key: string, value: unknown, topics: Set<string>): boolean {
+  if ((key === 'topic' || key === 'topics') && typeof value === 'string' && value) {
+    topics.add(value);
+    return true;
+  }
+  if (key === 'topics' && Array.isArray(value)) {
+    for (const t of value) {
+      if (typeof t === 'string' && t) {
+        topics.add(t);
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 /** YAML from onboarding wizard data: compose input and (optional) output templates. */
@@ -1218,7 +1276,7 @@ export function appendResource(
  */
 export function buildInsertableComponent(
   connectionName: string,
-  connectionType: 'processor' | 'cache' | 'rate_limit' | 'input' | 'output',
+  connectionType: InsertableComponentType,
   components: ConnectComponentSpec[]
 ): Record<string, unknown> | undefined {
   const yaml = getConnectTemplate({ connectionName, connectionType, components, existingYaml: '' });
@@ -1227,24 +1285,31 @@ export function buildInsertableComponent(
   }
   try {
     const parsed = parseYaml(yaml) as Record<string, unknown> | null;
-    if (!parsed) {
-      return;
-    }
-    if (connectionType === 'processor') {
-      const procs = (parsed.pipeline as { processors?: unknown[] } | undefined)?.processors;
-      return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
-    }
-    if (connectionType === 'input' || connectionType === 'output') {
-      // Bare input/output object (e.g. `{ kafka: {...} }`) for a broker/fallback/switch member array.
-      const obj = parsed[connectionType];
-      return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
-    }
-    const key: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
-    const arr = parsed[key];
-    return Array.isArray(arr) ? (arr[0] as Record<string, unknown>) : undefined;
+    return parsed ? templateComponent(parsed, connectionType) : undefined;
   } catch {
     // Unparseable template: nothing to insert, as when no template exists.
   }
+}
+
+type InsertableComponentType = 'processor' | 'cache' | 'rate_limit' | 'input' | 'output';
+
+/** The bare component a parsed template wraps: its first processor/resource, or its input/output. */
+function templateComponent(
+  parsed: Record<string, unknown>,
+  connectionType: InsertableComponentType
+): Record<string, unknown> | undefined {
+  if (connectionType === 'processor') {
+    const procs = (parsed.pipeline as { processors?: unknown[] } | undefined)?.processors;
+    return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
+  }
+  if (connectionType === 'input' || connectionType === 'output') {
+    // Bare input/output object (e.g. `{ kafka: {...} }`) for a broker/fallback/switch member array.
+    const obj = parsed[connectionType];
+    return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
+  }
+  const key: ResourceArrayKey = connectionType === 'cache' ? 'cache_resources' : 'rate_limit_resources';
+  const arr = parsed[key];
+  return Array.isArray(arr) ? (arr[0] as Record<string, unknown>) : undefined;
 }
 
 // Resource references: a `cache`/`rate_limit` processor's `resource:` must equal a `*_resources`

@@ -21,10 +21,28 @@ import { calculateTimeRange, type TimeRange } from '../../../utils/time-range';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
-const ObservabilityPage: FC = () => {
+// Owns the time-range picker. A refresh bumps `refreshKey`, which recomputes the same range ending now.
+const useRefreshableTimeRange = (refetch: () => unknown) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const refreshData = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    setPageHeader('Metrics', [{ title: 'Metrics', linkTo: '/observability' }]);
+    appGlobal.onRefresh = () => refreshData();
+  }, [refreshData]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey triggers recalculation on refresh
+  const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange, refreshKey]);
+
+  return { selectedTimeRange, setSelectedTimeRange, refreshKey, timeRange };
+};
+
+const ObservabilityPage: FC = () => {
   const {
     data: queries,
     isLoading: isLoadingQueries,
@@ -39,19 +57,7 @@ const ObservabilityPage: FC = () => {
       },
     },
   });
-
-  const refreshData = useCallback(() => {
-    setRefreshKey((prev) => prev + 1);
-    refetch();
-  }, [refetch]);
-
-  useEffect(() => {
-    setPageHeader('Metrics', [{ title: 'Metrics', linkTo: '/observability' }]);
-    appGlobal.onRefresh = () => refreshData();
-  }, [refreshData]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey triggers recalculation on refresh
-  const timeRange = useMemo(() => calculateTimeRange(selectedTimeRange), [selectedTimeRange, refreshKey]);
+  const { selectedTimeRange, setSelectedTimeRange, refreshKey, timeRange } = useRefreshableTimeRange(refetch);
 
   if (isLoadingQueries) {
     return (

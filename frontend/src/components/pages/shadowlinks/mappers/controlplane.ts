@@ -34,6 +34,53 @@ import {
   type UnifiedTopicMetadataSyncOptions,
 } from '../model';
 
+type ControlplaneClientOptions = NonNullable<ControlplaneShadowLink['clientOptions']>;
+
+/**
+ * Map TLS settings - controlplane uses flat structure
+ */
+function mapControlplaneTlsSettings(
+  tlsSettings: ControlplaneClientOptions['tlsSettings']
+): UnifiedTLSSettings | undefined {
+  if (!tlsSettings?.enabled) {
+    return;
+  }
+  return {
+    enabled: true,
+    tlsSettings: {
+      case: 'tlsPemSettings',
+      value: {
+        ca: tlsSettings.ca ?? '',
+        key: tlsSettings.key ?? '',
+        cert: tlsSettings.cert ?? '',
+        keyFingerprint: '',
+      },
+    },
+  };
+}
+
+/**
+ * Map authentication configuration
+ */
+function mapControlplaneAuthentication(
+  authProto: ControlplaneClientOptions['authenticationConfiguration']
+): UnifiedAuthenticationConfiguration | undefined {
+  if (authProto?.authentication?.case !== 'scramConfiguration') {
+    return;
+  }
+  const scram = authProto.authentication.value;
+  return {
+    authentication: {
+      case: 'scramConfiguration',
+      value: {
+        username: scram.username,
+        password: scram.password,
+        scramMechanism: scram.scramMechanism,
+      },
+    },
+  };
+}
+
 /**
  * Map controlplane client options to unified type
  * Note: Controlplane TLS uses flat structure (ca, key, cert directly on tlsSettings object)
@@ -45,39 +92,8 @@ function mapControlplaneClientOptions(
     return;
   }
 
-  // Map TLS settings - controlplane uses flat structure
-  let tlsSettings: UnifiedTLSSettings | undefined;
-  if (clientOptions.tlsSettings?.enabled) {
-    tlsSettings = {
-      enabled: true,
-      tlsSettings: {
-        case: 'tlsPemSettings',
-        value: {
-          ca: clientOptions.tlsSettings.ca ?? '',
-          key: clientOptions.tlsSettings.key ?? '',
-          cert: clientOptions.tlsSettings.cert ?? '',
-          keyFingerprint: '',
-        },
-      },
-    };
-  }
-
-  // Map authentication configuration
-  let authConfig: UnifiedAuthenticationConfiguration | undefined;
-  const authProto = clientOptions.authenticationConfiguration;
-  if (authProto?.authentication?.case === 'scramConfiguration') {
-    const scram = authProto.authentication.value;
-    authConfig = {
-      authentication: {
-        case: 'scramConfiguration',
-        value: {
-          username: scram.username,
-          password: scram.password,
-          scramMechanism: scram.scramMechanism,
-        },
-      },
-    };
-  }
+  const tlsSettings = mapControlplaneTlsSettings(clientOptions.tlsSettings);
+  const authConfig = mapControlplaneAuthentication(clientOptions.authenticationConfiguration);
 
   return {
     bootstrapServers: clientOptions.bootstrapServers,
@@ -245,6 +261,25 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
 type RawScramConfig = { username?: string; password?: string; scramMechanism?: ScramMechanism };
 type RawPlainConfig = { username?: string; password?: string };
 
+type ControlplaneAuthConfig = NonNullable<ControlplaneClientOptions['authenticationConfiguration']>;
+
+// Fallback: config sits directly on authConfig (JSON wire format) when response isn't fully deserialized.
+const extractWireAuthConfigs = (
+  authConfig: ControlplaneAuthConfig
+): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
+  const raw = authConfig as unknown as {
+    scramConfiguration?: RawScramConfig;
+    plainConfiguration?: RawPlainConfig;
+  };
+  if (raw.scramConfiguration) {
+    return { scramConfig: raw.scramConfiguration };
+  }
+  if (raw.plainConfiguration) {
+    return { plainConfig: raw.plainConfiguration };
+  }
+  return {};
+};
+
 const extractRawAuthConfigs = (
   authConfig: NonNullable<ControlplaneShadowLink['clientOptions']>['authenticationConfiguration'] | undefined
 ): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
@@ -259,18 +294,7 @@ const extractRawAuthConfigs = (
   if (oneof?.case === 'plainConfiguration') {
     return { plainConfig: oneof.value as RawPlainConfig };
   }
-  // Fallback: config sits directly on authConfig (JSON wire format) when response isn't fully deserialized.
-  const raw = authConfig as unknown as {
-    scramConfiguration?: RawScramConfig;
-    plainConfiguration?: RawPlainConfig;
-  };
-  if (raw.scramConfiguration) {
-    return { scramConfig: raw.scramConfiguration };
-  }
-  if (raw.plainConfiguration) {
-    return { plainConfig: raw.plainConfiguration };
-  }
-  return {};
+  return extractWireAuthConfigs(authConfig);
 };
 
 const extractControlplaneAuthSettings = (

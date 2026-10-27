@@ -99,7 +99,12 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   useEffect(
     function updateYamlDocumentation() {
       if (yaml && componentList) {
-        yaml.update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, parseSchema(componentList))));
+        // The schema applies before update settles; a failed revalidation only leaves stale markers.
+        yaml
+          .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, parseSchema(componentList))))
+          .catch((error: unknown) => {
+            globalThis.reportError(error);
+          });
       }
     },
     [yaml, componentList]

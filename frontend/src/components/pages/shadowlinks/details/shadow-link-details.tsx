@@ -63,7 +63,8 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
       {/* Topics Section */}
       <ShadowTopicsTable
         getNextTopicPage={async () => {
-          await fetchNextPage();
+          // Without throwOnError, TanStack Query resolves a failed page fetch and the table never sees the error.
+          await fetchNextPage({ throwOnError: true });
         }}
         hasNextPage={hasNextPage}
         isFetching={isFetchingTopics || isFetchingNextPage}

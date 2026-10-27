@@ -29,6 +29,15 @@ const edges: Edge[] = [
 const refData = (decorated: Edge[]) =>
   decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
 
+/** The data of edge `id`, failing loudly (rather than reading through `undefined`) when there is none. */
+const edgeData = (decorated: Edge[], id: string) => {
+  const data = decorated.find((e) => e.id === id)?.data;
+  if (!data) {
+    throw new Error(`Edge ${id} is missing or has no data`);
+  }
+  return data;
+};
+
 const scope = (...ids: string[]) => new Set(ids);
 
 describe('scopeBounds — body bounds plus the entry marker', () => {
@@ -128,20 +137,20 @@ describe('decorateEdges', () => {
 
   it('hover alone does not dim unrelated edges (only selection does)', () => {
     const hovered = decorateEdges(edges, { hoveredScope: scope('a') });
-    expect((hovered.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean }).dimmed).toBeUndefined();
+    expect(edgeData(hovered, 'fanout-c').dimmed).toBeUndefined();
   });
 
   it('dims unrelated edges and emphasizes connected ones while a node is selected', () => {
     const decorated = decorateEdges(edges, { selectedScope: scope('a') });
-    const spine = decorated.find((e) => e.id === 'spine-a-b')?.data as { dimmed?: boolean; emphasized?: boolean };
-    const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
+    const spine = edgeData(decorated, 'spine-a-b');
+    const fanout = edgeData(decorated, 'fanout-c');
     expect(spine.emphasized).toBe(true);
     expect(spine.dimmed).toBe(false);
     expect(fanout.dimmed).toBe(true);
 
     // No selection → no dimming anywhere.
     const plain = decorateEdges(edges, {});
-    expect((plain.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean }).dimmed).toBeUndefined();
+    expect(edgeData(plain, 'fanout-c').dimmed).toBeUndefined();
   });
 
   it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {

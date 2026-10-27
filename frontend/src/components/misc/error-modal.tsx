@@ -57,7 +57,7 @@ class ErrorModal extends Component<ErrorModalProps> {
           <DialogBody>
             <div className="flex flex-col gap-8">
               <div className="flex flex-row gap-2 pr-6">
-                <ErrorIcon className="size-6 shrink-0 self-center text-destructive" />
+                <ErrorIcon className="size-6 shrink-0 self-center" color="var(--color-destructive)" />
                 <div className="self-center">{this.subTitle}</div>
               </div>
 

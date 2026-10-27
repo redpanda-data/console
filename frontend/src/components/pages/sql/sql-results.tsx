@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -59,6 +60,7 @@ import type {
   ResultRow,
   SqlRole,
 } from './sql-types';
+import { TonedIcon } from '../shared/toned-icon';
 
 export type SqlResultsProps = {
   /** Current run state: idle | running | canceled | error | success. */
@@ -88,7 +90,7 @@ const RES_STAT =
 // Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
   return (
-    <Badge className="rounded-full bg-accent font-semibold text-accent-foreground" size="md" tone="default">
+    <Badge size="md" tone="default">
       <GitMerge /> Bridge query
     </Badge>
   );
@@ -96,7 +98,7 @@ function BridgeBar() {
 
 function PendingStat({ count, label }: { count: number; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-success">
+    <span className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-success">
       <StatusDot size="xxs" variant="success" /> {fmtNum(count)} {label}
     </span>
   );
@@ -110,8 +112,8 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
     return null;
   }
   return (
-    <div className="flex-shrink-0 border-border border-b bg-card px-4 pt-3 pb-3.5">
-      <div className="text-body-sm text-muted-foreground leading-snug">
+    <div className="shrink-0 border-b border-border bg-card px-4 pt-3 pb-3.5">
+      <div className="text-body-sm leading-snug text-muted-foreground">
         Bridge query covers <strong>{offStr(bridge.totalLag)}</strong> not yet in Iceberg at query time —{' '}
         <PendingStat count={bridge.translationLag} label="pending translation" /> +{' '}
         <PendingStat count={bridge.commitLag} label="pending commit" />. Bridging serves them from the topic so results
@@ -160,48 +162,81 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
   const pretty = useMemo(() => prettyJson(value), [value]);
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        render={
-          <button
-            className={cn(
-              'block cursor-pointer truncate text-left font-mono underline decoration-dotted underline-offset-2',
-              CELL_MAX_W
-            )}
-            title="Show JSON"
-            type="button"
-          >
-            {value}
-          </button>
-        }
-      />
+      <ElementTooltip content="Show JSON">
+        <PopoverTrigger
+          render={
+            <button
+              className={cn(
+                'block cursor-pointer truncate text-left font-mono underline decoration-dotted underline-offset-2',
+                CELL_MAX_W
+              )}
+              type="button"
+            >
+              {value}
+            </button>
+          }
+        />
+      </ElementTooltip>
       <PopoverContent
         align="start"
-        className="pointer-events-auto w-120 max-w-[90vw] overflow-hidden p-0"
+        className="pointer-events-auto w-120 max-w-[90vw] overflow-hidden"
         collisionAvoidance={TRACK_AND_CLIP}
         container={container ?? undefined}
       >
-        <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
-          <Braces className="shrink-0 text-informative" size={14} />
-          <span className="truncate font-mono font-semibold text-body text-strong">{name}</span>
+        <div className="flex items-center gap-2 border-b border-border bg-muted px-3 py-2">
+          <TonedIcon className="shrink-0" icon={Braces} size={14} tone="informative" />
+          <span className="truncate font-mono text-body font-semibold text-strong">{name}</span>
           <span className="text-body-sm text-muted-foreground">·</span>
-          <span className="shrink-0 font-mono text-body-sm text-muted-foreground uppercase tracking-wide">
+          <span className="shrink-0 font-mono text-body-sm tracking-wide text-muted-foreground uppercase">
             {typeLabel}
           </span>
           <span className="flex-1" />
-          <CopyButton className="size-7 p-0" content={pretty} size="sm" variant="ghost" />
-          <Button aria-label="Close" className="size-7 p-0" onClick={() => setOpen(false)} size="sm" variant="ghost">
+          <CopyButton className="size-7" content={pretty} size="icon" variant="ghost" />
+          <Button aria-label="Close" className="size-7" onClick={() => setOpen(false)} size="sm" variant="ghost">
             <X size={14} />
           </Button>
         </div>
         <SyncCodeBlock
           allowCopy={false}
-          className="!my-0 rounded-none border-0"
+          className="!my-0"
           code={pretty}
           keepBackground
           lang="json"
           themes={{ dark: 'github-dark', light: 'github-light' }}
           viewportProps={{ className: 'max-h-96' }}
         />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Viewer for a plain value too long for the clamped cell: the full text in a popover.
+function LongCellPopover({ value }: { value: string }) {
+  const container = useContext(CellPopoverContainerContext);
+  return (
+    <Popover>
+      <ElementTooltip content="Show full value">
+        <PopoverTrigger
+          render={
+            <button
+              className={cn(
+                'block cursor-pointer truncate text-left underline decoration-dotted underline-offset-2',
+                CELL_MAX_W
+              )}
+              type="button"
+            >
+              {value}
+            </button>
+          }
+        />
+      </ElementTooltip>
+      <PopoverContent
+        align="start"
+        className="pointer-events-auto max-h-72 max-w-120 overflow-auto"
+        collisionAvoidance={TRACK_AND_CLIP}
+        container={container ?? undefined}
+      >
+        <div className="font-mono text-body-sm break-all whitespace-pre-wrap">{value}</div>
       </PopoverContent>
     </Popover>
   );
@@ -218,7 +253,6 @@ function CellContent({
   name: string;
   typeLabel: string;
 }) {
-  const container = useContext(CellPopoverContainerContext);
   if (kind === 'bool' && typeof v === 'boolean') {
     return <span className="font-semibold">{String(v)}</span>;
   }
@@ -232,54 +266,31 @@ function CellContent({
   if (s.length <= CELL_CLAMP_CHARS) {
     return <span className={cn('block truncate', CELL_MAX_W)}>{s}</span>;
   }
-  return (
-    <Popover>
-      <PopoverTrigger
-        render={
-          <button
-            className={cn(
-              'block cursor-pointer truncate text-left underline decoration-dotted underline-offset-2',
-              CELL_MAX_W
-            )}
-            title="Show full value"
-            type="button"
-          >
-            {s}
-          </button>
-        }
-      />
-      <PopoverContent
-        align="start"
-        className="pointer-events-auto max-h-72 max-w-120 overflow-auto p-3"
-        collisionAvoidance={TRACK_AND_CLIP}
-        container={container ?? undefined}
-      >
-        <div className="whitespace-pre-wrap break-all font-mono text-body-sm">{s}</div>
-      </PopoverContent>
-    </Popover>
-  );
+  return <LongCellPopover value={s} />;
+}
+
+// One CSV field: formula-looking values are neutralized, then quoted when needed.
+function csvField(v: CellValue): string {
+  const raw = cellText(v);
+  const s = CSV_FORMULA_RE.test(raw) ? `'${raw}` : raw;
+  return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
+}
+
+function toCsv(cols: ColumnDef[], rows: ResultRow[]): string {
+  const head = cols.map((c) => c.name).join(',');
+  const body = rows.map((r) => cols.map((c) => csvField(r[c.name])).join(',')).join('\n');
+  return `${head}\n${body}`;
+}
+
+function exportBlob(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]): Blob {
+  if (fmt === 'json') {
+    return new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+  }
+  return new Blob([toCsv(cols, rows)], { type: 'text/csv' });
 }
 
 function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
-  let blob: Blob;
-  if (fmt === 'json') {
-    blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
-  } else {
-    const head = cols.map((c) => c.name).join(',');
-    const body = rows
-      .map((r) =>
-        cols
-          .map((c) => {
-            const raw = cellText(r[c.name]);
-            const s = CSV_FORMULA_RE.test(raw) ? `'${raw}` : raw;
-            return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
-          })
-          .join(',')
-      )
-      .join('\n');
-    blob = new Blob([`${head}\n${body}`], { type: 'text/csv' });
-  }
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(exportBlob(fmt, cols, rows));
   const a = document.createElement('a');
   a.href = url;
   a.download = `query_result.${fmt}`;
@@ -325,8 +336,8 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       // right-align (so digits line up) — keep the column name readable.
       renderHeaderCell: () => (
         <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
-          <span className="font-mono font-semibold text-body-sm text-strong">{c.name}</span>
-          <span className="inline-flex items-center gap-1 font-normal text-2xs text-muted-foreground uppercase tracking-wide">
+          <span className="font-mono text-body-sm font-semibold text-strong">{c.name}</span>
+          <span className="inline-flex items-center gap-1 text-2xs font-normal tracking-wide text-muted-foreground uppercase">
             {c.short}
           </span>
         </span>
@@ -359,7 +370,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   return (
     <CellPopoverContainerContext.Provider value={clipEl}>
       <div className="flex h-full min-h-0 w-full flex-col">
-        <div className="flex flex-shrink-0 items-center gap-4 border-border border-b bg-card px-4 py-2">
+        <div className="flex shrink-0 items-center gap-4 border-b border-border bg-card px-4 py-2">
           <div className="flex min-w-0 flex-wrap items-center gap-4">
             {bridge ? (
               <BridgeBar />
@@ -376,7 +387,6 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
             </span>
             {run.truncated ? (
               <Badge
-                className="rounded-full uppercase tracking-wide"
                 size="sm"
                 title="The server row cap fired; not all rows were returned."
                 tone="warning"
@@ -422,75 +432,85 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   );
 }
 
-export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = true }: SqlResultsProps) {
-  if (run.state === 'idle') {
-    // No tables in the catalog yet: nothing to query, so prompt the caller to
-    // create one from a topic. Admins get the wizard CTA; viewers get told who can.
-    if (!hasTables) {
-      return (
-        <Empty className="h-full">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Database />
-            </EmptyMedia>
-            <EmptyTitle>No tables yet</EmptyTitle>
-            <EmptyDescription>
-              {sqlRole === 'admin'
-                ? 'Create a table from a Redpanda topic to start querying it with SQL.'
-                : 'Ask an admin to create a table from a Redpanda topic before you can query it with SQL.'}
-            </EmptyDescription>
-          </EmptyHeader>
-          {sqlRole === 'admin' && onAddTable ? (
-            <EmptyContent>
-              <Button onClick={onAddTable} size="sm" variant="primary">
-                <Plus size={14} /> Add a topic to SQL
-              </Button>
-            </EmptyContent>
-          ) : null}
-        </Empty>
-      );
-    }
+type IdleResultsProps = Pick<SqlResultsProps, 'sqlRole' | 'onAddTable'> & { hasTables: boolean };
 
-    const modKey = isMacOS() ? '⌘' : 'Ctrl';
-
+function IdleResults({ sqlRole, onAddTable, hasTables }: IdleResultsProps) {
+  // No tables in the catalog yet: nothing to query, so prompt the caller to
+  // create one from a topic. Admins get the wizard CTA; viewers get told who can.
+  if (!hasTables) {
     return (
       <Empty className="h-full">
         <EmptyHeader>
           <EmptyMedia variant="icon">
-            <Terminal />
+            <Database />
           </EmptyMedia>
-          <EmptyTitle>Run a query to see results</EmptyTitle>
+          <EmptyTitle>No tables yet</EmptyTitle>
           <EmptyDescription>
-            Write a <InlineCode>SELECT</InlineCode> against a table in the catalog, then press{' '}
-            <KbdGroup>
-              <Kbd size="xs">{modKey}</Kbd>
-              <Kbd size="xs">↵</Kbd>
-            </KbdGroup>{' '}
-            or hit Run.
+            {sqlRole === 'admin'
+              ? 'Create a table from a Redpanda topic to start querying it with SQL.'
+              : 'Ask an admin to create a table from a Redpanda topic before you can query it with SQL.'}
           </EmptyDescription>
         </EmptyHeader>
-      </Empty>
-    );
-  }
-
-  if (run.state === 'running') {
-    return (
-      <Empty className="h-full">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Spinner className="size-6 text-action-primary" />
-          </EmptyMedia>
-          <EmptyTitle>Running query…</EmptyTitle>
-        </EmptyHeader>
-        {onCancel ? (
+        {sqlRole === 'admin' && onAddTable ? (
           <EmptyContent>
-            <Button onClick={onCancel} size="sm" variant="outline">
-              <X /> Cancel
+            <Button onClick={onAddTable} size="sm" variant="primary">
+              <Plus size={14} /> Add a topic to SQL
             </Button>
           </EmptyContent>
         ) : null}
       </Empty>
     );
+  }
+
+  const modKey = isMacOS() ? '⌘' : 'Ctrl';
+
+  return (
+    <Empty className="h-full">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Terminal />
+        </EmptyMedia>
+        <EmptyTitle>Run a query to see results</EmptyTitle>
+        <EmptyDescription>
+          Write a <InlineCode>SELECT</InlineCode> against a table in the catalog, then press{' '}
+          <KbdGroup>
+            <Kbd size="xs">{modKey}</Kbd>
+            <Kbd size="xs">↵</Kbd>
+          </KbdGroup>{' '}
+          or hit Run.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+}
+
+function RunningResults({ onCancel }: Pick<SqlResultsProps, 'onCancel'>) {
+  return (
+    <Empty className="h-full">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <TonedIcon className="size-6" icon={Spinner} tone="action" />
+        </EmptyMedia>
+        <EmptyTitle>Running query…</EmptyTitle>
+      </EmptyHeader>
+      {onCancel ? (
+        <EmptyContent>
+          <Button onClick={onCancel} size="sm" variant="outline">
+            <X /> Cancel
+          </Button>
+        </EmptyContent>
+      ) : null}
+    </Empty>
+  );
+}
+
+export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = true }: SqlResultsProps) {
+  if (run.state === 'idle') {
+    return <IdleResults hasTables={hasTables} onAddTable={onAddTable} sqlRole={sqlRole} />;
+  }
+
+  if (run.state === 'running') {
+    return <RunningResults onCancel={onCancel} />;
   }
 
   if (run.state === 'canceled') {

@@ -59,7 +59,7 @@ export const PropertyGroupComponent = (props: {
                 <AccordionTrigger>
                   <div className="flex items-center gap-4">
                     {/* The group name was rendered twice here before the migration. */}
-                    <span className="font-semibold text-heading-sm">{subGroup.group.name}</span>
+                    <span className="text-heading-sm font-semibold">{subGroup.group.name}</span>
                     <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                   </div>
                 </AccordionTrigger>

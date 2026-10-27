@@ -14,7 +14,7 @@ import { render, screen } from 'test-utils';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 
-describe('InvalidConfigNotice', () => {
+describe('the InvalidConfigNotice', () => {
   it('renders its message inside a warning alert', () => {
     render(<InvalidConfigNotice>Can't visualize the latest YAML.</InvalidConfigNotice>);
     expect(screen.getByRole('alert')).toHaveTextContent("Can't visualize the latest YAML.");
@@ -27,11 +27,15 @@ describe('InvalidConfigNotice', () => {
     expect(alert).not.toHaveClass('w-full');
   });
 
-  it('forwards positioning/padding classes from the caller', () => {
-    render(<InvalidConfigNotice className="absolute top-3 left-1/2 px-3">notice</InvalidConfigNotice>);
+  it('forwards positioning classes from the caller and pads by variant', () => {
+    render(
+      <InvalidConfigNotice className="absolute top-3 left-1/2" variant="floating">
+        notice
+      </InvalidConfigNotice>
+    );
     const alert = screen.getByRole('alert');
     expect(alert).toHaveClass('absolute', 'px-3');
-    // Caller padding wins over the Alert's default on the same axis.
+    // The variant's padding wins over the Alert's default on the same axis.
     expect(alert).not.toHaveClass('px-4');
   });
 });

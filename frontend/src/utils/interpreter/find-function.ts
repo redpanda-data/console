@@ -50,23 +50,20 @@ function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unkno
 
 // calls findByName or findByCallback depending on the arguments
 function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean): unknown[] {
-  const ignoreCase = Boolean(arg2);
-  const caseSensitive = !ignoreCase;
+  // a truthy second argument means ignoreCase
+  const caseSensitive = !arg2;
 
   if (typeof arg1 === 'string') {
     // findByName
-    const propertyName = String(arg1);
-    return findByName(self, propertyName, caseSensitive, returnFirstResult);
+    return findByName(self, String(arg1), caseSensitive, returnFirstResult);
   }
   if (typeof arg1 === 'function') {
     // findByCallback
-    const isMatch = arg1 as (object: unknown, key: string | number) => boolean;
-    return findByCallback(self, isMatch, returnFirstResult);
+    return findByCallback(self, arg1 as (object: unknown, key: string | number) => boolean, returnFirstResult);
   }
   if (typeof arg1 === 'object' && arg1 !== null) {
     // findByPattern
-    const pattern = arg1 as object;
-    return findByPattern(self, pattern, caseSensitive, returnFirstResult);
+    return findByPattern(self, arg1 as object, caseSensitive, returnFirstResult);
   }
   throw new Error('first parameter of find() must be: string, or function, or pattern object');
 }
@@ -95,85 +92,117 @@ function findByCallback(
   return ctx.results.map((x) => x.value);
 }
 
+const logPatternMatch: (...args: unknown[]) => void = IsDev
+  ? // biome-ignore lint/suspicious/noConsole: intentional console usage
+    console.debug
+  : (..._args: unknown[]) => {
+      /* do nothing */
+    };
+
+type PatternMatchOptions = { caseSensitive: boolean };
+
+function stringsMatch(currentObjValue: string, patternValue: unknown, options: PatternMatchOptions): boolean {
+  if (options.caseSensitive) {
+    if (currentObjValue !== patternValue) {
+      logPatternMatch(`  strings don't match (case sensitive): "${currentObjValue}" != "${patternValue}"`);
+      return false;
+    }
+  } else if (String(currentObjValue).toUpperCase() !== String(patternValue).toUpperCase()) {
+    logPatternMatch(`  strings don't match (ignore case): "${currentObjValue}" != "${patternValue}"`);
+    return false;
+  }
+  return true;
+}
+
+function primitivesMatch(currentObjValue: unknown, patternValue: unknown): boolean {
+  if (currentObjValue !== patternValue) {
+    logPatternMatch(`  primitives not equal: ${currentObjValue} != ${patternValue}`);
+    return false;
+  }
+  return true;
+}
+
+// Values of the same type: strings and primitives compare, objects recurse, anything else matches.
+function patternValueMatches(
+  currentObjValue: unknown,
+  patternValue: unknown,
+  key: string,
+  options: PatternMatchOptions
+): boolean {
+  if (typeof currentObjValue === 'string') {
+    // Compare string
+    return stringsMatch(currentObjValue, patternValue, options);
+  }
+  if (
+    typeof currentObjValue === 'boolean' ||
+    typeof currentObjValue === 'number' ||
+    typeof currentObjValue === 'undefined'
+  ) {
+    // Compare primitive
+    return primitivesMatch(currentObjValue, patternValue);
+  }
+  if (
+    typeof currentObjValue === 'object' &&
+    currentObjValue !== null &&
+    typeof patternValue === 'object' &&
+    patternValue !== null
+  ) {
+    // Compare object
+    logPatternMatch(`  -> descending into [${key}]`);
+    return isPatternMatch(currentObjValue as object, patternValue as object, options);
+  }
+  return true;
+}
+
+function patternPropertyMatches(
+  currentObj: object,
+  currentPattern: object,
+  key: string,
+  options: PatternMatchOptions
+): boolean {
+  const patternValue = (currentPattern as Record<string, unknown>)[key];
+
+  // don't require objects to have the same functions
+  // todo: later we might want to have special functions that can compare against the actual value!
+  //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
+  if (typeof patternValue === 'function') {
+    return true;
+  }
+
+  const currentObjValue = (currentObj as Record<string, unknown>)[key];
+  logPatternMatch(`  [${key}]`);
+
+  if (typeof currentObjValue !== typeof patternValue) {
+    logPatternMatch(`  property type mismatch: '${typeof currentObjValue}' != '${typeof patternValue}'`);
+    return false;
+  }
+
+  return patternValueMatches(currentObjValue, patternValue, key, options);
+}
+
+function isPatternMatch(currentObj: object, currentPattern: object, options: PatternMatchOptions): boolean {
+  if (typeof currentObj !== typeof currentPattern) {
+    logPatternMatch(`  type mismatch obj<>pattern: '${typeof currentObj}' != '${typeof currentPattern}'`);
+    return false;
+  }
+
+  for (const k in currentPattern) {
+    if (Object.hasOwn(currentPattern, k) && !patternPropertyMatches(currentObj, currentPattern, k, options)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function findByPattern(
   obj: unknown,
   patternObj: object,
   caseSensitive: boolean,
   returnFirstResult: boolean
 ): unknown[] {
-  const log = IsDev
-    ? // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.debug
-    : (..._args: unknown[]) => {
-        /* do nothing */
-      };
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 38, refactor later
-  const isPatternMatch = (currentObj: object, currentPattern: object): boolean => {
-    if (typeof currentObj !== typeof currentPattern) {
-      log(`  type mismatch obj<>pattern: '${typeof currentObj}' != '${typeof currentPattern}'`);
-      return false;
-    }
-
-    for (const k in currentPattern) {
-      if (Object.hasOwn(currentPattern, k)) {
-        const patternValue = (currentPattern as Record<string, unknown>)[k];
-
-        // don't require objects to have the same functions
-        // todo: later we might want to have special functions that can compare against the actual value!
-        //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
-        if (typeof patternValue === 'function') {
-          continue;
-        }
-
-        const currentObjValue = (currentObj as Record<string, unknown>)[k];
-        log(`  [${k}]`);
-
-        if (typeof currentObjValue !== typeof patternValue) {
-          log(`  property type mismatch: '${typeof currentObjValue}' != '${typeof patternValue}'`);
-          return false;
-        }
-
-        if (typeof currentObjValue === 'string') {
-          // Compare string
-          if (caseSensitive) {
-            if (currentObjValue !== patternValue) {
-              log(`  strings don't match (case sensitive): "${currentObjValue}" != "${patternValue}"`);
-              return false;
-            }
-          } else if (String(currentObjValue).toUpperCase() !== String(patternValue).toUpperCase()) {
-            log(`  strings don't match (ignore case): "${currentObjValue}" != "${patternValue}"`);
-            return false;
-          }
-        } else if (
-          typeof currentObjValue === 'boolean' ||
-          typeof currentObjValue === 'number' ||
-          typeof currentObjValue === 'undefined'
-        ) {
-          // Compare primitive
-          if (currentObjValue !== patternValue) {
-            log(`  primitives not equal: ${currentObjValue} != ${patternValue}`);
-            return false;
-          }
-        } else if (
-          typeof currentObjValue === 'object' &&
-          currentObjValue !== null &&
-          typeof patternValue === 'object' &&
-          patternValue !== null
-        ) {
-          // Compare object
-          log(`  -> descending into [${k}]`);
-          if (!isPatternMatch(currentObjValue as object, patternValue as object)) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
-  };
-
+  const options: PatternMatchOptions = { caseSensitive };
   const ctx: ObjectSearchContext = {
-    isMatch: isPatternMatch,
+    isMatch: (currentObj, currentPattern) => isPatternMatch(currentObj, currentPattern, options),
     pattern: patternObj,
     results: [],
     returnFirstResult,
@@ -198,48 +227,61 @@ type ObjectSearchContext = {
   returnFirstResult: boolean;
 };
 
+// the match function may throw, which counts as no match
+function matchesSafely(ctx: PropertySearchContext, obj: object, key: string): boolean {
+  try {
+    return ctx.isMatch(obj, key);
+  } catch {
+    return false;
+  }
+}
+
+// records the property when it matches; returns whether it did
+function recordIfMatch(ctx: PropertySearchContext, obj: object, key: string, propValue: unknown): boolean {
+  if (!matchesSafely(ctx, obj, key)) {
+    return false;
+  }
+  const clonedPath = Object.assign([], ctx.currentPath);
+  ctx.results.push({ propertyName: key, path: clonedPath, value: propValue });
+  return true;
+}
+
+function descendInto(ctx: PropertySearchContext, key: string, propValue: unknown): boolean {
+  ctx.currentPath.push(key);
+  const stop = findElement(ctx, propValue);
+  ctx.currentPath.pop();
+  return stop && ctx.returnFirstResult;
+}
+
+// returns 'shouldStop' for a single property of `obj`
+function visitProperty(ctx: PropertySearchContext, obj: object, key: string): boolean {
+  const propValue = (obj as Record<string, unknown>)[key];
+  if (typeof propValue === 'function') {
+    return false;
+  }
+
+  // Check if property is a match
+  if (recordIfMatch(ctx, obj, key, propValue) && ctx.returnFirstResult) {
+    return true;
+  }
+
+  // Descend into object
+  if (typeof propValue === 'object') {
+    return descendInto(ctx, key, propValue);
+  }
+  return false;
+}
+
 // returns 'shouldStop'
 // true  -> stop
 // false -> continue
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
   if (typeof obj !== 'object' || obj === null) {
     return false;
   }
   for (const key in obj) {
-    if (Object.hasOwn(obj, key)) {
-      const propValue = (obj as Record<string, unknown>)[key];
-      if (typeof propValue === 'function') {
-        continue;
-      }
-
-      // Check if property is a match
-      let isMatch = false;
-      try {
-        isMatch = ctx.isMatch(obj, key);
-      } catch {
-        // no op - match function may throw
-      }
-
-      if (isMatch) {
-        const clonedPath = Object.assign([], ctx.currentPath);
-        ctx.results.push({ propertyName: key, path: clonedPath, value: propValue });
-
-        if (ctx.returnFirstResult) {
-          return true;
-        }
-      }
-
-      // Descend into object
-      if (typeof propValue === 'object') {
-        ctx.currentPath.push(key);
-        const stop = findElement(ctx, propValue);
-        ctx.currentPath.pop();
-
-        if (stop && ctx.returnFirstResult) {
-          return true;
-        }
-      }
+    if (Object.hasOwn(obj, key) && visitProperty(ctx, obj, key)) {
+      return true;
     }
   }
 
@@ -258,15 +300,14 @@ function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
     return false;
   }
 
+  return findInChildObjects(ctx, obj);
+}
+
+function findInChildObjects(ctx: ObjectSearchContext, obj: object): boolean {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const propValue = (obj as Record<string, unknown>)[key];
-      if (typeof propValue !== 'object') {
-        continue;
-      }
-
-      const stop = findObject(ctx, propValue);
-      if (stop) {
+      if (typeof propValue === 'object' && findObject(ctx, propValue)) {
         return true;
       }
     }

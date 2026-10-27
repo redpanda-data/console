@@ -273,29 +273,12 @@ const ManualOffsetContent = ({
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topicName));
 
   if (topicPartitionErrors || topicWatermarksErrors) {
-    const partitionErrors = topicPartitionErrors?.map(({ partitionError }) => (
-      <li key={`${topicName}-${partitionError}`}>{partitionError}</li>
-    ));
-    const waterMarksErrors = topicWatermarksErrors?.map(({ waterMarksError }) => (
-      <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>
-    ));
     return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          {partitionErrors && partitionErrors.length > 0 ? (
-            <>
-              <strong>Partition Errors:</strong>
-              <ul>{partitionErrors}</ul>
-            </>
-          ) : null}
-          {waterMarksErrors && waterMarksErrors.length > 0 ? (
-            <>
-              <strong>Watermarks Errors:</strong>
-              <ul>{waterMarksErrors}</ul>
-            </>
-          ) : null}
-        </AlertDescription>
-      </Alert>
+      <PartitionErrorsAlert
+        topicName={topicName}
+        topicPartitionErrors={topicPartitionErrors}
+        topicWatermarksErrors={topicWatermarksErrors}
+      />
     );
   }
 
@@ -303,7 +286,62 @@ const ManualOffsetContent = ({
     return <Spinner className="size-6" />;
   }
 
-  const [, partitionId] = partitionInfo;
+  return (
+    <ManualOffsetPartition
+      onOffsetSpecified={onOffsetSpecified}
+      partitionId={partitionInfo[1]}
+      partitions={partitions}
+      topicName={topicName}
+    />
+  );
+};
+
+const PartitionErrorsAlert = ({
+  topicName,
+  topicPartitionErrors,
+  topicWatermarksErrors,
+}: {
+  topicName: string;
+  topicPartitionErrors: { partitionError: string }[] | undefined;
+  topicWatermarksErrors: { waterMarksError: string }[] | undefined;
+}) => {
+  const partitionErrors = topicPartitionErrors?.map(({ partitionError }) => (
+    <li key={`${topicName}-${partitionError}`}>{partitionError}</li>
+  ));
+  const waterMarksErrors = topicWatermarksErrors?.map(({ waterMarksError }) => (
+    <li key={`${topicName}-${waterMarksError}`}>{waterMarksError}</li>
+  ));
+  return (
+    <Alert variant="destructive">
+      <AlertDescription>
+        {partitionErrors && partitionErrors.length > 0 ? (
+          <>
+            <strong>Partition Errors:</strong>
+            <ul>{partitionErrors}</ul>
+          </>
+        ) : null}
+        {waterMarksErrors && waterMarksErrors.length > 0 ? (
+          <>
+            <strong>Watermarks Errors:</strong>
+            <ul>{waterMarksErrors}</ul>
+          </>
+        ) : null}
+      </AlertDescription>
+    </Alert>
+  );
+};
+
+const ManualOffsetPartition = ({
+  topicName,
+  partitions,
+  partitionId,
+  onOffsetSpecified,
+}: {
+  topicName: string;
+  partitions: Partition[];
+  partitionId: PartitionInfo[1];
+  onOffsetSpecified: (v: number) => void;
+}) => {
   const partition = partitions.find((p) => p.id === partitionId);
 
   if (!partition) {
@@ -436,17 +474,16 @@ type DeleteRecordsModalProps = {
   afterClose: () => void;
 };
 
-export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
-  const { visible, topic, onCancel, onFinish } = props;
+type WizardState = ReturnType<typeof createInitialWizardState>;
+// biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
+type DeleteRecordsResponse = void | DeleteRecordsResponseData | null | undefined;
+type DeleteRecordsCallbacks = {
+  onResponse: (responseData: DeleteRecordsResponse) => void;
+  setErrors: (errors: string[]) => void;
+};
 
-  useEffect(() => {
-    if (topic?.topicName) {
-      api.refreshPartitionsForTopic(topic.topicName, true);
-    }
-  }, [topic?.topicName]);
-
+function useDeleteRecordsWizard() {
   const [wizardState, setWizardState] = useState(createInitialWizardState);
-  const { partitionOption, specifiedPartition, offsetOption, specifiedOffset, timestamp } = wizardState;
   // Reset the offset choice whenever the partition selection changes — the available
   // offset options differ between all-partitions and a specific partition.
   const setPartitionOption = (v: PartitionOption) =>
@@ -455,25 +492,65 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
   const setOffsetOption = (v: OffsetOption) => setWizardState((prev) => ({ ...prev, offsetOption: v }));
   const setSpecifiedOffset = (v: number) => setWizardState((prev) => ({ ...prev, specifiedOffset: v }));
   const setTimestamp = (v: number) => setWizardState((prev) => ({ ...prev, timestamp: v }));
+  const resetWizard = () => setWizardState(createInitialWizardState());
+
+  return {
+    wizardState,
+    setPartitionOption,
+    setSpecifiedPartition,
+    setOffsetOption,
+    setSpecifiedOffset,
+    setTimestamp,
+    resetWizard,
+  };
+}
+
+function deleteRecordsByTimestamp(
+  topicName: string,
+  timestamp: number,
+  { partitionOption, specifiedPartition }: WizardState,
+  { onResponse, setErrors }: DeleteRecordsCallbacks
+) {
+  api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
+    if (partitionOption === 'allPartitions') {
+      const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
+        partitionId,
+        offset,
+      }));
+      api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(onResponse);
+    } else if (partitionOption === 'specificPartition') {
+      const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
+
+      if (partitionOffset !== null && partitionOffset !== undefined) {
+        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+        api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(onResponse);
+      } else {
+        setErrors(['No partition offset was specified. Contact your administrator.']);
+      }
+    }
+  });
+}
+
+function requestRecordDeletion(topicName: string, state: WizardState, callbacks: DeleteRecordsCallbacks) {
+  const { partitionOption, specifiedPartition, offsetOption, specifiedOffset, timestamp } = state;
+
+  if (partitionOption === 'allPartitions' && offsetOption === 'highWatermark') {
+    api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(callbacks.onResponse);
+  } else if (partitionOption === 'specificPartition' && offsetOption === 'manualOffset') {
+    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
+    api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(callbacks.onResponse);
+  } else if (offsetOption === 'timestamp' && timestamp !== null) {
+    deleteRecordsByTimestamp(topicName, timestamp, state, callbacks);
+  } else {
+    callbacks.setErrors(['Something went wrong. Contact your administrator.']);
+  }
+}
+
+function useDeleteRecordsSubmission(wizardState: WizardState, onFinish: () => void) {
   const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const handleClose = () => {
-    setWizardState(createInitialWizardState());
-    setOkButtonLoading(false);
-    setErrors([]);
-    onCancel();
-  };
-
-  const hasErrors = errors.length > 0;
-  const isAllPartitions = partitionOption === 'allPartitions';
-  const isSpecficPartition = partitionOption === 'specificPartition';
-  const isManualOffset = offsetOption === 'manualOffset';
-  const isHighWatermark = offsetOption === 'highWatermark';
-  const isTimestamp = offsetOption === 'timestamp';
-
-  // biome-ignore lint/suspicious/noConfusingVoidType: needed to fix error TS2345
-  const handleFinish = (responseData: void | DeleteRecordsResponseData | null | undefined) => {
+  const handleFinish = (responseData: DeleteRecordsResponse) => {
     if (responseData === null || responseData === undefined || typeof responseData === 'undefined') {
       setErrors(['You are not allowed to delete records on this topic. Contact your Kafka administrator.']);
       return;
@@ -490,74 +567,73 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     }
   };
 
+  const submitDelete = (topicName: string) => {
+    setOkButtonLoading(true);
+    requestRecordDeletion(topicName, wizardState, { onResponse: handleFinish, setErrors });
+  };
+
+  const resetSubmission = () => {
+    setOkButtonLoading(false);
+    setErrors([]);
+  };
+
+  return { okButtonLoading, errors, hasErrors: errors.length > 0, submitDelete, resetSubmission };
+}
+
+function isPrimaryDisabled(state: WizardState, hasErrors: boolean, isOffsetStep: boolean) {
+  if (hasErrors) {
+    return false;
+  }
+
+  if (isOffsetStep) {
+    return state.offsetOption === null || (state.offsetOption === 'timestamp' && state.timestamp === null);
+  }
+
+  return (
+    state.partitionOption === null ||
+    (state.partitionOption === 'specificPartition' && state.specifiedPartition === null)
+  );
+}
+
+function getPartitionInfo({ specifiedPartition, partitionOption }: WizardState): PartitionInfo {
+  if (specifiedPartition !== null && partitionOption === 'specificPartition') {
+    return ['specificPartition', specifiedPartition];
+  }
+  return 'allPartitions';
+}
+
+function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {
+  if (hasErrors) {
+    return 'Ok';
+  }
+  return isLast ? 'Delete Records' : 'Choose End Offset';
+}
+
+export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
+  const { visible, topic, onCancel, onFinish } = props;
+
+  useEffect(() => {
+    if (topic?.topicName) {
+      api.refreshPartitionsForTopic(topic.topicName, true);
+    }
+  }, [topic?.topicName]);
+
+  const { wizardState, resetWizard, ...wizardSetters } = useDeleteRecordsWizard();
+  const { partitionOption, specifiedPartition, offsetOption, timestamp } = wizardState;
+  const { okButtonLoading, errors, hasErrors, submitDelete, resetSubmission } = useDeleteRecordsSubmission(
+    wizardState,
+    onFinish
+  );
+
+  const handleClose = () => {
+    resetWizard();
+    resetSubmission();
+    onCancel();
+  };
+
   if (!topic) {
     return null;
   }
-
-  const isPrimaryDisabled = (isOffsetStep: boolean) => {
-    if (hasErrors) {
-      return false;
-    }
-
-    if (isOffsetStep) {
-      return offsetOption === null || (isTimestamp && timestamp === null);
-    }
-
-    return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
-  };
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-  const submitDelete = () => {
-    if (!topic) {
-      return;
-    }
-
-    const topicName = topic.topicName;
-
-    setOkButtonLoading(true);
-
-    if (isAllPartitions && isHighWatermark) {
-      api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(handleFinish);
-    } else if (isSpecficPartition && isManualOffset) {
-      // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-      api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(handleFinish);
-    } else if (isTimestamp && timestamp !== null) {
-      api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
-        if (isAllPartitions) {
-          const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
-            partitionId,
-            offset,
-          }));
-          api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(handleFinish);
-        } else if (isSpecficPartition) {
-          const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
-
-          if (partitionOffset !== null && partitionOffset !== undefined) {
-            // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-            api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(handleFinish);
-          } else {
-            setErrors(['No partition offset was specified. Contact your administrator.']);
-          }
-        }
-      });
-    } else {
-      setErrors(['Something went wrong. Contact your administrator.']);
-    }
-  };
-
-  const getPartitionInfo = (): PartitionInfo => {
-    if (specifiedPartition !== null && partitionOption === 'specificPartition') {
-      return ['specificPartition', specifiedPartition];
-    }
-    return 'allPartitions';
-  };
-
-  const getPrimaryLabel = (isLast: boolean) => {
-    if (hasErrors) {
-      return 'Ok';
-    }
-    return isLast ? 'Delete Records' : 'Choose End Offset';
-  };
 
   return (
     <Dialog
@@ -605,8 +681,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                       </Stepper.Navigation>
                       {isOffsetStep ? null : (
                         <SelectPartitionStep
-                          onPartitionOptionSelected={setPartitionOption}
-                          onPartitionSpecified={setSpecifiedPartition}
+                          onPartitionOptionSelected={wizardSetters.setPartitionOption}
+                          onPartitionSpecified={wizardSetters.setSpecifiedPartition}
                           partitions={range(0, topic.partitionCount)}
                           selectedPartitionOption={partitionOption}
                           specificPartition={specifiedPartition}
@@ -615,10 +691,10 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                       {isOffsetStep && partitionOption !== null ? (
                         <SelectOffsetStep
                           offsetOption={offsetOption}
-                          onOffsetOptionSelected={setOffsetOption}
-                          onOffsetSpecified={setSpecifiedOffset}
-                          onTimestampChanged={setTimestamp}
-                          partitionInfo={getPartitionInfo()}
+                          onOffsetOptionSelected={wizardSetters.setOffsetOption}
+                          onOffsetSpecified={wizardSetters.setSpecifiedOffset}
+                          onTimestampChanged={wizardSetters.setTimestamp}
+                          partitionInfo={getPartitionInfo(wizardState)}
                           timestamp={timestamp}
                           topicName={topic.topicName}
                         />
@@ -633,7 +709,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     </Button>
                   )}
                   <Button
-                    disabled={isPrimaryDisabled(isOffsetStep)}
+                    disabled={isPrimaryDisabled(wizardState, hasErrors, isOffsetStep)}
                     isLoading={okButtonLoading}
                     onClick={() => {
                       if (hasErrors) {
@@ -641,14 +717,14 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                         return;
                       }
                       if (methods.isLast) {
-                        submitDelete();
+                        submitDelete(topic.topicName);
                         return;
                       }
                       methods.next();
                     }}
                     variant={hasErrors ? 'primary' : 'destructive'}
                   >
-                    {getPrimaryLabel(methods.isLast)}
+                    {getPrimaryLabel(hasErrors, methods.isLast)}
                   </Button>
                 </DialogFooter>
               </>

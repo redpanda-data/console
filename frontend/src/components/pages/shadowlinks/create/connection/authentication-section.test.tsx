@@ -49,8 +49,8 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-describe('AuthenticationSection', () => {
-  describe('Toggle rendering', () => {
+describe('the AuthenticationSection', () => {
+  describe('toggle rendering', () => {
     test('renders all three auth method options', () => {
       render(<TestWrapper />);
 
@@ -74,7 +74,7 @@ describe('AuthenticationSection', () => {
     });
   });
 
-  describe('None method', () => {
+  describe('none method', () => {
     test('hides all credentials and the callout when authMethod is none', () => {
       render(<TestWrapper defaultValues={{ ...initialValues, authMethod: AUTH_METHOD.NONE }} />);
 
@@ -88,7 +88,7 @@ describe('AuthenticationSection', () => {
     });
   });
 
-  describe('PLAIN method', () => {
+  describe('the PLAIN method', () => {
     test('shows username + password but no mechanism dropdown when authMethod is plain', () => {
       render(<TestWrapper defaultValues={{ ...initialValues, authMethod: AUTH_METHOD.PLAIN }} />);
 
@@ -118,7 +118,7 @@ describe('AuthenticationSection', () => {
     });
   });
 
-  describe('SCRAM validation', () => {
+  describe('the SCRAM validation', () => {
     test('shows validation errors for empty SCRAM credentials', async () => {
       const user = userEvent.setup();
       const customValues: FormValues = {
@@ -155,7 +155,7 @@ describe('AuthenticationSection', () => {
     });
   });
 
-  describe('Switching preserves per-method credentials', () => {
+  describe('switching preserves per-method credentials', () => {
     test('typed SCRAM credentials survive a switch to PLAIN and back', async () => {
       const user = userEvent.setup();
       render(<TestWrapper />);

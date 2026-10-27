@@ -16,7 +16,7 @@ import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secu
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { useCreateRoleMutation, useListRolesQuery } from '../../../../react-query/api/security';
+import { useCreateRoleMutation } from '../../../../react-query/api/security';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
@@ -29,6 +29,7 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
+import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
   open: boolean;
@@ -41,16 +42,26 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { data: rolesData } = useListRolesQuery();
-
-  const existingNames = new Set((rolesData?.roles ?? []).map((r) => r.name));
-  const trimmed = roleName.trim();
-  const alreadyExists = trimmed !== '' && existingNames.has(trimmed);
+  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
 
   const handleClose = () => {
     setRoleName('');
     setSubmitted(false);
     onOpenChange(false);
+  };
+
+  const createAndOpenRole = async (name: string) => {
+    await createRole(create(CreateRoleRequestSchema, { role: { name } }));
+    toast.success(`Role "${name}" created`);
+    handleClose();
+    // Handled here so a navigation failure is not reported as a failed role create.
+    navigate({
+      to: '/security/roles/$roleName/details',
+      params: { roleName: encodeURIComponent(name) },
+      search: { host: undefined },
+    }).catch((error: unknown) => {
+      toast.error('Failed to navigate', { description: String(error) });
+    });
   };
 
   const handleSubmit = async () => {
@@ -60,14 +71,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     }
     setIsSubmitting(true);
     try {
-      await createRole(create(CreateRoleRequestSchema, { role: { name: trimmed } }));
-      toast.success(`Role "${trimmed}" created`);
-      handleClose();
-      navigate({
-        to: '/security/roles/$roleName/details',
-        params: { roleName: encodeURIComponent(trimmed) },
-        search: { host: undefined },
-      });
+      await createAndOpenRole(trimmed);
     } catch (err) {
       toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
     } finally {

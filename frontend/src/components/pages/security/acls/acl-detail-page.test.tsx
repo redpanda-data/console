@@ -21,7 +21,8 @@ import type { AclDetail } from '../shared/acl-model';
 
 const { mockUseGetAclsByPrincipal, mockNavigate } = rs.hoisted(() => ({
   mockUseGetAclsByPrincipal: rs.fn(),
-  mockNavigate: rs.fn(),
+  // Real navigate() returns a promise that settles once the route commits.
+  mockNavigate: rs.fn(() => Promise.resolve()),
 }));
 
 rs.mock('react-query/api/acl', () => {
@@ -51,7 +52,7 @@ rs.mock('state/ui-state', () => ({
 }));
 
 rs.mock('./acl-details', () => ({
-  ACLDetails: () => <div data-testid="acl-details" />,
+  ACLDetails: MockACLDetails,
 }));
 
 // ---------------------------------------------------------------------------
@@ -77,13 +78,13 @@ const loadingResult = { data: undefined, isLoading: true };
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('AclDetailPage — principal URL encoding', () => {
+describe('the AclDetailPage — principal URL encoding', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mockUseGetAclsByPrincipal.mockReturnValue(loadingResult);
   });
 
-  test('Group principal in URL is passed to the API as-is', async () => {
+  test('group principal in URL is passed to the API as-is', async () => {
     currentAclName = 'Group:mygroup';
     currentHost = '*';
 
@@ -116,7 +117,7 @@ describe('AclDetailPage — principal URL encoding', () => {
     });
   });
 
-  test('Edit button navigates to update page preserving aclName and host for Group principal', async () => {
+  test('edit button navigates to update page preserving aclName and host for Group principal', async () => {
     currentAclName = 'Group:mygroup';
     currentHost = '*';
     mockUseGetAclsByPrincipal.mockReturnValue(aclDetailResult('Group:mygroup'));
@@ -127,3 +128,7 @@ describe('AclDetailPage — principal URL encoding', () => {
     expect(editButton).toHaveAttribute('href', '/security/acls/Group:mygroup/update?host=*');
   });
 });
+
+function MockACLDetails() {
+  return <div data-testid="acl-details" />;
+}

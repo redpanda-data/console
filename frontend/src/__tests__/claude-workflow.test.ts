@@ -31,7 +31,7 @@ const readClaudeCodeActionStep = () => {
   return actionStep;
 };
 
-describe('Claude Code workflow', () => {
+describe('the Claude Code workflow', () => {
   test('passes the workflow token as an action input', () => {
     const actionStep = readClaudeCodeActionStep();
 

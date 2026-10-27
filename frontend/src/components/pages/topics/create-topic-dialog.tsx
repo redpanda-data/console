@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { convertRetentionValue } from './convert-retention-value';
 import type { CleanupPolicyType } from './types';
 import { isServerless } from '../../../config';
 import { useCreateTopicMutation } from '../../../react-query/api/topic';
@@ -46,8 +47,7 @@ import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-
-const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+import { TonedIcon } from '../shared/toned-icon';
 
 const createTopicFormSchema = z
   .object({
@@ -111,12 +111,8 @@ function NumInput(p: {
       id={p.id}
       inputMode="numeric"
       onBlur={() => {
-        if (!editValue) {
-          commit(undefined);
-          setEditValue('');
-          return;
-        }
-        const n = Number(editValue);
+        // An empty box and a non-numeric entry both clear the value.
+        const n = editValue ? Number(editValue) : Number.NaN;
         if (!Number.isFinite(n)) {
           commit(undefined);
           setEditValue('');
@@ -192,26 +188,14 @@ function RetentionSelect<U extends string>(p: {
         items={options}
         onValueChange={(u) => {
           const newUnit = u as U;
-          if (newUnit === 'default') {
-            p.onChangeValue(value * factors[unit]);
-          } else {
-            const factor = unit === 'default' ? 1 : factors[unit];
-            let newValue = (value * factor) / factors[newUnit];
-            if (Number.isNaN(newValue)) {
-              newValue = 0;
-            }
-            if (DECIMAL_PLACES_REGEX.test(String(newValue))) {
-              newValue = Math.round(newValue);
-            }
-            p.onChangeValue(newValue);
-          }
+          p.onChangeValue(convertRetentionValue(value, unit, newUnit, factors));
           p.onChangeUnit(newUnit);
         }}
         value={unit}
       >
         <SelectTrigger
           aria-label={`${p.label} unit`}
-          className="w-28 shrink-0 border-l"
+          className="w-28 shrink-0"
           data-testid={`${p['data-testid']}-unit`}
         >
           <SelectValue />
@@ -433,13 +417,12 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
                 />
                 <Button
                   aria-label="Remove entry"
-                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => remove(i)}
                   size="icon-sm"
                   type="button"
                   variant="ghost"
                 >
-                  <XIcon />
+                  <TonedIcon icon={XIcon} tone="muted" />
                 </Button>
               </div>
             ))}
@@ -478,12 +461,12 @@ function TopicCreatedPanel({
   return (
     <div className="flex flex-col items-center gap-4 py-2 text-center">
       <div className="flex size-12 items-center justify-center rounded-full bg-success-strong/10">
-        <CheckCircleIcon className="size-6 text-success" />
+        <TonedIcon className="size-6" icon={CheckCircleIcon} tone="success" />
       </div>
       <p className="text-body text-muted-foreground">Your topic is ready to use.</p>
       <div className="w-full rounded-lg border bg-muted/30 p-4">
         <div className="flex flex-col items-center gap-0.5">
-          <p className="font-medium text-body-sm text-muted-foreground uppercase tracking-wide">Topic name</p>
+          <p className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Topic name</p>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger
@@ -526,24 +509,65 @@ function buildTopicConfigs(values: CreateTopicFormValues) {
   for (const x of values.additionalConfig) {
     setVal(x.name, x.value);
   }
-  if (values.retentionTimeUnit !== 'default') {
-    setVal(
-      'retention.ms',
-      getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit as RetentionTimeUnit)
-    );
+  // The form's own fields override user-entered entries of the same name.
+  for (const [name, value] of formConfigEntries(values)) {
+    setVal(name, value);
   }
-  if (values.retentionSizeUnit !== 'default') {
-    setVal(
-      'retention.bytes',
-      getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit as RetentionSizeUnit)
-    );
-  }
-  if (values.minInSyncReplicas !== undefined) {
-    setVal('min.insync.replicas', values.minInSyncReplicas);
-  }
-  setVal('cleanup.policy', values.cleanupPolicy);
 
   return config.filter((x) => x.name.length > 0);
+}
+
+/** Config entries derived from the form fields, in the order they are applied; `undefined` skips one. */
+function formConfigEntries(values: CreateTopicFormValues): [string, string | number | undefined][] {
+  return [
+    [
+      'retention.ms',
+      values.retentionTimeUnit === 'default'
+        ? undefined
+        : getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit as RetentionTimeUnit),
+    ],
+    [
+      'retention.bytes',
+      values.retentionSizeUnit === 'default'
+        ? undefined
+        : getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit as RetentionSizeUnit),
+    ],
+    ['min.insync.replicas', values.minInSyncReplicas],
+    ['cleanup.policy', values.cleanupPolicy],
+  ];
+}
+
+function tryGetBrokerConfig(configName: string): string | undefined {
+  return (
+    api.clusterInfo?.brokers?.find(() => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined
+  );
+}
+
+/** Counts to request; an omitted field falls back to the broker default, or `-1` when that is unknown. */
+function getRequestedCounts(values: CreateTopicFormValues) {
+  return {
+    partitionCount: values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1'),
+    replicationFactor: values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1'),
+  };
+}
+
+type CreatedCounts = ReturnType<typeof getRequestedCounts>;
+
+// Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
+// return -1 even when the request named explicit values, so fall back to what we asked for.
+function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, requested: CreatedCounts) {
+  return {
+    topicName: apiResult.topicName,
+    partitionCount: apiResult.partitionCount === -1 ? requested.partitionCount : apiResult.partitionCount,
+    replicationFactor: apiResult.replicationFactor === -1 ? requested.replicationFactor : apiResult.replicationFactor,
+  };
+}
+
+function refreshClusterAfterCreate() {
+  api.refreshClusterOverview();
+  api.refreshClusterHealth().catch(() => {
+    // Best-effort refresh; the topic was created either way.
+  });
 }
 
 export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -555,9 +579,6 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     partitionCount?: number;
     replicationFactor?: number;
   } | null>(null);
-
-  const tryGetBrokerConfig = (configName: string): string | undefined =>
-    api.clusterInfo?.brokers?.find(() => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined;
 
   const form = useForm<CreateTopicFormValues>({
     resolver: zodResolver(createTopicFormSchema),
@@ -596,31 +617,18 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     setResult(null);
     setIsLoading(true);
     try {
-      const requestedPartitionCount = values.partitions ?? Number(tryGetBrokerConfig('num.partitions') ?? '-1');
-      const requestedReplicationFactor =
-        values.replicationFactor ?? Number(tryGetBrokerConfig('default.replication.factor') ?? '-1');
+      const requested = getRequestedCounts(values);
       const apiResult = await createTopic({
         topic: {
           name: values.topicName,
-          partitionCount: requestedPartitionCount,
-          replicationFactor: requestedReplicationFactor,
+          ...requested,
           configs: buildTopicConfigs(values),
         },
         validateOnly: false,
       });
 
-      // Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
-      // return -1 even when the request named explicit values, so fall back to what we asked for.
-      setResult({
-        topicName: apiResult.topicName,
-        partitionCount: apiResult.partitionCount === -1 ? requestedPartitionCount : apiResult.partitionCount,
-        replicationFactor:
-          apiResult.replicationFactor === -1 ? requestedReplicationFactor : apiResult.replicationFactor,
-      });
-      api.refreshClusterOverview();
-      api.refreshClusterHealth().catch(() => {
-        // Best-effort refresh; the topic was created either way.
-      });
+      setResult(toCreatedTopicResult(apiResult, requested));
+      refreshClusterAfterCreate();
     } catch (e) {
       setResult({ error: e });
     } finally {

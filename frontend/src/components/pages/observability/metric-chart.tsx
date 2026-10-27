@@ -35,7 +35,7 @@ type MetricChartProps = {
   };
 };
 
-export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
+const useMetricChart = ({ queryName, timeRange }: MetricChartProps) => {
   const { data, isLoading, isError } = useExecuteRangeQuery({
     queryName,
     params: {
@@ -71,6 +71,12 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
 
     return config;
   }, [seriesNames]);
+
+  return { data, isLoading, isError, chartData, seriesNames, chartConfig };
+};
+
+export const MetricChart: FC<MetricChartProps> = (props) => {
+  const { data, isLoading, isError, chartData, seriesNames, chartConfig } = useMetricChart(props);
 
   if (isLoading) {
     return (
@@ -139,7 +145,7 @@ export const MetricChart: FC<MetricChartProps> = ({ queryName, timeRange }) => {
                     <div className="flex w-full items-center gap-3">
                       <div className="h-2.5 w-2.5 shrink-0 rounded-xs" style={{ backgroundColor: indicatorColor }} />
                       <span className="text-muted-foreground">{name}</span>
-                      <span className="ml-auto font-medium font-mono tabular-nums">{formattedValue}</span>
+                      <span className="ml-auto font-mono font-medium tabular-nums">{formattedValue}</span>
                     </div>
                   );
                 }}

@@ -38,7 +38,17 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-describe('RolesStep', () => {
+/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
+const renderExpandedRolesStep = async (roles: FormValues['roles']) => {
+  const user = userEvent.setup();
+  render(<TestWrapper defaultValues={{ ...initialValues, rolesMode: 'specify', roles }} />);
+
+  // Need to open the collapsible to see the editable filters
+  await user.click(screen.getByTestId('roles-toggle-button'));
+  return user;
+};
+
+describe('the RolesStep', () => {
   beforeEach(() => {
     // Reset the shared store, then open the role sync gate, these tests
     // exercise the card itself, which only renders on Redpanda >= 26.2.0.
@@ -46,7 +56,7 @@ describe('RolesStep', () => {
     setShadowLinkGatesSupported({ roleSync: true });
   });
 
-  describe('Feature gate', () => {
+  describe('feature gate', () => {
     test('should render nothing when the cluster does not support role sync', () => {
       setShadowLinkGatesSupported({ roleSync: false });
 
@@ -65,26 +75,15 @@ describe('RolesStep', () => {
     });
   });
 
-  describe('Filter type options', () => {
+  describe('filter type options', () => {
     test('should show all filter type options when in specify roles mode', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        rolesMode: 'specify',
-        roles: [
-          {
-            name: '',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('roles-toggle-button');
-      await user.click(toggleButton);
+      await renderExpandedRolesStep([
+        {
+          name: '',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
@@ -104,24 +103,13 @@ describe('RolesStep', () => {
     });
 
     test('should switch the name placeholder between specific and prefix tabs', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        rolesMode: 'specify',
-        roles: [
-          {
-            name: '',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('roles-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedRolesStep([
+        {
+          name: '',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('role-filter-0-name')).toHaveAttribute('placeholder', 'my-role');
@@ -141,7 +129,7 @@ describe('RolesStep', () => {
     });
   });
 
-  describe('Mode toggle', () => {
+  describe('mode toggle', () => {
     test('should seed one empty filter when switching from all to specify mode', async () => {
       const user = userEvent.setup();
 
@@ -158,28 +146,18 @@ describe('RolesStep', () => {
     });
 
     test('should clear filters when switching to all mode and reseed on return', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        rolesMode: 'specify',
-        roles: [
-          {
-            name: 'role-1',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-          {
-            name: 'role-2',
-            patternType: PatternType.PREFIX,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      const toggleButton = screen.getByTestId('roles-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedRolesStep([
+        {
+          name: 'role-1',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+        {
+          name: 'role-2',
+          patternType: PatternType.PREFIX,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getAllByTestId(ROLE_FILTER_PATTERN)).toHaveLength(2);
@@ -202,26 +180,15 @@ describe('RolesStep', () => {
     });
   });
 
-  describe('Multiple filters', () => {
+  describe('multiple filters', () => {
     test('should create multiple role filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        rolesMode: 'specify',
-        roles: [
-          {
-            name: '',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('roles-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedRolesStep([
+        {
+          name: '',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
@@ -241,31 +208,20 @@ describe('RolesStep', () => {
     });
   });
 
-  describe('Deleting filters', () => {
+  describe('deleting filters', () => {
     test('should delete role filters', async () => {
-      const user = userEvent.setup();
-      const customValues: FormValues = {
-        ...initialValues,
-        rolesMode: 'specify',
-        roles: [
-          {
-            name: 'role-1',
-            patternType: PatternType.LITERAL,
-            filterType: FilterType.INCLUDE,
-          },
-          {
-            name: 'role-2',
-            patternType: PatternType.PREFIX,
-            filterType: FilterType.INCLUDE,
-          },
-        ],
-      };
-
-      render(<TestWrapper defaultValues={customValues} />);
-
-      // Need to open the collapsible to see the editable filters
-      const toggleButton = screen.getByTestId('roles-toggle-button');
-      await user.click(toggleButton);
+      const user = await renderExpandedRolesStep([
+        {
+          name: 'role-1',
+          patternType: PatternType.LITERAL,
+          filterType: FilterType.INCLUDE,
+        },
+        {
+          name: 'role-2',
+          patternType: PatternType.PREFIX,
+          filterType: FilterType.INCLUDE,
+        },
+      ]);
 
       await waitFor(() => {
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();

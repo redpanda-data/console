@@ -1,6 +1,6 @@
 import { afterEach, expect, rs, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 
 import ReassignPartitions from './reassign-partitions';
 import { StepSelectPartitions } from './step1-partitions';
@@ -68,9 +68,7 @@ test('sorts selectable topics by name', async () => {
   expect(within(screen.getAllByRole('row')[1]).getByRole('checkbox', { name: 'Select topic alpha' })).toBeVisible();
 });
 
-test('sorts review topics and expanded partitions', async () => {
-  seed();
-  const user = userEvent.setup();
+const renderReview = () => {
   rs.spyOn(ReassignPartitions.prototype, 'refreshData').mockImplementation(() => undefined);
   const parent = new ReassignPartitions({ matchedPath: '/reassign-partitions' });
   const topicsWithMoves = topics.map((topic) => ({
@@ -100,18 +98,31 @@ test('sorts review topics and expanded partitions', async () => {
       topicsWithMoves={topicsWithMoves}
     />
   );
-  await user.click(screen.getByRole('button', { name: 'Topic' }));
+};
+
+async function sortAscending(user: UserEvent, column: string) {
+  await user.click(screen.getByRole('button', { name: column }));
   await user.click(screen.getByRole('menuitem', { name: 'Asc' }));
-  const firstRow = screen.getAllByRole('row')[1];
-  expect(within(firstRow).getByText('alpha')).toBeVisible();
-  await user.click(within(firstRow).getByRole('button', { name: 'Expand row' }));
-  await user.click(screen.getByRole('button', { name: 'Partition' }));
-  await user.click(screen.getByRole('menuitem', { name: 'Asc' }));
+}
+
+const partitionTable = () => {
   const table = screen.getByRole('columnheader', { name: 'Partition' }).closest('table');
   if (!table) {
     throw new Error('Missing partition table');
   }
-  expect(within(within(table).getAllByRole('row')[1]).getAllByRole('cell')[0]).toHaveTextContent('1');
+  return table;
+};
+
+test('sorts review topics and expanded partitions', async () => {
+  seed();
+  const user = userEvent.setup();
+  renderReview();
+  await sortAscending(user, 'Topic');
+  const firstRow = screen.getAllByRole('row')[1];
+  expect(within(firstRow).getByText('alpha')).toBeVisible();
+  await user.click(within(firstRow).getByRole('button', { name: 'Expand row' }));
+  await sortAscending(user, 'Partition');
+  expect(within(within(partitionTable()).getAllByRole('row')[1]).getAllByRole('cell')[0]).toHaveTextContent('1');
 });
 
 test('keeps the sort menu open when the page re-renders', async () => {

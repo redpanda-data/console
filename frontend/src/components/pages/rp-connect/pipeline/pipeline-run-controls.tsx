@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { StopCircleIcon } from 'components/icons';
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -83,19 +84,13 @@ const CANCEL_START_COPY = {
   dismiss: 'Keep starting',
 } as const;
 
-export function PipelineRunButton({
-  pipelineId,
-  pipelineState,
-}: {
-  pipelineId: string;
-  pipelineState?: Pipeline_State;
-}) {
+type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
+
+// Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
+function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
-
-  const action = runActionForState(pipelineState);
-  const isCancellingStart = action === 'cancel-start';
 
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
@@ -120,6 +115,70 @@ export function PipelineRunButton({
     });
   }, [pipelineId, stopMutation, isCancellingStart]);
 
+  return { handleStart, isStartPending, performStop, isStopPending, isStopConfirmOpen, setIsStopConfirmOpen };
+}
+
+function PipelineStopControl({
+  copy,
+  isPending,
+  isConfirmOpen,
+  onConfirmOpenChange,
+  onConfirm,
+}: {
+  copy: StopCopy;
+  isPending: boolean;
+  isConfirmOpen: boolean;
+  onConfirmOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <>
+      <Button
+        disabled={isPending}
+        icon={isPending ? <Spinner /> : <StopCircleIcon />}
+        onClick={() => onConfirmOpenChange(true)}
+        testId="pipeline-stop"
+        variant="destructive-outline"
+      >
+        {copy.action}
+      </Button>
+      <Dialog onOpenChange={onConfirmOpenChange} open={isConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{copy.confirmTitle}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>{copy.confirmBody}</DialogBody>
+          <DialogFooter>
+            <Button onClick={() => onConfirmOpenChange(false)} variant="ghost">
+              {copy.dismiss}
+            </Button>
+            <Button
+              disabled={isPending}
+              icon={isPending ? <Spinner /> : <StopCircleIcon />}
+              onClick={onConfirm}
+              testId="confirm-stop-pipeline"
+              variant="destructive"
+            >
+              {copy.action}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+export function PipelineRunButton({
+  pipelineId,
+  pipelineState,
+}: {
+  pipelineId: string;
+  pipelineState?: Pipeline_State;
+}) {
+  const action = runActionForState(pipelineState);
+  const isCancellingStart = action === 'cancel-start';
+  const run = usePipelineRunActions(pipelineId, isCancellingStart);
+
   if (action === null) {
     return null;
   }
@@ -127,9 +186,9 @@ export function PipelineRunButton({
   if (action === 'start') {
     return (
       <Button
-        disabled={isStartPending}
-        icon={isStartPending ? <Spinner /> : <Play />}
-        onClick={handleStart}
+        disabled={run.isStartPending}
+        icon={run.isStartPending ? <Spinner /> : <Play />}
+        onClick={run.handleStart}
         testId="pipeline-start"
       >
         {START_LABEL}
@@ -139,46 +198,24 @@ export function PipelineRunButton({
 
   if (action === 'settling') {
     return (
-      <Button disabled icon={<Play />} testId="pipeline-start" title="Wait for the pipeline to finish stopping.">
-        {START_LABEL}
-      </Button>
+      // A disabled button takes no pointer events, so the reason hangs on a wrapper.
+      <ElementTooltip content="Wait for the pipeline to finish stopping.">
+        <span className="inline-flex cursor-not-allowed">
+          <Button disabled icon={<Play />} testId="pipeline-start">
+            {START_LABEL}
+          </Button>
+        </span>
+      </ElementTooltip>
     );
   }
 
-  const stopCopy = isCancellingStart ? CANCEL_START_COPY : STOP_COPY;
   return (
-    <>
-      <Button
-        disabled={isStopPending}
-        icon={isStopPending ? <Spinner /> : <StopCircleIcon />}
-        onClick={() => setIsStopConfirmOpen(true)}
-        testId="pipeline-stop"
-        variant="destructive-outline"
-      >
-        {stopCopy.action}
-      </Button>
-      <Dialog onOpenChange={setIsStopConfirmOpen} open={isStopConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{stopCopy.confirmTitle}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>{stopCopy.confirmBody}</DialogBody>
-          <DialogFooter>
-            <Button onClick={() => setIsStopConfirmOpen(false)} variant="ghost">
-              {stopCopy.dismiss}
-            </Button>
-            <Button
-              disabled={isStopPending}
-              icon={isStopPending ? <Spinner /> : <StopCircleIcon />}
-              onClick={performStop}
-              testId="confirm-stop-pipeline"
-              variant="destructive"
-            >
-              {stopCopy.action}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <PipelineStopControl
+      copy={isCancellingStart ? CANCEL_START_COPY : STOP_COPY}
+      isConfirmOpen={run.isStopConfirmOpen}
+      isPending={run.isStopPending}
+      onConfirm={run.performStop}
+      onConfirmOpenChange={run.setIsStopConfirmOpen}
+    />
   );
 }
