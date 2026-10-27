@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// ShadowBoxService controls the cluster's shadow box. A box rejects new
+// writes and some cluster changes, and can also reject fetches.
+service ShadowBoxService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Shadow Box"
+    description: "Box a cluster to reject new writes, some cluster changes and, optionally, fetches."
+  };
+
+  // Boxes the cluster with the saved settings. Brokers abort open
+  // transactions in scope after they apply the box, instead of waiting for
+  // them to time out. Does nothing if the cluster is already boxing or boxed.
+  // To box with other settings, save them with `UpdateShadowBoxSettings`
+  // first. Poll `GetShadowBoxStatus` until it reports
+  // `SHADOW_BOX_STATE_BOXED`.
+  rpc Box(BoxRequest) returns (BoxResponse) {
+    option (google.api.http) = {
+      post: "/v1/shadow-box/box"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Box the cluster"
+      description: "Box the cluster with the saved shadow box settings."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.BoxResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Saves the settings that `Box` uses. They always exist and start at their
+  // defaults, so you can save them before the first `Box`. If the cluster is
+  // boxing or boxed, a change puts it in `SHADOW_BOX_STATE_BOXING` until
+  // every broker has the new settings. Returns the box after the change.
+  rpc UpdateShadowBoxSettings(UpdateShadowBoxSettingsRequest) returns (UpdateShadowBoxSettingsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/shadow-box/settings"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update shadow box settings"
+      description: "Update the settings that the next box uses. A change also applies to a box that is in place."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateShadowBoxSettingsResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Releases the box. Does nothing if the cluster is already unboxing or
+  // unboxed. The saved settings stay for the next `Box`. Poll
+  // `GetShadowBoxStatus` until it reports `SHADOW_BOX_STATE_UNBOXED`.
+  rpc Unbox(UnboxRequest) returns (UnboxResponse) {
+    option (google.api.http) = {
+      post: "/v1/shadow-box/unbox"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Unbox the cluster"
+      description: "Release the shadow box. The saved settings stay for the next box."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UnboxResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Reports the shadow box as the controller leader has it, and each
+  // broker's copy. Poll until the expected state appears.
+  rpc GetShadowBoxStatus(GetShadowBoxStatusRequest) returns (GetShadowBoxStatusResponse) {
+    option (google.api.http) = {get: "/v1/shadow-box"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get shadow box status"
+      description: "Get the shadow box as the controller leader has it, and each broker's copy."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowBoxStatusResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Reports one broker's copy of the shadow box. Answers even while the
+  // controller has no leader.
+  rpc GetShadowBoxBrokerStatus(GetShadowBoxBrokerStatusRequest) returns (GetShadowBoxBrokerStatusResponse) {
+    option (google.api.http) = {get: "/v1/shadow-box/broker-status"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get shadow box broker status"
+      description: "Get one broker's copy of the shadow box. Works while the controller has no leader."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetShadowBoxBrokerStatusResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
+
+// Resources selected for shadow boxing.
+message ShadowBoxScope {
+  // Selects every resource the box supports. Currently covers user topics,
+  // consumer groups, Schema Registry, ACLs, and Roles.
+  message AllResources {}
+
+  // If unset, the box covers all resources.
+  oneof selection {
+    // Box every supported resource.
+    AllResources all_resources = 1;
+  }
+}
+
+// How the box treats fetches from user topics in its scope.
+message ShadowBoxReadPolicy {
+  // Users who can still fetch while the box blocks reads, such as your
+  // shadow link's user. An empty name matches clients without SASL or mTLS.
+  // An empty list blocks every consumer.
+  repeated string exempt_principals = 1;
+
+  // Lets every consumer keep fetching, so `exempt_principals` has no effect.
+  // Defaults to false.
+  bool allow_all_reads = 2;
+}
+
+// The state of the cluster's shadow box.
+enum ShadowBoxState {
+  SHADOW_BOX_STATE_UNSPECIFIED = 0;
+
+  // No box is requested, and any `Unbox` has completed.
+  SHADOW_BOX_STATE_UNBOXED = 1;
+
+  // Some brokers have not yet confirmed the latest change. Every broker
+  // counts, including brokers that are down.
+  SHADOW_BOX_STATE_BOXING = 2;
+
+  // Every broker enforces the latest change and will keep enforcing it after
+  // a restart. Writes accepted before the box may still finish, transactions
+  // may remain open, and partition offsets may still advance.
+  SHADOW_BOX_STATE_BOXED = 3;
+
+  // `Unbox` was requested, and some brokers have not yet confirmed that they
+  // stopped enforcing the box.
+  SHADOW_BOX_STATE_UNBOXING = 4;
+}
+
+// The shadow box as one broker has installed it.
+message ShadowBox {
+  // Where the box is in its lifecycle.
+  ShadowBoxState state = 1;
+
+  // Changes with each `Box`, `Unbox`, or `UpdateShadowBoxSettings` that
+  // changes something. Requests that change nothing, and completion, do not
+  // change it. `-1` until the first change.
+  int64 revision = 2;
+
+  // When `state` last changed, by the clock of the broker that recorded the
+  // change. Absent if the cluster has never been boxed or unboxed.
+  optional google.protobuf.Timestamp state_changed_at = 3;
+
+  // The saved settings, which `UpdateShadowBoxSettings` changes and `Box`
+  // uses. `Unbox` keeps them. Reported in every state.
+  ShadowBoxSettings settings = 4;
+}
+
+// Settings that decide what a box covers and how it behaves.
+message ShadowBoxSettings {
+  // Resources the box covers. If unset, the box covers all resources.
+  ShadowBoxScope scope = 1;
+
+  // How the box treats fetches from user topics in its scope. If unset,
+  // the box blocks every consumer.
+  ShadowBoxReadPolicy read_policy = 2;
+}
+
+// One broker's copy of the shadow box.
+message ShadowBoxBrokerStatus {
+  // The broker's node ID.
+  int32 node_id = 1;
+
+  // The box as this broker has installed it. Absent if the broker did not
+  // answer.
+  optional ShadowBox box = 2;
+
+  // Why the broker did not answer. Set only when `box` is absent.
+  optional string error_message = 3;
+}
+
+// `BoxRequest` is the request for the `Box` RPC.
+message BoxRequest {
+  // If set, the request fails unless the box is still at this revision. Use
+  // the `revision` from `GetShadowBoxStatus` or an earlier response.
+  optional int64 expected_revision = 1;
+}
+
+// `BoxResponse` is the response from the `Box` RPC.
+message BoxResponse {
+  // The box on the controller leader right after the request applied. It
+  // can already include a later change from another caller.
+  ShadowBox box = 1;
+}
+
+// `UpdateShadowBoxSettingsRequest` is the request for the
+// `UpdateShadowBoxSettings` RPC.
+message UpdateShadowBoxSettingsRequest {
+  // The values to save. Only the fields that `update_mask` names are read,
+  // or every field when `update_mask` is empty.
+  ShadowBoxSettings settings = 1;
+
+  // The settings to change. Settings it doesn't name keep their saved values.
+  // Naming `read_policy` replaces the whole read policy, and naming
+  // `read_policy.exempt_principals` adds names to the list. If empty, every
+  // setting is replaced.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If set, the request fails unless the box is still at this revision. Use
+  // the `revision` from `GetShadowBoxStatus` or an earlier response. Set it
+  // to fail if the box changed since you read it.
+  optional int64 expected_revision = 3;
+}
+
+// `UpdateShadowBoxSettingsResponse` is the response from the
+// `UpdateShadowBoxSettings` RPC.
+message UpdateShadowBoxSettingsResponse {
+  // The box on the controller leader right after the update applied. It
+  // can already include a later change from another caller.
+  ShadowBox box = 1;
+}
+
+// `UnboxRequest` is the request for the `Unbox` RPC.
+message UnboxRequest {
+  // If set, the request fails unless the box is still at this revision. Use
+  // the `revision` from `GetShadowBoxStatus` or an earlier response.
+  optional int64 expected_revision = 1;
+}
+
+// `UnboxResponse` is the response from the `Unbox` RPC.
+message UnboxResponse {
+  // The box on the controller leader right after the request applied. It
+  // can already include a later change from another caller.
+  ShadowBox box = 1;
+}
+
+// `GetShadowBoxStatusRequest` is the request for the `GetShadowBoxStatus`
+// RPC.
+message GetShadowBoxStatusRequest {}
+
+// `GetShadowBoxStatusResponse` is the response from the `GetShadowBoxStatus`
+// RPC.
+message GetShadowBoxStatusResponse {
+  // The box as the controller leader has installed it.
+  ShadowBox box = 1;
+
+  // Each cluster member's copy of the box, in node ID order. Brokers that
+  // are down are listed too.
+  repeated ShadowBoxBrokerStatus brokers = 2;
+}
+
+// `GetShadowBoxBrokerStatusRequest` is the request for the
+// `GetShadowBoxBrokerStatus` RPC.
+message GetShadowBoxBrokerStatusRequest {
+  // The node ID of the broker to report on. If unset, the broker handling
+  // the request reports on itself.
+  optional int32 node_id = 1;
+}
+
+// `GetShadowBoxBrokerStatusResponse` is the response from the
+// `GetShadowBoxBrokerStatus` RPC.
+message GetShadowBoxBrokerStatusResponse {
+  // The broker's copy of the box.
+  ShadowBoxBrokerStatus broker = 1;
+}

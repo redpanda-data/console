@@ -160,6 +160,11 @@ components:
       type: object
     AddTopicPartitionsResponse:
       type: object
+    AllResources:
+      description: |-
+        Selects every resource the box supports. Currently covers user topics,
+        consumer groups, Schema Registry, ACLs, and Roles.
+      type: object
     AlterTopicPartitionStatus:
       properties:
         error:
@@ -316,6 +321,23 @@ components:
           type: string
         version:
           type: string
+      type: object
+    BoxRequest:
+      description: '`BoxRequest` is the request for the `Box` RPC.'
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the box is still at this revision. Use
+            the `revision` from `GetShadowBoxStatus` or an earlier response.
+          format: int64
+          nullable: true
+          type: string
+      type: object
+    BoxResponse:
+      description: '`BoxResponse` is the response from the `Box` RPC.'
+      properties:
+        box:
+          $ref: '#/components/schemas/ShadowBox'
       type: object
     ComponentList:
       description: ComponentList contains the structured component data.
@@ -1303,6 +1325,29 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    GetShadowBoxBrokerStatusResponse:
+      description: |-
+        `GetShadowBoxBrokerStatusResponse` is the response from the
+        `GetShadowBoxBrokerStatus` RPC.
+      properties:
+        broker:
+          $ref: '#/components/schemas/ShadowBoxBrokerStatus'
+      type: object
+    GetShadowBoxStatusResponse:
+      description: |-
+        `GetShadowBoxStatusResponse` is the response from the `GetShadowBoxStatus`
+        RPC.
+      properties:
+        box:
+          $ref: '#/components/schemas/ShadowBox'
+        brokers:
+          description: |-
+            Each cluster member's copy of the box, in node ID order. Brokers that
+            are down are listed too.
+          items:
+            $ref: '#/components/schemas/ShadowBoxBrokerStatus'
+          type: array
       type: object
     GetShadowMetricsResponse:
       properties:
@@ -3056,6 +3101,91 @@ components:
       type: object
     SetTopicPartitionsResponse:
       type: object
+    ShadowBox:
+      description: The shadow box as one broker has installed it.
+      properties:
+        revision:
+          description: |-
+            Changes with each `Box`, `Unbox`, or `UpdateShadowBoxSettings` that
+            changes something. Requests that change nothing, and completion, do not
+            change it. `-1` until the first change.
+          format: int64
+          type: string
+        settings:
+          $ref: '#/components/schemas/ShadowBoxSettings'
+        state:
+          $ref: '#/components/schemas/ShadowBoxState'
+        state_changed_at:
+          description: |-
+            When `state` last changed, by the clock of the broker that recorded the
+            change. Absent if the cluster has never been boxed or unboxed.
+          format: date-time
+          nullable: true
+          type: string
+      type: object
+    ShadowBoxBrokerStatus:
+      description: One broker's copy of the shadow box.
+      properties:
+        box:
+          $ref: '#/components/schemas/ShadowBox'
+        error_message:
+          description: Why the broker did not answer. Set only when `box` is absent.
+          nullable: true
+          type: string
+        node_id:
+          description: The broker's node ID.
+          format: int32
+          type: integer
+      type: object
+    ShadowBoxReadPolicy:
+      description: How the box treats fetches from user topics in its scope.
+      properties:
+        allow_all_reads:
+          description: |-
+            Lets every consumer keep fetching, so `exempt_principals` has no effect.
+            Defaults to false.
+          type: boolean
+        exempt_principals:
+          description: |-
+            Users who can still fetch while the box blocks reads, such as your
+            shadow link's user. An empty name matches clients without SASL or mTLS.
+            An empty list blocks every consumer.
+          items:
+            type: string
+          type: array
+      type: object
+    ShadowBoxScope:
+      description: Resources selected for shadow boxing.
+      properties:
+        all_resources:
+          $ref: '#/components/schemas/AllResources'
+      type: object
+    ShadowBoxSettings:
+      description: Settings that decide what a box covers and how it behaves.
+      properties:
+        read_policy:
+          $ref: '#/components/schemas/ShadowBoxReadPolicy'
+        scope:
+          $ref: '#/components/schemas/ShadowBoxScope'
+      type: object
+    ShadowBoxState:
+      description: |-
+        The state of the cluster's shadow box.
+
+         - SHADOW_BOX_STATE_UNBOXED: No box is requested, and any `Unbox` has completed.
+         - SHADOW_BOX_STATE_BOXING: Some brokers have not yet confirmed the latest change. Every broker
+        counts, including brokers that are down.
+         - SHADOW_BOX_STATE_BOXED: Every broker enforces the latest change and will keep enforcing it after
+        a restart. Writes accepted before the box may still finish, transactions
+        may remain open, and partition offsets may still advance.
+         - SHADOW_BOX_STATE_UNBOXING: `Unbox` was requested, and some brokers have not yet confirmed that they
+        stopped enforcing the box.
+      enum:
+        - SHADOW_BOX_STATE_UNBOXED
+        - SHADOW_BOX_STATE_BOXING
+        - SHADOW_BOX_STATE_BOXED
+        - SHADOW_BOX_STATE_UNBOXING
+      type: string
     ShadowLinkClientOptions:
       properties:
         authentication_configuration:
@@ -3602,6 +3732,23 @@ components:
             $ref: '#/components/schemas/PartitionTransformStatus'
           type: array
       type: object
+    UnboxRequest:
+      description: '`UnboxRequest` is the request for the `Unbox` RPC.'
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the box is still at this revision. Use
+            the `revision` from `GetShadowBoxStatus` or an earlier response.
+          format: int64
+          nullable: true
+          type: string
+      type: object
+    UnboxResponse:
+      description: '`UnboxResponse` is the response from the `Unbox` RPC.'
+      properties:
+        box:
+          $ref: '#/components/schemas/ShadowBox'
+      type: object
     UnmountTopicsResponse:
       properties:
         mount_task_id:
@@ -3730,6 +3877,37 @@ components:
       properties:
         secret:
           $ref: '#/components/schemas/Secret'
+      type: object
+    UpdateShadowBoxSettingsRequest:
+      description: |-
+        `UpdateShadowBoxSettingsRequest` is the request for the
+        `UpdateShadowBoxSettings` RPC.
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the box is still at this revision. Use
+            the `revision` from `GetShadowBoxStatus` or an earlier response. Set it
+            to fail if the box changed since you read it.
+          format: int64
+          nullable: true
+          type: string
+        settings:
+          $ref: '#/components/schemas/ShadowBoxSettings'
+        update_mask:
+          description: |-
+            The settings to change. Settings it doesn't name keep their saved values.
+            Naming `read_policy` replaces the whole read policy, and naming
+            `read_policy.exempt_principals` adds names to the list. If empty, every
+            setting is replaced.
+          type: string
+      type: object
+    UpdateShadowBoxSettingsResponse:
+      description: |-
+        `UpdateShadowBoxSettingsResponse` is the response from the
+        `UpdateShadowBoxSettings` RPC.
+      properties:
+        box:
+          $ref: '#/components/schemas/ShadowBox'
       type: object
     UpdateTopicConfigurationsResponse:
       properties:
@@ -7355,6 +7533,219 @@ paths:
       summary: Update secret
       tags:
         - Secrets
+  /v1/shadow-box:
+    get:
+      description: Get the shadow box as the controller leader has it, and each broker's copy.
+      operationId: ShadowBoxService_GetShadowBoxStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShadowBoxStatusResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get shadow box status
+      tags:
+        - Shadow Box
+  /v1/shadow-box/box:
+    post:
+      description: Box the cluster with the saved shadow box settings.
+      operationId: ShadowBoxService_Box
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BoxRequest'
+        description: '`BoxRequest` is the request for the `Box` RPC.'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoxResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Box the cluster
+      tags:
+        - Shadow Box
+  /v1/shadow-box/broker-status:
+    get:
+      description: Get one broker's copy of the shadow box. Works while the controller has no leader.
+      operationId: ShadowBoxService_GetShadowBoxBrokerStatus
+      parameters:
+        - description: |-
+            The node ID of the broker to report on. If unset, the broker handling
+            the request reports on itself.
+          in: query
+          name: node_id
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetShadowBoxBrokerStatusResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get shadow box broker status
+      tags:
+        - Shadow Box
+  /v1/shadow-box/settings:
+    patch:
+      description: Update the settings that the next box uses. A change also applies to a box that is in place.
+      operationId: ShadowBoxService_UpdateShadowBoxSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShadowBoxSettingsRequest'
+        description: |-
+          `UpdateShadowBoxSettingsRequest` is the request for the
+          `UpdateShadowBoxSettings` RPC.
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateShadowBoxSettingsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update shadow box settings
+      tags:
+        - Shadow Box
+  /v1/shadow-box/unbox:
+    post:
+      description: Release the shadow box. The saved settings stay for the next box.
+      operationId: ShadowBoxService_Unbox
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnboxRequest'
+        description: '`UnboxRequest` is the request for the `Unbox` RPC.'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnboxResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Unbox the cluster
+      tags:
+        - Shadow Box
   /v1/shadow-links/{name}:
     get:
       description: Retrieve details of a specific shadow link by name.
@@ -8570,6 +8961,8 @@ tags:
     name: Secrets
   - description: Manage Redpanda roles.
     name: Security
+  - description: Box a cluster to reject new writes, some cluster changes and, optionally, fetches.
+    name: Shadow Box
   - description: Data plane operations for Redpanda shadow links.
     name: Shadow Links (Data Plane)
   - description: Manage Redpanda topics.
