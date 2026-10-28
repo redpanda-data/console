@@ -328,17 +328,16 @@ function buildTopicColumns(
 function useTopicListTable({
   topics,
   onDeleteTopic,
-  deleteTopicReason,
   isReady,
 }: {
   topics: Topic[];
   onDeleteTopic: (topic: Topic) => void;
-  deleteTopicReason: string | undefined;
   isReady: boolean;
 }) {
   const { pageIndex, setPageIndex, pagination, handlePaginationChange } = useTopicListPagination();
   const { sorting, handleSortingChange } = useTopicListSorting(setPageIndex);
   const { columnFilters, handleColumnFiltersChange } = useTopicNameFilter(setPageIndex);
+  const deleteTopicReason = useShadowBoxGuard().reasonFor('deleteTopic');
   const columns = buildTopicColumns(onDeleteTopic, deleteTopicReason);
 
   const table = useDataTable({
@@ -383,17 +382,20 @@ type TopicTableBodyProps = {
   showSkeleton: boolean;
   isFiltered: boolean;
   onCreateTopic: () => void;
-  createTopicReason: string | undefined;
 };
 
-const TopicTableBody = ({
-  table,
-  columnCount,
-  showSkeleton,
-  isFiltered,
-  onCreateTopic,
-  createTopicReason,
-}: TopicTableBodyProps) => {
+const CreateTopicButton = ({ onClick, testId }: { onClick: () => void; testId?: string }) => {
+  const createTopicReason = useShadowBoxGuard().reasonFor('createTopic');
+  return (
+    <DisabledReasonTooltip reason={createTopicReason}>
+      <Button data-testid={testId} disabled={Boolean(createTopicReason)} onClick={onClick}>
+        Create topic
+      </Button>
+    </DisabledReasonTooltip>
+  );
+};
+
+const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreateTopic }: TopicTableBodyProps) => {
   if (showSkeleton) {
     return [0, 1, 2, 3, 4].map((i) => (
       <TableRow key={i}>
@@ -443,11 +445,7 @@ const TopicTableBody = ({
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <DisabledReasonTooltip reason={createTopicReason}>
-                <Button disabled={Boolean(createTopicReason)} onClick={onCreateTopic}>
-                  Create topic
-                </Button>
-              </DisabledReasonTooltip>
+              <CreateTopicButton onClick={onCreateTopic} />
             </EmptyContent>
           )}
         </Empty>
@@ -463,12 +461,9 @@ const TopicList: FC = () => {
   const { allTopics, statistics } = useVisibleTopics(data.topics, showInternalTopics);
   const { topicToDelete, setTopicToDelete, deletionPending, handleDeleteTopic } = useDeleteTopic(refreshData);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
-  const { reasonFor } = useShadowBoxGuard();
-  const createTopicReason = reasonFor('createTopic');
   const { table, columnCount, isFiltered, pageIndex, pageCount, setPageIndex } = useTopicListTable({
     topics: allTopics,
     onDeleteTopic: setTopicToDelete,
-    deleteTopicReason: reasonFor('deleteTopic'),
     isReady: !(isLoading || isError),
   });
 
@@ -525,17 +520,7 @@ const TopicList: FC = () => {
         </div>
 
         <ListLayoutFilters
-          actions={
-            <DisabledReasonTooltip reason={createTopicReason}>
-              <Button
-                data-testid="create-topic-button"
-                disabled={Boolean(createTopicReason)}
-                onClick={() => setIsCreateTopicModalOpen(true)}
-              >
-                Create topic
-              </Button>
-            </DisabledReasonTooltip>
-          }
+          actions={<CreateTopicButton onClick={() => setIsCreateTopicModalOpen(true)} testId="create-topic-button" />}
         >
           <div className="relative">
             {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
@@ -597,7 +582,6 @@ const TopicList: FC = () => {
           <TableBody>
             <TopicTableBody
               columnCount={columnCount}
-              createTopicReason={createTopicReason}
               isFiltered={isFiltered}
               onCreateTopic={() => setIsCreateTopicModalOpen(true)}
               showSkeleton={isLoading || (pageCount > 0 && (pageIndex < 0 || pageIndex >= pageCount))}

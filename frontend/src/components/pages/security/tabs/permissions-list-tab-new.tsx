@@ -362,26 +362,25 @@ const PrincipalRowsSkeleton = () => (
   </div>
 );
 
-type NoPrincipalsProps = {
-  searchQuery: string;
-  onCreateAcl: () => void;
-  editAclsReason?: string;
+const CreateAclButton = ({ onClick }: { onClick: () => void }) => {
+  const editAclsReason = useShadowBoxGuard().reasonFor('editAcls');
+  return (
+    <DisabledReasonTooltip reason={editAclsReason}>
+      <Button disabled={Boolean(editAclsReason)} onClick={onClick}>
+        Create ACL
+      </Button>
+    </DisabledReasonTooltip>
+  );
 };
 
-const NoPrincipals = ({ searchQuery, onCreateAcl, editAclsReason }: NoPrincipalsProps) => {
+const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCreateAcl: () => void }) => {
   if (searchQuery) {
     return <div className="py-8 text-center text-body text-muted-foreground">No principals match your search.</div>;
   }
   return (
     <div className="rounded-md border">
       <SecurityEmptyState
-        action={
-          <DisabledReasonTooltip reason={editAclsReason}>
-            <Button disabled={Boolean(editAclsReason)} onClick={onCreateAcl}>
-              Create ACL
-            </Button>
-          </DisabledReasonTooltip>
-        }
+        action={<CreateAclButton onClick={onCreateAcl} />}
         description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
         docsHref={docsLinks.selfManaged.acl}
         icon={<KeyRoundIcon />}
@@ -411,7 +410,7 @@ const PrincipalList = ({ groups, isLoading, searchQuery, onCreateAcl, rows }: Pr
       return <PrincipalRowsSkeleton />;
     }
     if (groups.length === 0) {
-      return <NoPrincipals editAclsReason={editAclsReason} onCreateAcl={onCreateAcl} searchQuery={searchQuery} />;
+      return <NoPrincipals onCreateAcl={onCreateAcl} searchQuery={searchQuery} />;
     }
     return (
       <div className="flex flex-col gap-3">
@@ -446,7 +445,6 @@ export const PermissionsListTabNew: FC = () => {
   const rows = useExpandedRows();
   const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
     usePrincipalPermissions();
-  const editAclsReason = useShadowBoxGuard().reasonFor('editAcls');
 
   if (isUsersError && usersError) {
     return (
@@ -477,15 +475,7 @@ export const PermissionsListTabNew: FC = () => {
           </DescriptionWithHelp>
         </div>
 
-        <ListLayoutFilters
-          actions={
-            <DisabledReasonTooltip reason={editAclsReason}>
-              <Button disabled={Boolean(editAclsReason)} onClick={() => setCreateAclOpen(true)}>
-                Create ACL
-              </Button>
-            </DisabledReasonTooltip>
-          }
-        >
+        <ListLayoutFilters actions={<CreateAclButton onClick={() => setCreateAclOpen(true)} />}>
           <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."

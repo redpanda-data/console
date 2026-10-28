@@ -330,6 +330,17 @@ function buildPublishRequest(topicName: string, data: Inputs): PublishMessageReq
   return req;
 }
 
+const ProduceButton = ({ isSubmitting }: { isSubmitting: boolean }) => {
+  const produceReason = useShadowBoxGuard().reasonFor('produce');
+  return (
+    <DisabledReasonTooltip reason={produceReason}>
+      <Button data-testid="produce-button" disabled={Boolean(produceReason)} isLoading={isSubmitting} type="submit">
+        Produce
+      </Button>
+    </DisabledReasonTooltip>
+  );
+};
+
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const {
     control,
@@ -355,8 +366,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       },
     },
   });
-
-  const produceReason = useShadowBoxGuard().reasonFor('produce');
 
   const keyPayloadOptions = useWatch({ control, name: 'key' });
   const valuePayloadOptions = useWatch({ control, name: 'value' });
@@ -659,11 +668,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <DisabledReasonTooltip reason={produceReason}>
-          <Button data-testid="produce-button" disabled={Boolean(produceReason)} isLoading={isSubmitting} type="submit">
-            Produce
-          </Button>
-        </DisabledReasonTooltip>
+        <ProduceButton isSubmitting={isSubmitting} />
         <Button
           nativeButton={false}
           render={

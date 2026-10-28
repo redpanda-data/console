@@ -319,7 +319,10 @@ function useExistingUserAccess({
   const topicGrant = useTopicGrant({ existingUserSelected, topicName, topicAccess });
   const consumerGroup = useConsumerGroupAccess({ form, showConsumerGroupFields, existingUserSelected });
   const missingUserSecrets = useMissingUserSecrets(existingUserSelected);
-  return { ...topicGrant, ...consumerGroup, missingUserSecrets };
+  /** The box rejects ACL writes, so a user that needs a grant can't be set up until it's unboxed. */
+  const aclsBoxedReason = useShadowBoxGuard().reasonFor('editAcls');
+  const grantBoxedReason = topicGrant.needsTopicGrant || showConsumerGroupFields ? aclsBoxedReason : undefined;
+  return { ...topicGrant, ...consumerGroup, missingUserSecrets, grantBoxedReason };
 }
 
 type ExistingUserAccess = ReturnType<typeof useExistingUserAccess>;
@@ -486,8 +489,7 @@ function useAddUserSubmit({
   createUserWithSecrets,
   existingUserSelected,
   showConsumerGroupFields,
-  grantBoxed,
-  aclsBoxedReason,
+  grantBoxedReason,
 }: {
   form: UserForm;
   authMethod: AuthenticationMethodType;
@@ -499,8 +501,7 @@ function useAddUserSubmit({
   createUserWithSecrets: ReturnType<typeof useCreateUserWithSecretsMutation>['createUserWithSecrets'];
   existingUserSelected?: User;
   showConsumerGroupFields: boolean;
-  grantBoxed: boolean;
-  aclsBoxedReason: string | undefined;
+  grantBoxedReason: string | undefined;
 }) {
   const queryClient = useQueryClient();
   const { serviceAccountName, serviceAccountSelectorRef } = serviceAccount;
@@ -516,8 +517,8 @@ function useAddUserSubmit({
         });
       }
 
-      if (grantBoxed) {
-        toast.error(aclsBoxedReason);
+      if (grantBoxedReason) {
+        toast.error(grantBoxedReason);
         return { success: false };
       }
 
@@ -549,8 +550,7 @@ function useAddUserSubmit({
       showConsumerGroupFields,
       form,
       queryClient,
-      grantBoxed,
-      aclsBoxedReason,
+      grantBoxedReason,
     ]
   );
 }
@@ -1114,7 +1114,6 @@ type AddUserFormBodyProps = Omit<SaslUserFieldsProps, 'isPending'> & {
   serviceAccount: ServiceAccountDraft;
   hasServiceAccount: boolean;
   isPending: boolean;
-  grantBoxed: boolean;
 };
 
 function AddUserFormBody({
@@ -1123,15 +1122,14 @@ function AddUserFormBody({
   onAuthMethodChange,
   serviceAccount,
   hasServiceAccount,
-  grantBoxed,
   ...saslProps
 }: AddUserFormBodyProps) {
-  const { form, isPending } = saslProps;
+  const { form, isPending, access } = saslProps;
   const isServiceAccount = authMethod === AuthenticationMethod.SERVICE_ACCOUNT;
   return (
     <Form {...form}>
       <div className={inline ? 'flex flex-col gap-6' : 'mt-4 max-w-2xl space-y-8'}>
-        {grantBoxed && !isServiceAccount ? (
+        {access.grantBoxedReason && !isServiceAccount ? (
           <ShadowBoxedAlert action="editAcls" testId="add-user-shadow-boxed-alert" />
         ) : null}
         <AuthMethodField
@@ -1188,9 +1186,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       defaultAuthMethod || AuthenticationMethod.SASL
     );
     const serviceAccount = useServiceAccountDraft({ defaultServiceAccountName, pipelineName, topicName });
-    /** The box rejects ACL writes, so a user that needs a grant can't be set up until it's unboxed. */
-    const aclsBoxedReason = useShadowBoxGuard().reasonFor('editAcls');
-    const grantBoxed = Boolean(aclsBoxedReason) && (access.needsTopicGrant || showConsumerGroupFields);
 
     useReportStepValidity({
       authMethod,
@@ -1212,8 +1207,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       createUserWithSecrets,
       existingUserSelected: users.existingUserSelected,
       showConsumerGroupFields,
-      grantBoxed,
-      aclsBoxedReason,
+      grantBoxedReason: access.grantBoxedReason,
     });
 
     useImperativeHandle(ref, () => ({
@@ -1234,7 +1228,6 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
           access={access}
           authMethod={authMethod}
           form={form}
-          grantBoxed={grantBoxed}
           hasServiceAccount={hasServiceAccount}
           inline={inline}
           isPending={isPending}

@@ -139,8 +139,8 @@ const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => voi
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
         {boxed ? (
-          <EmptyDescription className="font-mono text-body-sm" data-testid="messages-error-detail">
-            {message}
+          <EmptyDescription data-testid="messages-error-detail">
+            <div className="font-mono text-body-sm leading-relaxed">{message}</div>
           </EmptyDescription>
         ) : null}
       </EmptyHeader>

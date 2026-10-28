@@ -59,7 +59,9 @@ const BoxedReadState = ({ message, onRetry }: { message: string; onRetry: () => 
       </EmptyMedia>
       <EmptyTitle>{BOXED_READS_TITLE}</EmptyTitle>
       <EmptyDescription>{BOXED_READS_DESCRIPTION}</EmptyDescription>
-      <EmptyDescription className="font-mono text-body-sm">{message}</EmptyDescription>
+      <EmptyDescription>
+        <div className="font-mono text-body-sm leading-relaxed">{message}</div>
+      </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
       <Button onClick={onRetry} size="sm" variant="outline">

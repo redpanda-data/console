@@ -74,6 +74,19 @@ function useSchemaRegistryPermissions() {
   };
 }
 
+// A box reason only where the user has the permission, so a missing permission keeps its own tooltip.
+function useEditSchemasBoxedReasons({
+  canCreateSchemas,
+  canDeleteSchemas,
+}: Pick<ReturnType<typeof useSchemaRegistryPermissions>, 'canCreateSchemas' | 'canDeleteSchemas'>) {
+  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
+  return {
+    editSchemasReason,
+    createBoxedReason: canCreateSchemas === false ? undefined : editSchemasReason,
+    deleteBoxedReason: canDeleteSchemas === false ? undefined : editSchemasReason,
+  };
+}
+
 // The subject named by the route (or the prop), with the page header and a
 // default `version=latest` search param kept in sync.
 function useSchemaDetailsRoute(subjectNameProp: string) {
@@ -167,8 +180,11 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   const { subject, isLoadingSubject, isSoftDeleted } = useSubjectDetailsData(subjectNameRaw);
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
-  const { reasonFor } = useShadowBoxGuard();
-  const editSchemasReason = reasonFor('editSchemas');
+  const {
+    editSchemasReason,
+    createBoxedReason: addVersionBoxedReason,
+    deleteBoxedReason: deleteSubjectBoxedReason,
+  } = useEditSchemasBoxedReasons({ canCreateSchemas, canDeleteSchemas });
 
   if (isLoadingSubject || !subject) {
     return (
@@ -181,9 +197,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
       </PageContent>
     );
   }
-
-  const addVersionBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
-  const deleteSubjectBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
 
   return (
     <PageContent key="b">
@@ -552,10 +565,8 @@ const SubjectVersionDefinition = ({
   const { versionDeleteKind, setVersionDeleteKind, executePermanentDelete, handleRecover, executeSoftDelete } =
     useSchemaVersionActions(subjectData, schema, setSelectedVersion);
   const versionSelectId = useId();
-  const { reasonFor } = useShadowBoxGuard();
-  const editSchemasReason = reasonFor('editSchemas');
-  const deleteVersionBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
-  const recoverBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
+  const { createBoxedReason: recoverBoxedReason, deleteBoxedReason: deleteVersionBoxedReason } =
+    useEditSchemasBoxedReasons({ canCreateSchemas, canDeleteSchemas });
 
   return (
     <div className="flex gap-10">

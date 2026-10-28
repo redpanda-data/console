@@ -244,8 +244,6 @@ function EditSchemaCompatibility(p: {
     );
   }
 
-  const onSave = () => saveCompatibility(configMode);
-
   const allOptions: { value: string; title: string; description: string }[] =
     subjectName || contextName ? [DEFAULT_OPTION, ...COMPATIBILITY_OPTIONS] : COMPATIBILITY_OPTIONS;
 
@@ -294,7 +292,7 @@ function EditSchemaCompatibility(p: {
                   <Button
                     data-testid="edit-compatibility-save-btn"
                     disabled={api.userData?.canManageSchemaRegistry === false || boxed}
-                    onClick={onSave}
+                    onClick={() => saveCompatibility(configMode)}
                     variant="primary"
                   >
                     Save

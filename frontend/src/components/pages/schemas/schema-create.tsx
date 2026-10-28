@@ -217,7 +217,10 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
     This component is about the "Save", "Validate", and "Cancel" buttons at the bottom of the page.
     Those buttons are shared across both page variants, thus it was extracted into its own component
  */
-const SchemaPageButtons = (p: {
+const SchemaPageButtons = ({
+  parentSubjectName,
+  editorState,
+}: {
   parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
   editorState: SchemaEditorStateHelper;
 }) => {
@@ -232,7 +235,6 @@ const SchemaPageButtons = (p: {
   } | null>(null);
   const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
   const isMissingContext = srContextsEnabled && !editorState.context;
   const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
@@ -322,8 +324,8 @@ const SchemaPageButtons = (p: {
 
         <Button
           onClick={() => {
-            if (p.parentSubjectName) {
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
+            if (parentSubjectName) {
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(parentSubjectName)}`);
             } else {
               appGlobal.historyReplace('/schema-registry');
             }

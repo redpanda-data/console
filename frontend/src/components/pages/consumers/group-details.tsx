@@ -628,8 +628,7 @@ const GroupByTopics = (groupProps: {
 }) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroupOffsets = useSupportedFeaturesStore((s) => s.deleteGroupOffsets);
-  const { reasonFor } = useShadowBoxGuard();
-  const offsetsBoxedReason = reasonFor('editConsumerOffsets');
+  const offsetsBoxedReason = useShadowBoxGuard().reasonFor('editConsumerOffsets');
   const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
 
   const lagGroupsByTopic = groupPartitionRowsByTopic(toPartitionRows(groupProps.group), quickSearchRegExp);

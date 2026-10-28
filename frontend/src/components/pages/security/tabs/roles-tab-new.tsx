@@ -103,13 +103,22 @@ const roleColumns: DataTableColumnDef<RoleEntry>[] = [
   },
 ];
 
-export const RolesTabNew: FC = () => {
-  useSecurityPageHeader('roles');
+// The box only adds a reason to Create role where the user could otherwise create one.
+function useRoleWriteReasons() {
   const createRole = useCreateRoleAvailability();
   const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
   const createRoleBoxedReason = createRole.disabled ? undefined : editRolesReason;
-  const createRoleDisabled = createRole.disabled || Boolean(createRoleBoxedReason);
-  const createRoleTooltip = [createRole.reason, createRoleBoxedReason].filter(Boolean).join(' ');
+  return {
+    editRolesReason,
+    createRoleBoxedReason,
+    createRoleDisabled: createRole.disabled || Boolean(createRoleBoxedReason),
+    createRoleTooltip: [createRole.reason, createRoleBoxedReason].filter(Boolean).join(' '),
+  };
+}
+
+export const RolesTabNew: FC = () => {
+  useSecurityPageHeader('roles');
+  const { editRolesReason, createRoleBoxedReason, createRoleDisabled, createRoleTooltip } = useRoleWriteReasons();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { roles, isLoading, isError, error } = useRoleListData();
   const columnFilters = useNameColumnFilter();

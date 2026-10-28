@@ -38,25 +38,14 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
-  const [roleName, setRoleName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+function useCreateAndOpenRole(onCreated: () => void) {
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
-  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
 
-  const handleClose = () => {
-    setRoleName('');
-    setSubmitted(false);
-    onOpenChange(false);
-  };
-
-  const createAndOpenRole = async (name: string) => {
+  return async (name: string) => {
     await createRole(create(CreateRoleRequestSchema, { role: { name } }));
     toast.success(`Role "${name}" created`);
-    handleClose();
+    onCreated();
     // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
       to: '/security/roles/$roleName/details',
@@ -66,6 +55,22 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
       toast.error('Failed to navigate', { description: String(error) });
     });
   };
+}
+
+export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
+  const [roleName, setRoleName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
+
+  const handleClose = () => {
+    setRoleName('');
+    setSubmitted(false);
+    onOpenChange(false);
+  };
+
+  const createAndOpenRole = useCreateAndOpenRole(handleClose);
 
   const handleSubmit = async () => {
     setSubmitted(true);

@@ -55,18 +55,18 @@ type UserRolesCardNewProps = {
   isLoading?: boolean;
 };
 
+const unassignedRoleOptions = (allRoles: { name: string }[], assigned: Role[]) => {
+  const assignedRoleNames = new Set(assigned.map((r) => r.principalName));
+  return allRoles.filter((r) => !assignedRoleNames.has(r.name)).map((r) => ({ value: r.name, label: r.name }));
+};
+
 export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNewProps) => {
   const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
   const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
-  const { reasonFor } = useShadowBoxGuard();
-  const editRolesReason = reasonFor('editRoles');
+  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
 
-  const assignedRoleNames = new Set(roles.map((r) => r.principalName));
-
-  const availableRoleOptions = (rolesData?.roles ?? [])
-    .filter((r) => !assignedRoleNames.has(r.name))
-    .map((r) => ({ value: r.name, label: r.name }));
+  const availableRoleOptions = unassignedRoleOptions(rolesData?.roles ?? [], roles);
 
   const removeFromRole = async (roleName: string) => {
     if (!userName) {

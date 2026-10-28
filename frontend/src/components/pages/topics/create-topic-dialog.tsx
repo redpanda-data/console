@@ -572,6 +572,16 @@ function refreshClusterAfterCreate() {
   });
 }
 
+/** The dialog can already be open when the box lands; a submit then would only be rejected. */
+function CreateTopicSubmitButton({ disabled, isLoading }: { disabled: boolean; isLoading: boolean }) {
+  const createTopicBoxed = Boolean(useShadowBoxGuard().reasonFor('createTopic'));
+  return (
+    <Button data-testid="onOk-button" disabled={disabled || createTopicBoxed} form="create-topic-form" type="submit">
+      {isLoading ? 'Creating…' : 'Create'}
+    </Button>
+  );
+}
+
 export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { mutateAsync: createTopic } = useCreateTopicMutation();
   const [isLoading, setIsLoading] = useState(false);
@@ -640,8 +650,6 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
   // Not `Boolean(...)`: the truthiness check narrows `result` to non-null for the success branch below.
   const isSuccess = result && !result.error;
-  /** The dialog can already be open when the box lands; a submit then would only be rejected. */
-  const createTopicBoxed = Boolean(useShadowBoxGuard().reasonFor('createTopic'));
 
   return (
     <Dialog
@@ -707,14 +715,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button onClick={handleClose} variant="outline">
                 Cancel
               </Button>
-              <Button
-                data-testid="onOk-button"
-                disabled={!form.formState.isValid || isLoading || createTopicBoxed}
-                form="create-topic-form"
-                type="submit"
-              >
-                {isLoading ? 'Creating…' : 'Create'}
-              </Button>
+              <CreateTopicSubmitButton disabled={!form.formState.isValid || isLoading} isLoading={isLoading} />
             </>
           )}
         </DialogFooter>
