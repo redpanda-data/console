@@ -23,7 +23,9 @@ import {
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { ArrowDownIcon, ArrowUpIcon, TriangleAlertIcon } from 'lucide-react';
+import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { ArrowDownIcon, ArrowUpIcon, LockIcon, TriangleAlertIcon } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
 import { KeyCell, OffsetCell, SizeCell, TimestampCell, ValueCell, type ValuePreviewConfig } from './message-cells';
@@ -126,24 +128,32 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
   </>
 );
 
-const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
-  <Empty data-testid="messages-error">
-    <EmptyHeader>
-      <EmptyMedia variant="icon">
-        <TriangleAlertIcon />
-      </EmptyMedia>
-      <EmptyTitle>Couldn't load messages</EmptyTitle>
-      <EmptyDescription>{message}</EmptyDescription>
-    </EmptyHeader>
-    {onRetry ? (
-      <EmptyContent>
-        <Button onClick={onRetry} size="sm" testId="messages-error-retry" variant="outline">
-          Retry
-        </Button>
-      </EmptyContent>
-    ) : null}
-  </Empty>
-);
+const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => {
+  const boxed = useShadowBoxGuard().isBoxedRead(message);
+  const title = boxed ? BOXED_READS_TITLE : "Couldn't load messages";
+  const description = boxed ? BOXED_READS_DESCRIPTION : message;
+  return (
+    <Empty data-testid="messages-error">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">{boxed ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+        {boxed ? (
+          <EmptyDescription data-testid="messages-error-detail">
+            <div className="font-mono text-body-sm leading-relaxed">{message}</div>
+          </EmptyDescription>
+        ) : null}
+      </EmptyHeader>
+      {onRetry ? (
+        <EmptyContent>
+          <Button onClick={onRetry} size="sm" testId="messages-error-retry" variant="outline">
+            Retry
+          </Button>
+        </EmptyContent>
+      ) : null}
+    </Empty>
+  );
+};
 
 const LiveWaitingState = () => (
   <Empty data-testid="messages-live-waiting">

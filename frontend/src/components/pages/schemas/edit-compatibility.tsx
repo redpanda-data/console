@@ -53,6 +53,8 @@ import {
 } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { TonedIcon } from '../shared/toned-icon';
 
 const DEFAULT_OPTION = {
@@ -214,6 +216,7 @@ function EditSchemaCompatibility(p: {
   onClose: () => void;
 }) {
   const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
   const saveCompatibility = useSaveCompatibility({ subjectName, contextName }, p.onClose);
 
   const schema = schemaDetails?.schemas.first(
@@ -240,8 +243,6 @@ function EditSchemaCompatibility(p: {
       </SkeletonGroup>
     );
   }
-
-  const onSave = () => saveCompatibility(configMode);
 
   const allOptions: { value: string; title: string; description: string }[] =
     subjectName || contextName ? [DEFAULT_OPTION, ...COMPATIBILITY_OPTIONS] : COMPATIBILITY_OPTIONS;
@@ -281,14 +282,17 @@ function EditSchemaCompatibility(p: {
             ))}
           </Choicebox>
 
+          <div className="mt-6">
+            <ShadowBoxedAlert action="editSchemas" />
+          </div>
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger
                 render={
                   <Button
                     data-testid="edit-compatibility-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
-                    onClick={onSave}
+                    disabled={api.userData?.canManageSchemaRegistry === false || boxed}
+                    onClick={() => saveCompatibility(configMode)}
                     variant="primary"
                   >
                     Save

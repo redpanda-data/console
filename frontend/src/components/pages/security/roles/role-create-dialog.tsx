@@ -29,6 +29,8 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
@@ -36,24 +38,14 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
-  const [roleName, setRoleName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+function useCreateAndOpenRole(onCreated: () => void) {
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
 
-  const handleClose = () => {
-    setRoleName('');
-    setSubmitted(false);
-    onOpenChange(false);
-  };
-
-  const createAndOpenRole = async (name: string) => {
+  return async (name: string) => {
     await createRole(create(CreateRoleRequestSchema, { role: { name } }));
     toast.success(`Role "${name}" created`);
-    handleClose();
+    onCreated();
     // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
       to: '/security/roles/$roleName/details',
@@ -63,10 +55,26 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
       toast.error('Failed to navigate', { description: String(error) });
     });
   };
+}
+
+export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
+  const [roleName, setRoleName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
+
+  const handleClose = () => {
+    setRoleName('');
+    setSubmitted(false);
+    onOpenChange(false);
+  };
+
+  const createAndOpenRole = useCreateAndOpenRole(handleClose);
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists) {
+    if (!trimmed || alreadyExists || boxed) {
       return;
     }
     setIsSubmitting(true);
@@ -86,6 +94,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <DialogTitle>Create role</DialogTitle>
         </DialogHeader>
         <DialogBody>
+          <ShadowBoxedAlert action="editRoles" />
           <div className="flex flex-col gap-2 py-2">
             <Label htmlFor="role-name">Role name</Label>
             <Input
@@ -103,7 +112,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting} onClick={handleSubmit}>
+          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting || boxed} onClick={handleSubmit}>
             Create
           </Button>
         </DialogFooter>

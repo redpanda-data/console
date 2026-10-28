@@ -17,12 +17,22 @@ import { ShieldIcon } from 'components/icons';
 import { ShadowLinkListPage } from 'components/pages/shadowlinks/list/shadowlink-list-page';
 import { ListShadowLinksRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { z } from 'zod';
+
+const searchSchema = z.object({
+  tab: z.enum(['links', 'source']).optional().catch(undefined),
+  /** Opens that dialog on the source tab, for links from other pages. */
+  action: z.enum(['box', 'unbox', 'exempt']).optional().catch(undefined),
+  /** With `action=exempt`: the user the box settings dialog adds to the exempt principals. */
+  principal: z.string().optional().catch(undefined),
+});
 
 export const Route = createFileRoute('/shadowlinks/')({
   staticData: {
     title: 'Shadow Links',
     icon: ShieldIcon,
   },
+  validateSearch: searchSchema,
   loader: async ({ context: { queryClient, dataplaneTransport } }) => {
     try {
       await queryClient.ensureQueryData(

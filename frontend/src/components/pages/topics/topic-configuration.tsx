@@ -33,6 +33,7 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { BOXED_TOPIC_CONFIG_NOTE, useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -436,6 +437,8 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
+  /** Config changes still go through while boxed; they just may not reach a shadow cluster in time. */
+  const { fenced: boxed } = useShadowBoxGuard();
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
   const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 
@@ -489,6 +492,11 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
+        {boxed ? (
+          <Alert testId="topic-config-boxed-note" variant="informative">
+            <AlertDescription>{BOXED_TOPIC_CONFIG_NOTE}</AlertDescription>
+          </Alert>
+        ) : null}
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[240px] flex-1">
             <InputGroup>

@@ -63,6 +63,8 @@ import { SASL_MECHANISMS } from 'utils/user';
 
 import { StepSurface } from './step-surface';
 import { useListACLsQuery } from '../../../../react-query/api/acl';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { userSecretIds } from '../types/constants';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 import {
@@ -317,7 +319,10 @@ function useExistingUserAccess({
   const topicGrant = useTopicGrant({ existingUserSelected, topicName, topicAccess });
   const consumerGroup = useConsumerGroupAccess({ form, showConsumerGroupFields, existingUserSelected });
   const missingUserSecrets = useMissingUserSecrets(existingUserSelected);
-  return { ...topicGrant, ...consumerGroup, missingUserSecrets };
+  /** The box rejects ACL writes, so a user that needs a grant can't be set up until it's unboxed. */
+  const aclsBoxedReason = useShadowBoxGuard().reasonFor('editAcls');
+  const grantBoxedReason = topicGrant.needsTopicGrant || showConsumerGroupFields ? aclsBoxedReason : undefined;
+  return { ...topicGrant, ...consumerGroup, missingUserSecrets, grantBoxedReason };
 }
 
 type ExistingUserAccess = ReturnType<typeof useExistingUserAccess>;
@@ -484,6 +489,7 @@ function useAddUserSubmit({
   createUserWithSecrets,
   existingUserSelected,
   showConsumerGroupFields,
+  grantBoxedReason,
 }: {
   form: UserForm;
   authMethod: AuthenticationMethodType;
@@ -495,6 +501,7 @@ function useAddUserSubmit({
   createUserWithSecrets: ReturnType<typeof useCreateUserWithSecretsMutation>['createUserWithSecrets'];
   existingUserSelected?: User;
   showConsumerGroupFields: boolean;
+  grantBoxedReason: string | undefined;
 }) {
   const queryClient = useQueryClient();
   const { serviceAccountName, serviceAccountSelectorRef } = serviceAccount;
@@ -508,6 +515,11 @@ function useAddUserSubmit({
           serviceAccountLabel: pipelineName || topicName || 'pipeline',
           serviceAccountName,
         });
+      }
+
+      if (grantBoxedReason) {
+        toast.error(grantBoxedReason);
+        return { success: false };
       }
 
       // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
@@ -538,6 +550,7 @@ function useAddUserSubmit({
       showConsumerGroupFields,
       form,
       queryClient,
+      grantBoxedReason,
     ]
   );
 }
@@ -1111,11 +1124,14 @@ function AddUserFormBody({
   hasServiceAccount,
   ...saslProps
 }: AddUserFormBodyProps) {
-  const { form, isPending } = saslProps;
+  const { form, isPending, access } = saslProps;
   const isServiceAccount = authMethod === AuthenticationMethod.SERVICE_ACCOUNT;
   return (
     <Form {...form}>
       <div className={inline ? 'flex flex-col gap-6' : 'mt-4 max-w-2xl space-y-8'}>
+        {access.grantBoxedReason && !isServiceAccount ? (
+          <ShadowBoxedAlert action="editAcls" testId="add-user-shadow-boxed-alert" />
+        ) : null}
         <AuthMethodField
           authMethod={authMethod}
           disabled={isPending || serviceAccount.isServiceAccountPending}
@@ -1191,6 +1207,7 @@ export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProp
       createUserWithSecrets,
       existingUserSelected: users.existingUserSelected,
       showConsumerGroupFields,
+      grantBoxedReason: access.grantBoxedReason,
     });
 
     useImperativeHandle(ref, () => ({

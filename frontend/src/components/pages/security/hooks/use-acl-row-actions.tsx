@@ -14,10 +14,12 @@ import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-sta
 import { useDeleteUserMutation, useInvalidateUsersCache, useListUsersQuery } from '../../../../react-query/api/user';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { Code as CodeEl } from '../../../../utils/tsx-utils';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 
 export type AclRowActionsContextValue = {
   users: { name: string }[];
   canDeleteUsers: boolean;
+  editAclsReason: string | undefined;
   deleteAclsForPrincipal: (principal: string, host: string) => Promise<void>;
   deleteUser: (name: string) => Promise<void>;
   invalidateUsers: () => Promise<void>;
@@ -51,10 +53,12 @@ export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure
   const { mutateAsync: deleteACLMutation } = useDeleteAclMutation();
   const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
+  const { reasonFor } = useShadowBoxGuard();
 
   return {
     users: usersData?.users ?? [],
     canDeleteUsers: Boolean(featureDeleteUser),
+    editAclsReason: reasonFor('editAcls'),
     deleteAclsForPrincipal: async (principal, host) => {
       await deleteACLMutation(allAclsFor(principal, host));
       toast.success(

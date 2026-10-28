@@ -13,6 +13,17 @@ import '../../../../utils/array-extensions';
 import { ErrorIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from 'components/redpanda-ui/components/empty';
+import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { LockIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 
@@ -39,6 +50,48 @@ type TopicMessageViewProps = {
         - add back summary of quick search  <this.FilterSummary />
 */
 
+/** A read the box rejects isn't an outage, so it gets an explanation rather than an error. */
+const BoxedReadState = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
+  <Empty data-testid="messages-boxed">
+    <EmptyHeader>
+      <EmptyMedia variant="icon">
+        <LockIcon />
+      </EmptyMedia>
+      <EmptyTitle>{BOXED_READS_TITLE}</EmptyTitle>
+      <EmptyDescription>{BOXED_READS_DESCRIPTION}</EmptyDescription>
+      <EmptyDescription>
+        <div className="font-mono text-body-sm leading-relaxed">{message}</div>
+      </EmptyDescription>
+    </EmptyHeader>
+    <EmptyContent>
+      <Button onClick={onRetry} size="sm" variant="outline">
+        Retry
+      </Button>
+    </EmptyContent>
+  </Empty>
+);
+
+const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
+  const boxed = useShadowBoxGuard().isBoxedRead(error.message);
+  if (boxed) {
+    return <BoxedReadState message={error.message} onRetry={onRetry} />;
+  }
+  return (
+    <Alert icon={<ErrorIcon />} variant="destructive">
+      <AlertTitle>Backend Error</AlertTitle>
+      <AlertDescription>
+        <div>Check and modify the request before resubmitting.</div>
+        <div className="mt-4">
+          <div className="codeBox">{error.message}</div>
+        </div>
+        <Button className="mt-4" onClick={onRetry}>
+          Retry Search
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
+};
+
 export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
   const settings = useTopicViewSettings(topic.topicName);
   const query = useMessageQueryParams(topic.topicName);
@@ -64,18 +117,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
       />
       {/* Message Table (or error display) */}
       {search.fetchError ? (
-        <Alert icon={<ErrorIcon />} variant="destructive">
-          <AlertTitle>Backend Error</AlertTitle>
-          <AlertDescription>
-            <div>Check and modify the request before resubmitting.</div>
-            <div className="mt-4">
-              <div className="codeBox">{search.fetchError.message}</div>
-            </div>
-            <Button className="mt-4" onClick={() => search.executeMessageSearch()}>
-              Retry Search
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <MessageSearchErrorAlert error={search.fetchError} onRetry={() => search.executeMessageSearch()} />
       ) : (
         <MessagesResults
           dialogs={dialogs}

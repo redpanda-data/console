@@ -66,6 +66,8 @@ import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -215,7 +217,10 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
     This component is about the "Save", "Validate", and "Cancel" buttons at the bottom of the page.
     Those buttons are shared across both page variants, thus it was extracted into its own component
  */
-const SchemaPageButtons = (p: {
+const SchemaPageButtons = ({
+  parentSubjectName,
+  editorState,
+}: {
   parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
   editorState: SchemaEditorStateHelper;
 }) => {
@@ -230,12 +235,13 @@ const SchemaPageButtons = (p: {
   } | null>(null);
   const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
-  const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
   const isMissingContext = srContextsEnabled && !editorState.context;
+  const boxed = Boolean(useShadowBoxGuard().reasonFor('editSchemas'));
 
   return (
     <>
+      <ShadowBoxedAlert action="editSchemas" testId="schema-create-shadow-boxed-alert" />
       {persistentValidationError ? (
         <Alert
           className="my-4"
@@ -267,7 +273,9 @@ const SchemaPageButtons = (p: {
       ) : null}
       <div className="mt-4 flex gap-4">
         <Button
-          disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
+          disabled={
+            boxed || isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue
+          }
           onClick={async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
             setValidating(true);
@@ -316,8 +324,8 @@ const SchemaPageButtons = (p: {
 
         <Button
           onClick={() => {
-            if (p.parentSubjectName) {
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
+            if (parentSubjectName) {
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(parentSubjectName)}`);
             } else {
               appGlobal.historyReplace('/schema-registry');
             }

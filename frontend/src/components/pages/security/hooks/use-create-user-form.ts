@@ -7,6 +7,7 @@ import { generatePassword } from 'utils/password';
 import { useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { getSASLMechanism, useCreateUserMutation, useListUsersQuery } from '../../../../react-query/api/user';
 import { type SaslMechanism, validatePassword, validateUsername } from '../../../../utils/user';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import type { CreateUserModalState } from '../users/user-create';
 
 type CreateUserFormState = {
@@ -25,6 +26,18 @@ const getInitialFormState = (): CreateUserFormState => ({
   selectedRoles: [],
 });
 
+/** Adds a new user to roles, best-effort. The box rejects role membership but not the user, so it adds none while boxed. */
+function useAddUserToRoles() {
+  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
+  const rolesBoxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
+  return (username: string, roles: string[]) =>
+    Promise.allSettled(
+      (rolesBoxed ? [] : roles).map((r) =>
+        updateMembership(create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: username }] }))
+      )
+    );
+}
+
 /**
  * The create-user form: its fields, the existing usernames, and `createUser`, which creates the user,
  * adds it to the selected roles (best-effort) and then calls `onCreated`.
@@ -33,7 +46,7 @@ export function useCreateUserForm(onCreated: () => void) {
   const [formState, setFormState] = useState(getInitialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { mutateAsync: createUserMutate } = useCreateUserMutation();
-  const { mutateAsync: updateMembership } = useUpdateRoleMembershipMutation();
+  const addUserToRoles = useAddUserToRoles();
   const { data: usersData } = useListUsersQuery();
 
   const setField =
@@ -57,11 +70,7 @@ export function useCreateUserForm(onCreated: () => void) {
       // mutateAsync re-throws after onError, so we catch to prevent unhandled rejection.
       return false;
     }
-    await Promise.allSettled(
-      selectedRoles.map((r) =>
-        updateMembership(create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: username }] }))
-      )
-    );
+    await addUserToRoles(username, selectedRoles);
     return true;
   };
 

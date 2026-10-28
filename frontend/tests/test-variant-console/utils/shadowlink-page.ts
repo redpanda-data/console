@@ -604,13 +604,13 @@ export class ShadowlinkPage {
    * Actions
    */
   async performFailover() {
-    // Find "Failover all topics" button specifically (not individual topic failover buttons)
-    const failoverButton = this.page.getByRole('button', { name: /^failover all topics$/i });
+    // Find "Fail over all topics" button specifically (not individual topic failover buttons)
+    const failoverButton = this.page.getByRole('button', { name: /^fail ?over all topics$/i });
     await failoverButton.click();
 
     // Confirm in dialog and wait for the failover request to complete. The confirm button closes
     // the dialog at once, so the response is the milestone; its listener is armed before the click.
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|failover/i }).last();
+    const confirmButton = this.page.getByTestId('confirm-failover');
     await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
   }
 
@@ -621,7 +621,7 @@ export class ShadowlinkPage {
     await failoverButton.click();
 
     // Confirm in dialog and wait for the failover request, so the refresh below sees its result
-    const confirmButton = this.page.getByRole('button', { name: /confirm|yes|failover/i }).last();
+    const confirmButton = this.page.getByTestId('confirm-failover');
     await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
 
     // Click the refresh button for the replicated topics table and wait for the refreshed list

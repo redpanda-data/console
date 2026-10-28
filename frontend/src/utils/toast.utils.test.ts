@@ -12,9 +12,10 @@ import {
   QuotaFailureSchema,
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
-import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 
 // Spies on the real manager: the unit project shares module caches across files, so a module mock
 // only takes effect when this file happens to load `toast.utils` first.
@@ -182,6 +183,55 @@ describe('formatToastErrorMessageGRPC', () => {
       const result = formatToastErrorMessageGRPC({ error, action: 'create', entity: 'role' });
       expect(result).toBe('Failed to create role: invalid input (reason: VALIDATION_ERROR) — name: is required');
     });
+  });
+});
+
+describe('formatToastErrorMessageGRPC while the cluster is shadow boxed', () => {
+  const kafkaError = (reason: string, code = Code.InvalidArgument) =>
+    new ConnectError('the request was rejected', code, undefined, [
+      { desc: ErrorInfoSchema, value: create(ErrorInfoSchema, { reason, domain: 'redpanda.com/kafka' }) },
+    ]);
+
+  afterEach(() => {
+    useShadowBoxStore.setState({ phase: null });
+  });
+
+  test('names the box after the broker’s own message for a policy violation', () => {
+    useShadowBoxStore.setState({ phase: 'boxed' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
+    ).toBe(
+      'Failed to create topic: the request was rejected (reason: POLICY_VIOLATION). This cluster is shadow boxed, which rejects writes and most changes a shadow link copies until it’s unboxed.'
+    );
+  });
+
+  test('says brokers may still be rejecting while it unboxes', () => {
+    useShadowBoxStore.setState({ phase: 'unboxing' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
+    ).toContain('being unboxed');
+  });
+
+  test('doesn’t blame the box for a timeout', () => {
+    useShadowBoxStore.setState({ phase: 'boxed' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('REQUEST_TIMED_OUT'), action: 'start', entity: 'pipeline' })
+    ).not.toContain('shadow boxed');
+  });
+
+  test('leaves unrelated failed preconditions alone', () => {
+    useShadowBoxStore.setState({ phase: 'boxed' });
+    const error = new ConnectError('the group is not empty', Code.FailedPrecondition);
+    expect(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'consumer group' })).toBe(
+      'Failed to delete consumer group: the group is not empty'
+    );
+  });
+
+  test('says nothing about a box when the cluster isn’t boxed', () => {
+    useShadowBoxStore.setState({ phase: 'unboxed' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
+    ).not.toContain('shadow boxed');
   });
 });
 

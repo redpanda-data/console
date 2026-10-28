@@ -107,10 +107,13 @@ export const useGetShadowMetricsQuery = (
   return useQuery(getShadowMetrics, getShadowMetricsRequest, options);
 };
 
-export const useListShadowTopicQuery = (request: MessageInit<ListShadowLinkTopicsRequest>) => {
+export const useListShadowTopicQuery = (
+  request: MessageInit<ListShadowLinkTopicsRequest>,
+  options?: QueryOptions<typeof ListShadowLinkTopicsResponseSchema>
+) => {
   const listShadowTopicsRequest = create(ListShadowLinkTopicsRequestSchema, request);
 
-  return useQuery(listShadowLinkTopics, listShadowTopicsRequest);
+  return useQuery(listShadowLinkTopics, listShadowTopicsRequest, options);
 };
 
 export const useGetShadowTopicQuery = (
@@ -274,18 +277,23 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
 export const useFailoverShadowLinkMutation = (options?: {
   onSuccess?: () => void;
   onError?: (error: ConnectError) => void;
+  /** Re-read the link's topics too, so the Cutover tab says failing over now rather than at its next poll. */
+  refreshTopics?: boolean;
 }) => {
   const queryClient = useQueryClient();
 
   return useMutation(failOver, {
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: listShadowLinks,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      const queryKeys = [
+        createConnectQueryKey({ schema: listShadowLinks, cardinality: 'finite' }),
+        ...(options?.refreshTopics
+          ? [
+              createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'finite' }),
+              createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'infinite' }),
+            ]
+          : []),
+      ];
+      await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false })));
       options?.onSuccess?.();
     },
     onError: (error) => {

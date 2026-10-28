@@ -47,6 +47,8 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import {
   type AddTopicFormData,
   addTopicFormSchema,
@@ -252,6 +254,7 @@ function buildCreateTopicRequest(data: AddTopicFormData) {
 function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
   const queryClient = useQueryClient();
   const createTopicMutation = useCreateTopicMutation();
+  const createTopicBoxedReason = useShadowBoxGuard().reasonFor('createTopic');
 
   const handleSubmit = useCallback(
     async (data: AddTopicFormData): Promise<StepSubmissionResult<AddTopicFormData>> => {
@@ -262,6 +265,9 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
             message: `Using existing topic "${data.topicName}"`,
             data,
           };
+        }
+        if (createTopicBoxedReason) {
+          return { success: false, message: createTopicBoxedReason, error: createTopicBoxedReason };
         }
 
         await createTopicMutation.mutateAsync(buildCreateTopicRequest(data));
@@ -286,7 +292,7 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
         };
       }
     },
-    [existingTopicSelected, createTopicMutation, queryClient]
+    [existingTopicSelected, createTopicMutation, queryClient, createTopicBoxedReason]
   );
   return { handleSubmit, isPending: createTopicMutation.isPending };
 }
@@ -542,6 +548,7 @@ export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicSt
       >
         <Form {...form}>
           <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
+            {topicSelectionType === CreatableSelectionOptions.CREATE ? <ShadowBoxedAlert action="createTopic" /> : null}
             <TopicNameSection
               existingTopicSelected={existingTopicSelected}
               form={form}

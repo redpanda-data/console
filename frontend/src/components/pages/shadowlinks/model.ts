@@ -81,7 +81,9 @@ export type UnifiedScramConfig = {
  * Plain TypeScript authentication configuration interface
  */
 export type UnifiedAuthenticationConfiguration = {
-  authentication?: { case: 'scramConfiguration'; value: UnifiedScramConfig };
+  authentication?:
+    | { case: 'scramConfiguration'; value: UnifiedScramConfig }
+    | { case: 'plainConfiguration'; value: { username: string; password: string } };
 };
 
 /**

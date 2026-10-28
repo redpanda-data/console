@@ -41,6 +41,8 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 
 type Role = {
   principalType: string;
@@ -53,16 +55,18 @@ type UserRolesCardNewProps = {
   isLoading?: boolean;
 };
 
+const unassignedRoleOptions = (allRoles: { name: string }[], assigned: Role[]) => {
+  const assignedRoleNames = new Set(assigned.map((r) => r.principalName));
+  return allRoles.filter((r) => !assignedRoleNames.has(r.name)).map((r) => ({ value: r.name, label: r.name }));
+};
+
 export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNewProps) => {
   const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
   const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
+  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
 
-  const assignedRoleNames = new Set(roles.map((r) => r.principalName));
-
-  const availableRoleOptions = (rolesData?.roles ?? [])
-    .filter((r) => !assignedRoleNames.has(r.name))
-    .map((r) => ({ value: r.name, label: r.name }));
+  const availableRoleOptions = unassignedRoleOptions(rolesData?.roles ?? [], roles);
 
   const removeFromRole = async (roleName: string) => {
     if (!userName) {
@@ -129,14 +133,17 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
         <TableCell align="right">
           <div className="flex items-center justify-end gap-1">
             {Boolean(userName) && (
-              <Button
-                onClick={() => setPendingRemoveRole(r.principalName)}
-                size="icon-sm"
-                testId={`remove-role-${r.principalName}`}
-                variant="ghost"
-              >
-                <Trash2Icon className="h-4 w-4" />
-              </Button>
+              <DisabledReasonTooltip reason={editRolesReason}>
+                <Button
+                  disabled={Boolean(editRolesReason)}
+                  onClick={() => setPendingRemoveRole(r.principalName)}
+                  size="icon-sm"
+                  testId={`remove-role-${r.principalName}`}
+                  variant="ghost"
+                >
+                  <Trash2Icon className="h-4 w-4" />
+                </Button>
+              </DisabledReasonTooltip>
             )}
             <Button
               render={
@@ -164,15 +171,18 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
         <ListLayoutFilters
           actions={
             userName ? (
-              <Combobox
-                className="w-56"
-                clearable={false}
-                onChange={assignRole}
-                options={availableRoleOptions}
-                placeholder="Assign a role..."
-                testId="assign-role-combobox"
-                value=""
-              />
+              <DisabledReasonTooltip reason={editRolesReason}>
+                <Combobox
+                  className="w-56"
+                  clearable={false}
+                  disabled={Boolean(editRolesReason)}
+                  onChange={assignRole}
+                  options={availableRoleOptions}
+                  placeholder="Assign a role..."
+                  testId="assign-role-combobox"
+                  value=""
+                />
+              </DisabledReasonTooltip>
             ) : undefined
           }
         >

@@ -33,11 +33,19 @@ import {
 } from 'components/redpanda-ui/components/item';
 import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Label } from 'components/redpanda-ui/components/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
+  Box,
   Check,
   ChevronDown,
   ChevronRight,
@@ -75,6 +83,15 @@ import {
 } from './visual-debuggers';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
+import {
+  getShadowBoxSimulatorOptions,
+  isShadowBoxSimulatorEnabled,
+  resetShadowBoxSimulator,
+  type SimBoxFailure,
+  type SimulatorOptions,
+  setShadowBoxSimulatorEnabled,
+  setShadowBoxSimulatorOptions,
+} from '../../utils/shadow-box-simulator';
 import { FEATURE_FLAGS } from '../constants';
 
 type BadgeProps = React.ComponentProps<typeof Badge>;
@@ -390,6 +407,157 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const SIMULATOR_SWITCHES = [
+  {
+    id: 'noLeader',
+    label: 'No controller leader',
+    description: 'GetShadowBoxStatus and every change return UNAVAILABLE. Each broker still answers for itself.',
+  },
+  {
+    id: 'slowCalls',
+    label: 'Changes take over 5 seconds',
+    description: 'Box, Unbox and settings changes apply, then return DEADLINE_EXCEEDED.',
+  },
+] as const;
+
+const BOX_FAILURES: { value: SimBoxFailure | 'none'; label: string }[] = [
+  { value: 'none', label: 'Box succeeds' },
+  { value: 'feature-inactive', label: 'Not every broker runs v26.3.1' },
+  { value: 'own-shadow-link', label: 'Has a shadow link that hasn’t failed over' },
+  { value: 'data-migration', label: 'A data migration is unfinished' },
+  { value: 'cluster-recovery', label: 'A cluster recovery is running' },
+  { value: 'read-replica', label: 'A topic is a read replica' },
+];
+
+function SimulatorRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-center gap-2.5 border-b px-3 py-1.5 last:border-0">{children}</div>;
+}
+
+function SimulatorRowText({ label, description }: { label: string; description: string }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="text-body-sm font-medium">{label}</div>
+      <div className="text-body-sm text-muted-foreground">{description}</div>
+    </div>
+  );
+}
+
+function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
+  const enabled = isShadowBoxSimulatorEnabled();
+  const options = getShadowBoxSimulatorOptions();
+  const flagOn = Boolean(getEffectiveFlags().enableShadowBoxing);
+  const update = (change: Partial<SimulatorOptions>) => {
+    setShadowBoxSimulatorOptions(change);
+    onMutate();
+  };
+  const brokers = Array.from({ length: options.brokerCount }, (_, index) => index + 1);
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {flagOn ? null : (
+        <div className="rounded-md border border-warning-line bg-warning-wash px-3 py-2 text-body-sm">
+          The <InlineCode>enableShadowBoxing</InlineCode> flag is off, so the shadow boxing UI stays hidden. Turn it on
+          in Feature flags (or in Cloud UI when embedded).
+        </div>
+      )}
+      <div className="overflow-hidden rounded-md border">
+        <SimulatorRow>
+          <Switch
+            checked={enabled}
+            onCheckedChange={(checked) => {
+              setShadowBoxSimulatorEnabled(checked);
+              onMutate();
+            }}
+            testId="debug-shadow-box-simulator"
+          />
+          <SimulatorRowText
+            description="Answers ShadowBoxService in the browser, per cluster, the way the Admin API does. Cloud UI on the same origin reads the same simulated boxes."
+            label="Simulate the Shadow Box API"
+          />
+        </SimulatorRow>
+        <SimulatorRow>
+          <SimulatorRowText
+            description="A stopped broker doesn’t answer and never picks up a change, so it holds any move until it’s back. There’s no timeout."
+            label="Brokers"
+          />
+          <div className="flex shrink-0 flex-wrap gap-1.5">
+            {brokers.map((nodeId) => {
+              const down = options.downBrokers.includes(nodeId);
+              return (
+                <Button
+                  aria-pressed={down}
+                  disabled={!enabled}
+                  key={nodeId}
+                  onClick={() =>
+                    update({
+                      downBrokers: down
+                        ? options.downBrokers.filter((id) => id !== nodeId)
+                        : [...options.downBrokers, nodeId],
+                    })
+                  }
+                  size="xs"
+                  testId={`debug-shadow-box-broker-${nodeId}`}
+                  variant={down ? 'destructive' : 'outline'}
+                >
+                  {down ? `Start broker ${nodeId}` : `Stop broker ${nodeId}`}
+                </Button>
+              );
+            })}
+          </div>
+        </SimulatorRow>
+        <SimulatorRow>
+          <SimulatorRowText
+            description="Box fails with FAILED_PRECONDITION for this reason."
+            label="Box preconditions"
+          />
+          <Select
+            disabled={!enabled}
+            onValueChange={(value) => update({ boxFailure: value === 'none' ? null : (value as SimBoxFailure) })}
+            value={options.boxFailure ?? 'none'}
+          >
+            <SelectTrigger className="w-56" size="sm" testId="debug-shadow-box-failure">
+              <SelectValue>
+                {(value: unknown) => BOX_FAILURES.find((failure) => failure.value === value)?.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              {BOX_FAILURES.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SimulatorRow>
+        {SIMULATOR_SWITCHES.map(({ id, label, description }) => (
+          <SimulatorRow key={id}>
+            <Switch
+              checked={options[id]}
+              disabled={!enabled}
+              onCheckedChange={(checked) => update({ [id]: checked })}
+            />
+            <SimulatorRowText description={description} label={label} />
+          </SimulatorRow>
+        ))}
+      </div>
+      <div>
+        <Button
+          icon={<Trash2 />}
+          onClick={() => {
+            resetShadowBoxSimulator();
+            toast.success('Reset every simulated shadow box to unboxed');
+            onMutate();
+          }}
+          size="xs"
+          variant="destructive-ghost"
+        >
+          Reset simulated boxes
+        </Button>
       </div>
     </div>
   );
@@ -752,7 +920,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
+type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'shadowbox' | 'storage' | 'env' | 'configs';
 
 const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   overview: {
@@ -772,6 +940,10 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
     title: 'Feature flags',
     description:
       'Override config.featureFlags locally. Overrides persist to localStorage; reload after toggling — most components read flags during render.',
+  },
+  shadowbox: {
+    title: 'Shadow box',
+    description: 'Stand in for the Shadow Box API, which no released Redpanda serves yet, and force its failure modes.',
   },
   storage: {
     title: 'Storage',
@@ -801,6 +973,7 @@ const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: Re
     items: [
       { id: 'visual', label: 'Visual', icon: <Eye className="h-3.5 w-3.5 shrink-0" /> },
       { id: 'flags', label: 'Feature flags', icon: <Flag className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'shadowbox', label: 'Shadow box', icon: <Box className="h-3.5 w-3.5 shrink-0" /> },
     ],
   },
   {
@@ -906,6 +1079,8 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         return <VisualPanel onMutate={forceUpdate} />;
       case 'flags':
         return <FeatureFlagsPanel onMutate={forceUpdate} />;
+      case 'shadowbox':
+        return <ShadowBoxPanel onMutate={forceUpdate} />;
       case 'storage':
         return <StoragePanel />;
       case 'env':
