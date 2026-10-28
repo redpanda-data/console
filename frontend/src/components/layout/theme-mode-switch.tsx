@@ -47,7 +47,10 @@ export const ThemeModeSwitch = () => {
       >
         {THEME_OPTIONS.map(({ value, label, Icon }) => (
           <Tooltip key={value}>
-            <TooltipTrigger render={<ToggleGroupItem aria-label={label} value={value} />}>
+            <TooltipTrigger
+              render={<ToggleGroupItem aria-label={label} value={value} />}
+              testId={`ColorModeSwitch-${value}`}
+            >
               <Icon aria-hidden />
             </TooltipTrigger>
             <TooltipContent>{label}</TooltipContent>

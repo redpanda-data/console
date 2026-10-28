@@ -132,8 +132,8 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. Light by
-          default; dark is opt-in through the header's switch (`enableDarkMode`). */}
+      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. The default
+          theme comes from STANDALONE_THEME_INIT (theme-init.ts). */}
       <ThemeProvider {...STANDALONE_THEME_INIT}>
         {/* showToast viewport, above the router so the error boundary and login can toast */}
         <BaseUiToaster testId="console-toasts" />

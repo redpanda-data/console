@@ -39,6 +39,7 @@ describe('the ThemeModeSwitch', () => {
       'Dark',
     ]);
     expect(screen.getByRole('button', { name: 'Light' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('ColorModeSwitch-dark')).toHaveAccessibleName('Dark');
   });
 
   test('stores the choice and applies it to the document', async () => {
