@@ -301,21 +301,22 @@ const useDefaultTab = (): ShadowLinksTab | undefined => {
   if ((shadowLinksData?.shadowLinks.length ?? 0) > 0) {
     return 'links';
   }
-  if (known && hasBoxActivity(summary.phase)) {
-    return 'source';
-  }
-  if (topology && topology.readers.length > 0) {
+  if ((known && hasBoxActivity(summary.phase)) || (topology?.readers.length ?? 0) > 0) {
     return 'source';
   }
   const settled = !isLoading && (known || isError) && !topology?.resolving;
   return settled ? 'links' : undefined;
 };
 
-export const ShadowLinkListPage = () => {
-  const navigate = useNavigate();
+const useRequestedTab = (): ShadowLinksTab | undefined => {
   // Read from the location, not the route match: the page also renders outside its route in tests.
   const searchTab = (useLocation().search as { tab?: unknown }).tab;
-  const requestedTab = searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
+  return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
+};
+
+export const ShadowLinkListPage = () => {
+  const navigate = useNavigate();
+  const requestedTab = useRequestedTab();
   const { available } = useShadowBoxStatusQuery();
   const defaultTab = useDefaultTab();
   const tab = requestedTab ?? defaultTab;
@@ -325,7 +326,9 @@ export const ShadowLinkListPage = () => {
   // Write the resolved default into the URL, so the banner and the host see which tab is showing.
   useEffect(() => {
     if (available && defaultTab && !requestedTab) {
-      navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true });
+      navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true }).catch((error: unknown) => {
+        toast.error('Failed to open the shadow links tab', { description: String(error) });
+      });
     }
   }, [available, requestedTab, defaultTab, navigate]);
 
@@ -349,11 +352,11 @@ export const ShadowLinkListPage = () => {
         </TabsTrigger>
       </TabsList>
       {tab ? (
-        <TabsContents>
-          <TabsContent className="pt-4" value="links">
+        <TabsContents className="mt-4">
+          <TabsContent value="links">
             <ShadowLinksOnThisCluster />
           </TabsContent>
-          <TabsContent className="pt-4" value="source">
+          <TabsContent value="source">
             <ShadowBoxSourcePanel />
           </TabsContent>
         </TabsContents>

@@ -32,6 +32,27 @@ const readConfirmation = (key: string) => {
   }
 };
 
+/** The operator's word that the source is boxed, for links Console can't read the box of. */
+const useManualConfirmation = (key: string) => {
+  // Keyed, so a link that loads after the page (or a different link) reads its own confirmation.
+  const [stored, setStored] = useState<{ key: string; confirmed: boolean } | null>(null);
+  const confirmed = stored?.key === key ? stored.confirmed : readConfirmation(key);
+
+  const setConfirmed = useCallback(
+    (value: boolean) => {
+      setStored({ key, confirmed: value });
+      try {
+        window.sessionStorage.setItem(key, String(value));
+      } catch {
+        // Confirmation then lasts only as long as this page.
+      }
+    },
+    [key]
+  );
+
+  return [confirmed, setConfirmed] as const;
+};
+
 /**
  * Everything the Cutover tab and the failover dialog need to say whether failing over is safe: the
  * source cluster's box (read by Cloud, or confirmed by hand) and every topic's lag. Pass a short
@@ -42,7 +63,6 @@ export const useCutoverReadiness = (
   { pollMs, enabled }: { pollMs: number; enabled: boolean }
 ) => {
   const linkName = link?.name ?? '';
-  const key = confirmationKey(linkName);
   const source = useShadowBoxStore((state) => (linkName ? state.topology?.sources[linkName] : undefined));
   const topology = useShadowBoxStore((state): TopologyState => {
     if (!state.topology) {
@@ -50,9 +70,7 @@ export const useCutoverReadiness = (
     }
     return state.topology.resolving ? 'resolving' : 'resolved';
   });
-  // Keyed, so a link that loads after the page (or a different link) reads its own confirmation.
-  const [stored, setStored] = useState<{ key: string; confirmed: boolean } | null>(null);
-  const manuallyConfirmed = stored?.key === key ? stored.confirmed : readConfirmation(key);
+  const [manuallyConfirmed, setConfirmed] = useManualConfirmation(confirmationKey(linkName));
 
   const topicsQuery = useListShadowTopicQuery(
     { shadowLinkName: linkName, pageSize: -1 },
@@ -60,18 +78,6 @@ export const useCutoverReadiness = (
       enabled: enabled && Boolean(linkName),
       refetchInterval: (query) => (query.state.status === 'error' ? Math.max(pollMs, ERROR_POLL_MS) : pollMs),
     }
-  );
-
-  const setConfirmed = useCallback(
-    (confirmed: boolean) => {
-      setStored({ key, confirmed });
-      try {
-        window.sessionStorage.setItem(key, String(confirmed));
-      } catch {
-        // Confirmation then lasts only as long as this page.
-      }
-    },
-    [key]
   );
 
   const linkIdentity = useMemo(() => getLinkIdentity(link), [link]);

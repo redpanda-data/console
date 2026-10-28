@@ -66,122 +66,133 @@ describe('the FailoverDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  test('a single topic is judged on its own lag', () => {
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={readiness(true, 0)}
-        topicName="orders-events"
-      />
-    );
+  describe('the readiness checks', () => {
+    test('a single topic is judged on its own lag', () => {
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={readiness(true, 0)}
+          topicName="orders-events"
+        />
+      );
 
-    expect(screen.getByText('Fail over orders-events?')).toBeVisible();
-    expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('orders-events has caught up.');
-  });
-
-  test('while the topics load, leaves the lag check open rather than calling it ready', () => {
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={getCutoverReadiness({ topics: undefined, box: readiness(true, 0).box })}
-      />
-    );
-
-    expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
-  });
-
-  test('a faulted topic isn’t safe to fail over', () => {
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n }],
-          box: readiness(true, 0).box,
-        })}
-        topicName="orders-audit"
-      />
-    );
-
-    expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('orders-audit has faulted');
-    expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
-  });
-
-  test('a box that blocks this link’s reads isn’t safe to fail over behind', () => {
-    const blocking = getSourceBoxStep({
-      source: {
-        kind: 'cloud',
-        clusterId: 'prod',
-        clusterName: 'prod-us-east-1',
-        box: {
-          status: 'known',
-          state: 'boxed',
-          revision: '18',
-          exemptPrincipals: [],
-          allowAllReads: false,
-          skipTransactionExpiration: false,
-          brokers: [],
-        },
-      },
-      link: { authentication: 'sasl', principal: 'shadow-orders' },
-      topology: 'resolved',
-      manuallyConfirmed: false,
+      expect(screen.getByText('Fail over orders-events?')).toBeVisible();
+      expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('orders-events has caught up.');
     });
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
-          box: blocking,
-        })}
-      />
-    );
 
-    expect(screen.getByTestId('failover-check-source')).toHaveAttribute('data-status', 'not-ready');
-    expect(screen.getByTestId('failover-check-source')).toHaveTextContent('block this link’s fetches');
-    expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
-  });
+    test('while the topics load, leaves the lag check open rather than calling it ready', () => {
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={getCutoverReadiness({ topics: undefined, box: readiness(true, 0).box })}
+        />
+      );
 
-  test('doesn’t call lag caught up when the last refresh failed', () => {
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
-          topicsFailed: true,
-          box: readiness(true, 0).box,
-        })}
-      />
-    );
+      expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
+    });
 
-    expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
-    expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('couldn’t refresh');
-  });
+    test('a faulted topic isn’t safe to fail over', () => {
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={getCutoverReadiness({
+            topics: [{ topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n }],
+            box: readiness(true, 0).box,
+          })}
+          topicName="orders-audit"
+        />
+      );
 
-  test('failing over every topic says a paused topic will be refused', () => {
-    render(
-      <FailoverDialog
-        onConfirm={rs.fn()}
-        onOpenChange={rs.fn()}
-        open
-        readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.PAUSED, totalLag: 0n }],
-          box: readiness(true, 0).box,
-        })}
-      />
-    );
+      expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('orders-audit has faulted');
+      expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
+    });
 
-    expect(screen.getByTestId('failover-check-paused')).toHaveAttribute('data-status', 'not-ready');
-    expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
+    test('a box that blocks this link’s reads isn’t safe to fail over behind', () => {
+      const blocking = getSourceBoxStep({
+        source: {
+          kind: 'cloud',
+          clusterId: 'prod',
+          clusterName: 'prod-us-east-1',
+          box: {
+            status: 'known',
+            state: 'boxed',
+            revision: '18',
+            exemptPrincipals: [],
+            allowAllReads: false,
+            skipTransactionExpiration: false,
+            brokers: [],
+          },
+        },
+        link: { authentication: 'sasl', principal: 'shadow-orders' },
+        topology: 'resolved',
+        manuallyConfirmed: false,
+      });
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={getCutoverReadiness({
+            topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
+            box: blocking,
+          })}
+        />
+      );
+
+      expect(screen.getByTestId('failover-check-source')).toHaveAttribute('data-status', 'not-ready');
+      expect(screen.getByTestId('failover-check-source')).toHaveTextContent('block this link’s fetches');
+      expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
+    });
+
+    test('doesn’t call lag caught up when the last refresh failed', () => {
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={getCutoverReadiness({
+            topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
+            topicsFailed: true,
+            box: readiness(true, 0).box,
+          })}
+        />
+      );
+
+      expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
+      expect(screen.getByTestId('failover-check-lag')).toHaveTextContent('couldn’t refresh');
+    });
+
+    test('failing over every topic says a paused topic will be refused', () => {
+      render(
+        <FailoverDialog
+          onConfirm={rs.fn()}
+          onOpenChange={rs.fn()}
+          open
+          readiness={getCutoverReadiness({
+            topics: [{ topicName: 'orders-events', state: ShadowTopicState.PAUSED, totalLag: 0n }],
+            box: readiness(true, 0).box,
+          })}
+        />
+      );
+
+      expect(screen.getByTestId('failover-check-paused')).toHaveAttribute('data-status', 'not-ready');
+      expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
+    });
+
+    test('waits for a fresh lag reading before it vouches for one', () => {
+      render(
+        <FailoverDialog checkingLag onConfirm={rs.fn()} onOpenChange={rs.fn()} open readiness={readiness(true, 0)} />
+      );
+
+      expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
+      expect(screen.getByTestId('confirm-failover')).toBeDisabled();
+    });
   });
 
   test('once every topic has failed over, says so instead of offering another failover', () => {
@@ -199,15 +210,6 @@ describe('the FailoverDialog', () => {
 
     expect(screen.getByText('Every topic has failed over')).toBeVisible();
     expect(screen.queryByTestId('confirm-failover')).not.toBeInTheDocument();
-  });
-
-  test('waits for a fresh lag reading before it vouches for one', () => {
-    render(
-      <FailoverDialog checkingLag onConfirm={rs.fn()} onOpenChange={rs.fn()} open readiness={readiness(true, 0)} />
-    );
-
-    expect(screen.getByTestId('failover-check-lag')).toHaveAttribute('data-status', 'unknown');
-    expect(screen.getByTestId('confirm-failover')).toBeDisabled();
   });
 
   test('without shadow boxing, keeps the original confirmation', () => {

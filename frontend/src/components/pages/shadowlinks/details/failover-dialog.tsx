@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,9 +35,13 @@ import {
 type CheckStatus = 'ready' | 'not-ready' | 'unknown';
 
 const CHECK_ICON: Record<CheckStatus, ReactNode> = {
-  ready: <CircleCheckIcon aria-label="Ready" className="mt-0.5 size-4 shrink-0 text-success" />,
-  'not-ready': <CircleAlertIcon aria-label="Not ready" className="mt-0.5 size-4 shrink-0 text-warning" />,
-  unknown: <CircleDashedIcon aria-label="Check yourself" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />,
+  ready: <TonedIcon aria-label="Ready" className="mt-0.5 size-4 shrink-0" icon={CircleCheckIcon} tone="success" />,
+  'not-ready': (
+    <TonedIcon aria-label="Not ready" className="mt-0.5 size-4 shrink-0" icon={CircleAlertIcon} tone="warning" />
+  ),
+  unknown: (
+    <TonedIcon aria-label="Check yourself" className="mt-0.5 size-4 shrink-0" icon={CircleDashedIcon} tone="muted" />
+  ),
 };
 
 type Check = { id: string; status: CheckStatus; text: string };
@@ -91,23 +96,17 @@ const behindCheck = (behind: LagStep['behind'], topicName: string | undefined): 
     : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
 });
 
-const faultedCheck = (faulted: string[], topicName: string | undefined): Check => ({
-  id: 'lag',
-  status: 'not-ready',
-  text: `${topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have')} faulted, so ${faulted.length === 1 ? 'it' : 'they'} may be missing records.`,
-});
+const faultedCheck = (faulted: string[], topicName: string | undefined): Check => {
+  const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
+  return {
+    id: 'lag',
+    status: 'not-ready',
+    text: `${subject} faulted, so ${faulted.length === 1 ? 'it' : 'they'} may be missing records.`,
+  };
+};
 
-const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, checking: boolean): Check => {
-  if (lag.status === 'loading' || checking) {
-    return { id: 'lag', status: 'unknown', text: 'Checking each topic’s lag…' };
-  }
-  if (lag.status === 'unavailable') {
-    return {
-      id: 'lag',
-      status: 'unknown',
-      text: 'Console couldn’t read the topics’ lag. Check that every topic has caught up.',
-    };
-  }
+/** A topic still behind or faulted, among the one being failed over or all of them. */
+const lagProblemCheck = (lag: LagStep, topicName: string | undefined): Check | undefined => {
   const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
   if (behind.length > 0) {
     return behindCheck(behind, topicName);
@@ -116,6 +115,9 @@ const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, chec
   if (faulted.length > 0) {
     return faultedCheck(faulted, topicName);
   }
+};
+
+const caughtUpCheck = (lag: LagStep, topicName: string | undefined): Check => {
   if (lag.stale) {
     return {
       id: 'lag',
@@ -128,6 +130,20 @@ const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, chec
     status: 'ready',
     text: topicName ? `${topicName} has caught up.` : 'Every topic has caught up.',
   };
+};
+
+const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, checking: boolean): Check => {
+  if (lag.status === 'loading' || checking) {
+    return { id: 'lag', status: 'unknown', text: 'Checking each topic’s lag…' };
+  }
+  if (lag.status === 'unavailable') {
+    return {
+      id: 'lag',
+      status: 'unknown',
+      text: 'Console couldn’t read the topics’ lag. Check that every topic has caught up.',
+    };
+  }
+  return lagProblemCheck(lag, topicName) ?? caughtUpCheck(lag, topicName);
 };
 
 /** Fail over all topics is refused while any topic is paused, so say so before the request fails. */

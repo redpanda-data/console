@@ -690,8 +690,8 @@ const SourceLaneSteps = ({
               onCheckedChange={(checked) => onManualConfirmChange(checked === true)}
               testId="cutover-source-boxed-confirmation"
             />
-            <Label className="font-normal" htmlFor="cutover-source-boxed-confirmation">
-              The source cluster reports Boxed, with this link’s user exempt
+            <Label htmlFor="cutover-source-boxed-confirmation">
+              <span className="font-normal">The source cluster reports Boxed, with this link’s user exempt</span>
             </Label>
           </div>
           <p className="text-body-sm text-muted-foreground">
@@ -750,61 +750,63 @@ export const CutoverTab = ({
 
   return (
     <Card size="full" testId="cutover-tab" variant="standard">
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-heading-sm">Cut over from {sourceName}</h2>
-          <p className="text-body text-muted-foreground">
-            Save the settings, box the source, and wait until it reports Boxed. Then fail the link over here. Don’t skip
-            the settings: by default a box blocks every consumer, this link’s user included.
-          </p>
-        </div>
-        <Lane
-          description="The shadow box API on the source cluster. Each change runs on its own page."
-          testId="cutover-lane-source"
-          title={`On ${sourceName}`}
-        >
-          <SourceLaneSteps
-            box={box}
-            linkIdentity={linkIdentity}
-            onManualConfirmChange={onManualConfirmChange}
-            states={states}
-          />
-        </Lane>
-        <Lane
-          dashed
-          description="Shadow linking on this cluster."
-          testId="cutover-lane-shadow"
-          title={`On ${clusterName}`}
-        >
-          <Step
-            index={4}
-            state={states.lag}
-            status={lagBadge(lag, failover.done)}
-            testId="cutover-step-lag"
-            title="Wait for zero lag"
+      <CardContent>
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-heading-sm">Cut over from {sourceName}</h2>
+            <p className="text-body text-muted-foreground">
+              Save the settings, box the source, and wait until it reports Boxed. Then fail the link over here. Don’t
+              skip the settings: by default a box blocks every consumer, this link’s user included.
+            </p>
+          </div>
+          <Lane
+            description="The shadow box API on the source cluster. Each change runs on its own page."
+            testId="cutover-lane-source"
+            title={`On ${sourceName}`}
           >
-            <LagStepBody failedOver={failover.done} lag={lag} onRetry={onRetryTopics} />
-          </Step>
-          <Step
-            index={5}
-            state={states.failover}
-            status={failoverBadge(failover)}
-            testId="cutover-step-failover"
-            title="Fail over"
-          >
-            <FailoverStepBody
-              clusterName={clusterName}
-              isFailingOver={isFailingOver}
-              linkName={shadowLink.name}
-              onFailoverAll={onFailoverAll}
-              readiness={readiness}
-              sourceName={sourceName}
+            <SourceLaneSteps
+              box={box}
+              linkIdentity={linkIdentity}
+              onManualConfirmChange={onManualConfirmChange}
+              states={states}
             />
-          </Step>
-          <Step index={6} state={states.clients} testId="cutover-step-clients" title="Move clients">
-            <MoveClientsStepBody clusterName={clusterName} failedOver={failover.done} sourceName={sourceName} />
-          </Step>
-        </Lane>
+          </Lane>
+          <Lane
+            dashed
+            description="Shadow linking on this cluster."
+            testId="cutover-lane-shadow"
+            title={`On ${clusterName}`}
+          >
+            <Step
+              index={4}
+              state={states.lag}
+              status={lagBadge(lag, failover.done)}
+              testId="cutover-step-lag"
+              title="Wait for zero lag"
+            >
+              <LagStepBody failedOver={failover.done} lag={lag} onRetry={onRetryTopics} />
+            </Step>
+            <Step
+              index={5}
+              state={states.failover}
+              status={failoverBadge(failover)}
+              testId="cutover-step-failover"
+              title="Fail over"
+            >
+              <FailoverStepBody
+                clusterName={clusterName}
+                isFailingOver={isFailingOver}
+                linkName={shadowLink.name}
+                onFailoverAll={onFailoverAll}
+                readiness={readiness}
+                sourceName={sourceName}
+              />
+            </Step>
+            <Step index={6} state={states.clients} testId="cutover-step-clients" title="Move clients">
+              <MoveClientsStepBody clusterName={clusterName} failedOver={failover.done} sourceName={sourceName} />
+            </Step>
+          </Lane>
+        </div>
       </CardContent>
     </Card>
   );

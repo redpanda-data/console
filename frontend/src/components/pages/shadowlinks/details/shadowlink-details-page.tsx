@@ -93,8 +93,8 @@ const ShadowLinkDetailsTabs = ({
       }
     : { defaultValue: 'overview' };
   return (
-    <Tabs className="gap-6" {...tabState}>
-      <TabsList testId="shadowlink-details-tabs" variant="underline">
+    <Tabs {...tabState}>
+      <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
         <TabsTrigger testId="overview-tab" value="overview" variant="underline">
           Overview
         </TabsTrigger>
@@ -227,12 +227,14 @@ const useShadowLinkFailover = (
 
   /** The dialog vouches for lag only from a read taken as it opens: the last poll can be a minute old. */
   const [checkingLag, setCheckingLag] = useState(false);
+  const stopCheckingLag = () => setCheckingLag(false);
   const openFailoverDialog = (topicName?: string) => {
     setFailoverTopicName(topicName || '');
     setShowFailoverDialog(true);
     if (cutoverAvailable) {
       setCheckingLag(true);
-      Promise.resolve(refetchTopics()).finally(() => setCheckingLag(false));
+      // A failed read ends the check too: the dialog then reports the lag as unreadable or out of date.
+      refetchTopics().then(stopCheckingLag, stopCheckingLag);
     }
   };
 

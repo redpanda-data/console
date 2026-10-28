@@ -24,9 +24,12 @@ rs.mock('react-query/api/shadow-box', () => {
   const actual = rs.requireActual<typeof import('react-query/api/shadow-box')>('react-query/api/shadow-box');
   return { ...actual, useShadowBoxStatusQuery: rs.fn() };
 });
-rs.mock('components/shadow-box/shadow-box-source-panel', () => ({
-  ShadowBoxSourcePanel: () => <div data-testid="shadow-box-source-panel-stub" />,
-}));
+
+function MockShadowBoxSourcePanel() {
+  return <div data-testid="shadow-box-source-panel-stub" />;
+}
+
+rs.mock('components/shadow-box/shadow-box-source-panel', () => ({ ShadowBoxSourcePanel: MockShadowBoxSourcePanel }));
 
 // Mock ui-state (mutated in a useEffect for breadcrumbs/title).
 rs.mock('state/ui-state', () => ({

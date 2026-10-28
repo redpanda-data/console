@@ -222,21 +222,7 @@ const sourceBoxReason = (box: SourceBoxStep): string | undefined => {
     : 'Available once the source cluster reports Boxed.';
 };
 
-const failoverReason = (
-  topics: CutoverTopic[] | undefined,
-  topicsFailed: boolean,
-  box: SourceBoxStep,
-  lag: LagStep
-): string | undefined => {
-  if (topics === undefined) {
-    return topicsFailed
-      ? 'Couldn’t load the link’s topics, so Console can’t check their lag.'
-      : 'Loading the link’s topics.';
-  }
-  const boxReason = sourceBoxReason(box);
-  if (boxReason) {
-    return boxReason;
-  }
+const lagReason = (lag: LagStep): string | undefined => {
   if (lag.stale) {
     return 'Couldn’t refresh the topics’ lag, so Console can’t confirm they’ve caught up.';
   }
@@ -249,6 +235,20 @@ const failoverReason = (
   if (lag.faulted.length > 0) {
     return `${topicsSubject(lag.faulted, 'has', 'have')} faulted, so ${lag.faulted.length === 1 ? 'it' : 'they'} may be missing records. Fix ${lag.faulted.length === 1 ? 'it' : 'them'}, or fail over anyway from the top of the page.`;
   }
+};
+
+const failoverReason = (
+  topics: CutoverTopic[] | undefined,
+  topicsFailed: boolean,
+  box: SourceBoxStep,
+  lag: LagStep
+): string | undefined => {
+  if (topics === undefined) {
+    return topicsFailed
+      ? 'Couldn’t load the link’s topics, so Console can’t check their lag.'
+      : 'Loading the link’s topics.';
+  }
+  return sourceBoxReason(box) ?? lagReason(lag);
 };
 
 export const getCutoverReadiness = ({
@@ -283,6 +283,24 @@ export type CutoverStepState = 'done' | 'current' | 'pending' | 'attention';
 
 export type CutoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
 
+type SourceStepStates = Pick<Record<CutoverStepId, CutoverStepState>, 'settings' | 'box' | 'boxed'>;
+
+/** The three steps on the source. Without a Cloud box to read, the operator confirms all three at once. */
+const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
+  if (box.kind === 'manual' && box.confirmed) {
+    return { settings: 'done', box: 'done', boxed: 'done' };
+  }
+  if (box.kind !== 'cloud') {
+    return { settings: 'current', box: 'pending', boxed: 'pending' };
+  }
+  const settings = box.linkExempt === false ? 'attention' : 'done';
+  const phase = box.box.state;
+  if (phase === 'boxing' || phase === 'boxed') {
+    return { settings, box: 'done', boxed: box.boxed ? 'done' : 'current' };
+  }
+  return { settings, box: settings === 'done' ? 'current' : 'pending', boxed: 'pending' };
+};
+
 /**
  * The reference's six steps, three on the source and three here. Each unlocks when the one before
  * it is done; a finished failover marks the first five done and makes moving clients current. A
@@ -296,40 +314,15 @@ export const getCutoverStepStates = ({
   if (failover.done) {
     return { settings: 'done', box: 'done', boxed: 'done', lag: 'done', failover: 'done', clients: 'current' };
   }
-  const states: Record<CutoverStepId, CutoverStepState> = {
-    settings: 'current',
-    box: 'pending',
-    boxed: 'pending',
-    lag: 'pending',
-    failover: 'pending',
-    clients: 'pending',
-  };
-  if (box.kind === 'manual') {
-    if (box.confirmed) {
-      states.settings = 'done';
-      states.box = 'done';
-      states.boxed = 'done';
-    }
-  } else if (box.kind === 'cloud') {
-    const phase = box.box.state;
-    const requested = phase === 'boxing' || phase === 'boxed';
-    if (box.linkExempt === false) {
-      states.settings = 'attention';
-    } else {
-      states.settings = 'done';
-    }
-    if (requested) {
-      states.box = 'done';
-      states.boxed = box.boxed ? 'done' : 'current';
-    } else if (states.settings === 'done') {
-      states.box = 'current';
-    }
-  }
+  const sourceSteps = getSourceStepStates(box);
   if (!isSourceBoxReady(box)) {
-    return states;
+    return { ...sourceSteps, lag: 'pending', failover: 'pending', clients: 'pending' };
   }
   const lagDone = lag.status === 'caught-up' && !lag.stale;
-  states.lag = lagDone ? 'done' : 'current';
-  states.failover = lagDone ? 'current' : 'pending';
-  return states;
+  return {
+    ...sourceSteps,
+    lag: lagDone ? 'done' : 'current',
+    failover: lagDone ? 'current' : 'pending',
+    clients: 'pending',
+  };
 };

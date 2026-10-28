@@ -43,18 +43,49 @@ rs.mock('react-query/api/shadowlink', () => ({
   })),
   useDeleteShadowLinkUnified: rs.fn(() => ({ deleteShadowLink: rs.fn(), isPending: false })),
   useFailoverShadowLinkMutation: rs.fn(() => ({ mutate: rs.fn(), isPending: false })),
-  useListShadowTopicQuery: rs.fn(() => ({ data: undefined, isError: false, error: null, refetch: rs.fn() })),
+  useListShadowTopicQuery: rs.fn(() => ({
+    data: undefined,
+    isError: false,
+    error: null,
+    refetch: rs.fn(() => Promise.resolve({})),
+  })),
 }));
-rs.mock('./shadow-link-details', () => ({ ShadowLinkDetails: () => <div data-testid="overview-stub" /> }));
-rs.mock('./tasks-table', () => ({ TasksTable: () => null }));
-rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: () => null }));
-rs.mock('./cutover-tab', () => ({ CutoverTab: () => <div data-testid="cutover-stub" /> }));
+
+function MockShadowLinkDetails() {
+  return <div data-testid="overview-stub" />;
+}
+
+function MockTasksTable() {
+  return null;
+}
+
+function MockShadowLinkConfiguration() {
+  return null;
+}
+
+function MockCutoverTab() {
+  return <div data-testid="cutover-stub" />;
+}
+
+rs.mock('./shadow-link-details', () => ({ ShadowLinkDetails: MockShadowLinkDetails }));
+rs.mock('./tasks-table', () => ({ TasksTable: MockTasksTable }));
+rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: MockShadowLinkConfiguration }));
+rs.mock('./cutover-tab', () => ({ CutoverTab: MockCutoverTab }));
 rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
 
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
 import { render } from 'test-utils';
 
 import { ShadowLinkDetailsPage } from './shadowlink-details-page';
+
+/** Opens the page at ?tab=cutover, which only means something with shadow boxing on. */
+const renderAtCutoverTab = (shadowBoxing: boolean) => {
+  const user = userEvent.setup();
+  flags.enableShadowBoxing = shadowBoxing;
+  route.search = { tab: 'cutover' };
+  render(<ShadowLinkDetailsPage />);
+  return user;
+};
 
 describe('the ShadowLinkDetailsPage', () => {
   beforeEach(() => {
@@ -63,10 +94,7 @@ describe('the ShadowLinkDetailsPage', () => {
   });
 
   test('with shadow boxing off, looks and fetches exactly as before', async () => {
-    const user = userEvent.setup();
-    flags.enableShadowBoxing = false;
-    route.search = { tab: 'cutover' };
-    render(<ShadowLinkDetailsPage />);
+    const user = renderAtCutoverTab(false);
 
     expect(screen.queryByTestId('cutover-tab-trigger')).not.toBeInTheDocument();
     expect(screen.getByTestId('overview-stub')).toBeInTheDocument();
@@ -79,10 +107,7 @@ describe('the ShadowLinkDetailsPage', () => {
   });
 
   test('with shadow boxing on, adds the Cutover tab, reads lag, and checks readiness before failing over', async () => {
-    const user = userEvent.setup();
-    flags.enableShadowBoxing = true;
-    route.search = { tab: 'cutover' };
-    render(<ShadowLinkDetailsPage />);
+    const user = renderAtCutoverTab(true);
 
     expect(screen.getByTestId('cutover-tab-trigger')).toBeInTheDocument();
     expect(screen.getByTestId('cutover-stub')).toBeInTheDocument();

@@ -23,10 +23,10 @@ export type ShadowLinkConfigurationProps = {
 };
 
 export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
-  <Tabs className="items-start gap-8" defaultValue="all" orientation="vertical">
+  <Tabs className="items-start" defaultValue="all" orientation="vertical">
     <TabsList
       aria-label="Configuration sections"
-      className="sticky top-4 w-52 shrink-0"
+      className="sticky top-4 mr-6 w-52 shrink-0"
       testId="configuration-subtabs"
       variant="nav"
     >

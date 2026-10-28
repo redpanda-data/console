@@ -95,6 +95,16 @@ const renderTab = (
     />
   );
 
+const EXTERNAL_SOURCE: ShadowLinkSource = { kind: 'external', bootstrapServers: ['kafka-01.corp.example:9092'] };
+
+const expectLane = (testId: string, title: string, stepIds: string[]) => {
+  const lane = screen.getByTestId(testId);
+  expect(lane).toHaveTextContent(title);
+  for (const stepId of stepIds) {
+    expect(within(lane).getByTestId(stepId)).toBeVisible();
+  }
+};
+
 describe('the CutoverTab', () => {
   const openCluster = rs.fn();
 
@@ -110,249 +120,267 @@ describe('the CutoverTab', () => {
     renderTab(cloudReadiness('unboxed', [0, 0]));
 
     expect(screen.getByText('Cut over from prod-us-east-1')).toBeVisible();
-    const source = screen.getByTestId('cutover-lane-source');
-    expect(source).toHaveTextContent('On prod-us-east-1');
-    expect(within(source).getByTestId('cutover-step-settings')).toBeVisible();
-    expect(within(source).getByTestId('cutover-step-box')).toBeVisible();
-    expect(within(source).getByTestId('cutover-step-boxed')).toBeVisible();
-    const shadow = screen.getByTestId('cutover-lane-shadow');
-    expect(shadow).toHaveTextContent('On dr-us-west-2');
-    expect(within(shadow).getByTestId('cutover-step-lag')).toBeVisible();
-    expect(within(shadow).getByTestId('cutover-step-failover')).toBeVisible();
-    expect(within(shadow).getByTestId('cutover-step-clients')).toBeVisible();
+    expectLane('cutover-lane-source', 'On prod-us-east-1', [
+      'cutover-step-settings',
+      'cutover-step-box',
+      'cutover-step-boxed',
+    ]);
+    expectLane('cutover-lane-shadow', 'On dr-us-west-2', [
+      'cutover-step-lag',
+      'cutover-step-failover',
+      'cutover-step-clients',
+    ]);
     expect(screen.getByTestId('cutover-tab')).toHaveTextContent('Don’t skip the settings');
   });
 
-  test('with the link exempt, Box is next; it opens the source, where Box runs', async () => {
-    const user = userEvent.setup();
-    renderTab(cloudReadiness('unboxed', [0, 0]));
+  describe('on the source', () => {
+    test('with the link exempt, Box is next; it opens the source, where Box runs', async () => {
+      const user = userEvent.setup();
+      renderTab(cloudReadiness('unboxed', [0, 0]));
 
-    expect(screen.getByTestId('cutover-step-settings')).toHaveAttribute('data-state', 'done');
-    expect(screen.getByTestId('cutover-step-box')).toHaveAttribute('data-state', 'current');
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-    expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent(
-      'Available once the source cluster reports Boxed.'
-    );
+      expect(screen.getByTestId('cutover-step-settings')).toHaveAttribute('data-state', 'done');
+      expect(screen.getByTestId('cutover-step-box')).toHaveAttribute('data-state', 'current');
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+      expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent(
+        'Available once the source cluster reports Boxed.'
+      );
 
-    await user.click(screen.getByTestId('cutover-open-source'));
-    expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=box');
-  });
-
-  test('before boxing, settings that would block this link come first: exempt its user on the source', async () => {
-    const user = userEvent.setup();
-    renderTab(cloudReadiness('unboxed', [5], []));
-
-    expect(screen.getByTestId('cutover-step-settings')).toHaveAttribute('data-state', 'attention');
-    expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Once the source is boxed');
-    expect(screen.getByTestId('cutover-open-source')).toBeDisabled();
-
-    await user.click(screen.getByTestId('cutover-exempt-link'));
-    expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=exempt&principal=shadow-orders');
-  });
-
-  test('once boxed with the link blocked, says its fetches are rejected and that saving reboxes', () => {
-    renderTab(cloudReadiness('boxed', [0], []));
-
-    expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Its brokers reject this link’s fetches');
-    expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('writes stay blocked the whole time');
-    expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Link can’t read');
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-  });
-
-  test('while boxing, waits for Boxed and names a broker that holds it', () => {
-    renderTab(
-      readinessFor(
-        cloudSource(
-          'boxing',
-          ['shadow-orders'],
-          [
-            { nodeId: 1, status: 'confirmed' },
-            { nodeId: 2, status: 'not-answering' },
-          ]
-        ),
-        topics([3])
-      )
-    );
-
-    expect(screen.getByTestId('cutover-step-box')).toHaveAttribute('data-state', 'done');
-    expect(screen.getByTestId('cutover-step-boxed')).toHaveAttribute('data-state', 'current');
-    expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('1 of 2 brokers have confirmed.');
-    expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('Broker 2 isn’t answering');
-    expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('There’s no timeout.');
-  });
-
-  test('once the source is boxed, offers to open or unbox it there', async () => {
-    const user = userEvent.setup();
-    renderTab(cloudReadiness('boxed', [5]));
-
-    await user.click(screen.getByTestId('cutover-unbox-source'));
-    expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=unbox');
-    await user.click(screen.getByTestId('cutover-view-source'));
-    expect(openCluster).toHaveBeenLastCalledWith('prod', '/shadowlinks?tab=source');
-  });
-
-  test('while lag drains, names the topic furthest behind', () => {
-    renderTab(cloudReadiness('boxed', [1204, 0, 0]));
-
-    expect(screen.getByTestId('cutover-step-boxed')).toHaveAttribute('data-state', 'done');
-    expect(screen.getByTestId('cutover-step-lag')).toHaveAttribute('data-state', 'current');
-    expect(screen.getByTestId('cutover-lag-summary')).toHaveTextContent(
-      '2 of 3 topics caught up. orders-events is 1,204 messages behind.'
-    );
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-  });
-
-  test('unlocks failover once the source is boxed and every topic has caught up', async () => {
-    const user = userEvent.setup();
-    const onFailoverAll = rs.fn();
-    renderTab(cloudReadiness('boxed', [0, 0]), { onFailoverAll });
-
-    expect(screen.getByTestId('cutover-step-failover')).toHaveAttribute('data-state', 'current');
-    await user.click(screen.getByTestId('cutover-failover-all'));
-    expect(onFailoverAll).toHaveBeenCalledTimes(1);
-  });
-
-  test('for an mTLS link, says Console can’t check the exempt list', () => {
-    renderTab(
-      readinessFor(cloudSource('boxed', ['shadow-orders']), topics([0]), { identity: { authentication: 'mtls' } }),
-      {
-        identity: { authentication: 'mtls' },
-      }
-    );
-
-    expect(screen.getByTestId('cutover-link-principal-unknown')).toHaveTextContent('mapping rules');
-  });
-
-  test('a link without SASL or mTLS is exempted with the empty name', async () => {
-    const user = userEvent.setup();
-    const identity: LinkIdentity = { authentication: 'none' };
-    renderTab(readinessFor(cloudSource('unboxed', ['shadow-orders']), topics([0]), { identity }), { identity });
-
-    await user.click(screen.getByTestId('cutover-exempt-link'));
-    expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=exempt&principal=');
-  });
-
-  test('when a refresh fails, keeps the last lag on screen but marks it out of date and locks failover', async () => {
-    const user = userEvent.setup();
-    const onRetryTopics = rs.fn();
-    renderTab(readinessFor(cloudSource('boxed'), topics([0, 0]), { topicsFailed: true }), { onRetryTopics });
-
-    expect(screen.getByTestId('cutover-lag-stale')).toBeVisible();
-    expect(screen.getByTestId('cutover-lag-summary')).toHaveTextContent('2 of 2 topics caught up.');
-    expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Out of date');
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-    await user.click(screen.getByTestId('cutover-lag-retry'));
-    expect(onRetryTopics).toHaveBeenCalledTimes(1);
-  });
-
-  test('while topics are still failing over, says so and keeps moving clients for later', () => {
-    renderTab(
-      readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAILING_OVER, totalLag: 0n },
-      ])
-    );
-
-    expect(screen.queryByTestId('cutover-done')).not.toBeInTheDocument();
-    expect(screen.getByTestId('cutover-step-failover')).toHaveTextContent('Failing over');
-    expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent('Failing over 1 topic…');
-    expect(screen.getByTestId('cutover-step-clients')).toHaveAttribute('data-state', 'pending');
-  });
-
-  test('without a readable source box, gives each source step its Admin API call and a manual confirmation', async () => {
-    const user = userEvent.setup();
-    const onManualConfirmChange = rs.fn();
-    renderTab(readinessFor({ kind: 'external', bootstrapServers: ['kafka-01.corp.example:9092'] }, topics([0])), {
-      onManualConfirmChange,
+      await user.click(screen.getByTestId('cutover-open-source'));
+      expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=box');
     });
 
-    expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent('kafka-01.corp.example:9092');
-    expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent('"exemptPrincipals":["shadow-orders"]');
-    expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent(
-      '"updateMask":"readPolicy.exemptPrincipals"'
-    );
-    expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent('admin_api_require_auth');
-    expect(screen.getByTestId('cutover-admin-api-box')).toHaveTextContent('ShadowBoxService/Box');
-    expect(screen.getByTestId('cutover-admin-api-status')).toHaveTextContent('SHADOW_BOX_STATE_BOXED');
-    await user.click(screen.getByTestId('cutover-source-boxed-confirmation'));
-    expect(onManualConfirmChange).toHaveBeenCalledWith(true);
+    test('before boxing, settings that would block this link come first: exempt its user on the source', async () => {
+      const user = userEvent.setup();
+      renderTab(cloudReadiness('unboxed', [5], []));
+
+      expect(screen.getByTestId('cutover-step-settings')).toHaveAttribute('data-state', 'attention');
+      expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Once the source is boxed');
+      expect(screen.getByTestId('cutover-open-source')).toBeDisabled();
+
+      await user.click(screen.getByTestId('cutover-exempt-link'));
+      expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=exempt&principal=shadow-orders');
+    });
+
+    test('once boxed with the link blocked, says its fetches are rejected and that saving reboxes', () => {
+      renderTab(cloudReadiness('boxed', [0], []));
+
+      expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Its brokers reject this link’s fetches');
+      expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('writes stay blocked the whole time');
+      expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Link can’t read');
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+    });
+
+    test('while boxing, waits for Boxed and names a broker that holds it', () => {
+      renderTab(
+        readinessFor(
+          cloudSource(
+            'boxing',
+            ['shadow-orders'],
+            [
+              { nodeId: 1, status: 'confirmed' },
+              { nodeId: 2, status: 'not-answering' },
+            ]
+          ),
+          topics([3])
+        )
+      );
+
+      expect(screen.getByTestId('cutover-step-box')).toHaveAttribute('data-state', 'done');
+      expect(screen.getByTestId('cutover-step-boxed')).toHaveAttribute('data-state', 'current');
+      expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('1 of 2 brokers have confirmed.');
+      expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('Broker 2 isn’t answering');
+      expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('There’s no timeout.');
+    });
+
+    test('once the source is boxed, offers to open or unbox it there', async () => {
+      const user = userEvent.setup();
+      renderTab(cloudReadiness('boxed', [5]));
+
+      await user.click(screen.getByTestId('cutover-unbox-source'));
+      expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=unbox');
+      await user.click(screen.getByTestId('cutover-view-source'));
+      expect(openCluster).toHaveBeenLastCalledWith('prod', '/shadowlinks?tab=source');
+    });
+
+    test('for an mTLS link, says Console can’t check the exempt list', () => {
+      renderTab(
+        readinessFor(cloudSource('boxed', ['shadow-orders']), topics([0]), { identity: { authentication: 'mtls' } }),
+        {
+          identity: { authentication: 'mtls' },
+        }
+      );
+
+      expect(screen.getByTestId('cutover-link-principal-unknown')).toHaveTextContent('mapping rules');
+    });
+
+    test('a link without SASL or mTLS is exempted with the empty name', async () => {
+      const user = userEvent.setup();
+      const identity: LinkIdentity = { authentication: 'none' };
+      renderTab(readinessFor(cloudSource('unboxed', ['shadow-orders']), topics([0]), { identity }), { identity });
+
+      await user.click(screen.getByTestId('cutover-exempt-link'));
+      expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=exempt&principal=');
+    });
   });
 
-  test('a source Cloud can’t read says why', () => {
-    renderTab(
-      readinessFor(
-        { kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason: 'forbidden' } },
-        topics([0])
-      )
-    );
+  describe('without a readable source box', () => {
+    test('gives each source step its Admin API call', () => {
+      renderTab(readinessFor(EXTERNAL_SOURCE, topics([0])));
 
-    expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent('Only superusers can read');
+      expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent('kafka-01.corp.example:9092');
+      expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent(
+        '"exemptPrincipals":["shadow-orders"]'
+      );
+      expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent(
+        '"updateMask":"readPolicy.exemptPrincipals"'
+      );
+      expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent('admin_api_require_auth');
+      expect(screen.getByTestId('cutover-admin-api-box')).toHaveTextContent('ShadowBoxService/Box');
+      expect(screen.getByTestId('cutover-admin-api-status')).toHaveTextContent('SHADOW_BOX_STATE_BOXED');
+    });
+
+    test('takes the operator’s word that the source is boxed', async () => {
+      const user = userEvent.setup();
+      const onManualConfirmChange = rs.fn();
+      renderTab(readinessFor(EXTERNAL_SOURCE, topics([0])), { onManualConfirmChange });
+
+      await user.click(screen.getByTestId('cutover-source-boxed-confirmation'));
+      expect(onManualConfirmChange).toHaveBeenCalledWith(true);
+    });
+
+    test('a source Cloud can’t read says why', () => {
+      renderTab(
+        readinessFor(
+          {
+            kind: 'cloud',
+            clusterId: 'prod',
+            clusterName: 'prod',
+            box: { status: 'unavailable', reason: 'forbidden' },
+          },
+          topics([0])
+        )
+      );
+
+      expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent('Only superusers can read');
+    });
+
+    test('embedded, while the host is still resolving links, waits instead of calling the source external', () => {
+      renderTab(readinessFor(undefined, topics([0]), { topology: 'resolving' }));
+
+      expect(screen.getByTestId('cutover-box-loading')).toHaveTextContent('Finding the cluster this link reads from');
+      expect(screen.queryByTestId('cutover-admin-api-settings')).not.toBeInTheDocument();
+    });
   });
 
-  test('after failover, moving clients is the last step: repoint them and leave the source boxed', () => {
-    renderTab(
-      readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-      ])
-    );
+  describe('on this cluster', () => {
+    test('while lag drains, names the topic furthest behind', () => {
+      renderTab(cloudReadiness('boxed', [1204, 0, 0]));
 
-    expect(screen.getByTestId('cutover-done')).toHaveTextContent('Every topic of orders-dr has failed over');
-    expect(screen.getByTestId('cutover-step-clients')).toHaveAttribute('data-state', 'current');
-    expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent(
-      'Repoint producers and consumers to dr-us-west-2.'
-    );
-    expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent('Leave prod-us-east-1 boxed');
-    expect(screen.queryByTestId('cutover-failover-all')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cutover-step-boxed')).toHaveAttribute('data-state', 'done');
+      expect(screen.getByTestId('cutover-step-lag')).toHaveAttribute('data-state', 'current');
+      expect(screen.getByTestId('cutover-lag-summary')).toHaveTextContent(
+        '2 of 3 topics caught up. orders-events is 1,204 messages behind.'
+      );
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+    });
+
+    test('unlocks failover once the source is boxed and every topic has caught up', async () => {
+      const user = userEvent.setup();
+      const onFailoverAll = rs.fn();
+      renderTab(cloudReadiness('boxed', [0, 0]), { onFailoverAll });
+
+      expect(screen.getByTestId('cutover-step-failover')).toHaveAttribute('data-state', 'current');
+      await user.click(screen.getByTestId('cutover-failover-all'));
+      expect(onFailoverAll).toHaveBeenCalledTimes(1);
+    });
+
+    test('when a refresh fails, keeps the last lag on screen but marks it out of date and locks failover', async () => {
+      const user = userEvent.setup();
+      const onRetryTopics = rs.fn();
+      renderTab(readinessFor(cloudSource('boxed'), topics([0, 0]), { topicsFailed: true }), { onRetryTopics });
+
+      expect(screen.getByTestId('cutover-lag-stale')).toBeVisible();
+      expect(screen.getByTestId('cutover-lag-summary')).toHaveTextContent('2 of 2 topics caught up.');
+      expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Out of date');
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+      await user.click(screen.getByTestId('cutover-lag-retry'));
+      expect(onRetryTopics).toHaveBeenCalledTimes(1);
+    });
+
+    test('while the topics load, claims nothing about lag', () => {
+      renderTab(readinessFor(cloudSource('boxed'), undefined));
+
+      expect(screen.getByTestId('cutover-lag-loading')).toBeVisible();
+      expect(screen.queryByTestId('cutover-lag-progress')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cutover-step-lag')).not.toHaveAttribute('data-state', 'done');
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+    });
+
+    test('when the topics can’t load, says so and offers a retry', async () => {
+      const user = userEvent.setup();
+      const onRetryTopics = rs.fn();
+      renderTab(readinessFor(cloudSource('boxed'), undefined, { topicsFailed: true }), { onRetryTopics });
+
+      expect(screen.getByTestId('cutover-lag-error')).toHaveTextContent('Couldn’t load the link’s topics');
+      expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent('Couldn’t load the link’s topics');
+      await user.click(screen.getByTestId('cutover-lag-retry'));
+      expect(onRetryTopics).toHaveBeenCalledTimes(1);
+    });
+
+    test('a faulted topic keeps failover locked and names the topic', () => {
+      renderTab(
+        readinessFor(cloudSource('boxed'), [
+          { topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n },
+          { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
+        ])
+      );
+
+      expect(screen.getByTestId('cutover-faulted-topics')).toHaveTextContent('orders-audit has faulted');
+      expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Topics faulted');
+      expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
+    });
   });
 
-  test('while the topics load, claims nothing about lag', () => {
-    renderTab(readinessFor(cloudSource('boxed'), undefined));
+  describe('once failover starts', () => {
+    test('while topics are still failing over, says so and keeps moving clients for later', () => {
+      renderTab(
+        readinessFor(cloudSource('boxed'), [
+          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
+          { topicName: 'orders-audit', state: ShadowTopicState.FAILING_OVER, totalLag: 0n },
+        ])
+      );
 
-    expect(screen.getByTestId('cutover-lag-loading')).toBeVisible();
-    expect(screen.queryByTestId('cutover-lag-progress')).not.toBeInTheDocument();
-    expect(screen.getByTestId('cutover-step-lag')).not.toHaveAttribute('data-state', 'done');
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-  });
+      expect(screen.queryByTestId('cutover-done')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cutover-step-failover')).toHaveTextContent('Failing over');
+      expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent('Failing over 1 topic…');
+      expect(screen.getByTestId('cutover-step-clients')).toHaveAttribute('data-state', 'pending');
+    });
 
-  test('when the topics can’t load, says so and offers a retry', async () => {
-    const user = userEvent.setup();
-    const onRetryTopics = rs.fn();
-    renderTab(readinessFor(cloudSource('boxed'), undefined, { topicsFailed: true }), { onRetryTopics });
+    test('after failover, moving clients is the last step: repoint them and leave the source boxed', () => {
+      renderTab(
+        readinessFor(cloudSource('boxed'), [
+          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
+        ])
+      );
 
-    expect(screen.getByTestId('cutover-lag-error')).toHaveTextContent('Couldn’t load the link’s topics');
-    expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent('Couldn’t load the link’s topics');
-    await user.click(screen.getByTestId('cutover-lag-retry'));
-    expect(onRetryTopics).toHaveBeenCalledTimes(1);
-  });
+      expect(screen.getByTestId('cutover-done')).toHaveTextContent('Every topic of orders-dr has failed over');
+      expect(screen.getByTestId('cutover-step-clients')).toHaveAttribute('data-state', 'current');
+      expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent(
+        'Repoint producers and consumers to dr-us-west-2.'
+      );
+      expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent('Leave prod-us-east-1 boxed');
+      expect(screen.queryByTestId('cutover-failover-all')).not.toBeInTheDocument();
+    });
 
-  test('a faulted topic keeps failover locked and names the topic', () => {
-    renderTab(
-      readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
-      ])
-    );
+    test('a failover that left a faulted topic behind still finishes', () => {
+      renderTab(
+        readinessFor(cloudSource('boxed'), [
+          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
+          { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
+        ])
+      );
 
-    expect(screen.getByTestId('cutover-faulted-topics')).toHaveTextContent('orders-audit has faulted');
-    expect(screen.getByTestId('cutover-step-lag')).toHaveTextContent('Topics faulted');
-    expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
-  });
-
-  test('a failover that left a faulted topic behind still finishes', () => {
-    renderTab(
-      readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
-      ])
-    );
-
-    expect(screen.getByTestId('cutover-done')).toHaveTextContent('apart from orders-audit, which has faulted');
-  });
-
-  test('embedded, while the host is still resolving links, waits instead of calling the source external', () => {
-    renderTab(readinessFor(undefined, topics([0]), { topology: 'resolving' }));
-
-    expect(screen.getByTestId('cutover-box-loading')).toHaveTextContent('Finding the cluster this link reads from');
-    expect(screen.queryByTestId('cutover-admin-api-settings')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cutover-done')).toHaveTextContent('apart from orders-audit, which has faulted');
+    });
   });
 });
