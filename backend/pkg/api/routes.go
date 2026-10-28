@@ -42,6 +42,7 @@ import (
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
 	monitoringsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/monitoring/v1"
+	pipelinesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/pipeline"
 	quotasvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/quota/v1"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
@@ -195,6 +196,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			loggerpkg.Fatal(api.Logger, "failed to create kubernetes pipeline service", slog.Any("error", err))
 		}
 		connectRPCReq.Services[consolev1alpha1connect.PipelineServiceName] = pipelineSvc
+		connectRPCReq.Services[dataplanev1connect.PipelineServiceName] = &pipelinesvc.ComponentService{}
 	}
 
 	// Call Hook

@@ -15,12 +15,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	pipelinesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/pipeline"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
 func TestPipelineConnectServices(t *testing.T) {
 	services := map[string]any{
 		consolev1alpha1connect.PipelineServiceName: consolev1alpha1connect.UnimplementedPipelineServiceHandler{},
+		dataplanev1connect.PipelineServiceName:     &pipelinesvc.ComponentService{},
 	}
 	names := func(svcs []ConnectService) []string {
 		var out []string
@@ -30,14 +33,16 @@ func TestPipelineConnectServices(t *testing.T) {
 		return out
 	}
 
-	assert.Equal(t, []string{consolev1alpha1connect.PipelineServiceName}, names(pipelineConnectServices(ConfigConnectRPCResponse{Services: services})))
+	assert.ElementsMatch(t,
+		[]string{consolev1alpha1connect.PipelineServiceName, dataplanev1connect.PipelineServiceName},
+		names(pipelineConnectServices(ConfigConnectRPCResponse{Services: services})))
 
 	// A service the hook mounts itself is skipped: chi panics on duplicate mounts.
 	hooked := ConfigConnectRPCResponse{
 		Services:           services,
-		AdditionalServices: []ConnectService{{ServiceName: consolev1alpha1connect.PipelineServiceName, MountPath: "/x/", Handler: http.NotFoundHandler()}},
+		AdditionalServices: []ConnectService{{ServiceName: dataplanev1connect.PipelineServiceName, MountPath: "/x/", Handler: http.NotFoundHandler()}},
 	}
-	assert.Empty(t, pipelineConnectServices(hooked))
+	assert.Equal(t, []string{consolev1alpha1connect.PipelineServiceName}, names(pipelineConnectServices(hooked)))
 
 	assert.Empty(t, pipelineConnectServices(ConfigConnectRPCResponse{Services: map[string]any{}}))
 }

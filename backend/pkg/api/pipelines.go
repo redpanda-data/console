@@ -20,6 +20,7 @@ import (
 	kubernetesfactory "github.com/redpanda-data/console/backend/pkg/factory/kubernetes"
 	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
+	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 )
 
 // admissionCheckTimeout bounds the startup check for the operator's
@@ -59,6 +60,11 @@ func pipelineConnectServices(hookOutput ConfigConnectRPCResponse, opts ...connec
 	if svc, ok := hookOutput.Services[consolev1alpha1connect.PipelineServiceName].(consolev1alpha1connect.PipelineServiceHandler); ok && !hooked[consolev1alpha1connect.PipelineServiceName] {
 		path, handler := consolev1alpha1connect.NewPipelineServiceHandler(svc, opts...)
 		out = append(out, ConnectService{ServiceName: consolev1alpha1connect.PipelineServiceName, MountPath: path, Handler: handler})
+	}
+	// The editor calls dataplane.v1 ListComponents for component docs.
+	if svc, ok := hookOutput.Services[dataplanev1connect.PipelineServiceName].(dataplanev1connect.PipelineServiceHandler); ok && !hooked[dataplanev1connect.PipelineServiceName] {
+		path, handler := dataplanev1connect.NewPipelineServiceHandler(svc, opts...)
+		out = append(out, ConnectService{ServiceName: dataplanev1connect.PipelineServiceName, MountPath: path, Handler: handler})
 	}
 	return out
 }
