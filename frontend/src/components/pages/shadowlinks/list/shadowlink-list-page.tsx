@@ -340,7 +340,7 @@ export const ShadowLinkListPage = () => {
       }
       value={tab ?? null}
     >
-      <TabsList testId="shadowlinks-tabs">
+      <TabsList testId="shadowlinks-tabs" variant="underline">
         <TabsTrigger testId="shadowlinks-tab-links" value="links" variant="underline">
           Links on this cluster
         </TabsTrigger>

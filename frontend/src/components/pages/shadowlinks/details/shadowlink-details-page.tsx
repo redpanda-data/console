@@ -93,8 +93,8 @@ const ShadowLinkDetailsTabs = ({
       }
     : { defaultValue: 'overview' };
   return (
-    <Tabs {...tabState}>
-      <TabsList testId="shadowlink-details-tabs">
+    <Tabs className="gap-6" {...tabState}>
+      <TabsList testId="shadowlink-details-tabs" variant="underline">
         <TabsTrigger testId="overview-tab" value="overview" variant="underline">
           Overview
         </TabsTrigger>
