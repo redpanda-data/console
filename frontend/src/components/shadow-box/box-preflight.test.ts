@@ -72,54 +72,59 @@ describe('getBoxPreflightChecks', () => {
     expect(messageOf(checks, 'brokers')).toContain('no timeout');
   });
 
-  test('warns about each reader the settings would block, by how it authenticates', () => {
-    const checks = getBoxPreflightChecks({
-      ...base,
-      exemptPrincipals: ['someone-else'],
-      readers: [
-        reader,
-        { ...reader, linkName: 'plain-dr', authentication: 'none', principal: undefined },
-        { ...reader, linkName: 'mtls-dr', authentication: 'mtls', principal: undefined },
-      ],
+  describe('the reader checks', () => {
+    test('warns about each reader the settings would block, by how it authenticates', () => {
+      const checks = getBoxPreflightChecks({
+        ...base,
+        exemptPrincipals: ['someone-else'],
+        readers: [
+          reader,
+          { ...reader, linkName: 'plain-dr', authentication: 'none', principal: undefined },
+          { ...reader, linkName: 'mtls-dr', authentication: 'mtls', principal: undefined },
+        ],
+      });
+      expect(messageOf(checks, 'reader-orders-dr')).toContain('reads as shadow-orders');
+      expect(messageOf(checks, 'reader-plain-dr')).toContain('without SASL or mTLS');
+      expect(messageOf(checks, 'reader-mtls-dr')).toContain('mTLS');
     });
-    expect(messageOf(checks, 'reader-orders-dr')).toContain('reads as shadow-orders');
-    expect(messageOf(checks, 'reader-plain-dr')).toContain('without SASL or mTLS');
-    expect(messageOf(checks, 'reader-mtls-dr')).toContain('mTLS');
-  });
 
-  test('an empty name lets a link without SASL or mTLS read', () => {
-    const checks = getBoxPreflightChecks({
-      ...base,
-      exemptPrincipals: [''],
-      readers: [{ ...reader, authentication: 'none', principal: undefined }],
+    test('an empty name lets a link without SASL or mTLS read', () => {
+      const checks = getBoxPreflightChecks({
+        ...base,
+        exemptPrincipals: [''],
+        readers: [{ ...reader, authentication: 'none', principal: undefined }],
+      });
+      expect(statuses(checks).readers).toBe('pass');
     });
-    expect(statuses(checks).readers).toBe('pass');
-  });
 
-  test('flags a User: name, which matches nobody', () => {
-    const checks = getBoxPreflightChecks({ ...base, exemptPrincipals: ['User:shadow-orders'] });
-    expect(statuses(checks)).toMatchObject({ 'reader-orders-dr': 'warn', 'policy-prefix-User:shadow-orders': 'warn' });
-  });
-
-  test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {
-    expect(
-      Object.keys(statuses(getBoxPreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
-    ).toEqual(['own-links', 'brokers']);
-    expect(statuses(getBoxPreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
-  });
-
-  test('waits for the host before saying no link reads from the cluster', () => {
-    expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersResolving: true })).readers).toBe('pending');
-    expect(messageOf(getBoxPreflightChecks({ ...base, readers: [] }), 'readers')).toContain('No shadow link');
-  });
-
-  test('when Cloud couldn’t check every link, says the readers it found may not be all of them', () => {
-    expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersIncomplete: true }))).toMatchObject({
-      'readers-incomplete': 'warn',
+    test('flags a User: name, which matches nobody', () => {
+      const checks = getBoxPreflightChecks({ ...base, exemptPrincipals: ['User:shadow-orders'] });
+      expect(statuses(checks)).toMatchObject({
+        'reader-orders-dr': 'warn',
+        'policy-prefix-User:shadow-orders': 'warn',
+      });
     });
-    expect(statuses(getBoxPreflightChecks({ ...base, readersIncomplete: true }))).toMatchObject({
-      readers: 'pass',
-      'readers-incomplete': 'warn',
+
+    test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {
+      expect(
+        Object.keys(statuses(getBoxPreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
+      ).toEqual(['own-links', 'brokers']);
+      expect(statuses(getBoxPreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
+    });
+
+    test('waits for the host before saying no link reads from the cluster', () => {
+      expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersResolving: true })).readers).toBe('pending');
+      expect(messageOf(getBoxPreflightChecks({ ...base, readers: [] }), 'readers')).toContain('No shadow link');
+    });
+
+    test('when Cloud couldn’t check every link, says the readers it found may not be all of them', () => {
+      expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersIncomplete: true }))).toMatchObject({
+        'readers-incomplete': 'warn',
+      });
+      expect(statuses(getBoxPreflightChecks({ ...base, readersIncomplete: true }))).toMatchObject({
+        readers: 'pass',
+        'readers-incomplete': 'warn',
+      });
     });
   });
 });

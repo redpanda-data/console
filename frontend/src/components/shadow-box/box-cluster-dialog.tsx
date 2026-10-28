@@ -12,6 +12,7 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isShadowLinkingDisabledError } from 'components/pages/shadowlinks/shadowlink-helpers';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
@@ -27,8 +28,9 @@ import {
 import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
+import type { ShadowLinkTopology } from 'federation/types';
 import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   type BoxSettingsInput,
@@ -44,9 +46,16 @@ import { z } from 'zod';
 
 import { BoxChangedNotice } from './box-changed-notice';
 import { getBoxPreflightChecks, type PreflightStatus } from './box-preflight';
-import { BOX_PHASE_LABEL, type BoxSummary, canBoxFromPhase, exemptNameFor, linksThatStopBox } from './shadow-box-model';
+import {
+  BOX_PHASE_LABEL,
+  type BoxSummary,
+  type BrokerProgress,
+  canBoxFromPhase,
+  linksThatStopBox,
+} from './shadow-box-model';
 import { type PrincipalSuggestion, ShadowBoxSettingsFields } from './shadow-box-settings-fields';
 import { useOpenedBox } from './use-opened-box';
+import { useReaderSuggestions } from './use-reader-suggestions';
 
 const FALLBACK_CONFIRMATION = 'box';
 
@@ -62,15 +71,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
-  pending: (
-    <LoaderCircleIcon
-      aria-label="Checking"
-      className="size-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none"
-    />
-  ),
-  pass: <CircleCheckIcon aria-label="Passed" className="size-4 shrink-0 text-success" />,
-  warn: <CircleAlertIcon aria-label="Warning" className="size-4 shrink-0 text-warning" />,
-  fail: <CircleXIcon aria-label="Blocks boxing" className="size-4 shrink-0 text-destructive" />,
+  pending: <TonedIcon aria-label="Checking" className="size-4 shrink-0" icon={LoaderCircleIcon} spin tone="muted" />,
+  pass: <TonedIcon aria-label="Passed" className="size-4 shrink-0" icon={CircleCheckIcon} tone="success" />,
+  warn: <TonedIcon aria-label="Warning" className="size-4 shrink-0" icon={CircleAlertIcon} tone="warning" />,
+  fail: <TonedIcon aria-label="Blocks boxing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
 };
 
 const mergePrincipals = (saved: string[], suggestions: PrincipalSuggestion[]) =>
@@ -98,28 +102,31 @@ const boxErrorTitle = (error: unknown, settingsSaved: boolean) => {
 };
 
 /** After this dialog's own save went through, Box failing leaves the new settings in place; says so. */
-const BoxErrorAlert = ({
-  error,
-  settingsSaved,
-  ref,
-}: {
-  error: unknown;
-  settingsSaved: boolean;
-  ref: React.Ref<HTMLDivElement>;
-}) => (
-  <Alert ref={ref} testId="box-cluster-error" variant="destructive">
-    <AlertTitle>{boxErrorTitle(error, settingsSaved)}</AlertTitle>
-    <AlertDescription>
-      <p>{describeShadowBoxError(error)}</p>
-      {settingsSaved ? (
-        <p>
-          The read policy and transaction setting above are saved. Box again to retry, or cancel to leave the cluster
-          unboxed with them.
-        </p>
-      ) : null}
-    </AlertDescription>
-  </Alert>
-);
+const BoxErrorAlert = ({ error, settingsSaved }: { error: unknown; settingsSaved: boolean }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // The error renders below the fold of a long dialog body; bring it into view.
+  useEffect(() => {
+    if (error) {
+      ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [error]);
+
+  return (
+    <Alert ref={ref} testId="box-cluster-error" variant="destructive">
+      <AlertTitle>{boxErrorTitle(error, settingsSaved)}</AlertTitle>
+      <AlertDescription>
+        <p>{describeShadowBoxError(error)}</p>
+        {settingsSaved ? (
+          <p>
+            The read policy and transaction setting above are saved. Box again to retry, or cancel to leave the cluster
+            unboxed with them.
+          </p>
+        ) : null}
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 /** This cluster's own links that haven't failed over: while any remain, it's a shadow and Box fails. */
 const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
@@ -167,38 +174,7 @@ const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
   </section>
 );
 
-const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
-  const { summary, brokers } = useShadowBoxStatusQuery();
-  const ownLinksQuery = useListShadowLinksQuery({});
-  const topology = useShadowBoxStore((state) => state.topology);
-  const boxCluster = useBoxClusterMutation();
-  const { opened, changed, refresh } = useOpenedBox(
-    summary,
-    boxCluster.isPending || boxCluster.isSuccess,
-    boxCluster.savedBox
-  );
-  const errorRef = useRef<HTMLDivElement>(null);
-
-  // The error renders below the fold of a long dialog body; bring it into view.
-  useEffect(() => {
-    if (boxCluster.error) {
-      errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  }, [boxCluster.error]);
-
-  const clusterName = topology?.clusterName;
-  const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
-  const suggestions = useMemo<PrincipalSuggestion[]>(
-    () =>
-      (topology?.readers ?? []).flatMap((reader) => {
-        const principal = exemptNameFor(reader);
-        return principal === undefined ? [] : [{ principal, linkName: reader.linkName }];
-      }),
-    [topology?.readers]
-  );
-  /** An empty exempt list locks every shadow link out, and the broker only logs it, so ask first. */
-  const [lockOutAcknowledged, setLockOutAcknowledged] = useState(false);
-
+const useBoxSettingsForm = (opened: BoxSummary, suggestions: PrincipalSuggestion[]) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
@@ -212,15 +188,17 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
     }
   }, [suggestions]);
 
-  const handleRefresh = () => {
-    refresh();
-    form.resetField('settings', { defaultValue: seedSettings(summary, suggestions) });
-    boxCluster.reset();
-  };
-
   const settings = useWatch({ control: form.control, name: 'settings' });
   const confirmation = useWatch({ control: form.control, name: 'confirmation' });
+  return { form, settings, confirmation };
+};
 
+const useBoxPreflight = (
+  topology: ShadowLinkTopology | null,
+  brokers: BrokerProgress[],
+  settings: BoxSettingsInput
+) => {
+  const ownLinksQuery = useListShadowLinksQuery({});
   const checks = getBoxPreflightChecks({
     linksThatStopBox: ownLinksState(ownLinksQuery),
     brokers,
@@ -234,9 +212,48 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
   const blocked = checks.some(
     (check) => check.status === 'fail' || (check.id === 'own-links' && check.status === 'pending')
   );
+  return { checks, blocked };
+};
+
+const useBoxClusterForm = () => {
+  const { summary, brokers } = useShadowBoxStatusQuery();
+  const topology = useShadowBoxStore((state) => state.topology);
+  const boxCluster = useBoxClusterMutation();
+  const openedBox = useOpenedBox(summary, boxCluster.isPending || boxCluster.isSuccess, boxCluster.savedBox);
+  const suggestions = useReaderSuggestions();
+  const settingsForm = useBoxSettingsForm(openedBox.opened, suggestions);
+  const preflight = useBoxPreflight(topology, brokers, settingsForm.settings);
+  return { summary, topology, boxCluster, ...openedBox, suggestions, ...settingsForm, ...preflight };
+};
+
+const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
+  const {
+    summary,
+    topology,
+    boxCluster,
+    opened,
+    changed,
+    refresh,
+    suggestions,
+    form,
+    settings,
+    confirmation,
+    checks,
+    blocked,
+  } = useBoxClusterForm();
+  /** An empty exempt list locks every shadow link out, and the broker only logs it, so ask first. */
+  const [lockOutAcknowledged, setLockOutAcknowledged] = useState(false);
+  const clusterName = topology?.clusterName;
+  const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;
   const alreadyBoxed = !canBoxFromPhase(opened.phase);
   const locksOutReaders = !settings.allowAllReads && settings.exemptPrincipals.length === 0;
+
+  const handleRefresh = () => {
+    refresh();
+    form.resetField('settings', { defaultValue: seedSettings(summary, suggestions) });
+    boxCluster.reset();
+  };
 
   const handleSubmit = form.handleSubmit((values) => {
     boxCluster.mutate(
@@ -317,8 +334,8 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
               onCheckedChange={(checked) => setLockOutAcknowledged(checked === true)}
               testId="box-cluster-lock-out"
             />
-            <Label className="font-normal" htmlFor="box-cluster-lock-out">
-              Box with no one exempt, blocking every consumer and shadow link
+            <Label htmlFor="box-cluster-lock-out">
+              <span className="font-normal">Box with no one exempt, blocking every consumer and shadow link</span>
             </Label>
           </div>
         ) : null}
@@ -337,7 +354,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
         </Field>
 
         {boxCluster.error && !(changed && isStaleRevisionError(boxCluster.error)) ? (
-          <BoxErrorAlert error={boxCluster.error} ref={errorRef} settingsSaved={boxCluster.savedBox !== undefined} />
+          <BoxErrorAlert error={boxCluster.error} settingsSaved={boxCluster.savedBox !== undefined} />
         ) : null}
       </DialogBody>
       <DialogFooter>

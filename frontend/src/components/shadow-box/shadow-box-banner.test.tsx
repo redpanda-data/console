@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen } from '@testing-library/react';
 import { renderWithFileRoutes } from 'test-utils';
 
@@ -27,6 +27,9 @@ import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { ShadowBoxBanner } from './shadow-box-banner';
 import type { BoxPhase, BoxSummary, BrokerProgress } from './shadow-box-model';
 
+const NOW = Date.UTC(2026, 5, 1, 12);
+const MINUTE = 60 * 1000;
+
 const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, brokers: BrokerProgress[] = []) =>
   rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
     known: true,
@@ -34,7 +37,7 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
     summary: {
       phase,
       revision: 3n,
-      stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
+      stateChangedAt: new Date(NOW - 12 * MINUTE),
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,
       skipTransactionExpiration: false,
@@ -46,6 +49,11 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
 describe('the ShadowBoxBanner', () => {
   beforeEach(() => {
     rs.clearAllMocks();
+    rs.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    rs.useRealTimers();
   });
 
   test('renders nothing while the cluster is unboxed', () => {
@@ -68,7 +76,7 @@ describe('the ShadowBoxBanner', () => {
   });
 
   test('while boxing, says brokers block as they pick it up, and names one that isn’t answering', () => {
-    mockStatus('boxing', { stateChangedAt: new Date() }, [
+    mockStatus('boxing', { stateChangedAt: new Date(NOW) }, [
       { nodeId: 1, status: 'confirmed', blocks: true },
       { nodeId: 2, status: 'not-answering', blocks: undefined },
     ]);
@@ -93,7 +101,7 @@ describe('the ShadowBoxBanner', () => {
   });
 
   test('warns that retention keeps running once a box has been held for long', () => {
-    mockStatus('boxed', { stateChangedAt: new Date(Date.now() - 3 * 60 * 60 * 1000) });
+    mockStatus('boxed', { stateChangedAt: new Date(NOW - 3 * 60 * MINUTE) });
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
     expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent(

@@ -83,6 +83,14 @@ const Harness = () => {
 
 const renderDialog = () => renderWithFileRoutes(<Harness />);
 
+/** Renders the dialog and types the cluster name, as a user about to box would. */
+const renderConfirmed = async () => {
+  const user = userEvent.setup();
+  renderDialog();
+  await user.type(await screen.findByTestId('box-cluster-confirmation'), 'prod-us-east-1');
+  return user;
+};
+
 describe('the BoxClusterDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -118,167 +126,177 @@ describe('the BoxClusterDialog', () => {
     });
   });
 
-  test('with no one exempt, Box waits for an explicit acknowledgement that it locks out every link', async () => {
-    const user = userEvent.setup();
-    useShadowBoxStore.setState({
-      topology: { clusterName: 'prod-us-east-1', readers: [], sources: {}, resolving: false, readersIncomplete: false },
+  describe('its settings', () => {
+    test('prefills the principals of the links that read from the cluster', async () => {
+      renderDialog();
+
+      expect(await screen.findByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
+      expect(screen.getByTestId('box-preflight-readers')).toHaveAttribute('data-status', 'pass');
     });
-    renderDialog();
 
-    await user.type(await screen.findByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-    expect(screen.getByTestId('shadow-box-settings-warning-empty')).toHaveTextContent('every shadow link’s user');
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    test('a User: name gets a one-click fix to the bare name', async () => {
+      const user = userEvent.setup();
+      live.value = { summary: summaryAt(2, { exemptPrincipals: ['User:shadow-orders'] }), brokers: [] };
+      renderDialog();
 
-    await user.click(screen.getByTestId('box-cluster-lock-out'));
-    expect(screen.getByTestId('confirm-box-cluster')).toBeEnabled();
-  });
+      await user.click(await screen.findByRole('button', { name: 'Use shadow-orders' }));
+      expect(screen.getByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
+      expect(screen.queryByTestId('shadow-box-exempt-principals-chip-User:shadow-orders')).not.toBeInTheDocument();
+    });
 
-  test('a User: name gets a one-click fix to the bare name', async () => {
-    const user = userEvent.setup();
-    live.value = { summary: summaryAt(2, { exemptPrincipals: ['User:shadow-orders'] }), brokers: [] };
-    renderDialog();
+    test('with no one exempt, Box waits for an explicit acknowledgement that it locks out every link', async () => {
+      useShadowBoxStore.setState({
+        topology: {
+          clusterName: 'prod-us-east-1',
+          readers: [],
+          sources: {},
+          resolving: false,
+          readersIncomplete: false,
+        },
+      });
+      const user = await renderConfirmed();
 
-    await user.click(await screen.findByRole('button', { name: 'Use shadow-orders' }));
-    expect(screen.getByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
-    expect(screen.queryByTestId('shadow-box-exempt-principals-chip-User:shadow-orders')).not.toBeInTheDocument();
-  });
+      expect(screen.getByTestId('shadow-box-settings-warning-empty')).toHaveTextContent('every shadow link’s user');
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
 
-  test('a shadow link that has failed over doesn’t stop Box', async () => {
-    rs.mocked(useListShadowLinksQuery).mockReturnValue({
-      data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
-    } as unknown as ReturnType<typeof useListShadowLinksQuery>);
-    renderDialog();
-
-    expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pass');
-  });
-
-  test('prefills the principals of the links that read from the cluster', async () => {
-    renderDialog();
-
-    expect(await screen.findByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
-    expect(screen.getByTestId('box-preflight-readers')).toHaveAttribute('data-status', 'pass');
-  });
-
-  test('boxes only after the cluster name is typed, with the reviewed settings and revision', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-
-    const confirm = await screen.findByTestId('confirm-box-cluster');
-    expect(confirm).toBeDisabled();
-
-    await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-    expect(confirm).toBeEnabled();
-    await user.click(confirm);
-
-    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({
-      settings: { exemptPrincipals: ['shadow-orders'], allowAllReads: false, skipTransactionExpiration: false },
-      opened: { revision: 2n },
+      await user.click(screen.getByTestId('box-cluster-lock-out'));
+      expect(screen.getByTestId('confirm-box-cluster')).toBeEnabled();
     });
   });
 
-  test('keeps the revision it opened with when a poll brings a newer one, and says so', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-    await user.type(await screen.findByTestId('box-cluster-confirmation'), 'prod-us-east-1');
+  describe('its preflight checks', () => {
+    test('a shadow link that has failed over doesn’t stop Box', async () => {
+      rs.mocked(useListShadowLinksQuery).mockReturnValue({
+        data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
+      } as unknown as ReturnType<typeof useListShadowLinksQuery>);
+      renderDialog();
 
-    live.set({ value: { summary: summaryAt(5, { allowAllReads: true }), brokers: [] } });
-
-    expect(await screen.findByTestId('shadow-box-changed')).toBeVisible();
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-
-    await user.click(screen.getByTestId('shadow-box-changed-refresh'));
-    expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
-    expect(screen.getByTestId('shadow-box-allow-all-reads')).toBeChecked();
-    await user.click(screen.getByTestId('confirm-box-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 5n } });
-  });
-
-  test('says so when someone else boxed the cluster while it was open', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-    await screen.findByTestId('confirm-box-cluster');
-
-    live.set({ value: { summary: summaryAt(3, { phase: 'boxing' }), brokers: [] } });
-    await user.click(await screen.findByTestId('shadow-box-changed-refresh'));
-
-    expect(screen.getByTestId('box-cluster-already-boxed')).toHaveTextContent('already boxing');
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-  });
-
-  test('when its own save went through but Box failed, doesn’t blame someone else and lets the user retry', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-    await user.type(await screen.findByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-
-    const saved = summaryAt(3, { exemptPrincipals: ['shadow-orders'] });
-    mutation.error = new ConnectError('a data migration is still running', Code.FailedPrecondition);
-    mutation.savedBox = saved;
-    live.set({ value: { summary: saved, brokers: [] } });
-
-    expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
-      'Settings saved, but the cluster isn’t boxed'
-    );
-    expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
-    await user.click(screen.getByTestId('confirm-box-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 3n } });
-  });
-
-  test('starts over after Cancel', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-    await user.type(await screen.findByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByTestId('box-cluster-dialog')).not.toBeInTheDocument());
-
-    live.set({ open: true });
-
-    expect(await screen.findByTestId('box-cluster-confirmation')).toHaveValue('');
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-  });
-
-  test('doesn’t pass the own-links check before the links load, or the readers check before the host finishes', async () => {
-    const user = userEvent.setup();
-    mockOwnLinks('loading');
-    useShadowBoxStore.setState({
-      topology: { clusterName: 'prod-us-east-1', readers: [], sources: {}, resolving: true, readersIncomplete: false },
+      expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pass');
     });
-    renderDialog();
 
-    expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pending');
-    expect(screen.getByTestId('box-preflight-readers')).toHaveAttribute('data-status', 'pending');
-    await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    test('doesn’t pass the own-links check before the links load, or the readers check before the host finishes', async () => {
+      const user = userEvent.setup();
+      mockOwnLinks('loading');
+      useShadowBoxStore.setState({
+        topology: {
+          clusterName: 'prod-us-east-1',
+          readers: [],
+          sources: {},
+          resolving: true,
+          readersIncomplete: false,
+        },
+      });
+      renderDialog();
+
+      expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pending');
+      expect(screen.getByTestId('box-preflight-readers')).toHaveAttribute('data-status', 'pending');
+      await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    });
+
+    test('a cluster with shadow links of its own can’t be boxed', async () => {
+      const user = userEvent.setup();
+      mockOwnLinks(['inbound-dr']);
+      renderDialog();
+
+      expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'fail');
+      await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    });
+
+    test('warns when a reader would be fenced out', async () => {
+      const user = userEvent.setup();
+      renderDialog();
+
+      await user.click(await screen.findByLabelText('Remove tag'));
+      expect(screen.getByTestId('box-preflight-reader-orders-dr')).toHaveAttribute('data-status', 'warn');
+      expect(screen.queryByTestId('box-preflight-policy-empty')).not.toBeInTheDocument();
+    });
   });
 
-  test('a cluster with shadow links of its own can’t be boxed', async () => {
-    const user = userEvent.setup();
-    mockOwnLinks(['inbound-dr']);
-    renderDialog();
+  describe('boxing', () => {
+    test('boxes only after the cluster name is typed, with the reviewed settings and revision', async () => {
+      const user = userEvent.setup();
+      renderDialog();
 
-    expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'fail');
-    await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
-    expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-  });
+      const confirm = await screen.findByTestId('confirm-box-cluster');
+      expect(confirm).toBeDisabled();
 
-  test('warns when a reader would be fenced out', async () => {
-    const user = userEvent.setup();
-    renderDialog();
+      await user.type(screen.getByTestId('box-cluster-confirmation'), 'prod-us-east-1');
+      expect(confirm).toBeEnabled();
+      await user.click(confirm);
 
-    await user.click(await screen.findByLabelText('Remove tag'));
-    expect(screen.getByTestId('box-preflight-reader-orders-dr')).toHaveAttribute('data-status', 'warn');
-    expect(screen.queryByTestId('box-preflight-policy-empty')).not.toBeInTheDocument();
-  });
+      await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
+      expect(mutate.mock.calls[0]?.[0]).toMatchObject({
+        settings: { exemptPrincipals: ['shadow-orders'], allowAllReads: false, skipTransactionExpiration: false },
+        opened: { revision: 2n },
+      });
+    });
 
-  test('explains a failed Box in plain words', async () => {
-    mutation.error = new ConnectError(
-      'Shadow boxing cannot start while a shadow link is configured',
-      Code.FailedPrecondition
-    );
-    renderDialog();
+    test('keeps the revision it opened with when a poll brings a newer one, and says so', async () => {
+      const user = await renderConfirmed();
 
-    expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
-      'Box its source instead, or fail the link over first.'
-    );
+      live.set({ value: { summary: summaryAt(5, { allowAllReads: true }), brokers: [] } });
+
+      expect(await screen.findByTestId('shadow-box-changed')).toBeVisible();
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+
+      await user.click(screen.getByTestId('shadow-box-changed-refresh'));
+      expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
+      expect(screen.getByTestId('shadow-box-allow-all-reads')).toBeChecked();
+      await user.click(screen.getByTestId('confirm-box-cluster'));
+      expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 5n } });
+    });
+
+    test('says so when someone else boxed the cluster while it was open', async () => {
+      const user = userEvent.setup();
+      renderDialog();
+      await screen.findByTestId('confirm-box-cluster');
+
+      live.set({ value: { summary: summaryAt(3, { phase: 'boxing' }), brokers: [] } });
+      await user.click(await screen.findByTestId('shadow-box-changed-refresh'));
+
+      expect(screen.getByTestId('box-cluster-already-boxed')).toHaveTextContent('already boxing');
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    });
+
+    test('when its own save went through but Box failed, doesn’t blame someone else and lets the user retry', async () => {
+      const user = await renderConfirmed();
+
+      const saved = summaryAt(3, { exemptPrincipals: ['shadow-orders'] });
+      mutation.error = new ConnectError('a data migration is still running', Code.FailedPrecondition);
+      mutation.savedBox = saved;
+      live.set({ value: { summary: saved, brokers: [] } });
+
+      expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
+        'Settings saved, but the cluster isn’t boxed'
+      );
+      expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
+      await user.click(screen.getByTestId('confirm-box-cluster'));
+      expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 3n } });
+    });
+
+    test('starts over after Cancel', async () => {
+      const user = await renderConfirmed();
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByTestId('box-cluster-dialog')).not.toBeInTheDocument());
+
+      live.set({ open: true });
+
+      expect(await screen.findByTestId('box-cluster-confirmation')).toHaveValue('');
+      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
+    });
+
+    test('explains a failed Box in plain words', async () => {
+      mutation.error = new ConnectError(
+        'Shadow boxing cannot start while a shadow link is configured',
+        Code.FailedPrecondition
+      );
+      renderDialog();
+
+      expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
+        'Box its source instead, or fail the link over first.'
+      );
+    });
   });
 });

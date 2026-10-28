@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   describeShadowBoxError,
@@ -30,13 +30,13 @@ import {
   useUpdateShadowBoxSettingsMutation,
 } from 'react-query/api/shadow-box';
 import { toast } from 'sonner';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { z } from 'zod';
 
 import { BoxChangedNotice } from './box-changed-notice';
-import { type BoxSummary, exemptNameFor, isBlockingPhase } from './shadow-box-model';
-import { type PrincipalSuggestion, ShadowBoxSettingsFields } from './shadow-box-settings-fields';
+import { type BoxSummary, isBlockingPhase } from './shadow-box-model';
+import { ShadowBoxSettingsFields } from './shadow-box-settings-fields';
 import { useOpenedBox } from './use-opened-box';
+import { useReaderSuggestions } from './use-reader-suggestions';
 
 const formSchema = z.object({
   settings: z.object({
@@ -72,31 +72,34 @@ const toFormValues = (summary: BoxSummary): FormValues => ({
   },
 });
 
-const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
-  const { summary } = useShadowBoxStatusQuery();
-  const topology = useShadowBoxStore((state) => state.topology);
-  const updateSettings = useUpdateShadowBoxSettingsMutation();
-  const { opened, changed, refresh } = useOpenedBox(summary, updateSettings.isPending || updateSettings.isSuccess);
-  const errorRef = useRef<HTMLDivElement>(null);
+const SaveErrorAlert = ({ error }: { error: unknown }) => {
+  const ref = useRef<HTMLDivElement>(null);
 
   // The error renders below the fold of a long dialog body; bring it into view.
   useEffect(() => {
-    if (updateSettings.error) {
-      errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (error) {
+      ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [updateSettings.error]);
+  }, [error]);
+
+  return (
+    <Alert ref={ref} testId="shadow-box-settings-error" variant="destructive">
+      <AlertTitle>Couldn’t save the settings</AlertTitle>
+      <AlertDescription>
+        <p>{describeShadowBoxError(error)}</p>
+      </AlertDescription>
+    </Alert>
+  );
+};
+
+const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
+  const { summary } = useShadowBoxStatusQuery();
+  const updateSettings = useUpdateShadowBoxSettingsMutation();
+  const { opened, changed, refresh } = useOpenedBox(summary, updateSettings.isPending || updateSettings.isSuccess);
 
   /** Saving while a box is requested makes every broker apply the new settings, back through Boxing. */
   const reboxes = isBlockingPhase(opened.phase);
-
-  const suggestions = useMemo<PrincipalSuggestion[]>(
-    () =>
-      (topology?.readers ?? []).flatMap((reader) => {
-        const principal = exemptNameFor(reader);
-        return principal === undefined ? [] : [{ principal, linkName: reader.linkName }];
-      }),
-    [topology?.readers]
-  );
+  const suggestions = useReaderSuggestions();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -169,12 +172,7 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
           )}
         />
         {updateSettings.error && !(changed && isStaleRevisionError(updateSettings.error)) ? (
-          <Alert ref={errorRef} testId="shadow-box-settings-error" variant="destructive">
-            <AlertTitle>Couldn’t save the settings</AlertTitle>
-            <AlertDescription>
-              <p>{describeShadowBoxError(updateSettings.error)}</p>
-            </AlertDescription>
-          </Alert>
+          <SaveErrorAlert error={updateSettings.error} />
         ) : null}
       </DialogBody>
       <DialogFooter>

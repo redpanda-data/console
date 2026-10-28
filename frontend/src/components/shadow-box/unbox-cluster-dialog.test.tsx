@@ -33,6 +33,15 @@ import { UnboxClusterDialog } from './unbox-cluster-dialog';
 const status = (phase: BoxPhase, revision: number) =>
   ({ summary: { phase, revision: BigInt(revision) } }) as unknown as ReturnType<typeof useShadowBoxStatusQuery>;
 
+/** Lets a test rerender the open dialog after it changes the mocked status. */
+const harness = { rerender: (): void => undefined };
+
+function Harness() {
+  const [, setTick] = useState(0);
+  harness.rerender = () => setTick((tick) => tick + 1);
+  return <UnboxClusterDialog onOpenChange={rs.fn()} open />;
+}
+
 describe('the UnboxClusterDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -61,17 +70,11 @@ describe('the UnboxClusterDialog', () => {
   });
 
   test('won’t release a box that changed after it opened', async () => {
-    let rerender: () => void = () => undefined;
-    const Harness = () => {
-      const [, setTick] = useState(0);
-      rerender = () => setTick((tick) => tick + 1);
-      return <UnboxClusterDialog onOpenChange={rs.fn()} open />;
-    };
     renderWithFileRoutes(<Harness />);
     await screen.findByTestId('confirm-unbox-cluster');
 
     rs.mocked(useShadowBoxStatusQuery).mockReturnValue(status('boxing', 9));
-    act(() => rerender());
+    act(() => harness.rerender());
 
     expect(await screen.findByTestId('shadow-box-changed')).toBeVisible();
     expect(screen.getByTestId('confirm-unbox-cluster')).toBeDisabled();

@@ -54,15 +54,13 @@ export const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[], n
   return parts.filter(Boolean).join(' ');
 };
 
-/**
- * Shown on every page while a box is anywhere but released, because writes start failing as soon
- * as boxing begins and keep failing on some brokers until unboxing finishes.
- */
+const brokerName = (nodeId: number | undefined) => (nodeId === undefined ? 'a broker' : `broker ${nodeId}`);
+
 /** With no controller leader there's no cluster box to read, but a broker's own blocking copy still rejects writes. */
 const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
   const reporting = copies
     .filter((copy) => copy.phase)
-    .map((copy) => `${copy.nodeId === undefined ? 'a broker' : `broker ${copy.nodeId}`} reports ${copy.phase}`)
+    .map((copy) => `${brokerName(copy.nodeId)} reports ${copy.phase}`)
     .join(', ');
   return (
     <div data-testid="shadow-box-banner">
@@ -79,6 +77,10 @@ const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
   );
 };
 
+/**
+ * Shown on every page while a box is anywhere but released, because writes start failing as soon
+ * as boxing begins and keep failing on some brokers until unboxing finishes.
+ */
 export const ShadowBoxBanner = () => {
   const { known, summary, brokers, blocking, ownCopies } = useShadowBoxStatusQuery();
   const clusterName = useShadowBoxStore((state) => state.topology?.clusterName);

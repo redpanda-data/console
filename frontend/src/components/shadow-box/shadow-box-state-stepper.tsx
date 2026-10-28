@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRightIcon } from 'lucide-react';
 import { Fragment } from 'react';
@@ -29,7 +30,7 @@ export const ShadowBoxStateStepper = ({ phase }: { phase: BoxPhase }) => (
         <Fragment key={state}>
           {index > 0 ? (
             <li aria-hidden="true" className="flex items-center" role="presentation">
-              <ArrowRightIcon className="size-3.5 text-muted-foreground" />
+              <TonedIcon className="size-3.5" icon={ArrowRightIcon} tone="muted" />
             </li>
           ) : null}
           <li

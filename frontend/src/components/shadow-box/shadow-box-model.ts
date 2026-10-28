@@ -291,6 +291,19 @@ export const EMPTY_EXEMPT_WARNING =
 
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
 
+const userPrefixWarning = (principal: string): ReadPolicyWarning => {
+  const bare = principal.slice(USER_PREFIX.length);
+  return {
+    id: `prefix-${principal}`,
+    severity: 'warning',
+    message: `Exempt names are bare user names: “${principal}” matches nobody. Use “${bare}”.`,
+    fix: {
+      label: `Use ${bare}`,
+      principals: (current) => Array.from(new Set(current.map((name) => (name === principal ? bare : name)))),
+    },
+  };
+};
+
 /** The cases the broker only logs on the controller leader, plus the rules that surprise people. */
 export const getReadPolicyWarnings = (principals: string[], allowAllReads: boolean): ReadPolicyWarning[] => {
   if (allowAllReads) {
@@ -300,20 +313,7 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   if (principals.length === 0) {
     warnings.push({ id: 'empty', severity: 'danger', message: EMPTY_EXEMPT_WARNING });
   }
-  for (const principal of principals) {
-    if (principal.startsWith(USER_PREFIX)) {
-      const bare = principal.slice(USER_PREFIX.length);
-      warnings.push({
-        id: `prefix-${principal}`,
-        severity: 'warning',
-        message: `Exempt names are bare user names: “${principal}” matches nobody. Use “${bare}”.`,
-        fix: {
-          label: `Use ${bare}`,
-          principals: (current) => Array.from(new Set(current.map((name) => (name === principal ? bare : name)))),
-        },
-      });
-    }
-  }
+  warnings.push(...principals.filter((principal) => principal.startsWith(USER_PREFIX)).map(userPrefixWarning));
   if (principals.includes('')) {
     warnings.push({
       id: 'blank',
@@ -442,7 +442,7 @@ export const getClientEffects = ({
     links && links.length > 0
       ? links.map((link) => ({
           id: `link-${link.linkName}`,
-          label: `${link.linkName} fetches${link.principal ? ` as ${link.principal}` : ''}`,
+          label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
           ...reads(fetchRejection, linkCanRead(summary, link)),
         }))
       : [

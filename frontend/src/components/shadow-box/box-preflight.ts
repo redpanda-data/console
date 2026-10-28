@@ -90,46 +90,50 @@ const blockedReaderMessage = (reader: ShadowLinkReader) => {
   return `${reader.linkName} reads as ${reader.principal}, which isn’t exempt, so it couldn’t finish copying.`;
 };
 
+/** Before the host has found any reader, says whether it's still looking, gave up early, or found none. */
+const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
+  if (resolving) {
+    return { id: 'readers', status: 'pending', message: 'Finding the shadow links that read from this cluster…' };
+  }
+  if (incomplete) {
+    return INCOMPLETE_READERS_CHECK;
+  }
+  return {
+    id: 'readers',
+    status: 'warn',
+    message: 'No shadow link in Redpanda Cloud reads from this cluster. Box it only if a link outside Cloud does.',
+  };
+};
+
+const readerProblems = (reader: ShadowLinkReader, canRead: boolean | undefined): PreflightCheck[] => {
+  if (canRead === false) {
+    return [{ id: `reader-${reader.linkName}`, status: 'warn', message: blockedReaderMessage(reader) }];
+  }
+  if (canRead === undefined) {
+    return [
+      {
+        id: `reader-${reader.linkName}`,
+        status: 'warn',
+        message:
+          reader.authentication === 'mtls'
+            ? `${reader.linkName}: ${MTLS_LINK_NOTE}`
+            : `Console can’t tell which user ${reader.linkName} reads as. Make sure it’s on the exempt list.`,
+      },
+    ];
+  }
+  return [];
+};
+
 const readerChecks = (
   readers: ShadowLinkReader[],
   policy: { exemptPrincipals: string[]; allowAllReads: boolean },
   { resolving, incomplete }: { resolving: boolean; incomplete: boolean }
 ): PreflightCheck[] => {
-  if (readers.length === 0 && resolving) {
-    return [{ id: 'readers', status: 'pending', message: 'Finding the shadow links that read from this cluster…' }];
-  }
-  if (readers.length === 0 && incomplete) {
-    return [INCOMPLETE_READERS_CHECK];
-  }
   if (readers.length === 0) {
-    return [
-      {
-        id: 'readers',
-        status: 'warn',
-        message: 'No shadow link in Redpanda Cloud reads from this cluster. Box it only if a link outside Cloud does.',
-      },
-    ];
+    return [noReadersCheck({ resolving, incomplete })];
   }
   const more = incomplete ? [INCOMPLETE_READERS_CHECK] : [];
-  const results = readers.map((reader) => ({ reader, canRead: linkCanRead(policy, reader) }));
-  const problems = results.flatMap(({ reader, canRead }): PreflightCheck[] => {
-    if (canRead === false) {
-      return [{ id: `reader-${reader.linkName}`, status: 'warn', message: blockedReaderMessage(reader) }];
-    }
-    if (canRead === undefined) {
-      return [
-        {
-          id: `reader-${reader.linkName}`,
-          status: 'warn',
-          message:
-            reader.authentication === 'mtls'
-              ? `${reader.linkName}: ${MTLS_LINK_NOTE}`
-              : `Console can’t tell which user ${reader.linkName} reads as. Make sure it’s on the exempt list.`,
-        },
-      ];
-    }
-    return [];
-  });
+  const problems = readers.flatMap((reader) => readerProblems(reader, linkCanRead(policy, reader)));
   if (problems.length > 0) {
     return [...problems, ...more];
   }

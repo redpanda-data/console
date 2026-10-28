@@ -12,14 +12,13 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { Dd, Dl, Dt } from 'components/redpanda-ui/components/typography';
+import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
@@ -27,6 +26,7 @@ import { CheckIcon } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import { toast } from 'sonner';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import { BoxClusterDialog } from './box-cluster-dialog';
@@ -96,7 +96,8 @@ const BrokersTable = ({ brokers, phase }: { brokers: BrokerProgress[]; phase: Bo
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody className="[&_tr:hover]:bg-transparent">
+      {/* Plain rows: nothing here is clickable, so the registry body's hover would mislead. */}
+      <tbody className="[&_tr:last-child]:border-0">
         {brokers.map((broker) => {
           const status = BROKER_STATUS[broker.status];
           return (
@@ -113,7 +114,7 @@ const BrokersTable = ({ brokers, phase }: { brokers: BrokerProgress[]; phase: Bo
             </TableRow>
           );
         })}
-      </TableBody>
+      </tbody>
     </Table>
     <p className="text-body-sm text-muted-foreground">
       {phase === 'boxing' || phase === 'unboxing'
@@ -148,7 +149,9 @@ const useActionFromUrl = (known: boolean, phase: BoxPhase, setters: DialogSetter
   const pending = action === 'box' || action === 'unbox' || action === 'exempt';
   const clear = useCallback(() => {
     if (pending) {
-      navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true });
+      navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
     }
   }, [pending, navigate]);
   useEffect(() => {
@@ -215,6 +218,21 @@ const SourceStep = ({
   </li>
 );
 
+const exemptStepState = (
+  exemptDone: boolean,
+  boxRequested: boolean,
+  summary: BoxSummary,
+  access: ReturnType<typeof readerAccess>
+): SourceStepState => {
+  if (exemptDone) {
+    return 'done';
+  }
+  if (!boxRequested && summary.exemptPrincipals.length === 0 && access.total === 0) {
+    return 'current';
+  }
+  return 'attention';
+};
+
 const boxStepState = (requested: boolean, settingsDone: boolean): SourceStepState => {
   if (requested) {
     return 'done';
@@ -251,6 +269,24 @@ const exemptStepText = (access: ReturnType<typeof readerAccess>, summary: BoxSum
     : 'Exempt each shadow link’s user before you box.';
 };
 
+const waitStepState = (phase: BoxPhase): SourceStepState => {
+  if (phase === 'boxed') {
+    return 'done';
+  }
+  return isBlockingPhase(phase) ? 'current' : 'pending';
+};
+
+const waitStepText = (summary: BoxSummary, brokers: BrokerProgress[]) => {
+  if (summary.phase === 'boxed') {
+    return 'Every broker confirmed, so nothing new is written here. Fail each link over on its shadow cluster.';
+  }
+  if (summary.phase === 'boxing') {
+    const confirmed = brokers.filter((broker) => broker.status === 'confirmed').length;
+    return `${confirmed} of ${brokers.length} brokers have confirmed.`;
+  }
+  return 'Box first. Then wait here until every broker confirms; a healthy cluster takes a second or two.';
+};
+
 /**
  * The source cluster's half of a failover, as the reference lays it out: save the settings, box,
  * and wait until it reports Boxed. Then each link fails over on its own shadow cluster.
@@ -266,47 +302,47 @@ const SourceStepsCard = ({
 }) => {
   const access = readerAccess(readers, summary);
   const exemptDone = summary.allowAllReads || (access.blocked.length === 0 && summary.exemptPrincipals.length > 0);
-  const boxed = summary.phase === 'boxed';
   const boxRequested = isBlockingPhase(summary.phase);
-  const confirmed = brokers.filter((broker) => broker.status === 'confirmed').length;
-  let exemptState: SourceStepState = exemptDone ? 'done' : 'attention';
-  if (!(exemptDone || boxRequested) && summary.exemptPrincipals.length === 0 && access.total === 0) {
-    exemptState = 'current';
-  }
-  let waitText = 'Box first. Then wait here until every broker confirms; a healthy cluster takes a second or two.';
-  if (boxed) {
-    waitText = 'Every broker confirmed, so nothing new is written here. Fail each link over on its shadow cluster.';
-  } else if (summary.phase === 'boxing') {
-    waitText = `${confirmed} of ${brokers.length} brokers have confirmed.`;
-  }
   return (
     <Card size="full" testId="shadow-box-source-steps" variant="standard">
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-heading-xs">Before a shadow link fails over</h3>
-          <p className="text-body-sm text-muted-foreground">
-            These steps run here, on the source cluster. Zero lag, the failover and moving clients happen on each shadow
-            cluster.
-          </p>
+      <CardContent>
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-heading-xs">Before a shadow link fails over</h3>
+            <p className="text-body-sm text-muted-foreground">
+              These steps run here, on the source cluster. Zero lag, the failover and moving clients happen on each
+              shadow cluster.
+            </p>
+          </div>
+          <ol className="flex flex-col gap-4">
+            <SourceStep
+              index={1}
+              state={exemptStepState(exemptDone, boxRequested, summary, access)}
+              testId="shadow-box-step-settings"
+              title="Save settings"
+            >
+              {exemptStepText(access, summary)}
+            </SourceStep>
+            <SourceStep
+              index={2}
+              state={boxStepState(boxRequested, exemptDone)}
+              testId="shadow-box-step-box"
+              title="Box"
+            >
+              {boxRequested
+                ? 'Box was called. Each broker rejects writes as soon as it picks it up.'
+                : 'Box puts the saved settings in force. It returns at Boxing.'}
+            </SourceStep>
+            <SourceStep
+              index={3}
+              state={waitStepState(summary.phase)}
+              testId="shadow-box-step-wait"
+              title="Wait for Boxed"
+            >
+              {waitStepText(summary, brokers)}
+            </SourceStep>
+          </ol>
         </div>
-        <ol className="flex flex-col gap-4">
-          <SourceStep index={1} state={exemptState} testId="shadow-box-step-settings" title="Save settings">
-            {exemptStepText(access, summary)}
-          </SourceStep>
-          <SourceStep index={2} state={boxStepState(boxRequested, exemptDone)} testId="shadow-box-step-box" title="Box">
-            {boxRequested
-              ? 'Box was called. Each broker rejects writes as soon as it picks it up.'
-              : 'Box puts the saved settings in force. It returns at Boxing.'}
-          </SourceStep>
-          <SourceStep
-            index={3}
-            state={boxed ? 'done' : boxRequested ? 'current' : 'pending'}
-            testId="shadow-box-step-wait"
-            title="Wait for Boxed"
-          >
-            {waitText}
-          </SourceStep>
-        </ol>
       </CardContent>
     </Card>
   );
@@ -322,8 +358,8 @@ const ExemptValue = ({ summary }: { summary: BoxSummary }) => {
   return (
     <span className="flex flex-wrap gap-1">
       {summary.exemptPrincipals.map((principal) => (
-        <Badge className="font-mono" key={principal} tone="default" variant="outline">
-          {principal || '(no SASL or mTLS)'}
+        <Badge key={principal} tone="default" variant="outline">
+          <span className="font-mono">{principal || '(no SASL or mTLS)'}</span>
         </Badge>
       ))}
     </span>
@@ -334,44 +370,54 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
   const warnings = getReadPolicyWarnings(summary.exemptPrincipals, summary.allowAllReads);
   return (
     <Card size="full" testId="shadow-box-settings-card" variant="standard">
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-heading-xs">Settings</h3>
-          <Button onClick={onEdit} size="sm" testId="edit-shadow-box-settings" variant="outline">
-            Edit settings
-          </Button>
+      <CardContent>
+        <div className="flex flex-col gap-7">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-heading-xs">Settings</h3>
+            <Button onClick={onEdit} size="sm" testId="edit-shadow-box-settings" variant="outline">
+              Edit settings
+            </Button>
+          </div>
+          <div className="flex flex-col gap-3">
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-body-sm">
+              <dt className="tracking-tight text-muted-foreground">Scope</dt>
+              <dd>All resources, the only scope</dd>
+              <dt className="tracking-tight text-muted-foreground">Exempt users</dt>
+              <dd data-testid="shadow-box-read-policy">
+                <ExemptValue summary={summary} />
+              </dd>
+              <dt className="tracking-tight text-muted-foreground">Open transactions</dt>
+              <dd>
+                {summary.skipTransactionExpiration
+                  ? 'Left open: Skip transaction expiration is on'
+                  : 'Ended once the cluster is boxed, as a commit if the coordinator had already decided to commit'}
+              </dd>
+            </dl>
+            <div className="flex flex-col gap-7">
+              {warnings.map((warning) => (
+                <Alert
+                  key={warning.id}
+                  testId={`shadow-box-policy-${warning.id}`}
+                  variant={
+                    warning.severity === 'info'
+                      ? 'informative'
+                      : warning.severity === 'danger'
+                        ? 'destructive'
+                        : 'warning'
+                  }
+                >
+                  <AlertDescription>
+                    <p>{warning.message}</p>
+                  </AlertDescription>
+                </Alert>
+              ))}
+              <p className="text-body-sm text-muted-foreground">
+                {summary.allowAllReads ? '' : `${SUPERUSERS_NOT_EXEMPT} `}The cluster keeps one set of settings. Box
+                uses them, and they stay saved after Unbox.
+              </p>
+            </div>
+          </div>
         </div>
-        <Dl className="my-0 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-body-sm">
-          <Dt className="font-normal text-muted-foreground">Scope</Dt>
-          <Dd>All resources, the only scope</Dd>
-          <Dt className="font-normal text-muted-foreground">Exempt users</Dt>
-          <Dd data-testid="shadow-box-read-policy">
-            <ExemptValue summary={summary} />
-          </Dd>
-          <Dt className="font-normal text-muted-foreground">Open transactions</Dt>
-          <Dd>
-            {summary.skipTransactionExpiration
-              ? 'Left open: Skip transaction expiration is on'
-              : 'Ended once the cluster is boxed, as a commit if the coordinator had already decided to commit'}
-          </Dd>
-        </Dl>
-        {warnings.map((warning) => (
-          <Alert
-            key={warning.id}
-            testId={`shadow-box-policy-${warning.id}`}
-            variant={
-              warning.severity === 'info' ? 'informative' : warning.severity === 'danger' ? 'destructive' : 'warning'
-            }
-          >
-            <AlertDescription>
-              <p>{warning.message}</p>
-            </AlertDescription>
-          </Alert>
-        ))}
-        <p className="text-body-sm text-muted-foreground">
-          {summary.allowAllReads ? '' : `${SUPERUSERS_NOT_EXEMPT} `}The cluster keeps one set of settings. Box uses
-          them, and they stay saved after Unbox.
-        </p>
       </CardContent>
     </Card>
   );
@@ -423,98 +469,100 @@ const ReadersCard = ({
 
   return (
     <Card size="full" testId="shadow-box-readers" variant="standard">
-      <CardContent className="flex flex-col gap-3">
-        <h3 className="text-heading-xs">Links reading from this cluster</h3>
-        {readers === undefined ? (
-          <p className="text-body-sm text-muted-foreground">
-            Redpanda doesn’t record which shadow links read from a cluster, so Console can’t list them. Check the Shadow
-            Links page on each shadow cluster, and make sure each link’s user is exempt before you box.
-          </p>
-        ) : null}
-        {readers?.length === 0 && resolving ? (
-          <p
-            className="flex items-center gap-2 text-body-sm text-muted-foreground"
-            data-testid="shadow-box-readers-loading"
-          >
-            <Spinner className="size-4" />
-            Finding the shadow links that read from this cluster…
-          </p>
-        ) : null}
-        {readers && incomplete ? (
-          <Alert testId="shadow-box-readers-incomplete" variant="warning">
-            <AlertDescription>
-              <p>
-                Redpanda Cloud couldn’t check every shadow link, so this list may be missing some. Make sure each link’s
-                user is exempt before you box.
-              </p>
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {settledEmpty ? (
-          <Empty className="py-6">
-            <EmptyHeader>
-              <EmptyTitle>No links read from this cluster</EmptyTitle>
-              <EmptyDescription>
-                No shadow link in Redpanda Cloud uses this cluster as its source. Links to it from outside Cloud don’t
-                appear here.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : null}
-        {readers && readers.length > 0 ? (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Link</TableHead>
-                  <TableHead>Shadow cluster</TableHead>
-                  <TableHead>Reads as</TableHead>
-                  <TableHead>Under these settings</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="[&_tr:hover]:bg-transparent">
-                {readers.map((reader) => {
-                  const canRead = linkCanRead(summary, reader);
-                  let access: 'yes' | 'no' | 'unknown' = 'unknown';
-                  if (canRead !== undefined) {
-                    access = canRead ? 'yes' : 'no';
-                  }
-                  return (
-                    <TableRow
-                      key={`${reader.shadowClusterId}-${reader.linkName}`}
-                      testId={`shadow-box-reader-${reader.linkName}`}
-                    >
-                      <TableCell weight="medium">
-                        {openCluster ? (
-                          <Button
-                            className="h-auto p-0"
-                            onClick={() =>
-                              openCluster(
-                                reader.shadowClusterId,
-                                `/shadowlinks/${encodeURIComponent(reader.linkName)}?tab=cutover`
-                              )
-                            }
-                            variant="link"
-                          >
-                            {reader.linkName}
-                          </Button>
-                        ) : (
-                          reader.linkName
-                        )}
-                      </TableCell>
-                      <TableCell>{reader.shadowClusterName}</TableCell>
-                      <TableCell>{readerUser(reader)}</TableCell>
-                      <TableCell>{READER_ACCESS_BADGE[access]}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+      <CardContent>
+        <div className="flex flex-col gap-7">
+          <h3 className="text-heading-xs">Links reading from this cluster</h3>
+          {readers === undefined ? (
             <p className="text-body-sm text-muted-foreground">
-              Only links created in Redpanda Cloud with this cluster as the source appear here.
+              Redpanda doesn’t record which shadow links read from a cluster, so Console can’t list them. Check the
+              Shadow Links page on each shadow cluster, and make sure each link’s user is exempt before you box.
             </p>
-          </>
-        ) : null}
+          ) : null}
+          {readers?.length === 0 && resolving ? (
+            <p
+              className="flex items-center gap-2 text-body-sm text-muted-foreground"
+              data-testid="shadow-box-readers-loading"
+            >
+              <Spinner className="size-4" />
+              Finding the shadow links that read from this cluster…
+            </p>
+          ) : null}
+          {readers && incomplete ? (
+            <Alert testId="shadow-box-readers-incomplete" variant="warning">
+              <AlertDescription>
+                <p>
+                  Redpanda Cloud couldn’t check every shadow link, so this list may be missing some. Make sure each
+                  link’s user is exempt before you box.
+                </p>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {settledEmpty ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>No links read from this cluster</EmptyTitle>
+                <EmptyDescription>
+                  No shadow link in Redpanda Cloud uses this cluster as its source. Links to it from outside Cloud don’t
+                  appear here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : null}
+          {readers && readers.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Link</TableHead>
+                    <TableHead>Shadow cluster</TableHead>
+                    <TableHead>Reads as</TableHead>
+                    <TableHead>Under these settings</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <tbody className="[&_tr:last-child]:border-0">
+                  {readers.map((reader) => {
+                    const canRead = linkCanRead(summary, reader);
+                    let access: 'yes' | 'no' | 'unknown' = 'unknown';
+                    if (canRead !== undefined) {
+                      access = canRead ? 'yes' : 'no';
+                    }
+                    return (
+                      <TableRow
+                        key={`${reader.shadowClusterId}-${reader.linkName}`}
+                        testId={`shadow-box-reader-${reader.linkName}`}
+                      >
+                        <TableCell weight="medium">
+                          {openCluster ? (
+                            <button
+                              className={cn(buttonVariants({ variant: 'link' }), 'h-auto p-0')}
+                              onClick={() =>
+                                openCluster(
+                                  reader.shadowClusterId,
+                                  `/shadowlinks/${encodeURIComponent(reader.linkName)}?tab=cutover`
+                                )
+                              }
+                              type="button"
+                            >
+                              {reader.linkName}
+                            </button>
+                          ) : (
+                            reader.linkName
+                          )}
+                        </TableCell>
+                        <TableCell>{reader.shadowClusterName}</TableCell>
+                        <TableCell>{readerUser(reader)}</TableCell>
+                        <TableCell>{READER_ACCESS_BADGE[access]}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </tbody>
+              </Table>
+              <p className="text-body-sm text-muted-foreground">
+                Only links created in Redpanda Cloud with this cluster as the source appear here.
+              </p>
+            </>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   );
@@ -532,13 +580,15 @@ const GOOD_TO_KNOW = [
 
 const GoodToKnowCard = () => (
   <Card size="full" testId="shadow-box-good-to-know" variant="standard">
-    <CardContent className="flex flex-col gap-2">
-      <h3 className="text-heading-xs">Good to know</h3>
-      <ul className="list-disc space-y-1 pl-5 text-body-sm">
-        {GOOD_TO_KNOW.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
+    <CardContent>
+      <div className="flex flex-col gap-6">
+        <h3 className="text-heading-xs">Good to know</h3>
+        <ul className="list-disc space-y-1 pl-5 text-body-sm">
+          {GOOD_TO_KNOW.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
     </CardContent>
   </Card>
 );
@@ -613,102 +663,50 @@ const ReadProblem = ({
   </Alert>
 );
 
-/** The Shadow Links page's view of this cluster as a link source: its box, and who reads from it. */
-export const ShadowBoxSourcePanel = () => {
-  const {
-    summary,
-    brokers,
-    data,
-    isLoading,
-    error,
-    refetch,
-    isRefetching,
-    dataUpdatedAt,
-    known,
-    access,
-    unreadable,
-    ownCopies,
-  } = useShadowBoxStatusQuery();
-  const topology = useShadowBoxStore((state) => state.topology);
-  const ownLinks = useListShadowLinksQuery({}).data?.shadowLinks ?? [];
-  const now = useNow();
-  const [boxOpen, setBoxOpen] = useState(false);
-  const [unboxOpen, setUnboxOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const setters = useMemo<DialogSetters>(() => ({ box: setBoxOpen, unbox: setUnboxOpen, exempt: setSettingsOpen }), []);
-  const { principal } = useLocation().search as { principal?: string };
-  const closingClears = useActionFromUrl(known, summary.phase, setters);
+type StatusQuery = ReturnType<typeof useShadowBoxStatusQuery>;
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col gap-4" data-testid="shadow-box-source-loading">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    );
-  }
+/** Shown above the box when a refresh failed, so the status below reads as possibly out of date. */
+const StaleStatusAlert = ({
+  error,
+  now,
+  dataUpdatedAt,
+  ownCopies,
+}: Pick<StatusQuery, 'error' | 'dataUpdatedAt' | 'ownCopies'> & { now: number }) => (
+  <Alert testId="shadow-box-status-stale" variant="warning">
+    <AlertTitle>Couldn’t refresh the shadow box</AlertTitle>
+    <AlertDescription>
+      <p>{describeShadowBoxReadError(error)}</p>
+      <p>Showing its status from {formatBoxDuration(now - dataUpdatedAt)} ago.</p>
+      {ownCopies.length > 0 ? (
+        <div className="text-body-sm">
+          Each broker’s own copy, read from that broker:
+          <OwnCopiesList copies={ownCopies} />
+        </div>
+      ) : null}
+    </AlertDescription>
+  </Alert>
+);
 
-  if (access === 'forbidden') {
-    return (
-      <Alert testId="shadow-box-forbidden" variant="informative">
-        <AlertTitle>Only superusers can see this cluster’s shadow box</AlertTitle>
-        <AlertDescription>
-          <p>
-            The Shadow Box API is for superusers, so Console can’t show whether this cluster is boxed. While it is,
-            writes and most changes a shadow link copies are rejected.
-          </p>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (unreadable) {
-    return (
-      <Alert testId="shadow-box-unreadable" variant="warning">
-        <AlertTitle>Console can’t tell what state this box is in</AlertTitle>
-        <AlertDescription>
-          <p>The cluster reported a box this version of Console doesn’t understand, so it won’t guess.</p>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (error && !data) {
-    return <ReadProblem error={error} isRefetching={isRefetching} onRetry={() => refetch()} ownCopies={ownCopies} />;
-  }
-
+const BoxStatusCard = ({
+  summary,
+  brokers,
+  readers,
+  now,
+  actions,
+}: {
+  summary: BoxSummary;
+  brokers: BrokerProgress[];
+  readers: ShadowLinkReader[] | undefined;
+  now: number;
+  actions: ReactNode;
+}) => {
   const { phase } = summary;
   const changedAt = summary.stateChangedAt;
   const held = describeHeldMove(summary, brokers, now);
-  const readers = topology ? topology.readers : undefined;
-  const actions = (
-    <BoxActions
-      onBox={() => setBoxOpen(true)}
-      onUnbox={() => setUnboxOpen(true)}
-      phase={phase}
-      stopsBox={linksThatStopBox(ownLinks).map((link) => link.name)}
-    />
-  );
-
   return (
-    <div className="flex flex-col gap-4" data-testid="shadow-box-source-panel">
-      {error ? (
-        <Alert testId="shadow-box-status-stale" variant="warning">
-          <AlertTitle>Couldn’t refresh the shadow box</AlertTitle>
-          <AlertDescription>
-            <p>{describeShadowBoxReadError(error)}</p>
-            <p>Showing its status from {formatBoxDuration(now - dataUpdatedAt)} ago.</p>
-            {ownCopies.length > 0 ? (
-              <div className="text-body-sm">
-                Each broker’s own copy, read from that broker:
-                <OwnCopiesList copies={ownCopies} />
-              </div>
-            ) : null}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      <Card size="full" testId="shadow-box-status-card" variant="standard">
-        <CardContent className="flex flex-col gap-4">
+    <Card size="full" testId="shadow-box-status-card" variant="standard">
+      <CardContent>
+        <div className="flex flex-col gap-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -737,12 +735,74 @@ export const ShadowBoxSourcePanel = () => {
             </div>
             {brokers.length > 0 ? <BrokersTable brokers={brokers} phase={phase} /> : null}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/** The panel's three dialogs; each can also open from `?action=` (see useActionFromUrl). */
+const useSourceDialogs = (known: boolean, phase: BoxPhase) => {
+  const [boxOpen, setBoxOpen] = useState(false);
+  const [unboxOpen, setUnboxOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const setters = useMemo<DialogSetters>(() => ({ box: setBoxOpen, unbox: setUnboxOpen, exempt: setSettingsOpen }), []);
+  const { principal } = useLocation().search as { principal?: string };
+  const closingClears = useActionFromUrl(known, phase, setters);
+  return { boxOpen, setBoxOpen, unboxOpen, setUnboxOpen, settingsOpen, setSettingsOpen, principal, closingClears };
+};
+
+const SourceDialogs = ({
+  dialogs,
+  clusterName,
+}: {
+  dialogs: ReturnType<typeof useSourceDialogs>;
+  clusterName: string | undefined;
+}) => (
+  <>
+    <BoxClusterDialog onOpenChange={dialogs.closingClears(dialogs.setBoxOpen)} open={dialogs.boxOpen} />
+    <UnboxClusterDialog
+      clusterName={clusterName}
+      onOpenChange={dialogs.closingClears(dialogs.setUnboxOpen)}
+      open={dialogs.unboxOpen}
+    />
+    <ShadowBoxSettingsDialog
+      addPrincipal={dialogs.principal}
+      onOpenChange={dialogs.closingClears(dialogs.setSettingsOpen)}
+      open={dialogs.settingsOpen}
+    />
+  </>
+);
+
+const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
+  const { summary, brokers, error, dataUpdatedAt, ownCopies, known } = status;
+  const topology = useShadowBoxStore((state) => state.topology);
+  const ownLinks = useListShadowLinksQuery({}).data?.shadowLinks ?? [];
+  const now = useNow();
+  const dialogs = useSourceDialogs(known, summary.phase);
+  const readers = topology ? topology.readers : undefined;
+
+  return (
+    <div className="flex flex-col gap-4" data-testid="shadow-box-source-panel">
+      {error ? <StaleStatusAlert dataUpdatedAt={dataUpdatedAt} error={error} now={now} ownCopies={ownCopies} /> : null}
+      <BoxStatusCard
+        actions={
+          <BoxActions
+            onBox={() => dialogs.setBoxOpen(true)}
+            onUnbox={() => dialogs.setUnboxOpen(true)}
+            phase={summary.phase}
+            stopsBox={linksThatStopBox(ownLinks).map((link) => link.name)}
+          />
+        }
+        brokers={brokers}
+        now={now}
+        readers={readers}
+        summary={summary}
+      />
 
       <SourceStepsCard brokers={brokers} readers={readers} summary={summary} />
 
-      <SettingsCard onEdit={() => setSettingsOpen(true)} summary={summary} />
+      <SettingsCard onEdit={() => dialogs.setSettingsOpen(true)} summary={summary} />
 
       <ReadersCard
         incomplete={topology?.readersIncomplete ?? false}
@@ -753,17 +813,59 @@ export const ShadowBoxSourcePanel = () => {
 
       <GoodToKnowCard />
 
-      <BoxClusterDialog onOpenChange={closingClears(setBoxOpen)} open={boxOpen} />
-      <UnboxClusterDialog
-        clusterName={topology?.clusterName}
-        onOpenChange={closingClears(setUnboxOpen)}
-        open={unboxOpen}
-      />
-      <ShadowBoxSettingsDialog
-        addPrincipal={principal}
-        onOpenChange={closingClears(setSettingsOpen)}
-        open={settingsOpen}
-      />
+      <SourceDialogs clusterName={topology?.clusterName} dialogs={dialogs} />
     </div>
   );
+};
+
+/** The Shadow Links page's view of this cluster as a link source: its box, and who reads from it. */
+export const ShadowBoxSourcePanel = () => {
+  const status = useShadowBoxStatusQuery();
+
+  if (status.isLoading) {
+    return (
+      <div className="flex flex-col gap-4" data-testid="shadow-box-source-loading">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  if (status.access === 'forbidden') {
+    return (
+      <Alert testId="shadow-box-forbidden" variant="informative">
+        <AlertTitle>Only superusers can see this cluster’s shadow box</AlertTitle>
+        <AlertDescription>
+          <p>
+            The Shadow Box API is for superusers, so Console can’t show whether this cluster is boxed. While it is,
+            writes and most changes a shadow link copies are rejected.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (status.unreadable) {
+    return (
+      <Alert testId="shadow-box-unreadable" variant="warning">
+        <AlertTitle>Console can’t tell what state this box is in</AlertTitle>
+        <AlertDescription>
+          <p>The cluster reported a box this version of Console doesn’t understand, so it won’t guess.</p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (status.error && !status.data) {
+    return (
+      <ReadProblem
+        error={status.error}
+        isRefetching={status.isRefetching}
+        onRetry={() => status.refetch()}
+        ownCopies={status.ownCopies}
+      />
+    );
+  }
+
+  return <SourcePanelBody status={status} />;
 };
