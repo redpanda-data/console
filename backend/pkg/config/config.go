@@ -45,6 +45,7 @@ type Config struct {
 	SQL            SQL          `yaml:"sql"`
 	Logger         Logging      `yaml:"logger"`
 	Analytics      Analytics    `yaml:"analytics"`
+	Pipelines      Pipelines    `yaml:"pipelines"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -106,6 +107,11 @@ func (c *Config) Validate() error {
 	err = c.Analytics.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate Analytics config: %w", err)
+	}
+
+	err = c.Pipelines.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Pipelines config: %w", err)
 	}
 
 	return nil
