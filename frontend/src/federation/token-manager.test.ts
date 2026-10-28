@@ -83,25 +83,28 @@ describe('the TokenManager', () => {
   });
 
   describe('reset', () => {
-    test('clears refresh state when called', async () => {
-      let resolveToken: (value: string) => void;
-      const tokenPromise = new Promise<string>((resolve) => {
-        resolveToken = resolve;
-      });
-      const mockGetToken = mock().mockReturnValue(tokenPromise);
-      const tokenManager = new TokenManager(mockGetToken);
+    test('clears refresh state and invalidates the pending request', async () => {
+      const token = Promise.withResolvers<string>();
+      const manager = new TokenManager(() => token.promise);
+      const pending = manager.refresh().catch((error: unknown) => error);
+      expect(manager.isRefreshing).toBe(true);
+      manager.reset();
+      expect(manager.isRefreshing).toBe(false);
+      token.resolve('token');
+      expect(await pending).toMatchObject({ message: 'Token refresh cancelled' });
+    });
 
-      // Start a refresh
-      const pending = tokenManager.refresh();
-      expect(tokenManager.isRefreshing).toBe(true);
-
-      // Reset
-      tokenManager.reset();
-      expect(tokenManager.isRefreshing).toBe(false);
-
-      // Resolve the original promise (cleanup)
-      resolveToken!('token');
-      await pending;
+    test('does not commit stale tokens or clear a newer refresh', async () => {
+      const race = startReplacementRefresh();
+      race.stale.resolve('stale-token');
+      expect(await race.cancelled).toMatchObject({ message: 'Token refresh cancelled' });
+      expect(race.manager.refresh()).toBe(race.newRefresh);
+      expect(race.manager.isRefreshing).toBe(true);
+      race.current.resolve('current-token');
+      await expect(race.newRefresh).resolves.toBe('current-token');
+      expect(race.getToken).toHaveBeenCalledTimes(2);
+      expect(race.commitToken).toHaveBeenCalledTimes(1);
+      expect(race.commitToken).toHaveBeenCalledWith('current-token');
     });
 
     test('is safe to call when no refresh is in progress', () => {
@@ -170,3 +173,15 @@ describe('the TokenManager', () => {
     });
   });
 });
+
+function startReplacementRefresh() {
+  const stale = Promise.withResolvers<string>();
+  const current = Promise.withResolvers<string>();
+  const getToken = mock().mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
+  const commitToken = mock();
+  const manager = new TokenManager(getToken, commitToken);
+  const cancelled = manager.refresh().catch((error: unknown) => error);
+  manager.reset();
+  const newRefresh = manager.refresh();
+  return { stale, current, getToken, commitToken, manager, cancelled, newRefresh };
+}

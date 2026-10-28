@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -59,14 +60,29 @@ describe('console build analysis', () => {
     await rm(directory, { recursive: true, force: true });
   });
 
-  const build = (enabled: boolean, signal: AbortSignal) =>
-    execute(process.execPath, [fixture, directory], {
+  const build = (enabled: boolean, signal: AbortSignal, config?: string) =>
+    execute(process.execPath, [fixture, directory, ...(config ? [config] : [])], {
       cwd: tmpdir(),
       // Rsdoctor's own test mode overrides disableClientServer.
       env: { ...process.env, RSDOCTOR: enabled ? 'true' : '', RSTEST: undefined },
       signal,
       maxBuffer: 10 * 1024 * 1024,
     });
+
+  test('preserves separate main-app and React 19 analysis reports', async ({ signal }) => {
+    await build(true, signal);
+    const mainReport = join(directory, 'build-stats/rsdoctor/rsdoctor-data.json');
+    const originalMain = createHash('sha256')
+      .update(await readFile(mainReport))
+      .digest('hex');
+    await build(true, signal, 'rsbuild.config.react19.ts');
+    expect(
+      createHash('sha256')
+        .update(await readFile(mainReport))
+        .digest('hex')
+    ).toBe(originalMain);
+    expect(existsSync(join(directory, 'build-stats/rsdoctor-react19/rsdoctor-data.json'))).toBe(true);
+  });
 
   // Covers the configuration's opt-in gate, not the plugin's disabled behavior.
   test('keeps analysis reports out of normal builds', async ({ signal }) => {

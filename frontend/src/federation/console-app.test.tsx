@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useQuery } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -55,27 +56,12 @@ rs.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: MockNotFoundPage,
 }));
 
-rs.mock('./token-manager', () => ({
-  TokenManager: class MockTokenManager {
-    private getToken: () => Promise<string>;
-    refresh = rs.fn();
-    reset = rs.fn();
-    setGetAccessToken = rs.fn();
-    isRefreshing = false;
-
-    constructor(getToken: () => Promise<string>) {
-      this.getToken = getToken;
-      this.refresh.mockImplementation(() => this.getToken());
-      this.setGetAccessToken.mockImplementation((fn: () => Promise<string>) => {
-        this.getToken = fn;
-      });
-    }
-  },
-}));
-
 import { ConsoleApp } from './console-app';
 import type { ConsoleAppProps } from './types';
 import { config, setup } from '../config';
+
+let pendingTopic: Promise<string> | undefined;
+let reportBreadcrumbsDuringRender = false;
 
 const mockGetAccessToken = rs.fn();
 const mockOnRouteChange = rs.fn();
@@ -97,6 +83,8 @@ const defaultProps: ConsoleAppProps = {
 describe('the ConsoleApp', () => {
   beforeEach(() => {
     rs.clearAllMocks();
+    pendingTopic = undefined;
+    reportBreadcrumbsDuringRender = false;
     mockGetAccessToken.mockResolvedValue('test-token-123');
     // Reset config.jwt
     config.jwt = undefined;
@@ -136,6 +124,82 @@ describe('the ConsoleApp', () => {
         await token.promise;
       });
       expect(screen.getByTestId('router-provider')).toBe(mounted);
+    });
+  });
+
+  describe('initialization ownership', () => {
+    test('does not let an unmounted cluster overwrite the active token', async () => {
+      const staleToken = Promise.withResolvers<string>();
+      const oldApp = render(<ConsoleApp {...defaultProps} getAccessToken={() => staleToken.promise} />);
+      oldApp.unmount();
+      render(<ConsoleApp {...defaultProps} clusterId="current-cluster" />);
+      await waitFor(() => expect(config.jwt).toBe('test-token-123'));
+
+      await act(async () => {
+        staleToken.resolve('stale-cluster-token');
+        await staleToken.promise;
+      });
+
+      expect(config.jwt).toBe('test-token-123');
+      expect(setup).toHaveBeenCalledTimes(1);
+      expect(setup).toHaveBeenCalledWith(expect.objectContaining({ clusterId: 'current-cluster' }));
+    });
+
+    test('keeps an active query subscribed when a host callback changes', async () => {
+      const topic = Promise.withResolvers<string>();
+      pendingTopic = topic.promise;
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      await screen.findByText('Loading topic fixture');
+
+      rerender(<ConsoleApp {...defaultProps} onSidebarItemsChange={rs.fn()} />);
+      await act(async () => {
+        topic.resolve('Loaded topic fixture');
+        await topic.promise;
+      });
+
+      expect(await screen.findByText('Loaded topic fixture')).toBeInTheDocument();
+      expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
+    });
+
+    test('forwards subscription events to the latest host callbacks without reconnecting', async () => {
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
+      const callbacks = { sidebar: rs.fn(), breadcrumbs: rs.fn() };
+      rerender(
+        <ConsoleApp
+          {...defaultProps}
+          onBreadcrumbsChange={callbacks.breadcrumbs}
+          onSidebarItemsChange={callbacks.sidebar}
+        />
+      );
+      const settings = rs.mocked(setup).mock.calls[0]?.[0];
+      settings?.setSidebarItems?.([]);
+      settings?.setBreadcrumbs?.([]);
+      expect(callbacks.sidebar).toHaveBeenCalledWith([]);
+      expect(callbacks.breadcrumbs).toHaveBeenCalledWith([]);
+      expect(setup).toHaveBeenCalledTimes(1);
+    });
+
+    test('accepts breadcrumb notifications from a route rendering', async () => {
+      reportBreadcrumbsDuringRender = true;
+      render(<ConsoleApp {...defaultProps} />);
+      expect(await screen.findByTestId('router-provider')).toBeInTheDocument();
+      expect(mockOnBreadcrumbsChange).toHaveBeenCalledWith([]);
+      expect(mockOnError).not.toHaveBeenCalled();
+    });
+
+    test('hides the previous cluster while a new cluster initializes', async () => {
+      const { rerender } = render(<ConsoleApp {...defaultProps} />);
+      await screen.findByTestId('router-provider');
+      const token = Promise.withResolvers<string>();
+      rerender(<ConsoleApp {...defaultProps} clusterId="next-cluster" getAccessToken={() => token.promise} />);
+      expect(screen.queryByTestId('router-provider')).not.toBeInTheDocument();
+      await act(async () => {
+        token.resolve('next-cluster-token');
+        await token.promise;
+      });
+      expect(await screen.findByTestId('router-provider')).toBeInTheDocument();
+      expect(setup).toHaveBeenLastCalledWith(expect.objectContaining({ clusterId: 'next-cluster' }));
     });
   });
 
@@ -205,6 +269,7 @@ describe('the ConsoleApp', () => {
 
     test('calls setup with correct arguments', async () => {
       const customConfig = {
+        jwt: 'stale-host-token',
         urlOverride: {
           grpc: 'http://custom-grpc:9090',
         },
@@ -217,8 +282,8 @@ describe('the ConsoleApp', () => {
           expect.objectContaining({
             jwt: 'test-token-123',
             clusterId: 'test-cluster-id',
-            setSidebarItems: mockOnSidebarItemsChange,
-            setBreadcrumbs: mockOnBreadcrumbsChange,
+            setSidebarItems: expect.any(Function),
+            setBreadcrumbs: expect.any(Function),
             featureFlags: { enablePipelineDiagrams: true },
             urlOverride: { grpc: 'http://custom-grpc:9090' },
           })
@@ -543,9 +608,20 @@ describe('the ConsoleApp', () => {
 });
 
 function MockRouterProvider({ children }: { children?: React.ReactNode }) {
-  return <div data-testid="router-provider">{children}</div>;
+  if (reportBreadcrumbsDuringRender) {
+    rs.mocked(setup).mock.calls[0]?.[0]?.setBreadcrumbs?.([]);
+  }
+  return <div data-testid="router-provider">{pendingTopic ? <MockTopicQuery /> : children}</div>;
 }
 
 function MockNotFoundPage() {
   return <div>Not Found</div>;
+}
+
+function MockTopicQuery() {
+  const { data } = useQuery({
+    queryKey: ['federated-lifecycle-probe'],
+    queryFn: () => pendingTopic ?? Promise.resolve('Loaded topic fixture'),
+  });
+  return <p>{data ?? 'Loading topic fixture'}</p>;
 }

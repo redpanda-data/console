@@ -9,20 +9,16 @@ import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { pluginTailwindcss } from '@rsbuild/plugin-tailwindcss';
 import { pluginYaml } from '@rsbuild/plugin-yaml';
 
-import { moduleFederationConfig } from './module-federation.config';
+import { moduleFederationConfig, react19ModuleFederationConfig } from './module-federation.config';
 import { sharedAliases } from './test.shared';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
-const configuredExposes = moduleFederationConfig.exposes;
+const isReact19 = process.env.CONSOLE_FEDERATION_REACT19 === 'true';
+const federationConfig = isReact19 ? react19ModuleFederationConfig : moduleFederationConfig;
+const configuredExposes = federationConfig.exposes;
 
 if (!configuredExposes || Array.isArray(configuredExposes)) {
   throw new Error('Federation contract tests require named Console exposes');
-}
-
-const configExpose = configuredExposes['./config'];
-
-if (!configExpose) {
-  throw new Error('Federation contract tests require the config expose');
 }
 
 export default defineConfig({
@@ -56,7 +52,7 @@ export default defineConfig({
   output: {
     cleanDistPath: true,
     distPath: {
-      root: 'dist/federation-test',
+      root: isReact19 ? 'dist/federation-test-react19' : 'dist/federation-test',
     },
     emitCss: false,
     filenameHash: false,
@@ -74,8 +70,7 @@ export default defineConfig({
     pluginYaml(),
     pluginModuleFederation(
       {
-        ...moduleFederationConfig,
-        name: 'rp_console',
+        ...federationConfig,
         filename: 'remoteEntry.cjs',
         library: {
           type: 'commonjs-module',
@@ -84,12 +79,10 @@ export default defineConfig({
         dts: false,
         dev: false,
         experiments: {
-          ...moduleFederationConfig.experiments,
+          ...federationConfig.experiments,
           asyncStartup: true,
         },
-        exposes: {
-          './config': configExpose,
-        },
+        exposes: configuredExposes,
       },
       { target: 'node' }
     ),
