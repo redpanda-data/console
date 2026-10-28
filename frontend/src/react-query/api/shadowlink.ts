@@ -284,23 +284,16 @@ export const useFailoverShadowLinkMutation = (options?: {
 
   return useMutation(failOver, {
     onSuccess: async () => {
-      if (options?.refreshTopics) {
-        queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'finite' }),
-          exact: false,
-        });
-        queryClient.invalidateQueries({
-          queryKey: createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'infinite' }),
-          exact: false,
-        });
-      }
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: listShadowLinks,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      const queryKeys = [
+        createConnectQueryKey({ schema: listShadowLinks, cardinality: 'finite' }),
+        ...(options?.refreshTopics
+          ? [
+              createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'finite' }),
+              createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'infinite' }),
+            ]
+          : []),
+      ];
+      await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false })));
       options?.onSuccess?.();
     },
     onError: (error) => {

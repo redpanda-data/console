@@ -290,27 +290,38 @@ const startMove = (cluster: SimCluster, options: SimulatorOptions, state: SimSta
   return { box, brokers: withPending(cluster, options, copyOf(box), now, stepMs) };
 };
 
-const applySettingsUpdate = (current: SimSettings, request: UpdateShadowBoxSettingsRequest): SimSettings => {
-  const paths = request.updateMask?.paths ?? [];
-  const incoming = request.settings;
-  const replaceAll = paths.length === 0;
-  const next = { ...current };
-  if (replaceAll || paths.includes('read_policy')) {
-    next.exemptPrincipals = incoming?.readPolicy?.exemptPrincipals ?? [];
-    next.allowAllReads = incoming?.readPolicy?.allowAllReads ?? false;
+type SimReadPolicy = Pick<SimSettings, 'exemptPrincipals' | 'allowAllReads'>;
+
+/** An empty mask replaces the whole policy, as `read_policy` does; `read_policy.exempt_principals` only adds names. */
+const applyReadPolicyUpdate = (
+  current: SimReadPolicy,
+  request: UpdateShadowBoxSettingsRequest,
+  paths: string[]
+): SimReadPolicy => {
+  const incoming = request.settings?.readPolicy;
+  const next = { exemptPrincipals: current.exemptPrincipals, allowAllReads: current.allowAllReads };
+  if (paths.length === 0 || paths.includes('read_policy')) {
+    next.exemptPrincipals = incoming?.exemptPrincipals ?? [];
+    next.allowAllReads = incoming?.allowAllReads ?? false;
   }
-  if (!replaceAll && paths.includes('read_policy.exempt_principals')) {
-    next.exemptPrincipals = Array.from(
-      new Set([...current.exemptPrincipals, ...(incoming?.readPolicy?.exemptPrincipals ?? [])])
-    );
+  if (paths.includes('read_policy.exempt_principals')) {
+    next.exemptPrincipals = Array.from(new Set([...current.exemptPrincipals, ...(incoming?.exemptPrincipals ?? [])]));
   }
-  if (!replaceAll && paths.includes('read_policy.allow_all_reads')) {
-    next.allowAllReads = incoming?.readPolicy?.allowAllReads ?? false;
-  }
-  if (replaceAll || paths.includes('skip_transaction_expiration')) {
-    next.skipTransactionExpiration = incoming?.skipTransactionExpiration ?? false;
+  if (paths.includes('read_policy.allow_all_reads')) {
+    next.allowAllReads = incoming?.allowAllReads ?? false;
   }
   return next;
+};
+
+const applySettingsUpdate = (current: SimSettings, request: UpdateShadowBoxSettingsRequest): SimSettings => {
+  const paths = request.updateMask?.paths ?? [];
+  const replacesSkip = paths.length === 0 || paths.includes('skip_transaction_expiration');
+  return {
+    ...applyReadPolicyUpdate(current, request, paths),
+    skipTransactionExpiration: replacesSkip
+      ? (request.settings?.skipTransactionExpiration ?? false)
+      : current.skipTransactionExpiration,
+  };
 };
 
 const sameSettings = (a: SimSettings, b: SimSettings) =>
@@ -373,10 +384,21 @@ const assertRevision = (cluster: SimCluster, expected: bigint | undefined) => {
 
 const noLeaderError = () => new ConnectError('no controller leader', Code.Unavailable);
 
+/** The record, for a call that needs the controller leader. */
+const readLeaderState = (): SimulatorRecord => {
+  const state = readState();
+  if (state.options.noLeader) {
+    throw noLeaderError();
+  }
+  return state;
+};
+
 const SIMULATED_LATENCY_MS = 180;
 
 const withLatency = async <T>(work: () => T): Promise<T> => {
-  await new Promise((resolve) => setTimeout(resolve, SIMULATED_LATENCY_MS));
+  await new Promise((resolve) => {
+    setTimeout(resolve, SIMULATED_LATENCY_MS);
+  });
   return work();
 };
 
@@ -388,10 +410,7 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
   createRouterTransport(({ service }) => {
     /** A change that returns the cluster unchanged is a no-op, and leaves the record alone. */
     const mutate = (change: (cluster: SimCluster, options: SimulatorOptions, now: number) => SimCluster) => {
-      const state = readState();
-      if (state.options.noLeader) {
-        throw noLeaderError();
-      }
+      const state = readLeaderState();
       const now = Date.now();
       const current = settle(state.clusters[clusterKey] ?? newCluster(), state.options, now);
       const next = change(current, state.options, now);
@@ -411,11 +430,7 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
     service(ShadowBoxService, {
       getShadowBoxStatus: () =>
         withLatency(() => {
-          const state = readState();
-          if (state.options.noLeader) {
-            throw noLeaderError();
-          }
-          const status = statusOf(state);
+          const status = statusOf(readLeaderState());
           return create(GetShadowBoxStatusResponseSchema, {
             box: toBoxMessage(status.box),
             brokers: status.brokers.map(toBrokerMessage),

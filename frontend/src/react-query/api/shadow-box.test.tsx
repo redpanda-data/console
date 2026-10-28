@@ -10,8 +10,8 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   box,
@@ -57,6 +57,11 @@ const boxedStatus = create(GetShadowBoxStatusResponseSchema, {
   brokers: [{ nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: 3n } }],
 });
 
+const renderStatusQuery = (transport: Transport) => {
+  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+  return renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+};
+
 describe('useShadowBoxStatusQuery', () => {
   beforeEach(() => {
     flags.enableShadowBoxing = true;
@@ -68,9 +73,8 @@ describe('useShadowBoxStatusQuery', () => {
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getShadowBoxStatus, () => boxedStatus);
     });
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+    const { result } = renderStatusQuery(transport);
 
     await waitFor(() => expect(result.current.known).toBe(true));
     expect(result.current.summary).toMatchObject({ phase: 'boxed', exemptPrincipals: ['shadow-orders'] });
@@ -90,19 +94,22 @@ describe('useShadowBoxStatusQuery', () => {
     ],
     ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ shadowBoxService: false })],
   ])('stays idle when %s', async (_label, arrange) => {
+    rs.useFakeTimers();
+    onTestFinished(() => {
+      rs.useRealTimers();
+    });
     arrange();
     const handler = rs.fn(() => boxedStatus);
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getShadowBoxStatus, handler);
     });
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+    const { result } = renderStatusQuery(transport);
 
     expect(result.current.available).toBe(false);
     expect(result.current.known).toBe(false);
-    /** A router-transport handler only runs after a microtask, so let one pass before asserting. */
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    // Run every timer already queued, and the microtasks between them, so a would-be read has a chance to run.
+    await rs.runOnlyPendingTimersAsync();
     expect(handler).not.toHaveBeenCalled();
   });
 });

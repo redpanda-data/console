@@ -17,6 +17,7 @@ import {
   BOX_SETTINGS_UPDATE_PATHS,
   type BoxPhase,
   type BoxSummary,
+  type BrokerProgress,
   getBrokerProgress,
   isBlockingPhase,
   isTransitionPhase,
@@ -146,9 +147,12 @@ export type BrokerOwnCopy = { nodeId?: number; phase?: BoxPhase; revision?: bigi
  * fails with UNAVAILABLE, this asks each broker the last status listed (or the broker that takes the
  * call, when none was) for its own copy, so Console still knows whether brokers are blocking.
  */
-const useBrokerOwnCopies = (enabled: boolean, nodeIds: number[]) => {
+const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   const transport = useShadowBoxTransport();
-  const targets: (number | undefined)[] = nodeIds.length > 0 ? nodeIds : [undefined];
+  const targets = useMemo<(number | undefined)[]>(
+    () => (brokers.length > 0 ? brokers.map((broker) => broker.nodeId) : [undefined]),
+    [brokers]
+  );
   const results = useQueries({
     queries: targets.map((nodeId) => ({
       queryKey: ['shadow-box-broker-status', nodeId ?? 'self'],
@@ -172,22 +176,14 @@ const useBrokerOwnCopies = (enabled: boolean, nodeIds: number[]) => {
             };
           })
         : [],
-    // biome-ignore lint/correctness/useExhaustiveDependencies: `targets` follows `nodeIds`
-    [enabled, results, nodeIds]
+    [enabled, results, targets]
   );
 };
 
-/**
- * The cluster's shadow box, polled quickly while brokers are still applying a change. Every
- * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
- * A cluster without the API, or a viewer who isn't a superuser, stops polling: the banner and
- * guards hide, and the Shadow Links page says why.
- */
-export const useShadowBoxStatusQuery = () => {
-  const available = useShadowBoxAvailability();
+/** The status query, polled at the pace the box's state calls for and refetched when the simulator changes. */
+const useShadowBoxStatusRead = (available: boolean) => {
   const transport = useShadowBoxTransport();
   const queryClient = useQueryClient();
-  const setPhase = useShadowBoxStore((state) => state.setPhase);
 
   const query = useQuery(
     getShadowBoxStatus,
@@ -219,28 +215,41 @@ export const useShadowBoxStatusQuery = () => {
     }
     // Every mounted consumer hears the same event; joining the refetch already in flight keeps it to one.
     return subscribeToSimulator(() => {
-      invalidateStatus(queryClient, { cancelRefetch: false });
+      // A failed refetch doesn't reject invalidateQueries; the query keeps the error for its readers.
+      void invalidateStatus(queryClient, { cancelRefetch: false });
     });
   }, [available, queryClient]);
 
+  return query;
+};
+
+/** Hands the phase to the store the write guards read, or null while it isn't known. */
+const usePublishedBoxPhase = (phase: BoxPhase | null) => {
+  const setPhase = useShadowBoxStore((state) => state.setPhase);
+  useEffect(() => {
+    setPhase(phase);
+  }, [phase, setPhase]);
+};
+
+/**
+ * The cluster's shadow box, polled quickly while brokers are still applying a change. Every
+ * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
+ * A cluster without the API, or a viewer who isn't a superuser, stops polling: the banner and
+ * guards hide, and the Shadow Links page says why.
+ */
+export const useShadowBoxStatusQuery = () => {
+  const available = useShadowBoxAvailability();
+  const query = useShadowBoxStatusRead(available);
   const access = accessOf(query.error);
-  const parsed = useMemo(() => summarizeBox(query.data?.box), [query.data]);
-  const brokers = useMemo(() => getBrokerProgress(query.data), [query.data]);
-  const noLeader = available && isNoLeaderError(query.error);
-  const ownCopies = useBrokerOwnCopies(
-    noLeader,
-    brokers.map((broker) => broker.nodeId)
+  const { parsed, brokers } = useMemo(
+    () => ({ parsed: summarizeBox(query.data?.box), brokers: getBrokerProgress(query.data) }),
+    [query.data]
   );
+  const noLeader = available && isNoLeaderError(query.error);
+  const ownCopies = useBrokerOwnCopies(noLeader, brokers);
   const known = available && access === 'ok' && parsed !== undefined;
   const summary = parsed ?? UNBOXED_SUMMARY;
-  /** Without a status, a broker's own blocking copy is enough to disable the writes it rejects. */
-  const blocking = known
-    ? isBlockingPhase(summary.phase)
-    : ownCopies.some((copy) => copy.phase && isBlockingPhase(copy.phase));
-
-  useEffect(() => {
-    setPhase(known ? summary.phase : null);
-  }, [known, summary.phase, setPhase]);
+  usePublishedBoxPhase(known ? summary.phase : null);
 
   return {
     ...query,
@@ -254,8 +263,13 @@ export const useShadowBoxStatusQuery = () => {
     /** The cluster has no controller leader right now, so `ownCopies` stand in for the status. */
     noLeader,
     ownCopies,
-    /** Whether some broker rejects writes now, as far as Console can tell. */
-    blocking,
+    /**
+     * Whether some broker rejects writes now, as far as Console can tell. Without a status, a broker's
+     * own blocking copy is enough to disable the writes it rejects.
+     */
+    blocking: known
+      ? isBlockingPhase(summary.phase)
+      : ownCopies.some((copy) => copy.phase && isBlockingPhase(copy.phase)),
     summary,
     brokers,
   };
