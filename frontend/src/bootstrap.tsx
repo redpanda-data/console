@@ -12,9 +12,10 @@ import { initTheme } from 'components/redpanda-ui/components/theme-provider';
 import { createRoot } from 'react-dom/client';
 
 import App from './app';
+import { STANDALONE_THEME_INIT } from './theme-init';
 
-// Pre-paint theme stamp; ThemeProvider in app.tsx re-applies the same values, so keep the two in step.
-initTheme({ defaultTheme: 'light' });
+// Pre-paint theme stamp, for a load whose inline index.html script could not run.
+initTheme(STANDALONE_THEME_INIT);
 
 const rootElement = document.getElementById('root');
 // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app

@@ -13,9 +13,10 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
-const { getMatchedRoutes, mockPageBreadcrumbs } = rs.hoisted(() => ({
+const { getMatchedRoutes, mockPageBreadcrumbs, isFeatureFlagEnabled } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
   mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
+  isFeatureFlagEnabled: rs.fn((_flag: string) => false),
 }));
 
 rs.mock('@tanstack/react-router', () => ({
@@ -39,7 +40,7 @@ rs.mock('lucide-react', () => ({
 
 rs.mock('../../config', () => ({
   isEmbedded: () => false,
-  isFeatureFlagEnabled: () => false,
+  isFeatureFlagEnabled,
 }));
 
 rs.mock('../../state/backend-api', () => ({
@@ -105,6 +106,20 @@ describe('the AppPageHeader', () => {
 
     mockPageBreadcrumbs.length = 0;
   });
+
+  it('shows the theme switch, even when the route hides the title row, only with enableDarkMode', () => {
+    const { unmount } = render(<AppPageHeader />);
+    expect(screen.queryByTestId('theme-mode-switch')).not.toBeInTheDocument();
+    unmount();
+
+    isFeatureFlagEnabled.mockImplementation((flag) => flag === 'enableDarkMode');
+    try {
+      render(<AppPageHeader />);
+      expect(screen.getByTestId('theme-mode-switch')).toBeInTheDocument();
+    } finally {
+      isFeatureFlagEnabled.mockImplementation(() => false);
+    }
+  });
 });
 
 function MockLink({
@@ -117,7 +132,7 @@ function MockLink({
 }
 
 function MockThemeModeSwitch() {
-  return null;
+  return <span data-testid="theme-mode-switch" />;
 }
 
 function MockChevronLeft() {

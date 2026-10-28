@@ -71,6 +71,12 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
             </BreadcrumbList>
           </Breadcrumb>
         )}
+        {/* In this row, not the title row, so it holds its place on routes that hide the title row. */}
+        {!isEmbedded() && (IsDev || isFeatureFlagEnabled('enableDarkMode')) && (
+          <div className="-my-1 ml-auto">
+            <ThemeModeSwitch />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -159,7 +165,6 @@ function AppPageHeader() {
                   </Tooltip>
                 </TooltipProvider>
               ))}
-            {IsDev && !isEmbedded() && <ThemeModeSwitch />}
           </div>
         </div>
       )}
