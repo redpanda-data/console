@@ -441,7 +441,7 @@ function SimulatorRow({ children }: { children: React.ReactNode }) {
 function SimulatorRowText({ label, description }: { label: string; description: string }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-      <div className="font-medium text-body-sm">{label}</div>
+      <div className="text-body-sm font-medium">{label}</div>
       <div className="text-body-sm text-muted-foreground">{description}</div>
     </div>
   );

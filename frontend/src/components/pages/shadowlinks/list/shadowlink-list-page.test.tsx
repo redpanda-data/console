@@ -121,7 +121,7 @@ describe('the ShadowLinkListPage', () => {
   });
 });
 
-describe('ShadowLinkListPage with shadow boxing', () => {
+describe('the ShadowLinkListPage with shadow boxing', () => {
   const noLinks = () =>
     mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
 

@@ -51,9 +51,9 @@ export const ShadowBoxStateStepper = ({ phase }: { phase: BoxPhase }) => (
       className="col-start-3 col-end-6 flex items-center gap-1.5 text-caption text-muted-foreground"
       data-testid="shadow-box-blocks-bracket"
     >
-      <span aria-hidden="true" className="h-2 flex-1 rounded-bl-sm border-warning-line border-b border-l" />
+      <span aria-hidden="true" className="h-2 flex-1 rounded-bl-sm border-b border-l border-warning-line" />
       <span>Rejects writes</span>
-      <span aria-hidden="true" className="h-2 flex-1 rounded-br-sm border-warning-line border-r border-b" />
+      <span aria-hidden="true" className="h-2 flex-1 rounded-br-sm border-r border-b border-warning-line" />
     </div>
   </div>
 );

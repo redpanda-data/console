@@ -65,13 +65,13 @@ describe('shadow box simulator', () => {
   test('a cluster starts unboxed at revision -1, with no state change yet and default settings', async () => {
     const status = await call(client().getShadowBoxStatus({}));
     expect(status.box?.state).toBe(ShadowBoxState.UNBOXED);
-    expect(status.box?.revision).toBe(BigInt(-1));
+    expect(status.box?.revision).toBe(-1n);
     expect(status.box?.stateChangedAt).toBeUndefined();
     expect(status.box?.settings?.readPolicy?.exemptPrincipals).toEqual([]);
     expect(status.brokers.map((broker) => broker.nodeId)).toEqual([1, 2, 3]);
   });
 
-  test('Box returns at boxing; each broker blocks once it picks it up, and the cluster is boxed once all have', async () => {
+  test('a Box returns at boxing; each broker blocks once it picks it up, and the cluster is boxed once all have', async () => {
     const shadowBox = client();
     const saved = await call(
       shadowBox.updateShadowBoxSettings({
@@ -80,11 +80,11 @@ describe('shadow box simulator', () => {
       })
     );
     expect(saved.box?.state).toBe(ShadowBoxState.UNBOXED);
-    expect(saved.box?.revision).toBeGreaterThan(BigInt(-1));
+    expect(saved.box?.revision).toBeGreaterThan(-1n);
 
     const boxing = await call(shadowBox.box({ expectedRevision: saved.box?.revision }));
     expect(boxing.box?.state).toBe(ShadowBoxState.BOXING);
-    expect(boxing.box?.revision).toBeGreaterThan(saved.box?.revision ?? BigInt(0));
+    expect(boxing.box?.revision).toBeGreaterThan(saved.box?.revision ?? 0n);
 
     await rs.advanceTimersByTimeAsync(2200);
     const partway = await call(shadowBox.getShadowBoxStatus({}));
@@ -105,7 +105,7 @@ describe('shadow box simulator', () => {
 
   test('revisions grow by uneven steps, never by a fixed count', async () => {
     const shadowBox = client();
-    const revisions: bigint[] = [BigInt(-1)];
+    const revisions: bigint[] = [-1n];
     for (const allowAllReads of [true, false, true, false]) {
       const response = await call(
         shadowBox.updateShadowBoxSettings({
@@ -113,16 +113,16 @@ describe('shadow box simulator', () => {
           updateMask: { paths: ['read_policy'] },
         })
       );
-      revisions.push(response.box?.revision ?? BigInt(0));
+      revisions.push(response.box?.revision ?? 0n);
     }
-    const steps = revisions.slice(1).map((revision, index) => revision - (revisions[index] ?? BigInt(0)));
-    expect(steps.every((step) => step >= BigInt(2) && step <= BigInt(10))).toBe(true);
+    const steps = revisions.slice(1).map((revision, index) => revision - (revisions[index] ?? 0n));
+    expect(steps.every((step) => step >= 2n && step <= 10n)).toBe(true);
   });
 
-  test('Box while boxing or boxed and Unbox while unboxed change nothing', async () => {
+  test('a Box while boxing or boxed and an Unbox while unboxed change nothing', async () => {
     const shadowBox = client();
     const unboxed = await call(shadowBox.unbox({}));
-    expect(unboxed.box?.revision).toBe(BigInt(-1));
+    expect(unboxed.box?.revision).toBe(-1n);
 
     const boxing = await call(shadowBox.box({}));
     const again = await call(shadowBox.box({}));
@@ -130,7 +130,7 @@ describe('shadow box simulator', () => {
   });
 
   test('a stale expected revision fails the way the broker does', async () => {
-    const error = await failure(client().box({ expectedRevision: BigInt(7) }));
+    const error = await failure(client().box({ expectedRevision: 7n }));
     expect(error.code).toBe(Code.FailedPrecondition);
     expect(error.rawMessage).toBe('Shadow boxing revision has changed');
   });
@@ -220,7 +220,7 @@ describe('shadow box simulator', () => {
     expect(replaced.box?.settings?.readPolicy?.exemptPrincipals).toEqual(['new-user']);
   });
 
-  test('Unbox keeps the settings saved', async () => {
+  test('an Unbox keeps the settings saved', async () => {
     const shadowBox = client();
     await call(
       shadowBox.updateShadowBoxSettings({
@@ -263,7 +263,7 @@ describe('shadow box simulator', () => {
     expect(broker.broker?.box?.state).toBe(ShadowBoxState.UNBOXED);
   });
 
-  test('GetShadowBoxBrokerStatus: a down broker is UNAVAILABLE, a broker that isn’t a member is NOT_FOUND', async () => {
+  test('the GetShadowBoxBrokerStatus call: a down broker is UNAVAILABLE, a broker that isn’t a member is NOT_FOUND', async () => {
     setShadowBoxSimulatorOptions({ downBrokers: [3] });
     const shadowBox = client();
     expect((await failure(shadowBox.getShadowBoxBrokerStatus({ nodeId: 3 }))).code).toBe(Code.Unavailable);

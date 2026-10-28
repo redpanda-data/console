@@ -64,7 +64,7 @@ describe('phase rules', () => {
     expect(hasBoxActivity('unboxed')).toBe(false);
   });
 
-  test('Box is accepted while unboxed or unboxing; Box while boxing or boxed changes nothing', () => {
+  test('a Box is accepted while unboxed or unboxing; a Box while boxing or boxed changes nothing', () => {
     expect(canBoxFromPhase('unboxed')).toBe(true);
     expect(canBoxFromPhase('unboxing')).toBe(true);
     expect(canBoxFromPhase('boxing')).toBe(false);
@@ -84,15 +84,15 @@ describe('getBrokerProgress', () => {
       ],
     });
     expect(getBrokerProgress(response)).toEqual([
-      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxing', revision: BigInt(18) }, blocks: true },
+      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxing', revision: 18n }, blocks: true },
       {
         nodeId: 2,
         status: 'not-answering',
         blocks: undefined,
         errorMessage: 'rpc::errc::disconnected_endpoint(node down)',
       },
-      { nodeId: 3, status: 'behind', copy: { phase: 'unboxed', revision: BigInt(-1) }, blocks: false },
-      { nodeId: 4, status: 'behind', copy: { phase: 'boxed', revision: BigInt(18) }, blocks: true },
+      { nodeId: 3, status: 'behind', copy: { phase: 'unboxed', revision: -1n }, blocks: false },
+      { nodeId: 4, status: 'behind', copy: { phase: 'boxed', revision: 18n }, blocks: true },
     ]);
   });
 
@@ -108,7 +108,7 @@ describe('summarizeBox', () => {
       summarizeBox(
         create(ShadowBoxSchema, {
           state: ShadowBoxState.BOXED,
-          revision: BigInt(29),
+          revision: 29n,
           stateChangedAt: timestampFromDate(changedAt),
           settings: {
             readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
@@ -118,7 +118,7 @@ describe('summarizeBox', () => {
       )
     ).toEqual({
       phase: 'boxed',
-      revision: BigInt(29),
+      revision: 29n,
       stateChangedAt: changedAt,
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,

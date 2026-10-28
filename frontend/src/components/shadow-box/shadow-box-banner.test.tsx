@@ -33,7 +33,7 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
     available: true,
     summary: {
       phase,
-      revision: BigInt(3),
+      revision: 3n,
       stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,
@@ -43,7 +43,7 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
     brokers,
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
 
-describe('ShadowBoxBanner', () => {
+describe('the ShadowBoxBanner', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });

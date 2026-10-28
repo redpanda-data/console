@@ -33,7 +33,7 @@ import { UnboxClusterDialog } from './unbox-cluster-dialog';
 const status = (phase: BoxPhase, revision: number) =>
   ({ summary: { phase, revision: BigInt(revision) } }) as unknown as ReturnType<typeof useShadowBoxStatusQuery>;
 
-describe('UnboxClusterDialog', () => {
+describe('the UnboxClusterDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mutation.error = null;
@@ -48,7 +48,7 @@ describe('UnboxClusterDialog', () => {
     expect(screen.getByTestId('unbox-cluster-dialog')).toHaveTextContent('clients still pointed at it start writing');
 
     await user.click(screen.getByTestId('confirm-unbox-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: BigInt(7) });
+    expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: 7n });
   });
 
   test('says when someone else re-boxed the cluster', async () => {

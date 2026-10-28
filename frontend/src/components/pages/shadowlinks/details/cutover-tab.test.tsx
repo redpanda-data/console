@@ -95,7 +95,7 @@ const renderTab = (
     />
   );
 
-describe('CutoverTab', () => {
+describe('the CutoverTab', () => {
   const openCluster = rs.fn();
 
   beforeEach(() => {
@@ -248,8 +248,8 @@ describe('CutoverTab', () => {
   test('while topics are still failing over, says so and keeps moving clients for later', () => {
     renderTab(
       readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: BigInt(0) },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAILING_OVER, totalLag: BigInt(0) },
+        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
+        { topicName: 'orders-audit', state: ShadowTopicState.FAILING_OVER, totalLag: 0n },
       ])
     );
 
@@ -292,7 +292,7 @@ describe('CutoverTab', () => {
   test('after failover, moving clients is the last step: repoint them and leave the source boxed', () => {
     renderTab(
       readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: BigInt(0) },
+        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
       ])
     );
 
@@ -328,8 +328,8 @@ describe('CutoverTab', () => {
   test('a faulted topic keeps failover locked and names the topic', () => {
     renderTab(
       readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: BigInt(0) },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: BigInt(0) },
+        { topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n },
+        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
       ])
     );
 
@@ -341,8 +341,8 @@ describe('CutoverTab', () => {
   test('a failover that left a faulted topic behind still finishes', () => {
     renderTab(
       readinessFor(cloudSource('boxed'), [
-        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: BigInt(0) },
-        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: BigInt(0) },
+        { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
+        { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
       ])
     );
 

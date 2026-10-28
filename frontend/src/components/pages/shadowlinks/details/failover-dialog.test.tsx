@@ -43,7 +43,7 @@ const readiness = (boxed: boolean, lag: number) =>
 
 const EXACTLY_FAIL_OVER = /^Fail over$/;
 
-describe('FailoverDialog', () => {
+describe('the FailoverDialog', () => {
   test('lists the safe order: stop writes and let lag drain first, repoint clients after', () => {
     render(<FailoverDialog onConfirm={rs.fn()} onOpenChange={rs.fn()} open readiness={readiness(true, 0)} />);
 
@@ -101,7 +101,7 @@ describe('FailoverDialog', () => {
         onOpenChange={rs.fn()}
         open
         readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: BigInt(0) }],
+          topics: [{ topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n }],
           box: readiness(true, 0).box,
         })}
         topicName="orders-audit"
@@ -138,7 +138,7 @@ describe('FailoverDialog', () => {
         onOpenChange={rs.fn()}
         open
         readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: BigInt(0) }],
+          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
           box: blocking,
         })}
       />
@@ -156,7 +156,7 @@ describe('FailoverDialog', () => {
         onOpenChange={rs.fn()}
         open
         readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: BigInt(0) }],
+          topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
           topicsFailed: true,
           box: readiness(true, 0).box,
         })}
@@ -174,7 +174,7 @@ describe('FailoverDialog', () => {
         onOpenChange={rs.fn()}
         open
         readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.PAUSED, totalLag: BigInt(0) }],
+          topics: [{ topicName: 'orders-events', state: ShadowTopicState.PAUSED, totalLag: 0n }],
           box: readiness(true, 0).box,
         })}
       />
@@ -191,7 +191,7 @@ describe('FailoverDialog', () => {
         onOpenChange={rs.fn()}
         open
         readiness={getCutoverReadiness({
-          topics: [{ topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: BigInt(0) }],
+          topics: [{ topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n }],
           box: readiness(true, 0).box,
         })}
       />

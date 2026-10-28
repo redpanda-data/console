@@ -51,10 +51,10 @@ import {
 const boxedStatus = create(GetShadowBoxStatusResponseSchema, {
   box: {
     state: ShadowBoxState.BOXED,
-    revision: BigInt(3),
+    revision: 3n,
     settings: { readPolicy: { exemptPrincipals: ['shadow-orders'] } },
   },
-  brokers: [{ nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: BigInt(3) } }],
+  brokers: [{ nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: 3n } }],
 });
 
 describe('useShadowBoxStatusQuery', () => {
@@ -75,7 +75,7 @@ describe('useShadowBoxStatusQuery', () => {
     await waitFor(() => expect(result.current.known).toBe(true));
     expect(result.current.summary).toMatchObject({ phase: 'boxed', exemptPrincipals: ['shadow-orders'] });
     expect(result.current.brokers).toEqual([
-      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxed', revision: BigInt(3) }, blocks: true },
+      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxed', revision: 3n }, blocks: true },
     ]);
     expect(result.current.blocking).toBe(true);
     expect(useShadowBoxStore.getState().phase).toBe('boxed');
@@ -140,7 +140,7 @@ const boxTransport = (saved: ReturnType<typeof savedBox>, boxError?: ConnectErro
       if (boxError) {
         throw boxError;
       }
-      return create(BoxResponseSchema, { box: { state: ShadowBoxState.BOXING, revision: BigInt(6) } });
+      return create(BoxResponseSchema, { box: { state: ShadowBoxState.BOXING, revision: 6n } });
     });
     rpc(getShadowBoxStatus, () => boxedStatus);
   });
@@ -161,14 +161,14 @@ describe('useBoxClusterMutation', () => {
 
     expect(calls).toEqual(['save', 'box']);
     expect(saveRequests[0]).toMatchObject({
-      expectedRevision: BigInt(4),
+      expectedRevision: 4n,
       updateMask: { paths: ['read_policy', 'skip_transaction_expiration'] },
       settings: {
         readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
         skipTransactionExpiration: true,
       },
     });
-    expect(boxRequests[0]).toMatchObject({ expectedRevision: BigInt(5) });
+    expect(boxRequests[0]).toMatchObject({ expectedRevision: 5n });
   });
 
   test('boxes straight away when the settings are already saved', async () => {
@@ -181,7 +181,7 @@ describe('useBoxClusterMutation', () => {
     });
 
     expect(calls).toEqual(['box']);
-    expect(boxRequests[0]).toMatchObject({ expectedRevision: BigInt(4) });
+    expect(boxRequests[0]).toMatchObject({ expectedRevision: 4n });
   });
 
   test('won’t box when the save came back with someone else’s settings', async () => {
@@ -212,7 +212,7 @@ describe('useBoxClusterMutation', () => {
     });
 
     expect(calls).toEqual(['save', 'box']);
-    expect(result.current.savedBox).toMatchObject({ revision: BigInt(5), exemptPrincipals: ['shadow-orders'] });
+    expect(result.current.savedBox).toMatchObject({ revision: 5n, exemptPrincipals: ['shadow-orders'] });
     act(() => result.current.reset());
     expect(result.current.savedBox).toBeUndefined();
   });
@@ -270,7 +270,7 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
       });
       rpc(getShadowBoxBrokerStatus, () =>
         create(GetShadowBoxBrokerStatusResponseSchema, {
-          broker: { nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: BigInt(18) } },
+          broker: { nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: 18n } },
         })
       );
     });
@@ -278,9 +278,7 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
 
     const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
 
-    await waitFor(() =>
-      expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'boxed', revision: BigInt(18) }])
-    );
+    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'boxed', revision: 18n }]));
     expect(result.current.noLeader).toBe(true);
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);

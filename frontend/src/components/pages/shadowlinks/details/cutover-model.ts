@@ -186,7 +186,7 @@ export const getLagStep = (topics: CutoverTopic[] | undefined, box: BoxProgress,
     (topic) => topic.state === ShadowTopicState.ACTIVE || topic.state === ShadowTopicState.PAUSED
   );
   const behind = syncingTopics
-    .filter((topic) => topic.totalLag > BigInt(0))
+    .filter((topic) => topic.totalLag > 0n)
     .map((topic) => ({ topicName: topic.topicName, lag: topic.totalLag }))
     .sort(byLagDescending);
   const faulted = topics.filter((topic) => topic.state === ShadowTopicState.FAULTED).map((topic) => topic.topicName);

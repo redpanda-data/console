@@ -56,7 +56,7 @@ import { render } from 'test-utils';
 
 import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
-describe('ShadowLinkDetailsPage', () => {
+describe('the ShadowLinkDetailsPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     route.search = {};

@@ -44,7 +44,7 @@ export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationP
       </TabsTrigger>
     </TabsList>
 
-    <TabsContents className="min-w-0 max-w-4xl flex-1">
+    <TabsContents className="max-w-4xl min-w-0 flex-1">
       <TabsContent testId="all-content" value="all">
         <div className="flex flex-col gap-12">
           <ConfigurationSource shadowLink={shadowLink} />

@@ -32,7 +32,7 @@ export const ShadowBoxClientEffects = ({ effects }: { effects: ClientEffect[] })
         data-verdict={effect.verdict}
         key={effect.id}
       >
-        <div className="font-medium text-body-sm">{effect.label}</div>
+        <div className="text-body-sm font-medium">{effect.label}</div>
         <div className="text-body-sm text-muted-foreground">{effect.detail}</div>
       </li>
     ))}

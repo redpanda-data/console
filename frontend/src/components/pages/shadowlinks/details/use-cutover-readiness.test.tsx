@@ -85,7 +85,7 @@ describe('useCutoverReadiness', () => {
 
   test('a failed refresh marks the lag it kept as out of date', () => {
     rs.mocked(useListShadowTopicQuery).mockReturnValueOnce({
-      data: { shadowTopics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: BigInt(0) }] },
+      data: { shadowTopics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }] },
       isError: true,
       error: new Error('unavailable'),
       refetch: rs.fn(),

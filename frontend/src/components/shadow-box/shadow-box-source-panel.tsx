@@ -719,7 +719,7 @@ export const ShadowBoxSourcePanel = () => {
                 {changedAt
                   ? `${BOX_PHASE_LABEL[phase]} since ${formatSince(changedAt, now)}, ${formatBoxDuration(now - changedAt.getTime())} ago · `
                   : ''}
-                {summary.revision === BigInt(-1) ? 'No changes yet' : `revision ${summary.revision.toString()}`}
+                {summary.revision === -1n ? 'No changes yet' : `revision ${summary.revision.toString()}`}
               </p>
             </div>
             {actions}

@@ -111,7 +111,7 @@ export type BoxSummary = {
 
 export const UNBOXED_SUMMARY: BoxSummary = {
   phase: 'unboxed',
-  revision: BigInt(-1),
+  revision: -1n,
   exemptPrincipals: [],
   allowAllReads: false,
   skipTransactionExpiration: false,

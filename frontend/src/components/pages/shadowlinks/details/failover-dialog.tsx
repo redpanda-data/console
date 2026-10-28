@@ -198,7 +198,7 @@ const CutoverFailoverDialog = ({
                   : 'This makes every shadow topic writable on this cluster and stops syncing them from the source cluster. You can’t undo it.'}
               </p>
               <div>
-                <p className="font-semibold text-body">Before you fail over</p>
+                <p className="text-body font-semibold">Before you fail over</p>
                 <ul className="mt-2 flex flex-col gap-1.5" data-testid="failover-readiness">
                   {checks.map((check) => (
                     <li
@@ -214,7 +214,7 @@ const CutoverFailoverDialog = ({
                 </ul>
               </div>
               <div>
-                <p className="font-semibold text-body">After you fail over</p>
+                <p className="text-body font-semibold">After you fail over</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   <li className="text-body">Repoint producers and consumers to this cluster.</li>
                   <li className="text-body">Re-create any Redpanda Connect pipelines on this cluster.</li>

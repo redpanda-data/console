@@ -68,7 +68,7 @@ const mockStatus = (
     blocking: isBlockingPhase(phase),
     summary: {
       phase,
-      revision: BigInt(18),
+      revision: 18n,
       stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
       exemptPrincipals,
       allowAllReads: false,
@@ -80,7 +80,7 @@ const mockStatus = (
 const confirmed = (nodeId: number, phase: BoxPhase = 'boxed'): BrokerProgress => ({
   nodeId,
   status: 'confirmed',
-  copy: { phase, revision: BigInt(18) },
+  copy: { phase, revision: 18n },
   blocks: isBlockingPhase(phase),
 });
 
@@ -102,7 +102,7 @@ const readers = [
   { linkName: 'edge-dr', shadowClusterId: 'edge', shadowClusterName: 'edge-dr', authentication: 'mtls' as const },
 ];
 
-describe('ShadowBoxSourcePanel', () => {
+describe('the ShadowBoxSourcePanel', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     rs.mocked(useListShadowLinksQuery).mockReturnValue({ data: { shadowLinks: [] } } as unknown as ReturnType<
@@ -128,7 +128,7 @@ describe('ShadowBoxSourcePanel', () => {
   test('boxing: each broker’s copy and status, and a broker that isn’t answering holds it with no timeout', () => {
     mockStatus('boxing', [
       confirmed(1, 'boxing'),
-      { nodeId: 2, status: 'behind', copy: { phase: 'unboxed', revision: BigInt(-1) }, blocks: false },
+      { nodeId: 2, status: 'behind', copy: { phase: 'unboxed', revision: -1n }, blocks: false },
       {
         nodeId: 3,
         status: 'not-answering',
@@ -259,7 +259,7 @@ describe('ShadowBoxSourcePanel', () => {
       known: false,
       access: 'ok',
       unreadable: false,
-      ownCopies: [{ nodeId: 1, phase: 'boxed', revision: BigInt(18) }],
+      ownCopies: [{ nodeId: 1, phase: 'boxed', revision: 18n }],
       summary: { phase: 'unboxed' },
       brokers: [],
     } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);

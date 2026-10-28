@@ -54,7 +54,7 @@ const Harness = () => {
   return <ShadowBoxSettingsDialog onOpenChange={setOpen} open={open} />;
 };
 
-describe('ShadowBoxSettingsDialog', () => {
+describe('the ShadowBoxSettingsDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mutation.error = null;
@@ -78,7 +78,7 @@ describe('ShadowBoxSettingsDialog', () => {
         allowAllReads: false,
         skipTransactionExpiration: false,
       },
-      expectedRevision: BigInt(4),
+      expectedRevision: 4n,
     });
     expect(toast.success).toHaveBeenCalledWith('Shadow box settings saved', { description: 'The next Box uses them.' });
   });

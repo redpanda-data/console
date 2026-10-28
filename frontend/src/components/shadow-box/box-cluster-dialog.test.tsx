@@ -83,7 +83,7 @@ const Harness = () => {
 
 const renderDialog = () => renderWithFileRoutes(<Harness />);
 
-describe('BoxClusterDialog', () => {
+describe('the BoxClusterDialog', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mutation.error = null;
@@ -173,7 +173,7 @@ describe('BoxClusterDialog', () => {
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
     expect(mutate.mock.calls[0]?.[0]).toMatchObject({
       settings: { exemptPrincipals: ['shadow-orders'], allowAllReads: false, skipTransactionExpiration: false },
-      opened: { revision: BigInt(2) },
+      opened: { revision: 2n },
     });
   });
 
@@ -191,7 +191,7 @@ describe('BoxClusterDialog', () => {
     expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
     expect(screen.getByTestId('shadow-box-allow-all-reads')).toBeChecked();
     await user.click(screen.getByTestId('confirm-box-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: BigInt(5) } });
+    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 5n } });
   });
 
   test('says so when someone else boxed the cluster while it was open', async () => {
@@ -221,7 +221,7 @@ describe('BoxClusterDialog', () => {
     );
     expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('confirm-box-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: BigInt(3) } });
+    expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 3n } });
   });
 
   test('starts over after Cancel', async () => {
