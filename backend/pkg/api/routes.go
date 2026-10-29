@@ -42,7 +42,6 @@ import (
 	apikafkaconnectsvcv1alpha2 "github.com/redpanda-data/console/backend/pkg/api/connect/service/kafkaconnect/v1alpha2"
 	licensesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/license"
 	monitoringsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/monitoring/v1"
-	pipelinesvc "github.com/redpanda-data/console/backend/pkg/api/connect/service/pipeline"
 	quotasvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/quota/v1"
 	topicsvcv1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1"
 	topicsvcv1alpha1 "github.com/redpanda-data/console/backend/pkg/api/connect/service/topic/v1alpha1"
@@ -157,7 +156,8 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 		api.ConnectSvc,
 	)
 
-	connectRPCReq := ConfigConnectRPCRequest{
+	// Call Hook
+	hookOutput := api.Hooks.Route.ConfigConnectRPC(ConfigConnectRPCRequest{
 		BaseInterceptors: baseInterceptors,
 		GRPCGatewayMux:   gwMux,
 		Services: map[string]any{
@@ -189,18 +189,7 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			dataplanev1connect.SecurityServiceName:           dataplanev1connect.UnimplementedSecurityServiceHandler{},
 			dataplanev1connect.MonitoringServiceName:         monitoringSvcV1,
 		},
-	}
-	if api.Cfg.Pipelines.Kubernetes.Enabled {
-		pipelineSvc, err := api.newKubernetesPipelineService()
-		if err != nil {
-			loggerpkg.Fatal(api.Logger, "failed to create kubernetes pipeline service", slog.Any("error", err))
-		}
-		connectRPCReq.Services[consolev1alpha1connect.PipelineServiceName] = pipelineSvc
-		connectRPCReq.Services[dataplanev1connect.PipelineServiceName] = &pipelinesvc.ComponentService{}
-	}
-
-	// Call Hook
-	hookOutput := api.Hooks.Route.ConfigConnectRPC(connectRPCReq)
+	})
 
 	// rewrite local variables that may have been replaced in the hooks
 	// that we need to use later on in the function to register services
@@ -456,10 +445,6 @@ func (api *API) setupConnectWithGRPCGateway(r chi.Router) {
 			MountPath:   securitySvcPathV1,
 			Handler:     securitySvcHandlerV1,
 		},
-	}
-
-	if api.Cfg.Pipelines.Kubernetes.Enabled {
-		ossServices = append(ossServices, pipelineConnectServices(hookOutput, connect.WithInterceptors(hookOutput.Interceptors...))...)
 	}
 
 	// Order matters. OSS services first, so Enterprise handlers override OSS.

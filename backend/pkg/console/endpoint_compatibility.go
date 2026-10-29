@@ -17,7 +17,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/console/v1alpha1/consolev1alpha1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1/dataplanev1connect"
 	"github.com/redpanda-data/console/backend/pkg/protogen/redpanda/api/dataplane/v1alpha3/dataplanev1alpha3connect"
@@ -232,32 +231,27 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		})
 	}
 
-	endpoints = append(endpoints, ossDefaultEndpoints(s.cfg)...)
+	// OSS defaults
+	endpoints = append(endpoints,
+		EndpointCompatibilityEndpoint{
+			Endpoint:    consolev1alpha1connect.PipelineServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
+		EndpointCompatibilityEndpoint{
+			Endpoint:    dataplanev1alpha3connect.TracingServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
+		EndpointCompatibilityEndpoint{
+			Endpoint:    dataplanev1alpha3connect.SQLServiceName,
+			Method:      "POST",
+			IsSupported: false,
+		},
+	)
 
 	return EndpointCompatibility{
 		KafkaClusterVersion: clusterVersion,
 		Endpoints:           endpoints,
 	}, nil
-}
-
-// ossDefaultEndpoints are services OSS serves only when configured; the
-// enterprise build may override them through the EndpointCompatibility hook.
-func ossDefaultEndpoints(cfg *config.Config) []EndpointCompatibilityEndpoint {
-	return []EndpointCompatibilityEndpoint{
-		{
-			Endpoint:    consolev1alpha1connect.PipelineServiceName,
-			Method:      "POST",
-			IsSupported: cfg.Pipelines.Kubernetes.Enabled,
-		},
-		{
-			Endpoint:    dataplanev1alpha3connect.TracingServiceName,
-			Method:      "POST",
-			IsSupported: false,
-		},
-		{
-			Endpoint:    dataplanev1alpha3connect.SQLServiceName,
-			Method:      "POST",
-			IsSupported: false,
-		},
-	}
 }

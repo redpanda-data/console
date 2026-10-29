@@ -1,7 +1,6 @@
 # Changelog
 
 ## Master / Unreleased
-- [FEATURE] Manage Redpanda Connect pipelines that run as Redpanda Operator Pipeline resources from self-hosted Console with `pipelines.kubernetes.enabled`. Console only edits Pipelines it manages and requires a Console login (or `pipelines.kubernetes.allowUnauthenticated`), a `userRef` with `clusterRef`, and, with its ServiceAccount, the operator's admission policy for Console.
 - [BUGFIX] Fix the Redpanda Connect pipeline list snapping back to page 1, which stopped the Next and Last buttons from working once a cluster had more than one page of pipelines.
 
 ## v3.13.1 / 2026-10-22
