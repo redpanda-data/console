@@ -2,6 +2,8 @@ module github.com/redpanda-data/console/backend
 
 go 1.26.10
 
+godebug multipathtcp=0
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260209202127-80ab13bee0bf.1
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
