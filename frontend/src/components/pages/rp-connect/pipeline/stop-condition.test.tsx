@@ -28,7 +28,7 @@ const CHOOSE_BELOW_RE = /Choose how it should stop below/;
 // The editor for a `redpanda` input with no stop condition.
 function renderOpenEditor() {
   const user = userEvent.setup();
-  const onApply = rs.fn();
+  const onApply = rs.fn(() => true);
   const onClose = rs.fn();
   const { unmount } = render(
     <StopConditionEditor effective={continuous} name="redpanda" onApply={onApply} onClose={onClose} slot={openSlot} />
@@ -65,7 +65,7 @@ describe('the StopConditionEditor', () => {
 
   test('keeps a multi-line check, and applies on Cmd+Enter', async () => {
     const user = userEvent.setup();
-    const onApply = rs.fn();
+    const onApply = rs.fn(() => true);
     const check = 'let n = this.n\n$n > 3';
     render(
       <StopConditionEditor
@@ -107,7 +107,7 @@ describe('the StopConditionEditor', () => {
 
   test('shows a restart_input the YAML sets with an idle timeout, and warns it never stops', async () => {
     const user = userEvent.setup();
-    const onApply = rs.fn();
+    const onApply = rs.fn(() => true);
     render(
       <StopConditionEditor
         effective={continuous}
@@ -220,7 +220,7 @@ describe('the StopConditionEditor', () => {
 
   test('choosing to keep running clears the condition', async () => {
     const user = userEvent.setup();
-    const onApply = rs.fn();
+    const onApply = rs.fn(() => true);
     render(
       <StopConditionEditor
         effective={{ kind: 'condition', reason: 'Stops after 1 minute without new messages.' }}
@@ -234,6 +234,35 @@ describe('the StopConditionEditor', () => {
     await user.click(screen.getByRole('radio', { name: 'Keep running' }));
     await user.click(screen.getByRole('button', { name: 'Apply' }));
     expect(onApply).toHaveBeenCalledWith(null);
+  });
+});
+
+describe('the StopConditionEditor when it can’t make the edit', () => {
+  test('stays open with its choices when the YAML edit is refused', async () => {
+    const { user, onApply, onClose } = renderOpenEditor();
+    onApply.mockReturnValue(false);
+    await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
+    await replaceLimit(user, '500{enter}');
+    expect(onApply).toHaveBeenCalledWith({ messageLimit: 500 });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Message limit' })).toHaveValue('500');
+  });
+
+  test('a locked input that Connect refuses says why, then why it can’t be edited here', () => {
+    render(
+      <StopConditionEditor
+        effective={{ kind: 'invalid', reason: 'Connect refuses snapshot_only with more than one table.' }}
+        name="aws_dynamodb_cdc"
+        onClose={rs.fn()}
+        slot={{
+          ...openSlot,
+          locked: 'This input comes from a YAML alias or merge key. Change its stop condition in the YAML.',
+        }}
+      />
+    );
+    expect(screen.getByText('Connect refuses snapshot_only', { exact: false })).toHaveTextContent(
+      'Connect refuses snapshot_only with more than one table. This input comes from a YAML alias or merge key.'
+    );
   });
 });
 

@@ -242,7 +242,7 @@ export type FlowCardData = {
   stopSlot?: StopSlot;
   endBehavior?: InputEndBehavior;
   /** Set or clear the stop condition (wired by the canvas in edit mode). */
-  onSetStopCondition?: (draft: StopConditionDraft | null) => void;
+  onSetStopCondition?: (draft: StopConditionDraft | null) => boolean;
 };
 
 // An input's stop row, on cards and broker/sequence markers that can take a stop condition.

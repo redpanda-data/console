@@ -140,7 +140,8 @@ export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
   return rows;
 }
 
-const CHILDLESS_WRAPPER = 'Its `read_until` has no input to read from yet. Add one in the YAML first.';
+/** The lock on a `read_until` with no input yet. */
+export const CHILDLESS_WRAPPER = 'Its `read_until` has no input to read from yet. Add one in the YAML first.';
 
 // The stop slot of the input held by `slot`; `component` is that input with any `read_until` peeled off.
 function stopSlotFor(

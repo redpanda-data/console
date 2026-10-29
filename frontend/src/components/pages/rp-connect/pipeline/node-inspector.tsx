@@ -136,7 +136,7 @@ type NodeInspectorProps = {
   /** An input's stop condition (`read_until`), shown under the header. */
   stop?: { slot: StopSlot; effective: InputEndBehavior; isGroup?: boolean };
   /** Set or clear that stop condition; absent in read-only mode. */
-  onSetStopCondition?: (draft: StopConditionDraft | null) => void;
+  onSetStopCondition?: (draft: StopConditionDraft | null) => boolean;
 };
 
 /** The inspector's pending-edit hooks, registered into the panel's `commitRef`. */

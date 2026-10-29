@@ -121,7 +121,7 @@ const DURATION_PART_RE = /^(\d*)(?:\.(\d*))?([^\d.]*)/;
 // The leading `<number><unit>` part of `text`: its length and nanoseconds; undefined when there isn't one.
 function durationPart(text: string): { length: number; ns: number } | undefined {
   const [part, whole = '', fraction, unit = ''] = DURATION_PART_RE.exec(text) ?? [''];
-  const scale = UNIT_NS[unit];
+  const scale = Object.hasOwn(UNIT_NS, unit) ? UNIT_NS[unit] : undefined;
   if (!(whole || fraction) || scale === undefined) {
     return;
   }

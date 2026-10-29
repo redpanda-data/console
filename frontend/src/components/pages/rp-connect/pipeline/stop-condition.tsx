@@ -56,7 +56,7 @@ import {
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import type { InputEndBehavior, InputEndKind } from '../utils/input-end-behavior';
 import { FLOW_STOP_ROW_H } from '../utils/pipeline-flow-layout';
-import type { StopSlot } from '../utils/pipeline-flow-parser';
+import { CHILDLESS_WRAPPER, type StopSlot } from '../utils/pipeline-flow-parser';
 import { CODE_SPAN_RE, type StopConditionDraft, stopRowText, stopSummary, withCaveat } from '../utils/read-until';
 import { isStopConditionSet, READ_UNTIL } from '../utils/yaml';
 
@@ -123,7 +123,8 @@ type StopConditionEditorProps = {
   /** Members of a broker/sequence each keep their own condition; this one ends them all at once. */
   isGroup?: boolean;
   readOnly?: boolean;
-  onApply?: (draft: StopConditionDraft | null) => void;
+  /** False when the YAML edit is refused, which keeps the editor open. */
+  onApply?: (draft: StopConditionDraft | null) => boolean;
   onClose: () => void;
 };
 
@@ -233,8 +234,10 @@ function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; 
 // What happens today; `editing` adds the nudge to the form below.
 function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false): string {
   if (slot.locked) {
-    // A wrapper with no input says so in its lock.
-    return effective.kind === 'invalid' ? slot.locked : `${withCaveat(effective.reason, effective)} ${slot.locked}`;
+    // A wrapper with no input says so in its lock; any other lock follows the input's own reason.
+    return slot.locked === CHILDLESS_WRAPPER
+      ? slot.locked
+      : `${withCaveat(effective.reason, effective)} ${slot.locked}`;
   }
   if (effective.kind === 'invalid') {
     // A broken input inside isn't fixed by this slot's own condition.
@@ -363,7 +366,7 @@ const StopEditorFooter = ({ ownsEnd, onCancel }: { ownsEnd?: boolean; onCancel: 
 );
 
 type StopEditorFormProps = Pick<StopConditionEditorProps, 'slot' | 'isGroup' | 'onClose'> & {
-  onApply: (draft: StopConditionDraft | null) => void;
+  onApply: (draft: StopConditionDraft | null) => boolean;
 };
 
 function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps) {
@@ -379,9 +382,11 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
   const hint = backstopHint({ mode, alsoIdle, restart: restart && restartOffered, limit }, slot.ownEnd);
   const { batches } = slot.ownEnd;
   const extras = <StopExtras alsoIdle={alsoIdle} control={control} hint={hint} restartOffered={restartOffered} />;
+  // A refused edit keeps the form open with the choices made in it.
   const apply = form.handleSubmit((values) => {
-    onApply(draftFromStopForm(values, offersRestart(values.mode, slot.ownEnd, slot.condition)));
-    onClose();
+    if (onApply(draftFromStopForm(values, offersRestart(values.mode, slot.ownEnd, slot.condition)))) {
+      onClose();
+    }
   });
 
   return (
@@ -595,7 +600,7 @@ type StopRowProps = {
   name: string;
   slot: StopSlot;
   effective: InputEndBehavior;
-  onApply?: (draft: StopConditionDraft | null) => void;
+  onApply?: (draft: StopConditionDraft | null) => boolean;
 };
 
 /**

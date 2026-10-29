@@ -166,7 +166,7 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
   if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
     const items = (value as { outputs?: unknown[] }).outputs;
     if (Array.isArray(items)) {
-      return items.map(firstKey).filter((k): k is string => !!k);
+      return items.map(slotComponentKey).filter((k): k is string => !!k);
     }
   }
 
@@ -174,13 +174,13 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
     const cases = (value as { cases?: unknown[] }).cases;
     if (Array.isArray(cases)) {
       return cases
-        .map((c) => (c && typeof c === 'object' ? firstKey((c as { output?: unknown }).output) : undefined))
+        .map((c) => (c && typeof c === 'object' ? slotComponentKey((c as { output?: unknown }).output) : undefined))
         .filter((k): k is string => !!k);
     }
   }
 
   if (outputKey === 'fallback' && Array.isArray(value)) {
-    return value.map(firstKey).filter((k): k is string => !!k);
+    return value.map(slotComponentKey).filter((k): k is string => !!k);
   }
 };
 

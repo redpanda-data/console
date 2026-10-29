@@ -493,6 +493,25 @@ output:
         expect(result.outputs).toEqual(['resource', 'resource']);
       });
 
+      // A member's own processors can come before its output, as they can on an input.
+      test('names each member by its output, past processors listed first', () => {
+        const yaml = `
+output:
+  broker:
+    outputs:
+      - processors: [{ mapping: root = this }]
+        kafka_franz: { topic: a }
+`;
+        expect(componentsOf(yaml).outputs).toEqual(['kafka_franz']);
+        const switched = componentsOf(
+          'output:\n  switch:\n    cases:\n      - output: { processors: [], drop: {} }\n'
+        ).outputs;
+        expect(switched).toEqual(['drop']);
+        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toEqual([
+          'stdout',
+        ]);
+      });
+
       test('extracts mixed child outputs from broker', () => {
         const yaml = `
 output:

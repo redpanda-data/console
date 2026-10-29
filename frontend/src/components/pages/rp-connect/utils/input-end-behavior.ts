@@ -732,6 +732,10 @@ function classifyReadUntil(
   return inner.batches ? { ...behavior, batches: true } : behavior;
 }
 
+// The rule for a component name from the YAML; only the table's own keys, so `constructor` finds none.
+const ownRule = <T>(rules: Record<string, T>, name: string): T | undefined =>
+  Object.hasOwn(rules, name) ? rules[name] : undefined;
+
 function classifyComponent(name: string, value: unknown, ctx: ClassifyContext): InputEndBehavior {
   if (name === READ_UNTIL) {
     return { kind: 'invalid', reason: 'Its stop condition has no input to read from.' };
@@ -740,7 +744,7 @@ function classifyComponent(name: string, value: unknown, ctx: ClassifyContext): 
     return classifyResource(value, ctx);
   }
   const config = asRecord(value) ?? {};
-  const behavior = WRAPPER_RULES[name]?.(config, ctx) ?? END_RULES[name]?.(config) ?? UNKNOWN;
+  const behavior = ownRule(WRAPPER_RULES, name)?.(config, ctx) ?? ownRule(END_RULES, name)?.(config) ?? UNKNOWN;
   return deliversBatches(name, config) ? { ...behavior, batches: true } : behavior;
 }
 

@@ -862,6 +862,18 @@ function stopConditionEdit(
 // Set/clear an input's stop condition (a card's stop row, inspector section). Pending inspector
 // edits land first — wrapping moves the component, so a later flush would miss its path — and
 // stay their own undo step.
+// Lands a stop condition edit in the YAML; false when it's refused, after a toast says why.
+function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange: (yaml: string) => void): boolean {
+  if (edit && 'error' in edit) {
+    showToast({ status: 'error', title: edit.error });
+    return false;
+  }
+  if (edit) {
+    onYamlChange(edit.yaml);
+  }
+  return true;
+}
+
 function useSetStopCondition(
   yamlContent: string,
   flowNodes: PipelineFlowNode[],
@@ -871,7 +883,7 @@ function useSetStopCondition(
   const { yamlRef, commitPending } = selection;
   const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
   return useCallback(
-    (nodeId: string, draft: StopConditionDraft | null) => {
+    (nodeId: string, draft: StopConditionDraft | null): boolean => {
       const before = yamlRef.current;
       const yaml = commitPending();
       if (yaml !== before) {
@@ -879,12 +891,7 @@ function useSetStopCondition(
       }
       // The canvas already parsed this YAML unless a pending edit just landed.
       const nodes = yaml === yamlContent ? flowNodes : parsePipelineFlowTree(yaml).nodes;
-      const edit = stopConditionEdit(yaml, nodes, nodeId, draft);
-      if (edit && 'error' in edit) {
-        showToast({ status: 'error', title: edit.error });
-      } else if (edit) {
-        onYamlChange(edit.yaml);
-      }
+      return applyStopEdit(stopConditionEdit(yaml, nodes, nodeId, draft), onYamlChange);
     },
     [yamlRef, commitPending, flowNodes, onYamlChange, recordEdit, yamlContent]
   );

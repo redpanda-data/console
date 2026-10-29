@@ -288,7 +288,7 @@ output:
 
   const renderEditableCanvas = () => {
     const onSelectNode = rs.fn();
-    const onSetStopCondition = rs.fn();
+    const onSetStopCondition = rs.fn(() => true);
     render(
       <PipelineFlowCanvas
         configYaml={VALID_PIPELINE_YAML}

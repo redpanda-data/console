@@ -103,6 +103,16 @@ describe('classifyInputSlot plain inputs', () => {
   });
 });
 
+describe('classifyInputSlot unknown names', () => {
+  // A draft isn't linted, so its input can be any name, built-in object keys included.
+  test('a name the catalog doesn’t know is unknown, even a built-in object key', () => {
+    for (const name of ['not_a_real_input', 'constructor', 'toString', '__proto__']) {
+      expect([name, kindOf(`${name}: {}`)]).toEqual([name, 'unknown']);
+    }
+    expect(summarizePipelineEndYaml('input:\n  constructor: {}\n').status).toBe('unknown');
+  });
+});
+
 describe('classifyInputSlot brokers, sequences and resources', () => {
   test('a broker ends only when every member does', () => {
     const mixed = classifyInputSlot(

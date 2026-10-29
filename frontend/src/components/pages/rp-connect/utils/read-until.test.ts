@@ -103,6 +103,9 @@ describe('durations', () => {
       ['5 m', undefined],
       ['', undefined],
       ['99999999999h', undefined],
+      // Units are looked up by name, so built-in object keys aren't units.
+      ['5constructor', undefined],
+      ['1toString', undefined],
     ];
     for (const [text, ns] of cases) {
       expect([text, parseGoDuration(text)]).toEqual([text, ns]);

@@ -973,7 +973,7 @@ type CanvasCallbacks = {
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
-  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => void;
+  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => boolean;
   collapsedIds: ReadonlySet<string>;
   toggleCollapse: (nodeId: string) => void;
   selectedNodeId?: string;
@@ -1238,7 +1238,7 @@ type PipelineFlowCanvasProps = {
   onAddTopic?: (section: string, componentName: string) => void;
   onAddSasl?: (section: string, componentName: string) => void;
   /** Set or clear an input's stop condition (`read_until`) from its card's stop row. */
-  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => void;
+  onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => boolean;
 };
 
 // Layout-derived canvas geometry: the Dagre pass plus its pan extent, size and legend vocabulary.
