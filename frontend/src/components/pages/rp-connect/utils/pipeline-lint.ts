@@ -24,7 +24,7 @@ import {
 } from 'yaml';
 
 import { type PipelineFlowNode, parseEditableNodes } from './pipeline-flow-parser';
-import { idleTimeoutFires, isEnvRef, isIdleTimeoutParseable, isIdleTimeoutSet } from './read-until';
+import { classifyIdleTimeout, type IdleTimeoutKind } from './read-until';
 import { editTargetPath, READ_UNTIL, readStopCondition, type StopCondition, slotComponentKey } from './yaml';
 
 type NodeRange = { id: string; start: number; end: number; span: number };
@@ -158,24 +158,18 @@ const lintAt = (lineCounter: LineCounter, node: unknown, hint: string): LintHint
 };
 
 // The idle timeout's own problem: one Connect rejects at start, or one it accepts but never fires.
-function idleTimeoutProblem(idle: string): string | undefined {
-  if (!isIdleTimeoutParseable(idle)) {
-    return 'idle_timeout must be a duration such as 30s, 5m or 1h.';
-  }
-  if (isEnvRef(idle) || idleTimeoutFires(idle)) {
-    return;
-  }
-  return isIdleTimeoutSet(idle)
-    ? 'An idle_timeout of 0 never fires. Use a duration such as 30s.'
-    : 'A negative idle_timeout is ignored. Use a duration such as 30s.';
-}
+const IDLE_TIMEOUT_PROBLEM: Partial<Record<IdleTimeoutKind, string>> = {
+  invalid: 'idle_timeout must be a duration such as 30s, 5m or 1h.',
+  zero: 'An idle_timeout of 0 never fires. Use a duration such as 30s.',
+  negative: 'A negative idle_timeout is ignored. Use a duration such as 30s.',
+};
 
 // What a resolved `read_until` is missing for Connect to build it.
 function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondition): string[] {
   const missing: string[] = [];
   // An unparseable timeout fails on its own, so it isn't also reported as missing.
-  const idleGiven =
-    stop.idleTimeout !== undefined && (!isIdleTimeoutParseable(stop.idleTimeout) || isIdleTimeoutSet(stop.idleTimeout));
+  const idle = classifyIdleTimeout(stop.idleTimeout);
+  const idleGiven = idle !== 'unset' && idle !== 'negative';
   if (!(stop.check || idleGiven)) {
     missing.push('read_until needs a check or an idle_timeout to know when to stop.');
   }
@@ -197,7 +191,7 @@ function readUntilProblems(
   const resolved = (value?.toJS(doc) ?? {}) as Record<string, unknown>;
   const stop = readStopCondition(resolved);
   const hints = missingWrapperParts(resolved, stop).map((hint) => lintAt(lineCounter, keyNode, hint));
-  const idleProblem = stop.idleTimeout === undefined ? undefined : idleTimeoutProblem(stop.idleTimeout);
+  const idleProblem = IDLE_TIMEOUT_PROBLEM[classifyIdleTimeout(stop.idleTimeout)];
   if (idleProblem) {
     const idlePair = value?.items.find((p) => isScalar(p.key) && p.key.value === 'idle_timeout');
     hints.push(lintAt(lineCounter, idlePair?.key ?? keyNode, idleProblem));

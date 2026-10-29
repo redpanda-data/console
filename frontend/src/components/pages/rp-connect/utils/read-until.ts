@@ -159,36 +159,38 @@ export function parseGoDuration(value: string): number | undefined {
 /** Whether a field holds an env var reference, resolved only when the pipeline starts. */
 export const isEnvRef = (value: string) => ENV_REF_RE.test(value);
 
-/** Whether `idle_timeout` will parse at runtime: a Go duration, or an env var reference resolved then. */
-export function isIdleTimeoutParseable(value: string): boolean {
-  return parseGoDuration(value) !== undefined || isEnvRef(value);
-}
-
 /**
- * Whether an `idle_timeout` arms a timer: Connect only starts one for a positive duration, so `0s`
- * never fires and a negative one counts as unset. An env var reference is taken to be positive.
+ * How Connect reads an `idle_timeout`: `invalid` fails to parse at start, `negative` counts as unset, `zero`
+ * is set but never fires, and an `env` reference is resolved at start and taken to be positive.
  */
-export function idleTimeoutFires(value: string | undefined): boolean {
-  if (value === undefined) {
-    return false;
+export type IdleTimeoutKind = 'unset' | 'invalid' | 'env' | 'negative' | 'zero' | 'positive';
+
+export function classifyIdleTimeout(value: string | undefined): IdleTimeoutKind {
+  // Connect skips an empty one.
+  if (value === undefined || value === '') {
+    return 'unset';
   }
   const ns = parseGoDuration(value);
-  return ns === undefined ? isEnvRef(value) : ns > 0;
-}
-
-/** Whether Connect counts the `idle_timeout` as set: any parseable value but a negative one. */
-export function isIdleTimeoutSet(value: string | undefined): boolean {
-  if (value === undefined) {
-    return false;
+  if (ns === undefined) {
+    return isEnvRef(value) ? 'env' : 'invalid';
   }
-  const ns = parseGoDuration(value);
-  return ns === undefined ? isEnvRef(value) : ns >= 0;
+  if (ns === 0) {
+    return 'zero';
+  }
+  return ns < 0 ? 'negative' : 'positive';
 }
 
-/** What the editor accepts for `idle_timeout`: a positive Go duration (`30s`, `1h30m`) or an env var reference. */
-export function isValidIdleTimeout(value: string): boolean {
-  return idleTimeoutFires(value.trim());
-}
+/** Whether an `idle_timeout` arms a timer: Connect only starts one for a positive duration. */
+export const idleTimeoutFires = (value: string | undefined): boolean => {
+  const kind = classifyIdleTimeout(value);
+  return kind === 'positive' || kind === 'env';
+};
+
+/** Whether Connect counts the `idle_timeout` as set, so the `read_until` needs no check. */
+export const isIdleTimeoutSet = (value: string | undefined): boolean => {
+  const kind = classifyIdleTimeout(value);
+  return kind === 'positive' || kind === 'env' || kind === 'zero';
+};
 
 const DURATION_WORD_RE = /(\d*\.?\d*)(ns|us|µs|μs|ms|s|m|h)/g;
 const DURATION_UNIT_WORDS: Record<string, [string, string]> = {
@@ -223,6 +225,9 @@ export function describeDuration(value: string): string {
 const COMPACT_NUMBER = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 const FULL_NUMBER = new Intl.NumberFormat('en');
 
+/** A message count in short form, as stop rows and run history show it: "1K", "12.5K". */
+export const compactCount = (n: number): string => COMPACT_NUMBER.format(n);
+
 export type StopConditionSummary = {
   /** Fits a one-line label, e.g. "1K msgs · idle 30s". */
   short: string;
@@ -246,7 +251,7 @@ function limitUnit(n: number, batches: boolean, abbreviated: boolean): string {
 function checkClause(check: string | undefined, batches: boolean): StopConditionSummary | undefined {
   const limit = parseMessageLimit(check);
   if (limit) {
-    const msgs = `${COMPACT_NUMBER.format(limit.limit)} ${limitUnit(limit.limit, batches, true)}`;
+    const msgs = `${compactCount(limit.limit)} ${limitUnit(limit.limit, batches, true)}`;
     const long = `after ${FULL_NUMBER.format(limit.limit)} ${limitUnit(limit.limit, batches, false)}`;
     return { short: msgs, compact: `after ${msgs}`, long };
   }

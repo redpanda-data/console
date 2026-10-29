@@ -12,7 +12,7 @@
 import { z } from 'zod';
 
 import type { InputEndBehavior } from '../utils/input-end-behavior';
-import { isValidIdleTimeout, parseMessageLimit, type StopConditionDraft } from '../utils/read-until';
+import { idleTimeoutFires, parseMessageLimit, type StopConditionDraft } from '../utils/read-until';
 import { isStopConditionSet, type StopCondition } from '../utils/yaml';
 
 // The stop condition editor's form model.
@@ -52,7 +52,8 @@ export const stopFormSchema = z
     if (s.mode === 'check' && s.check.trim() === '') {
       issue('check', 'Enter a Bloblang condition.');
     }
-    if (usesIdle(s) && !isValidIdleTimeout(s.idle)) {
+    // The editor accepts only a timeout that fires: a positive duration or an env var reference.
+    if (usesIdle(s) && !idleTimeoutFires(s.idle.trim())) {
       issue('idle', 'Enter a duration such as 30s, 5m or 1h.');
     }
   });

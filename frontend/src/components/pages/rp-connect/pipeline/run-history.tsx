@@ -20,6 +20,7 @@ import { prettyMilliseconds } from 'utils/utils';
 
 import { type PipelineRun, type RunOutcome, runDurationMs, runTally } from '../utils/pipeline-runs';
 import { browserTimeZone, runTimeParts } from '../utils/pipeline-schedule';
+import { compactCount } from '../utils/read-until';
 
 const OUTCOME: Record<RunOutcome, { label: string; variant: StatusBadgeVariant; bar: string }> = {
   running: { label: 'Running', variant: 'informative', bar: 'animate-pulse bg-primary' },
@@ -32,9 +33,8 @@ const OUTCOME: Record<RunOutcome, { label: string; variant: StatusBadgeVariant; 
 
 const STRIP_RUNS = 20;
 const COLLAPSED_ROWS = 10;
-const COMPACT_NUMBER = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
 
-const count = (value: number | undefined) => (value === undefined ? '—' : COMPACT_NUMBER.format(value));
+const count = (value: number | undefined) => (value === undefined ? '—' : compactCount(value));
 const ago = (ms: number) => (ms < 60_000 ? 'just now' : `${prettyMilliseconds(ms, { compact: true })} ago`);
 
 /** The latest runs as ticks, oldest first, coloured by how each went. */

@@ -136,7 +136,21 @@ export function normalizeSchedule(schedule: PipelineSchedule, now: number = Date
   };
 }
 
-export const browserTimeZone = (): string => new Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+// Formatters are costly to build and these run for every row on each clock tick, so each is kept by its
+// locale and options.
+const displayFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function displayFormatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale ?? ''}|${JSON.stringify(options)}`;
+  let formatter = displayFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    displayFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+export const browserTimeZone = (): string => displayFormatter(undefined, {}).resolvedOptions().timeZone || 'UTC';
 
 type CalendarDate = { year: number; month: number; day: number };
 type WallTime = CalendarDate & { hour: number; minute: number };
@@ -386,7 +400,7 @@ export function ordinal(n: number): string {
 /** A `HH:MM` wall time in the reader's locale, e.g. "2:00 AM" or "02:00". */
 function formatWallTime(time: string, locale?: string): string {
   const { hour, minute } = parseTime(time);
-  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(
+  return displayFormatter(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(
     Date.UTC(2000, 0, 1, hour, minute)
   );
 }
@@ -483,16 +497,16 @@ export function runTimeParts(
   locale?: string
 ): { weekday: string; date: string; time: string; zone: string } {
   return {
-    weekday: new Intl.DateTimeFormat(locale, { timeZone, weekday: 'short' }).format(instant),
-    date: new Intl.DateTimeFormat(locale, { timeZone, month: 'short', day: 'numeric' }).format(instant),
-    time: new Intl.DateTimeFormat(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(instant),
+    weekday: displayFormatter(locale, { timeZone, weekday: 'short' }).format(instant),
+    date: displayFormatter(locale, { timeZone, month: 'short', day: 'numeric' }).format(instant),
+    time: displayFormatter(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(instant),
     zone: zoneAbbreviation(instant, timeZone, locale),
   };
 }
 
 /** A zone's short name at `instant`, e.g. "PDT" or "GMT+5:45". */
 export const zoneAbbreviation = (instant: number, timeZone: string, locale?: string): string =>
-  new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'short' })
+  displayFormatter(locale, { timeZone, timeZoneName: 'short' })
     .formatToParts(instant)
     .find((p) => p.type === 'timeZoneName')?.value ?? '';
 
@@ -506,7 +520,7 @@ export const untilLabel = (at: number, now: number) =>
 
 /** A run's start in the schedule's zone, e.g. "Tue, Oct 20, 2:00 AM BST". */
 export function formatRunTime(instant: number, timeZone: string, locale?: string): string {
-  return new Intl.DateTimeFormat(locale, {
+  return displayFormatter(locale, {
     timeZone,
     weekday: 'short',
     month: 'short',

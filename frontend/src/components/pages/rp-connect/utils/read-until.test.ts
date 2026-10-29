@@ -14,11 +14,11 @@ import { parseDocument, parse as parseYaml } from 'yaml';
 import type { InputEndBehavior } from './input-end-behavior';
 import type { StopSlot } from './pipeline-flow-parser';
 import {
+  classifyIdleTimeout,
   describeDuration,
   describeStopCondition,
   idleTimeoutFires,
-  isIdleTimeoutParseable,
-  isValidIdleTimeout,
+  isIdleTimeoutSet,
   messageLimitCheck,
   parseGoDuration,
   parseMessageLimit,
@@ -112,21 +112,39 @@ describe('durations', () => {
     }
   });
 
-  test('the editor accepts durations that fire, and env var references', () => {
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal Connect env var references, not JS templates
-    for (const ok of ['30s', '5m', '1h30m', '500ms', '1.5h', '.5s', '${IDLE}', '${IDLE:30s}']) {
-      expect([ok, isValidIdleTimeout(ok)]).toEqual([ok, true]);
-    }
-    for (const bad of ['', '30', 'soon', '0s', '0', '-5s', '5 m', '0.0000000001s']) {
-      expect([bad, isValidIdleTimeout(bad)]).toEqual([bad, false]);
+  test('an idle timeout reads as Connect reads it', () => {
+    const cases: [string | undefined, string][] = [
+      [undefined, 'unset'],
+      // Connect skips an empty one.
+      ['', 'unset'],
+      ['30s', 'positive'],
+      ['1h30m', 'positive'],
+      ['.5s', 'positive'],
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect env var reference, not a JS template
+      ['${IDLE:30s}', 'env'],
+      ['0s', 'zero'],
+      ['0.0000000001s', 'zero'],
+      ['-5s', 'negative'],
+      ['30', 'invalid'],
+      ['soon', 'invalid'],
+      ['5 m', 'invalid'],
+    ];
+    for (const [value, kind] of cases) {
+      expect([value, classifyIdleTimeout(value)]).toEqual([value, kind]);
     }
   });
 
-  test('a zero timeout parses but never fires', () => {
-    expect(isIdleTimeoutParseable('0s')).toBe(true);
-    expect(idleTimeoutFires('0s')).toBe(false);
-    expect(idleTimeoutFires('-1s')).toBe(false);
-    expect(idleTimeoutFires('1ms')).toBe(true);
+  test('only a positive timeout or an env var reference fires; a zero one still counts as set', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect env var reference, not a JS template
+    expect(['1ms', '${IDLE}', '0s', '-1s', 'soon', undefined].map(idleTimeoutFires)).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(['1ms', '0s', '-1s', 'soon'].map(isIdleTimeoutSet)).toEqual([true, true, false, false]);
   });
 
   test('describes them in words', () => {

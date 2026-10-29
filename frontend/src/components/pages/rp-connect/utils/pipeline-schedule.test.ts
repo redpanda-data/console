@@ -13,6 +13,7 @@ import {
   defaultSchedule,
   describeRuntime,
   describeSchedule,
+  formatRunTime,
   nextRuns,
   normalizeSchedule,
   type PipelineSchedule,
@@ -310,5 +311,20 @@ describe('at a glance', () => {
       time: '2:00 AM',
       zone: 'PDT',
     });
+  });
+
+  // Each locale and zone gets its own formatter, kept across calls.
+  test('a run reads in the zone and locale asked for, however often it is formatted', () => {
+    const run = at('2026-10-24T09:00:00Z');
+    const read = () => [
+      formatRunTime(run, 'America/Vancouver', 'en-US'),
+      formatRunTime(run, 'Europe/London', 'en-US'),
+      formatRunTime(run, 'Europe/London', 'en-GB'),
+    ];
+    const [vancouver, londonUs, londonGb] = read();
+    expect(vancouver).toContain('2:00 AM');
+    expect(londonUs).toContain('10:00 AM');
+    expect(londonGb).toContain('24 Oct');
+    expect(read()).toEqual([vancouver, londonUs, londonGb]);
   });
 });

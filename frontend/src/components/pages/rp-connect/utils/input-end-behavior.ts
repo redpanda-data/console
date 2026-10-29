@@ -12,10 +12,10 @@
 import { parse as parseYaml } from 'yaml';
 
 import {
+  classifyIdleTimeout,
   describeStopCondition,
   idleTimeoutFires,
   isEnvRef,
-  isIdleTimeoutParseable,
   isIdleTimeoutSet,
   parseGoDuration,
   parseMessageLimit,
@@ -610,7 +610,7 @@ function stopEffects(stop: StopCondition, inner: InputEndBehavior): StopEffects 
 
 // Connect's own start-up errors: an unparseable timeout, or nothing to stop on.
 function stopStartupError(stop: StopCondition): InputEndBehavior | undefined {
-  if (stop.idleTimeout && !isIdleTimeoutParseable(stop.idleTimeout)) {
+  if (stop.idleTimeout && classifyIdleTimeout(stop.idleTimeout) === 'invalid') {
     return {
       kind: 'invalid',
       reason: `Its idle timeout ${code(stop.idleTimeout.trim())} isn’t a duration such as 30s or 5m.`,
