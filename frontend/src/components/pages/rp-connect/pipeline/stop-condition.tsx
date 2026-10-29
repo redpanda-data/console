@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { type KeyboardEvent, type ReactElement, type ReactNode, type SyntheticEvent, useId, useState } from 'react';
 import { type Control, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import {
   backstopHint,
@@ -393,7 +393,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
           e.stopPropagation();
           // Invalid fields report inline; this catches an apply or close handler that throws.
           apply(e).catch((error: unknown) => {
-            toast.error('Failed to apply the stop condition', { description: String(error) });
+            showToast({ status: 'error', title: 'Failed to apply the stop condition', description: String(error) });
           });
         }}
       >

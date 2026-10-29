@@ -23,9 +23,9 @@ import { Separator } from 'components/redpanda-ui/components/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { CalendarClock, History } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { usePipelineRuns } from 'state/rpcn-run-history-preview';
 import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { showToast } from 'utils/toast.utils';
 
 import { PipelineScheduleDialog, useClock } from './pipeline-schedule';
 import { RunHistoryTable, RunOutcomeStrip } from './run-history';
@@ -134,7 +134,7 @@ function ScheduledRuns({
   if (state === 'paused') {
     const resume = () => {
       saveSchedule(pipelineId, { ...schedule, enabled: true });
-      toast.success('Schedule resumed', { description: describeSchedule(schedule) });
+      showToast({ status: 'success', title: 'Schedule resumed', description: describeSchedule(schedule) });
     };
     return (
       <RunsPlaceholder

@@ -45,12 +45,12 @@ import {
   useStartPipelineMutation,
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import { appGlobal } from 'state/app-global';
 import { areSchedulesEnabled, scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useResetRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { docsLinks } from 'utils/docs-links';
 import { isModifiedClick } from 'utils/mouse-events';
+import { showToast } from 'utils/toast.utils';
 
 import { connectorOption, createColumns, SCHEDULE_FILTER_OPTIONS } from './list-columns';
 import { type PipelineRow, soonestRun, tagFilterValue, toPipelineRow, withSchedules } from './list-row';
@@ -231,7 +231,7 @@ const usePipelineListColumns = (onEditSchedule?: (pipelineId: string) => void) =
 type SearchPatch = Partial<Record<keyof PipelineListSearch, unknown>>;
 
 const reportSearchUpdateFailure = (error: unknown) => {
-  toast.error('Failed to update the pipelines view', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to update the pipelines view', description: String(error) });
 };
 
 // The list's view lives in the URL. Every change replaces the entry rather than pushing one, and any
@@ -409,7 +409,7 @@ const CreatePipelineButton = () => {
   const handleCreateClick = useCallback(() => {
     resetRpcnWizardStore();
     navigate({ to: '/rp-connect/create', search: { serverless: undefined } }).catch((error: unknown) => {
-      toast.error('Failed to open the pipeline editor', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to open the pipeline editor', description: String(error) });
     });
   }, [resetRpcnWizardStore, navigate]);
 
@@ -518,7 +518,7 @@ const PipelineListTable = ({
       if (isRowNavigationClick(event)) {
         navigate({ to: '/rp-connect/$pipelineId', params: { pipelineId: encodeURIComponent(pipelineId) } }).catch(
           (error: unknown) => {
-            toast.error('Failed to open the pipeline', { description: String(error) });
+            showToast({ status: 'error', title: 'Failed to open the pipeline', description: String(error) });
           }
         );
       }
@@ -580,7 +580,7 @@ const ListScheduleDialog = ({
   const editPipeline = () => {
     navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId: encodeURIComponent(pipelineId) } }).catch(
       (error: unknown) => {
-        toast.error('Failed to open the pipeline editor', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to open the pipeline editor', description: String(error) });
       }
     );
   };

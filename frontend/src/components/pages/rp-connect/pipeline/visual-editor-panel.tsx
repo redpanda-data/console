@@ -30,9 +30,9 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { formatShortcut, modKey, shiftKey } from 'utils/shortcuts';
 import { pluralizeWithNumber } from 'utils/string';
+import { showToast } from 'utils/toast.utils';
 
 import type { InspectorChildItem } from './node-config-form';
 import { NodeInspector, type PendingNodeCommit } from './node-inspector';
@@ -812,7 +812,7 @@ function usePendingDelete(
       const next = removeComponentAt(yamlContent, pendingDelete);
       if (next === null) {
         // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. a shared anchor) — say so.
-        toast.error('Couldn’t remove this node — edit it in the YAML view instead.');
+        showToast({ status: 'error', title: 'Couldn’t remove this node — edit it in the YAML view instead.' });
       } else {
         onYamlChange(next);
       }
@@ -881,7 +881,7 @@ function useSetStopCondition(
       const nodes = yaml === yamlContent ? flowNodes : parsePipelineFlowTree(yaml).nodes;
       const edit = stopConditionEdit(yaml, nodes, nodeId, draft);
       if (edit && 'error' in edit) {
-        toast.error(edit.error);
+        showToast({ status: 'error', title: edit.error });
       } else if (edit) {
         onYamlChange(edit.yaml);
       }
@@ -916,7 +916,7 @@ function applyInsertResult(
   { onYamlChange, select }: { onYamlChange: (yaml: string) => void; select: (next: SelectedNode) => void }
 ): void {
   if (result === null) {
-    toast.error(`Couldn’t add ${connectionName} — the insert position no longer exists.`);
+    showToast({ status: 'error', title: `Couldn’t add ${connectionName} — the insert position no longer exists.` });
     return;
   }
   onYamlChange(result.yaml);

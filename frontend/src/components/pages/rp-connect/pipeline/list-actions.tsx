@@ -35,7 +35,6 @@ import type {
   useStartPipelineMutation,
   useStopPipelineMutation,
 } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import {
   autosaveTargetKey,
   rpcnEditorAutosave,
@@ -44,7 +43,7 @@ import {
 } from 'state/rpcn-editor-autosave';
 import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
@@ -72,16 +71,17 @@ const startPipeline = (startMutation: StartMutate, pipeline: PipelineRow) => {
       if (startRecordsRun(pipeline.end)) {
         useRunHistoryStore.getState().startManualRun(pipeline.id, { now: startedAt });
       }
-      toast.success(runsNow(pipeline) ? 'Run starting' : 'Pipeline starting');
+      showToast({ status: 'success', title: runsNow(pipeline) ? 'Run starting' : 'Pipeline starting' });
     })
     .catch((err) => {
-      toast.error(
-        formatToastErrorMessageGRPC({
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({
           error: ConnectError.from(err),
           action: 'start',
           entity: 'pipeline',
-        })
-      );
+        }),
+      });
     });
 };
 
@@ -92,16 +92,17 @@ const stopPipeline = (stopMutation: StopMutate, id: string) => {
   stopMutation(stopRequest)
     .then(() => {
       useRunHistoryStore.getState().requestStop(id);
-      toast.success('Pipeline stopping');
+      showToast({ status: 'success', title: 'Pipeline stopping' });
     })
     .catch((err) => {
-      toast.error(
-        formatToastErrorMessageGRPC({
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({
           error: ConnectError.from(err),
           action: 'stop',
           entity: 'pipeline',
-        })
-      );
+        }),
+      });
     });
 };
 
@@ -115,16 +116,17 @@ const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: bo
       rpcnEditorAutosave.clear(autosaveTargetKey(id));
       useSchedulePreviewStore.getState().removeSchedule(id);
       useRunHistoryStore.getState().replaceRuns(id, []);
-      toast.success(isDraftRow ? 'Draft deleted' : 'Pipeline deleted');
+      showToast({ status: 'success', title: isDraftRow ? 'Draft deleted' : 'Pipeline deleted' });
     },
     onError: (err) => {
-      toast.error(
-        formatToastErrorMessageGRPC({
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({
           error: ConnectError.from(err),
           action: 'delete',
           entity: 'pipeline',
-        })
-      );
+        }),
+      });
     },
   });
 };
@@ -155,7 +157,9 @@ function ScheduleMenuItems({
       return;
     }
     saveSchedule(pipeline.id, { ...schedule, enabled });
-    toast.success(enabled ? 'Schedule resumed' : 'Schedule paused', {
+    showToast({
+      status: 'success',
+      title: enabled ? 'Schedule resumed' : 'Schedule paused',
       description: enabled ? describeSchedule(schedule) : undefined,
     });
   };

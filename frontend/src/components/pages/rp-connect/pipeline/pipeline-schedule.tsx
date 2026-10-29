@@ -48,8 +48,8 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertTriangle, Box, CalendarClock, CalendarOff, CalendarX2, CircleCheck, CircleX, Info } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 import { areSchedulesEnabled, usePipelineSchedule, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
+import { showToast } from 'utils/toast.utils';
 
 import { ScheduleGlance, UpcomingRunTiles } from './schedule-glance';
 import { RichText } from './stop-condition';
@@ -941,7 +941,9 @@ function useScheduleDialogActions(pipelineId: string, onOpenChange: (open: boole
   const onSubmit = (submitted: PipelineSchedule) => {
     const values = normalizeSchedule(submitted);
     saveSchedule(pipelineId, values);
-    toast.success(values.enabled ? 'Schedule saved' : 'Schedule saved, paused', {
+    showToast({
+      status: 'success',
+      title: values.enabled ? 'Schedule saved' : 'Schedule saved, paused',
       description: values.enabled ? describeSchedule(values) : undefined,
     });
     onOpenChange(false);
@@ -949,7 +951,7 @@ function useScheduleDialogActions(pipelineId: string, onOpenChange: (open: boole
 
   const onRemove = () => {
     removeSchedule(pipelineId);
-    toast.success('Schedule removed');
+    showToast({ status: 'success', title: 'Schedule removed' });
     onOpenChange(false);
   };
 

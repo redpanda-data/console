@@ -60,6 +60,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { usePipelineRuns, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { pluralizeWithNumber } from 'utils/string';
+import { showToast } from 'utils/toast.utils';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
 import { DebugPanda } from './debug-panda';
@@ -349,7 +350,7 @@ function RunHistoryPanel() {
           disabled={!id}
           onClick={() => {
             replaceRuns(id, sampleRuns(Date.now()));
-            toast.success('Sample runs added');
+            showToast({ status: 'success', title: 'Sample runs added' });
           }}
           size="sm"
         >
