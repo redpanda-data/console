@@ -1738,6 +1738,53 @@ output:
       });
     });
 
+    // The canvas shows a wrapped input as the input it reads; its target is the slot either way.
+    describe('an input wrapped in read_until', () => {
+      const wrapped = `input:
+  read_until:
+    idle_timeout: 30s
+    input:
+      broker:
+        inputs:
+          - read_until:
+              check: counter() >= 5
+              input:
+                kafka_franz: { topics: [a] }
+output:
+  drop: {}
+`;
+      const member: EditTarget = {
+        kind: 'path',
+        path: ['input', 'read_until', 'input', 'broker', 'inputs', 0],
+        componentType: 'input',
+      };
+
+      test('is read and written inside its wrapper, which keeps its stop condition', () => {
+        expect(getComponentAt(wrapped, member)).toEqual({ kafka_franz: { topics: ['a'] } });
+        const next = setComponentAt(wrapped, member, { kafka_franz: { topics: ['b'] } }) as string;
+        expect(parseYaml(next).input.read_until.input.broker.inputs[0]).toEqual({
+          read_until: { check: 'counter() >= 5', input: { kafka_franz: { topics: ['b'] } } },
+        });
+        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toEqual(['broker']);
+      });
+
+      test('is deleted with its wrapper', () => {
+        const next = removeComponentAt(wrapped, member) as string;
+        expect(parseYaml(next).input.read_until.input.broker.inputs).toEqual([]);
+      });
+
+      test('an input resource keeps its read_until, as the canvas shows it', () => {
+        const resource = `input_resources:
+  - label: r
+    read_until:
+      check: "true"
+      input: { generate: { mapping: root = 1 } }
+`;
+        const target: EditTarget = { kind: 'path', path: ['input_resources', 0], componentType: 'input' };
+        expect(Object.keys(getComponentAt(resource, target) ?? {})).toEqual(['label', 'read_until']);
+      });
+    });
+
     describe('formatting stability', () => {
       const longMapping =
         'root.out = this.first_field.second_field.third_field.fourth_field.fifth_field.sixth_field.seventh_field.eighth_field.ninth_field';

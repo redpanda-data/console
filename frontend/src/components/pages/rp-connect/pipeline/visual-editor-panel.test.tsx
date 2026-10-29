@@ -29,7 +29,7 @@ function MockPipelineFlowCanvas(props: {
         onClick={() =>
           props.onSelectNode?.('input-broker-0', {
             kind: 'path',
-            path: ['input', 'broker', 'inputs', 0, 'read_until', 'input'],
+            path: ['input', 'broker', 'inputs', 0],
             componentType: 'input',
           })
         }

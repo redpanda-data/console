@@ -12,7 +12,7 @@
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { isMap, isScalar, LineCounter, parseDocument, type Scalar, type YAMLMap } from 'yaml';
 
-import { type EditTarget, editTargetPath } from '../utils/yaml';
+import { type EditTarget, targetComponentPath } from '../utils/yaml';
 
 /** Field/group key (`path.join('/')`) → the lint messages anchored to it. */
 export type FieldLintErrors = ReadonlyMap<string, string[]>;
@@ -161,7 +161,7 @@ function collectFieldSegments(yaml: string, target: EditTarget, componentName: s
   try {
     const lineCounter = new LineCounter();
     const doc = parseDocument(yaml, { lineCounter });
-    const wrapper = doc.getIn(editTargetPath(target), true);
+    const wrapper = doc.getIn(targetComponentPath(doc, target), true);
     if (isMap(wrapper)) {
       pushComponentSegments(wrapper, componentName, segments, lineCounter);
     }

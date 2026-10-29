@@ -1192,7 +1192,9 @@ export type ResourceArrayKey = 'cache_resources' | 'rate_limit_resources';
 
 /**
  * Addresses a visually editable component. Early kinds are top-level conveniences (with tailored
- * prune-on-delete); `path` addresses any nested component by exact YAML location + schema type.
+ * prune-on-delete); `path` addresses any nested component by exact YAML location + schema type. An
+ * input under `input` is addressed by its slot, and read and written through its `read_until`
+ * (`targetComponentPath`), so a stop condition never moves its target.
  */
 export type EditTarget =
   | { kind: 'input' }
@@ -1203,7 +1205,7 @@ export type EditTarget =
   // A `switch` case object — edited for its routing condition; body components are their own nodes.
   | { kind: 'switchCase'; path: (string | number)[] };
 
-/** The YAML path (for `getIn`/`setIn`) of an edit target's component object. */
+/** The YAML path (for `getIn`/`setIn`) of an edit target's component object, or of an input's slot. */
 export function editTargetPath(target: EditTarget): (string | number)[] {
   switch (target.kind) {
     case 'input':
@@ -1296,12 +1298,28 @@ export function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): bool
   return true; // input / output — singletons, kind match is enough
 }
 
+const recordAt = (doc: Document, path: (string | number)[]): Record<string, unknown> | undefined =>
+  asRecord((doc.getIn(path) as { toJSON?: () => unknown } | undefined)?.toJSON?.());
+
+/**
+ * The YAML path of the component an edit target holds. The canvas shows an input under `input` (the
+ * top-level one, or a broker or sequence member) as the input its `read_until` wraps, so that is where
+ * its component is read and written; deleting the target still takes the whole slot.
+ */
+export function targetComponentPath(doc: Document, target: EditTarget): (string | number)[] {
+  const path = editTargetPath(target);
+  if (targetComponentType(target) !== 'input' || path[0] !== 'input') {
+    return path;
+  }
+  const slot = recordAt(doc, path);
+  return slot ? [...path, ...unwrapReadUntil(slot).innerPath] : path;
+}
+
 /** Read the component object at an edit target as plain JS (for the edit dialog). */
 export function getComponentAt(yaml: string, target: EditTarget): Record<string, unknown> | undefined {
   try {
-    const node = parseDocument(yaml).getIn(editTargetPath(target)) as { toJSON?: () => unknown } | undefined;
-    const obj = node?.toJSON?.();
-    return obj && typeof obj === 'object' && !Array.isArray(obj) ? (obj as Record<string, unknown>) : undefined;
+    const doc = parseDocument(yaml);
+    return recordAt(doc, targetComponentPath(doc, target));
   } catch {
     // Unparseable YAML: no component at the target.
   }
@@ -1314,7 +1332,7 @@ export function setComponentAt(
 ): string | null {
   try {
     const doc = parseDocument(yaml);
-    const path = editTargetPath(target);
+    const path = targetComponentPath(doc, target);
     // Only overwrite an existing node: writing to a stale path (external edit / undo) would make
     // setIn pad a sequence with `- null` or inject a phantom component under a padded parent.
     if (doc.getIn(path) === undefined) {

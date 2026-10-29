@@ -65,7 +65,6 @@ import {
   editTargetPath,
   getComponentAt,
   listResourceLabels,
-  READ_UNTIL,
   type ResourceKind,
   renameResourceReferences,
   resourceArrayKey,
@@ -75,17 +74,8 @@ import {
   targetComponentType,
 } from '../utils/yaml';
 
-// Which node the inspector shows: its path with any `read_until` wrapper steps left out, so setting or
-// clearing a stop condition keeps the same form and its unsaved edits.
-function nodeIdentity(target: EditTarget): string {
-  const path = editTargetPath(target);
-  return JSON.stringify(
-    path.filter(
-      (step, i) =>
-        !((step === READ_UNTIL && path[i + 1] === 'input') || (step === 'input' && path[i - 1] === READ_UNTIL))
-    )
-  );
-}
+// Which node the inspector shows. An input is addressed by its slot, so a stop condition keeps its form.
+const nodeIdentity = (target: EditTarget): string => JSON.stringify(editTargetPath(target));
 
 // Default component per kind for the dangling-reference quick-fix.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
@@ -147,15 +137,9 @@ export type PendingNodeCommit = {
   discard: () => void;
 };
 
-const WRAPPED_TOP_LEVEL_INPUT = JSON.stringify(['input', READ_UNTIL, 'input']);
-
-// The top-level section a target's component is, counting an input inside its `read_until`.
-function topLevelSection(target: EditTarget | null): 'input' | 'output' | undefined {
-  if (target?.kind === 'input' || target?.kind === 'output') {
-    return target.kind;
-  }
-  return target?.kind === 'path' && JSON.stringify(target.path) === WRAPPED_TOP_LEVEL_INPUT ? 'input' : undefined;
-}
+// The top-level section a target's component is.
+const topLevelSection = (target: EditTarget | null): 'input' | 'output' | undefined =>
+  target?.kind === 'input' || target?.kind === 'output' ? target.kind : undefined;
 
 // Lint message falling on a switch case's routing `check` line, so the condition field can show its own error.
 function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {

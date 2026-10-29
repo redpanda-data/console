@@ -82,10 +82,6 @@ function nodeRangePaths(node: PipelineFlowNode, nodes: PipelineFlowNode[]): [str
   if (node.editTarget && node.editTarget.kind !== 'switchCase') {
     paths.push([node.id, editTargetPath(node.editTarget)]);
   }
-  // A wrapped input's `read_until` settings sit outside its component — attribute them to it too.
-  if (node.stopSlot?.condition) {
-    paths.push([node.id, node.stopSlot.path]);
-  }
   // Attribute a case's range (incl. its `check`) to the rendered case-entry node, so a condition
   // error selects and outlines the entry card.
   if (node.caseEditTarget) {

@@ -33,7 +33,7 @@ function collectNodeSignatures(yaml: string, out: NodeSignatures): void {
     out.parentOf.set(node.id, node.parentId);
     if (node.editTarget) {
       // An input signs its whole slot, so a stop-condition (`read_until`) edit marks it too.
-      out.signatures.set(node.id, configSignature(doc, node.stopSlot?.path ?? editTargetPath(node.editTarget)));
+      out.signatures.set(node.id, configSignature(doc, editTargetPath(node.editTarget)));
     }
   }
 }

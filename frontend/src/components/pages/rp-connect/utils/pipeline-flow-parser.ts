@@ -212,8 +212,6 @@ type GroupChildSpec = {
   /** Original index in the source array — drives the child id + edit path. */
   index?: number;
   meta?: NodeMetaEntry[];
-  /** Path from the member's slot to its component — set when a `read_until` wraps it. */
-  innerPath?: string[];
   stop?: { stopSlot: StopSlot; endBehavior: InputEndBehavior };
 };
 
@@ -270,13 +268,12 @@ function memberSpecsWithIndices(
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       continue;
     }
-    const { component, innerPath, stop } = unwrapReadUntil(item as Record<string, unknown>);
+    const { component, stop } = unwrapReadUntil(item as Record<string, unknown>);
     const key = slotComponentKey(component);
     if (key) {
       specs.push({
         index: i,
         ...memberNameAndMeta(key, component),
-        innerPath,
         stop: stopSlotFor({ path: [...membersPath, i], slot: item, component, condition: stop }, config),
       });
     }
@@ -307,7 +304,7 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         section: spec.section,
         parentId: spec.groupId,
         meta: child.meta,
-        editTarget: pathEditTarget(spec.section, [...slotPath, ...(child.innerPath ?? [])]),
+        editTarget: pathEditTarget(spec.section, slotPath),
         ...child.stop,
       };
     }),
@@ -485,8 +482,8 @@ function hasSaslConfig(componentName: string, componentConfig: unknown, rootConf
   return ownSaslIsUsed || hasNonEmptySasl(rootConfig.redpanda);
 }
 
-// A `read_until` input renders as the input it wraps, edited at the wrapped path; the wrapper's
-// settings ride the node as its stop condition.
+// A `read_until` input renders as the input it wraps; the wrapper's settings ride the node as its stop
+// condition.
 function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedYamlConfig): TopLevelInput | undefined {
   const { component, innerPath, stop } = unwrapReadUntil(inputObj);
   const key = slotComponentKey(component);
@@ -498,7 +495,7 @@ function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedY
     key,
     value: component[key],
     componentPath,
-    editTarget: innerPath.length > 0 ? pathEditTarget('input', componentPath) : { kind: 'input' },
+    editTarget: { kind: 'input' },
     ...stopSlotFor({ path: ['input'], slot: inputObj, component, condition: stop }, config),
     // The input's own label is the one the inspector edits; a label on the wrapper is a fallback.
     labelText: extractLabel(component) ?? extractLabel(inputObj),

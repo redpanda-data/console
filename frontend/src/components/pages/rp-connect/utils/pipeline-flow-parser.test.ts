@@ -1820,7 +1820,7 @@ describe('the SECTION_LABEL', () => {
 });
 
 describe('stop conditions (read_until)', () => {
-  it('renders a wrapped input as the input it reads, edited at the wrapped path', () => {
+  it('renders a wrapped input as the input it reads, addressed by its slot', () => {
     const yaml = `
 input:
   label: orders_in
@@ -1837,7 +1837,7 @@ output:
       label: 'redpanda',
       labelText: 'orders_in',
       topics: ['orders'],
-      editTarget: { kind: 'path', path: ['input', 'read_until', 'input'], componentType: 'input' },
+      editTarget: { kind: 'input' },
       stopSlot: { path: ['input'], condition: { check: 'counter() >= 100' }, ownEnd: { kind: 'continuous' } },
       // redpanda reads in batches, and Connect counts each once.
       endBehavior: { kind: 'condition', reason: 'Stops after 100 batches.', batches: true },
@@ -1871,7 +1871,7 @@ input:
     });
     expect(nodes.find((n) => n.id === 'input-broker-0')).toMatchObject({
       label: 'kafka',
-      editTarget: { kind: 'path', path: ['input', 'broker', 'inputs', 0, 'read_until', 'input'] },
+      editTarget: { kind: 'path', path: ['input', 'broker', 'inputs', 0] },
       stopSlot: { path: ['input', 'broker', 'inputs', 0], condition: { idleTimeout: '30s' } },
       endBehavior: { kind: 'condition' },
     });
@@ -1895,7 +1895,7 @@ input:
 `;
     const { nodes } = parsePipelineFlowTree(yaml);
     expect(nodes.find((n) => n.id === 'input-broker')).toMatchObject({
-      editTarget: { kind: 'path', path: ['input', 'read_until', 'input'] },
+      editTarget: { kind: 'input' },
       stopSlot: { path: ['input'], condition: { idleTimeout: '1m' } },
       endBehavior: { kind: 'condition' },
     });

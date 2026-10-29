@@ -82,7 +82,6 @@ import {
   resourceTargetKind,
   seqLengthAt,
   setComponentAt,
-  unwrapReadUntil,
 } from '../utils/yaml';
 
 // Types the insert (+) picker offers: pipeline steps plus the resources they reference.
@@ -526,9 +525,9 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
 
 type InspectorSelection = ReturnType<typeof useInspectorSelection>;
 
-// The selection against the current YAML: as is; followed to its input's new path when a stop
-// condition wraps/unwraps it (same node); or null once an undo/redo or external edit removes the
-// node or puts a different component at its positional target.
+// The selection against the current YAML: as is; followed to its new path when it moves but stays the
+// same node (a broker member, when the broker's own stop condition wraps or unwraps it); or null once
+// an undo/redo or external edit removes the node or puts a different component at its positional target.
 function liveSelectionOf(
   selected: SelectedNode | null,
   yamlContent: string,
@@ -763,15 +762,6 @@ function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange
   return { existingSecrets, missingSecrets, isSecretsDialogOpen, setIsSecretsDialogOpen, handleRenameSecretReferences };
 }
 
-// A wrapped input goes with its stop condition — deleting only the inner input would orphan the `read_until`.
-function deletionTarget(target: EditTarget, flowNodes: PipelineFlowNode[]): EditTarget {
-  const slot = flowNodes.find((n) => editTargetsEqual(n.editTarget, target))?.stopSlot;
-  if (!slot?.condition) {
-    return target;
-  }
-  return slot.path.length === 1 ? { kind: 'input' } : { kind: 'path', path: slot.path, componentType: 'input' };
-}
-
 // Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
 function usePendingDelete(
   yamlContent: string,
@@ -780,21 +770,19 @@ function usePendingDelete(
   flowNodes: PipelineFlowNode[]
 ) {
   const [pendingDelete, setPendingDelete] = useState<EditTarget | null>(null);
-  const requestDelete = useCallback(
-    (target: EditTarget) => setPendingDelete(deletionTarget(target, flowNodes)),
-    [flowNodes]
-  );
+  // An input's target is its slot, so its stop condition goes with it.
+  const requestDelete = useCallback((target: EditTarget) => setPendingDelete(target), []);
   const pendingDeleteComponent = useMemo(
     () => (pendingDelete ? getComponentAt(yamlContent, pendingDelete) : undefined),
     [pendingDelete, yamlContent]
   );
   const pendingDeleteName =
-    pendingDelete && pendingDeleteComponent
-      ? componentKeyAt(pendingDelete, unwrapReadUntil(pendingDeleteComponent).component)
-      : undefined;
-  const pendingDeleteHasStop = pendingDeleteComponent
-    ? isStopConditionSet(unwrapReadUntil(pendingDeleteComponent).stop)
-    : false;
+    pendingDelete && pendingDeleteComponent ? componentKeyAt(pendingDelete, pendingDeleteComponent) : undefined;
+  const pendingDeleteHasStop = isStopConditionSet(
+    pendingDelete
+      ? flowNodes.find((n) => editTargetsEqual(n.editTarget, pendingDelete))?.stopSlot?.condition
+      : undefined
+  );
 
   // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
