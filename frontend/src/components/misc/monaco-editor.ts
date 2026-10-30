@@ -34,28 +34,5 @@ window.MonacoEnvironment = {
 // Tell monaco editor where to load dependencies from
 loader.config({ monaco });
 
-// Override `vs` (the default theme `@monaco-editor/react` applies) so every
-// editor without an explicit `theme` prop uses these colors.
-const kowlThemeColors = {
-  'editor.background': '#fcfcfc',
-  'editorGutter.background': '#00000018',
-  'editor.lineHighlightBackground': '#aaaaaa20',
-  'editor.lineHighlightBorder': '#00000000',
-  'editorLineNumber.foreground': '#8c98a8',
-  'editorOverviewRuler.background': '#606060',
-};
-monaco.editor.defineTheme('vs', {
-  base: 'vs',
-  inherit: true,
-  colors: kowlThemeColors,
-  rules: [],
-});
-monaco.editor.defineTheme('kowl', {
-  base: 'vs',
-  inherit: false,
-  colors: kowlThemeColors,
-  rules: [],
-});
-
 // biome-ignore lint/performance/noBarrelFile: on-demand adapter configures the shared runtime before either editor mounts
 export { DiffEditor, default } from '@monaco-editor/react';

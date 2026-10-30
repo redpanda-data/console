@@ -47,7 +47,7 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
 
   return (
     <div className="flex flex-col">
-      <div className="mb-2 size-8">{logo}</div>
+      <div className="mb-2 size-8 logo-plate">{logo}</div>
 
       <div className="text-label">{type === 'source' ? 'Import from' : 'Export to'}</div>
 

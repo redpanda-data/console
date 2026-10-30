@@ -1,7 +1,7 @@
 // Copyright 2026 Redpanda Data, Inc.
 
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
-import { defineConfig, loadEnv } from '@rsbuild/core';
+import { defineConfig, loadEnv, type RsbuildConfig } from '@rsbuild/core';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
@@ -22,32 +22,34 @@ const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 // Matches the `?raw` import query (load files as raw source strings).
 const RAW_QUERY = /raw/;
 
+export const consolePlugins = (federationConfig = moduleFederationConfig) => [
+  pluginReact({
+    reactRefreshOptions: {
+      forceEnable: true,
+    },
+    // Rspack's Rust implementation avoids the extra Babel transform while
+    // preserving the existing opt-in React Compiler behavior.
+    reactCompiler: {
+      target: '19',
+      compilationMode: 'annotation',
+      panicThreshold: 'critical_errors',
+    },
+  }),
+  pluginSvgr({ mixedImport: true, parallel: true }),
+  pluginSass(),
+  pluginTailwindcss(),
+  pluginYaml(),
+  pluginModuleFederation({
+    ...federationConfig,
+    dts: false,
+  }),
+  pluginNodePolyfill({
+    globals: { process: true },
+  }),
+];
+
 export default defineConfig({
-  plugins: [
-    pluginReact({
-      reactRefreshOptions: {
-        forceEnable: true,
-      },
-      // Rspack's Rust implementation avoids the extra Babel transform while
-      // preserving the existing opt-in React Compiler behavior.
-      reactCompiler: {
-        target: '19',
-        compilationMode: 'annotation',
-        panicThreshold: 'critical_errors',
-      },
-    }),
-    pluginSvgr({ mixedImport: true, parallel: true }),
-    pluginSass(),
-    pluginTailwindcss(),
-    pluginYaml(),
-    pluginModuleFederation({
-      ...moduleFederationConfig,
-      dts: false,
-    }),
-    pluginNodePolyfill({
-      globals: { process: true },
-    }),
-  ],
+  plugins: consolePlugins(),
   dev: {
     hmr: true,
     lazyCompilation: false,
@@ -142,9 +144,17 @@ export default defineConfig({
       root: 'build',
     },
   },
-  tools: {
+  tools: consoleTools(),
+});
+
+export function consoleTools({ federationOnly = false } = {}): NonNullable<RsbuildConfig['tools']> {
+  return {
+    htmlPlugin: federationOnly ? false : undefined,
     rspack: (config, { appendPlugins, isProd }) => {
       config.lazyCompilation = false;
+      if (federationOnly) {
+        config.entry = {};
+      }
       config.experiments = {
         ...config.experiments,
         asyncWebAssembly: true,
@@ -167,7 +177,7 @@ export default defineConfig({
         ignored: ['**/routeTree.gen.ts', '**/.playwright-mcp/**'],
       };
 
-      appendPlugins(createConsolePlugins());
+      appendPlugins(createConsolePlugins(federationOnly));
     },
     bundlerChain: (chain) => {
       // pluginYaml parses `.yaml` into a JS object; exclude `?raw` imports and load
@@ -177,11 +187,11 @@ export default defineConfig({
       }
       chain.module.rule('raw-source').resourceQuery(RAW_QUERY).type('asset/source');
     },
-  },
-});
+  };
+}
 
-function createConsolePlugins() {
-  const plugins = [tanstackRouter(tanstackRouterConfig)];
+function createConsolePlugins(federationOnly: boolean) {
+  const plugins = federationOnly ? [] : [tanstackRouter(tanstackRouterConfig)];
 
   if (process.env.RSDOCTOR) {
     plugins.push(
@@ -192,7 +202,9 @@ function createConsolePlugins() {
         },
         output: {
           mode: 'brief',
-          reportDir: fileURLToPath(new URL('./build-stats/rsdoctor', import.meta.url)),
+          reportDir: fileURLToPath(
+            new URL(federationOnly ? './build-stats/rsdoctor-react19' : './build-stats/rsdoctor', import.meta.url)
+          ),
           options: {
             type: ['html', 'json'],
           },

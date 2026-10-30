@@ -11,6 +11,7 @@
 
 import type { EditorProps, Monaco } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
+import { useMonacoTheme } from 'hooks/use-monaco-theme';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { lazy, useEffect, useState } from 'react';
@@ -90,8 +91,9 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
-  const { options: givenOptions, ...rest } = props;
+  const { options: givenOptions, beforeMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const monacoTheme = useMonacoTheme();
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
   const { data: componentResponse } = useListComponentsQuery();
   const componentList = componentResponse?.components;
@@ -127,7 +129,6 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
       <LazyEditor
-        beforeMount={(monaco) => setMonacoOptions(monaco)}
         defaultLanguage="yaml"
         defaultValue={''}
         loading={<LoadingPlaceholder />}
@@ -138,6 +139,12 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
           style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
         }}
         {...rest}
+        beforeMount={(monaco) => {
+          monacoTheme.beforeMount(monaco);
+          setMonacoOptions(monaco);
+          beforeMount?.(monaco);
+        }}
+        theme={monacoTheme.theme}
       />
     </LoadingBoundary>
   );

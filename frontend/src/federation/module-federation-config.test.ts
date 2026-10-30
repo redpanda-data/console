@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import { moduleFederationConfig } from '../../module-federation.config';
+import { moduleFederationConfig, react19ModuleFederationConfig } from '../../module-federation.config';
 
 describe('the Console Module Federation config', () => {
   test('keeps the federation name and embedded.js filename for Cloud UI', () => {
@@ -44,5 +44,15 @@ describe('the Console Module Federation config', () => {
     expect(sharedNames).not.toContain('react-dom');
     expect(sharedNames).not.toContain('@tanstack/react-query');
     expect(sharedNames).not.toContain('@tanstack/react-router');
+  });
+});
+
+test('requires host-provided React without a private modern fallback', () => {
+  expect(react19ModuleFederationConfig.shared).toMatchObject({
+    react: { import: false },
+    'react-dom': { import: false },
+    'react-dom/client': { import: false },
+    'react/jsx-runtime': { import: false },
+    'react/jsx-dev-runtime': { import: false },
   });
 });

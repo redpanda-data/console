@@ -15,13 +15,17 @@
  */
 export class TokenManager {
   private refreshPromise: Promise<string> | null = null;
+  private generation = 0;
 
   /**
    * Creates a TokenManager instance.
    * @param getAccessToken - Async function that fetches a new access token and
-   *   stores it (e.g., in config.jwt). Must return the token string.
+   *   returns the token string. onToken commits it only while this manager is current.
    */
-  constructor(private getAccessToken: () => Promise<string>) {}
+  constructor(
+    private getAccessToken: () => Promise<string>,
+    private readonly onToken?: (token: string) => void
+  ) {}
 
   /**
    * Refreshes the access token.
@@ -37,10 +41,22 @@ export class TokenManager {
       return this.refreshPromise;
     }
 
+    const generation = this.generation;
     try {
-      this.refreshPromise = this.getAccessToken().finally(() => {
-        this.refreshPromise = null;
-      });
+      const refreshPromise: Promise<string> = this.getAccessToken()
+        .then((token) => {
+          if (generation !== this.generation) {
+            throw new DOMException('Token refresh cancelled', 'AbortError');
+          }
+          this.onToken?.(token);
+          return token;
+        })
+        .finally(() => {
+          if (this.refreshPromise === refreshPromise) {
+            this.refreshPromise = null;
+          }
+        });
+      this.refreshPromise = refreshPromise;
     } catch (error) {
       return Promise.reject(error);
     }
@@ -49,11 +65,12 @@ export class TokenManager {
   }
 
   /**
-   * Resets internal state, clearing any pending refresh promise.
+   * Invalidates pending refreshes so they cannot commit a token after teardown.
    * Use this for cleanup on component unmount.
    * Safe to call multiple times or when no refresh is in progress.
    */
   reset(): void {
+    this.generation += 1;
     this.refreshPromise = null;
   }
 

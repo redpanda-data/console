@@ -119,7 +119,6 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
       onChange={handleValueChange}
       onMount={handleOnMount}
       options={options}
-      theme="vs-light"
       value={value}
       width="100%"
     />

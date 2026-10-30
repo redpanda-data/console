@@ -9,25 +9,54 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
-import { useTheme } from 'components/redpanda-ui/components/theme-provider';
-import { Moon, Sun } from 'lucide-react';
+import { type Theme, useTheme } from 'components/redpanda-ui/components/theme-provider';
+import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { Monitor, Moon, Sun } from 'lucide-react';
 
-/** Dev-only theme toggle on the Registry ThemeProvider. `resolvedTheme`, not `theme`: the stored
- * preference can be `system`, and the label names the theme the click produces. */
+const THEME_OPTIONS = [
+  { value: 'system', label: 'System', Icon: Monitor },
+  { value: 'light', label: 'Light', Icon: Sun },
+  { value: 'dark', label: 'Dark', Icon: Moon },
+] as const;
+
+const isTheme = (value: unknown): value is Theme => THEME_OPTIONS.some((option) => option.value === value);
+
+/**
+ * Standalone theme switcher on the Registry ThemeProvider, shown when dark mode is available: a
+ * segmented System / Light / Dark control on the stored preference, so `System` stays selected and keeps
+ * following the OS. Selecting the chosen segment again leaves it chosen.
+ */
 export const ThemeModeSwitch = () => {
-  const { resolvedTheme, setTheme } = useTheme();
-  const next = resolvedTheme === 'dark' ? 'light' : 'dark';
+  const { theme, setTheme } = useTheme();
 
   return (
-    <Button
-      aria-label={`Switch to ${next} mode`}
-      data-testid="ColorModeSwitch"
-      onClick={() => setTheme(next)}
-      size="icon-sm"
-      variant="ghost"
-    >
-      {resolvedTheme === 'dark' ? <Sun /> : <Moon />}
-    </Button>
+    <TooltipProvider>
+      <ToggleGroup
+        aria-label="Theme"
+        attached={false}
+        onValueChange={([next]) => {
+          if (isTheme(next)) {
+            setTheme(next);
+          }
+        }}
+        size="sm"
+        testId="ColorModeSwitch"
+        value={[theme]}
+        variant="outline"
+      >
+        {THEME_OPTIONS.map(({ value, label, Icon }) => (
+          <Tooltip key={value}>
+            <TooltipTrigger
+              render={<ToggleGroupItem aria-label={label} value={value} />}
+              testId={`ColorModeSwitch-${value}`}
+            >
+              <Icon aria-hidden />
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        ))}
+      </ToggleGroup>
+    </TooltipProvider>
   );
 };

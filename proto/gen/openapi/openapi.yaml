@@ -970,6 +970,28 @@ components:
     EarliestOffset:
       description: Start at the earliest offset in the partition.
       type: object
+    Egress:
+      description: Selects the egress gateways a pipeline may reach its targets through.
+      properties:
+        gateway_refs:
+          description: |-
+            The gateways, by ID. Creating or updating a pipeline fails with
+            NOT_FOUND for a gateway the pipeline cannot use, and with
+            FAILED_PRECONDITION for one that is not yet provisioned. A draft's
+            gateways are not checked until StartPipeline.
+          items:
+            $ref: '#/components/schemas/EgressGatewayRef'
+          type: array
+      type: object
+    EgressGatewayRef:
+      description: Refers to one egress gateway.
+      properties:
+        id:
+          description: The egress gateway's ID.
+          type: string
+      required:
+        - id
+      type: object
     Entity:
       properties:
         entity_name:
@@ -2303,6 +2325,8 @@ components:
         display_name:
           description: User-friendly pipeline name.
           type: string
+        egress:
+          $ref: '#/components/schemas/Egress'
         id:
           description: Pipeline ID.
           type: string
@@ -2369,7 +2393,10 @@ components:
         - STATE_DRAFT
       type: string
     Pipeline.Status:
-      description: Pipeline status may contain an error message.
+      description: |-
+        Pipeline status may contain an error message. If an egress gateway of a
+        started pipeline becomes unavailable, the pipeline is `STATE_STARTING`
+        until the gateway is available again, and `error` names the gateway.
       properties:
         error:
           type: string
@@ -2395,6 +2422,8 @@ components:
             configuration is stored unvalidated; StartPipeline validates and deploys it.
             Drafts count against the cluster's pipeline limit.
           type: boolean
+        egress:
+          $ref: '#/components/schemas/Egress'
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -2429,6 +2458,8 @@ components:
             promotes a draft. Leave unset to update whatever is stored.
           nullable: true
           type: boolean
+        egress:
+          $ref: '#/components/schemas/Egress'
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -6524,7 +6555,7 @@ paths:
             type: string
         - description: |-
             Specifies which fields should be updated. If not provided,
-            all fields will be updated.
+            all fields will be updated, except that an unset `egress` is left as it is.
           in: query
           name: update_mask
           schema:
