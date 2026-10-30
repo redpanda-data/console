@@ -20,7 +20,7 @@ export type ConnectConfigFixture = {
   name: string;
   description: string;
   yaml: string;
-  tags: ('simple' | 'medium' | 'complex' | 'invalid' | 'edge-case')[];
+  tags: ('simple' | 'medium' | 'complex' | 'invalid' | 'edge-case' | 'stops')[];
 };
 
 const generateToDrop = `# Smallest valid pipeline that emits visible logs.
@@ -1604,80 +1604,501 @@ rate_limit_resources:
       interval: 1s
 `;
 
+// ── Stop conditions ────────────────────────────────────────────────────────
+// A Cloud pipeline stops itself, and uses no compute, once its input ends. These
+// exercise the stop row on input cards, the canvas end chip, the list's
+// Runs column and, with enableRpcnPipelineSchedules on, the schedule preview.
+
+const REDPANDA_CONNECTION = `seed_brokers:
+  - \${REDPANDA_BROKERS}
+sasl:
+  - mechanism: SCRAM-SHA-256
+    username: \${secrets.KAFKA_USER}
+    password: \${secrets.KAFKA_PASSWORD}
+tls:
+  enabled: true`;
+
+// A `redpanda` component's Cloud connection fields, indented to sit under it.
+const redpandaConnection = (indent: number) =>
+  REDPANDA_CONNECTION.split('\n')
+    .map((line) => ' '.repeat(indent) + line)
+    .join('\n');
+
+const redpandaOutput = (topic: string) => `output:
+  redpanda:
+${redpandaConnection(4)}
+    topic: ${topic}
+`;
+
+const generateFixedCount = `# The quickest pipeline that stops itself: generate with a count ends after that
+# many messages, so the pipeline stops and uses no compute. Validates everywhere.
+#
+# The input card's stop row reads "when its data runs out". With
+# enableRpcnPipelineSchedules on, the header's Schedule dialog accepts it.
+input:
+  generate:
+    count: 100
+    interval: 100ms
+    mapping: 'root = {"id": uuid_v4(), "ts": now()}'
+
+pipeline:
+  processors:
+    - log:
+        level: INFO
+        message: 'generated \${! json("id") }'
+
+output:
+  drop: {}
+`;
+
+const postgresSnapshot = `# Batch export: sql_select reads every row its query returns, then its input
+# ends and the pipeline stops. A nightly snapshot like this is what the schedule
+# preview is for.
+input:
+  sql_select:
+    driver: postgres
+    dsn: \${secrets.POSTGRES_DSN}
+    table: orders
+    columns: ["id", "customer_id", "total", "updated_at"]
+    where: "updated_at >= now() - interval '1 day'"
+
+pipeline:
+  processors:
+    - mapping: |
+        root = this
+        root.exported_at = now()
+
+${redpandaOutput('orders-daily-snapshot')}`;
+
+const topicBackfill = `# Reads a topic until 10,000 messages have arrived, or until a minute passes with
+# no new message, whichever comes first. The idle timeout is the backstop: with
+# the limit alone, a quiet topic would keep the pipeline running.
+#
+# The input card's stop row reads "after 10K msgs or 1m idle". Edit it there.
+input:
+  read_until:
+    check: counter() >= 10000
+    idle_timeout: 1m
+    input:
+      label: orders_backfill
+      redpanda:
+${redpandaConnection(8)}
+        topics: [orders]
+        consumer_group: orders-backfill
+
+${redpandaOutput('orders-replay')}`;
+
+const endOfBatchMarker = `# Stops on the message that makes its check true: an end-of-batch marker an
+# upstream job writes last. With a check alone, the pipeline waits for as long as
+# no marker arrives, so the editor warns and suggests an idle timeout.
+input:
+  read_until:
+    check: this.type == "end_of_batch"
+    input:
+      redpanda:
+${redpandaConnection(8)}
+        topics: [batch-loads]
+        consumer_group: batch-loader
+
+pipeline:
+  processors:
+    - mapping: 'root = if this.type == "end_of_batch" { deleted() } else { this }'
+
+${redpandaOutput('batch-loads-clean')}`;
+
+const snapshotThenCatchUp = `# Two phases in one run: read the whole table, then follow its change topic until
+# it goes quiet. A sequence moves on only when its current input ends, so each
+# member needs an end of its own; the sequence row adds them up.
+input:
+  sequence:
+    inputs:
+      - sql_select:
+          driver: postgres
+          dsn: \${secrets.POSTGRES_DSN}
+          table: customers
+          columns: ["*"]
+      - read_until:
+          idle_timeout: 30s
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [customers-changes]
+              consumer_group: customers-catch-up
+
+${redpandaOutput('customers-merged')}`;
+
+const brokerOneEndless = `# A broker ends only once every member has. Two of these inputs end: a bucket
+# listing, and a topic read until idle. The third streams forever, so the
+# pipeline never stops. Give it a stop condition and the broker row reads
+# "Stops once all inputs stop".
+input:
+  broker:
+    inputs:
+      - aws_s3:
+          bucket: invoices
+          prefix: 2026/
+          region: us-east-1
+          credentials:
+            id: \${secrets.AWS_ACCESS_KEY_ID}
+            secret: \${secrets.AWS_SECRET_ACCESS_KEY}
+      - read_until:
+          idle_timeout: 30s
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [invoices-late]
+              consumer_group: invoices-late
+      - redpanda:
+${redpandaConnection(10)}
+          topics: [invoices-live]
+          consumer_group: invoices-live
+
+${redpandaOutput('invoices-all')}`;
+
+const brokerAllMembersStop = `# A broker ends once every member has, so each member needs an end of its own:
+# a message limit with an idle backstop, an idle timeout alone, a generate count
+# that ends by itself, and a check with an idle backstop.
+input:
+  broker:
+    inputs:
+      - read_until:
+          check: counter() >= 10000
+          idle_timeout: 1m
+          input:
+            label: orders_backfill
+            redpanda:
+${redpandaConnection(14)}
+              topics: [orders]
+              consumer_group: orders-backfill
+      - read_until:
+          idle_timeout: 30s
+          input:
+            label: payments_drain
+            redpanda:
+${redpandaConnection(14)}
+              topics: [payments]
+              consumer_group: payments-drain
+      - generate:
+          count: 500
+          interval: 10ms
+          mapping: 'root = {"id": uuid_v4()}'
+      - read_until:
+          check: this.type == "end_of_batch"
+          idle_timeout: 5m
+          input:
+            generate:
+              interval: 1s
+              mapping: 'root.type = if counter() % 1000 == 0 { "end_of_batch" } else { "row" }'
+
+output:
+  drop: {}
+`;
+
+const brokerOwnStopCondition = `# A stop condition around the whole broker: it ends after 50,000 messages across
+# all members, or once 2 minutes pass with nothing from any of them. A member can
+# still carry its own: searches stops after 10 idle minutes.
+input:
+  read_until:
+    check: counter() >= 50000
+    idle_timeout: 2m
+    input:
+      broker:
+        inputs:
+          - redpanda:
+${redpandaConnection(14)}
+              topics: [clicks]
+              consumer_group: clicks-rollup
+          - redpanda:
+${redpandaConnection(14)}
+              topics: [page-views]
+              consumer_group: page-views-rollup
+          - read_until:
+              idle_timeout: 10m
+              input:
+                redpanda:
+${redpandaConnection(18)}
+                  topics: [searches]
+                  consumer_group: searches-rollup
+
+output:
+  drop: {}
+`;
+
+const brokerNestedGroups = `# Groups inside a broker. A sequence snapshots a table, then follows its change
+# topic until it goes quiet; a nested broker's members both end; and a check
+# alone stops on an end-of-batch marker, but warns it can wait forever for one.
+input:
+  broker:
+    inputs:
+      - sequence:
+          inputs:
+            - sql_select:
+                driver: postgres
+                dsn: \${secrets.POSTGRES_DSN}
+                table: customers
+                columns: ["*"]
+            - read_until:
+                idle_timeout: 30s
+                input:
+                  redpanda:
+${redpandaConnection(20)}
+                    topics: [customers-changes]
+                    consumer_group: customers-catch-up
+      - broker:
+          inputs:
+            - generate:
+                count: 100
+                mapping: 'root = {"source": "seed"}'
+            - read_until:
+                idle_timeout: 45s
+                input:
+                  redpanda:
+${redpandaConnection(20)}
+                    topics: [customers-late]
+                    consumer_group: customers-late
+      - read_until:
+          check: this.type == "end_of_batch"
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [batch-loads]
+              consumer_group: batch-loads
+
+output:
+  drop: {}
+`;
+
+const brokerBatchingWithPeriod = `# Batching on the broker itself. Every member ends and the policy has a period,
+# so the last partial batch is flushed and the pipeline stops. Remove the period
+# and it reads "May not stop": the last batch would wait forever to fill.
+input:
+  broker:
+    batching:
+      count: 100
+      period: 5s
+    inputs:
+      - read_until:
+          idle_timeout: 1m
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [metrics-a]
+              consumer_group: metrics-a-batch
+      - read_until:
+          check: counter() >= 2000
+          idle_timeout: 1m
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [metrics-b]
+              consumer_group: metrics-b-batch
+
+output:
+  drop: {}
+`;
+
+const stopConditionTraps = `# Stop conditions that look as if they end the input but don't, the way Connect
+# runs them. Each member's stop row says why, and its popover how to fix it.
+input:
+  broker:
+    inputs:
+      # restart_input reads a finished input again at once, so its idle timeout
+      # never runs out.
+      - read_until:
+          idle_timeout: 30s
+          restart_input: true
+          input:
+            sql_select:
+              driver: postgres
+              dsn: \${secrets.POSTGRES_DSN}
+              table: events
+              columns: ["*"]
+      # A zero idle timeout passes Connect's checks but never fires.
+      - read_until:
+          idle_timeout: 0s
+          input:
+            redpanda:
+${redpandaConnection(14)}
+              topics: [events]
+              consumer_group: traps-zero-idle
+      # A check that is never true.
+      - read_until:
+          check: "false"
+          input:
+            generate:
+              interval: 1s
+              mapping: 'root = {}'
+      # A streamed response reconnects whenever the server closes it, by default.
+      - http_client:
+          url: https://example.com/events
+          stream:
+            enabled: true
+
+output:
+  drop: {}
+`;
+
+const batchingWithoutPeriod = `# Reads as "May not stop". Once its input ends, a batch policy with no period
+# waits forever for its last partial batch to fill, so the pipeline keeps
+# running. The hint on the input says to set policy.period.
+input:
+  batched:
+    child:
+      sql_select:
+        driver: postgres
+        dsn: \${secrets.POSTGRES_DSN}
+        table: orders
+        columns: ["*"]
+    policy:
+      count: 500
+
+${redpandaOutput('orders-batched')}`;
+
+const readOnlyStopConditions = `# Stop conditions the editor shows read-only, each with its reason. Rewriting
+# them in place would change what an alias feeds elsewhere, or drop a variable,
+# so they are changed in the YAML.
+#
+# Saving in Cloud needs a RESTART_INPUT secret (true or false).
+input:
+  broker:
+    inputs:
+      # An anchored input is editable; an alias that reuses it is locked.
+      - &orders
+        redpanda:
+${redpandaConnection(10)}
+          topics: [orders]
+          consumer_group: read-only-demo
+      - *orders
+      # So is an alias of a read_until.
+      - &until_idle
+        read_until:
+          idle_timeout: 30s
+          input:
+            generate:
+              count: 10
+              mapping: 'root = {}'
+      - *until_idle
+      # restart_input from a variable is locked, since the editor would drop it.
+      - read_until:
+          check: this.done
+          restart_input: \${secrets.RESTART_INPUT}
+          input:
+            generate:
+              count: 10
+              mapping: 'root = {"done": true}'
+
+output:
+  drop: {}
+`;
+
+const incompleteStopConditions = `# Stop conditions Connect's lint accepts but that fail once the pipeline runs.
+# The editor reports each in the Problems panel and on the input's stop row; the
+# pipeline reads "Needs fixing".
+input:
+  broker:
+    inputs:
+      # Nothing to stop on: needs a check or an idle_timeout.
+      - read_until:
+          input:
+            generate:
+              interval: 1s
+              mapping: 'root = {}'
+      # An idle_timeout that isn't a duration.
+      - read_until:
+          idle_timeout: soon
+          input:
+            generate:
+              interval: 1s
+              mapping: 'root = {}'
+      # No input to read from.
+      - read_until:
+          check: this.done
+      # A batch policy with nothing to send a batch on.
+      - batched:
+          child:
+            generate:
+              count: 10
+              mapping: 'root = {}'
+          policy: {}
+
+output:
+  drop: {}
+`;
+
 export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'simple-generate-to-drop',
-    name: 'Simple — generate to drop',
+    name: 'Generate to drop',
     description: 'Smallest pipeline that validates everywhere (Cloud included).',
     yaml: generateToDrop,
     tags: ['simple'],
   },
   {
     id: 'simple-generate-to-redpanda-local',
-    name: 'Simple — generate to Redpanda (local Tilt)',
+    name: 'Generate to Redpanda (local Tilt)',
     description: 'cloudv2 Tilt — needs one Console secret (LOCAL_RP_PASSWORD). Setup steps in YAML comments.',
     yaml: generateToRedpandaLocal,
     tags: ['simple'],
   },
   {
     id: 'simple-generate-to-redpanda-cloud',
-    name: 'Simple — generate to Redpanda (Cloud)',
+    name: 'Generate to Redpanda (Cloud)',
     description: 'SCRAM-SHA-256 + TLS using ${secrets.X}. Canonical Cloud quickstart pattern.',
     yaml: generateToRedpanda,
     tags: ['simple'],
   },
   {
     id: 'simple-noisy-logs',
-    name: 'Simple — noisy INFO/WARN/ERROR logs',
+    name: 'Noisy INFO/WARN/ERROR logs',
     description: 'Emits 5 msg/sec at INFO + WARN + ERROR. (DEBUG/TRACE are dropped by Cloud.)',
     yaml: noisyLogs,
     tags: ['simple'],
   },
   {
     id: 'medium-http-to-redpanda',
-    name: 'Medium — HTTP to Redpanda',
+    name: 'HTTP to Redpanda',
     description: 'Webhook ingest, schema-registry decode with try/catch, write to Redpanda.',
     yaml: httpToRedpanda,
     tags: ['medium'],
   },
   {
     id: 'medium-postgres-cdc',
-    name: 'Medium — Postgres CDC to Redpanda',
+    name: 'Postgres CDC to Redpanda',
     description: 'Logical-replication CDC → Redpanda topic per table, keyed by primary key.',
     yaml: postgresCdcToRedpanda,
     tags: ['medium'],
   },
   {
     id: 'complex-enrichment-workflow',
-    name: 'Complex — workflow enrichment',
+    name: 'Workflow enrichment',
     description: 'Multi-branch parallel HTTP enrichment (cookbook-style). Redpanda → Redpanda.',
     yaml: enrichmentWorkflow,
     tags: ['complex'],
   },
   {
     id: 'complex-rag-ingest',
-    name: 'Complex — RAG ingest (embeddings → PGVector)',
+    name: 'RAG ingest (embeddings → PGVector)',
     description: 'Chunk → OpenAI embeddings → Postgres for retrieval-augmented generation.',
     yaml: ragEmbeddingPipeline,
     tags: ['complex'],
   },
   {
     id: 'complex-enterprise',
-    name: 'Complex — enterprise enrichment',
+    name: 'Enterprise enrichment',
     description: 'Redpanda → dedupe → branch enrich → filter → S3 + DLQ. Cache + rate limit resources.',
     yaml: enterpriseEnrichment,
     tags: ['complex'],
   },
   {
     id: 'complex-kitchen-sink',
-    name: 'Complex — kitchen sink',
+    name: 'Kitchen sink',
     description: 'Many component types (broker, workflow, parallel, retry, fan_out) for editor stress-testing.',
     yaml: allComponentsKitchenSink,
     tags: ['complex'],
   },
   {
     id: 'complex-heavy-branching',
-    name: 'Complex — heavy branching & routing',
+    name: 'Heavy branching & routing',
     description:
       'Broker fan-in, nested switch → branch → try/catch, for_each, parallel, cache/rate-limit refs, switch+fallback DLQ output. Built to exercise the visualizer.',
     yaml: heavyBranching,
@@ -1685,7 +2106,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'complex-omni-channel-platform',
-    name: 'Complex — omni-channel platform (mega)',
+    name: 'Omni-channel platform (mega)',
     description:
       '~800-line, maximally-branched commerce platform: broker fan-in of 5 sources, top-level switch routing per event type into nested switch/branch/try-catch/parallel/workflow/for_each/group_by, shared fraud + enrichment stages, and a large switch output with DLQ, per-region S3, pub/sub and fallbacks. Exercises every visualizer node/edge shape.',
     yaml: omniChannelPlatform,
@@ -1693,7 +2114,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-resource-indirection',
-    name: 'Edge — resource indirection (*_resources)',
+    name: 'Resource indirection (*_resources)',
     description:
       'input/output/processor declared as named *_resources and referenced via resource:. Exercises the visualizer’s reference linking and a reused processor resource.',
     yaml: resourceIndirection,
@@ -1701,7 +2122,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-secrets-heavy',
-    name: 'Edge — many secret references',
+    name: 'Many secret references',
     description:
       'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
     yaml: secretsHeavy,
@@ -1709,30 +2130,135 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   },
   {
     id: 'edge-giant-config',
-    name: 'Edge — 60 processors (perf)',
+    name: '60 processors (perf)',
     description: 'Large pipeline to surface editor/render perf issues.',
     yaml: giantConfig,
     tags: ['edge-case'],
   },
   {
+    id: 'stops-generate-count',
+    name: 'Generate a fixed count',
+    description:
+      'Ends after 100 messages and stops itself. Validates everywhere; the quickest way to try the schedule preview.',
+    yaml: generateFixedCount,
+    tags: ['stops', 'simple'],
+  },
+  {
+    id: 'stops-postgres-snapshot',
+    name: 'Postgres table snapshot',
+    description: 'sql_select reads every row, then stops: the nightly-export shape a schedule runs.',
+    yaml: postgresSnapshot,
+    tags: ['stops'],
+  },
+  {
+    id: 'stops-topic-backfill',
+    name: 'Topic backfill (limit + idle backstop)',
+    description: 'read_until with counter() >= 10000 and a 1m idle timeout on a redpanda input.',
+    yaml: topicBackfill,
+    tags: ['stops'],
+  },
+  {
+    id: 'stops-end-of-batch-check',
+    name: 'End-of-batch marker (check only)',
+    description: 'Stops on a Bloblang check; the editor warns it can wait forever and suggests an idle backstop.',
+    yaml: endOfBatchMarker,
+    tags: ['stops'],
+  },
+  {
+    id: 'stops-sequence-catch-up',
+    name: 'Sequence: snapshot, then catch up',
+    description: 'A table read, then a topic read until idle. Each sequence member carries its own stop.',
+    yaml: snapshotThenCatchUp,
+    tags: ['stops', 'medium'],
+  },
+  {
+    id: 'stops-broker-one-endless',
+    name: 'Broker with one endless member',
+    description:
+      'Two members end, one streams forever, so the broker runs continuously. Member rows add up on the broker.',
+    yaml: brokerOneEndless,
+    tags: ['stops', 'medium'],
+  },
+  {
+    id: 'stops-broker-all-members',
+    name: 'Broker where every member stops',
+    description:
+      'A limit with an idle backstop, an idle timeout, a generate count and a check with a backstop: it stops after the last one.',
+    yaml: brokerAllMembersStop,
+    tags: ['stops', 'medium'],
+  },
+  {
+    id: 'stops-broker-own-condition',
+    name: 'Stop condition around a whole broker',
+    description: 'read_until wraps the broker (50K msgs or 2m idle), and one member keeps an idle timeout of its own.',
+    yaml: brokerOwnStopCondition,
+    tags: ['stops', 'medium'],
+  },
+  {
+    id: 'stops-broker-nested-groups',
+    name: 'Broker with a nested sequence and broker',
+    description:
+      'A sequence and a broker as members, each drawn as one card that sums up its own; a check-only member warns it can wait forever.',
+    yaml: brokerNestedGroups,
+    tags: ['stops', 'complex'],
+  },
+  {
+    id: 'stops-broker-batching-period',
+    name: 'Broker batching with a period',
+    description: 'Broker-level batching flushes its last batch on the period, so the broker still stops.',
+    yaml: brokerBatchingWithPeriod,
+    tags: ['stops', 'medium'],
+  },
+  {
+    id: 'edge-stop-condition-traps',
+    name: 'Stop conditions that never fire',
+    description:
+      'restart_input + idle over a table, a 0s idle timeout, a never-true check, and a reconnecting HTTP stream.',
+    yaml: stopConditionTraps,
+    tags: ['stops', 'edge-case'],
+  },
+  {
+    id: 'edge-batching-without-period',
+    name: 'Batching with no period',
+    description: 'A finished input whose last partial batch waits forever: reads "May not stop", with the fix.',
+    yaml: batchingWithoutPeriod,
+    tags: ['stops', 'edge-case'],
+  },
+  {
+    id: 'edge-read-only-stop-conditions',
+    name: 'Read-only stop conditions',
+    description:
+      'An aliased input, an aliased read_until and an env-var restart_input: each stop row explains why it is read-only.',
+    yaml: readOnlyStopConditions,
+    tags: ['stops', 'edge-case'],
+  },
+  {
     id: 'invalid-malformed-yaml',
-    name: 'Invalid — malformed YAML',
+    name: 'Malformed YAML',
     description: 'Broken syntax for testing editor error display.',
     yaml: malformedYaml,
     tags: ['invalid'],
   },
   {
     id: 'invalid-missing-required',
-    name: 'Invalid — missing required fields',
+    name: 'Missing required fields',
     description: 'Parses, but server-side validation should reject it.',
     yaml: missingRequiredFields,
     tags: ['invalid'],
   },
   {
     id: 'invalid-cloud-disabled-stdio',
-    name: 'Invalid — stdin/stdout (Cloud-disabled)',
+    name: 'stdin/stdout (Cloud-disabled)',
     description: 'Triggers "unable to infer component type" — components disabled in Cloud.',
     yaml: stdinStdoutDisabled,
     tags: ['invalid'],
+  },
+  {
+    id: 'invalid-incomplete-stop-conditions',
+    name: 'Incomplete stop conditions',
+    description:
+      'read_until with nothing to stop on, a non-duration idle timeout, no input, and a trigger-less batch policy. Lint accepts them; Connect fails on them.',
+    yaml: incompleteStopConditions,
+    tags: ['stops', 'invalid'],
   },
 ];

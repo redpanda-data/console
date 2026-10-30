@@ -14,14 +14,16 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpenIcon, Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
+import { StopKindIcon } from './stop-condition';
 import { useResilientParse } from './use-resilient-parse';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { getNodeDocsUrl } from '../utils/connector-docs';
-import { buildChildrenMap, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { buildChildrenMap, hasStopSlot, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { stopSummary } from '../utils/read-until';
 
 const SECTION_TITLES: Record<string, string> = {
   input: 'INPUT',
@@ -103,6 +105,41 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
     );
   }
   return null;
+};
+
+// The id a row's StopMark describes it with (undefined for rows without one).
+function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
+  const id = useId();
+  return hasStopSlot(node) ? id : undefined;
+}
+
+// How an input ends — its stop condition, or on its own — as a small glyph with the full sentence
+// on hover, and as the row's description (`descriptionId`) for assistive tech.
+const StopMark = ({ node, descriptionId }: { node: PipelineFlowNode; descriptionId?: string }) => {
+  if (!(descriptionId && node.stopSlot && node.endBehavior)) {
+    return null;
+  }
+  const { kind } = node.endBehavior;
+  const ends = kind === 'condition' || kind === 'natural';
+  const { long } = stopSummary(node.stopSlot, node.endBehavior);
+  // The tone and fill sit on the wrapper; the glyph draws in its currentColor.
+  return (
+    <ElementTooltip content={long}>
+      <span
+        className={cn(
+          'shrink-0',
+          ends ? 'text-success' : 'text-muted-foreground',
+          kind === 'condition' && '[&_svg]:fill-current',
+          kind === 'invalid' && 'text-destructive'
+        )}
+      >
+        <span className="sr-only" id={descriptionId}>
+          {long}
+        </span>
+        <StopKindIcon className="size-3.5" kind={kind} />
+      </span>
+    </ElementTooltip>
+  );
 };
 
 // The muted ink and the hover/focus reveal live on the wrapper; `current-ghost` takes that ink.
@@ -221,12 +258,14 @@ const NodeRow = ({
   const hasError = errorNodeIds?.has(node.id);
   const unsaved = unsavedNodeIds?.has(node.id);
   const docsUrl = getNodeDocsUrl(node);
+  const stopDescriptionId = useStopDescriptionId(node);
 
   return (
     <>
       {/* The row itself is the treeitem: it takes focus and handles select/expand keys; the
           chevron stays a presentational click target so mouse behaviour is unchanged. */}
       <div
+        aria-describedby={stopDescriptionId}
         aria-expanded={hasChildren ? !collapsed : undefined}
         aria-label={node.label}
         aria-level={depth + 1}
@@ -281,6 +320,7 @@ const NodeRow = ({
                 </span>
               </ElementTooltip>
             ) : null}
+            <StopMark descriptionId={stopDescriptionId} node={node} />
             <RowStatusDot hasError={hasError} unsaved={unsaved} />
             {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
           </span>

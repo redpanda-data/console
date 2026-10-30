@@ -10,6 +10,8 @@ export const FEATURE_FLAGS = {
   enableRpcnPipelineDrafts: false,
   enableRpcnTemplateGallery: false,
   enableRpcnVisualEditor: false,
+  // Browser-local preview; nothing runs on the schedule yet.
+  enableRpcnPipelineSchedules: false,
   enableDataplaneObservabilityServerless: false,
   enableDataplaneObservability: false,
   enableNewPipelineLogs: false,

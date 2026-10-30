@@ -48,7 +48,6 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import { useGetPipelineQuery, usePipelineSampleQuery } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import {
   type AttachedServiceAccount,
   autosaveTargetKey,
@@ -58,6 +57,7 @@ import {
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -78,6 +78,7 @@ import {
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineRunsPanel } from './pipeline-runs-panel';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { type SaveContext, type SaveIntent, unsavedChangesCopy } from './save-actions';
@@ -94,6 +95,7 @@ import {
 } from './use-pipeline-editor-store';
 import { usePipelineLint } from './use-pipeline-lint';
 import { usePipelineSave } from './use-pipeline-save';
+import { useRunObserver, useWatchingRun } from './use-run-observer';
 import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
 import { takeStartLintHints } from './use-start-draft';
@@ -122,6 +124,8 @@ import {
 } from '../utils/yaml';
 import { withYamlDocumentation } from '../utils/yaml-editor-schema';
 
+// How often the page checks on a run this browser started.
+const RUN_WATCH_INTERVAL_MS = 5000;
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
     return 'Add an input';
@@ -227,11 +231,24 @@ function useDiagramDialogs(
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
+  // A component that comes from a merge key, or sits inside nested wrappers, can't be rewritten safely.
+  const warnUnpatched = (componentName: string) =>
+    showToast({
+      status: 'warning',
+      title: 'Couldn’t add it to the YAML',
+      description: `Add it to the ${componentName} config by hand.`,
+    });
+
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
-      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+      if (!data.topicName) {
+        return;
+      }
+      if (patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -245,6 +262,8 @@ function useDiagramDialogs(
           onServiceAccountAttached(serviceAccount);
         }
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -276,7 +295,7 @@ function useDiagramDialogs(
           componentName
         );
         if (parseError) {
-          toast.error('Failed to parse pipeline YAML');
+          showToast({ status: 'error', title: 'Failed to parse pipeline YAML' });
         }
         setConnectorTopics(topics);
         // An input reading as its own user needs the group granted too, so the dialog starts from it.
@@ -392,6 +411,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     // Natural height on purpose: this lane scrolls with the page, so logs pagination sits right below
     // the table.
     <div className="flex flex-col p-6">
+      <PipelineRunsPanel configYaml={pipeline.configYaml} pipelineId={pipeline.id} />
       {showThroughput ? (
         <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
@@ -868,11 +888,21 @@ function useDraftSupport(mode: PipelineMode, pipeline: Pipeline | undefined) {
 
 /** The loaded pipeline, the component catalog and config schema, and what saving it may do. */
 function usePipelineServerData(mode: PipelineMode, pipelineId: string | undefined) {
-  const { data: pipelineResponse } = useGetPipelineQuery(
+  // A run this browser started is watched until it ends, for up to an hour; the query otherwise polls
+  // only while the pipeline starts or stops.
+  const watchingRun = useWatchingRun(pipelineId);
+  const { data: pipelineResponse, dataUpdatedAt } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId }
+    {
+      enabled: mode !== 'create' && !!pipelineId,
+      steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+      // A hidden tab still sees the run end, within the browser's timer throttling.
+      refetchIntervalInBackground: watchingRun,
+    }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
+  // Ends a run this browser started once the pipeline is seen to stop, in either mode.
+  useRunObserver(pipeline?.id, pipeline?.state, dataUpdatedAt);
   const { components, componentList } = useEnrichedComponents();
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {
@@ -1214,7 +1244,7 @@ function useAutosaveRecovery({
       { keepDefaultValues: true }
     );
     setIsAutosaveDismissed(true);
-    toast.success('Your edits were restored — they still need saving');
+    showToast({ status: 'success', title: 'Your edits were restored — they still need saving' });
   }, [recoverableEntry, setYamlContent, setAttachedServiceAccount, form, setIsAutosaveDismissed]);
 
   const handleDiscardAutosave = useCallback(() => {
@@ -1597,6 +1627,7 @@ function PipelinePageHeader({ page, expanded }: PageSectionProps) {
   if (config.mode !== 'view') {
     return (
       <PipelineEditHeader
+        configYaml={editorState.yamlContent}
         draftIssueCount={Object.keys(saveSession.lint.lintHints).length}
         expanded={expanded}
         form={page.form}
@@ -1607,6 +1638,7 @@ function PipelinePageHeader({ page, expanded }: PageSectionProps) {
         onEditSettings={() => setIsConfigDialogOpen(true)}
         onRequestDelete={editingDraft ? () => setIsDeleteAlertOpen(true) : undefined}
         onSave={saveSession.save.handleSave}
+        pipelineId={pipeline?.id}
         saveContext={server.saveContext}
         url={pipeline?.url}
       />
@@ -1915,7 +1947,10 @@ function UnsavedChangesDialog({
   // Flushed, not debounced: the pending write dies with the page.
   const handleLeaveAndKeepEdits = useCallback(() => {
     if (!flushAutosave()) {
-      toast.error('Your edits could not be kept in this browser. Save them, or discard them to leave.');
+      showToast({
+        status: 'error',
+        title: 'Your edits could not be kept in this browser. Save them, or discard them to leave.',
+      });
       return;
     }
     blocker.proceed?.();
@@ -2142,7 +2177,7 @@ function PipelineConnectorDialogs({ page }: { page: PipelinePageModel }) {
               form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
             }
             setIsTemplateDialogOpen(false);
-            toast.success('Template applied — review the YAML and click Save to deploy.');
+            showToast({ status: 'success', title: 'Template applied — review the YAML and click Save to deploy.' });
           }}
           open={editorState.isTemplateDialogOpen}
         />

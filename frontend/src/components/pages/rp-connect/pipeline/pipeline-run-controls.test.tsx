@@ -12,6 +12,7 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { RUN_HISTORY_STORAGE_KEY, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { render, screen } from 'test-utils';
 
 import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
@@ -36,8 +37,10 @@ describe('the PipelineStateBadge', () => {
 
 describe('the PipelineRunButton', () => {
   beforeEach(() => {
-    startMutate.mockClear();
+    startMutate.mockReset();
     stopMutate.mockClear();
+    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+    useRunHistoryStore.setState({ runs: {} });
   });
 
   test('a stopped pipeline offers Start pipeline, which starts it without a confirmation', async () => {
@@ -49,6 +52,38 @@ describe('the PipelineRunButton', () => {
 
     await user.click(start);
     expect(startMutate).toHaveBeenCalledTimes(1);
+  });
+
+  test('a scheduled pipeline offers Run now, a single run that leaves the schedule as it is', async () => {
+    const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} scheduled />);
+
+    const start = screen.getByTestId('pipeline-start');
+    expect(start).toHaveTextContent('Run now');
+    await user.hover(start);
+    expect(await screen.findByText('Starts one run now. The schedule stays as it is.')).toBeInTheDocument();
+
+    await user.click(start);
+    expect(startMutate).toHaveBeenCalledTimes(1);
+    // The run is recorded, as started by hand.
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'running',
+      trigger: 'manual',
+    });
+  });
+
+  test('a pipeline that stops on its own records its run, under its usual label', async () => {
+    const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} recordsRuns />);
+    const start = screen.getByTestId('pipeline-start');
+    expect(start).toHaveTextContent('Start pipeline');
+    await user.click(start);
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'running',
+      trigger: 'manual',
+    });
   });
 
   test.each([
@@ -104,5 +139,30 @@ describe('the PipelineRunButton', () => {
   test('an unknown state offers no run action to name', () => {
     render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.UNSPECIFIED} />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('the PipelineRunButton’s run history', () => {
+  const STARTED = Date.UTC(2026, 0, 15, 12);
+
+  beforeEach(() => {
+    startMutate.mockReset();
+    window.localStorage.removeItem(RUN_HISTORY_STORAGE_KEY);
+    useRunHistoryStore.setState({ runs: {} });
+  });
+
+  // Before it's seen running, a stopped or errored state may be the one from before the start, so only
+  // starting it again shows that run is over.
+  test('a run that errored before it was seen running ends as failed when the pipeline is started again', async () => {
+    const user = userEvent.setup();
+    startMutate.mockImplementation((_request: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.());
+    useRunHistoryStore.getState().startManualRun('p1', { now: STARTED });
+    useRunHistoryStore.getState().observe('p1', 'error', STARTED + 20_000);
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.ERROR} recordsRuns />);
+    await user.click(screen.getByTestId('pipeline-start'));
+    expect(useRunHistoryStore.getState().runs['default/p1']).toEqual([
+      expect.objectContaining({ outcome: 'running' }),
+      expect.objectContaining({ outcome: 'failed' }),
+    ]);
   });
 });

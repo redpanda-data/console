@@ -6,6 +6,7 @@ import { schemaToConfig } from './schema';
 import {
   appendResource,
   buildInsertableComponent,
+  configComponentsOf,
   configToYaml,
   countResourceReferences,
   createResourceAndReturnLabel,
@@ -18,7 +19,7 @@ import {
   insertComponentAt,
   listResourceLabels,
   mergeConnectConfigs,
-  parseConfigComponents,
+  type ParsedYamlConfig,
   patchRedpandaConfig,
   removeComponentAt,
   renameResourceReferences,
@@ -296,7 +297,9 @@ output:
   });
 });
 
-describe('parseConfigComponents', () => {
+const componentsOf = (yaml: string) => configComponentsOf(parseYaml(yaml, { merge: true }) as ParsedYamlConfig | null);
+
+describe('configComponentsOf', () => {
   describe('inputs', () => {
     describe('single input', () => {
       test('parses a simple generate input', () => {
@@ -308,7 +311,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['generate']);
       });
 
@@ -325,7 +328,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['kafka']);
       });
     });
@@ -360,7 +363,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['amqp_0_9', 'kafka']);
       });
 
@@ -374,7 +377,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual([]);
       });
     });
@@ -398,7 +401,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['file', 'generate']);
       });
 
@@ -431,7 +434,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['file', 'file']);
       });
     });
@@ -451,7 +454,7 @@ output:
       - localhost:9092
     topic: my_topic
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.inputs).toEqual(['generate']);
         expect(result.outputs).toEqual(['kafka']);
       });
@@ -465,7 +468,7 @@ input:
 output:
   drop: {}
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['drop']);
       });
     });
@@ -486,8 +489,27 @@ output:
   processors:
     - resource: general_processor
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['resource', 'resource']);
+      });
+
+      // A member's own processors can come before its output, as they can on an input.
+      test('names each member by its output, past processors listed first', () => {
+        const yaml = `
+output:
+  broker:
+    outputs:
+      - processors: [{ mapping: root = this }]
+        kafka_franz: { topic: a }
+`;
+        expect(componentsOf(yaml).outputs).toEqual(['kafka_franz']);
+        const switched = componentsOf(
+          'output:\n  switch:\n    cases:\n      - output: { processors: [], drop: {} }\n'
+        ).outputs;
+        expect(switched).toEqual(['drop']);
+        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toEqual([
+          'stdout',
+        ]);
       });
 
       test('extracts mixed child outputs from broker', () => {
@@ -507,7 +529,7 @@ output:
             - amqps://guest:guest@localhost:5672/
           target_address: queue:/my_queue
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['kafka', 'http_client', 'amqp_1']);
       });
 
@@ -518,7 +540,7 @@ output:
     pattern: fan_out
     outputs: []
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual([]);
       });
 
@@ -539,7 +561,7 @@ output:
       count: 10
       period: 1s
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['kafka', 'redis_streams']);
       });
     });
@@ -573,7 +595,7 @@ output:
                 root = this
                 root.type = this.type | "unknown"
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
       });
 
@@ -597,7 +619,7 @@ output:
             project: people
             topic: that_i_dont_want_to_hang_with
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
       });
     });
@@ -621,7 +643,7 @@ output:
     - file:
         path: /usr/local/benthos/everything_failed.jsonl
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['http_client', 'http_client', 'file']);
       });
 
@@ -641,7 +663,7 @@ output:
     - file:
         path: /usr/local/benthos/failed_stuff.jsonl
 `;
-        const result = parseConfigComponents(yaml);
+        const result = componentsOf(yaml);
         expect(result.outputs).toEqual(['aws_dynamodb', 'file']);
       });
     });
@@ -663,7 +685,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['mapping']);
     });
 
@@ -682,7 +704,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['log']);
     });
 
@@ -705,7 +727,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['switch']);
     });
 
@@ -722,7 +744,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['resource']);
     });
 
@@ -742,7 +764,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['catch']);
     });
 
@@ -761,7 +783,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['try']);
     });
 
@@ -800,7 +822,7 @@ output:
       - localhost:9092
     topic: output_topic
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['kafka']);
       expect(result.processors).toEqual(['mapping', 'log', 'switch', 'catch', 'try', 'resource']);
       expect(result.outputs).toEqual(['kafka']);
@@ -821,7 +843,7 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['generate']);
     });
 
@@ -837,7 +859,7 @@ output:
     topic: test
     key: ""
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.outputs).toEqual(['redpanda']);
     });
 
@@ -868,7 +890,7 @@ output:
     partition: ""
     max_in_flight: 0
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['generate']);
       expect(result.outputs).toEqual(['redpanda']);
     });
@@ -894,7 +916,7 @@ pipeline:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual(['branch', 'mapping']);
     });
 
@@ -918,7 +940,7 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
     });
 
@@ -937,7 +959,7 @@ output:
         http_client:
           url: http://example.com/post
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.outputs).toEqual(['kafka', 'http_client']);
     });
 
@@ -953,7 +975,7 @@ output:
       file:
         path: /usr/local/benthos/failed.jsonl
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.outputs).toEqual(['http_client', 'file']);
     });
 
@@ -976,7 +998,7 @@ output:
             project: dealing_with_mike
             topic: mikes_bars
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
     });
 
@@ -1022,7 +1044,7 @@ output:
         http_client:
           url: http://example.com/webhook
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['kafka', 'generate']);
       expect(result.processors).toEqual(['mapping', 'branch']);
       expect(result.outputs).toEqual(['kafka', 'http_client']);
@@ -1030,14 +1052,8 @@ output:
   });
 
   describe('edge cases', () => {
-    test('returns empty for empty string', () => {
-      const result = parseConfigComponents('');
-      expect(result).toEqual({ inputs: [], processors: [], outputs: [] });
-    });
-
-    test('returns empty for invalid YAML', () => {
-      const result = parseConfigComponents('{{{{not valid yaml');
-      expect(result).toEqual({ inputs: [], processors: [], outputs: [] });
+    test('returns empty for an empty config', () => {
+      expect(componentsOf('')).toEqual({ inputs: [], processors: [], outputs: [] });
     });
 
     test('handles config with no output', () => {
@@ -1046,7 +1062,7 @@ input:
   generate:
     mapping: 'root = {}'
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['generate']);
       expect(result.outputs).toEqual([]);
       expect(result.processors).toEqual([]);
@@ -1061,7 +1077,7 @@ input:
 output:
   drop: {}
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.processors).toEqual([]);
     });
 
@@ -1074,7 +1090,7 @@ pipeline:
   processors:
     - mapping: 'root = this'
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual([]);
       expect(result.processors).toEqual(['mapping']);
       expect(result.outputs).toEqual(['drop']);
@@ -1113,7 +1129,7 @@ output:
       - http_client:
           url: http://example.com/webhook
 `;
-      const result = parseConfigComponents(yaml);
+      const result = componentsOf(yaml);
       expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
       expect(result.processors).toEqual(['mapping', 'log']);
       expect(result.outputs).toEqual(['kafka', 'http_client']);
@@ -1722,6 +1738,53 @@ output:
       });
     });
 
+    // The canvas shows a wrapped input as the input it reads; its target is the slot either way.
+    describe('an input wrapped in read_until', () => {
+      const wrapped = `input:
+  read_until:
+    idle_timeout: 30s
+    input:
+      broker:
+        inputs:
+          - read_until:
+              check: counter() >= 5
+              input:
+                kafka_franz: { topics: [a] }
+output:
+  drop: {}
+`;
+      const member: EditTarget = {
+        kind: 'path',
+        path: ['input', 'read_until', 'input', 'broker', 'inputs', 0],
+        componentType: 'input',
+      };
+
+      test('is read and written inside its wrapper, which keeps its stop condition', () => {
+        expect(getComponentAt(wrapped, member)).toEqual({ kafka_franz: { topics: ['a'] } });
+        const next = setComponentAt(wrapped, member, { kafka_franz: { topics: ['b'] } }) as string;
+        expect(parseYaml(next).input.read_until.input.broker.inputs[0]).toEqual({
+          read_until: { check: 'counter() >= 5', input: { kafka_franz: { topics: ['b'] } } },
+        });
+        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toEqual(['broker']);
+      });
+
+      test('is deleted with its wrapper', () => {
+        const next = removeComponentAt(wrapped, member) as string;
+        expect(parseYaml(next).input.read_until.input.broker.inputs).toEqual([]);
+      });
+
+      test('an input resource keeps its read_until, as the canvas shows it', () => {
+        const resource = `input_resources:
+  - label: r
+    read_until:
+      check: "true"
+      input: { generate: { mapping: root = 1 } }
+`;
+        const target: EditTarget = { kind: 'path', path: ['input_resources', 0], componentType: 'input' };
+        expect(Object.keys(getComponentAt(resource, target) ?? {})).toEqual(['label', 'read_until']);
+      });
+    });
+
     describe('formatting stability', () => {
       const longMapping =
         'root.out = this.first_field.second_field.third_field.fourth_field.fifth_field.sixth_field.seventh_field.eighth_field.ninth_field';
@@ -2230,5 +2293,117 @@ output_resources:
       const parsed = parseYaml(yaml as string) as { output?: Record<string, unknown> };
       expect(parsed.output?.drop).toEqual({});
     });
+  });
+});
+
+describe('inputs inside a read_until stop condition', () => {
+  const wrapped = `input:
+  read_until:
+    idle_timeout: 30s
+    input:
+      redpanda:
+        # topics: Required - topics to read from
+        seed_brokers: ["\${REDPANDA_BROKERS}"]
+output:
+  drop: {}`;
+
+  test('the list names the wrapped input, not the wrapper', () => {
+    expect(componentsOf(wrapped).inputs).toEqual(['redpanda']);
+    const broker = `input:
+  broker:
+    inputs:
+      - read_until: { idle_timeout: 5s, input: { kafka: {} } }
+      - aws_s3: {}`;
+    expect(componentsOf(broker).inputs).toEqual(['kafka', 'aws_s3']);
+  });
+
+  test('patches topics and SASL into the wrapped input, stripping its placeholder', () => {
+    const result = patchRedpandaConfig(wrapped, 'input', 'redpanda', {
+      topicName: 'orders',
+      sasl: [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }],
+    }) as string;
+    const inner = (parseYaml(result) as { input: { read_until: { input: { redpanda: Record<string, unknown> } } } })
+      .input.read_until.input.redpanda;
+    expect(inner.topics).toEqual(['orders']);
+    expect(inner.sasl).toEqual([{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }]);
+    expect(result).not.toContain('# topics:');
+    expect((parseYaml(result) as { input: Record<string, unknown> }).input.redpanda).toBeUndefined();
+  });
+
+  test('reads the wrapped input’s topics', () => {
+    const withTopics = wrapped.replace('# topics: Required - topics to read from', 'topics: [a, b]');
+    expect(extractConnectorTopics(withTopics, 'input', 'redpanda')).toEqual({ topics: ['a', 'b'], parseError: false });
+  });
+});
+
+describe('a scanner added to an input inside a read_until', () => {
+  test('lands on the wrapped input, not on the wrapper', () => {
+    const wrapped =
+      'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      aws_s3:\n        bucket: b\noutput:\n  drop: {}\n';
+    const merged = mergeConnectConfigs(wrapped, { csv: {} } as never) as { toJS: () => unknown };
+    expect(merged.toJS()).toMatchObject({
+      input: { read_until: { idle_timeout: '5s', input: { aws_s3: { bucket: 'b', scanner: { csv: {} } } } } },
+    });
+  });
+});
+
+describe('patching a wrapped input built from a merge key', () => {
+  test('writes into the wrapped input when only the wrapper’s settings are merged in', () => {
+    const yaml = `defs:
+  stop: &stop
+    idle_timeout: 5s
+input:
+  read_until:
+    <<: *stop
+    input:
+      redpanda:
+        seed_brokers: [a]
+        consumer_group: g
+output:
+  drop: {}`;
+    const result = patchRedpandaConfig(yaml, 'input', 'redpanda', { topicName: 'orders' }) as string;
+    const { input } = parseYaml(result, { merge: true }) as { input: Record<string, unknown> };
+    expect(Object.keys(input)).toEqual(['read_until']);
+    expect((input.read_until as { input: { redpanda: Record<string, unknown> } }).input.redpanda).toEqual({
+      seed_brokers: ['a'],
+      consumer_group: 'g',
+      topics: ['orders'],
+    });
+  });
+
+  test('refuses to shadow a component a merge key supplies', () => {
+    const merged = `defs:
+  rp: &rp
+    redpanda:
+      seed_brokers: [a]
+input:
+  read_until:
+    idle_timeout: 5s
+    input:
+      <<: *rp`;
+    expect(patchRedpandaConfig(merged, 'input', 'redpanda', { topicName: 'orders' })).toBeUndefined();
+    const wholeWrapper = `defs:
+  ru: &ru
+    read_until:
+      idle_timeout: 5s
+      input:
+        redpanda:
+          seed_brokers: [a]
+input:
+  <<: *ru`;
+    expect(patchRedpandaConfig(wholeWrapper, 'input', 'redpanda', { topicName: 'orders' })).toBeUndefined();
+  });
+
+  test('refuses a component behind a second wrapper', () => {
+    const nested = `input:
+  read_until:
+    idle_timeout: 5s
+    input:
+      read_until:
+        check: this.done
+        input:
+          redpanda:
+            seed_brokers: [a]`;
+    expect(patchRedpandaConfig(nested, 'input', 'redpanda', { topicName: 'orders' })).toBeUndefined();
   });
 });

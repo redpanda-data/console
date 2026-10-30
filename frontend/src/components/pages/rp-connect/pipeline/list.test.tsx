@@ -31,6 +31,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { SCHEDULE_PREVIEW_STORAGE_KEY, scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
@@ -47,6 +49,7 @@ rs.mock('config', () => {
 type ListRequest = ListPipelinesRequest;
 
 import { PipelineListPage } from './list';
+import { defaultSchedule } from '../utils/pipeline-schedule';
 
 const yamlFor = ({ inputs, outputs }: { inputs: string[]; outputs: string[] }) => `
 input:
@@ -90,7 +93,7 @@ const FIXTURES: Fixture[] = [
     id: 'ccc333',
     displayName: 'nightly-export',
     state: Pipeline_State.STOPPED,
-    inputs: ['generate'],
+    inputs: ['sql_select'],
     outputs: ['gcp_cloud_storage'],
   },
   {
@@ -170,11 +173,32 @@ const rowFor = (displayName: string) => {
 };
 
 const SEARCH_INPUT_RE = /search pipelines/i;
+const UNTIL_DONE_RE = /Until done/;
 const CLEAR_FILTERS_RE = /clear filters/i;
+const SCHEDULED_OPTION_RE = /^Scheduled/;
+const NEXT_RUN_RE = /^Next in /;
+const SCHEDULE_DIALOG_RE = /Schedule runs/;
+const DELETE_DRAFT_RE = /delete draft/i;
 
 const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, item: RegExp) => {
   await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
   await user.click(await screen.findByRole('menuitem', { name: item }));
+};
+
+const openRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, displayName: string, item: string) => {
+  await user.click(within(rowFor(displayName)).getByRole('button', { name: 'Open menu' }));
+  await user.click(await screen.findByRole('menuitem', { name: item }));
+};
+
+// Two buttons are named Schedule: the column header opens a sort menu, the toolbar's filter a dialog.
+const scheduleButton = (popup: 'menu' | 'dialog') => {
+  const button = screen
+    .getAllByRole('button', { name: 'Schedule' })
+    .find((b) => b.getAttribute('aria-haspopup') === popup);
+  if (!button) {
+    throw new Error(popup === 'menu' ? 'no Schedule column header' : 'no Schedule filter');
+  }
+  return button;
 };
 
 // Every row links to its pipeline, so the link text is the visible rows.
@@ -412,6 +436,17 @@ describe('the PipelineListPage', () => {
       await goToPage(user, 'Go to previous page', 1);
     });
 
+    it('shows more rows per page when asked', async () => {
+      const user = userEvent.setup();
+      await renderManyPipelines();
+
+      await user.click(screen.getByRole('combobox', { name: 'Rows per page' }));
+      await user.click(await screen.findByRole('option', { name: '50' }));
+      await waitFor(() => expect(screen.getByText('Page 1 of 1')).toBeInTheDocument());
+      expect(visibleLinkNames()).toHaveLength(35);
+      expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveTextContent('50');
+    });
+
     it('goes back to page 1 when the filters change', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
@@ -439,6 +474,19 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
       });
     });
+  });
+
+  it('says whether each pipeline stops on its own, and filters on it', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    expect(within(rowFor('nightly-export')).getByText('Until done')).toBeInTheDocument();
+    expect(within(rowFor('orders-enrichment')).getByText('Continuously')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Runs' }));
+    await user.click(await screen.findByRole('option', { name: UNTIL_DONE_RE }));
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
   });
 
   describe('drafts', () => {
@@ -589,6 +637,47 @@ describe('the PipelineListPage', () => {
         expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
       });
 
+      it('records no run when the draft it starts never stops on its own', async () => {
+        const user = userEvent.setup();
+        useRunHistoryStore.setState({ runs: {} });
+        const startPipelineMock = rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
+        renderWithFileRoutes(<PipelineListPage />, {
+          transport: buildTransport({ withDraft: true, startPipelineMock }),
+        });
+
+        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+        await openRowMenuItem(user, 'half-built-pipeline', 'Start');
+        await user.click(await screen.findByTestId('confirm-start-draft'));
+
+        await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
+        await waitFor(() => expect(screen.queryByTestId('confirm-start-draft')).not.toBeInTheDocument());
+        expect(runsOf(useRunHistoryStore.getState().runs, 'draft777')).toEqual([]);
+      });
+
+      it('records a run when the draft it starts stops on its own', async () => {
+        const user = userEvent.setup();
+        useRunHistoryStore.setState({ runs: {} });
+        renderWithFileRoutes(<PipelineListPage />, {
+          transport: buildTransport({
+            withDraft: true,
+            extraDrafts: [{ ...DRAFT_FIXTURE, id: 'draft888', displayName: 'one-off-export', inputs: ['sql_select'] }],
+          }),
+        });
+
+        await waitFor(() => expect(screen.getByText('one-off-export')).toBeInTheDocument());
+
+        await user.click(within(rowFor('one-off-export')).getByRole('button', { name: 'Open menu' }));
+        await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+        await user.click(await screen.findByTestId('confirm-start-draft'));
+
+        await waitFor(() =>
+          expect(runsOf(useRunHistoryStore.getState().runs, 'draft888')).toEqual([
+            expect.objectContaining({ outcome: 'running', trigger: 'manual' }),
+          ])
+        );
+      });
+
       it('deletes a draft from its row, after a confirmation', async () => {
         const user = userEvent.setup();
         const deletePipelineMock = rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
@@ -608,6 +697,21 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
         expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+      });
+
+      // They live in this browser only, so nothing else would clear them.
+      it('clears a deleted draft’s schedule and runs from this browser', async () => {
+        const user = userEvent.setup();
+        useSchedulePreviewStore.getState().saveSchedule('draft777', defaultSchedule('UTC'));
+        useRunHistoryStore.getState().startManualRun('draft777', { now: NOW - 60_000 });
+        renderList({ withDraft: true });
+        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+        await openDraftRowMenuItem(user, DELETE_DRAFT_RE);
+        await user.click(await screen.findByTestId('confirm-delete-draft'));
+
+        await waitFor(() => expect(runsOf(useRunHistoryStore.getState().runs, 'draft777')).toEqual([]));
+        expect(scheduleOf(useSchedulePreviewStore.getState().schedules, 'draft777')).toBeUndefined();
       });
 
       // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
@@ -644,5 +748,211 @@ describe('the PipelineListPage', () => {
         expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
       });
     });
+  });
+});
+
+describe('the PipelineListPage schedules', () => {
+  const openMenu = async (user: ReturnType<typeof userEvent.setup>, displayName: string) => {
+    await user.click(within(rowFor(displayName)).getByRole('button', { name: 'Open menu' }));
+  };
+  const scheduleCell = (displayName: string) => within(rowFor(displayName)).queryByTestId('pipeline-schedule-line');
+  const storedSchedule = (id: string) => useSchedulePreviewStore.getState().schedules[`default/${id}`];
+
+  beforeEach(() => {
+    mockIsFeatureFlagEnabled.mockImplementation((flag) => flag === 'enableRpcnPipelineSchedules');
+    window.localStorage.removeItem(SCHEDULE_PREVIEW_STORAGE_KEY);
+    useSchedulePreviewStore.setState({ schedules: {} });
+    const { saveSchedule } = useSchedulePreviewStore.getState();
+    // nightly-export stops on its own; orders-enrichment never does.
+    saveSchedule('ccc333', { ...defaultSchedule('UTC'), enabled: true });
+    saveSchedule('aaa111', { ...defaultSchedule('UTC'), enabled: false });
+  });
+
+  afterEach(() => {
+    mockIsFeatureFlagEnabled.mockImplementation(() => false);
+  });
+
+  it('shows each pipeline’s schedule, and filters on it', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    expect(scheduleCell('nightly-export')).toHaveTextContent(NEXT_RUN_RE);
+    expect(scheduleCell('orders-enrichment')).toHaveTextContent('Paused');
+    expect(scheduleCell('clickstream-sink')).not.toBeInTheDocument();
+
+    // The column header sorts; the toolbar's Schedule button filters.
+    await user.click(scheduleButton('dialog'));
+    await user.click(await screen.findByRole('option', { name: SCHEDULED_OPTION_RE }));
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
+  });
+
+  it('sorts by the next run, then paused, then pipelines without a schedule', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    const header = scheduleButton('menu');
+    await user.click(header);
+    await user.click(await screen.findByRole('menuitem', { name: 'Asc' }));
+    await waitFor(() =>
+      expect(visibleLinkNames()).toEqual(['nightly-export', 'orders-enrichment', 'clickstream-sink'])
+    );
+    // Descending turns the schedules around; pipelines without one stay last.
+    await user.click(header);
+    await user.click(await screen.findByRole('menuitem', { name: 'Desc' }));
+    await waitFor(() =>
+      expect(visibleLinkNames()).toEqual(['orders-enrichment', 'nightly-export', 'clickstream-sink'])
+    );
+  });
+
+  it('runs a scheduled pipeline once, and pauses or resumes its schedule from the row menu', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await openMenu(user, 'nightly-export');
+    expect(await screen.findByRole('menuitem', { name: 'Run now' })).toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Pause schedule' }));
+    expect(storedSchedule('ccc333')?.enabled).toBe(false);
+    await waitFor(() => expect(scheduleCell('nightly-export')).toHaveTextContent('Paused'));
+
+    await openRowMenuItem(user, 'nightly-export', 'Resume schedule');
+    expect(storedSchedule('ccc333')?.enabled).toBe(true);
+  });
+
+  // A pipeline that never stops would only sit on hold, so its schedule is resumed from the dialog,
+  // which says why it can't be.
+  it('offers to edit, not resume, the paused schedule of a pipeline that never stops', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await openMenu(user, 'orders-enrichment');
+    expect(await screen.findByRole('menuitem', { name: 'Edit schedule' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Resume schedule' })).not.toBeInTheDocument();
+  });
+
+  it('opens the schedule dialog for a pipeline without one', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('clickstream-sink')).toBeInTheDocument());
+
+    await openMenu(user, 'clickstream-sink');
+    await user.click(await screen.findByRole('menuitem', { name: 'Add schedule' }));
+    expect(await screen.findByRole('dialog', { name: SCHEDULE_DIALOG_RE })).toBeInTheDocument();
+  });
+});
+
+describe('the PipelineListPage schedules as the clock passes a run', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  const finite = { state: Pipeline_State.STOPPED, inputs: ['sql_select'], outputs: ['s3'] };
+
+  beforeEach(() => {
+    mockIsFeatureFlagEnabled.mockImplementation((flag) => flag === 'enableRpcnPipelineSchedules');
+    rs.useFakeTimers({ shouldAdvanceTime: true });
+    rs.setSystemTime(Date.UTC(2026, 0, 15, 0, 30));
+    useSchedulePreviewStore.setState({ schedules: {} });
+    const { saveSchedule } = useSchedulePreviewStore.getState();
+    saveSchedule('early1', { ...defaultSchedule('UTC'), enabled: true, time: '02:00' });
+    saveSchedule('late1', { ...defaultSchedule('UTC'), enabled: true, time: '03:00' });
+    return () => {
+      rs.useRealTimers();
+      mockIsFeatureFlagEnabled.mockImplementation(() => false);
+    };
+  });
+
+  // The first run is more than the page's hourly recheck away, so it takes two rechecks to see it pass.
+  it('moves a run more than an hour off down the Schedule order once it passes', async () => {
+    renderWithFileRoutes(<PipelineListPage />, {
+      transport: buildTransport({
+        pipelines: [
+          { ...finite, id: 'early1', displayName: 'early-export' },
+          { ...finite, id: 'late1', displayName: 'late-export' },
+        ],
+      }),
+      initialLocation: '/?sort=schedule',
+    });
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['early-export', 'late-export']));
+
+    await rs.advanceTimersByTimeAsync(HOUR_MS);
+    expect(visibleLinkNames()).toEqual(['early-export', 'late-export']);
+    await rs.advanceTimersByTimeAsync(HOUR_MS);
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['late-export', 'early-export']));
+  });
+});
+
+describe('the PipelineListPage runs', () => {
+  const RUN_WATCH_MS = 10_000;
+  const runOf = (id: string) => runsOf(useRunHistoryStore.getState().runs, id)[0];
+  let pipeline: Fixture;
+
+  beforeEach(() => {
+    rs.useFakeTimers({ shouldAdvanceTime: true });
+    pipeline = {
+      id: 'once1',
+      displayName: 'one-off-export',
+      state: Pipeline_State.RUNNING,
+      inputs: ['sql_select'],
+      outputs: ['s3'],
+    };
+    useRunHistoryStore.setState({ runs: {} });
+    useRunHistoryStore.getState().startManualRun('once1', { now: Date.now() - 1000 });
+    return () => {
+      rs.useRealTimers();
+    };
+  });
+
+  // The list otherwise polls only while a pipeline starts or stops, so it would never see the run end.
+  it('polls for a run this browser started until it sees the run end', async () => {
+    const onRequest = rs.fn();
+    renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ pipelines: [pipeline], onRequest }) });
+    await waitFor(() => expect(runOf('once1')?.seenActive).toBe(true));
+
+    pipeline.state = Pipeline_State.STOPPED;
+    await rs.advanceTimersByTimeAsync(RUN_WATCH_MS);
+    await waitFor(() => expect(runOf('once1')).toMatchObject({ outcome: 'completed', endTime: expect.any(Number) }));
+
+    // With the run over, the list stops polling.
+    onRequest.mockClear();
+    await rs.advanceTimersByTimeAsync(3 * RUN_WATCH_MS);
+    expect(onRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe('the PipelineListPage view in the URL', () => {
+  it('restores a linked view: its tab, search and facets', async () => {
+    renderWithFileRoutes(<PipelineListPage />, {
+      transport: buildTransport(),
+      initialLocation: `/?tab=running&q=orders&input=${encodeURIComponent(JSON.stringify(['redpanda']))}`,
+    });
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['orders-enrichment']));
+    expect(tab('Running')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('orders');
+    expect(screen.getByRole('button', { name: CLEAR_FILTERS_RE })).toBeInTheDocument();
+  });
+
+  it('writes the tab to the URL', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await user.click(tab('Stopped'));
+    expect(router.state.location.search).toMatchObject({ tab: 'stopped' });
+  });
+
+  it('writes the search to the URL, and drops the default tab and a cleared search', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await user.click(tab('Stopped'));
+    await user.click(tab('All'));
+    await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'night');
+    await waitFor(() => expect(router.state.location.search).toEqual({ q: 'night' }));
+
+    await user.click(screen.getByRole('button', { name: CLEAR_FILTERS_RE }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('');
   });
 });
