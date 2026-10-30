@@ -18,7 +18,6 @@ import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { setMonacoTheme } from '../../../config';
 import {
   CompressionType,
   CompressionTypeSchema,
@@ -519,7 +518,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                       height={300}
                       language={encodingToLanguage(keyPayloadOptions?.encoding)}
                       onChange={onChange}
-                      onMount={setMonacoTheme}
                       value={value}
                     />
                   )}
@@ -633,7 +631,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                       height={300}
                       language={encodingToLanguage(valuePayloadOptions?.encoding)}
                       onChange={onChange}
-                      onMount={setMonacoTheme}
                       value={value}
                     />
                   )}
