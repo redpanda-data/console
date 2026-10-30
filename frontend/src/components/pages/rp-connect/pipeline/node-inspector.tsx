@@ -46,11 +46,13 @@ import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
+import { DeprecationDocsLink, DeprecationText } from './deprecation-notice';
 import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
 import { ChildItemsList, formFieldKeys, type InspectorChildItem, NodeConfigForm } from './node-config-form';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
+import { type DeprecationNotice, deprecationNotice, isDeprecatedComponent } from '../utils/deprecation';
 import { findConnectComponent } from '../utils/schema';
 import {
   appendResource,
@@ -430,6 +432,10 @@ function ComponentInspector(props: ComponentInspectorProps) {
     [components, target, componentName]
   );
   const lintMapping = useNodeLintMapping({ ...props, spec });
+  const deprecation = useMemo(
+    () => (spec && isDeprecatedComponent(spec) ? deprecationNotice(spec, components) : undefined),
+    [spec, components]
+  );
   const { caseObject, conditionError } = useCaseCondition(yaml, caseTarget, props.lintHints);
   // Resource labels for the `resource:` dropdowns in this component's form.
   const resourceLabels: Record<ResourceKind, string[]> = {
@@ -477,6 +483,7 @@ function ComponentInspector(props: ComponentInspectorProps) {
           refLabel={danglingRef.ref}
         />
       ) : null}
+      {deprecation ? <DeprecatedComponentBanner notice={deprecation} /> : null}
       <InspectorBody
         childItems={props.childItems}
         component={component}
@@ -857,6 +864,16 @@ const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate:
     <Button onClick={onCreate} size="sm" variant="outline">
       Create it
     </Button>
+  </InspectorBanner>
+);
+
+// The component still loads and saves; this only steers the user toward its replacement.
+const DeprecatedComponentBanner = ({ notice }: { notice: DeprecationNotice }) => (
+  <InspectorBanner title="Deprecated component" tone="warning">
+    <p>
+      <DeprecationText notice={notice} />
+    </p>
+    {notice.docsUrl ? <DeprecationDocsLink notice={notice} /> : null}
   </InspectorBanner>
 );
 

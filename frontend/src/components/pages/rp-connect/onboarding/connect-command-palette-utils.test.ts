@@ -26,15 +26,10 @@ describe('byProminence', () => {
     expect(sorted([spec('avro'), spec('mapping')])).toEqual(['mapping', 'avro']);
   });
 
-  it('demotes deprecated and experimental below stable, even when common', () => {
-    const result = sorted([
-      spec('mapping', ComponentStatus.DEPRECATED),
-      spec('avro', ComponentStatus.STABLE),
-      spec('parquet', ComponentStatus.EXPERIMENTAL),
-    ]);
-    // Stable (even uncommon) sorts above demoted ones; deprecated/experimental sink.
-    expect(result[0]).toBe('avro');
-    expect(result.slice(1).sort()).toEqual(['mapping', 'parquet']);
+  it('demotes experimental below stable, even when common', () => {
+    const result = sorted([spec('mapping', ComponentStatus.EXPERIMENTAL), spec('avro', ComponentStatus.STABLE)]);
+    // Stable (even uncommon) sorts above experimental.
+    expect(result).toEqual(['avro', 'mapping']);
   });
 
   it('falls back to alphabetical within the same prominence bucket', () => {

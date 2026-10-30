@@ -10,6 +10,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, rs } from '@rstest/core';
+import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
 import { render, screen } from 'test-utils';
@@ -120,6 +121,24 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
   it('renders an enabled "Add output" button in edit mode', async () => {
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={rs.fn()} />);
     expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
+  });
+});
+
+describe('the PipelineFlowCanvas — deprecated components', () => {
+  it('badges a deprecated node, with the warning as its tooltip', async () => {
+    const user = userEvent.setup();
+    render(
+      <PipelineFlowCanvas
+        configYaml={VALID_PIPELINE_YAML}
+        deprecationsByNode={new Map([['input-0', 'generate is deprecated. Use the redpanda input instead.']])}
+      />
+    );
+
+    const badge = await screen.findByText('Deprecated');
+    await user.hover(badge);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'generate is deprecated. Use the redpanda input instead.'
+    );
   });
 });
 

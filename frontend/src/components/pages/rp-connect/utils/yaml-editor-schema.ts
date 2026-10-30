@@ -1,4 +1,5 @@
 import { asciidocToMarkdown } from './asciidoc';
+import { isDeprecatedComponent } from './deprecation';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 type SchemaNode = {
@@ -6,6 +7,7 @@ type SchemaNode = {
   $ref?: string;
   description?: string;
   markdownDescription?: string;
+  doNotSuggest?: boolean;
   definitions?: Record<string, SchemaNode | undefined>;
   properties?: Record<string, SchemaNode | boolean | undefined>;
   patternProperties?: Record<string, SchemaNode | boolean | undefined>;
@@ -53,6 +55,10 @@ function addComponentDescriptions(
     const component = componentIndex.get(`${type}:${name}`);
     if (!(component && node) || typeof node !== 'object') {
       continue;
+    }
+    // Not `deprecationMessage`: a branch with a problem loses the anyOf match, dropping its hover and completions.
+    if (isDeprecatedComponent(component)) {
+      node.doNotSuggest = true;
     }
     addDescription(node, component.summary);
     addFieldDescriptions(unwrapField(node), component.config?.children ?? []);

@@ -11,6 +11,7 @@
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Monaco } from '@monaco-editor/react';
 import { useBlocker, useNavigate, useRouter, useSearch } from '@tanstack/react-router';
 import { getUserTagEntries } from 'components/constants';
 import { ArrowLeftIcon } from 'components/icons';
@@ -66,6 +67,7 @@ import { ChangesPanel } from './changes-panel';
 import { summarizeComponentChanges, summarizeSettingsChanges, UNSAVED_CHANGES_LANE_LABEL } from './changes-summary';
 import { ConfigDialog } from './config-dialog';
 import { DeleteDraftDialog } from './delete-draft-dialog';
+import { DeprecatedComponentList } from './deprecation-notice';
 import { DetailsDialog } from './details-dialog';
 import {
   areDraftsEnabled,
@@ -83,6 +85,7 @@ import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { type SaveContext, type SaveIntent, unsavedChangesCopy } from './save-actions';
 import { ScrollShadow } from './scroll-shadow';
 import { TemplateGalleryCta } from './template-cta';
+import { useDeprecationMarkers } from './use-deprecation-markers';
 import { useEditorAutosave } from './use-editor-autosave';
 import {
   type EditLane,
@@ -105,8 +108,9 @@ import { AddUserStep } from '../onboarding/add-user-step';
 import { LogsTab } from '../pipelines-details';
 import { cpuToTasks, MIN_TASKS } from '../tasks';
 import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
-import type { ConnectComponentType } from '../types/schema';
+import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, UserStepRef, UserStepSubmissionData } from '../types/wizard';
+import { findDeprecatedUsages } from '../utils/deprecation';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -308,10 +312,13 @@ function EditorSkeleton() {
 function YamlViewPanel({
   configYaml,
   schema,
+  components,
 }: {
   configYaml: string;
   schema: ReturnType<typeof parseYamlEditorSchema>;
+  components: ConnectComponentSpec[];
 }) {
+  const attachDeprecationMarkers = useDeprecationMarkers(components);
   // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
   // Mount-time listener disposables, torn down on unmount so the editor + listener graph can be GC'd.
@@ -319,7 +326,8 @@ function YamlViewPanel({
   // Register the read-only viewer as the active editor so sidebar/Visual selection can reveal lines here too.
   const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
   const handleMount = useCallback(
-    (instance: editor.IStandaloneCodeEditor) => {
+    (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      attachDeprecationMarkers(instance, monaco);
       const sync = () => {
         const scrollTop = instance.getScrollTop();
         const maxY = instance.getScrollHeight() - instance.getLayoutInfo().height;
@@ -333,7 +341,7 @@ function YamlViewPanel({
       sync();
       setEditorInstance(instance);
     },
-    [setEditorInstance]
+    [setEditorInstance, attachDeprecationMarkers]
   );
   useEffect(
     function disposeScrollSyncListeners() {
@@ -424,6 +432,7 @@ function EditorPanel({
   onYamlChange,
   onEditorMount,
   yamlEditorSchema,
+  components,
   lintHints,
   isLintPending,
 }: {
@@ -432,9 +441,23 @@ function EditorPanel({
   onYamlChange: (val: string) => void;
   onEditorMount: (editorRef: editor.IStandaloneCodeEditor) => void;
   yamlEditorSchema: ReturnType<typeof parseYamlEditorSchema>;
+  components: ConnectComponentSpec[];
   lintHints: Record<string, LintHint>;
   isLintPending: boolean;
 }) {
+  const attachDeprecationMarkers = useDeprecationMarkers(components);
+  const handleEditorMount = useCallback(
+    (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      attachDeprecationMarkers(instance, monaco);
+      onEditorMount(instance);
+    },
+    [attachDeprecationMarkers, onEditorMount]
+  );
+  const deferredYamlContent = useDeferredValue(yamlContent);
+  const deprecations = useMemo(
+    () => findDeprecatedUsages(deferredYamlContent, components),
+    [deferredYamlContent, components]
+  );
   return (
     <ResizablePanelGroup orientation="vertical">
       <ResizablePanel defaultSize="70%" minSize="30%">
@@ -446,7 +469,7 @@ function EditorPanel({
             <div className="absolute inset-0">
               <YamlEditor
                 onChange={(val) => onYamlChange(val || '')}
-                onEditorMount={onEditorMount}
+                onEditorMount={handleEditorMount}
                 schema={yamlEditorSchema}
                 transparentBackground
                 value={yamlContent}
@@ -465,6 +488,7 @@ function EditorPanel({
             ) : null}
           </div>
           <LintHintList isPending={isLintPending} lintHints={lintHints} />
+          <DeprecatedComponentList usages={deprecations} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
@@ -1738,7 +1762,11 @@ function PipelineLaneContent({ page }: { page: PipelinePageModel }) {
       <div className="min-w-0 flex-1">
         {lanes.isMonitorLane ? <ViewModePanel pipeline={pipeline} /> : null}
         {mode === 'view' && pipeline && editorState.activeViewLane === 'configuration' ? (
-          <YamlViewPanel configYaml={pipeline.configYaml} schema={server.yamlEditorSchema} />
+          <YamlViewPanel
+            components={server.components}
+            configYaml={pipeline.configYaml}
+            schema={server.yamlEditorSchema}
+          />
         ) : null}
         {mode === 'view' && pipeline && editorState.activeViewLane === 'visual' ? (
           <VisualEditorPanel
@@ -1781,6 +1809,7 @@ function PipelineLaneContent({ page }: { page: PipelinePageModel }) {
         ) : null}
         {mode === 'view' || editorState.activeEditLane === 'visual' || lanes.isEditChangesLane ? null : (
           <EditorPanel
+            components={server.components}
             isLintPending={saveSession.lint.isLintPending}
             isServerlessInitializing={documentSession.isServerlessInitializing}
             lintHints={lintHints}

@@ -13,6 +13,7 @@ import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/ap
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from '@connectrpc/connect';
+import type { Monaco } from '@monaco-editor/react';
 import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
@@ -41,6 +42,7 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 // Dataplane response/entity schemas
 import {
+  ComponentStatus,
   CreatePipelineResponseSchema,
   GetPipelineResponseSchema,
   GetPipelineServiceConfigSchemaResponseSchema,
@@ -122,9 +124,13 @@ const contentChangeListeners: ContentChangeCallback[] = [];
 type CursorPositionCallback = (e: { position: { lineNumber: number; column: number } }) => void;
 const cursorPositionListeners: CursorPositionCallback[] = [];
 
+// The text the mock editor last rendered, read back through its model.
+let mockEditorValue = '';
+
 const mockEditorInstance = {
   getPosition: rs.fn(() => ({ lineNumber: 1, column: 4 })),
   getModel: rs.fn(() => ({
+    getValue: rs.fn(() => mockEditorValue),
     getLineContent: rs.fn(() => '  /'),
     // Large enough that node ranges from any test YAML are never clamped.
     getLineCount: rs.fn(() => 1000),
@@ -134,6 +140,7 @@ const mockEditorInstance = {
     contentChangeListeners.push(cb);
     return { dispose: rs.fn() };
   }),
+  onDidChangeModel: rs.fn(() => ({ dispose: rs.fn() })),
   // Cursor → structure-tree highlight sync subscribes to this.
   onDidChangeCursorPosition: rs.fn((cb: CursorPositionCallback) => {
     cursorPositionListeners.push(cb);
@@ -161,13 +168,19 @@ const mockEditorInstance = {
   getLayoutInfo: rs.fn(() => ({ height: 0 })),
 } as unknown as editor.IStandaloneCodeEditor;
 
+const mockMonaco = {
+  MarkerSeverity: { Warning: 4 },
+  editor: { setModelMarkers: rs.fn() },
+} as unknown as Monaco;
+
 function MockYamlEditor(props: {
   onChange?: (val: string) => void;
-  onEditorMount?: (ed: editor.IStandaloneCodeEditor) => void;
+  onEditorMount?: (ed: editor.IStandaloneCodeEditor, monaco: Monaco) => void;
   value?: string;
 }) {
+  mockEditorValue = props.value || '';
   React.useEffect(() => {
-    props.onEditorMount?.(mockEditorInstance);
+    props.onEditorMount?.(mockEditorInstance, mockMonaco);
   }, [props.onEditorMount]);
   return (
     <textarea data-testid="yaml-editor" onChange={(e) => props.onChange?.(e.target.value)} value={props.value || ''} />
@@ -347,6 +360,7 @@ type TransportOverrides = {
   createPipelineMock?: ReturnType<typeof rs.fn>;
   updatePipelineMock?: ReturnType<typeof rs.fn>;
   lintMock?: ReturnType<typeof rs.fn>;
+  listComponentsMock?: ReturnType<typeof rs.fn>;
   stopPipelineMock?: ReturnType<typeof rs.fn>;
   startPipelineMock?: ReturnType<typeof rs.fn>;
   listPipelinesMock?: ReturnType<typeof rs.fn>;
@@ -417,7 +431,10 @@ function routeDataplaneRpcs({ rpc }: ConnectRouter, overrides?: TransportOverrid
     lintPipelineConfig,
     overrides?.lintMock ?? rs.fn().mockReturnValue(create(LintPipelineConfigResponseSchema, { lintHints: [] }))
   );
-  rpc(listComponents, rs.fn().mockReturnValue(create(ListComponentsResponseSchema, {})));
+  rpc(
+    listComponents,
+    overrides?.listComponentsMock ?? rs.fn().mockReturnValue(create(ListComponentsResponseSchema, {}))
+  );
   rpc(
     getPipelineServiceConfigSchema,
     rs.fn().mockReturnValue(create(GetPipelineServiceConfigSchemaResponseSchema, {}))
@@ -761,6 +778,46 @@ describe('the PipelinePage', () => {
 
   // LintHintList has no tests of its own.
   describe('lint panel', () => {
+    it('lists deprecated components under the lint issues and marks them in the editor', async () => {
+      const listComponentsMock = rs.fn().mockReturnValue(
+        create(ListComponentsResponseSchema, {
+          components: {
+            inputs: [
+              {
+                name: 'kafka_franz',
+                status: ComponentStatus.DEPRECATED,
+                description:
+                  'This input is deprecated. Use the xref:components:inputs/redpanda.adoc[`redpanda` input] instead.',
+              },
+              { name: 'redpanda', status: ComponentStatus.STABLE },
+            ],
+          },
+        })
+      );
+      render(<PipelinePage />, { transport: createTransport({ listComponentsMock }) });
+
+      act(() => {
+        fireEvent.change(screen.getByTestId('yaml-editor'), {
+          target: { value: 'input:\n  kafka_franz:\n    topics: [a]\noutput:\n  drop: {}' },
+        });
+      });
+
+      expect(await screen.findByTestId('deprecated-component-list')).toHaveTextContent(
+        'Line 2: kafka_franz is deprecated. Use the redpanda input instead.'
+      );
+      // Markers refresh from the editor's own change events, which the mock textarea doesn't emit.
+      act(() => {
+        for (const listener of contentChangeListeners) {
+          listener({ changes: [{ text: 'k' }] });
+        }
+      });
+      await waitFor(() =>
+        expect(mockMonaco.editor.setModelMarkers).toHaveBeenLastCalledWith(expect.anything(), 'rpcn-deprecation', [
+          expect.objectContaining({ startLineNumber: 2, severity: 4, message: expect.stringContaining('redpanda') }),
+        ])
+      );
+    });
+
     it('displays lint warnings from the backend as the user types YAML', async () => {
       const lintMock = rs.fn().mockReturnValue(
         create(LintPipelineConfigResponseSchema, {
