@@ -950,6 +950,8 @@ type CanvasCallbacks = {
   /** Kind of the selected edit target — `'switchCase'` means the condition, not the component. */
   selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
+  /** Deprecation warnings by node id. */
+  deprecationsByNode?: Map<string, string>;
   /** Node ids whose config differs from the last-saved pipeline. */
   unsavedNodeIds?: ReadonlySet<string>;
   flashNodeIds?: ReadonlySet<string>;
@@ -998,12 +1000,21 @@ function applyInteractionState(data: FlowCardData, node: Node, cb: CanvasCallbac
   }
 }
 
-// Lint badges, the unsaved dot, and the undo/redo pulse.
-function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+// Lint and deprecation badges.
+function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
   }
+  const deprecation = cb.deprecationsByNode?.get(node.id);
+  if (deprecation) {
+    data.deprecation = deprecation;
+  }
+}
+
+// Issue badges, the unsaved dot, and the undo/redo pulse.
+function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+  applyIssueBadges(data, node, cb);
   // A condition edit is attributed to the non-rendered case-wrapper node — also mark its stand-in entry card.
   if (cb.unsavedNodeIds?.has(node.id) || (data.caseOwnerId && cb.unsavedNodeIds?.has(data.caseOwnerId))) {
     data.unsaved = true;
@@ -1184,6 +1195,8 @@ type PipelineFlowCanvasProps = {
   selectedTargetKind?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
+  /** Deprecation warnings mapped to node ids — badged in place on the canvas. */
+  deprecationsByNode?: Map<string, string>;
   /** Node ids whose config differs from the last-saved pipeline — flagged with an unsaved dot. */
   unsavedNodeIds?: ReadonlySet<string>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
@@ -1305,6 +1318,7 @@ function useDecoratedNodes({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  deprecationsByNode,
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
@@ -1337,6 +1351,7 @@ function useDecoratedNodes({
       selectedNodeId,
       selectedTargetKind,
       lintErrorsByNode,
+      deprecationsByNode,
       unsavedNodeIds,
       flashNodeIds,
       flashToken,
@@ -1354,6 +1369,7 @@ function useDecoratedNodes({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    deprecationsByNode,
     unsavedNodeIds,
     flashNodeIds,
     flashToken,
@@ -1377,6 +1393,7 @@ export function PipelineFlowCanvas({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  deprecationsByNode,
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
@@ -1420,6 +1437,7 @@ export function PipelineFlowCanvas({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    deprecationsByNode,
     unsavedNodeIds,
     flashNodeIds,
     flashToken,

@@ -14,10 +14,11 @@ import { LoadingBoundary } from 'components/ui/loading-boundary';
 import { useMonacoTheme } from 'hooks/use-monaco-theme';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
+import { useDeprecationMarkers } from '../pages/rp-connect/pipeline/use-deprecation-markers';
 import { parseSchema } from '../pages/rp-connect/utils/schema';
 import { withYamlDocumentation } from '../pages/rp-connect/utils/yaml-editor-schema';
 import { annotateAnyOfTitles } from '../ui/yaml/yaml-editor';
@@ -90,27 +91,36 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
-export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
-  const { options: givenOptions, beforeMount, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const monacoTheme = useMonacoTheme();
-  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+// Once the live catalog loads: its docs on the YAML schema, and markers on deprecated components.
+// Returns the mount callback that attaches the markers.
+function useComponentCatalog(yaml: MonacoYaml | undefined) {
   const { data: componentResponse } = useListComponentsQuery();
   const componentList = componentResponse?.components;
+  const components = useMemo(() => (componentList ? parseSchema(componentList) : undefined), [componentList]);
 
   useEffect(
     function updateYamlDocumentation() {
-      if (yaml && componentList) {
+      if (yaml && components) {
         // The schema applies before update settles; a failed revalidation only leaves stale markers.
         yaml
-          .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, parseSchema(componentList))))
+          .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, components)))
           .catch((error: unknown) => {
             globalThis.reportError(error);
           });
       }
     },
-    [yaml, componentList]
+    [yaml, components]
   );
+
+  return useDeprecationMarkers(components);
+}
+
+export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
+  const { options: givenOptions, beforeMount, onMount, ...rest } = props;
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const monacoTheme = useMonacoTheme();
+  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+  const attachDeprecationMarkers = useComponentCatalog(yaml);
 
   useEffect(() => {
     return () => {
@@ -143,6 +153,10 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
           monacoTheme.beforeMount(monaco);
           setMonacoOptions(monaco);
           beforeMount?.(monaco);
+        }}
+        onMount={(instance, monaco) => {
+          attachDeprecationMarkers(instance, monaco);
+          onMount?.(instance, monaco);
         }}
         theme={monacoTheme.theme}
       />

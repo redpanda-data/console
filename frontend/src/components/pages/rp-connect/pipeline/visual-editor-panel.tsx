@@ -39,13 +39,14 @@ import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
-import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
+import { type DeprecationProblem, type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 import { TemplateGalleryCta } from './template-cta';
 import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { deprecationMessage, findDeprecatedUsages } from '../utils/deprecation';
 import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
 import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -611,16 +612,42 @@ function buildProblems(
   return [...list, ...unmapped];
 }
 
+// Deprecated components in use, located and selectable like lint problems.
+function useDeprecations(yamlContent: string, components: ConnectComponentSpec[], flowNodes: PipelineFlowNode[]) {
+  const usages = useMemo(() => findDeprecatedUsages(yamlContent, components), [yamlContent, components]);
+  const deprecationsByNode = useMemo(
+    () => new Map(usages.map((usage) => [usage.nodeId, deprecationMessage(usage.notice)])),
+    [usages]
+  );
+  const deprecations = useMemo<DeprecationProblem[]>(() => {
+    const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
+    return usages.map(({ nodeId, notice, range }) => {
+      const node = nodesById.get(nodeId);
+      return {
+        key: `deprecated-${nodeId}`,
+        notice,
+        line: range.startLineNumber,
+        nodeId,
+        nodeLabel: node?.label,
+        target: node?.editTarget,
+        caseTarget: caseTargetForNode(node, flowNodes),
+      };
+    });
+  }, [usages, flowNodes]);
+  return { deprecationsByNode, deprecations };
+}
+
 type FlowOverviewOptions = {
   yamlContent: string;
+  components: ConnectComponentSpec[];
   lintHints?: LintHint[];
   isEditing: boolean;
   selectedId?: string;
 };
 
-// What the canvas overlays show about the document: its nodes, lint, unsaved changes, and the
-// selected node's children for the inspector.
-function useFlowOverview({ yamlContent, lintHints, isEditing, selectedId }: FlowOverviewOptions) {
+// What the canvas overlays show about the document: its nodes, lint, deprecations, unsaved changes,
+// and the selected node's children for the inspector.
+function useFlowOverview({ yamlContent, components, lintHints, isEditing, selectedId }: FlowOverviewOptions) {
   const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
@@ -646,12 +673,15 @@ function useFlowOverview({ yamlContent, lintHints, isEditing, selectedId }: Flow
     () => buildProblems(lintHints ?? [], lintByNode, flowNodes),
     [lintHints, lintByNode, flowNodes]
   );
+  const { deprecationsByNode, deprecations } = useDeprecations(yamlContent, components, flowNodes);
 
   return {
     flowNodes,
     offerTemplate,
     lintByNode,
     lintMessagesByNode,
+    deprecationsByNode,
+    deprecations,
     unsavedNodeIds,
     unsavedNodeList,
     childItems,
@@ -1081,6 +1111,7 @@ function CanvasStage({
         <>
           <PipelineFlowCanvas
             configYaml={yamlContent}
+            deprecationsByNode={overview.deprecationsByNode}
             flashNodeIds={history.flash.ids}
             flashToken={history.flash.token}
             focusNodeId={focus.id || undefined}
@@ -1100,6 +1131,7 @@ function CanvasStage({
           {isEditing ? <HistoryToolbar history={history} /> : null}
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
             <PipelineProblemsPanel
+              deprecations={overview.deprecations}
               missingSecrets={missingSecrets}
               onAddSecrets={isEditing ? onAddSecrets : undefined}
               onSelectProblem={(id, target, caseTarget) => selectAndReveal({ id, target, caseTarget })}
@@ -1254,7 +1286,13 @@ export function VisualEditorPanel({
   const isEditing = mode !== 'view';
   const selection = useInspectorSelection(yamlContent, onYamlChange);
   const history = useCanvasHistory(yamlContent, onYamlChange, selection.commitRef);
-  const overview = useFlowOverview({ yamlContent, lintHints, isEditing, selectedId: selection.selected?.id });
+  const overview = useFlowOverview({
+    yamlContent,
+    components,
+    lintHints,
+    isEditing,
+    selectedId: selection.selected?.id,
+  });
   const secrets = useMissingSecrets(yamlContent, isEditing, onYamlChange);
   const deletion = usePendingDelete(yamlContent, onYamlChange, selection.dropSelection);
   const insert = useNodeInsert({ yamlContent, components, onYamlChange, selection });

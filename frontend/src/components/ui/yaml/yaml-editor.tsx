@@ -26,7 +26,7 @@ const Editor = lazy(() => import('../../misc/monaco-editor'));
 export type YamlEditorProps = EditorProps & {
   'data-testid'?: string;
   transparentBackground?: boolean;
-  onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
+  onEditorMount?: (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => void;
   schema?: {
     definitions?: Record<string, JSONSchema>;
     properties?: Record<string, JSONSchema>;
@@ -191,7 +191,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
         }}
         defaultLanguage="yaml"
         loading={<LoadingPlaceholder />}
-        onMount={(editorInstance) => {
+        onMount={(editorInstance, monaco) => {
           // Normalize invisible spaces in the pasted range (see whitespace.ts).
           editorInstance.onDidPaste((e) => {
             const model = editorInstance.getModel();
@@ -204,7 +204,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
               editorInstance.executeEdits('normalize-pasted-whitespace', [{ range: e.range, text: normalized }]);
             }
           });
-          onEditorMount?.(editorInstance);
+          onEditorMount?.(editorInstance, monaco);
         }}
         options={options}
         path="pipeline.yaml"

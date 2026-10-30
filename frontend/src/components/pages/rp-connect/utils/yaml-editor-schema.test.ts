@@ -1,5 +1,5 @@
 import { create } from '@bufbuild/protobuf';
-import { ComponentSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { ComponentSpecSchema, ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 import { withYamlDocumentation } from './yaml-editor-schema';
 import { describe, expect, test } from 'bun:test';
@@ -146,5 +146,20 @@ describe('withYamlDocumentation', () => {
       },
     };
     expect(withYamlDocumentation(schema, [component('input', 'Replacement')])).toEqual(schema);
+  });
+
+  test('keeps deprecated components out of completion but still validates them', () => {
+    const branch = (name: string) => ({ properties: { [name]: { properties: { topic: { type: 'string' } } } } });
+    const schema = { definitions: { input: { allOf: [{ anyOf: [branch('example'), branch('modern')] }] } } };
+    const deprecated = { ...component('input', ''), status: ComponentStatus.DEPRECATED };
+    const modern = { ...component('input', ''), name: 'modern' };
+    const [deprecatedBranch, modernBranch] = withYamlDocumentation(schema, [deprecated, modern]).definitions.input
+      .allOf[0].anyOf;
+    // Its field schema survives, so existing configs keep hover and field completion.
+    expect(deprecatedBranch.properties.example).toMatchObject({
+      doNotSuggest: true,
+      properties: { topic: { type: 'string' } },
+    });
+    expect(modernBranch.properties.modern).not.toHaveProperty('doNotSuggest');
   });
 });

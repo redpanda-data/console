@@ -16,7 +16,7 @@ import { DialogFooter } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { ScrollableTabsList, Tabs, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Link } from 'components/redpanda-ui/components/typography';
-import { ExternalLink, Waypoints } from 'lucide-react';
+import { ExternalLink, TriangleAlert, Waypoints } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useMemo, useState } from 'react';
@@ -33,10 +33,12 @@ import {
   searchableText,
 } from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
+import { DeprecationText } from '../pipeline/deprecation-notice';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { getCategoryDisplayName } from '../utils/categories';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
+import { type DeprecationNotice, deprecationNotice, isDeprecatedComponent } from '../utils/deprecation';
 import { componentStatusToString, parseSchema } from '../utils/schema';
 
 function ComponentIcon({ component, className = 'size-5' }: { component: ConnectComponentSpec; className?: string }) {
@@ -88,12 +90,7 @@ function FormattedDescription({ markdown }: { markdown: string }) {
 }
 
 function statusBadge(status: ComponentStatus, name: string) {
-  if (
-    name !== 'redpanda' &&
-    (status === ComponentStatus.BETA ||
-      status === ComponentStatus.EXPERIMENTAL ||
-      status === ComponentStatus.DEPRECATED)
-  ) {
+  if (name !== 'redpanda' && (status === ComponentStatus.BETA || status === ComponentStatus.EXPERIMENTAL)) {
     return (
       <Badge size="sm" tone="default" variant="subtle">
         {componentStatusToString(status)}
@@ -327,38 +324,53 @@ function usePaletteCatalog({
     const builtIn = components ? parseSchema(components) : [];
     return [...builtIn, ...(additionalComponents ?? [])];
   }, [components, additionalComponents]);
+  // Deprecated components can't be picked for new work; `allComponents` keeps them for the search hint.
+  const pickable = useMemo(() => allComponents.filter((c) => !isDeprecatedComponent(c)), [allComponents]);
 
   const typeAllowed = useMemo(() => {
     const set = allowedTypes && allowedTypes.length > 0 ? new Set(allowedTypes) : null;
     return (type: ConnectComponentType) => !set || set.has(type);
   }, [allowedTypes]);
 
-  const inScope = useMemo(() => allComponents.filter((c) => typeAllowed(c.type)), [allComponents, typeAllowed]);
+  const inScope = useMemo(() => pickable.filter((c) => typeAllowed(c.type)), [pickable, typeAllowed]);
 
   // Searchable text is derived once per catalog: building it walks the alias table and joins each
   // component's full description — too costly to redo per keystroke across hundreds of components.
   const searchIndex = useMemo(
-    () => new Map(allComponents.map((component) => [component, searchableText(component)])),
-    [allComponents]
+    () => new Map(pickable.map((component) => [component, searchableText(component)])),
+    [pickable]
   );
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);
   // Keyed by CommandItem `value` (`type:name`) since two types can share a name (e.g. kafka in/out).
   const byKey = useMemo(() => new Map(inScope.map((c) => [`${c.type}:${c.name}`, c])), [inScope]);
-  return { allComponents, typeAllowed, inScope, searchIndex, byName, byKey };
+  return { allComponents, pickable, typeAllowed, inScope, searchIndex, byName, byKey };
 }
 
 type PaletteCatalog = ReturnType<typeof usePaletteCatalog>;
 
+// The notice for an exact-name search of a hidden deprecated component, so the miss is explained.
+function useDeprecatedMatch(catalog: PaletteCatalog, q: string): DeprecationNotice | undefined {
+  const { allComponents, typeAllowed } = catalog;
+  return useMemo(() => {
+    const match = q
+      ? allComponents.find((c) => c.name === q && typeAllowed(c.type) && isDeprecatedComponent(c))
+      : undefined;
+    return match ? deprecationNotice(match, allComponents) : undefined;
+  }, [q, allComponents, typeAllowed]);
+}
+
 // Searching: a single ranked, flat list across the in-scope catalog, plus — on a type-locked
 // miss — the out-of-scope types that DO match, shown in the empty state so the miss isn't read as a gap.
+// An exact-name search for a deprecated component leads with its replacement.
 function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
-  const { allComponents, inScope, searchIndex, typeAllowed } = catalog;
+  const { pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
   const q = query.trim().toLowerCase();
+  const deprecatedMatch = useDeprecatedMatch(catalog, q);
   const results = useMemo(() => {
     if (!q) {
       return [];
     }
-    return inScope
+    const ranked = inScope
       .map((component) => ({
         component,
         rank: matchRank(component, q, searchIndex.get(component) ?? ''),
@@ -366,22 +378,25 @@ function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?:
       .filter((r) => r.rank >= 0)
       .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
       .map((r) => r.component);
-  }, [inScope, q, searchIndex]);
+    const replacement = deprecatedMatch?.replacement;
+    const pinned = replacement ? byKey.get(`${replacement.type}:${replacement.name}`) : undefined;
+    return pinned ? [pinned, ...ranked.filter((c) => c !== pinned)] : ranked;
+  }, [inScope, q, searchIndex, deprecatedMatch, byKey]);
 
   const outOfScopeTypes = useMemo(() => {
     if (!q || results.length > 0 || !allowedTypes || allowedTypes.length === 0) {
       return [];
     }
     const types = new Set<ConnectComponentType>();
-    for (const component of allComponents) {
+    for (const component of pickable) {
       if (!typeAllowed(component.type) && matchRank(component, q, searchIndex.get(component) ?? '') >= 0) {
         types.add(component.type);
       }
     }
     return [...types].sort();
-  }, [q, results, allowedTypes, allComponents, typeAllowed, searchIndex]);
+  }, [q, results, allowedTypes, pickable, typeAllowed, searchIndex]);
 
-  return { q, results, outOfScopeTypes };
+  return { q, results, outOfScopeTypes, deprecatedMatch };
 }
 
 // Browse facets (no query): recents + suggested + everything grouped by category.
@@ -459,6 +474,19 @@ function PaletteFacetTabs({
     </div>
   );
 }
+
+// Why an exact-name search came up without the component the user typed.
+const DeprecatedMatchHint = ({ notice }: { notice: DeprecationNotice }) => (
+  <div
+    className="flex items-start gap-2 px-3 py-2 text-body-sm text-muted-foreground"
+    data-testid="palette-deprecated-hint"
+  >
+    <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={TriangleAlert} tone="warning" />
+    <span>
+      <DeprecationText notice={notice} />
+    </span>
+  </div>
+);
 
 function PaletteListGroups({
   query,
@@ -573,7 +601,7 @@ export const ConnectCommandPalette = ({
   const { recents, commit } = useCommitWithRecents(onSelect);
   const catalog = usePaletteCatalog({ components, additionalComponents, allowedTypes });
   const activeComponent = catalog.byKey.get(activeValue);
-  const { q, results, outOfScopeTypes } = usePaletteSearch(catalog, query, allowedTypes);
+  const { q, results, outOfScopeTypes, deprecatedMatch } = usePaletteSearch(catalog, query, allowedTypes);
   const { allGroups, tabs, currentTab, browseItems } = usePaletteFacets({ catalog, recents, allowedTypes, tab });
 
   // Enter commits the highlighted component; a single click only previews, double-click commits.
@@ -607,6 +635,7 @@ export const ConnectCommandPalette = ({
 
         <div className="flex min-h-0 flex-1">
           <CommandList className="h-full max-h-none min-w-0 flex-1 md:max-w-[28rem]">
+            {q && deprecatedMatch ? <DeprecatedMatchHint notice={deprecatedMatch} /> : null}
             <CommandEmpty>{buildEmptyMessage(query.trim(), allowedTypes, outOfScopeTypes)}</CommandEmpty>
             <PaletteListGroups
               allGroups={allGroups}
