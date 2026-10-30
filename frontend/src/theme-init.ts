@@ -16,9 +16,13 @@ import type { ThemeInit } from 'components/redpanda-ui/components/theme-provider
  * Standalone Console's theme resolve, shared by index.html's inline script, the pre-paint `initTheme` in
  * bootstrap.tsx and app.tsx's ThemeProvider, so the three cannot disagree for a paint. With
  * `enableDarkMode` the default is the OS preference until the user picks one in the header's switcher;
- * without it, light. Read from the static default rather than `isFeatureFlagEnabled`, because the inline
- * script is built from it: flipping the flag fails theme-init.test.ts until index.html is regenerated.
+ * without it, light, read from a key only the dev switcher writes, so a stored choice cannot switch the
+ * page and is still there when the flag comes back on. Read from the static default rather than
+ * `isFeatureFlagEnabled`, because the inline script is built from it: flipping the flag fails
+ * theme-init.test.ts until index.html is regenerated.
  */
-export const STANDALONE_THEME_INIT = {
-  defaultTheme: FEATURE_FLAGS.enableDarkMode ? 'system' : 'light',
-} as const satisfies ThemeInit;
+export const STANDALONE_THEME_INIT = (
+  FEATURE_FLAGS.enableDarkMode
+    ? { defaultTheme: 'system' }
+    : { defaultTheme: 'light', storageKey: 'redpanda-ui-theme-unavailable' }
+) satisfies ThemeInit;
