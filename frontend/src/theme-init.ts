@@ -9,20 +9,72 @@
  * by the Apache License, Version 2.0
  */
 
-import { FEATURE_FLAGS } from 'components/constants';
 import type { ThemeInit } from 'components/redpanda-ui/components/theme-provider';
 
 /**
- * Standalone Console's theme resolve, shared by index.html's inline script, the pre-paint `initTheme` in
- * bootstrap.tsx and app.tsx's ThemeProvider, so the three cannot disagree for a paint. With
- * `enableDarkMode` the default is the OS preference until the user picks one in the header's switcher;
- * without it, light, read from a key only the dev switcher writes, so a stored choice cannot switch the
- * page and is still there when the flag comes back on. Read from the static default rather than
- * `isFeatureFlagEnabled`, because the inline script is built from it: flipping the flag fails
- * theme-init.test.ts until index.html is regenerated.
+ * Whether standalone Console's `enableDarkMode` was on when the previous page load recorded it. The theme
+ * is resolved before the first paint, ahead of the bundle and its flags, so each load runs on what the
+ * previous one recorded (`installDarkModeAvailabilitySync`). A flag change lands on the next load, and a
+ * page never flips theme under the user. Cloud UI's theme gate uses the same key.
  */
-export const STANDALONE_THEME_INIT = (
-  FEATURE_FLAGS.enableDarkMode
-    ? { defaultTheme: 'system' }
-    : { defaultTheme: 'light', storageKey: 'redpanda-ui-theme-unavailable' }
-) satisfies ThemeInit;
+export const DARK_MODE_AVAILABLE_KEY = 'redpanda-ui-dark-mode';
+
+/** Dark mode available: the stored choice, else the OS preference. */
+export const AVAILABLE_THEME_INIT = {
+  defaultTheme: 'system',
+  storageKey: 'redpanda-ui-theme',
+} as const satisfies ThemeInit;
+
+/**
+ * Dark mode unavailable: light. A key nothing writes, so neither a stored `dark` nor the OS can switch the
+ * page, and the user's choice is still in `AVAILABLE_THEME_INIT`'s key when the flag comes back on.
+ */
+export const UNAVAILABLE_THEME_INIT = {
+  defaultTheme: 'light',
+  storageKey: 'redpanda-ui-theme-unavailable',
+} as const satisfies ThemeInit;
+
+/** Safari in private mode throws on `localStorage`; without storage, dark mode stays unavailable. */
+const readDarkModeAvailable = (): boolean => {
+  try {
+    return localStorage.getItem(DARK_MODE_AVAILABLE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+let availableThisLoad: boolean | undefined;
+
+/**
+ * Read once per page load, so index.html's inline script, the pre-paint `initTheme` in bootstrap.tsx,
+ * app.tsx's ThemeProvider and the header's switch agree until the next load.
+ */
+export const isDarkModeAvailable = (): boolean => {
+  availableThisLoad ??= readDarkModeAvailable();
+  return availableThisLoad;
+};
+
+export const themeInitFor = (available: boolean): ThemeInit =>
+  available ? AVAILABLE_THEME_INIT : UNAVAILABLE_THEME_INIT;
+
+/**
+ * Records `isAvailable()` for the next load: now, and again when the page is left, so a flag toggled in
+ * the debug dialog lands on the reload.
+ */
+export const installDarkModeAvailabilitySync = (isAvailable: () => boolean): (() => void) => {
+  const sync = () => {
+    try {
+      if (isAvailable()) {
+        localStorage.setItem(DARK_MODE_AVAILABLE_KEY, 'true');
+      } else {
+        localStorage.removeItem(DARK_MODE_AVAILABLE_KEY);
+      }
+    } catch {
+      // Without storage the next load stays light, which is the safe answer.
+    }
+  };
+
+  sync();
+  window.addEventListener('pagehide', sync);
+  return () => window.removeEventListener('pagehide', sync);
+};

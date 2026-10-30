@@ -9,9 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import { FEATURE_FLAGS } from './components/constants';
 import { themeScript } from './components/redpanda-ui/components/theme-provider';
-import { STANDALONE_THEME_INIT } from './theme-init';
+import {
+  AVAILABLE_THEME_INIT,
+  DARK_MODE_AVAILABLE_KEY,
+  installDarkModeAvailabilitySync,
+  isDarkModeAvailable,
+  UNAVAILABLE_THEME_INIT,
+} from './theme-init';
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,10 +24,14 @@ import { runInNewContext } from 'node:vm';
 
 const indexHtml = readFileSync(fileURLToPath(new URL('../public/index.html', import.meta.url)), 'utf8');
 
+const bootThemeScript =
+  `(function(){try{if(localStorage.getItem(${JSON.stringify(DARK_MODE_AVAILABLE_KEY)})==="true"){` +
+  `${themeScript(AVAILABLE_THEME_INIT)}}else{${themeScript(UNAVAILABLE_THEME_INIT)}}}catch{}})()`;
+
 /** Runs the boot script against a dark OS and `stored`, and returns the theme it stamps. */
 const bootTheme = (stored: Record<string, string>) => {
   const root = { dataset: {} as Record<string, string>, classList: { toggle: () => undefined }, style: {} };
-  runInNewContext(themeScript(STANDALONE_THEME_INIT), {
+  runInNewContext(bootThemeScript, {
     localStorage: { getItem: (key: string) => stored[key] ?? null },
     matchMedia: () => ({ matches: true }),
     document: { documentElement: root },
@@ -31,15 +40,38 @@ const bootTheme = (stored: Record<string, string>) => {
 };
 
 describe('index.html boot theme', () => {
-  it('inlines the registry theme script for STANDALONE_THEME_INIT, so the first paint resolves the theme the app will', () => {
-    expect(indexHtml).toContain(`<script>${themeScript(STANDALONE_THEME_INIT)}</script>`);
+  it('inlines the registry theme script for each availability, so the first paint resolves the theme the app will', () => {
+    expect(indexHtml).toContain(`<script>${bootThemeScript}</script>`);
   });
 
-  it('keeps a stored choice from switching the page unless enableDarkMode is on', () => {
-    // biome-ignore lint/suspicious/noUnnecessaryConditions: a rollout flips the static flag; this holds both ways
-    const expected = FEATURE_FLAGS.enableDarkMode ? 'dark' : 'light';
+  it('follows the stored choice, else the OS, only while dark mode is available', () => {
+    expect(bootTheme({ [DARK_MODE_AVAILABLE_KEY]: 'true', 'redpanda-ui-theme': 'light' })).toBe('light');
+    expect(bootTheme({ [DARK_MODE_AVAILABLE_KEY]: 'true' })).toBe('dark');
+    expect(bootTheme({ 'redpanda-ui-theme': 'dark' })).toBe('light');
+  });
+});
 
-    expect(bootTheme({ 'redpanda-ui-theme': 'dark' })).toBe(expected);
-    expect(bootTheme({ 'redpanda-ui-theme': 'system' })).toBe(expected);
+describe('dark-mode availability', () => {
+  it('records the flag now and again when the page is left, until torn down', () => {
+    let enabled = true;
+    const teardown = installDarkModeAvailabilitySync(() => enabled);
+    expect(localStorage.getItem(DARK_MODE_AVAILABLE_KEY)).toBe('true');
+
+    enabled = false;
+    window.dispatchEvent(new Event('pagehide'));
+    expect(localStorage.getItem(DARK_MODE_AVAILABLE_KEY)).toBeNull();
+
+    teardown();
+    enabled = true;
+    window.dispatchEvent(new Event('pagehide'));
+    expect(localStorage.getItem(DARK_MODE_AVAILABLE_KEY)).toBeNull();
+  });
+
+  it('reads the recorded availability once per page load', () => {
+    localStorage.setItem(DARK_MODE_AVAILABLE_KEY, 'true');
+    expect(isDarkModeAvailable()).toBe(true);
+
+    localStorage.removeItem(DARK_MODE_AVAILABLE_KEY);
+    expect(isDarkModeAvailable()).toBe(true);
   });
 });

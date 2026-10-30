@@ -16,8 +16,8 @@ export const FEATURE_FLAGS = {
   enablePipelineDiagrams: false,
   enableConnectSlashMenu: false,
   enableNewTopicMessagesPage: false,
-  // Standalone only: shows the header's theme switch and defaults the theme to the OS preference (see
-  // theme-init.ts — index.html's inline script follows it). Embedded Console follows the Cloud UI host.
+  // Standalone only: from the next page load, shows the header's theme switch and defaults the theme to
+  // the OS preference (theme-init.ts). Embedded Console follows the Cloud UI host.
   enableDarkMode: false,
 };
 

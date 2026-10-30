@@ -57,11 +57,17 @@ import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
-import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, getGrpcBasePath, setup } from './config';
+import {
+  addBearerTokenInterceptor,
+  checkExpiredLicenseInterceptor,
+  getGrpcBasePath,
+  isFeatureFlagEnabled,
+  setup,
+} from './config';
 import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
-import { STANDALONE_THEME_INIT } from './theme-init';
+import { installDarkModeAvailabilitySync, isDarkModeAvailable, themeInitFor } from './theme-init';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -122,7 +128,9 @@ const App = () => {
     // config.featureFlags). Dev-only mechanism — see debug-helper/feature-flag-overrides.ts.
     applyDebugFeatureFlagOverrides();
     const uiSettingsTeardown = installUISettingsSideEffects();
+    const darkModeSyncTeardown = installDarkModeAvailabilitySync(() => isFeatureFlagEnabled('enableDarkMode'));
     return () => {
+      darkModeSyncTeardown();
       uiSettingsTeardown();
       setupTeardown?.();
     };
@@ -132,9 +140,9 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. The default
-          theme comes from STANDALONE_THEME_INIT (theme-init.ts). */}
-      <ThemeProvider {...STANDALONE_THEME_INIT}>
+      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. The theme
+          follows this load's dark-mode availability (theme-init.ts). */}
+      <ThemeProvider {...themeInitFor(isDarkModeAvailable())}>
         {/* showToast viewport, above the router so the error boundary and login can toast */}
         <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>

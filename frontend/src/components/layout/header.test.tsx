@@ -13,10 +13,10 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
-const { getMatchedRoutes, mockPageBreadcrumbs, isFeatureFlagEnabled } = rs.hoisted(() => ({
+const { getMatchedRoutes, mockPageBreadcrumbs, isDarkModeAvailable } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
   mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
-  isFeatureFlagEnabled: rs.fn((_flag: string) => false),
+  isDarkModeAvailable: rs.fn(() => false),
 }));
 
 rs.mock('@tanstack/react-router', () => ({
@@ -40,7 +40,7 @@ rs.mock('lucide-react', () => ({
 
 rs.mock('../../config', () => ({
   isEmbedded: () => false,
-  isFeatureFlagEnabled,
+  isFeatureFlagEnabled: () => false,
 }));
 
 rs.mock('../../state/backend-api', () => ({
@@ -67,7 +67,7 @@ rs.mock('../../state/ui-state', () => ({
     }),
 }));
 
-rs.mock('../../utils/env', () => ({ IsDev: false }));
+rs.mock('../../theme-init', () => ({ isDarkModeAvailable }));
 rs.mock('../misc/buttons/data-refresh/component', () => ({ default: () => null }));
 
 rs.mock('../redpanda-ui/components/breadcrumb', () => ({
@@ -107,17 +107,17 @@ describe('the AppPageHeader', () => {
     mockPageBreadcrumbs.length = 0;
   });
 
-  it('shows the theme switch, even when the route hides the title row, only with enableDarkMode', () => {
+  it('shows the theme switch, even when the route hides the title row, only when dark mode is available', () => {
     const { unmount } = render(<AppPageHeader />);
     expect(screen.queryByTestId('theme-mode-switch')).not.toBeInTheDocument();
     unmount();
 
-    isFeatureFlagEnabled.mockImplementation((flag) => flag === 'enableDarkMode');
+    isDarkModeAvailable.mockReturnValue(true);
     try {
       render(<AppPageHeader />);
       expect(screen.getByTestId('theme-mode-switch')).toBeInTheDocument();
     } finally {
-      isFeatureFlagEnabled.mockImplementation(() => false);
+      isDarkModeAvailable.mockReturnValue(false);
     }
   });
 });

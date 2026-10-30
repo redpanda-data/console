@@ -12,10 +12,10 @@ import { initTheme } from 'components/redpanda-ui/components/theme-provider';
 import { createRoot } from 'react-dom/client';
 
 import App from './app';
-import { STANDALONE_THEME_INIT } from './theme-init';
+import { isDarkModeAvailable, themeInitFor } from './theme-init';
 
 // Pre-paint theme stamp, for a load whose inline index.html script could not run.
-initTheme(STANDALONE_THEME_INIT);
+initTheme(themeInitFor(isDarkModeAvailable()));
 
 const rootElement = document.getElementById('root');
 // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app

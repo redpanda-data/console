@@ -23,7 +23,7 @@ const THEME_OPTIONS = [
 const isTheme = (value: unknown): value is Theme => THEME_OPTIONS.some((option) => option.value === value);
 
 /**
- * Standalone theme switcher on the Registry ThemeProvider, shown in dev or with `enableDarkMode`: a
+ * Standalone theme switcher on the Registry ThemeProvider, shown when dark mode is available: a
  * segmented System / Light / Dark control on the stored preference, so `System` stays selected and keeps
  * following the OS. Selecting the chosen segment again leaves it chosen.
  */

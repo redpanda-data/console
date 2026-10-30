@@ -19,7 +19,7 @@ import { ThemeModeSwitch } from './theme-mode-switch';
 import { isEmbedded, isFeatureFlagEnabled } from '../../config';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
-import { IsDev } from '../../utils/env';
+import { isDarkModeAvailable } from '../../theme-init';
 import DataRefreshButton from '../misc/buttons/data-refresh/component';
 import {
   Breadcrumb,
@@ -71,8 +71,9 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
             </BreadcrumbList>
           </Breadcrumb>
         )}
-        {/* In this row, not the title row, so it holds its place on routes that hide the title row. */}
-        {!isEmbedded() && (IsDev || isFeatureFlagEnabled('enableDarkMode')) && (
+        {/* In this row, not the title row, so it holds its place on routes that hide the title row. This
+            load's availability rather than the live flag, so the switch writes the key the theme reads. */}
+        {!isEmbedded() && isDarkModeAvailable() && (
           <div className="-my-1 ml-auto">
             <ThemeModeSwitch />
           </div>
