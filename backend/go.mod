@@ -7,11 +7,11 @@ require (
 	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.19.1-20251027152159-f1066ce064ca.2
 	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.36.10-20251027152159-f1066ce064ca.1
 	buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260323171043-6e06f84ad823.1
-	buf.build/gen/go/redpandadata/core/connectrpc/go v1.20.0-20260729012103-56ecb1a5ae87.1
-	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.11-20260729012103-56ecb1a5ae87.1
+	buf.build/gen/go/redpandadata/core/connectrpc/go v1.21.0-20261027183222-7c410e23a924.1
+	buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.12-20261027183222-7c410e23a924.2
 	buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1
 	buf.build/go/protovalidate v1.0.1
-	connectrpc.com/connect v1.20.0
+	connectrpc.com/connect v1.21.0
 	connectrpc.com/grpcreflect v1.3.0
 	github.com/aws/aws-sdk-go-v2/config v1.31.21
 	github.com/basgys/goxml2json v1.1.0
@@ -44,7 +44,7 @@ require (
 	github.com/redpanda-data/benthos/v4 v4.56.0
 	github.com/redpanda-data/common-go/api v0.0.0-20260130192523-413455981e59
 	github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7
-	github.com/redpanda-data/common-go/rpadmin v0.2.9
+	github.com/redpanda-data/common-go/rpadmin v0.2.12
 	github.com/redpanda-data/common-go/rpsr v0.1.4
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/stretchr/testify v1.11.1

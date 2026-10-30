@@ -214,6 +214,9 @@ type AdminAPIClient interface {
 	//   - FailOver: Fails over a shadow link or single shadow topic
 	ShadowLinkService(opts ...connect.ClientOption) adminv2connect.ShadowLinkServiceClient
 
+	// ShadowBoxService returns a client for the ShadowBoxService of the Admin API V2.
+	ShadowBoxService(opts ...connect.ClientOption) adminv2connect.ShadowBoxServiceClient
+
 	// ClusterService returns a client for listing kafka connections
 	ClusterService(opts ...connect.ClientOption) adminv2connect.ClusterServiceClient
 
