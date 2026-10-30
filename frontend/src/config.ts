@@ -21,7 +21,6 @@ import {
   type Transport,
 } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import type { Monaco } from '@monaco-editor/react';
 import memoizeOne from 'memoize-one';
 import type * as monaco from 'monaco-editor';
 import { protobufRegistry } from 'protobuf-registry';
@@ -260,24 +259,6 @@ const setConfig = ({
     ...args,
   });
   return config;
-};
-
-export const setMonacoTheme = (_editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
-  monacoInstance.editor.defineTheme('kowl', {
-    base: 'vs',
-    inherit: false,
-    colors: {
-      'editor.background': '#fcfcfc',
-      'editorGutter.background': '#00000018',
-      'editor.lineHighlightBackground': '#aaaaaa20',
-      'editor.lineHighlightBorder': '#00000000',
-      'editorLineNumber.foreground': '#8c98a8',
-      'editorOverviewRuler.background': '#606060',
-    },
-    rules: [],
-  });
-
-  monacoInstance.editor.setTheme('kowl');
 };
 
 // Subscribe to UI state changes for breadcrumbs and sidebar items.

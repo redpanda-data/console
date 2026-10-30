@@ -13,9 +13,10 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
-const { getMatchedRoutes, mockPageBreadcrumbs } = rs.hoisted(() => ({
+const { getMatchedRoutes, mockPageBreadcrumbs, isDarkModeAvailable } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
   mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
+  isDarkModeAvailable: rs.fn(() => false),
 }));
 
 rs.mock('@tanstack/react-router', () => ({
@@ -66,7 +67,7 @@ rs.mock('../../state/ui-state', () => ({
     }),
 }));
 
-rs.mock('../../utils/env', () => ({ IsDev: false }));
+rs.mock('../../theme-init', () => ({ isDarkModeAvailable }));
 rs.mock('../misc/buttons/data-refresh/component', () => ({ default: () => null }));
 
 rs.mock('../redpanda-ui/components/breadcrumb', () => ({
@@ -105,6 +106,20 @@ describe('the AppPageHeader', () => {
 
     mockPageBreadcrumbs.length = 0;
   });
+
+  it('shows the theme switch, even when the route hides the title row, only when dark mode is available', () => {
+    const { unmount } = render(<AppPageHeader />);
+    expect(screen.queryByTestId('theme-mode-switch')).not.toBeInTheDocument();
+    unmount();
+
+    isDarkModeAvailable.mockReturnValue(true);
+    try {
+      render(<AppPageHeader />);
+      expect(screen.getByTestId('theme-mode-switch')).toBeInTheDocument();
+    } finally {
+      isDarkModeAvailable.mockReturnValue(false);
+    }
+  });
 });
 
 function MockLink({
@@ -117,7 +132,7 @@ function MockLink({
 }
 
 function MockThemeModeSwitch() {
-  return null;
+  return <span data-testid="theme-mode-switch" />;
 }
 
 function MockChevronLeft() {
