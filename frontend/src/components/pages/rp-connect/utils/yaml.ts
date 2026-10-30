@@ -30,7 +30,7 @@ import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, R
 const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
 
 /** Keys that appear as siblings to the component name (e.g. `label`, a `<<` merge key). */
-const RESERVED_COMPONENT_KEYS = new Set(['label', '<<']);
+export const RESERVED_COMPONENT_KEYS: ReadonlySet<string> = new Set(['label', '<<']);
 
 /** Extract the component name from an object, skipping reserved keys like `label`. */
 export const firstKey = (obj: unknown): string | undefined => {

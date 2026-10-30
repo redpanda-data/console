@@ -7,6 +7,8 @@ import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
 const KAFKA_OPTION = /kafka_franz/;
+const LEGACY_OPTION = /legacy_consumer/;
+const REDPANDA_OPTION = /redpanda/;
 const GENERATE_OPTION = /generate/;
 const HTTP_CLIENT_OPTION = /http_client/;
 const NO_INPUTS_MATCH = /No inputs match/;
@@ -70,6 +72,47 @@ describe('the ConnectCommandPalette', () => {
 
     expect(await screen.findByText(NO_INPUTS_MATCH)).toBeInTheDocument();
     expect(screen.getByText(EXISTS_AS_CACHE)).toBeInTheDocument();
+  });
+
+  it('leaves deprecated components out of browsing and search', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        ...INPUT_COMPONENTS,
+        component('legacy_consumer', 'input', { status: ComponentStatus.DEPRECATED, summary: 'Consume from Kafka' }),
+      ],
+    });
+
+    expect(await screen.findByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'consume');
+
+    await waitFor(() => expect(screen.getByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument());
+    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
+  });
+
+  it('explains an exact-name search for a deprecated component and leads with its replacement', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        ...INPUT_COMPONENTS,
+        component('redpanda', 'input', { summary: 'Consume from Redpanda' }),
+        component('legacy_consumer', 'input', {
+          status: ComponentStatus.DEPRECATED,
+          description:
+            'This input is deprecated. Use the xref:components:inputs/redpanda.adoc[`redpanda` input] instead.',
+        }),
+      ],
+    });
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'legacy_consumer');
+
+    const hint = await screen.findByTestId('palette-deprecated-hint');
+    expect(hint).toHaveTextContent('legacy_consumer is deprecated. Use the redpanda input instead.');
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent(REDPANDA_OPTION);
+    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
   });
 
   it('commits the highlighted component and records it under Recent', async () => {
