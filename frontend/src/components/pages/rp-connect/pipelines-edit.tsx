@@ -16,6 +16,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
+import { isEmbedded } from 'config';
 import {
   type Pipeline,
   type Pipeline_ServiceAccount,
@@ -43,8 +44,11 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     p.addBreadcrumb('Edit Pipeline', `/rp-connect/${pipelineId}/edit`);
 
     this.refreshData(true);
-    // get secrets
-    rpcnSecretManagerApi.refreshSecrets(true);
+    // The secret store only exists in Cloud. Feature.SecretService can't gate this:
+    // Cloud's backend doesn't report it in endpoint compatibility, so it reads as unsupported.
+    if (isEmbedded()) {
+      rpcnSecretManagerApi.refreshSecrets(true);
+    }
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
