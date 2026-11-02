@@ -124,13 +124,9 @@ const contentChangeListeners: ContentChangeCallback[] = [];
 type CursorPositionCallback = (e: { position: { lineNumber: number; column: number } }) => void;
 const cursorPositionListeners: CursorPositionCallback[] = [];
 
-// The text the mock editor last rendered, read back through its model.
-let mockEditorValue = '';
-
 const mockEditorInstance = {
   getPosition: rs.fn(() => ({ lineNumber: 1, column: 4 })),
   getModel: rs.fn(() => ({
-    getValue: rs.fn(() => mockEditorValue),
     getLineContent: rs.fn(() => '  /'),
     // Large enough that node ranges from any test YAML are never clamped.
     getLineCount: rs.fn(() => 1000),
@@ -140,7 +136,6 @@ const mockEditorInstance = {
     contentChangeListeners.push(cb);
     return { dispose: rs.fn() };
   }),
-  onDidChangeModel: rs.fn(() => ({ dispose: rs.fn() })),
   // Cursor → structure-tree highlight sync subscribes to this.
   onDidChangeCursorPosition: rs.fn((cb: CursorPositionCallback) => {
     cursorPositionListeners.push(cb);
@@ -178,7 +173,6 @@ function MockYamlEditor(props: {
   onEditorMount?: (ed: editor.IStandaloneCodeEditor, monaco: Monaco) => void;
   value?: string;
 }) {
-  mockEditorValue = props.value || '';
   React.useEffect(() => {
     props.onEditorMount?.(mockEditorInstance, mockMonaco);
   }, [props.onEditorMount]);
@@ -783,12 +777,7 @@ describe('the PipelinePage', () => {
         create(ListComponentsResponseSchema, {
           components: {
             inputs: [
-              {
-                name: 'kafka_franz',
-                status: ComponentStatus.DEPRECATED,
-                description:
-                  'This input is deprecated. Use the xref:components:inputs/redpanda.adoc[`redpanda` input] instead.',
-              },
+              { name: 'kafka_franz', status: ComponentStatus.DEPRECATED },
               { name: 'redpanda', status: ComponentStatus.STABLE },
             ],
           },
@@ -805,17 +794,9 @@ describe('the PipelinePage', () => {
       expect(await screen.findByTestId('deprecated-component-list')).toHaveTextContent(
         'Line 2: kafka_franz is deprecated. Use the redpanda input instead.'
       );
-      // Markers refresh from the editor's own change events, which the mock textarea doesn't emit.
-      act(() => {
-        for (const listener of contentChangeListeners) {
-          listener({ changes: [{ text: 'k' }] });
-        }
-      });
-      await waitFor(() =>
-        expect(mockMonaco.editor.setModelMarkers).toHaveBeenLastCalledWith(expect.anything(), 'rpcn-deprecation', [
-          expect.objectContaining({ startLineNumber: 2, severity: 4, message: expect.stringContaining('redpanda') }),
-        ])
-      );
+      expect(mockMonaco.editor.setModelMarkers).toHaveBeenCalledWith(expect.anything(), 'rpcn-deprecation', [
+        expect.objectContaining({ startLineNumber: 2, severity: 4, message: expect.stringContaining('redpanda') }),
+      ]);
     });
 
     it('displays lint warnings from the backend as the user types YAML', async () => {

@@ -11,61 +11,42 @@
 
 import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import type { ConnectComponentSpec } from '../types/schema';
 import { deprecationMessage, findDeprecatedUsages } from '../utils/deprecation';
 
 const MARKER_OWNER = 'rpcn-deprecation';
-const REFRESH_DELAY_MS = 300;
 
 type MountedEditor = { instance: editor.IStandaloneCodeEditor; monaco: Monaco };
 
-/**
- * Warning markers on deprecated component keys, recomputed from the editor's own text so
- * uncontrolled editors stay in sync. Returns the mount callback that attaches them.
- */
-export function useDeprecationMarkers(components: readonly ConnectComponentSpec[] | undefined) {
+/** The deprecated components `yaml` uses, marked as warnings in the editor `attach` is given. */
+export function useDeprecationMarkers(yaml: string, components: readonly ConnectComponentSpec[] | undefined) {
   const [mounted, setMounted] = useState<MountedEditor | null>(null);
+  const deferredYaml = useDeferredValue(yaml);
+  const usages = useMemo(
+    () => (components ? findDeprecatedUsages(deferredYaml, components) : []),
+    [deferredYaml, components]
+  );
 
   useEffect(() => {
-    if (!(mounted && components)) {
+    const model = mounted?.instance.getModel();
+    if (!(mounted && model)) {
       return;
     }
-    const { instance, monaco } = mounted;
-    const apply = () => {
-      const model = instance.getModel();
-      if (!model) {
-        return;
-      }
-      try {
-        const markers = findDeprecatedUsages(model.getValue(), components).map(({ notice, range }) => ({
-          ...range,
-          severity: monaco.MarkerSeverity.Warning,
-          message: deprecationMessage(notice),
-        }));
-        monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
-      } catch (error) {
-        globalThis.reportError(error);
-      }
-    };
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    apply();
-    const contentSubscription = instance.onDidChangeModelContent(() => {
-      clearTimeout(timer);
-      timer = setTimeout(apply, REFRESH_DELAY_MS);
-    });
-    const modelSubscription = instance.onDidChangeModel(apply);
-    return () => {
-      clearTimeout(timer);
-      contentSubscription.dispose();
-      modelSubscription.dispose();
-      const model = instance.getModel();
-      if (model) {
-        monaco.editor.setModelMarkers(model, MARKER_OWNER, []);
-      }
-    };
-  }, [mounted, components]);
+    const { monaco } = mounted;
+    const markers = usages.map(({ notice, range }) => ({
+      ...range,
+      severity: monaco.MarkerSeverity.Warning,
+      message: deprecationMessage(notice),
+    }));
+    monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
+    return () => monaco.editor.setModelMarkers(model, MARKER_OWNER, []);
+  }, [mounted, usages]);
 
-  return useCallback((instance: editor.IStandaloneCodeEditor, monaco: Monaco) => setMounted({ instance, monaco }), []);
+  const attach = useCallback(
+    (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => setMounted({ instance, monaco }),
+    []
+  );
+  return { usages, attach };
 }

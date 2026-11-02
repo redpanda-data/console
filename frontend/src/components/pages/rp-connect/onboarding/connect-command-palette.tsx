@@ -33,12 +33,11 @@ import {
   searchableText,
 } from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
-import { DeprecationText } from '../pipeline/deprecation-notice';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { getCategoryDisplayName } from '../utils/categories';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
-import { type DeprecationNotice, deprecationNotice, isDeprecatedComponent } from '../utils/deprecation';
+import { deprecationMessage, deprecationNotice, isDeprecatedComponent } from '../utils/deprecation';
 import { componentStatusToString, parseSchema } from '../utils/schema';
 
 function ComponentIcon({ component, className = 'size-5' }: { component: ConnectComponentSpec; className?: string }) {
@@ -348,24 +347,19 @@ function usePaletteCatalog({
 
 type PaletteCatalog = ReturnType<typeof usePaletteCatalog>;
 
-// The notice for an exact-name search of a hidden deprecated component, so the miss is explained.
-function useDeprecatedMatch(catalog: PaletteCatalog, q: string): DeprecationNotice | undefined {
-  const { allComponents, typeAllowed } = catalog;
-  return useMemo(() => {
+// Searching: a single ranked, flat list across the in-scope catalog, plus — on a type-locked
+// miss — the out-of-scope types that DO match, shown in the empty state so the miss isn't read as a gap.
+// An exact-name search for a deprecated component leads with its replacement.
+function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
+  const { allComponents, pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
+  const q = query.trim().toLowerCase();
+  // An exact-name search for a hidden deprecated component explains the miss.
+  const deprecatedMatch = useMemo(() => {
     const match = q
       ? allComponents.find((c) => c.name === q && typeAllowed(c.type) && isDeprecatedComponent(c))
       : undefined;
     return match ? deprecationNotice(match, allComponents) : undefined;
   }, [q, allComponents, typeAllowed]);
-}
-
-// Searching: a single ranked, flat list across the in-scope catalog, plus — on a type-locked
-// miss — the out-of-scope types that DO match, shown in the empty state so the miss isn't read as a gap.
-// An exact-name search for a deprecated component leads with its replacement.
-function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
-  const { pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
-  const q = query.trim().toLowerCase();
-  const deprecatedMatch = useDeprecatedMatch(catalog, q);
   const results = useMemo(() => {
     if (!q) {
       return [];
@@ -476,15 +470,13 @@ function PaletteFacetTabs({
 }
 
 // Why an exact-name search came up without the component the user typed.
-const DeprecatedMatchHint = ({ notice }: { notice: DeprecationNotice }) => (
+const DeprecatedMatchHint = ({ message }: { message: string }) => (
   <div
     className="flex items-start gap-2 px-3 py-2 text-body-sm text-muted-foreground"
     data-testid="palette-deprecated-hint"
   >
     <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={TriangleAlert} tone="warning" />
-    <span>
-      <DeprecationText notice={notice} />
-    </span>
+    <span>{message}</span>
   </div>
 );
 
@@ -635,7 +627,7 @@ export const ConnectCommandPalette = ({
 
         <div className="flex min-h-0 flex-1">
           <CommandList className="h-full max-h-none min-w-0 flex-1 md:max-w-[28rem]">
-            {q && deprecatedMatch ? <DeprecatedMatchHint notice={deprecatedMatch} /> : null}
+            {q && deprecatedMatch ? <DeprecatedMatchHint message={deprecationMessage(deprecatedMatch)} /> : null}
             <CommandEmpty>{buildEmptyMessage(query.trim(), allowedTypes, outOfScopeTypes)}</CommandEmpty>
             <PaletteListGroups
               allGroups={allGroups}

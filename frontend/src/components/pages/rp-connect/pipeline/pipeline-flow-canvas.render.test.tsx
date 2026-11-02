@@ -130,7 +130,7 @@ describe('the PipelineFlowCanvas — deprecated components', () => {
     render(
       <PipelineFlowCanvas
         configYaml={VALID_PIPELINE_YAML}
-        deprecationsByNode={new Map([['input-0', 'generate is deprecated. Use the redpanda input instead.']])}
+        deprecationsByNode={new Map([['input-0', ['generate is deprecated. Use the redpanda input instead.']]])}
       />
     );
 

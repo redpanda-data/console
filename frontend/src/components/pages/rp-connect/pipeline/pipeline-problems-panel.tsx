@@ -9,15 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { type IconTone, TonedIcon } from 'components/pages/shared/toned-icon';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
-import { AlertCircle, KeyRound, type LucideIcon, MousePointerClick, TriangleAlert } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { AlertCircle, KeyRound, MousePointerClick, TriangleAlert } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
 
-import { DeprecationText } from './deprecation-notice';
 import { FloatingChipPanel } from './floating-chip-panel';
-import type { DeprecationNotice } from '../utils/deprecation';
 import type { EditTarget } from '../utils/yaml';
 
 export type PipelineProblem = {
@@ -32,9 +29,6 @@ export type PipelineProblem = {
   caseTarget?: EditTarget;
 };
 
-/** A deprecated component in use — a warning, located like a problem. */
-export type DeprecationProblem = Omit<PipelineProblem, 'message'> & { notice: DeprecationNotice };
-
 type PipelineProblemsPanelProps = {
   problems: PipelineProblem[];
   onSelectProblem: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
@@ -42,7 +36,8 @@ type PipelineProblemsPanelProps = {
   missingSecrets?: string[];
   /** Open the add-secrets flow (omit to hide the action, e.g. in view mode). */
   onAddSecrets?: () => void;
-  deprecations?: DeprecationProblem[];
+  /** Deprecated components in use: warnings, located like problems. */
+  deprecations?: PipelineProblem[];
 };
 
 // Section heading in the expanded panel, shown only when more than one kind of issue is present.
@@ -52,25 +47,26 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-// One located issue: clickable row that selects its node, or inert when it maps to no node.
+// One problem (or, with `warning`, a deprecation): clickable row that selects its node, or inert
+// when it maps to no node.
 const ProblemRow = ({
   problem,
   onSelect,
-  icon = AlertCircle,
-  tone = 'destructive',
-  children,
+  warning,
 }: {
-  problem: Omit<PipelineProblem, 'message'>;
+  problem: PipelineProblem;
   onSelect?: () => void;
-  icon?: LucideIcon;
-  tone?: IconTone;
-  children: ReactNode;
+  warning?: boolean;
 }) => {
   const body = (
     <>
-      <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={icon} tone={tone} />
+      <TonedIcon
+        className="mt-0.5 size-3.5 shrink-0"
+        icon={warning ? TriangleAlert : AlertCircle}
+        tone={warning ? 'warning' : 'destructive'}
+      />
       <span className="flex min-w-0 flex-col">
-        <span className="text-body-sm text-foreground">{children}</span>
+        <span className="text-body-sm text-foreground">{problem.message}</span>
         {onSelect ? (
           <span className="flex items-center gap-1 text-body-sm text-muted-foreground">
             <span className="inline-flex opacity-0 transition-opacity group-hover:opacity-100">
@@ -139,20 +135,9 @@ function issuesLabel(problemCount: number, secretCount: number, deprecationCount
   return pluralizeWithNumber(deprecationCount, 'deprecated component');
 }
 
-// The chip's icon and colour: the most severe kind present wins.
-function chipStyle(hasLint: boolean, hasSecrets: boolean): { icon: LucideIcon; className: string } {
-  if (hasLint) {
-    return { icon: AlertCircle, className: 'border-destructive/40 text-destructive hover:bg-destructive/5' };
-  }
-  return {
-    icon: hasSecrets ? KeyRound : TriangleAlert,
-    className: 'border-warning/50 text-warning hover:bg-warning-wash',
-  };
-}
-
 // Clicking a located issue selects its node and collapses the list.
 function selectHandler(
-  problem: Omit<PipelineProblem, 'message'>,
+  problem: PipelineProblem,
   onSelectProblem: PipelineProblemsPanelProps['onSelectProblem'],
   close: () => void
 ): (() => void) | undefined {
@@ -185,11 +170,15 @@ export function PipelineProblemsPanel({
     return null;
   }
 
-  const { icon: Icon, className } = chipStyle(hasLint, hasSecrets);
+  const warningIcon = hasSecrets ? KeyRound : TriangleAlert;
+  const Icon = hasLint ? AlertCircle : warningIcon;
+  const tone = hasLint
+    ? 'border-destructive/40 text-destructive hover:bg-destructive/5'
+    : 'border-warning/50 text-warning hover:bg-warning-wash';
 
   return (
     <FloatingChipPanel
-      chipClassName={className}
+      chipClassName={tone}
       chipTestId="pipeline-problems-chip"
       label={issuesLabel(problems.length, missingSecrets.length, deprecations.length)}
       leading={<Icon className="size-3.5" />}
@@ -218,9 +207,7 @@ export function PipelineProblemsPanel({
             </div>
           ) : null}
           {problems.map((problem) => (
-            <ProblemRow key={problem.key} onSelect={selectHandler(problem, onSelectProblem, close)} problem={problem}>
-              {problem.message}
-            </ProblemRow>
+            <ProblemRow key={problem.key} onSelect={selectHandler(problem, onSelectProblem, close)} problem={problem} />
           ))}
 
           {hasDeprecations ? (
@@ -232,14 +219,11 @@ export function PipelineProblemsPanel({
               ) : null}
               {deprecations.map((deprecation) => (
                 <ProblemRow
-                  icon={TriangleAlert}
                   key={deprecation.key}
                   onSelect={selectHandler(deprecation, onSelectProblem, close)}
                   problem={deprecation}
-                  tone="warning"
-                >
-                  <DeprecationText notice={deprecation.notice} />
-                </ProblemRow>
+                  warning
+                />
               ))}
             </div>
           ) : null}

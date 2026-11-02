@@ -13,7 +13,7 @@ import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
 
-import { type DeprecationProblem, type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
+import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 
 const PROBLEMS: PipelineProblem[] = [
   { key: 'p1', message: 'field required', nodeId: 'input-0', nodeLabel: 'kafka_franz', target: { kind: 'input' } },
@@ -21,10 +21,10 @@ const PROBLEMS: PipelineProblem[] = [
 
 const USE_THE_REPLACEMENT = /Use the/;
 
-const DEPRECATIONS: DeprecationProblem[] = [
+const DEPRECATIONS: PipelineProblem[] = [
   {
     key: 'd1',
-    notice: { name: 'kafka_franz', type: 'input', replacement: { name: 'redpanda', type: 'input' } },
+    message: 'kafka_franz is deprecated. Use the redpanda input instead.',
     line: 2,
     nodeId: 'input-0',
     nodeLabel: 'kafka_franz',

@@ -12,7 +12,7 @@ import { mockComponents } from '../utils/__fixtures__/component-schemas';
 // without React Flow's DOM measurement (which doesn't run under Happy DOM).
 function MockPipelineFlowCanvas(props: {
   configYaml: string;
-  deprecationsByNode?: Map<string, string>;
+  deprecationsByNode?: Map<string, string[]>;
   onSelectNode?: (id: string, t: unknown) => void;
   onClearSelection?: () => void;
   onInsert?: (index: number) => void;
@@ -240,15 +240,8 @@ output:
 const logProc = 'log:\n        message: hi';
 const mappingProc = "mapping: 'root = this'";
 
-const DEPRECATED_MEMORY_CACHE = {
-  ...mockComponents.memoryCache,
-  status: ComponentStatus.DEPRECATED,
-  description: 'This cache is deprecated. Use the xref:components:caches/redis.adoc[`redis` cache] instead.',
-};
-const DEPRECATION_COMPONENTS = [DEPRECATED_MEMORY_CACHE, { ...mockComponents.memoryCache, name: 'redis' }];
-const MEMORY_DEPRECATION = 'memory is deprecated. Use the redis cache instead.';
-const USE_THE_REPLACEMENT = /Use the/;
-const REDIS_DOCS_LINK = /redis.*docs/;
+const DEPRECATION_COMPONENTS = [{ ...mockComponents.memoryCache, status: ComponentStatus.DEPRECATED }];
+const MEMORY_DEPRECATION = 'memory is deprecated and may be removed in a future release.';
 
 describe('the VisualEditorPanel', () => {
   beforeEach(() => {
@@ -257,21 +250,17 @@ describe('the VisualEditorPanel', () => {
   });
 
   describe('a deprecated component in use', () => {
-    test('is badged on the canvas and listed as a warning that opens it with the replacement', async () => {
+    test('is badged on the canvas and listed as a warning that opens its inspector banner', async () => {
       const user = userEvent.setup();
       renderPanel({ components: DEPRECATION_COMPONENTS, yamlContent: CACHE_YAML });
 
       expect(JSON.parse(screen.getByTestId('flow-canvas').getAttribute('data-deprecations') ?? '[]')).toEqual([
-        ['resource-cache_resources-0', MEMORY_DEPRECATION],
+        ['resource-cache_resources-0', [MEMORY_DEPRECATION]],
       ]);
 
       await user.click(screen.getByTestId('pipeline-problems-chip'));
-      await user.click(screen.getByText(USE_THE_REPLACEMENT));
+      await user.click(screen.getByText(MEMORY_DEPRECATION));
       expect(await screen.findByRole('alert')).toHaveTextContent(MEMORY_DEPRECATION);
-      expect(screen.getByRole('link', { name: REDIS_DOCS_LINK })).toHaveAttribute(
-        'href',
-        expect.stringContaining('/caches/redis/')
-      );
     });
 
     test('still opens in its form and saves edits', async () => {
@@ -282,12 +271,6 @@ describe('the VisualEditorPanel', () => {
 
       expect(onYamlChange).toHaveBeenCalledTimes(1);
       expect(onYamlChange.mock.calls[0][0]).toContain('ttl: 10m');
-    });
-
-    test('raises nothing for a pipeline without deprecated components', () => {
-      renderPanel({ components: DEPRECATION_COMPONENTS });
-      expect(screen.getByTestId('flow-canvas').getAttribute('data-deprecations')).toBe('[]');
-      expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
     });
   });
 

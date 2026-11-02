@@ -951,7 +951,7 @@ type CanvasCallbacks = {
   selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
   /** Deprecation warnings by node id. */
-  deprecationsByNode?: Map<string, string>;
+  deprecationsByNode?: Map<string, string[]>;
   /** Node ids whose config differs from the last-saved pipeline. */
   unsavedNodeIds?: ReadonlySet<string>;
   flashNodeIds?: ReadonlySet<string>;
@@ -1006,9 +1006,9 @@ function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks): 
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
   }
-  const deprecation = cb.deprecationsByNode?.get(node.id);
-  if (deprecation) {
-    data.deprecation = deprecation;
+  const deprecations = cb.deprecationsByNode?.get(node.id);
+  if (deprecations?.length) {
+    data.deprecations = deprecations;
   }
 }
 
@@ -1196,7 +1196,7 @@ type PipelineFlowCanvasProps = {
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
   /** Deprecation warnings mapped to node ids — badged in place on the canvas. */
-  deprecationsByNode?: Map<string, string>;
+  deprecationsByNode?: Map<string, string[]>;
   /** Node ids whose config differs from the last-saved pipeline — flagged with an unsaved dot. */
   unsavedNodeIds?: ReadonlySet<string>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */

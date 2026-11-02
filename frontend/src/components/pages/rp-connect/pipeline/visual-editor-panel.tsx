@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { create } from '@bufbuild/protobuf';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import {
   AlertDialog,
@@ -39,7 +40,7 @@ import { NodeInspector, type PendingNodeCommit } from './node-inspector';
 import { CanvasCommandPalette } from './pipeline-canvas-command-palette';
 import { PipelineFlowCanvas } from './pipeline-flow-canvas';
 import { PipelineFlowSkeleton } from './pipeline-flow-skeleton';
-import { type DeprecationProblem, type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
+import { type PipelineProblem, PipelineProblemsPanel } from './pipeline-problems-panel';
 import { PipelineUnsavedPanel } from './pipeline-unsaved-panel';
 import { TemplateGalleryCta } from './template-cta';
 import { usePipelineEditorStore } from './use-pipeline-editor-store';
@@ -612,28 +613,27 @@ function buildProblems(
   return [...list, ...unmapped];
 }
 
-// Deprecated components in use, located and selectable like lint problems.
+// Each node's hint messages, for its canvas badge and inspector.
+function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>): Map<string, string[]> {
+  return new Map([...hintsByNode].map(([id, hints]) => [id, hints.map((h) => h.hint)]));
+}
+
+// Deprecated components in use, as located hints: they map to nodes and problems the way lint does.
 function useDeprecations(yamlContent: string, components: ConnectComponentSpec[], flowNodes: PipelineFlowNode[]) {
-  const usages = useMemo(() => findDeprecatedUsages(yamlContent, components), [yamlContent, components]);
-  const deprecationsByNode = useMemo(
-    () => new Map(usages.map((usage) => [usage.nodeId, deprecationMessage(usage.notice)])),
-    [usages]
+  const hints = useMemo(
+    () =>
+      findDeprecatedUsages(yamlContent, components).map(({ notice, range }) =>
+        create(LintHintSchema, {
+          line: range.startLineNumber,
+          column: range.startColumn,
+          hint: deprecationMessage(notice),
+        })
+      ),
+    [yamlContent, components]
   );
-  const deprecations = useMemo<DeprecationProblem[]>(() => {
-    const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
-    return usages.map(({ nodeId, notice, range }) => {
-      const node = nodesById.get(nodeId);
-      return {
-        key: `deprecated-${nodeId}`,
-        notice,
-        line: range.startLineNumber,
-        nodeId,
-        nodeLabel: node?.label,
-        target: node?.editTarget,
-        caseTarget: caseTargetForNode(node, flowNodes),
-      };
-    });
-  }, [usages, flowNodes]);
+  const byNode = useMemo(() => mapLintHintsToNodes(yamlContent, hints), [yamlContent, hints]);
+  const deprecationsByNode = useMemo(() => hintMessagesByNode(byNode), [byNode]);
+  const deprecations = useMemo(() => buildProblems(hints, byNode, flowNodes), [hints, byNode, flowNodes]);
   return { deprecationsByNode, deprecations };
 }
 
@@ -653,16 +653,7 @@ function useFlowOverview({ yamlContent, components, lintHints, isEditing, select
 
   // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
   const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
-  const lintMessagesByNode = useMemo(() => {
-    const messages = new Map<string, string[]>();
-    for (const [id, hints] of lintByNode) {
-      messages.set(
-        id,
-        hints.map((h) => h.hint)
-      );
-    }
-    return messages;
-  }, [lintByNode]);
+  const lintMessagesByNode = useMemo(() => hintMessagesByNode(lintByNode), [lintByNode]);
   const { unsavedNodeIds, unsavedNodeList } = useUnsavedNodes(yamlContent, isEditing, flowNodes);
 
   const childItems = useMemo<InspectorChildItem[]>(
@@ -1205,6 +1196,7 @@ function InspectorRail({
               childItems={overview.childItems}
               commitRef={isEditing ? commitRef : undefined}
               components={components}
+              deprecations={overview.deprecationsByNode.get(selected.id)}
               lintHints={overview.lintByNode.get(selected.id)}
               onAddTopic={isEditing ? onAddTopic : undefined}
               onApply={onYamlChange}

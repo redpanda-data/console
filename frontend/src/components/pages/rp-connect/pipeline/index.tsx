@@ -67,7 +67,7 @@ import { ChangesPanel } from './changes-panel';
 import { summarizeComponentChanges, summarizeSettingsChanges, UNSAVED_CHANGES_LANE_LABEL } from './changes-summary';
 import { ConfigDialog } from './config-dialog';
 import { DeleteDraftDialog } from './delete-draft-dialog';
-import { DeprecatedComponentList } from './deprecation-notice';
+import { DeprecatedComponentList } from './deprecated-component-list';
 import { DetailsDialog } from './details-dialog';
 import {
   areDraftsEnabled,
@@ -110,7 +110,6 @@ import { cpuToTasks, MIN_TASKS } from '../tasks';
 import { TemplateGalleryDialog } from '../template-gallery/template-gallery-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import type { AddTopicFormData, BaseStepRef, UserStepRef, UserStepSubmissionData } from '../types/wizard';
-import { findDeprecatedUsages } from '../utils/deprecation';
 import { navigateToConnectClusters } from '../utils/navigation';
 import { changedNodeIds } from '../utils/pipeline-diff';
 import { parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -318,7 +317,7 @@ function YamlViewPanel({
   schema: ReturnType<typeof parseYamlEditorSchema>;
   components: ConnectComponentSpec[];
 }) {
-  const attachDeprecationMarkers = useDeprecationMarkers(components);
+  const { attach: attachDeprecationMarkers } = useDeprecationMarkers(configYaml, components);
   // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
   // Mount-time listener disposables, torn down on unmount so the editor + listener graph can be GC'd.
@@ -445,7 +444,8 @@ function EditorPanel({
   lintHints: Record<string, LintHint>;
   isLintPending: boolean;
 }) {
-  const attachDeprecationMarkers = useDeprecationMarkers(components);
+  const deprecations = useDeprecationMarkers(yamlContent, components);
+  const { attach: attachDeprecationMarkers } = deprecations;
   const handleEditorMount = useCallback(
     (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
       attachDeprecationMarkers(instance, monaco);
@@ -453,11 +453,7 @@ function EditorPanel({
     },
     [attachDeprecationMarkers, onEditorMount]
   );
-  const deferredYamlContent = useDeferredValue(yamlContent);
-  const deprecations = useMemo(
-    () => findDeprecatedUsages(deferredYamlContent, components),
-    [deferredYamlContent, components]
-  );
+  const hasLintHints = Object.keys(lintHints).length > 0;
   return (
     <ResizablePanelGroup orientation="vertical">
       <ResizablePanel defaultSize="70%" minSize="30%">
@@ -487,8 +483,11 @@ function EditorPanel({
               <CountDot count={Object.keys(lintHints).length} variant="destructive" />
             ) : null}
           </div>
-          <LintHintList isPending={isLintPending} lintHints={lintHints} />
-          <DeprecatedComponentList usages={deprecations} />
+          {/* Its "No issues found" would contradict the deprecations listed below it. */}
+          {hasLintHints || isLintPending || deprecations.usages.length === 0 ? (
+            <LintHintList isPending={isLintPending} lintHints={lintHints} />
+          ) : null}
+          <DeprecatedComponentList usages={deprecations.usages} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

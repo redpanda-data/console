@@ -10,17 +10,20 @@
  */
 
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type Document, isMap, isScalar, LineCounter, type Range, type Scalar } from 'yaml';
+import { isMap, isScalar, isSeq, LineCounter, parseDocument, type Range, type Scalar } from 'yaml';
 
 import { getConnectorDocsUrl } from './connector-docs';
-import { type PipelineFlowNode, parseEditableNodes } from './pipeline-flow-parser';
-import { editTargetPath, RESERVED_COMPONENT_KEYS, targetComponentType } from './yaml';
-import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import {
+  CONNECT_COMPONENT_TYPE,
+  type ConnectComponentSpec,
+  type ConnectComponentType,
+  type RawFieldSpec,
+} from '../types/schema';
 
 type ComponentRef = { name: string; type: ConnectComponentType };
 
 export type DeprecationNotice = ComponentRef & {
-  /** The component the schema recommends instead, when this dataplane serves it. */
+  /** The component to use instead, when this dataplane serves it. */
   replacement?: ComponentRef;
   /** The replacement's docs, or the deprecated component's own when there is no replacement. */
   docsUrl?: string;
@@ -30,21 +33,8 @@ export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'sta
   return component.status === ComponentStatus.DEPRECATED;
 }
 
-// Docs directory → component type, for `xref:components:<dir>/<name>.adoc` links.
-const DOCS_DIR_TYPE: Record<string, ConnectComponentType> = {
-  inputs: 'input',
-  outputs: 'output',
-  processors: 'processor',
-  caches: 'cache',
-  rate_limits: 'rate_limit',
-  buffers: 'buffer',
-  metrics: 'metrics',
-  tracers: 'tracer',
-  scanners: 'scanner',
-};
-
-// What upstream names as the replacement from 4.114 on; older schemas flag these deprecated but name none.
-const KNOWN_REPLACEMENTS: Record<string, ComponentRef> = {
+// What to use instead, per upstream's deprecation notes: ComponentSpec has no field for it.
+const REPLACEMENTS: Record<string, ComponentRef> = {
   'input:kafka': { name: 'redpanda', type: 'input' },
   'input:kafka_franz': { name: 'redpanda', type: 'input' },
   'input:redpanda_common': { name: 'redpanda', type: 'input' },
@@ -55,33 +45,11 @@ const KNOWN_REPLACEMENTS: Record<string, ComponentRef> = {
   'processor:jira': { name: 'jira', type: 'input' },
 };
 
-const PARAGRAPH_BREAK = /\n\s*\n/;
-const DEPRECATED_WORD = /deprecated/i;
-const COMPONENT_XREF = /xref:components:([a-z_]+)\/([a-z0-9_]+)\.adoc/g;
-const RENAMED_TO = /renamed to `([a-z0-9_]+)`/;
-
-// The replacement named by the description's deprecation paragraph: a component xref
-// ("Use the xref:components:inputs/redpanda.adoc[…] instead") or a rename ("renamed to `postgres_cdc`").
-function namedReplacement(component: ConnectComponentSpec): ComponentRef | undefined {
-  const paragraph = (component.description ?? '').split(PARAGRAPH_BREAK).find((p) => DEPRECATED_WORD.test(p));
-  if (!paragraph) {
-    return;
-  }
-  for (const [, dir, name] of paragraph.matchAll(COMPONENT_XREF)) {
-    const type = DOCS_DIR_TYPE[dir];
-    if (type) {
-      return { name, type };
-    }
-  }
-  const renamed = RENAMED_TO.exec(paragraph);
-  return renamed ? { name: renamed[1], type: component.type } : undefined;
-}
-
 export function deprecationNotice(
   component: ConnectComponentSpec,
   catalog: readonly ConnectComponentSpec[]
 ): DeprecationNotice {
-  const named = namedReplacement(component) ?? KNOWN_REPLACEMENTS[`${component.type}:${component.name}`];
+  const named = REPLACEMENTS[`${component.type}:${component.name}`];
   const replacement =
     named && catalog.some((c) => c.type === named.type && c.name === named.name && !isDeprecatedComponent(c))
       ? named
@@ -95,7 +63,7 @@ export function deprecationNotice(
   };
 }
 
-/** Plain-text warning, for tooltips and editor markers. */
+/** The warning every surface shows. */
 export function deprecationMessage({ name, replacement }: DeprecationNotice): string {
   return replacement
     ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/g, ' ')} instead.`
@@ -103,46 +71,89 @@ export function deprecationMessage({ name, replacement }: DeprecationNotice): st
 }
 
 export type DeprecatedUsage = {
-  /** Flow-node id of the component, for selecting it on the canvas. */
-  nodeId: string;
   notice: DeprecationNotice;
   /** 1-based range of the component's name key in the YAML. */
   range: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number };
 };
 
-// The component-name key of the map at an edit target: its first key that isn't `label`/`<<`.
-function componentNameKey(node: unknown): Scalar<string> | undefined {
+type FieldShape = Pick<RawFieldSpec, 'name' | 'type' | 'kind'> & { children?: readonly FieldShape[] };
+
+const COMPONENT_TYPES: ReadonlySet<string> = new Set(CONNECT_COMPONENT_TYPE);
+const PROCESSORS: FieldShape = { name: 'processors', type: 'processor', kind: 'array' };
+
+// Where components sit at the top level of a config.
+const CONFIG_ROOT: FieldShape = {
+  name: '',
+  type: 'object',
+  kind: 'scalar',
+  children: [
+    { name: 'input', type: 'input', kind: 'scalar' },
+    { name: 'buffer', type: 'buffer', kind: 'scalar' },
+    { name: 'pipeline', type: 'object', kind: 'scalar', children: [PROCESSORS] },
+    { name: 'output', type: 'output', kind: 'scalar' },
+    { name: 'input_resources', type: 'input', kind: 'array' },
+    { name: 'processor_resources', type: 'processor', kind: 'array' },
+    { name: 'output_resources', type: 'output', kind: 'array' },
+    { name: 'cache_resources', type: 'cache', kind: 'array' },
+    { name: 'rate_limit_resources', type: 'rate_limit', kind: 'array' },
+    { name: 'metrics', type: 'metrics', kind: 'scalar' },
+    { name: 'tracer', type: 'tracer', kind: 'scalar' },
+  ],
+};
+
+type Walk = { catalog: readonly ConnectComponentSpec[]; lineCounter: LineCounter; usages: DeprecatedUsage[] };
+
+// The values a field holds, by its kind.
+function fieldValues(node: unknown, kind: string): unknown[] {
+  switch (kind) {
+    case 'array':
+      return isSeq(node) ? node.items : [];
+    case '2darray':
+      return isSeq(node) ? node.items.flatMap((row) => (isSeq(row) ? row.items : [])) : [];
+    case 'map':
+      return isMap(node) ? node.items.map((pair) => pair.value) : [];
+    default:
+      return [node];
+  }
+}
+
+// Follows the schema's component-typed fields, so nested components are found wherever they sit.
+function walkField(walk: Walk, node: unknown, field: FieldShape): void {
+  for (const value of fieldValues(node, field.kind)) {
+    if (COMPONENT_TYPES.has(field.type)) {
+      walkComponent(walk, value, field.type as ConnectComponentType);
+    } else if (isMap(value)) {
+      for (const child of field.children ?? []) {
+        walkField(walk, value.get(child.name, true), child);
+      }
+    }
+  }
+}
+
+// A component slot: `{ <name>: config }` plus `label`, and `processors` on inputs and outputs.
+function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): void {
   if (!isMap(node)) {
     return;
   }
-  const pair = node.items.find(
-    ({ key }) => isScalar(key) && typeof key.value === 'string' && !RESERVED_COMPONENT_KEYS.has(key.value)
-  );
-  return pair?.key as Scalar<string> | undefined;
+  for (const { key, value } of node.items) {
+    if (isScalar(key) && typeof key.value === 'string') {
+      walkSlotKey(walk, key as Scalar<string>, value, type);
+    }
+  }
 }
 
-// The usage at one flow node, when its component is deprecated.
-function usageAtNode(
-  node: PipelineFlowNode,
-  doc: Document,
-  lineCounter: LineCounter,
-  catalog: readonly ConnectComponentSpec[]
-): DeprecatedUsage | undefined {
-  const target = node.editTarget;
-  if (!target || target.kind === 'switchCase') {
+function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType): void {
+  if (key.value === 'processors' && (type === 'input' || type === 'output')) {
+    walkField(walk, value, PROCESSORS);
     return;
   }
-  const key = componentNameKey(doc.getIn(editTargetPath(target), true));
-  const type = targetComponentType(target);
-  const component = key && catalog.find((c) => c.type === type && c.name === key.value && isDeprecatedComponent(c));
-  if (!(component && key.range)) {
-    return;
+  const spec = walk.catalog.find((c) => c.type === type && c.name === key.value);
+  if (spec && isDeprecatedComponent(spec) && key.range) {
+    walk.usages.push({ notice: deprecationNotice(spec, walk.catalog), range: lineRange(key.range, walk.lineCounter) });
   }
-  return {
-    nodeId: node.id,
-    notice: deprecationNotice(component, catalog),
-    range: lineRange(key.range, lineCounter),
-  };
+  if (spec?.config) {
+    walkField(walk, value, spec.config);
+  }
 }
 
 function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): DeprecatedUsage['range'] {
@@ -151,13 +162,14 @@ function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): D
   return { startLineNumber: start.line, startColumn: start.col, endLineNumber: end.line, endColumn: end.col };
 }
 
-/** Every deprecated component the YAML uses, in document order. */
+/** Every deprecated component the YAML uses, nested ones included, in document order. */
 export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]): DeprecatedUsage[] {
   // Most configs use none; skip the parse unless a deprecated name appears at all.
   if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
     return [];
   }
   const lineCounter = new LineCounter();
-  const { doc, nodes } = parseEditableNodes(yaml, lineCounter);
-  return nodes.flatMap((node) => usageAtNode(node, doc, lineCounter, components) ?? []);
+  const walk: Walk = { catalog: components, lineCounter, usages: [] };
+  walkField(walk, parseDocument(yaml, { lineCounter }).contents, CONFIG_ROOT);
+  return walk.usages;
 }

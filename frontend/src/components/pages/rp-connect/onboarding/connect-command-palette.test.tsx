@@ -7,8 +7,8 @@ import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
 const KAFKA_OPTION = /kafka_franz/;
-const LEGACY_OPTION = /legacy_consumer/;
-const REDPANDA_OPTION = /redpanda/;
+const PG_STREAM_OPTION = /pg_stream/;
+const POSTGRES_CDC_OPTION = /postgres_cdc/;
 const GENERATE_OPTION = /generate/;
 const HTTP_CLIENT_OPTION = /http_client/;
 const NO_INPUTS_MATCH = /No inputs match/;
@@ -79,17 +79,17 @@ describe('the ConnectCommandPalette', () => {
     renderPalette({
       additionalComponents: [
         ...INPUT_COMPONENTS,
-        component('legacy_consumer', 'input', { status: ComponentStatus.DEPRECATED, summary: 'Consume from Kafka' }),
+        component('pg_stream', 'input', { status: ComponentStatus.DEPRECATED, summary: 'Consume from Postgres' }),
       ],
     });
 
     expect(await screen.findByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText('Search components…'), 'consume');
 
     await waitFor(() => expect(screen.getByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument());
-    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
   });
 
   it('explains an exact-name search for a deprecated component and leads with its replacement', async () => {
@@ -97,22 +97,18 @@ describe('the ConnectCommandPalette', () => {
     renderPalette({
       additionalComponents: [
         ...INPUT_COMPONENTS,
-        component('redpanda', 'input', { summary: 'Consume from Redpanda' }),
-        component('legacy_consumer', 'input', {
-          status: ComponentStatus.DEPRECATED,
-          description:
-            'This input is deprecated. Use the xref:components:inputs/redpanda.adoc[`redpanda` input] instead.',
-        }),
+        component('postgres_cdc', 'input', { summary: 'Stream Postgres changes' }),
+        component('pg_stream', 'input', { status: ComponentStatus.DEPRECATED }),
       ],
     });
 
-    await user.type(screen.getByPlaceholderText('Search components…'), 'legacy_consumer');
+    await user.type(screen.getByPlaceholderText('Search components…'), 'pg_stream');
 
     const hint = await screen.findByTestId('palette-deprecated-hint');
-    expect(hint).toHaveTextContent('legacy_consumer is deprecated. Use the redpanda input instead.');
+    expect(hint).toHaveTextContent('pg_stream is deprecated. Use the postgres_cdc input instead.');
     const options = screen.getAllByRole('option');
-    expect(options[0]).toHaveTextContent(REDPANDA_OPTION);
-    expect(screen.queryByRole('option', { name: LEGACY_OPTION })).not.toBeInTheDocument();
+    expect(options[0]).toHaveTextContent(POSTGRES_CDC_OPTION);
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
   });
 
   it('commits the highlighted component and records it under Recent', async () => {

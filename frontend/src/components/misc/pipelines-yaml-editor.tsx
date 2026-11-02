@@ -91,9 +91,8 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
-// Once the live catalog loads: its docs on the YAML schema, and markers on deprecated components.
-// Returns the mount callback that attaches the markers.
-function useComponentCatalog(yaml: MonacoYaml | undefined) {
+// The live component catalog, applied to the YAML schema's docs once both have loaded.
+function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
   const { data: componentResponse } = useListComponentsQuery();
   const componentList = componentResponse?.components;
   const components = useMemo(() => (componentList ? parseSchema(componentList) : undefined), [componentList]);
@@ -112,15 +111,18 @@ function useComponentCatalog(yaml: MonacoYaml | undefined) {
     [yaml, components]
   );
 
-  return useDeprecationMarkers(components);
+  return components;
 }
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
-  const { options: givenOptions, beforeMount, onMount, ...rest } = props;
+  const { options: givenOptions, beforeMount, onMount, onChange, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const monacoTheme = useMonacoTheme();
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
-  const attachDeprecationMarkers = useComponentCatalog(yaml);
+  // Callers pass `value` or only `defaultValue`, so track what's typed for the latter.
+  const [typedText, setTypedText] = useState<string>();
+  const components = useDocumentedCatalog(yaml);
+  const deprecations = useDeprecationMarkers(rest.value ?? typedText ?? rest.defaultValue ?? '', components);
 
   useEffect(() => {
     return () => {
@@ -154,8 +156,12 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
           setMonacoOptions(monaco);
           beforeMount?.(monaco);
         }}
+        onChange={(value, event) => {
+          setTypedText(value ?? '');
+          onChange?.(value, event);
+        }}
         onMount={(instance, monaco) => {
-          attachDeprecationMarkers(instance, monaco);
+          deprecations.attach(instance, monaco);
           onMount?.(instance, monaco);
         }}
         theme={monacoTheme.theme}

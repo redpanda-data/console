@@ -225,8 +225,8 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
-  /** Set when the node's component is deprecated: the warning, shown as the badge's tooltip. */
-  deprecation?: string;
+  /** Warnings for deprecated components in this node's config, shown as the badge's tooltip. */
+  deprecations?: string[];
   /** Config differs from the last-saved pipeline — flagged with an info-toned "unsaved" dot. */
   unsaved?: boolean;
   // Injected by the canvas (edit mode only).
@@ -415,10 +415,10 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </ElementTooltip>
   ) : null;
 
-// A warning-toned badge on a node whose component is deprecated; the warning is its tooltip.
-const DeprecatedBadge = ({ message }: { message?: string }) =>
-  message ? (
-    <ElementTooltip content={message}>
+// A warning-toned badge on a node that uses a deprecated component; the warnings are its tooltip.
+const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
+  messages?.length ? (
+    <ElementTooltip content={<span className="whitespace-pre-line">{messages.join('\n')}</span>}>
       <span className="inline-flex shrink-0 items-center gap-1 rounded border border-warning/50 bg-warning-wash px-1.5 py-0.5 text-2xs font-medium text-warning">
         <TriangleAlert className="size-3" />
         Deprecated
@@ -474,7 +474,7 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
           {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
-          <DeprecatedBadge message={data.deprecation} />
+          <DeprecatedBadge messages={data.deprecations} />
           <UnsavedDot show={data.unsaved} />
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
@@ -711,7 +711,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
-          <DeprecatedBadge message={data.deprecation} />
+          <DeprecatedBadge messages={data.deprecations} />
           <UnsavedDot show={data.unsaved} />
         </div>
         {/* "Add case / Add input" footer row. Edit mode only. */}
