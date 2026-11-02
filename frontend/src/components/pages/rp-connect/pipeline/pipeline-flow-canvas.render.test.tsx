@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterAll, beforeAll, describe, expect, it, rs } from '@rstest/core';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
-import { render, screen } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
@@ -121,6 +121,52 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
   it('renders an enabled "Add output" button in edit mode', async () => {
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={rs.fn()} />);
     expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
+  });
+});
+
+// Reports each element once, as a real observer does for a node whose size never changes again.
+class MeasureOnceResizeObserver {
+  private readonly seen = new WeakSet<Element>();
+  constructor(private readonly callback: ResizeObserverCallback) {}
+  observe(target: Element) {
+    if (!this.seen.has(target)) {
+      this.seen.add(target);
+      const size = [{ inlineSize: 200, blockSize: 80 }];
+      const entry = { target, contentRect: target.getBoundingClientRect(), borderBoxSize: size, contentBoxSize: size };
+      queueMicrotask(() => this.callback([entry as unknown as ResizeObserverEntry], this as unknown as ResizeObserver));
+    }
+  }
+  unobserve() {}
+  disconnect() {}
+}
+
+describe('the PipelineFlowCanvas — measured nodes', () => {
+  const restoreSizes: (() => void)[] = [];
+  beforeEach(() => {
+    rs.stubGlobal('ResizeObserver', MeasureOnceResizeObserver);
+    for (const [prop, size] of [
+      ['offsetWidth', 200],
+      ['offsetHeight', 80],
+    ] as const) {
+      const spy = rs.spyOn(HTMLElement.prototype, prop, 'get').mockReturnValue(size);
+      restoreSizes.push(() => spy.mockRestore());
+    }
+  });
+  afterEach(() => {
+    for (const restore of restoreSizes.splice(0)) {
+      restore();
+    }
+    rs.stubGlobal('ResizeObserver', ResizeObserverMock);
+  });
+
+  it('keeps its edges when a re-render rebuilds the node objects', async () => {
+    const { container, rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
+    await waitFor(() => expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1));
+
+    // Selection re-decorates every node into a new object; no new measurement follows.
+    rerender(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} selectedNodeId="input-0" />);
+    await waitFor(() => expect(container.querySelector('.ring-primary')).not.toBeNull());
+    expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1);
   });
 });
 
