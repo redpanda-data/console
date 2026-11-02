@@ -62,6 +62,7 @@ import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-co
 import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
+  type FeatureFlagKey,
   getAllFlagKeys,
   getEffectiveFlags,
   getOverrides as getFlagOverrides,
@@ -73,6 +74,7 @@ import {
   setVisualDebugger,
   VISUAL_DEBUGGERS,
 } from './visual-debuggers';
+import { isEmbedded } from '../../config';
 import { useHotKey } from '../../hooks/use-hot-key';
 import env, { IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
@@ -615,10 +617,12 @@ function EnvironmentPanel() {
 function FlagToggle({
   id,
   checked,
+  disabled = false,
   onCheckedChange,
 }: {
   id: string;
   checked: boolean;
+  disabled?: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
@@ -630,13 +634,21 @@ function FlagToggle({
           : 'border-border bg-background text-muted-foreground'
       )}
     >
-      <Switch checked={checked} id={id} onCheckedChange={onCheckedChange} />
-      <Label className="cursor-pointer" htmlFor={id}>
+      <Switch checked={checked} disabled={disabled} id={id} onCheckedChange={onCheckedChange} />
+      <Label className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'} htmlFor={id}>
         {checked ? 'On' : 'Off'}
       </Label>
     </div>
   );
 }
+
+/**
+ * Flags the embedding host decides while Console is embedded, so Console's override cannot change anything
+ * there. Dark mode: the host owns the root theme and the theme switcher, and Console follows it.
+ */
+const HOST_OWNED_FLAGS: Partial<Record<FeatureFlagKey, { hostFlag: string; reason: string }>> = {
+  enableDarkMode: { hostFlag: 'enable-dark-mode', reason: "Embedded Console follows Cloud UI's theme." },
+};
 
 function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
   const [filter, setFilter] = useState('');
@@ -655,6 +667,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
 
   const hasAnyOverride = Object.keys(overrides).length > 0;
   const enabledCount = allKeys.filter((key) => effective[key]).length;
+  const embedded = isEmbedded();
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -690,6 +703,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
             const isOverridden = key in overrides;
             const defaultValue = FEATURE_FLAGS[key];
             const effectiveValue = effective[key];
+            const hostOwned = embedded ? HOST_OWNED_FLAGS[key] : undefined;
             return (
               <Item className="flex-col items-stretch" key={key} size="xs" variant="outline">
                 {/* h-5 matches the badge so the row doesn't grow when it appears */}
@@ -717,6 +731,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                 <div className="flex items-center gap-1.5">
                   <FlagToggle
                     checked={effectiveValue}
+                    disabled={hostOwned !== undefined}
                     id={`flag-toggle-${key}`}
                     onCheckedChange={(checked) => {
                       setFlagOverride(key, checked);
@@ -743,6 +758,12 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
                     default {defaultValue ? 'on' : 'off'}
                   </span>
                 </div>
+                {hostOwned ? (
+                  <p className="text-body-sm text-muted-foreground" data-testid={`flag-host-owned-${key}`}>
+                    {hostOwned.reason} Override <InlineCode>{hostOwned.hostFlag}</InlineCode> in Cloud UI's debug
+                    dialog.
+                  </p>
+                ) : null}
               </Item>
             );
           })}
