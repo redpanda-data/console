@@ -1369,7 +1369,7 @@ const SchemaSections = ({
 
 // Edits normally apply on field blur; this is the visible pending state plus a manual trigger
 // (and ⌘⏎) for applying without moving focus.
-const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
+export const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
   <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-muted/40 px-4 py-2">
     <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
       <span aria-hidden className="size-1.5 rounded-full bg-informative" />
@@ -1383,7 +1383,7 @@ const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
   </div>
 );
 
-const isCommitShortcut = (e: React.KeyboardEvent) => (e.metaKey || e.ctrlKey) && e.key === 'Enter';
+export const isCommitShortcut = (e: React.KeyboardEvent) => (e.metaKey || e.ctrlKey) && e.key === 'Enter';
 
 export function NodeConfigForm(props: NodeConfigFormProps) {
   const { spec, componentName, value, headerSlot, childItems, onSelectChild, onCommitField, fieldErrors } = props;

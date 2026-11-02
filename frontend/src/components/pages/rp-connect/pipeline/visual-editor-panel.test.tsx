@@ -274,6 +274,36 @@ describe('the VisualEditorPanel', () => {
     });
   });
 
+  // `generate` has no spec in these tests, so its inspector is the raw-YAML editor (as for `mapping`).
+  describe('the raw-YAML inspector', () => {
+    test('shows the unsaved-edits bar once edited, and Apply commits without leaving the node', async () => {
+      const user = userEvent.setup();
+      const { onYamlChange } = renderPanel();
+      await openNodeInspector(user, 'select-input');
+      expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+
+      await retype(user, screen.getByTestId('node-yaml'), 'generate:\n  mapping: root = 1');
+      await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+      expect(onYamlChange).toHaveBeenCalledTimes(1);
+      expect(onYamlChange.mock.calls[0][0]).toContain('root = 1');
+    });
+
+    test('commits on ⌘⏎ and when focus leaves the editor', async () => {
+      const user = userEvent.setup();
+      const { onYamlChange } = renderPanel();
+      await openNodeInspector(user, 'select-input');
+
+      await retype(user, screen.getByTestId('node-yaml'), 'generate:\n  mapping: root = 1');
+      await user.keyboard('{Meta>}{Enter}{/Meta}');
+      expect(onYamlChange.mock.calls.at(-1)?.[0]).toContain('root = 1');
+
+      await retype(user, screen.getByTestId('node-yaml'), 'generate:\n  mapping: root = 2');
+      await user.click(document.body);
+      expect(onYamlChange.mock.calls.at(-1)?.[0]).toContain('root = 2');
+    });
+  });
+
   describe('selecting, removing and inserting nodes', () => {
     test('passes the pipeline YAML to the canvas', () => {
       renderPanel();

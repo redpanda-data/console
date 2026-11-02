@@ -47,7 +47,14 @@ import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
-import { ChildItemsList, formFieldKeys, type InspectorChildItem, NodeConfigForm } from './node-config-form';
+import {
+  ChildItemsList,
+  formFieldKeys,
+  type InspectorChildItem,
+  isCommitShortcut,
+  NodeConfigForm,
+  PendingEditsBar,
+} from './node-config-form';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
@@ -590,6 +597,7 @@ const InspectorBody = ({
       <RawComponentEditor
         component={component}
         key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
       />
     </>
@@ -989,26 +997,60 @@ function parseComponentDraft(draft: string): ComponentDraft {
 const RawComponentEditor = ({
   component,
   onConfigChange,
+  onCommitField,
 }: {
   component: Record<string, unknown>;
   onConfigChange?: (next: Record<string, unknown> | null) => void;
+  onCommitField?: () => boolean;
 }) => {
   // No prop→state resync: the sole call site keys this editor on the component value, so a
   // changed `component` always remounts a fresh instance (same contract as NodeConfigForm).
   const initial = useMemo(() => yamlStringify(component), [component]);
   const [draft, setDraft] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-
   // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
   // error reports nothing, so invalid YAML is never committed.
+  const { config, error } = useMemo(
+    () => (draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft)),
+    [draft, initial]
+  );
   useEffect(() => {
-    const result = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
-    setError(result.error);
-    onConfigChange?.(result.config);
-  }, [draft, initial, onConfigChange]);
+    onConfigChange?.(config);
+  }, [config, onConfigChange]);
+
+  // Like the schema form: a real change applies on Apply, ⌘⏎, or focus leaving the editor.
+  const pending = config !== null && yamlStringify(config) !== initial;
+  const commitNow = () => {
+    if (pending) {
+      onCommitField?.();
+    }
+  };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    // biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the editor.
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      onBlur={
+        onCommitField
+          ? (e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                commitNow();
+              }
+            }
+          : undefined
+      }
+      // Capture phase, or Monaco takes ⌘⏎ as "insert line below" first.
+      onKeyDownCapture={
+        onCommitField
+          ? (e) => {
+              if (isCommitShortcut(e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                commitNow();
+              }
+            }
+          : undefined
+      }
+    >
       {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
@@ -1021,6 +1063,7 @@ const RawComponentEditor = ({
         </div>
         {error ? <div className="shrink-0 text-body-sm text-destructive">{error}</div> : null}
       </div>
+      {onCommitField && pending ? <PendingEditsBar onApply={commitNow} /> : null}
     </div>
   );
 };
