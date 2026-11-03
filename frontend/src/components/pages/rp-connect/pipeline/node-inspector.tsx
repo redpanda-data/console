@@ -994,6 +994,39 @@ function parseComponentDraft(draft: string): ComponentDraft {
   return { config: parsed as Record<string, unknown>, error: null };
 }
 
+// Whether a draft holds the component `yaml` does, formatting and comments aside.
+function draftMatches(draft: string, yaml: string): boolean {
+  if (draft === yaml) {
+    return true;
+  }
+  const { config } = parseComponentDraft(draft);
+  return config !== null && yamlStringify(config) === yaml;
+}
+
+// The raw editor's text, and the pending config it parses to (null when clean).
+function useComponentDraft(component: Record<string, unknown>) {
+  const initial = useMemo(() => yamlStringify(component), [component]);
+  const [draft, setDraft] = useState(initial);
+  // The node's YAML changed under the editor (this draft committed, or an edit elsewhere): a draft
+  // matching the old YAML follows it, an edited one is kept. Adjusted in render, so no render pairs
+  // the old draft with the new YAML; in place, so focus, caret and scroll survive a commit.
+  const [baseline, setBaseline] = useState(initial);
+  if (baseline !== initial) {
+    setBaseline(initial);
+    if (draftMatches(draft, baseline)) {
+      setDraft(initial);
+    }
+  }
+
+  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
+  // invalid YAML is never committed and a whitespace or comment edit isn't reformatted into the YAML.
+  const { config, error } = useMemo(() => {
+    const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
+    return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;
+  }, [draft, initial]);
+  return { draft, setDraft, config, error };
+}
+
 // Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
@@ -1004,22 +1037,7 @@ const RawComponentEditor = ({
   onConfigChange?: (next: Record<string, unknown> | null) => void;
   onCommitField?: () => boolean;
 }) => {
-  const initial = useMemo(() => yamlStringify(component), [component]);
-  const [draft, setDraft] = useState(initial);
-  // The node's YAML changed under the editor (this draft committed, or an edit elsewhere): a clean
-  // draft follows it, an edited one is kept. In place, so focus, caret and scroll survive a commit.
-  const baselineRef = useRef(initial);
-  useEffect(() => {
-    setDraft((current) => (current === baselineRef.current ? initial : current));
-    baselineRef.current = initial;
-  }, [initial]);
-
-  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
-  // invalid YAML is never committed and a whitespace or comment edit isn't reformatted into the YAML.
-  const { config, error } = useMemo(() => {
-    const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
-    return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;
-  }, [draft, initial]);
+  const { draft, setDraft, config, error } = useComponentDraft(component);
   useEffect(() => {
     onConfigChange?.(config);
   }, [config, onConfigChange]);

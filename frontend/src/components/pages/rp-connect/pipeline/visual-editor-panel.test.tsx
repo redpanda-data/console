@@ -152,7 +152,16 @@ type User = ReturnType<typeof userEvent.setup>;
 const CACHE_YAML = 'cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n';
 
 // Stateful host so a committed edit or an insert flows back into the panel (re-keying the form).
-function StatefulPanel({ initialYaml, children }: { initialYaml: string; children?: ReactNode }) {
+// `externalYaml` adds a button that replaces the YAML from outside the panel.
+function StatefulPanel({
+  initialYaml,
+  externalYaml,
+  children,
+}: {
+  initialYaml: string;
+  externalYaml?: string;
+  children?: ReactNode;
+}) {
   const [yaml, setYaml] = useState(initialYaml);
   return (
     <PipelineEditorProvider>
@@ -163,6 +172,11 @@ function StatefulPanel({ initialYaml, children }: { initialYaml: string; childre
         onYamlChange={setYaml}
         yamlContent={yaml}
       />
+      {externalYaml === undefined ? null : (
+        <button onClick={() => setYaml(externalYaml)} type="button">
+          external-edit
+        </button>
+      )}
       {children}
     </PipelineEditorProvider>
   );
@@ -277,8 +291,8 @@ describe('the VisualEditorPanel', () => {
   // `generate` has no spec in these tests, so its inspector is the raw-YAML editor (as for `mapping`).
   // StatefulPanel so each commit flows back: the editor must survive it, not remount.
   describe('the raw-YAML inspector', () => {
-    async function editRawYaml(user: User, yaml: string) {
-      render(<StatefulPanel initialYaml={sampleYaml} />);
+    async function editRawYaml(user: User, yaml: string, panel = <StatefulPanel initialYaml={sampleYaml} />) {
+      render(panel);
       await openNodeInspector(user, 'select-input');
       const editor = screen.getByTestId('node-yaml');
       await retype(user, editor, yaml);
@@ -310,6 +324,30 @@ describe('the VisualEditorPanel', () => {
       await user.click(document.body);
 
       expectCanvasYaml('root = 2');
+    });
+
+    // Commits a draft whose comment doesn't survive, so the kept draft no longer matches the node's
+    // YAML verbatim; `external-edit` then sets the input's mapping to `root = 3`.
+    async function commitCommentedDraft(user: User) {
+      const panel = (
+        <StatefulPanel externalYaml={sampleYaml.replace("'root = {}'", 'root = 3')} initialYaml={sampleYaml} />
+      );
+      const editor = (await editRawYaml(user, 'generate:\n  mapping: root = 1 # note', panel)) as HTMLTextAreaElement;
+      await user.keyboard('{Meta>}{Enter}{/Meta}');
+      expectCanvasYaml('root = 1');
+      return editor;
+    }
+
+    test('follows an outside edit after committing a draft that differs only in formatting', async () => {
+      const user = userEvent.setup();
+      const editor = await commitCommentedDraft(user);
+
+      await user.click(screen.getByRole('button', { name: 'external-edit' }));
+      expect(editor.value).toContain('root = 3');
+      expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'deselect' }));
+      expectCanvasYaml('root = 3', 'root = 1');
     });
   });
 
