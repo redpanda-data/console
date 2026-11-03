@@ -1366,6 +1366,7 @@ function InspectorRail({
               components={components}
               deprecations={overview.deprecationsByNode.get(selected.id)}
               lintHints={overview.lintByNode.get(selected.id)}
+              nodeId={selected.id}
               onAddTopic={isEditing ? onAddTopic : undefined}
               onApply={onYamlChange}
               onClose={() => selectNode(null)}

@@ -81,8 +81,9 @@ import {
   targetComponentType,
 } from '../utils/yaml';
 
-// Which node the inspector shows. An input is addressed by its slot, so a stop condition keeps its form.
-const nodeIdentity = (target: EditTarget): string => JSON.stringify(editTargetPath(target));
+// Which node the inspector shows: its canvas id, which a stop condition wrapping it or its broker doesn't
+// change, else its path.
+const nodeIdentity = (target: EditTarget, nodeId?: string): string => nodeId ?? JSON.stringify(editTargetPath(target));
 
 // Default component per kind for the dangling-reference quick-fix.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
@@ -100,6 +101,8 @@ const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
 
 type NodeInspectorProps = {
   target: EditTarget | null;
+  /** The selected canvas node's id. */
+  nodeId?: string;
   /** For a switch-case entry node: the case's routing-condition target, shown at the top of the panel. */
   caseTarget?: EditTarget | null;
   /** Canonical pipeline YAML — read from and written back to. */
@@ -171,7 +174,10 @@ function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?
   }
 }
 
-type InspectorDraftsArgs = Pick<NodeInspectorProps, 'target' | 'caseTarget' | 'commitRef' | 'onRequestCommit'> & {
+type InspectorDraftsArgs = Pick<
+  NodeInspectorProps,
+  'target' | 'nodeId' | 'caseTarget' | 'commitRef' | 'onRequestCommit'
+> & {
   component?: Record<string, unknown>;
 };
 
@@ -214,11 +220,10 @@ function flushComponentDraft(
 
 // Clear pending drafts when the selected node changes — the inspector instance is reused.
 function useClearDraftsOnNodeChange(
-  target: EditTarget | null | undefined,
-  caseTarget: EditTarget | null | undefined,
+  { target, nodeId, caseTarget }: Pick<InspectorDraftsArgs, 'target' | 'nodeId' | 'caseTarget'>,
   draftRefs: DraftRef[]
 ) {
-  const targetIdentity = target ? nodeIdentity(target) : '';
+  const targetIdentity = target ? nodeIdentity(target, nodeId) : '';
   const caseIdentity = caseTarget ? JSON.stringify(editTargetPath(caseTarget)) : '';
   // biome-ignore lint/correctness/useExhaustiveDependencies: the identities are change triggers; the body only resets refs.
   useEffect(() => {
@@ -230,7 +235,14 @@ function useClearDraftsOnNodeChange(
 
 // Pending edits from the active editors (null when clean), registered into the panel's `commitRef`
 // so it can flush them on node-leave / save, and flushed per field through `commitField`.
-function useInspectorDrafts({ target, caseTarget, component, commitRef, onRequestCommit }: InspectorDraftsArgs) {
+function useInspectorDrafts({
+  target,
+  nodeId,
+  caseTarget,
+  component,
+  commitRef,
+  onRequestCommit,
+}: InspectorDraftsArgs) {
   // Refs, not state, so per-keystroke reporting doesn't re-render. `component` applies at
   // `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
@@ -273,7 +285,7 @@ function useInspectorDrafts({ target, caseTarget, component, commitRef, onReques
       commitRef.current = null;
     };
   }, [commit, commitRef]);
-  useClearDraftsOnNodeChange(target, caseTarget, [componentDraftRef, conditionDraftRef]);
+  useClearDraftsOnNodeChange({ target, nodeId, caseTarget }, [componentDraftRef, conditionDraftRef]);
 
   // Flush the draft immediately (field blur / Apply); reports whether the write landed — the
   // panel's flush consumes the draft on success, so a surviving draft means it failed.
@@ -528,6 +540,7 @@ function ComponentInspector(props: ComponentInspectorProps) {
         componentName={componentName}
         conditionSection={conditionSection}
         fieldErrors={lintMapping.byField}
+        identity={nodeIdentity(target, props.nodeId)}
         onCommitField={readOnly || !props.onRequestCommit ? undefined : drafts.commitField}
         onCreateResource={props.onCreateResource}
         onCreateTopic={createTopicHandler(componentName, topLevelSection(target), readOnly, props.onAddTopic)}
@@ -546,6 +559,8 @@ function ComponentInspector(props: ComponentInspectorProps) {
 
 type InspectorBodyProps = {
   conditionSection: ReactNode;
+  /** Re-keys the editors on selection change. */
+  identity: string;
   component: Record<string, unknown>;
   componentName: string;
   useForm: boolean;
@@ -566,6 +581,7 @@ type InspectorBodyProps = {
 // Case-condition section (if any) plus the most specific of: schema form, read-only view, child list, raw YAML.
 const InspectorBody = ({
   conditionSection,
+  identity,
   component,
   componentName,
   useForm,
@@ -601,7 +617,7 @@ const InspectorBody = ({
         // sibling with identical config can't inherit dirty state); the token remounts on undo/redo,
         // dropping stale edit state. Same-node saved-value changes (field-blur commits, Topic/User
         // dialogs) re-sync IN PLACE inside the form, so focus and scroll survive a commit.
-        key={`${nodeIdentity(target)}:${resetToken ?? 0}`}
+        key={`${identity}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
         onCreateResource={onCreateResource}
@@ -632,7 +648,7 @@ const InspectorBody = ({
       <RawComponentEditor
         component={component}
         // Same keying as NodeConfigForm: remount on node identity or undo/redo, re-sync in place otherwise.
-        key={`${nodeIdentity(target)}:${resetToken ?? 0}`}
+        key={`${identity}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
       />
