@@ -393,11 +393,12 @@ function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
   return zDown ? (alt ? 'out' : 'in') : null;
 }
 
-// Typing, or anything inside a popup (e.g. a stop-condition editor's radios), keeps its own keys.
+// Typing, or anything inside our popovers (e.g. a stop-condition editor's radios), keeps its own keys.
+// Not any role="dialog": a host shell's dialog around the canvas would match.
 const isTypingTarget = (target: EventTarget | null): boolean =>
   Boolean(
     (target as HTMLElement | null)?.closest(
-      'input, textarea, [contenteditable="true"], [role="dialog"], .monaco-editor'
+      'input, textarea, [contenteditable="true"], [data-slot="popover-content"], .monaco-editor'
     )
   );
 

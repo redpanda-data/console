@@ -400,4 +400,28 @@ output:
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
+
+  // The zoom tool paints its cursor on React Flow's pane while Z is held.
+  const paneCursor = () => document.querySelector<HTMLElement>('.react-flow__pane')?.style.cursor;
+
+  it('leaves Z to the stop editor', async () => {
+    const user = userEvent.setup();
+    renderEditableCanvas();
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    screen.getByRole('radio', { name: 'When it goes idle' }).focus();
+    await user.keyboard('{z>}');
+    expect(paneCursor()).toBe('');
+  });
+
+  it('still zooms on Z inside a dialog that hosts the canvas', async () => {
+    const user = userEvent.setup();
+    render(
+      <div role="dialog">
+        <PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />
+      </div>
+    );
+    (await screen.findByRole('button', { name: STOP_BUTTON_RE })).focus();
+    await user.keyboard('{z>}');
+    expect(paneCursor()).toBe('zoom-in');
+  });
 });
