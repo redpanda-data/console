@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+package redpanda.api.dataplane.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "redpanda/api/auth/v1/authorization.proto";
+
+// ClusterFenceService controls the cluster fence. A fence rejects new
+// writes and some cluster changes, and can also reject fetches.
+service ClusterFenceService {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Cluster Fence"
+    description: "Fence a cluster to reject new writes, some cluster changes and, optionally, fetches."
+  };
+
+  // Fences the cluster with the saved settings. Brokers abort open
+  // transactions in scope after they apply the fence, instead of waiting for
+  // them to time out. Does nothing if the cluster is already fencing or fenced.
+  // To fence with other settings, save them with `UpdateClusterFenceSettings`
+  // first. Poll `GetClusterFenceStatus` until it reports
+  // `CLUSTER_FENCE_STATE_FENCED`.
+  rpc Fence(FenceRequest) returns (FenceResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster-fence/fence"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Fence the cluster"
+      description: "Fence the cluster with the saved cluster fence settings."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.FenceResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Saves the settings that `Fence` uses. They always exist and start at their
+  // defaults, so you can save them before the first `Fence`. If the cluster is
+  // fencing or fenced, a change puts it in `CLUSTER_FENCE_STATE_FENCING` until
+  // every broker has the new settings. Returns the fence after the change.
+  rpc UpdateClusterFenceSettings(UpdateClusterFenceSettingsRequest) returns (UpdateClusterFenceSettingsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/cluster-fence/settings"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update cluster fence settings"
+      description: "Update the settings that the next fence uses. A change also applies to a fence that is in place."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UpdateClusterFenceSettingsResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Releases the fence. Does nothing if the cluster is already unfencing or
+  // unfenced. The saved settings stay for the next `Fence`. Poll
+  // `GetClusterFenceStatus` until it reports `CLUSTER_FENCE_STATE_UNFENCED`.
+  rpc Unfence(UnfenceRequest) returns (UnfenceResponse) {
+    option (google.api.http) = {
+      post: "/v1/cluster-fence/unfence"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Unfence the cluster"
+      description: "Release the cluster fence. The saved settings stay for the next fence."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.UnfenceResponse"}}
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "A precondition failed, such as a stale expected_revision"
+          schema: {json_schema: {ref: ".google.rpc.Status"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_ADMIN
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Reports the cluster fence as the controller leader has it, and each
+  // broker's copy. Poll until the expected state appears.
+  rpc GetClusterFenceStatus(GetClusterFenceStatusRequest) returns (GetClusterFenceStatusResponse) {
+    option (google.api.http) = {get: "/v1/cluster-fence"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get cluster fence status"
+      description: "Get the cluster fence as the controller leader has it, and each broker's copy."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetClusterFenceStatusResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+
+  // Reports one broker's copy of the cluster fence. Answers even while the
+  // controller has no leader.
+  rpc GetClusterFenceBrokerStatus(GetClusterFenceBrokerStatusRequest) returns (GetClusterFenceBrokerStatusResponse) {
+    option (google.api.http) = {get: "/v1/cluster-fence/broker-status"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get cluster fence broker status"
+      description: "Get one broker's copy of the cluster fence. Works while the controller has no leader."
+      responses: {
+        key: "200"
+        value: {
+          description: "OK"
+          schema: {json_schema: {ref: ".redpanda.api.dataplane.v1.GetClusterFenceBrokerStatusResponse"}}
+        }
+      }
+    };
+    option (redpanda.api.auth.v1.authorization) = {
+      required_permission: PERMISSION_VIEW
+      api: API_REDPANDA_ADMIN
+    };
+  }
+}
+
+// Resources selected for the cluster fence.
+message ClusterFenceScope {
+  // Selects every resource the fence supports. Currently covers user topics,
+  // consumer groups, Schema Registry, ACLs, and Roles.
+  message AllResources {}
+
+  // If unset, the fence covers all resources.
+  oneof selection {
+    // Fence every supported resource.
+    AllResources all_resources = 1;
+  }
+}
+
+// How the fence treats fetches from user topics in its scope.
+message ClusterFenceReadPolicy {
+  // Users who can still fetch while the fence blocks reads, such as your
+  // shadow link's user. An empty name matches clients without SASL or mTLS.
+  // An empty list blocks every consumer.
+  repeated string exempt_principals = 1;
+
+  // Lets every consumer keep fetching, so `exempt_principals` has no effect.
+  // Defaults to false.
+  bool allow_all_reads = 2;
+}
+
+// The state of the cluster fence.
+enum ClusterFenceState {
+  CLUSTER_FENCE_STATE_UNSPECIFIED = 0;
+
+  // No fence is requested, and any `Unfence` has completed.
+  CLUSTER_FENCE_STATE_UNFENCED = 1;
+
+  // Some brokers have not yet confirmed the latest change. Every broker
+  // counts, including brokers that are down.
+  CLUSTER_FENCE_STATE_FENCING = 2;
+
+  // Every broker enforces the latest change and will keep enforcing it after
+  // a restart. Writes accepted before the fence may still finish, transactions
+  // may remain open, and partition offsets may still advance.
+  CLUSTER_FENCE_STATE_FENCED = 3;
+
+  // `Unfence` was requested, and some brokers have not yet confirmed that they
+  // stopped enforcing the fence.
+  CLUSTER_FENCE_STATE_UNFENCING = 4;
+}
+
+// The cluster fence as one broker has installed it.
+message ClusterFence {
+  // Where the fence is in its lifecycle.
+  ClusterFenceState state = 1;
+
+  // Changes with each `Fence`, `Unfence`, or `UpdateClusterFenceSettings` that
+  // changes something. Requests that change nothing, and completion, do not
+  // change it. `-1` until the first change.
+  int64 revision = 2;
+
+  // When `state` last changed, by the clock of the broker that recorded the
+  // change. Absent if the cluster has never been fenced or unfenced.
+  optional google.protobuf.Timestamp state_changed_at = 3;
+
+  // The saved settings, which `UpdateClusterFenceSettings` changes and `Fence`
+  // uses. `Unfence` keeps them. Reported in every state.
+  ClusterFenceSettings settings = 4;
+}
+
+// Settings that decide what a fence covers and how it behaves.
+message ClusterFenceSettings {
+  // Resources the fence covers. If unset, the fence covers all resources.
+  ClusterFenceScope scope = 1;
+
+  // How the fence treats fetches from user topics in its scope. If unset,
+  // the fence blocks every consumer.
+  ClusterFenceReadPolicy read_policy = 2;
+}
+
+// One broker's copy of the cluster fence.
+message ClusterFenceBrokerStatus {
+  // The broker's node ID.
+  int32 node_id = 1;
+
+  // The fence as this broker has installed it. Absent if the broker did not
+  // answer.
+  optional ClusterFence fence = 2;
+
+  // Why the broker did not answer. Set only when `fence` is absent.
+  optional string error_message = 3;
+}
+
+// `FenceRequest` is the request for the `Fence` RPC.
+message FenceRequest {
+  // If set, the request fails unless the fence is still at this revision. Use
+  // the `revision` from `GetClusterFenceStatus` or an earlier response.
+  optional int64 expected_revision = 1;
+}
+
+// `FenceResponse` is the response from the `Fence` RPC.
+message FenceResponse {
+  // The fence on the controller leader right after the request applied. It
+  // can already include a later change from another caller.
+  ClusterFence fence = 1;
+}
+
+// `UpdateClusterFenceSettingsRequest` is the request for the
+// `UpdateClusterFenceSettings` RPC.
+message UpdateClusterFenceSettingsRequest {
+  // The values to save. Only the fields that `update_mask` names are read,
+  // or every field when `update_mask` is empty.
+  ClusterFenceSettings settings = 1;
+
+  // The settings to change. Settings it doesn't name keep their saved values.
+  // Naming `read_policy` replaces the whole read policy, and naming
+  // `read_policy.exempt_principals` adds names to the list. If empty, every
+  // setting is replaced.
+  google.protobuf.FieldMask update_mask = 2;
+
+  // If set, the request fails unless the fence is still at this revision. Use
+  // the `revision` from `GetClusterFenceStatus` or an earlier response. Set it
+  // to fail if the fence changed since you read it.
+  optional int64 expected_revision = 3;
+}
+
+// `UpdateClusterFenceSettingsResponse` is the response from the
+// `UpdateClusterFenceSettings` RPC.
+message UpdateClusterFenceSettingsResponse {
+  // The fence on the controller leader right after the update applied. It
+  // can already include a later change from another caller.
+  ClusterFence fence = 1;
+}
+
+// `UnfenceRequest` is the request for the `Unfence` RPC.
+message UnfenceRequest {
+  // If set, the request fails unless the fence is still at this revision. Use
+  // the `revision` from `GetClusterFenceStatus` or an earlier response.
+  optional int64 expected_revision = 1;
+}
+
+// `UnfenceResponse` is the response from the `Unfence` RPC.
+message UnfenceResponse {
+  // The fence on the controller leader right after the request applied. It
+  // can already include a later change from another caller.
+  ClusterFence fence = 1;
+}
+
+// `GetClusterFenceStatusRequest` is the request for the
+// `GetClusterFenceStatus` RPC.
+message GetClusterFenceStatusRequest {}
+
+// `GetClusterFenceStatusResponse` is the response from the
+// `GetClusterFenceStatus` RPC.
+message GetClusterFenceStatusResponse {
+  // The fence as the controller leader has installed it.
+  ClusterFence fence = 1;
+
+  // Each cluster member's copy of the fence, in node ID order. Brokers that
+  // are down are listed too.
+  repeated ClusterFenceBrokerStatus brokers = 2;
+}
+
+// `GetClusterFenceBrokerStatusRequest` is the request for the
+// `GetClusterFenceBrokerStatus` RPC.
+message GetClusterFenceBrokerStatusRequest {
+  // The node ID of the broker to report on. If unset, the broker handling
+  // the request reports on itself.
+  optional int32 node_id = 1;
+}
+
+// `GetClusterFenceBrokerStatusResponse` is the response from the
+// `GetClusterFenceBrokerStatus` RPC.
+message GetClusterFenceBrokerStatusResponse {
+  // The broker's copy of the fence.
+  ClusterFenceBrokerStatus broker = 1;
+}
