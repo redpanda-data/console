@@ -78,6 +78,7 @@ describe('the PipelineProblemsPanel', () => {
     expect(chip.className).toContain('text-destructive');
 
     await user.click(chip);
+    expect(screen.getByText('Problems')).toBeInTheDocument();
     expect(screen.getByTestId('pipeline-problems-deprecations')).toHaveTextContent(
       'Deprecated componentskafka_franz is deprecated. Use the redpanda input instead.'
     );

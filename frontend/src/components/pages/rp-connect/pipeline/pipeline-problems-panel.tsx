@@ -201,8 +201,8 @@ export function PipelineProblemsPanel({
             />
           ) : null}
 
-          {hasLint && hasSecrets ? (
-            <div className="mt-1 border-t border-border/60 pt-1">
+          {hasLint && (hasSecrets || hasDeprecations) ? (
+            <div className={hasSecrets ? 'mt-1 border-t border-border/60 pt-1' : undefined}>
               <SectionLabel>Problems</SectionLabel>
             </div>
           ) : null}
