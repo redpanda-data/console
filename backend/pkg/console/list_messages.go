@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"math"
 	"runtime/debug"
+	"slices"
 	"sync"
 	"time"
 
@@ -831,6 +832,10 @@ func (*Service) calculateReadRanges(
 	return nextToken, anyPartitionHasMore
 }
 
+func consumeClientOpts(cl *kgo.Client, partitionOffsets map[string]map[int32]kgo.Offset) []kgo.Opt {
+	return slices.Concat(cl.Opts(), []kgo.Opt{kgo.ConsumePartitions(partitionOffsets)})
+}
+
 // FetchMessages is in charge of fulfilling the topic consume request. This is tricky
 // in many cases, often due to the fact that we can't consume backwards, but we offer
 // users to consume the most recent messages.
@@ -843,7 +848,7 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
 	}
 
-	opts := append(cl.Opts(), kgo.ConsumePartitions(partitionOffsets))
+	opts := consumeClientOpts(cl, partitionOffsets)
 	client, err := kgo.NewClient(opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create new kafka client: %w", err)
