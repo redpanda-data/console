@@ -596,7 +596,8 @@ const InspectorBody = ({
       {conditionSection}
       <RawComponentEditor
         component={component}
-        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        // Same keying as NodeConfigForm: remount on node identity or undo/redo, re-sync in place otherwise.
+        key={`${JSON.stringify(editTargetPath(target))}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
       />
@@ -1003,22 +1004,28 @@ const RawComponentEditor = ({
   onConfigChange?: (next: Record<string, unknown> | null) => void;
   onCommitField?: () => boolean;
 }) => {
-  // No prop→state resync: the sole call site keys this editor on the component value, so a
-  // changed `component` always remounts a fresh instance (same contract as NodeConfigForm).
   const initial = useMemo(() => yamlStringify(component), [component]);
   const [draft, setDraft] = useState(initial);
-  // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
-  // error reports nothing, so invalid YAML is never committed.
-  const { config, error } = useMemo(
-    () => (draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft)),
-    [draft, initial]
-  );
+  // The node's YAML changed under the editor (this draft committed, or an edit elsewhere): a clean
+  // draft follows it, an edited one is kept. In place, so focus, caret and scroll survive a commit.
+  const baselineRef = useRef(initial);
+  useEffect(() => {
+    setDraft((current) => (current === baselineRef.current ? initial : current));
+    baselineRef.current = initial;
+  }, [initial]);
+
+  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
+  // invalid YAML is never committed and a whitespace or comment edit isn't reformatted into the YAML.
+  const { config, error } = useMemo(() => {
+    const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
+    return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;
+  }, [draft, initial]);
   useEffect(() => {
     onConfigChange?.(config);
   }, [config, onConfigChange]);
 
-  // Like the schema form: a real change applies on Apply, ⌘⏎, or focus leaving the editor.
-  const pending = config !== null && yamlStringify(config) !== initial;
+  // Like the schema form: a pending edit applies on Apply, ⌘⏎, or focus leaving the editor.
+  const pending = config !== null;
   const commitNow = () => {
     if (pending) {
       onCommitField?.();
@@ -1029,27 +1036,20 @@ const RawComponentEditor = ({
     // biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the editor.
     <div
       className="flex min-h-0 flex-1 flex-col"
-      onBlur={
-        onCommitField
-          ? (e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                commitNow();
-              }
-            }
-          : undefined
-      }
-      // Capture phase, or Monaco takes ⌘⏎ as "insert line below" first.
-      onKeyDownCapture={
-        onCommitField
-          ? (e) => {
-              if (isCommitShortcut(e)) {
-                e.preventDefault();
-                e.stopPropagation();
-                commitNow();
-              }
-            }
-          : undefined
-      }
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          commitNow();
+        }
+      }}
+      // Capture phase, or Monaco takes ⌘⏎ as "insert line below" first (which it still does when
+      // nothing is pending).
+      onKeyDownCapture={(e) => {
+        if (pending && onCommitField && isCommitShortcut(e)) {
+          e.preventDefault();
+          e.stopPropagation();
+          commitNow();
+        }
+      }}
     >
       {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">

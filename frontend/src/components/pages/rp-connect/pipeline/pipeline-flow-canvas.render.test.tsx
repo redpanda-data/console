@@ -124,7 +124,8 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
   });
 });
 
-// Reports each element once, as a real observer does for a node whose size never changes again.
+// Reports each element only once, so nothing re-measures a node after a rebuild: its handle bounds
+// have to survive on their own.
 class MeasureOnceResizeObserver {
   private readonly seen = new WeakSet<Element>();
   constructor(private readonly callback: ResizeObserverCallback) {}
