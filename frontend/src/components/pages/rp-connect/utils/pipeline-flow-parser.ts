@@ -13,7 +13,7 @@ import { type Document, type LineCounter, parseDocument } from 'yaml';
 
 import { classifyInputSlot, type InputEndBehavior } from './input-end-behavior';
 import { type NodeMetaEntry, summarizeComponent, truncate } from './pipeline-flow-meta';
-import { stopSlotLock } from './read-until';
+import { stopSlotLock, unwrapLock } from './read-until';
 import {
   type EditTarget,
   firstKey,
@@ -103,6 +103,8 @@ export type StopSlot = {
   ownEnd: InputEndBehavior;
   /** Why the condition can only be read here, not edited: a `read_until` with no input yet. */
   locked?: string;
+  /** Why its `read_until` can only be removed in the YAML, though its settings can change here. */
+  unwrapLock?: string;
 };
 
 /** Whether a node (or a canvas card's data) is an input that takes a stop condition: it has a slot and a known end. */
@@ -1215,9 +1217,14 @@ const emptyConfigNodes = (): PipelineFlowNode[] => [
 // Lock the stop conditions the YAML can't take a rewrite of (an aliased or merged input, say).
 function lockStopSlots(nodes: PipelineFlowNode[], doc: Document): void {
   for (const node of nodes) {
-    const locked = node.stopSlot && !node.stopSlot.locked ? stopSlotLock(doc, node.stopSlot.path) : undefined;
-    if (node.stopSlot && locked) {
-      node.stopSlot = { ...node.stopSlot, locked };
+    const slot = node.stopSlot;
+    if (!slot || slot.locked) {
+      continue;
+    }
+    const locked = stopSlotLock(doc, slot.path);
+    const unwrap = locked || !slot.condition ? undefined : unwrapLock(doc, slot.path);
+    if (locked || unwrap) {
+      node.stopSlot = { ...slot, ...(locked ? { locked } : { unwrapLock: unwrap }) };
     }
   }
 }

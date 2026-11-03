@@ -30,6 +30,7 @@ import {
   stopRowText,
   stopShortLabel,
   stopSlotLock,
+  unwrapLock,
 } from './read-until';
 import { readStopCondition, unwrapReadUntil } from './yaml';
 import { describe, expect, test } from 'bun:test';
@@ -548,6 +549,47 @@ output:
   test('refuses to wrap again a read_until a merge key brings in', () => {
     const merged = 'x: &ru\n  read_until:\n    check: counter() >= 5\n    input: { generate: {} }\ninput:\n  <<: *ru\n';
     expect(setStopCondition(merged, ['input'], { check: 'counter() >= 10' })).toBeNull();
+  });
+});
+
+describe('unwrapLock', () => {
+  const lockOf = (yaml: string) => unwrapLock(parseDocument(yaml), ['input']);
+
+  test('a wrapper its input can take the place of is removable, labels and processors included', () => {
+    expect(
+      lockOf('input:\n  read_until:\n    idle_timeout: 5s\n    input: { kafka: {}, label: a }\n  label: b\n')
+    ).toBeUndefined();
+    expect(
+      lockOf(
+        'input:\n  read_until:\n    idle_timeout: 5s\n    input: { kafka: {}, processors: [{ log: {} }] }\n  processors: [{ log: {} }]\n'
+      )
+    ).toBeUndefined();
+  });
+
+  test.each([
+    [
+      'a merge key beside it',
+      'b: &b { label: x }\ninput:\n  <<: *b\n  read_until:\n    idle_timeout: 5s\n    input: { kafka: {} }\n',
+      'merge key',
+    ],
+    [
+      'a merge key in its input',
+      'c: &c { kafka: {} }\ninput:\n  read_until:\n    idle_timeout: 5s\n    input: { <<: *c }\n',
+      'merge key',
+    ],
+    [
+      'an anchor on both',
+      'input: &outer\n  read_until:\n    idle_timeout: 5s\n    input: &inner { kafka: {} }\n',
+      'anchor',
+    ],
+    [
+      'a key both set',
+      'input:\n  read_until:\n    idle_timeout: 5s\n    input: { kafka: {}, foo: inner }\n  foo: outer\n',
+      'same keys',
+    ],
+  ])('%s keeps it in the YAML, where setStopCondition refuses to remove it', (_, yaml, reason) => {
+    expect(lockOf(yaml)).toContain(reason);
+    expect(setStopCondition(yaml, ['input'], null)).toBeNull();
   });
 });
 

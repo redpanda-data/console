@@ -152,6 +152,23 @@ describe('the StopConditionEditor', () => {
     expect(limit).toHaveFocus();
   });
 
+  test('a wrapper only the YAML can remove offers no Keep running', () => {
+    renderEditor({
+      effective: { kind: 'condition', reason: 'Stops after 1 minute without new messages.' },
+      slot: {
+        ...openSlot,
+        condition: { idleTimeout: '1m' },
+        unwrapLock: 'Remove its `read_until` in the YAML: a merge key could change what the moved keys mean.',
+      },
+    });
+    const keepRunning = screen.getByRole('radio', { name: 'Keep running' });
+    expect(keepRunning).toHaveAttribute('aria-disabled', 'true');
+    expect(keepRunning).toHaveAccessibleDescription(
+      'Remove its read_until in the YAML: a merge key could change what the moved keys mean.'
+    );
+    expect(screen.getByRole('textbox', { name: 'Idle timeout' })).toHaveValue('1m');
+  });
+
   test('choosing to keep running clears the condition', async () => {
     const { user, onApply } = renderEditor({
       effective: { kind: 'condition', reason: 'Stops after 1 minute without new messages.' },

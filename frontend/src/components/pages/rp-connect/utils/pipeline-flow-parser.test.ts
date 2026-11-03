@@ -1934,6 +1934,13 @@ input:
     expect(input?.stopSlot?.locked).toBeUndefined();
   });
 
+  it('keeps a wrapper its input can’t take the place of editable, but not removable', () => {
+    const yaml = 'c: &c { kafka: {} }\ninput:\n  read_until:\n    idle_timeout: 5s\n    input: { <<: *c }\n';
+    const slot = parsePipelineFlowTree(yaml).nodes.find((n) => n.id === 'input-0')?.stopSlot;
+    expect(slot?.locked).toBeUndefined();
+    expect(slot?.unwrapLock).toContain('merge key');
+  });
+
   it('locks the stop condition of an input the YAML reaches through an alias or merge key', () => {
     const yaml = `
 k: &k { kafka: {} }

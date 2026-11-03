@@ -139,23 +139,32 @@ const ModeOption = ({
   selected,
   title,
   description,
+  disabled = false,
   children,
 }: {
   value: StopMode;
   selected: boolean;
   title: string;
   description?: ReactNode;
+  disabled?: boolean;
   children?: ReactNode;
 }) => {
   const id = useId();
   return (
-    <div className={cn('rounded-md px-2.5 py-2 transition-colors', selected ? 'bg-muted/70' : 'hover:bg-muted/40')}>
-      <Label className="cursor-pointer items-start" htmlFor={id}>
+    <div
+      className={cn(
+        'rounded-md px-2.5 py-2 transition-colors',
+        selected && 'bg-muted/70',
+        !(selected || disabled) && 'hover:bg-muted/40'
+      )}
+    >
+      <Label className={cn('items-start', disabled ? 'cursor-not-allowed' : 'cursor-pointer')} htmlFor={id}>
         {/* mr-0.5 widens the label's gap to line the text up with the fields below. */}
         <RadioGroupItem
           aria-describedby={description ? `${id}-description` : undefined}
           aria-label={title}
           className="mt-0.5 mr-0.5"
+          disabled={disabled}
           id={id}
           value={value}
         />
@@ -413,7 +422,8 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                     {/* Sets the options' padding and spacing; the group's own gap acts on this one child. */}
                     <div className="grid gap-0.5 p-1.5">
                       <ModeOption
-                        description={<RichText text={none.description} />}
+                        description={<RichText text={slot.unwrapLock ?? none.description} />}
+                        disabled={slot.unwrapLock !== undefined}
                         selected={mode === 'none'}
                         title={none.title}
                         value="none"

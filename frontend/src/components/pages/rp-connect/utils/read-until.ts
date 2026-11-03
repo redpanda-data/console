@@ -493,13 +493,42 @@ function placeChildPair(slot: YAMLMap, pair: Pair, outerKeys: Set<unknown>): 'mo
   return key === 'processors' && prependProcessors(slot.get('processors', true), pair.value) ? 'done' : 'clash';
 }
 
-// Prepend the child's processors to the slot's; false when either isn't a list or is anchored.
+// Both are lists, and neither is anchored.
+const processorsMerge = (outer: unknown, inner: unknown): boolean =>
+  isSeq(outer) && isSeq(inner) && !(outer.anchor || inner.anchor);
+
+// Prepend the child's processors to the slot's; false when they can't merge.
 function prependProcessors(outer: unknown, inner: unknown): boolean {
-  if (!(isSeq(outer) && isSeq(inner)) || outer.anchor || inner.anchor) {
+  if (!(isSeq(outer) && isSeq(inner) && processorsMerge(outer, inner))) {
     return false;
   }
   outer.items.unshift(...inner.items);
   return true;
+}
+
+const UNWRAP_MERGED = 'Remove its `read_until` in the YAML: a merge key could change what the moved keys mean.';
+const UNWRAP_ANCHORS = 'Remove its `read_until` in the YAML: it and its input each carry an anchor.';
+const UNWRAP_CLASH = 'Remove its `read_until` in the YAML: the wrapper and its input set the same keys.';
+
+// Why the slot's wrapper can't be replaced by its child input's fields (see placeChildPair).
+function unwrapBlocker(slot: YAMLMap, inner: YAMLMap): string | undefined {
+  // A merge key on either side could shadow, or be shadowed by, the keys that move.
+  if ([...slot.items, ...inner.items].some(isMergePair)) {
+    return UNWRAP_MERGED;
+  }
+  if (slot.anchor && inner.anchor) {
+    return UNWRAP_ANCHORS;
+  }
+  const outerKeys = new Set(slot.items.map(pairKey).filter((k) => k !== READ_UNTIL));
+  const clashes = (inner.items as Pair[]).some((pair) => {
+    const key = pairKey(pair);
+    return (
+      outerKeys.has(key) &&
+      key !== 'label' &&
+      !(key === 'processors' && processorsMerge(slot.get('processors', true), pair.value))
+    );
+  });
+  return clashes ? UNWRAP_CLASH : undefined;
 }
 
 // A `read_until` wrapper's child input; without one, a `read_until` is a component of its own.
@@ -548,8 +577,7 @@ function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap
 // Replace the wrapper with its child input's fields, in place; false when they can't merge.
 function unwrapSlot(slot: YAMLMap, wrapperPair: Pair): boolean {
   const inner = wrappedInput(wrapperPair.value);
-  // A merge key on either side could shadow, or be shadowed by, the keys that move.
-  if (!inner || [...slot.items, ...inner.items].some(isMergePair)) {
+  if (!inner || unwrapBlocker(slot, inner)) {
     return false;
   }
   const moved = childPairsToMove(slot, inner);
@@ -628,6 +656,14 @@ function wrapperLock(doc: Document, wrapper: YAMLMap): string | undefined {
   if (isScalar(restart) && typeof restart.value === 'string' && isEnvRef(restart.value)) {
     return `Its \`restart_input\` is set from \`${restart.value.trim()}\`. Change its stop condition in the YAML.`;
   }
+}
+
+/** Why the `read_until` on the input slot at `slotPath` can only be removed in the YAML; undefined when it can. */
+export function unwrapLock(doc: Document, slotPath: (string | number)[]): string | undefined {
+  const slot = doc.getIn(slotPath, true);
+  const wrapperPair = isMap(slot) ? findPair(slot, READ_UNTIL) : undefined;
+  const inner = wrappedInput(wrapperPair?.value);
+  return isMap(slot) && inner ? unwrapBlocker(slot, inner) : undefined;
 }
 
 // Apply `stop` to the slot in place: false when it can't be done safely, 'unchanged' for a no-op.
