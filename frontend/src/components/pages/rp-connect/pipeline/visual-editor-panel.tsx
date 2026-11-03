@@ -584,7 +584,7 @@ function nodeProblems(
     for (const hint of hints) {
       mapped.add(hint);
       list.push({
-        key: `${nodeId}-${hint.line}-${hint.hint}`,
+        key: `${nodeId}-${hint.line}:${hint.column}-${hint.hint}`,
         message: hint.hint,
         line: hint.line || undefined,
         nodeId,
@@ -609,7 +609,11 @@ function buildProblems(
   const { list, mapped } = nodeProblems(lintByNode, flowNodes);
   const unmapped = all
     .filter((hint) => !mapped.has(hint))
-    .map((hint) => ({ key: `unmapped-${hint.line}-${hint.hint}`, message: hint.hint, line: hint.line || undefined }));
+    .map((hint) => ({
+      key: `unmapped-${hint.line}:${hint.column}-${hint.hint}`,
+      message: hint.hint,
+      line: hint.line || undefined,
+    }));
   return [...list, ...unmapped];
 }
 
