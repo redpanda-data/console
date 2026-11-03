@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
 import { functionalUpdate } from '@tanstack/react-table';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -183,6 +183,7 @@ const reportSearchUpdateFailure = (error: unknown) => {
 // pending, `location` is already the next page's.
 const usePipelineListSearch = () => {
   const navigate = useNavigate();
+  const router = useRouter();
   const rawSearch = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).search }) as Record<
     string,
     unknown
@@ -190,6 +191,11 @@ const usePipelineListSearch = () => {
   const search = useMemo(() => readPipelineListSearch(rawSearch), [rawSearch]);
   const update = useCallback(
     (patch: SearchPatch, { keepPage = false }: { keepPage?: boolean } = {}) => {
+      // `to: '.'` resolves against a pending location, so a write while leaving would land on the next page.
+      const { location, resolvedLocation } = router.state;
+      if (resolvedLocation && location.pathname !== resolvedLocation.pathname) {
+        return;
+      }
       const full = keepPage ? patch : { ...patch, page: undefined };
       const next = nextPipelineListSearch(rawSearch, full);
       if (JSON.stringify(next) !== JSON.stringify(nextPipelineListSearch(rawSearch, {}))) {
@@ -201,7 +207,7 @@ const usePipelineListSearch = () => {
         }).catch(reportSearchUpdateFailure);
       }
     },
-    [navigate, rawSearch]
+    [navigate, rawSearch, router]
   );
   return { search, update };
 };
