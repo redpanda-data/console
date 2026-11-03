@@ -28,6 +28,7 @@ func (c *Serde) SetDefaults() {
 	c.MaxDeserializationPayloadSize = DefaultMaxDeserializationPayloadSize
 	c.Protobuf.SetDefaults()
 	c.MessagePack.SetDefaults()
+	c.Cbor.SetDefaults()
 }
 
 // RegisterFlags registers all nested config flags.

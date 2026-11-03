@@ -24,4 +24,7 @@ func (*Cbor) Validate() error {
 }
 
 // SetDefaults for the cbor configuration.
-func (*Cbor) SetDefaults() {}
+func (c *Cbor) SetDefaults() {
+	// UnmarshalText never fails, it falls back to a literal for non-regex input.
+	_ = c.TopicName.UnmarshalText([]byte("/.*/"))
+}
