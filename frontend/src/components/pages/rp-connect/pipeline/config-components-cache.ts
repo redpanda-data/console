@@ -9,20 +9,48 @@
  * by the Apache License, Version 2.0
  */
 
-import { parseConfigComponents } from '../utils/yaml';
+import { parse as parseYaml } from 'yaml';
 
-const configComponentsCache = new Map<string, ReturnType<typeof parseConfigComponents>>();
+import { type PipelineEndStatus, summarizePipelineEnd } from '../utils/input-end-behavior';
+import { configComponentsOf, type ParsedConfigComponents, type ParsedYamlConfig } from '../utils/yaml';
+
+/** What the list shows from a config: its component names, and whether it stops on its own. */
+export type ConfigListFacts = ParsedConfigComponents & { end: PipelineEndStatus };
+
+const NO_FACTS: ConfigListFacts = { inputs: [], processors: [], outputs: [], end: 'none' };
+
+const orElse = <T>(read: () => T, fallback: T): T => {
+  try {
+    return read();
+  } catch {
+    return fallback;
+  }
+};
+
+// One parse serves both, and each fails on its own.
+function readConfigFacts(configYaml: string): ConfigListFacts {
+  const config = configYaml
+    ? orElse(() => parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null, undefined)
+    : undefined;
+  if (config === undefined) {
+    return NO_FACTS;
+  }
+  const end = orElse((): PipelineEndStatus => summarizePipelineEnd(config).status, 'none');
+  return { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
+}
+
+const configComponentsCache = new Map<string, ConfigListFacts>();
 const CONFIG_COMPONENTS_CACHE_LIMIT = 10_000;
 
 /**
- * Cached {@link parseConfigComponents}, keyed by the config text: a full YAML parse, and the list's
+ * Cached {@link readConfigFacts}, keyed by the config text: a full YAML parse, and the list's
  * row transform re-runs over every row on each drain step and poll tick.
  *
  * The Map is never cleared, so the steady-state cost is the retained YAML of up to 10k pipelines —
  * the keys, not the parsed values. Past that ceiling the oldest half is evicted and re-parses on the
  * next poll, so a cluster steadily above 10k pays the parse this avoids.
  */
-export function parseConfigComponentsCached(configYaml: string): ReturnType<typeof parseConfigComponents> {
+export function parseConfigComponentsCached(configYaml: string): ConfigListFacts {
   const cached = configComponentsCache.get(configYaml);
   if (cached) {
     return cached;
@@ -30,7 +58,7 @@ export function parseConfigComponentsCached(configYaml: string): ReturnType<type
   if (configComponentsCache.size >= CONFIG_COMPONENTS_CACHE_LIMIT) {
     evictOldestHalf();
   }
-  const parsed = parseConfigComponents(configYaml);
+  const parsed = readConfigFacts(configYaml);
   configComponentsCache.set(configYaml, parsed);
   return parsed;
 }
