@@ -1052,6 +1052,7 @@ const RawComponentEditor = ({
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the editor.
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the editor.
     <div
       className="flex min-h-0 flex-1 flex-col"
       onBlur={(e) => {
