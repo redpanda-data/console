@@ -204,7 +204,7 @@ const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; descriptio
     tag: 'stops',
     label: 'Stop conditions',
     chip: 'Stops',
-    description: 'Whether a pipeline ends on its own: input stop rows and the Runs column.',
+    description: 'Whether a pipeline ends on its own: input stop rows, the Runs column, the schedule preview.',
   },
   { tag: 'invalid', label: 'Invalid', chip: 'Invalid', description: 'Configs the editor or Connect should reject.' },
 ];
@@ -342,7 +342,7 @@ function RunHistoryPanel() {
         </div>
         <span className="text-body-sm text-muted-foreground">
           {fromPage ? 'From the pipeline you’re viewing. ' : null}
-          History shows on the Monitor tab of a pipeline that stops on its own.
+          History shows on the Monitor tab of a pipeline that stops on its own, or has a schedule.
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">

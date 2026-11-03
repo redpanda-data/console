@@ -12,8 +12,8 @@
 import { config } from 'config';
 import type { z } from 'zod';
 
-// A browser-local preview store keeps one JSON map in localStorage, keyed by pipeline. Reads and writes go
-// through here, so they behave the same when storage can't be used.
+// The browser-local preview stores (schedules, run history) each keep one JSON map in localStorage, keyed
+// by pipeline. Reads and writes go through here, so they all behave the same when storage can't be used.
 
 /** A pipeline's key in a preview map: its cluster, then its id. */
 export const pipelinePreviewKey = (pipelineId: string): string => `${config.clusterId || 'default'}/${pipelineId}`;

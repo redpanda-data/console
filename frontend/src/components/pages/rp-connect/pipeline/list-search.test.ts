@@ -21,9 +21,9 @@ import { describe, expect, test } from 'bun:test';
 
 describe('the list search params', () => {
   test('keep only the list keys that parse', () => {
-    expect(readPipelineListSearch({ tab: 'running', q: 'orders', page: 2, runs: ['finite'], defaultTab: 'x' })).toEqual(
-      { tab: 'running', q: 'orders', page: 2, runs: ['finite'] }
-    );
+    expect(
+      readPipelineListSearch({ tab: 'running', q: 'orders', page: 2, schedule: ['active'], defaultTab: 'x' })
+    ).toEqual({ tab: 'running', q: 'orders', page: 2, schedule: ['active'] });
     expect(readPipelineListSearch({ tab: 'nope', page: -1, sort: 'tags', input: 'redpanda' })).toEqual({});
     expect(readPipelineListSearch(undefined)).toEqual({});
   });
@@ -44,14 +44,14 @@ describe('the list search params', () => {
       facetSearchFromFilters([
         { id: 'state', value: ['1'] },
         { id: 'tags', value: ['env:prod'] },
-        { id: 'end', value: [] },
+        { id: 'schedule', value: [] },
       ])
-    ).toEqual({ input: undefined, output: undefined, tag: ['env:prod'], runs: undefined });
+    ).toEqual({ input: undefined, output: undefined, tag: ['env:prod'], runs: undefined, schedule: undefined });
   });
 
   test('hold a sort only when it isn’t the default', () => {
     expect(sortingFromSearch({})).toEqual([{ id: 'state', desc: false }]);
-    expect(sortingFromSearch({ sort: 'name' })).toEqual([{ id: 'name', desc: false }]);
+    expect(sortingFromSearch({ sort: 'schedule' })).toEqual([{ id: 'schedule', desc: false }]);
     expect(sortSearchFromSorting([{ id: 'state', desc: false }])).toEqual({ sort: undefined, desc: undefined });
     expect(sortSearchFromSorting([{ id: 'name', desc: true }])).toEqual({ sort: 'name', desc: true });
     expect(sortSearchFromSorting([])).toEqual({ sort: undefined, desc: undefined });

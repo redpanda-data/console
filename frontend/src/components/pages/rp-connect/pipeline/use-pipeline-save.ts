@@ -42,6 +42,7 @@ import {
 import { toast } from 'sonner';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -655,6 +656,7 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
+          useSchedulePreviewStore.getState().removeSchedule(id);
           useRunHistoryStore.getState().replaceRuns(id, []);
           toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
           onBeforeGuardedNavigate?.();

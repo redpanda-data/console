@@ -63,6 +63,7 @@ import * as React from 'react';
 import { toast } from 'sonner';
 import { rpcnEditorAutosave, useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { scheduleOf, useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
 import {
@@ -73,6 +74,7 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
+import { defaultSchedule } from '../utils/pipeline-schedule';
 
 const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
 rs.mock('../utils/use-pipeline-mode', () => ({
@@ -2530,7 +2532,8 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     // They live in this browser only, so nothing else would clear them.
-    it('drops a deleted draft’s runs', async () => {
+    it('drops a deleted draft’s schedule and runs', async () => {
+      useSchedulePreviewStore.getState().saveSchedule('test-pipeline', defaultSchedule('UTC'));
       useRunHistoryStore.getState().startManualRun('test-pipeline', { now: Date.UTC(2026, 0, 15, 12) });
       const { user } = renderPipelinePage('edit', { getPipelineMock: rs.fn().mockReturnValue(draftPipeline()) });
 
@@ -2538,6 +2541,7 @@ describe('pipelinePage saving and recovering work', () => {
       await user.click(await screen.findByTestId('confirm-delete-draft'));
 
       await waitFor(() => expect(runsOf(useRunHistoryStore.getState().runs, 'test-pipeline')).toEqual([]));
+      expect(scheduleOf(useSchedulePreviewStore.getState().schedules, 'test-pipeline')).toBeUndefined();
     });
 
     // Deleting is a departure the user has already confirmed, so a second dialog would offer to save
