@@ -33,6 +33,7 @@ import {
 import { type Pipeline_State, Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useState } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
@@ -86,25 +87,35 @@ const CANCEL_START_COPY = {
 type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
 
 // Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
-function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
+function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, recordsRuns: boolean) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
+  const startManualRun = useRunHistoryStore((s) => s.startManualRun);
+  const requestStop = useRunHistoryStore((s) => s.requestStop);
   const [isStopConfirmOpen, setIsStopConfirmOpen] = useState(false);
 
   const handleStart = useCallback(() => {
+    // A run starts when it's asked for, so the page's data from before then can't end it.
+    const startedAt = Date.now();
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
-      onSuccess: () => showToast({ status: 'success', title: 'Pipeline starting' }),
+      onSuccess: () => {
+        if (recordsRuns) {
+          startManualRun(pipelineId, { now: startedAt });
+        }
+        showToast({ status: 'success', title: 'Pipeline starting' });
+      },
       onError: (err) =>
         showToast({
           status: 'error',
           title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' }),
         }),
     });
-  }, [pipelineId, startMutation]);
+  }, [pipelineId, startMutation, recordsRuns, startManualRun]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
+        requestStop(pipelineId);
         showToast({ status: 'success', title: isCancellingStart ? 'Canceling pipeline start' : 'Pipeline stopping' });
         setIsStopConfirmOpen(false);
       },
@@ -116,7 +127,7 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
         setIsStopConfirmOpen(false);
       },
     });
-  }, [pipelineId, stopMutation, isCancellingStart]);
+  }, [pipelineId, stopMutation, isCancellingStart, requestStop]);
 
   return { handleStart, isStartPending, performStop, isStopPending, isStopConfirmOpen, setIsStopConfirmOpen };
 }
@@ -174,13 +185,16 @@ function PipelineStopControl({
 export function PipelineRunButton({
   pipelineId,
   pipelineState,
+  recordsRuns = false,
 }: {
   pipelineId: string;
   pipelineState?: Pipeline_State;
+  /** Starting it records a run: it stops on its own. */
+  recordsRuns?: boolean;
 }) {
   const action = runActionForState(pipelineState);
   const isCancellingStart = action === 'cancel-start';
-  const run = usePipelineRunActions(pipelineId, isCancellingStart);
+  const run = usePipelineRunActions(pipelineId, isCancellingStart, recordsRuns);
 
   if (action === null) {
     return null;

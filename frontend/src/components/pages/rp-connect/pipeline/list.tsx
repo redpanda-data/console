@@ -71,7 +71,12 @@ import {
   pipelineListEmptyText,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
+import { useRunsObserver } from './use-run-observer';
 import { TabKafkaConnect } from '../../connect/overview';
+
+// How often the list checks on a run this browser started; slower than a pipeline's page, as it refetches
+// every page.
+const RUN_WATCH_INTERVAL_MS = 10_000;
 
 // Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
 // flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
@@ -113,15 +118,39 @@ const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boo
     : `Couldn't refresh pipelines: ${error.message}`;
 };
 
+// The listed pipelines' query and rows. It polls while a pipeline starts or stops, and while a listed
+// pipeline has a run this browser started, until the list sees that run end or an hour passes.
+const useListedPipelines = () => {
+  // Follows the rows below.
+  const [watchingRun, setWatchingRun] = useState(false);
+  const query = useListPipelinesQuery(LIST_WITH_DRAFTS, {
+    enableSmartPolling: true,
+    steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+    // A hidden tab still sees the run end, within the browser's timer throttling.
+    refetchIntervalInBackground: watchingRun,
+  });
+  const baseRows = useMemo(
+    () =>
+      (query.data?.pipelines || [])
+        .filter(
+          (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
+        )
+        .map(toPipelineRow),
+    [query.data]
+  );
+  // Ends runs this browser started once the list sees their pipelines stop.
+  const listsOpenRun = useRunsObserver(baseRows, query.dataUpdatedAt);
+  if (listsOpenRun !== watchingRun) {
+    setWatchingRun(listsOpenRun);
+  }
+  return { query, baseRows };
+};
+
 const usePipelineListData = () => {
   const {
-    data: pipelinesData,
-    isLoading,
-    error,
-    hasNextPage,
-  } = useListPipelinesQuery(LIST_WITH_DRAFTS, {
-    enableSmartPolling: true,
-  });
+    query: { isLoading, error, hasNextPage },
+    baseRows: pipelines,
+  } = useListedPipelines();
   const invalidatePipelineQueries = useInvalidatePipelineQueries();
   useEffect(() => {
     appGlobal.onRefresh = () => {
@@ -129,15 +158,6 @@ const usePipelineListData = () => {
     };
   }, [invalidatePipelineQueries]);
 
-  const pipelines = useMemo(
-    () =>
-      (pipelinesData?.pipelines || [])
-        .filter(
-          (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
-        )
-        .map(toPipelineRow),
-    [pipelinesData]
-  );
   const draftCount = useMemo(() => pipelines.filter((p) => p.isDraft).length, [pipelines]);
 
   return {

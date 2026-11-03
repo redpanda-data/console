@@ -41,11 +41,13 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
+import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import { startRecordsRun } from '../utils/pipeline-runs';
 
 export type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'];
 
@@ -60,15 +62,24 @@ const toastPipelineError = (action: 'start' | 'stop' | 'delete') => (err: unknow
     title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action, entity: 'pipeline' }),
   });
 
-const startPipeline = (startMutation: StartMutate, id: string) => {
-  startMutation(create(StartPipelineRequestSchema, { request: { id } }))
-    .then(() => showToast({ status: 'success', title: 'Pipeline starting' }))
+const startPipeline = (startMutation: StartMutate, pipeline: PipelineRow) => {
+  const startedAt = Date.now();
+  startMutation(create(StartPipelineRequestSchema, { request: { id: pipeline.id } }))
+    .then(() => {
+      if (startRecordsRun(pipeline.end)) {
+        useRunHistoryStore.getState().startManualRun(pipeline.id, { now: startedAt });
+      }
+      showToast({ status: 'success', title: 'Pipeline starting' });
+    })
     .catch(toastPipelineError('start'));
 };
 
 const stopPipeline = (stopMutation: StopMutate, id: string) => {
   stopMutation(create(StopPipelineRequestSchema, { request: { id } }))
-    .then(() => showToast({ status: 'success', title: 'Pipeline stopping' }))
+    .then(() => {
+      useRunHistoryStore.getState().requestStop(id);
+      showToast({ status: 'success', title: 'Pipeline stopping' });
+    })
     .catch(toastPipelineError('stop'));
 };
 
@@ -76,6 +87,7 @@ const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: bo
   deleteMutation(create(DeletePipelineRequestSchema, { request: { id } }), {
     onSuccess: () => {
       rpcnEditorAutosave.clear(autosaveTargetKey(id));
+      useRunHistoryStore.getState().replaceRuns(id, []);
       showToast({ status: 'success', title: isDraftRow ? 'Draft deleted' : 'Pipeline deleted' });
     },
     onError: toastPipelineError('delete'),
@@ -137,13 +149,13 @@ export const ActionsCell = memo(
               </DropdownMenuItem>
             ) : null}
             {isStarting ? (
-              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Retry start</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline)}>Retry start</DropdownMenuItem>
             ) : null}
             {isStopping ? (
               <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Retry stop</DropdownMenuItem>
             ) : null}
             {canStart ? (
-              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Start</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline)}>Start</DropdownMenuItem>
             ) : null}
             {canStop ? (
               <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Stop</DropdownMenuItem>
