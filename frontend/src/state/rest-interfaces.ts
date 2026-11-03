@@ -166,6 +166,7 @@ export type GetTopicConsumersResponse = {
 export type MessageDataType =
   | 'null'
   | 'avro'
+  | 'avroGlue'
   | 'protobuf'
   | 'protobufSchema'
   | 'protobufBSR'
