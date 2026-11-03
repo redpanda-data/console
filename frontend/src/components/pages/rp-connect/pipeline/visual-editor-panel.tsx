@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { create } from '@bufbuild/protobuf';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import {
   AlertDialog,
@@ -46,6 +47,7 @@ import { usePipelineEditorStore } from './use-pipeline-editor-store';
 import { AddConnectorDialog } from '../onboarding/add-connector-dialog';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { deprecationMessage, findDeprecatedUsages } from '../utils/deprecation';
 import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from '../utils/pipeline-diff';
 import type { FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import { type PipelineFlowNode, parsePipelineFlowTree, shouldOfferTemplate } from '../utils/pipeline-flow-parser';
@@ -582,7 +584,7 @@ function nodeProblems(
     for (const hint of hints) {
       mapped.add(hint);
       list.push({
-        key: `${nodeId}-${hint.line}-${hint.hint}`,
+        key: `${nodeId}-${hint.line}:${hint.column}-${hint.hint}`,
         message: hint.hint,
         line: hint.line || undefined,
         nodeId,
@@ -607,35 +609,55 @@ function buildProblems(
   const { list, mapped } = nodeProblems(lintByNode, flowNodes);
   const unmapped = all
     .filter((hint) => !mapped.has(hint))
-    .map((hint) => ({ key: `unmapped-${hint.line}-${hint.hint}`, message: hint.hint, line: hint.line || undefined }));
+    .map((hint) => ({
+      key: `unmapped-${hint.line}:${hint.column}-${hint.hint}`,
+      message: hint.hint,
+      line: hint.line || undefined,
+    }));
   return [...list, ...unmapped];
+}
+
+// Each node's hint messages, for its canvas badge and inspector.
+function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>): Map<string, string[]> {
+  return new Map([...hintsByNode].map(([id, hints]) => [id, hints.map((h) => h.hint)]));
+}
+
+// Deprecated components in use, as located hints: they map to nodes and problems the way lint does.
+function useDeprecations(yamlContent: string, components: ConnectComponentSpec[], flowNodes: PipelineFlowNode[]) {
+  const hints = useMemo(
+    () =>
+      findDeprecatedUsages(yamlContent, components).map(({ notice, range }) =>
+        create(LintHintSchema, {
+          line: range.startLineNumber,
+          column: range.startColumn,
+          hint: deprecationMessage(notice),
+        })
+      ),
+    [yamlContent, components]
+  );
+  const byNode = useMemo(() => mapLintHintsToNodes(yamlContent, hints), [yamlContent, hints]);
+  const deprecationsByNode = useMemo(() => hintMessagesByNode(byNode), [byNode]);
+  const deprecations = useMemo(() => buildProblems(hints, byNode, flowNodes), [hints, byNode, flowNodes]);
+  return { deprecationsByNode, deprecations };
 }
 
 type FlowOverviewOptions = {
   yamlContent: string;
+  components: ConnectComponentSpec[];
   lintHints?: LintHint[];
   isEditing: boolean;
   selectedId?: string;
 };
 
-// What the canvas overlays show about the document: its nodes, lint, unsaved changes, and the
-// selected node's children for the inspector.
-function useFlowOverview({ yamlContent, lintHints, isEditing, selectedId }: FlowOverviewOptions) {
+// What the canvas overlays show about the document: its nodes, lint, deprecations, unsaved changes,
+// and the selected node's children for the inspector.
+function useFlowOverview({ yamlContent, components, lintHints, isEditing, selectedId }: FlowOverviewOptions) {
   const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
   // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
   const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
-  const lintMessagesByNode = useMemo(() => {
-    const messages = new Map<string, string[]>();
-    for (const [id, hints] of lintByNode) {
-      messages.set(
-        id,
-        hints.map((h) => h.hint)
-      );
-    }
-    return messages;
-  }, [lintByNode]);
+  const lintMessagesByNode = useMemo(() => hintMessagesByNode(lintByNode), [lintByNode]);
   const { unsavedNodeIds, unsavedNodeList } = useUnsavedNodes(yamlContent, isEditing, flowNodes);
 
   const childItems = useMemo<InspectorChildItem[]>(
@@ -646,12 +668,15 @@ function useFlowOverview({ yamlContent, lintHints, isEditing, selectedId }: Flow
     () => buildProblems(lintHints ?? [], lintByNode, flowNodes),
     [lintHints, lintByNode, flowNodes]
   );
+  const { deprecationsByNode, deprecations } = useDeprecations(yamlContent, components, flowNodes);
 
   return {
     flowNodes,
     offerTemplate,
     lintByNode,
     lintMessagesByNode,
+    deprecationsByNode,
+    deprecations,
     unsavedNodeIds,
     unsavedNodeList,
     childItems,
@@ -1081,6 +1106,7 @@ function CanvasStage({
         <>
           <PipelineFlowCanvas
             configYaml={yamlContent}
+            deprecationsByNode={overview.deprecationsByNode}
             flashNodeIds={history.flash.ids}
             flashToken={history.flash.token}
             focusNodeId={focus.id || undefined}
@@ -1100,6 +1126,7 @@ function CanvasStage({
           {isEditing ? <HistoryToolbar history={history} /> : null}
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
             <PipelineProblemsPanel
+              deprecations={overview.deprecations}
               missingSecrets={missingSecrets}
               onAddSecrets={isEditing ? onAddSecrets : undefined}
               onSelectProblem={(id, target, caseTarget) => selectAndReveal({ id, target, caseTarget })}
@@ -1173,6 +1200,7 @@ function InspectorRail({
               childItems={overview.childItems}
               commitRef={isEditing ? commitRef : undefined}
               components={components}
+              deprecations={overview.deprecationsByNode.get(selected.id)}
               lintHints={overview.lintByNode.get(selected.id)}
               onAddTopic={isEditing ? onAddTopic : undefined}
               onApply={onYamlChange}
@@ -1254,7 +1282,13 @@ export function VisualEditorPanel({
   const isEditing = mode !== 'view';
   const selection = useInspectorSelection(yamlContent, onYamlChange);
   const history = useCanvasHistory(yamlContent, onYamlChange, selection.commitRef);
-  const overview = useFlowOverview({ yamlContent, lintHints, isEditing, selectedId: selection.selected?.id });
+  const overview = useFlowOverview({
+    yamlContent,
+    components,
+    lintHints,
+    isEditing,
+    selectedId: selection.selected?.id,
+  });
   const secrets = useMissingSecrets(yamlContent, isEditing, onYamlChange);
   const deletion = usePendingDelete(yamlContent, onYamlChange, selection.dropSelection);
   const insert = useNodeInsert({ yamlContent, components, onYamlChange, selection });

@@ -33,9 +33,9 @@ const COMMON_COMPONENTS = new Set([
   'archive',
 ]);
 
-// Deprecated/experimental components are de-emphasised: sorted below stable ones.
+// Experimental components are de-emphasised: sorted below stable ones. Deprecated ones never reach the palette.
 function isDemoted(status: ComponentStatus): boolean {
-  return status === ComponentStatus.DEPRECATED || status === ComponentStatus.EXPERIMENTAL;
+  return status === ComponentStatus.EXPERIMENTAL;
 }
 
 // Tiebreaker order (after relevance, primary when browsing): stable before demoted, common before long tail, then name.

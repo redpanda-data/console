@@ -7,6 +7,9 @@ import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
 const KAFKA_OPTION = /kafka_franz/;
+const KAFKA_OUTPUT_OPTION = /kafka/;
+const PG_STREAM_OPTION = /pg_stream/;
+const POSTGRES_CDC_OPTION = /postgres_cdc/;
 const GENERATE_OPTION = /generate/;
 const HTTP_CLIENT_OPTION = /http_client/;
 const NO_INPUTS_MATCH = /No inputs match/;
@@ -70,6 +73,77 @@ describe('the ConnectCommandPalette', () => {
 
     expect(await screen.findByText(NO_INPUTS_MATCH)).toBeInTheDocument();
     expect(screen.getByText(EXISTS_AS_CACHE)).toBeInTheDocument();
+  });
+
+  it('leaves deprecated components out of browsing and search', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        ...INPUT_COMPONENTS,
+        component('pg_stream', 'input', { status: ComponentStatus.DEPRECATED, summary: 'Consume from Postgres' }),
+      ],
+    });
+
+    expect(await screen.findByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'consume');
+
+    await waitFor(() => expect(screen.getByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument());
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
+  });
+
+  it('explains an exact-name search for a deprecated component and leads with its replacement', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        ...INPUT_COMPONENTS,
+        component('postgres_cdc', 'input', { summary: 'Stream Postgres changes' }),
+        component('pg_stream', 'input', { status: ComponentStatus.DEPRECATED }),
+      ],
+    });
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'pg_stream');
+
+    const hint = await screen.findByTestId('palette-deprecated-hint');
+    expect(hint).toHaveTextContent('pg_stream is deprecated. Use the postgres_cdc input instead.');
+    const options = screen.getAllByRole('option');
+    expect(options[0]).toHaveTextContent(POSTGRES_CDC_OPTION);
+    expect(screen.queryByRole('option', { name: PG_STREAM_OPTION })).not.toBeInTheDocument();
+  });
+
+  it('gives no deprecation hint when a live component of that name is in scope', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        component('kafka', 'input', { status: ComponentStatus.DEPRECATED }),
+        component('kafka', 'output'),
+        component('redpanda', 'input'),
+      ],
+      allowedTypes: ['input', 'output'],
+    });
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'kafka');
+
+    expect(await screen.findByRole('option', { name: KAFKA_OUTPUT_OPTION })).toBeInTheDocument();
+    expect(screen.queryByTestId('palette-deprecated-hint')).not.toBeInTheDocument();
+  });
+
+  it('keeps the hint when the live component of that name is the replacement', async () => {
+    const user = userEvent.setup();
+    renderPalette({
+      additionalComponents: [
+        component('jira', 'processor', { status: ComponentStatus.DEPRECATED }),
+        component('jira', 'input'),
+      ],
+      allowedTypes: ['input', 'processor'],
+    });
+
+    await user.type(screen.getByPlaceholderText('Search components…'), 'jira');
+
+    expect(await screen.findByTestId('palette-deprecated-hint')).toHaveTextContent(
+      'jira is deprecated. Use the jira input instead.'
+    );
   });
 
   it('commits the highlighted component and records it under Recent', async () => {

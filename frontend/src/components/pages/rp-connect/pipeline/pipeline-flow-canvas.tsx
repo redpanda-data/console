@@ -15,6 +15,7 @@ import {
   Controls,
   type Edge,
   type Node,
+  type NodeChange,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -950,6 +951,8 @@ type CanvasCallbacks = {
   /** Kind of the selected edit target — `'switchCase'` means the condition, not the component. */
   selectedTargetKind?: string;
   lintErrorsByNode?: Map<string, string[]>;
+  /** Deprecation warnings by node id. */
+  deprecationsByNode?: Map<string, string[]>;
   /** Node ids whose config differs from the last-saved pipeline. */
   unsavedNodeIds?: ReadonlySet<string>;
   flashNodeIds?: ReadonlySet<string>;
@@ -998,12 +1001,21 @@ function applyInteractionState(data: FlowCardData, node: Node, cb: CanvasCallbac
   }
 }
 
-// Lint badges, the unsaved dot, and the undo/redo pulse.
-function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+// Lint and deprecation badges.
+function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
   }
+  const deprecations = cb.deprecationsByNode?.get(node.id);
+  if (deprecations?.length) {
+    data.deprecations = deprecations;
+  }
+}
+
+// Issue badges, the unsaved dot, and the undo/redo pulse.
+function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+  applyIssueBadges(data, node, cb);
   // A condition edit is attributed to the non-rendered case-wrapper node — also mark its stand-in entry card.
   if (cb.unsavedNodeIds?.has(node.id) || (data.caseOwnerId && cb.unsavedNodeIds?.has(data.caseOwnerId))) {
     data.unsaved = true;
@@ -1184,6 +1196,8 @@ type PipelineFlowCanvasProps = {
   selectedTargetKind?: string;
   /** Lint messages mapped to node ids — badged in place on the canvas. */
   lintErrorsByNode?: Map<string, string[]>;
+  /** Deprecation warnings mapped to node ids — badged in place on the canvas. */
+  deprecationsByNode?: Map<string, string[]>;
   /** Node ids whose config differs from the last-saved pipeline — flagged with an unsaved dot. */
   unsavedNodeIds?: ReadonlySet<string>;
   /** Node ids to briefly pulse (e.g. after undo/redo), with a token to replay it. */
@@ -1293,6 +1307,29 @@ type DecoratedNodesOptions = Omit<CanvasCallbacks, 'collapsedIds' | 'toggleColla
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
 };
 
+// A new node object without `measured` makes React Flow drop its handle bounds, and edges skip the
+// node until it re-measures, which a node that never resizes may never do. So every rebuilt node
+// carries the size React Flow last measured for it.
+function useMeasuredNodes(nodes: Node[]) {
+  const measuredRef = useRef(new Map<string, NonNullable<Node['measured']>>());
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    for (const change of changes) {
+      if (change.type === 'dimensions' && change.dimensions) {
+        measuredRef.current.set(change.id, change.dimensions);
+      }
+    }
+  }, []);
+  const measuredNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const measured = measuredRef.current.get(node.id);
+        return measured ? { ...node, measured } : node;
+      }),
+    [nodes]
+  );
+  return { measuredNodes, onNodesChange };
+}
+
 // Per-render node decoration (selection, lint, unsaved, collapse, edit actions) over the laid-out
 // nodes, owning the collapse state and which nodes are new since the last commit.
 function useDecoratedNodes({
@@ -1305,6 +1342,7 @@ function useDecoratedNodes({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  deprecationsByNode,
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
@@ -1337,6 +1375,7 @@ function useDecoratedNodes({
       selectedNodeId,
       selectedTargetKind,
       lintErrorsByNode,
+      deprecationsByNode,
       unsavedNodeIds,
       flashNodeIds,
       flashToken,
@@ -1354,6 +1393,7 @@ function useDecoratedNodes({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    deprecationsByNode,
     unsavedNodeIds,
     flashNodeIds,
     flashToken,
@@ -1377,6 +1417,7 @@ export function PipelineFlowCanvas({
   selectedNodeId,
   selectedTargetKind,
   lintErrorsByNode,
+  deprecationsByNode,
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
@@ -1420,10 +1461,12 @@ export function PipelineFlowCanvas({
     selectedNodeId,
     selectedTargetKind,
     lintErrorsByNode,
+    deprecationsByNode,
     unsavedNodeIds,
     flashNodeIds,
     flashToken,
   });
+  const { measuredNodes, onNodesChange } = useMeasuredNodes(rfNodes);
 
   // Hover only restyles edges so node objects stay referentially stable — rebuilding the DOM under
   // the cursor looped mouseleave/mouseenter, flickering the cursor and eating clicks.
@@ -1468,7 +1511,7 @@ export function PipelineFlowCanvas({
           elementsSelectable={false}
           maxZoom={MAX_ZOOM}
           minZoom={minZoom}
-          nodes={rfNodes}
+          nodes={measuredNodes}
           nodesConnectable={false}
           nodesDraggable={false}
           nodesFocusable={false}
@@ -1483,6 +1526,7 @@ export function PipelineFlowCanvas({
           // Only clear when leaving the tracked node: crossing into a nested child fires
           // enter(child) then leave(parent), which must not wipe the child's hover.
           onNodeMouseLeave={(_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))}
+          onNodesChange={onNodesChange}
           onPaneClick={() => onClearSelection?.()}
           panOnDrag={canPanCanvas(zoomMode)}
           panOnScroll={false}

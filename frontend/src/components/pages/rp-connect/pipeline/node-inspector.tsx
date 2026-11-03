@@ -47,7 +47,14 @@ import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
-import { ChildItemsList, formFieldKeys, type InspectorChildItem, NodeConfigForm } from './node-config-form';
+import {
+  ChildItemsList,
+  formFieldKeys,
+  type InspectorChildItem,
+  isCommitShortcut,
+  NodeConfigForm,
+  PendingEditsBar,
+} from './node-config-form';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
@@ -100,6 +107,8 @@ type NodeInspectorProps = {
   readOnly?: boolean;
   /** Lint problems that map to the selected node. */
   lintHints?: LintHint[];
+  /** Warnings for deprecated components in the selected node's config. */
+  deprecations?: string[];
   /** Jump to this node's lines in the YAML lane (footer "View in YAML" action). */
   onOpenInYaml?: () => void;
   /** Close the inspector (deselect). */
@@ -477,6 +486,7 @@ function ComponentInspector(props: ComponentInspectorProps) {
           refLabel={danglingRef.ref}
         />
       ) : null}
+      {props.deprecations?.length ? <DeprecatedComponentBanner messages={props.deprecations} /> : null}
       <InspectorBody
         childItems={props.childItems}
         component={component}
@@ -586,7 +596,9 @@ const InspectorBody = ({
       {conditionSection}
       <RawComponentEditor
         component={component}
-        key={`${JSON.stringify(editTargetPath(target))}:${JSON.stringify(component)}`}
+        // Same keying as NodeConfigForm: remount on node identity or undo/redo, re-sync in place otherwise.
+        key={`${JSON.stringify(editTargetPath(target))}:${resetToken ?? 0}`}
+        onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
       />
     </>
@@ -860,6 +872,15 @@ const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate:
   </InspectorBanner>
 );
 
+// The component still loads and saves; this only steers the user toward the replacement.
+const DeprecatedComponentBanner = ({ messages }: { messages: string[] }) => (
+  <InspectorBanner title="Deprecated component" tone="warning">
+    {[...new Set(messages)].map((message) => (
+      <p key={message}>{message}</p>
+    ))}
+  </InspectorBanner>
+);
+
 const EmptyHint = ({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) => (
   <li className="flex items-center gap-2.5">
     <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -973,30 +994,82 @@ function parseComponentDraft(draft: string): ComponentDraft {
   return { config: parsed as Record<string, unknown>, error: null };
 }
 
+// Whether a draft holds the component `yaml` does, formatting and comments aside.
+function draftMatches(draft: string, yaml: string): boolean {
+  if (draft === yaml) {
+    return true;
+  }
+  const { config } = parseComponentDraft(draft);
+  return config !== null && yamlStringify(config) === yaml;
+}
+
+// The raw editor's text, and the pending config it parses to (null when clean).
+function useComponentDraft(component: Record<string, unknown>) {
+  const initial = useMemo(() => yamlStringify(component), [component]);
+  const [draft, setDraft] = useState(initial);
+  // The node's YAML changed under the editor (this draft committed, or an edit elsewhere): a draft
+  // matching the old YAML follows it, an edited one is kept. Adjusted in render, so no render pairs
+  // the old draft with the new YAML; in place, so focus, caret and scroll survive a commit.
+  const [baseline, setBaseline] = useState(initial);
+  if (baseline !== initial) {
+    setBaseline(initial);
+    if (draftMatches(draft, baseline)) {
+      setDraft(initial);
+    }
+  }
+
+  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
+  // invalid YAML is never committed and a whitespace or comment edit isn't reformatted into the YAML.
+  const { config, error } = useMemo(() => {
+    const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
+    return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;
+  }, [draft, initial]);
+  return { draft, setDraft, config, error };
+}
+
 // Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
   onConfigChange,
+  onCommitField,
 }: {
   component: Record<string, unknown>;
   onConfigChange?: (next: Record<string, unknown> | null) => void;
+  onCommitField?: () => boolean;
 }) => {
-  // No prop→state resync: the sole call site keys this editor on the component value, so a
-  // changed `component` always remounts a fresh instance (same contract as NodeConfigForm).
-  const initial = useMemo(() => yamlStringify(component), [component]);
-  const [draft, setDraft] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-
-  // Parse the draft live: a valid mapping is reported as pending config; a clean draft or parse
-  // error reports nothing, so invalid YAML is never committed.
+  const { draft, setDraft, config, error } = useComponentDraft(component);
   useEffect(() => {
-    const result = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
-    setError(result.error);
-    onConfigChange?.(result.config);
-  }, [draft, initial, onConfigChange]);
+    onConfigChange?.(config);
+  }, [config, onConfigChange]);
+
+  // Like the schema form: a pending edit applies on Apply, ⌘⏎, or focus leaving the editor.
+  const pending = config !== null;
+  const commitNow = () => {
+    if (pending) {
+      onCommitField?.();
+    }
+  };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    // biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the editor.
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the editor.
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          commitNow();
+        }
+      }}
+      // Capture phase, or Monaco takes ⌘⏎ as "insert line below" first (which it still does when
+      // nothing is pending).
+      onKeyDownCapture={(e) => {
+        if (pending && onCommitField && isCommitShortcut(e)) {
+          e.preventDefault();
+          e.stopPropagation();
+          commitNow();
+        }
+      }}
+    >
       {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
@@ -1009,6 +1082,7 @@ const RawComponentEditor = ({
         </div>
         {error ? <div className="shrink-0 text-body-sm text-destructive">{error}</div> : null}
       </div>
+      {onCommitField && pending ? <PendingEditsBar onApply={commitNow} /> : null}
     </div>
   );
 };
