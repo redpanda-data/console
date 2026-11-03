@@ -49,7 +49,6 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetPipelineServiceConfigSchemaQuery } from 'react-query/api/connect';
 import { useGetPipelineQuery, usePipelineSampleQuery } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import {
   type AttachedServiceAccount,
   autosaveTargetKey,
@@ -59,6 +58,7 @@ import {
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -230,11 +230,24 @@ function useDiagramDialogs(
   const topicStepRef = useRef<BaseStepRef<AddTopicFormData>>(null);
   const userStepRef = useRef<UserStepRef>(null);
 
+  // A component that comes from a merge key, or sits inside nested wrappers, can't be rewritten safely.
+  const warnUnpatched = (componentName: string) =>
+    showToast({
+      status: 'warning',
+      title: 'Couldn’t add it to the YAML',
+      description: `Add it to the ${componentName} config by hand.`,
+    });
+
   const topicDialog = useRefFormDialog<AddTopicFormData, DiagramDialogTarget>({
     ref: topicStepRef,
     onSuccess: (data, target) => {
-      if (data.topicName && patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
+      if (!data.topicName) {
+        return;
+      }
+      if (patchComponent(target.section, target.componentName, { topicName: data.topicName })) {
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -248,6 +261,8 @@ function useDiagramDialogs(
           onServiceAccountAttached(serviceAccount);
         }
         focusEditorEnd();
+      } else {
+        warnUnpatched(target.componentName);
       }
     },
   });
@@ -279,7 +294,7 @@ function useDiagramDialogs(
           componentName
         );
         if (parseError) {
-          toast.error('Failed to parse pipeline YAML');
+          showToast({ status: 'error', title: 'Failed to parse pipeline YAML' });
         }
         setConnectorTopics(topics);
         // An input reading as its own user needs the group granted too, so the dialog starts from it.
@@ -1237,7 +1252,7 @@ function useAutosaveRecovery({
       { keepDefaultValues: true }
     );
     setIsAutosaveDismissed(true);
-    toast.success('Your edits were restored — they still need saving');
+    showToast({ status: 'success', title: 'Your edits were restored — they still need saving' });
   }, [recoverableEntry, setYamlContent, setAttachedServiceAccount, form, setIsAutosaveDismissed]);
 
   const handleDiscardAutosave = useCallback(() => {
@@ -1943,7 +1958,10 @@ function UnsavedChangesDialog({
   // Flushed, not debounced: the pending write dies with the page.
   const handleLeaveAndKeepEdits = useCallback(() => {
     if (!flushAutosave()) {
-      toast.error('Your edits could not be kept in this browser. Save them, or discard them to leave.');
+      showToast({
+        status: 'error',
+        title: 'Your edits could not be kept in this browser. Save them, or discard them to leave.',
+      });
       return;
     }
     blocker.proceed?.();
@@ -2170,7 +2188,7 @@ function PipelineConnectorDialogs({ page }: { page: PipelinePageModel }) {
               form.setValue('name', suggestedName, { shouldDirty: true, shouldValidate: true });
             }
             setIsTemplateDialogOpen(false);
-            toast.success('Template applied — review the YAML and click Save to deploy.');
+            showToast({ status: 'success', title: 'Template applied — review the YAML and click Save to deploy.' });
           }}
           open={editorState.isTemplateDialogOpen}
         />

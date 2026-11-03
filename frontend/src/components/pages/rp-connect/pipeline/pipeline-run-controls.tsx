@@ -33,8 +33,7 @@ import {
 import { type Pipeline_State, Pipeline_State as PipelineState } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useCallback, useState } from 'react';
 import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
   // A state a newer server knows and this build does not falls through to the UNSPECIFIED copy.
@@ -94,22 +93,26 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
 
   const handleStart = useCallback(() => {
     startMutation(create(StartPipelineRequestSchema, { request: { id: pipelineId } }), {
-      onSuccess: () => toast.success('Pipeline starting'),
+      onSuccess: () => showToast({ status: 'success', title: 'Pipeline starting' }),
       onError: (err) =>
-        toast.error(
-          formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' })
-        ),
+        showToast({
+          status: 'error',
+          title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' }),
+        }),
     });
   }, [pipelineId, startMutation]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
       onSuccess: () => {
-        toast.success(isCancellingStart ? 'Canceling pipeline start' : 'Pipeline stopping');
+        showToast({ status: 'success', title: isCancellingStart ? 'Canceling pipeline start' : 'Pipeline stopping' });
         setIsStopConfirmOpen(false);
       },
       onError: (err) => {
-        toast.error(formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'stop', entity: 'pipeline' }));
+        showToast({
+          status: 'error',
+          title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'stop', entity: 'pipeline' }),
+        });
         setIsStopConfirmOpen(false);
       },
     });

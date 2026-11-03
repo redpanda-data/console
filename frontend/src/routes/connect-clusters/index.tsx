@@ -14,11 +14,14 @@ import { LinkIcon } from 'components/icons';
 import { z } from 'zod';
 
 import KafkaConnectOverview from '../../components/pages/connect/overview';
+import { pipelineListSearchSchema } from '../../components/pages/rp-connect/pipeline/list-search';
 
 const connectViewValues = ['kafka-connect', 'redpanda-connect', 'redpanda-connect-secret'] as const;
 
+// The Redpanda Connect pipelines list renders here and keeps its view in these params too.
 const searchSchema = z.object({
   defaultTab: z.enum(connectViewValues).optional().catch(undefined),
+  ...pipelineListSearchSchema.shape,
 });
 
 export type ConnectClustersSearchParams = z.infer<typeof searchSchema>;
