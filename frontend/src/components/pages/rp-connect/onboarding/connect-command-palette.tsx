@@ -353,13 +353,22 @@ type PaletteCatalog = ReturnType<typeof usePaletteCatalog>;
 function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
   const { allComponents, pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
   const q = query.trim().toLowerCase();
-  // An exact-name search for a hidden deprecated component explains the miss.
+  // An exact-name search for a hidden deprecated component explains the miss, unless a live
+  // component of that name other than its replacement answers it (e.g. the kafka output).
   const deprecatedMatch = useMemo(() => {
     const match = q
       ? allComponents.find((c) => c.name === q && typeAllowed(c.type) && isDeprecatedComponent(c))
       : undefined;
-    return match ? deprecationNotice(match, allComponents) : undefined;
-  }, [q, allComponents, typeAllowed]);
+    if (!match) {
+      return;
+    }
+    const notice = deprecationNotice(match, allComponents);
+    const { replacement } = notice;
+    const answered = inScope.some(
+      (c) => c.name === q && !(c.type === replacement?.type && c.name === replacement.name)
+    );
+    return answered ? undefined : notice;
+  }, [q, allComponents, typeAllowed, inScope]);
   const results = useMemo(() => {
     if (!q) {
       return [];
