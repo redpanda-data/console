@@ -168,10 +168,10 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			RedpandaFeature: redpandaFeatureShadowLinkRoleSync,
 		},
 		{
-			URL:             "/api/shadow-box",
+			URL:             "/api/cluster-fence",
 			Method:          "GET",
 			HasRedpandaAPI:  true,
-			RedpandaFeature: redpandaFeatureShadowBox,
+			RedpandaFeature: redpandaFeatureClusterFence,
 		},
 		{
 			URL:             "/api/schema-registry/contexts",
@@ -255,7 +255,7 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			IsSupported: false,
 		},
 		EndpointCompatibilityEndpoint{
-			Endpoint:    dataplanev1connect.ShadowBoxServiceName,
+			Endpoint:    dataplanev1connect.ClusterFenceServiceName,
 			Method:      "POST",
 			IsSupported: false,
 		},
