@@ -56,6 +56,24 @@ describe('the PipelineRunButton', () => {
     expect(startMutate).toHaveBeenCalledTimes(1);
   });
 
+  test('a scheduled pipeline offers Run now, a single run that leaves the schedule as it is', async () => {
+    const user = userEvent.setup();
+    render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} scheduled />);
+
+    const start = screen.getByTestId('pipeline-start');
+    expect(start).toHaveTextContent('Run now');
+    await user.hover(start);
+    expect(await screen.findByText('Starts one run now. The schedule stays as it is.')).toBeInTheDocument();
+
+    await user.click(start);
+    expect(startMutate).toHaveBeenCalledTimes(1);
+    // The run is recorded, as started by hand.
+    expect(useRunHistoryStore.getState().runs['default/p1']?.[0]).toMatchObject({
+      outcome: 'running',
+      trigger: 'manual',
+    });
+  });
+
   test('a pipeline that stops on its own records its run, under its usual label', async () => {
     const user = userEvent.setup();
     render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STOPPED} recordsRuns />);

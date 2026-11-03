@@ -39,13 +39,27 @@ const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
 ];
 
-// After Output, as the table orders them.
+// After Output, as the table orders them: Runs, then Schedule with the schedule preview on.
 const RUNS_COLUMN = { head: 'w-12', cell: <Skeleton className="h-4 w-20" /> };
+const SCHEDULE_COLUMN = {
+  head: 'w-16',
+  cell: (
+    <div className="flex flex-col gap-1">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-3 w-28" />
+    </div>
+  ),
+};
 
 const SKELETON_ROW_COUNT = 5;
 
-export const PipelineListSkeleton = () => {
-  const columns = [...SKELETON_COLUMNS.slice(0, 3), RUNS_COLUMN, ...SKELETON_COLUMNS.slice(3)];
+export const PipelineListSkeleton = ({ schedules = false }: { schedules?: boolean }) => {
+  const columns = [
+    ...SKELETON_COLUMNS.slice(0, 3),
+    RUNS_COLUMN,
+    ...(schedules ? [SCHEDULE_COLUMN] : []),
+    ...SKELETON_COLUMNS.slice(3),
+  ];
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -54,8 +68,8 @@ export const PipelineListSkeleton = () => {
       </div>
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-64" />
-        {/* Input, Output, Tags and Runs. */}
-        {Array.from({ length: 4 }, (_, i) => (
+        {/* Input, Output, Tags, Runs and Schedule. */}
+        {Array.from({ length: schedules ? 5 : 4 }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
           <Skeleton className="h-8 w-20" key={i} />
         ))}

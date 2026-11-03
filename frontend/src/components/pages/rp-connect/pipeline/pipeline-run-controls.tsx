@@ -24,6 +24,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { PIPELINE_STATE_LABELS, PIPELINE_STATE_STATUS_VARIANT } from 'components/ui/pipeline/constants';
 import { Play } from 'lucide-react';
 import {
@@ -69,6 +70,9 @@ function runActionForState(state?: Pipeline_State): RunAction | null {
 }
 
 const START_LABEL = 'Start pipeline';
+// A scheduled pipeline's Start is one extra run; its schedule carries on.
+const RUN_NOW_LABEL = 'Run now';
+const RUN_NOW_HINT = 'Starts one run now. The schedule stays as it is.';
 
 const STOP_COPY = {
   action: 'Stop pipeline',
@@ -87,7 +91,11 @@ const CANCEL_START_COPY = {
 type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
 
 // Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
-function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, recordsRuns: boolean) {
+function usePipelineRunActions(
+  pipelineId: string,
+  isCancellingStart: boolean,
+  { scheduled, recordsRuns }: { scheduled: boolean; recordsRuns: boolean }
+) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
   const startManualRun = useRunHistoryStore((s) => s.startManualRun);
@@ -102,7 +110,7 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, r
         if (recordsRuns) {
           startManualRun(pipelineId, { now: startedAt });
         }
-        showToast({ status: 'success', title: 'Pipeline starting' });
+        showToast({ status: 'success', title: scheduled ? 'Run starting' : 'Pipeline starting' });
       },
       onError: (err) =>
         showToast({
@@ -110,7 +118,7 @@ function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean, r
           title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'start', entity: 'pipeline' }),
         }),
     });
-  }, [pipelineId, startMutation, recordsRuns, startManualRun]);
+  }, [pipelineId, startMutation, scheduled, recordsRuns, startManualRun]);
 
   const performStop = useCallback(() => {
     stopMutation(create(StopPipelineRequestSchema, { request: { id: pipelineId } }), {
@@ -182,47 +190,75 @@ function PipelineStopControl({
   );
 }
 
-export function PipelineRunButton({
-  pipelineId,
-  pipelineState,
-  recordsRuns = false,
+// Start, or Run now with a schedule; while the pipeline settles, disabled with the reason.
+function PipelineStartControl({
+  scheduled,
+  settling,
+  isPending,
+  onStart,
 }: {
-  pipelineId: string;
-  pipelineState?: Pipeline_State;
-  /** Starting it records a run: it stops on its own. */
-  recordsRuns?: boolean;
+  scheduled: boolean;
+  settling: boolean;
+  isPending: boolean;
+  onStart: () => void;
 }) {
-  const action = runActionForState(pipelineState);
-  const isCancellingStart = action === 'cancel-start';
-  const run = usePipelineRunActions(pipelineId, isCancellingStart, recordsRuns);
-
-  if (action === null) {
-    return null;
-  }
-
-  if (action === 'start') {
-    return (
-      <Button
-        disabled={run.isStartPending}
-        icon={run.isStartPending ? <Spinner /> : <Play />}
-        onClick={run.handleStart}
-        testId="pipeline-start"
-      >
-        {START_LABEL}
-      </Button>
-    );
-  }
-
-  if (action === 'settling') {
+  const label = scheduled ? RUN_NOW_LABEL : START_LABEL;
+  if (settling) {
     return (
       // A disabled button takes no pointer events, so the reason hangs on a wrapper.
       <ElementTooltip content="Wait for the pipeline to finish stopping.">
         <span className="inline-flex cursor-not-allowed">
           <Button disabled icon={<Play />} testId="pipeline-start">
-            {START_LABEL}
+            {label}
           </Button>
         </span>
       </ElementTooltip>
+    );
+  }
+  const button = (
+    <Button disabled={isPending} icon={isPending ? <Spinner /> : <Play />} onClick={onStart} testId="pipeline-start">
+      {label}
+    </Button>
+  );
+  return scheduled ? (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex" />}>{button}</TooltipTrigger>
+      <TooltipContent>{RUN_NOW_HINT}</TooltipContent>
+    </Tooltip>
+  ) : (
+    button
+  );
+}
+
+export function PipelineRunButton({
+  pipelineId,
+  pipelineState,
+  scheduled = false,
+  recordsRuns = scheduled,
+}: {
+  pipelineId: string;
+  pipelineState?: Pipeline_State;
+  /** With a schedule, starting it is a single run. */
+  scheduled?: boolean;
+  /** Starting it records a run: it stops on its own. */
+  recordsRuns?: boolean;
+}) {
+  const action = runActionForState(pipelineState);
+  const isCancellingStart = action === 'cancel-start';
+  const run = usePipelineRunActions(pipelineId, isCancellingStart, { scheduled, recordsRuns });
+
+  if (action === null) {
+    return null;
+  }
+
+  if (action === 'start' || action === 'settling') {
+    return (
+      <PipelineStartControl
+        isPending={run.isStartPending}
+        onStart={run.handleStart}
+        scheduled={scheduled}
+        settling={action === 'settling'}
+      />
     );
   }
 

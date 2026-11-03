@@ -42,12 +42,14 @@ import {
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
 import { useRunHistoryStore } from 'state/rpcn-run-history-preview';
+import { useSchedulePreviewStore } from 'state/rpcn-schedule-preview';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { startRecordsRun } from '../utils/pipeline-runs';
+import { describeSchedule } from '../utils/pipeline-schedule';
 
 export type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'];
 
@@ -55,6 +57,9 @@ export type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'
 export type StartMutate = ReturnType<typeof useStartPipelineMutation>['mutateAsync'];
 
 export type StopMutate = ReturnType<typeof useStopPipelineMutation>['mutateAsync'];
+
+// A schedule's one extra run, for a pipeline whose runs end.
+const runsNow = (pipeline: PipelineRow) => pipeline.schedule !== undefined && pipeline.end === 'finite';
 
 const toastPipelineError = (action: 'start' | 'stop' | 'delete') => (err: unknown) =>
   showToast({
@@ -69,7 +74,7 @@ const startPipeline = (startMutation: StartMutate, pipeline: PipelineRow) => {
       if (startRecordsRun(pipeline.end)) {
         useRunHistoryStore.getState().startManualRun(pipeline.id, { now: startedAt });
       }
-      showToast({ status: 'success', title: 'Pipeline starting' });
+      showToast({ status: 'success', title: runsNow(pipeline) ? 'Run starting' : 'Pipeline starting' });
     })
     .catch(toastPipelineError('start'));
 };
@@ -87,6 +92,7 @@ const deletePipeline = (deleteMutation: DeleteMutate, id: string, isDraftRow: bo
   deleteMutation(create(DeletePipelineRequestSchema, { request: { id } }), {
     onSuccess: () => {
       rpcnEditorAutosave.clear(autosaveTargetKey(id));
+      useSchedulePreviewStore.getState().removeSchedule(id);
       useRunHistoryStore.getState().replaceRuns(id, []);
       showToast({ status: 'success', title: isDraftRow ? 'Draft deleted' : 'Pipeline deleted' });
     },
@@ -101,10 +107,56 @@ type ActionsCellProps = {
   startMutation: StartMutate;
   stopMutation: StopMutate;
   isDeletingPipeline: boolean;
+  /** Set with the schedule preview on. */
+  onEditSchedule?: (pipelineId: string) => void;
 };
 
+// Set or edit the schedule, and pause or resume it in place.
+function ScheduleMenuItems({
+  pipeline,
+  onEditSchedule,
+}: {
+  pipeline: PipelineRow;
+  onEditSchedule: (pipelineId: string) => void;
+}) {
+  const saveSchedule = useSchedulePreviewStore((s) => s.saveSchedule);
+  const schedule = pipeline.schedule?.schedule;
+  const setEnabled = (enabled: boolean) => {
+    if (!schedule) {
+      return;
+    }
+    saveSchedule(pipeline.id, { ...schedule, enabled });
+    showToast({
+      status: 'success',
+      title: enabled ? 'Schedule resumed' : 'Schedule paused',
+      description: enabled ? describeSchedule(schedule) : undefined,
+    });
+  };
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => onEditSchedule(pipeline.id)}>
+        {schedule ? 'Edit schedule' : 'Add schedule'}
+      </DropdownMenuItem>
+      {schedule?.enabled ? <DropdownMenuItem onClick={() => setEnabled(false)}>Pause schedule</DropdownMenuItem> : null}
+      {/* Back on for a pipeline that doesn't stop on its own, it would only sit on hold; Edit says why. */}
+      {schedule && !schedule.enabled && pipeline.end === 'finite' ? (
+        <DropdownMenuItem onClick={() => setEnabled(true)}>Resume schedule</DropdownMenuItem>
+      ) : null}
+    </>
+  );
+}
+
 export const ActionsCell = memo(
-  ({ pipeline, navigate, deleteMutation, startMutation, stopMutation, isDeletingPipeline }: ActionsCellProps) => {
+  ({
+    pipeline,
+    navigate,
+    deleteMutation,
+    startMutation,
+    stopMutation,
+    isDeletingPipeline,
+    onEditSchedule,
+  }: ActionsCellProps) => {
     const isDraftRow = pipeline.isDraft;
     const canStart = !isDraftRow && (STARTABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
     const canStop = !isDraftRow && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(pipeline.state);
@@ -154,12 +206,16 @@ export const ActionsCell = memo(
             {isStopping ? (
               <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Retry stop</DropdownMenuItem>
             ) : null}
+            {/* With a schedule, starting it is a single run; the schedule carries on. */}
             {canStart ? (
-              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline)}>Start</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline)}>
+                {runsNow(pipeline) ? 'Run now' : 'Start'}
+              </DropdownMenuItem>
             ) : null}
             {canStop ? (
               <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Stop</DropdownMenuItem>
             ) : null}
+            {onEditSchedule ? <ScheduleMenuItems onEditSchedule={onEditSchedule} pipeline={pipeline} /> : null}
             <DropdownMenuSeparator />
             <DeleteResourceMenuItem
               isDeleting={isDeletingPipeline}

@@ -18,7 +18,7 @@ import { PIPELINE_STATE_TABS, type PipelineStateTabId, stateFilterValues } from 
 // optional and drops out when it holds its default; a value that doesn't parse is ignored.
 
 const TAB_IDS = PIPELINE_STATE_TABS.map((tab) => tab.id) as [PipelineStateTabId, ...PipelineStateTabId[]];
-const SORTABLE_COLUMNS = ['state', 'name'] as const;
+const SORTABLE_COLUMNS = ['state', 'name', 'schedule'] as const;
 const values = z.array(z.string()).optional().catch(undefined);
 export const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -30,6 +30,7 @@ export const pipelineListSearchSchema = z.object({
   output: values,
   tag: values,
   runs: values,
+  schedule: values,
   sort: z.enum(SORTABLE_COLUMNS).optional().catch(undefined),
   desc: z.boolean().optional().catch(undefined),
   /** 1-based. */
@@ -46,12 +47,19 @@ export function readPipelineListSearch(search: unknown): PipelineListSearch {
   return parsed.success ? parsed.data : {};
 }
 
+/** `search` without the Schedule column's sort and filter, for when the column isn't shown. */
+export function withoutScheduleView(search: PipelineListSearch): PipelineListSearch {
+  const { schedule: _, ...rest } = search;
+  return rest.sort === 'schedule' ? { ...rest, sort: undefined, desc: undefined } : rest;
+}
+
 // Facet columns and the search keys that hold them.
 const FILTER_KEYS = {
   inputs: 'input',
   outputs: 'output',
   tags: 'tag',
   end: 'runs',
+  schedule: 'schedule',
 } as const satisfies Record<string, keyof PipelineListSearch>;
 
 /** The table's column filters for `search`: its tab, its name search, and each facet. */

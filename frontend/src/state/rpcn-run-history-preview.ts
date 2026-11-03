@@ -72,7 +72,7 @@ type RunHistoryStore = {
 };
 
 export const useRunHistoryStore = create<RunHistoryStore>()((set, get) => {
-  // Each write re-reads storage first, so runs another tab saved are kept; with storage unreadable, it builds on
+  // Each write re-reads storage first, as the schedule preview does; with storage unreadable, it builds on
   // what this page holds. An unchanged list writes nothing, and one this version can't read is left as is.
   const update = (pipelineId: string, change: (runs: PipelineRun[]) => PipelineRun[]) => {
     const key = pipelinePreviewKey(pipelineId);

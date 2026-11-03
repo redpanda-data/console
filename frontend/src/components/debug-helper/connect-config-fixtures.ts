@@ -1606,8 +1606,8 @@ rate_limit_resources:
 
 // ── Stop conditions ────────────────────────────────────────────────────────
 // A Cloud pipeline stops itself, and uses no compute, once its input ends. These
-// exercise the stop row on input cards, the canvas end chip and the list's
-// Runs column.
+// exercise the stop row on input cards, the canvas end chip, the list's
+// Runs column and, with enableRpcnPipelineSchedules on, the schedule preview.
 
 const REDPANDA_CONNECTION = `seed_brokers:
   - \${REDPANDA_BROKERS}
@@ -1633,7 +1633,8 @@ ${redpandaConnection(4)}
 const generateFixedCount = `# The quickest pipeline that stops itself: generate with a count ends after that
 # many messages, so the pipeline stops and uses no compute. Validates everywhere.
 #
-# The input card's stop row reads "when its data runs out".
+# The input card's stop row reads "when its data runs out". With
+# enableRpcnPipelineSchedules on, the header's Schedule dialog accepts it.
 input:
   generate:
     count: 100
@@ -1651,7 +1652,8 @@ output:
 `;
 
 const postgresSnapshot = `# Batch export: sql_select reads every row its query returns, then its input
-# ends and the pipeline stops.
+# ends and the pipeline stops. A nightly snapshot like this is what the schedule
+# preview is for.
 input:
   sql_select:
     driver: postgres
@@ -2136,14 +2138,15 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'stops-generate-count',
     name: 'Generate a fixed count',
-    description: 'Ends after 100 messages and stops itself. Validates everywhere.',
+    description:
+      'Ends after 100 messages and stops itself. Validates everywhere; the quickest way to try the schedule preview.',
     yaml: generateFixedCount,
     tags: ['stops', 'simple'],
   },
   {
     id: 'stops-postgres-snapshot',
     name: 'Postgres table snapshot',
-    description: 'sql_select reads every row, then stops: a one-off export.',
+    description: 'sql_select reads every row, then stops: the nightly-export shape a schedule runs.',
     yaml: postgresSnapshot,
     tags: ['stops'],
   },
