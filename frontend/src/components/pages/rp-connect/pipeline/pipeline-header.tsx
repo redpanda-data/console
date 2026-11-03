@@ -61,6 +61,7 @@ import {
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
 import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
+import { startRecordsRun } from '../utils/pipeline-runs';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -363,7 +364,11 @@ export function PipelineViewHeader({
           {viewingDraft ? (
             <StartDraftControl pipeline={pipeline} units={units} />
           ) : (
-            <PipelineRunButton pipelineId={pipeline.id} pipelineState={pipeline.state} />
+            <PipelineRunButton
+              pipelineId={pipeline.id}
+              pipelineState={pipeline.state}
+              recordsRuns={startRecordsRun(endSummary.status)}
+            />
           )}
         </div>
       </div>

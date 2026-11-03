@@ -31,6 +31,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { runsOf, useRunHistoryStore } from 'state/rpcn-run-history-preview';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
@@ -172,9 +173,15 @@ const rowFor = (displayName: string) => {
 const SEARCH_INPUT_RE = /search pipelines/i;
 const UNTIL_DONE_RE = /Until done/;
 const CLEAR_FILTERS_RE = /clear filters/i;
+const DELETE_DRAFT_RE = /delete draft/i;
 
 const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, item: RegExp) => {
   await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+  await user.click(await screen.findByRole('menuitem', { name: item }));
+};
+
+const openRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, displayName: string, item: string) => {
+  await user.click(within(rowFor(displayName)).getByRole('button', { name: 'Open menu' }));
   await user.click(await screen.findByRole('menuitem', { name: item }));
 };
 
@@ -614,6 +621,47 @@ describe('the PipelineListPage', () => {
         expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
       });
 
+      it('records no run when the draft it starts never stops on its own', async () => {
+        const user = userEvent.setup();
+        useRunHistoryStore.setState({ runs: {} });
+        const startPipelineMock = rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
+        renderWithFileRoutes(<PipelineListPage />, {
+          transport: buildTransport({ withDraft: true, startPipelineMock }),
+        });
+
+        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+        await openRowMenuItem(user, 'half-built-pipeline', 'Start');
+        await user.click(await screen.findByTestId('confirm-start-draft'));
+
+        await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
+        await waitFor(() => expect(screen.queryByTestId('confirm-start-draft')).not.toBeInTheDocument());
+        expect(runsOf(useRunHistoryStore.getState().runs, 'draft777')).toEqual([]);
+      });
+
+      it('records a run when the draft it starts stops on its own', async () => {
+        const user = userEvent.setup();
+        useRunHistoryStore.setState({ runs: {} });
+        renderWithFileRoutes(<PipelineListPage />, {
+          transport: buildTransport({
+            withDraft: true,
+            extraDrafts: [{ ...DRAFT_FIXTURE, id: 'draft888', displayName: 'one-off-export', inputs: ['sql_select'] }],
+          }),
+        });
+
+        await waitFor(() => expect(screen.getByText('one-off-export')).toBeInTheDocument());
+
+        await user.click(within(rowFor('one-off-export')).getByRole('button', { name: 'Open menu' }));
+        await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+        await user.click(await screen.findByTestId('confirm-start-draft'));
+
+        await waitFor(() =>
+          expect(runsOf(useRunHistoryStore.getState().runs, 'draft888')).toEqual([
+            expect.objectContaining({ outcome: 'running', trigger: 'manual' }),
+          ])
+        );
+      });
+
       it('deletes a draft from its row, after a confirmation', async () => {
         const user = userEvent.setup();
         const deletePipelineMock = rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
@@ -633,6 +681,19 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
         expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+      });
+
+      // They live in this browser only, so nothing else would clear them.
+      it('clears a deleted draft’s runs from this browser', async () => {
+        const user = userEvent.setup();
+        useRunHistoryStore.getState().startManualRun('draft777', { now: NOW - 60_000 });
+        renderList({ withDraft: true });
+        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+
+        await openDraftRowMenuItem(user, DELETE_DRAFT_RE);
+        await user.click(await screen.findByTestId('confirm-delete-draft'));
+
+        await waitFor(() => expect(runsOf(useRunHistoryStore.getState().runs, 'draft777')).toEqual([]));
       });
 
       // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
@@ -669,6 +730,44 @@ describe('the PipelineListPage', () => {
         expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
       });
     });
+  });
+});
+
+describe('the PipelineListPage runs', () => {
+  const RUN_WATCH_MS = 10_000;
+  const runOf = (id: string) => runsOf(useRunHistoryStore.getState().runs, id)[0];
+  let pipeline: Fixture;
+
+  beforeEach(() => {
+    rs.useFakeTimers({ shouldAdvanceTime: true });
+    pipeline = {
+      id: 'once1',
+      displayName: 'one-off-export',
+      state: Pipeline_State.RUNNING,
+      inputs: ['sql_select'],
+      outputs: ['s3'],
+    };
+    useRunHistoryStore.setState({ runs: {} });
+    useRunHistoryStore.getState().startManualRun('once1', { now: Date.now() - 1000 });
+    return () => {
+      rs.useRealTimers();
+    };
+  });
+
+  // The list otherwise polls only while a pipeline starts or stops, so it would never see the run end.
+  it('polls for a run this browser started until it sees the run end', async () => {
+    const onRequest = rs.fn();
+    renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ pipelines: [pipeline], onRequest }) });
+    await waitFor(() => expect(runOf('once1')?.seenActive).toBe(true));
+
+    pipeline.state = Pipeline_State.STOPPED;
+    await rs.advanceTimersByTimeAsync(RUN_WATCH_MS);
+    await waitFor(() => expect(runOf('once1')).toMatchObject({ outcome: 'completed', endTime: expect.any(Number) }));
+
+    // With the run over, the list stops polling.
+    onRequest.mockClear();
+    await rs.advanceTimersByTimeAsync(3 * RUN_WATCH_MS);
+    expect(onRequest).not.toHaveBeenCalled();
   });
 });
 

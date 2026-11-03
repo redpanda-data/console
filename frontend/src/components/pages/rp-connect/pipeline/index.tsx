@@ -80,6 +80,7 @@ import {
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
+import { PipelineRunsPanel } from './pipeline-runs-panel';
 import { PipelineStructureTree } from './pipeline-structure-tree';
 import { PipelineThroughputCard } from './pipeline-throughput-card';
 import { type SaveContext, type SaveIntent, unsavedChangesCopy } from './save-actions';
@@ -97,6 +98,7 @@ import {
 } from './use-pipeline-editor-store';
 import { usePipelineLint } from './use-pipeline-lint';
 import { usePipelineSave } from './use-pipeline-save';
+import { useRunObserver, useWatchingRun } from './use-run-observer';
 import { useSaveHotkey } from './use-save-hotkey';
 import { useSlashCommand } from './use-slash-command';
 import { takeStartLintHints } from './use-start-draft';
@@ -125,6 +127,8 @@ import {
 } from '../utils/yaml';
 import { withYamlDocumentation } from '../utils/yaml-editor-schema';
 
+// How often the page checks on a run this browser started.
+const RUN_WATCH_INTERVAL_MS = 5000;
 function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
   if (type === 'input') {
     return 'Add an input';
@@ -414,6 +418,7 @@ function ViewModePanel({ pipeline }: { pipeline: Pipeline | undefined }) {
     // Natural height on purpose: this lane scrolls with the page, so logs pagination sits right below
     // the table.
     <div className="flex flex-col p-6">
+      <PipelineRunsPanel configYaml={pipeline.configYaml} pipelineId={pipeline.id} />
       {showThroughput ? (
         <>
           <PipelineThroughputCard pipelineId={pipeline.id} />
@@ -906,11 +911,21 @@ function useDraftSupport(mode: PipelineMode, pipeline: Pipeline | undefined) {
 
 /** The loaded pipeline, the component catalog and config schema, and what saving it may do. */
 function usePipelineServerData(mode: PipelineMode, pipelineId: string | undefined) {
-  const { data: pipelineResponse } = useGetPipelineQuery(
+  // A run this browser started is watched until it ends, for up to an hour; the query otherwise polls
+  // only while the pipeline starts or stops.
+  const watchingRun = useWatchingRun(pipelineId);
+  const { data: pipelineResponse, dataUpdatedAt } = useGetPipelineQuery(
     { id: pipelineId || '' },
-    { enabled: mode !== 'create' && !!pipelineId }
+    {
+      enabled: mode !== 'create' && !!pipelineId,
+      steadyPollInterval: watchingRun ? RUN_WATCH_INTERVAL_MS : undefined,
+      // A hidden tab still sees the run end, within the browser's timer throttling.
+      refetchIntervalInBackground: watchingRun,
+    }
   );
   const pipeline = useMemo(() => pipelineResponse?.response?.pipeline, [pipelineResponse]);
+  // Ends a run this browser started once the pipeline is seen to stop, in either mode.
+  useRunObserver(pipeline?.id, pipeline?.state, dataUpdatedAt);
   const { components, componentList } = useEnrichedComponents();
   const { data: schemaResponse } = useGetPipelineServiceConfigSchemaQuery();
   const yamlEditorSchema = useMemo(() => {
