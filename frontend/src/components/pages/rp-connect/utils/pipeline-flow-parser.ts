@@ -541,8 +541,6 @@ function multiInputNodes(
     labelText: input.labelText,
     stopSlot: input.stopSlot,
     endBehavior: input.endBehavior,
-    // Explicit, since a wrapped member's edit path doesn't end at its array index.
-    insertSlot: { containerPath: membersPath, accepts: 'input' },
   };
   return groupNodes;
 }

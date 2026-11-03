@@ -13,9 +13,7 @@ import { type Document, isAlias, isMap, isScalar, isSeq, Pair, parseDocument, Sc
 
 import type { InputEndBehavior, InputEndKind } from './input-end-behavior';
 import type { StopSlot } from './pipeline-flow-parser';
-import { isStopConditionSet, READ_UNTIL, type StopCondition } from './yaml';
-
-const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
+import { isStopConditionSet, READ_UNTIL, type StopCondition, YAML_STRINGIFY_OPTIONS } from './yaml';
 
 // ── Message limits ─────────────────────────────────────────────────────────
 // `counter()` counts per call site; the deprecated `count("name")` is shared by name, so it is

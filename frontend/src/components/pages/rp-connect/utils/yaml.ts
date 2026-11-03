@@ -27,7 +27,7 @@ import type { ConnectComponentSpec, ConnectComponentType, ConnectConfigObject, R
 
 // `lineWidth: 0` disables folding: the lib default folds long single-line bloblang mappings at
 // col 80, reformatting lines the user never touched. Every mutation stringify must use this.
-const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
+export const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
 
 /** Keys that appear as siblings to the component name (e.g. `label`, a `<<` merge key). */
 const RESERVED_COMPONENT_KEYS = new Set(['label', '<<']);

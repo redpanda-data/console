@@ -324,10 +324,10 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 // Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
-// switches, radios, menus (toolbar buttons, Radix triggers — all render as focusable controls) and
-// anything in a popup dialog must not have Delete open the confirm dialog or `/` open the palette.
+// switches, radios, menus and our popovers (not any role="dialog", which a host shell's own dialog would
+// match) must not have Delete open the confirm dialog or `/` open the palette.
 const FOCUS_GUARD_SELECTOR =
-  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [role="dialog"], .monaco-editor';
+  'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [data-slot="popover-content"], .monaco-editor';
 
 // Unmodified canvas keys: `/` opens the palette, Escape deselects, Delete/Backspace deletes.
 function plainCanvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
@@ -869,10 +869,10 @@ function stopConditionEdit(
   return { yaml: next };
 }
 
-// Lands a stop condition edit in the YAML; false when it's refused, after a toast says why.
+// Lands a stop condition edit in the YAML; false when it's refused, after a toast (one id, so retries don't stack).
 function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange: (yaml: string) => void): boolean {
   if (edit && 'error' in edit) {
-    showToast({ status: 'error', title: edit.error });
+    showToast({ id: 'rpcn-stop-condition-edit', status: 'error', title: edit.error });
     return false;
   }
   if (edit) {
