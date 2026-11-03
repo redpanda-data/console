@@ -382,7 +382,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
   // Errors show once Apply is tried, then track each edit.
   const form = useForm<StopFormState>({
     resolver: zodResolver(stopFormSchema),
-    defaultValues: stopFormState(slot.condition),
+    defaultValues: stopFormState(slot.condition, slot.unwrapLock === undefined),
   });
   const { control } = form;
   const [mode, alsoIdle, restart, limit] = useWatch({ control, name: ['mode', 'alsoIdle', 'restart', 'limit'] });

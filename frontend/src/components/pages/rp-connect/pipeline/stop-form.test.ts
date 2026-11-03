@@ -38,6 +38,12 @@ describe('stop form model', () => {
     expect(stopFormState({ idleTimeout: '10s' })).toMatchObject({ mode: 'idle', idle: '10s' });
   });
 
+  test('starts an unset condition on an idle timeout when Keep running is off the table', () => {
+    expect(stopFormState({}, false)).toMatchObject({ mode: 'idle', idle: '30s' });
+    expect(stopFormState({ restartInput: true }, false)).toMatchObject({ mode: 'idle', restart: true });
+    expect(stopFormState({ check: 'this.done' }, false).mode).toBe('check');
+  });
+
   test('validates only what the chosen mode uses', () => {
     const base = stopFormState(undefined);
     expect(problemsIn({ ...base, mode: 'count', limit: '0' })).toEqual(['limit']);

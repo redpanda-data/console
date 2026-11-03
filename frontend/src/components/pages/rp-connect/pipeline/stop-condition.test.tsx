@@ -169,6 +169,16 @@ describe('the StopConditionEditor', () => {
     expect(screen.getByRole('textbox', { name: 'Idle timeout' })).toHaveValue('1m');
   });
 
+  test('a wrapper only the YAML can remove, with nothing to stop on yet, starts on an idle timeout', async () => {
+    const { user, onApply } = renderEditor({
+      slot: { ...openSlot, condition: {}, unwrapLock: 'Remove its `read_until` in the YAML.' },
+    });
+    expect(screen.getByRole('radio', { name: 'Keep running' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'When it goes idle' })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onApply).toHaveBeenCalledWith({ idleTimeout: '30s' });
+  });
+
   test('choosing to keep running clears the condition', async () => {
     const { user, onApply } = renderEditor({
       effective: { kind: 'condition', reason: 'Stops after 1 minute without new messages.' },

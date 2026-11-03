@@ -60,8 +60,11 @@ export const stopFormSchema = z
 
 export type StopFormState = z.infer<typeof stopFormSchema>;
 
-/** The editor's starting state for a slot's current condition. */
-export function stopFormState(condition?: StopCondition): StopFormState {
+/**
+ * The editor's starting state for a slot's current condition. Without Keep running on offer (a
+ * wrapper only the YAML can remove), an unset condition starts on an idle timeout instead.
+ */
+export function stopFormState(condition?: StopCondition, canKeepRunning = true): StopFormState {
   const state: StopFormState = {
     mode: 'none',
     limit: DEFAULT_LIMIT,
@@ -71,7 +74,7 @@ export function stopFormState(condition?: StopCondition): StopFormState {
     restart: Boolean(condition?.restartInput),
   };
   if (!isStopConditionSet(condition)) {
-    return state;
+    return canKeepRunning ? state : { ...state, mode: 'idle' };
   }
   const limit = parseMessageLimit(condition.check);
   if (limit) {
