@@ -58,6 +58,18 @@ describe('useShadowBoxGuard', () => {
     );
   });
 
+  test('only user topics are fenced: Redpanda’s internal topics stay open, and _schemas only takes no produce', () => {
+    mockStatus('boxed');
+    const { result } = renderHook(() => useShadowBoxGuard());
+
+    expect(result.current.reasonFor('editTopicConfig', '_orders')).toBeDefined();
+    expect(result.current.reasonFor('deleteTopic', 'orders')).toBeDefined();
+    expect(result.current.reasonFor('editTopicConfig', '_schemas')).toBeUndefined();
+    expect(result.current.reasonFor('deleteTopic', '__consumer_offsets')).toBeUndefined();
+    expect(result.current.reasonFor('produce', '_redpanda.audit_log')).toBeUndefined();
+    expect(result.current.reasonFor('produce', '_schemas')).toBeDefined();
+  });
+
   test('disables nothing until the status has loaded', () => {
     mockStatus('boxed', { known: false });
     const { result } = renderHook(() => useShadowBoxGuard());

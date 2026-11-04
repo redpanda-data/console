@@ -293,12 +293,13 @@ const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
   if (box.kind !== 'cloud') {
     return { settings: 'current', box: 'pending', boxed: 'pending' };
   }
-  const settings = box.linkExempt === false ? 'attention' : 'done';
+  /** A link Console can't check, such as one that uses mTLS, isn't done: the operator still has to look. */
+  const settings = box.linkExempt === true ? 'done' : 'attention';
   const phase = box.box.state;
   if (phase === 'boxing' || phase === 'boxed') {
     return { settings, box: 'done', boxed: box.boxed ? 'done' : 'current' };
   }
-  return { settings, box: settings === 'done' ? 'current' : 'pending', boxed: 'pending' };
+  return { settings, box: box.linkExempt === false ? 'pending' : 'current', boxed: 'pending' };
 };
 
 /**

@@ -132,10 +132,16 @@ export const summarizeBox = (box: ClusterFence | undefined): BoxSummary | undefi
 
 type BoxSettingsValues = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads'>;
 
-export const sameBoxSettings = (a: BoxSettingsValues, b: BoxSettingsValues): boolean =>
-  a.allowAllReads === b.allowAllReads &&
-  a.exemptPrincipals.length === b.exemptPrincipals.length &&
-  a.exemptPrincipals.every((principal) => b.exemptPrincipals.includes(principal));
+/** Redpanda keeps exempt names as a set, so order and repeats don't count. */
+export const sameBoxSettings = (a: BoxSettingsValues, b: BoxSettingsValues): boolean => {
+  const names = new Set(a.exemptPrincipals);
+  const otherNames = new Set(b.exemptPrincipals);
+  return (
+    a.allowAllReads === b.allowAllReads &&
+    names.size === otherNames.size &&
+    [...names].every((principal) => otherNames.has(principal))
+  );
+};
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -244,13 +250,16 @@ type ReadPolicy = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads'>;
 
 /**
  * Whether a box with this read policy lets the link fetch. Names are bare user names, matched
- * exactly; an empty name matches clients without SASL or mTLS; superusers get no pass. Undefined
- * when Console can't tell: an mTLS link reads as whatever the cluster's mapping rules make of its
- * certificate.
+ * exactly; an empty name matches clients without SASL or mTLS; superusers get no pass; an empty list
+ * blocks every link. Otherwise undefined when Console can't tell: an mTLS link reads as whatever the
+ * cluster's mapping rules make of its certificate.
  */
 export const linkCanRead = (policy: ReadPolicy, link: LinkIdentity): boolean | undefined => {
   if (policy.allowAllReads) {
     return true;
+  }
+  if (policy.exemptPrincipals.length === 0) {
+    return false;
   }
   if (link.authentication === 'none') {
     return policy.exemptPrincipals.includes('');
@@ -334,6 +343,18 @@ const BOXED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|sh
  */
 export const isBoxedReadError = (message: string): boolean => BOXED_READ_REJECTION.test(message);
 
+/**
+ * The Kafka-namespace topics Redpanda doesn't count as user topics. Any other name is fenced,
+ * `_`-prefixed or not.
+ */
+const NON_USER_TOPICS = new Set(['__consumer_offsets', '_schemas', '_redpanda.audit_log', '_redpanda.transform_logs']);
+
+/** Whether a fence rejects creating, deleting or changing the config of this topic. */
+export const isFencedTopic = (topic: string): boolean => !NON_USER_TOPICS.has(topic);
+
+/** Whether a fence rejects producing to this topic: `_schemas` too, since the fence covers Schema Registry. */
+export const isFencedTopicWrite = (topic: string): boolean => topic === '_schemas' || isFencedTopic(topic);
+
 /** Box fails while the cluster has a shadow link of its own that hasn't failed over. */
 export const SHADOW_CLUSTER_CANT_BOX =
   'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Fence its source instead, or fail the link over first.';
@@ -381,24 +402,29 @@ const rejectionVerdict = (
     : { verdict: 'allowed', detail: 'Allowed.' };
 };
 
-/** A settings change while boxed finds open transactions already ended by the first Boxed. */
-const transactionEffect = (summary: Pick<BoxSummary, 'phase'>, wasBoxed: boolean): ClientEffect => {
+const TRANSACTION_ENDING = 'aborted, or committed if the coordinator had already decided to commit';
+
+/**
+ * Each broker ends the open transactions it coordinates as soon as it picks up the fence, not once
+ * the cluster is fenced, and keeps retrying the ones that fail.
+ */
+const transactionEffect = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): ClientEffect => {
   const base = { id: 'transaction', label: 'An open transaction' };
-  if (!isBlockingPhase(summary.phase)) {
-    return { ...base, verdict: 'open', detail: 'Open.' };
+  const { blocking, open } = blockingSplit(brokers);
+  if (brokers.length > 0 && blocking.length > 0 && open.length > 0) {
+    return {
+      ...base,
+      verdict: 'partly',
+      detail:
+        summary.phase === 'unboxing'
+          ? `Open again on ${brokersPhrase(open)}. Still ended on ${brokersPhrase(blocking)} until ${blocking.length === 1 ? 'it picks' : 'they pick'} up Unfence.`
+          : `Ended on ${brokersPhrase(blocking)}: ${TRANSACTION_ENDING}. Still open on ${brokersPhrase(open)} until ${open.length === 1 ? 'it picks' : 'they pick'} up the fence.`,
+    };
   }
-  return summary.phase === 'boxed' || wasBoxed
-    ? {
-        ...base,
-        verdict: 'ended',
-        detail:
-          'Ended by the fence, as a commit if the coordinator had already decided to commit, so readers can move past it.',
-      }
-    : {
-        ...base,
-        verdict: 'open',
-        detail: 'Can commit or abort, but not grow. The fence ends it once the cluster is fenced.',
-      };
+  const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
+  return blocks
+    ? { ...base, verdict: 'ended', detail: `Ended by the fence as each broker picks it up: ${TRANSACTION_ENDING}.` }
+    : { ...base, verdict: 'open', detail: 'Open.' };
 };
 
 /**
@@ -465,6 +491,6 @@ export const getClientEffects = ({
       ...rejectionVerdict(summary, brokers, 'POLICY_VIOLATION (44)'),
     },
     { id: 'schema', label: 'A Schema Registry write', ...rejectionVerdict(summary, brokers, 'HTTP 412') },
-    transactionEffect(summary, isApplyingNewSettings(summary, brokers)),
+    transactionEffect(summary, brokers),
   ];
 };

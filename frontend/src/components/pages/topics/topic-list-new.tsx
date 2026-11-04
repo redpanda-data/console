@@ -22,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { isFencedTopic } from 'components/shadow-box/shadow-box-model';
 import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
 import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
@@ -289,38 +290,41 @@ function buildTopicColumns(
       header: '',
       enableSorting: false,
       meta: columnMeta({ align: 'right' as const, headWidth: 'fit' as const }),
-      cell: ({ row: { original: topic } }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                aria-label={`Actions for ${topic.topicName}`}
-                className="deleteButton"
-                data-testid={`topic-actions-trigger-${topic.topicName}`}
-                size="icon-sm"
-                variant="ghost"
+      cell: ({ row: { original: topic } }) => {
+        const fenceReason = isFencedTopic(topic.topicName) ? deleteTopicReason : undefined;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  aria-label={`Actions for ${topic.topicName}`}
+                  className="deleteButton"
+                  data-testid={`topic-actions-trigger-${topic.topicName}`}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                data-testid={`delete-topic-button-${topic.topicName}`}
+                disabled={!hasDeletePrivilege() || Boolean(fenceReason) || undefined}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteTopic(topic);
+                }}
+                variant="destructive"
               >
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            }
-          />
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              data-testid={`delete-topic-button-${topic.topicName}`}
-              disabled={!hasDeletePrivilege() || Boolean(deleteTopicReason) || undefined}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteTopic(topic);
-              }}
-              variant="destructive"
-            >
-              <TrashIcon />
-              Delete
-              <ShadowBoxedMenuHint reason={hasDeletePrivilege() ? deleteTopicReason : undefined} />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+                <TrashIcon />
+                Delete
+                <ShadowBoxedMenuHint reason={hasDeletePrivilege() ? fenceReason : undefined} />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 }

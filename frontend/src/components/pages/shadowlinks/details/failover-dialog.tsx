@@ -68,7 +68,7 @@ const sourceCheck = (readiness: CutoverReadiness): Check => {
       text:
         readiness.box.kind === 'manual'
           ? 'You confirmed the source cluster is fenced.'
-          : 'The source cluster is fenced, so nothing new is written there.',
+          : 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
     };
   }
   if (readiness.box.kind === 'cloud') {

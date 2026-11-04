@@ -26,7 +26,12 @@ rs.mock('../../../config', () => {
 const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
 
 rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ fenced: guard.reason !== undefined, readsBlocked: false, reasonFor: () => guard.reason }),
+  /** Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic. */
+  useShadowBoxGuard: () => ({
+    fenced: guard.reason !== undefined,
+    readsBlocked: false,
+    reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
+  }),
 }));
 
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';

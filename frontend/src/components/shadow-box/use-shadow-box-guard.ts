@@ -12,7 +12,7 @@
 import { useCallback } from 'react';
 import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 
-import { isBoxedReadError } from './shadow-box-model';
+import { isBoxedReadError, isFencedTopic, isFencedTopicWrite } from './shadow-box-model';
 
 /**
  * Every change a fence rejects that Console offers a control for. DeleteRecords, users and SCRAM
@@ -42,6 +42,14 @@ const ACTION_PHRASE: Record<Exclude<BoxedAction, 'createShadowLink'>, string> = 
   deleteConsumerGroup: 'delete consumer groups',
 };
 
+/** For a topic action, whether the fence covers that topic: internal topics stay open. */
+const TOPIC_IN_SCOPE: Partial<Record<BoxedAction, (topic: string) => boolean>> = {
+  createTopic: isFencedTopic,
+  deleteTopic: isFencedTopic,
+  editTopicConfig: isFencedTopic,
+  produce: isFencedTopicWrite,
+};
+
 const boxedActionReason = (action: BoxedAction) =>
   action === 'createShadowLink'
     ? 'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
@@ -56,8 +64,12 @@ export const useShadowBoxGuard = () => {
   /** Fetches are blocked too, except for exempt users, unless the box allows every reader. */
   const readsBlocked = blocking && !summary.allowAllReads;
 
+  /** Pass `topic` for a change to one topic, so the fence's internal-topic exemption applies. */
   const reasonFor = useCallback(
-    (action: BoxedAction): string | undefined => (blocking ? boxedActionReason(action) : undefined),
+    (action: BoxedAction, topic?: string): string | undefined => {
+      const covered = topic === undefined || (TOPIC_IN_SCOPE[action]?.(topic) ?? true);
+      return blocking && covered ? boxedActionReason(action) : undefined;
+    },
     [blocking]
   );
 

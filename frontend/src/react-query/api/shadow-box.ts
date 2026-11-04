@@ -171,8 +171,9 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
               return { nodeId: broker.nodeId, phase: toBoxPhase(broker.fence.state), revision: broker.fence.revision };
             }
             return {
-              nodeId: targets[index],
-              errorMessage: result.error instanceof ConnectError ? result.error.rawMessage : undefined,
+              nodeId: broker?.nodeId ?? targets[index],
+              errorMessage:
+                broker?.errorMessage ?? (result.error instanceof ConnectError ? result.error.rawMessage : undefined),
             };
           })
         : [],
@@ -381,8 +382,9 @@ const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
   },
   { pattern: /recovery/i, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
   {
-    pattern: /storage (?:mode|configuration)|read.?replica/i,
-    sentence: 'A topic the fence covers uses a storage configuration it doesn’t support, such as a read replica.',
+    pattern: /storage (?:mode|configuration)/i,
+    sentence:
+      'A topic the fence covers uses a storage mode this Redpanda doesn’t recognize, which can happen while brokers run different versions.',
   },
   {
     pattern: /membership changed/i,

@@ -208,6 +208,11 @@ describe('linkCanRead', () => {
     expect(linkCanRead(policy([]), { authentication: 'sasl', principal: 'admin' })).toBe(false);
   });
 
+  test('an empty list blocks every link, even one Console can’t otherwise judge', () => {
+    expect(linkCanRead(policy([]), { authentication: 'mtls' })).toBe(false);
+    expect(linkCanRead(policy(['ops']), { authentication: 'mtls' })).toBeUndefined();
+  });
+
   test('an empty name matches clients without SASL or mTLS; allow all reads lets everyone read', () => {
     expect(linkCanRead(policy(['']), { authentication: 'none' })).toBe(true);
     expect(linkCanRead(policy(['shadow-orders']), { authentication: 'none' })).toBe(false);
@@ -305,5 +310,16 @@ describe('getClientEffects', () => {
       brokers: [],
     });
     expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({ verdict: 'ended' });
+  });
+
+  test('part way through a first Fence, brokers that picked it up already end open transactions', () => {
+    const effects = getClientEffects({
+      summary: { ...settings, phase: 'boxing' },
+      brokers: progress([1, 'confirmed', true], [2, 'behind', false]),
+    });
+    expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({
+      verdict: 'partly',
+      detail: expect.stringContaining('Ended on broker 1'),
+    });
   });
 });

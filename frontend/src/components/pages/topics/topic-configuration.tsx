@@ -438,9 +438,7 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  const boxedReason = useShadowBoxGuard().reasonFor('editTopicConfig');
-  /** The fence covers user topics only; internal ones, named with a leading underscore, stay editable. */
-  const fenceReason = props.targetTopic?.startsWith('_') ? undefined : boxedReason;
+  const fenceReason = useShadowBoxGuard().reasonFor('editTopicConfig', props.targetTopic);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
   const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 

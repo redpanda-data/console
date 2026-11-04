@@ -87,6 +87,9 @@ const blockedReaderMessage = (reader: ShadowLinkReader) => {
   if (reader.authentication === 'none') {
     return `${reader.linkName} connects without SASL or mTLS, so only an empty exempt name lets it read. Exempt clients without SASL or mTLS above.`;
   }
+  if (!reader.principal) {
+    return `No one is exempt, so ${reader.linkName} couldn’t read or finish copying.`;
+  }
   return `${reader.linkName} reads as ${reader.principal}, which isn’t exempt, so it couldn’t finish copying.`;
 };
 

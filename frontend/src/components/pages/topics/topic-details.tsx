@@ -289,7 +289,7 @@ function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
-  const produceReason = useShadowBoxGuard().reasonFor('produce');
+  const produceReason = useShadowBoxGuard().reasonFor('produce', topicName);
 
   const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
   const modifiedConfigCount = useModifiedConfigCount(topicName);

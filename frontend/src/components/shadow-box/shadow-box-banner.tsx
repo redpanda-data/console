@@ -26,6 +26,7 @@ import {
   describeHeldMove,
   hasBoxActivity,
   isApplyingNewSettings,
+  isBlockingPhase,
   isLongBox,
 } from './shadow-box-model';
 import { UnboxClusterDialog } from './unbox-cluster-dialog';
@@ -64,6 +65,15 @@ const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
       copy.phase ? [`${brokerName(copy.nodeId)} reports ${BOX_PHASE_LABEL[copy.phase].toLowerCase()}`] : []
     )
     .join(', ');
+  const blockingCount = copies.filter((copy) => copy.phase && isBlockingPhase(copy.phase)).length;
+  const reported = copies.filter((copy) => copy.phase).length;
+  let consequence = '';
+  if (blockingCount > 0) {
+    consequence =
+      blockingCount === reported
+        ? ' Writes to those brokers are rejected.'
+        : ' Writes are rejected on the brokers that report fencing or fenced.';
+  }
   return (
     <div data-testid="shadow-box-banner">
       <Alert className="my-4" data-phase="no-leader" icon={<TriangleAlertIcon />} role="region" variant="warning">
@@ -71,7 +81,7 @@ const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
         <AlertDescription>
           <p>
             It has no controller leader right now, so Console read each broker’s own copy of the fence: {reporting}.
-            Writes to those brokers are rejected.
+            {consequence}
           </p>
         </AlertDescription>
       </Alert>

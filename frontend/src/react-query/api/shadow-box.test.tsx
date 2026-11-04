@@ -316,7 +316,7 @@ describe('describeShadowBoxError', () => {
         "Cluster fence does not support an in-scope topic's storage configuration",
         Code.FailedPrecondition
       ),
-      "A topic the fence covers uses a storage configuration it doesn’t support, such as a read replica. Redpanda said: “Cluster fence does not support an in-scope topic's storage configuration”",
+      "A topic the fence covers uses a storage mode this Redpanda doesn’t recognize, which can happen while brokers run different versions. Redpanda said: “Cluster fence does not support an in-scope topic's storage configuration”",
     ],
     [
       new ConnectError('Broker membership changed during the cluster fence transition', Code.FailedPrecondition),

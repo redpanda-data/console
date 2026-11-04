@@ -278,7 +278,7 @@ const waitStepState = (phase: BoxPhase): SourceStepState => {
 
 const waitStepText = (summary: BoxSummary, brokers: BrokerProgress[]) => {
   if (summary.phase === 'boxed') {
-    return 'Every broker confirmed, so nothing new is written here. Fail each link over on its shadow cluster.';
+    return 'Every broker confirmed, so new writes are rejected. Writes accepted just before the fence can still land. Fail each link over on its shadow cluster.';
   }
   if (summary.phase === 'boxing') {
     const confirmed = brokers.filter((broker) => broker.status === 'confirmed').length;
@@ -387,7 +387,10 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
                 <ExemptValue summary={summary} />
               </dd>
               <dt className="tracking-tight text-muted-foreground">Open transactions</dt>
-              <dd>Ended once the cluster is fenced, as a commit if the coordinator had already decided to commit</dd>
+              <dd>
+                Ended as each broker picks up the fence: aborted, or committed if the coordinator had already decided to
+                commit
+              </dd>
             </dl>
             <div className="flex flex-col gap-7">
               {warnings.map((warning) => (
@@ -744,7 +747,8 @@ const useSourceDialogs = (known: boolean, phase: BoxPhase) => {
   const [unboxOpen, setUnboxOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const setters = useMemo<DialogSetters>(() => ({ box: setBoxOpen, unbox: setUnboxOpen, exempt: setSettingsOpen }), []);
-  const { principal } = useLocation().search as { principal?: string };
+  /** The raw query string: the parsed search turns a name like `1001` or `true` into a number or boolean. */
+  const principal = new URLSearchParams(useLocation().searchStr).get('principal') ?? undefined;
   const closingClears = useActionFromUrl(known, phase, setters);
   return { boxOpen, setBoxOpen, unboxOpen, setUnboxOpen, settingsOpen, setSettingsOpen, principal, closingClears };
 };

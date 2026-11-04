@@ -49,6 +49,7 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+import { isFencedTopicWrite } from '../../shadow-box/shadow-box-model';
 import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
 import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { DisabledReasonTooltip } from '../../ui/disabled-reason-tooltip';
@@ -329,8 +330,8 @@ function buildPublishRequest(topicName: string, data: Inputs): PublishMessageReq
   return req;
 }
 
-const ProduceButton = ({ isSubmitting }: { isSubmitting: boolean }) => {
-  const produceReason = useShadowBoxGuard().reasonFor('produce');
+const ProduceButton = ({ isSubmitting, topicName }: { isSubmitting: boolean; topicName: string }) => {
+  const produceReason = useShadowBoxGuard().reasonFor('produce', topicName);
   return (
     <DisabledReasonTooltip reason={produceReason}>
       <Button data-testid="produce-button" disabled={Boolean(produceReason)} isLoading={isSubmitting} type="submit">
@@ -398,7 +399,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   return (
     <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
-      <ShadowBoxedAlert action="produce" testId="produce-shadow-boxed-alert" />
+      {isFencedTopicWrite(topicName) ? <ShadowBoxedAlert action="produce" testId="produce-shadow-boxed-alert" /> : null}
       <div className="flex flex-row gap-4">
         <Controller
           control={control}
@@ -665,7 +666,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <ProduceButton isSubmitting={isSubmitting} />
+        <ProduceButton isSubmitting={isSubmitting} topicName={topicName} />
         <Button
           nativeButton={false}
           render={

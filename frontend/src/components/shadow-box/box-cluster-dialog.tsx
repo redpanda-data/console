@@ -57,7 +57,7 @@ import { type PrincipalSuggestion, ShadowBoxSettingsFields } from './shadow-box-
 import { useOpenedBox } from './use-opened-box';
 import { useReaderSuggestions } from './use-reader-suggestions';
 
-const FALLBACK_CONFIRMATION = 'box';
+const FALLBACK_CONFIRMATION = 'fence';
 
 const formSchema = z.object({
   settings: z.object({
@@ -169,6 +169,10 @@ const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
         <li>Internal topics, such as __consumer_offsets</li>
       </ul>
     </div>
+    <p className="text-body-sm sm:col-span-2">
+      Each broker also ends open transactions as it picks up the fence: aborted, or committed if the coordinator had
+      already decided to commit.
+    </p>
   </section>
 );
 
