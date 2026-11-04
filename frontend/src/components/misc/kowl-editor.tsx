@@ -11,6 +11,7 @@
 
 import type { DiffEditorProps, EditorProps } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
+import { useMonacoTheme } from 'hooks/use-monaco-theme';
 import type { editor } from 'monaco-editor';
 import { lazy } from 'react';
 
@@ -54,9 +55,11 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 const LazyEditor = lazy(() => import('./monaco-editor'));
 const LazyDiffEditor = lazy(() => import('./monaco-editor').then((m) => ({ default: m.DiffEditor })));
 
+// The theme comes after the caller's props: it is built from the tokens, so a caller cannot pin one.
 export default function KowlEditor(props: KowlEditorProps) {
-  const { options: givenOptions, ...rest } = props;
+  const { options: givenOptions, beforeMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const monacoTheme = useMonacoTheme();
 
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
@@ -66,14 +69,20 @@ export default function KowlEditor(props: KowlEditorProps) {
         options={options}
         wrapperProps={{ className: 'kowlEditor' }}
         {...rest}
+        beforeMount={(monaco) => {
+          monacoTheme.beforeMount(monaco);
+          beforeMount?.(monaco);
+        }}
+        theme={monacoTheme.theme}
       />
     </LoadingBoundary>
   );
 }
 
 export function KowlDiffEditor(props: KowlDiffEditorProps) {
-  const { options: givenOptions, ...rest } = props;
+  const { options: givenOptions, beforeMount, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const monacoTheme = useMonacoTheme();
 
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
@@ -82,6 +91,11 @@ export function KowlDiffEditor(props: KowlDiffEditorProps) {
         options={options}
         wrapperProps={{ className: 'kowlEditor' }}
         {...rest}
+        beforeMount={(monaco) => {
+          monacoTheme.beforeMount(monaco);
+          beforeMount?.(monaco);
+        }}
+        theme={monacoTheme.theme}
       />
     </LoadingBoundary>
   );

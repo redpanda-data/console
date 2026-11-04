@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterAll, beforeAll, describe, expect, it, rs } from '@rstest/core';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
-import { render, screen } from 'test-utils';
+import { render, screen, waitFor } from 'test-utils';
 
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
@@ -83,6 +84,9 @@ const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
 const NO_OUTPUT_NOTE_RE = /no output configured/i;
 const STALE_LAYOUT_RE = /showing the last valid layout/i;
 
+// An input card's stop row: its visible text, then what it does.
+const STOP_BUTTON_RE = /stop condition for generate$/;
+
 // The minimap svg's accessible name.
 const OVERVIEW_LABEL_RE = /pipeline overview/i;
 
@@ -120,6 +124,71 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
   it('renders an enabled "Add output" button in edit mode', async () => {
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={rs.fn()} />);
     expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
+  });
+});
+
+// Reports each element only once, so nothing re-measures a node after a rebuild: its handle bounds
+// have to survive on their own.
+class MeasureOnceResizeObserver {
+  private readonly seen = new WeakSet<Element>();
+  constructor(private readonly callback: ResizeObserverCallback) {}
+  observe(target: Element) {
+    if (!this.seen.has(target)) {
+      this.seen.add(target);
+      const size = [{ inlineSize: 200, blockSize: 80 }];
+      const entry = { target, contentRect: target.getBoundingClientRect(), borderBoxSize: size, contentBoxSize: size };
+      queueMicrotask(() => this.callback([entry as unknown as ResizeObserverEntry], this as unknown as ResizeObserver));
+    }
+  }
+  unobserve() {}
+  disconnect() {}
+}
+
+describe('the PipelineFlowCanvas — measured nodes', () => {
+  const restoreSizes: (() => void)[] = [];
+  beforeEach(() => {
+    rs.stubGlobal('ResizeObserver', MeasureOnceResizeObserver);
+    for (const [prop, size] of [
+      ['offsetWidth', 200],
+      ['offsetHeight', 80],
+    ] as const) {
+      const spy = rs.spyOn(HTMLElement.prototype, prop, 'get').mockReturnValue(size);
+      restoreSizes.push(() => spy.mockRestore());
+    }
+  });
+  afterEach(() => {
+    for (const restore of restoreSizes.splice(0)) {
+      restore();
+    }
+    rs.stubGlobal('ResizeObserver', ResizeObserverMock);
+  });
+
+  it('keeps its edges when a re-render rebuilds the node objects', async () => {
+    const { container, rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
+    await waitFor(() => expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1));
+
+    // Selection re-decorates every node into a new object; no new measurement follows.
+    rerender(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} selectedNodeId="input-0" />);
+    await waitFor(() => expect(container.querySelector('.ring-primary')).not.toBeNull());
+    expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1);
+  });
+});
+
+describe('the PipelineFlowCanvas — deprecated components', () => {
+  it('badges a deprecated node, with the warning as its tooltip', async () => {
+    const user = userEvent.setup();
+    render(
+      <PipelineFlowCanvas
+        configYaml={VALID_PIPELINE_YAML}
+        deprecationsByNode={new Map([['input-0', ['generate is deprecated. Use the redpanda input instead.']]])}
+      />
+    );
+
+    const badge = await screen.findByText('Deprecated');
+    await user.hover(badge);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'generate is deprecated. Use the redpanda input instead.'
+    );
   });
 });
 
@@ -266,5 +335,93 @@ describe('the PipelineMiniMap — viewport outside the pan extent', () => {
       throw new Error('viewport rect not rendered');
     }
     expectBoxWithin(attrBox(view), svgWidth, svgHeight);
+  });
+});
+
+describe('the PipelineFlowCanvas — stop conditions', () => {
+  const BROKER_YAML = `input:
+  broker:
+    inputs:
+      - read_until:
+          idle_timeout: 30s
+          input:
+            kafka_franz: { topics: [a] }
+      - aws_s3: { bucket: b }
+      - redpanda: { topics: [c] }
+output:
+  drop: {}`;
+
+  const renderEditableCanvas = () => {
+    const onSelectNode = rs.fn();
+    const onSetStopCondition = rs.fn(() => true);
+    render(
+      <PipelineFlowCanvas
+        configYaml={VALID_PIPELINE_YAML}
+        onSelectNode={onSelectNode}
+        onSetStopCondition={onSetStopCondition}
+        onSlotInsert={rs.fn()}
+      />
+    );
+    return { onSelectNode, onSetStopCondition };
+  };
+
+  it('gives every input card a row saying how it stops, and sums them up on the broker', async () => {
+    render(<PipelineFlowCanvas configYaml={BROKER_YAML} />);
+    const rows = await screen.findAllByTestId('stop-row');
+    expect(rows.map((r) => r.textContent).sort()).toEqual(
+      [
+        'Stopsafter 30s idle',
+        'Stopswhen its data runs out',
+        'Continuousno stop condition',
+        'Continuous1 of 3 inputs never stops',
+      ].sort()
+    );
+  });
+
+  it('opens the editor without selecting the card behind it', async () => {
+    const user = userEvent.setup();
+    const { onSelectNode, onSetStopCondition } = renderEditableCanvas();
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('When should generate stop?');
+    expect(onSelectNode).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('radio', { name: 'When it goes idle' }));
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onSetStopCondition).toHaveBeenCalledWith('input-0', { idleTimeout: '30s' });
+    expect(onSelectNode).not.toHaveBeenCalled();
+  });
+
+  it('is read-only in view mode', async () => {
+    const user = userEvent.setup();
+    render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    expect(
+      await screen.findByText('Generates messages until the pipeline is stopped.', { exact: false })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+  });
+
+  // The zoom tool paints its cursor on React Flow's pane while Z is held.
+  const paneCursor = () => document.querySelector<HTMLElement>('.react-flow__pane')?.style.cursor;
+
+  it('leaves Z to the stop editor', async () => {
+    const user = userEvent.setup();
+    renderEditableCanvas();
+    await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
+    screen.getByRole('radio', { name: 'When it goes idle' }).focus();
+    await user.keyboard('{z>}');
+    expect(paneCursor()).toBe('');
+  });
+
+  it('still zooms on Z inside a dialog that hosts the canvas', async () => {
+    const user = userEvent.setup();
+    render(
+      <div role="dialog">
+        <PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />
+      </div>
+    );
+    (await screen.findByRole('button', { name: STOP_BUTTON_RE })).focus();
+    await user.keyboard('{z>}');
+    expect(paneCursor()).toBe('zoom-in');
   });
 });

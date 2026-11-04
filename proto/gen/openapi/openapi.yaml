@@ -160,6 +160,11 @@ components:
       type: object
     AddTopicPartitionsResponse:
       type: object
+    AllResources:
+      description: |-
+        Selects every resource the fence supports. Currently covers user topics,
+        consumer groups, Schema Registry, ACLs, and Roles.
+      type: object
     AlterTopicPartitionStatus:
       properties:
         error:
@@ -317,6 +322,91 @@ components:
         version:
           type: string
       type: object
+    ClusterFence:
+      description: The cluster fence as one broker has installed it.
+      properties:
+        revision:
+          description: |-
+            Changes with each `Fence`, `Unfence`, or `UpdateClusterFenceSettings` that
+            changes something. Requests that change nothing, and completion, do not
+            change it. `-1` until the first change.
+          format: int64
+          type: string
+        settings:
+          $ref: '#/components/schemas/ClusterFenceSettings'
+        state:
+          $ref: '#/components/schemas/ClusterFenceState'
+        state_changed_at:
+          description: |-
+            When `state` last changed, by the clock of the broker that recorded the
+            change. Absent if the cluster has never been fenced or unfenced.
+          format: date-time
+          nullable: true
+          type: string
+      type: object
+    ClusterFenceBrokerStatus:
+      description: One broker's copy of the cluster fence.
+      properties:
+        error_message:
+          description: Why the broker did not answer. Set only when `fence` is absent.
+          nullable: true
+          type: string
+        fence:
+          $ref: '#/components/schemas/ClusterFence'
+        node_id:
+          description: The broker's node ID.
+          format: int32
+          type: integer
+      type: object
+    ClusterFenceReadPolicy:
+      description: How the fence treats fetches from user topics in its scope.
+      properties:
+        allow_all_reads:
+          description: |-
+            Lets every consumer keep fetching, so `exempt_principals` has no effect.
+            Defaults to false.
+          type: boolean
+        exempt_principals:
+          description: |-
+            Users who can still fetch while the fence blocks reads, such as your
+            shadow link's user. An empty name matches clients without SASL or mTLS.
+            An empty list blocks every consumer.
+          items:
+            type: string
+          type: array
+      type: object
+    ClusterFenceScope:
+      description: Resources selected for the cluster fence.
+      properties:
+        all_resources:
+          $ref: '#/components/schemas/AllResources'
+      type: object
+    ClusterFenceSettings:
+      description: Settings that decide what a fence covers and how it behaves.
+      properties:
+        read_policy:
+          $ref: '#/components/schemas/ClusterFenceReadPolicy'
+        scope:
+          $ref: '#/components/schemas/ClusterFenceScope'
+      type: object
+    ClusterFenceState:
+      description: |-
+        The state of the cluster fence.
+
+         - CLUSTER_FENCE_STATE_UNFENCED: No fence is requested, and any `Unfence` has completed.
+         - CLUSTER_FENCE_STATE_FENCING: Some brokers have not yet confirmed the latest change. Every broker
+        counts, including brokers that are down.
+         - CLUSTER_FENCE_STATE_FENCED: Every broker enforces the latest change and will keep enforcing it after
+        a restart. Writes accepted before the fence may still finish, transactions
+        may remain open, and partition offsets may still advance.
+         - CLUSTER_FENCE_STATE_UNFENCING: `Unfence` was requested, and some brokers have not yet confirmed that they
+        stopped enforcing the fence.
+      enum:
+        - CLUSTER_FENCE_STATE_UNFENCED
+        - CLUSTER_FENCE_STATE_FENCING
+        - CLUSTER_FENCE_STATE_FENCED
+        - CLUSTER_FENCE_STATE_UNFENCING
+      type: string
     ComponentList:
       description: ComponentList contains the structured component data.
       properties:
@@ -970,6 +1060,28 @@ components:
     EarliestOffset:
       description: Start at the earliest offset in the partition.
       type: object
+    Egress:
+      description: Selects the egress gateways a pipeline may reach its targets through.
+      properties:
+        gateway_refs:
+          description: |-
+            The gateways, by ID. Creating or updating a pipeline fails with
+            NOT_FOUND for a gateway the pipeline cannot use, and with
+            FAILED_PRECONDITION for one that is not yet provisioned. A draft's
+            gateways are not checked until StartPipeline.
+          items:
+            $ref: '#/components/schemas/EgressGatewayRef'
+          type: array
+      type: object
+    EgressGatewayRef:
+      description: Refers to one egress gateway.
+      properties:
+        id:
+          description: The egress gateway's ID.
+          type: string
+      required:
+        - id
+      type: object
     Entity:
       properties:
         entity_name:
@@ -1110,6 +1222,23 @@ components:
         error_message:
           type: string
       type: object
+    FenceRequest:
+      description: '`FenceRequest` is the request for the `Fence` RPC.'
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the fence is still at this revision. Use
+            the `revision` from `GetClusterFenceStatus` or an earlier response.
+          format: int64
+          nullable: true
+          type: string
+      type: object
+    FenceResponse:
+      description: '`FenceResponse` is the response from the `Fence` RPC.'
+      properties:
+        fence:
+          $ref: '#/components/schemas/ClusterFence'
+      type: object
     FieldSpec:
       description: FieldSpec represents a field specification.
       properties:
@@ -1222,6 +1351,29 @@ components:
         - FILTER_TYPE_EXCLUDE
       title: What type of filter this is, include or exclude
       type: string
+    GetClusterFenceBrokerStatusResponse:
+      description: |-
+        `GetClusterFenceBrokerStatusResponse` is the response from the
+        `GetClusterFenceBrokerStatus` RPC.
+      properties:
+        broker:
+          $ref: '#/components/schemas/ClusterFenceBrokerStatus'
+      type: object
+    GetClusterFenceStatusResponse:
+      description: |-
+        `GetClusterFenceStatusResponse` is the response from the
+        `GetClusterFenceStatus` RPC.
+      properties:
+        brokers:
+          description: |-
+            Each cluster member's copy of the fence, in node ID order. Brokers that
+            are down are listed too.
+          items:
+            $ref: '#/components/schemas/ClusterFenceBrokerStatus'
+          type: array
+        fence:
+          $ref: '#/components/schemas/ClusterFence'
+      type: object
     GetConnectClusterResponse:
       properties:
         cluster:
@@ -2329,6 +2481,8 @@ components:
         display_name:
           description: User-friendly pipeline name.
           type: string
+        egress:
+          $ref: '#/components/schemas/Egress'
         id:
           description: Pipeline ID.
           type: string
@@ -2395,7 +2549,10 @@ components:
         - STATE_DRAFT
       type: string
     Pipeline.Status:
-      description: Pipeline status may contain an error message.
+      description: |-
+        Pipeline status may contain an error message. If an egress gateway of a
+        started pipeline becomes unavailable, the pipeline is `STATE_STARTING`
+        until the gateway is available again, and `error` names the gateway.
       properties:
         error:
           type: string
@@ -2421,6 +2578,8 @@ components:
             configuration is stored unvalidated; StartPipeline validates and deploys it.
             Drafts count against the cluster's pipeline limit.
           type: boolean
+        egress:
+          $ref: '#/components/schemas/Egress'
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -2455,6 +2614,8 @@ components:
             promotes a draft. Leave unset to update whatever is stored.
           nullable: true
           type: boolean
+        egress:
+          $ref: '#/components/schemas/Egress'
         resources:
           $ref: '#/components/schemas/Resources'
         service_account:
@@ -3610,6 +3771,23 @@ components:
             $ref: '#/components/schemas/PartitionTransformStatus'
           type: array
       type: object
+    UnfenceRequest:
+      description: '`UnfenceRequest` is the request for the `Unfence` RPC.'
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the fence is still at this revision. Use
+            the `revision` from `GetClusterFenceStatus` or an earlier response.
+          format: int64
+          nullable: true
+          type: string
+      type: object
+    UnfenceResponse:
+      description: '`UnfenceResponse` is the response from the `Unfence` RPC.'
+      properties:
+        fence:
+          $ref: '#/components/schemas/ClusterFence'
+      type: object
     UnmountTopicsResponse:
       properties:
         mount_task_id:
@@ -3627,6 +3805,37 @@ components:
         - UNSUPPORTED_SCHEMA_FEATURE_POLICY_FAIL
         - UNSUPPORTED_SCHEMA_FEATURE_POLICY_REMOVE
       type: string
+    UpdateClusterFenceSettingsRequest:
+      description: |-
+        `UpdateClusterFenceSettingsRequest` is the request for the
+        `UpdateClusterFenceSettings` RPC.
+      properties:
+        expected_revision:
+          description: |-
+            If set, the request fails unless the fence is still at this revision. Use
+            the `revision` from `GetClusterFenceStatus` or an earlier response. Set it
+            to fail if the fence changed since you read it.
+          format: int64
+          nullable: true
+          type: string
+        settings:
+          $ref: '#/components/schemas/ClusterFenceSettings'
+        update_mask:
+          description: |-
+            The settings to change. Settings it doesn't name keep their saved values.
+            Naming `read_policy` replaces the whole read policy, and naming
+            `read_policy.exempt_principals` adds names to the list. If empty, every
+            setting is replaced.
+          type: string
+      type: object
+    UpdateClusterFenceSettingsResponse:
+      description: |-
+        `UpdateClusterFenceSettingsResponse` is the response from the
+        `UpdateClusterFenceSettings` RPC.
+      properties:
+        fence:
+          $ref: '#/components/schemas/ClusterFence'
+      type: object
     UpdateConfiguration:
       properties:
         name:
@@ -4521,6 +4730,219 @@ paths:
       summary: Unmount topics to object storage
       tags:
         - Cloud Storage
+  /v1/cluster-fence:
+    get:
+      description: Get the cluster fence as the controller leader has it, and each broker's copy.
+      operationId: ClusterFenceService_GetClusterFenceStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetClusterFenceStatusResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get cluster fence status
+      tags:
+        - Cluster Fence
+  /v1/cluster-fence/broker-status:
+    get:
+      description: Get one broker's copy of the cluster fence. Works while the controller has no leader.
+      operationId: ClusterFenceService_GetClusterFenceBrokerStatus
+      parameters:
+        - description: |-
+            The node ID of the broker to report on. If unset, the broker handling
+            the request reports on itself.
+          in: query
+          name: node_id
+          schema:
+            format: int32
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetClusterFenceBrokerStatusResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Get cluster fence broker status
+      tags:
+        - Cluster Fence
+  /v1/cluster-fence/fence:
+    post:
+      description: Fence the cluster with the saved cluster fence settings.
+      operationId: ClusterFenceService_Fence
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FenceRequest'
+        description: '`FenceRequest` is the request for the `Fence` RPC.'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FenceResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Fence the cluster
+      tags:
+        - Cluster Fence
+  /v1/cluster-fence/settings:
+    patch:
+      description: Update the settings that the next fence uses. A change also applies to a fence that is in place.
+      operationId: ClusterFenceService_UpdateClusterFenceSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClusterFenceSettingsRequest'
+        description: |-
+          `UpdateClusterFenceSettingsRequest` is the request for the
+          `UpdateClusterFenceSettings` RPC.
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateClusterFenceSettingsResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Update cluster fence settings
+      tags:
+        - Cluster Fence
+  /v1/cluster-fence/unfence:
+    post:
+      description: Release the cluster fence. The saved settings stay for the next fence.
+      operationId: ClusterFenceService_Unfence
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnfenceRequest'
+        description: '`UnfenceRequest` is the request for the `Unfence` RPC.'
+        required: true
+        x-originalParamName: body
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnfenceResponse'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: A precondition failed, such as a stale expected_revision
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Unauthenticated.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: Internal Server Error. Reach out to support.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpc.Status'
+          description: An unexpected error response.
+      summary: Unfence the cluster
+      tags:
+        - Cluster Fence
   /v1/kafka-connect/clusters:
     get:
       description: List Connect clusters available in Console.
@@ -6563,7 +6985,7 @@ paths:
             type: string
         - description: |-
             Specifies which fields should be updated. If not provided,
-            all fields will be updated.
+            all fields will be updated, except that an unset `egress` is left as it is.
           in: query
           name: update_mask
           schema:
@@ -8150,7 +8572,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
+              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -8562,6 +8984,8 @@ tags:
     name: Redpanda ACLs
   - description: 'Manage Redpanda topics stored in object storage. See: [Mountable Topics](https://docs.redpanda.com/redpanda-cloud/manage/mountable-topics/)'
     name: Cloud Storage
+  - description: Fence a cluster to reject new writes, some cluster changes and, optionally, fetches.
+    name: Cluster Fence
   - description: Manage Wasm transforms in Redpanda.
     name: Wasm Transforms
   - description: Manage [connectors](https://docs.redpanda.com/redpanda-cloud/develop/managed-connectors/) and interact with the Kafka Connect API.

@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 import { useLintPipelineConfigQuery } from 'react-query/api/connect';
 
 import { extractLintHintsFromError } from '../errors';
-import { localYamlLintHints, mergeLintHints } from '../utils/pipeline-lint';
+import { localStopConditionLintHints, localYamlLintHints, mergeLintHints } from '../utils/pipeline-lint';
 
 /**
  * Deduped hints for the Lint-issues panel: server lint RPC, client-side YAML syntax errors, and
@@ -41,6 +41,12 @@ export function usePipelineLint(yamlContent: string, errorLintHints: Record<stri
     [enabled, debouncedYamlContent]
   );
 
+  // Stop conditions the server lint accepts but Connect refuses at start.
+  const stopHints = useMemo(
+    () => (enabled ? localStopConditionLintHints(debouncedYamlContent) : []),
+    [enabled, debouncedYamlContent]
+  );
+
   const lintHints = useMemo(() => {
     // Local syntax errors supersede: server lint returns nothing and save-error hints repeat the same problem
     // with worse positions.
@@ -54,8 +60,8 @@ export function usePipelineLint(yamlContent: string, errorLintHints: Record<stri
         ? Object.values(extractLintHintsFromError(lintError))
         : [];
     // Dedupe: after a failed save the same problem arrives from the error details and the re-lint.
-    return mergeLintHints(errorLintHints, lintResponse?.lintHints ?? [], rejection);
-  }, [syntaxHints, isLintError, lintError, errorLintHints, lintResponse]);
+    return mergeLintHints(errorLintHints, lintResponse?.lintHints ?? [], [...rejection, ...stopHints]);
+  }, [syntaxHints, isLintError, lintError, errorLintHints, lintResponse, stopHints]);
 
   // A disabled query reports isPending forever; only surface pending when a lint can actually run.
   return { lintHints, isLintPending: lintEnabled && isLintPending };

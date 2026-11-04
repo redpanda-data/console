@@ -93,3 +93,14 @@ describe('changedNodeIdsFromBaseline', () => {
     expect(changedNodeIdsFromBaseline(nodeConfigSignatures('{{{'), base)).toEqual(changedNodeIds('{{{', base));
   });
 });
+
+describe('stop conditions', () => {
+  it('a stop-condition edit marks its input as changed', () => {
+    const before = 'input:\n  kafka: { topics: [a] }\noutput:\n  drop: {}\n';
+    const wrapped =
+      'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      kafka: { topics: [a] }\noutput:\n  drop: {}\n';
+    expect(changedNodeIds(before, wrapped)).toEqual(['input-0']);
+    expect(changedNodeIds(wrapped, wrapped.replace('5s', '10s'))).toEqual(['input-0']);
+    expect(changedNodeIds(wrapped, wrapped)).toEqual([]);
+  });
+});

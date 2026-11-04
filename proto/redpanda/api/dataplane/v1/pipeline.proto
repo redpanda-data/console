@@ -83,6 +83,10 @@ message Pipeline {
   // Empty for pipelines not written since this field existed.
   google.protobuf.Timestamp update_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The egress gateways the pipeline may reach its targets through. Absent
+  // when the pipeline uses none.
+  Egress egress = 16;
+
   message Resources {
     // `memory_shares` is a string specifying the amount of memory to allocate for
     // the pipeline.
@@ -134,7 +138,9 @@ message Pipeline {
     STATE_DRAFT = 7;
   }
 
-  // Pipeline status may contain an error message.
+  // Pipeline status may contain an error message. If an egress gateway of a
+  // started pipeline becomes unavailable, the pipeline is `STATE_STARTING`
+  // until the gateway is available again, and `error` names the gateway.
   message Status {
     string error = 2;
   }
@@ -143,6 +149,33 @@ message Pipeline {
     string client_id = 1;
     string client_secret = 2 [(buf.validate.field).string.pattern = "^\\$\\{secrets\\.[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?\\}$"];
   }
+}
+
+// Selects the egress gateways a pipeline may reach its targets through.
+message Egress {
+  // The gateways, by ID. Creating or updating a pipeline fails with
+  // NOT_FOUND for a gateway the pipeline cannot use, and with
+  // FAILED_PRECONDITION for one that is not yet provisioned. A draft's
+  // gateways are not checked until StartPipeline.
+  repeated EgressGatewayRef gateway_refs = 1 [
+    (buf.validate.field).repeated.max_items = 16,
+    (buf.validate.field).cel = {
+      id: "egress_gateway_refs_unique"
+      message: "Each egress gateway may be listed only once."
+      expression: "this.map(r, r.id).unique()"
+    }
+  ];
+}
+
+// Refers to one egress gateway.
+message EgressGatewayRef {
+  // The egress gateway's ID.
+  string id = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$",
+    (buf.validate.field).string.max_len = 253
+  ];
 }
 
 // PipelineService is the service for Redpanda Connect.
@@ -339,6 +372,9 @@ service PipelineService {
   // StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
   // It also deploys a draft: the configuration is validated first, and an invalid
   // one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
+  // The pipeline's egress gateways are checked as on CreatePipeline; a gateway
+  // it cannot use fails with NOT_FOUND, and one not yet provisioned with
+  // FAILED_PRECONDITION, leaving the pipeline as it was.
   rpc StartPipeline(StartPipelineRequest) returns (StartPipelineResponse) {
     option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/start"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
@@ -540,6 +576,10 @@ message PipelineCreate {
   // configuration is stored unvalidated; StartPipeline validates and deploys it.
   // Drafts count against the cluster's pipeline limit.
   bool draft = 9;
+
+  // The egress gateways the pipeline may reach its targets through. Not
+  // checked for a draft until StartPipeline.
+  Egress egress = 10;
 }
 
 // CreatePipelineRequest is the request of CreatePipeline.
@@ -671,6 +711,12 @@ message PipelineUpdate {
   // changes whether a pipeline is a draft; false is rejected, and StartPipeline
   // promotes a draft. Leave unset to update whatever is stored.
   optional bool draft = 9;
+
+  // The egress gateways the pipeline may reach its targets through, replaced
+  // as a whole. Without an update mask, an unset egress leaves the pipeline's
+  // gateways as they are; with one, they change only when the mask names
+  // `egress`. An egress with no gateway_refs removes them.
+  Egress egress = 10;
 }
 
 message UpdatePipelineRequest {
@@ -687,7 +733,7 @@ message UpdatePipelineRequest {
   ];
 
   // Specifies which fields should be updated. If not provided,
-  // all fields will be updated.
+  // all fields will be updated, except that an unset `egress` is left as it is.
   google.protobuf.FieldMask update_mask = 3;
 }
 

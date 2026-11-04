@@ -4,32 +4,32 @@ export const PineconeLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg fill="currentColor" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg" {...props}>
     <title>Pinecone</title>
     <g fill="none" fillRule="evenodd" transform="translate(0 1)">
-      <path d="m14.58 5.24.7-3.89" stroke="#201d1e" strokeLinecap="square" strokeWidth="1.77" />
+      <path d="m14.58 5.24.7-3.89" stroke="currentColor" strokeLinecap="square" strokeWidth="1.77" />
       <path
         d="m17.8 3.86-2.44-2.98-3.32 1.94"
-        stroke="#201d1e"
+        stroke="currentColor"
         strokeLinecap="square"
         strokeLinejoin="round"
         strokeWidth="1.77"
       />
-      <path d="m11.66 21.84.68-3.89" stroke="#201d1e" strokeLinecap="square" strokeWidth="1.77" />
+      <path d="m11.66 21.84.68-3.89" stroke="currentColor" strokeLinecap="square" strokeWidth="1.77" />
       <path
         d="m14.88 20.45-2.46-2.97-3.31 1.95"
-        stroke="#201d1e"
+        stroke="currentColor"
         strokeLinecap="square"
         strokeLinejoin="round"
         strokeWidth="1.77"
       />
-      <path d="m13.07 13.82.68-3.89" stroke="#201d1e" strokeLinecap="square" strokeWidth="1.77" />
+      <path d="m13.07 13.82.68-3.89" stroke="currentColor" strokeLinecap="square" strokeWidth="1.77" />
       <path
         d="m16.29 12.43-2.45-2.96-3.31 1.94"
-        stroke="#201d1e"
+        stroke="currentColor"
         strokeLinecap="square"
         strokeLinejoin="round"
         strokeWidth="1.77"
       />
-      <circle cx="10.77" cy="26.85" fill="#201d1e" fillRule="nonzero" r="1.63" />
-      <g stroke="#201d1e" strokeLinecap="square">
+      <circle cx="10.77" cy="26.85" fill="currentColor" fillRule="nonzero" r="1.63" />
+      <g stroke="currentColor" strokeLinecap="square">
         <path d="m6.15 21.5-2.99 2.08" strokeWidth="1.68" />
         <path d="m6.33 24.87-3.53-1.04.26-3.67" strokeLinejoin="round" strokeWidth="1.68" />
         <path d="m17.01 23.45 2.08 3" strokeWidth="1.68" />

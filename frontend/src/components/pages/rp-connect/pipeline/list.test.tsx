@@ -90,7 +90,7 @@ const FIXTURES: Fixture[] = [
     id: 'ccc333',
     displayName: 'nightly-export',
     state: Pipeline_State.STOPPED,
-    inputs: ['generate'],
+    inputs: ['sql_select'],
     outputs: ['gcp_cloud_storage'],
   },
   {
@@ -170,6 +170,7 @@ const rowFor = (displayName: string) => {
 };
 
 const SEARCH_INPUT_RE = /search pipelines/i;
+const UNTIL_DONE_RE = /Until done/;
 const CLEAR_FILTERS_RE = /clear filters/i;
 
 const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, item: RegExp) => {
@@ -412,6 +413,17 @@ describe('the PipelineListPage', () => {
       await goToPage(user, 'Go to previous page', 1);
     });
 
+    it('shows more rows per page when asked', async () => {
+      const user = userEvent.setup();
+      await renderManyPipelines();
+
+      await user.click(screen.getByRole('combobox', { name: 'Rows per page' }));
+      await user.click(await screen.findByRole('option', { name: '50' }));
+      await waitFor(() => expect(screen.getByText('Page 1 of 1')).toBeInTheDocument());
+      expect(visibleLinkNames()).toHaveLength(35);
+      expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveTextContent('50');
+    });
+
     it('goes back to page 1 when the filters change', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
@@ -439,6 +451,19 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
       });
     });
+  });
+
+  it('says whether each pipeline stops on its own, and filters on it', async () => {
+    const user = userEvent.setup();
+    renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    expect(within(rowFor('nightly-export')).getByText('Until done')).toBeInTheDocument();
+    expect(within(rowFor('orders-enrichment')).getByText('Continuously')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Runs' }));
+    await user.click(await screen.findByRole('option', { name: UNTIL_DONE_RE }));
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
   });
 
   describe('drafts', () => {
@@ -644,5 +669,42 @@ describe('the PipelineListPage', () => {
         expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
       });
     });
+  });
+});
+
+describe('the PipelineListPage view in the URL', () => {
+  it('restores a linked view: its tab, search and facets', async () => {
+    renderWithFileRoutes(<PipelineListPage />, {
+      transport: buildTransport(),
+      initialLocation: `/?tab=running&q=orders&input=${encodeURIComponent(JSON.stringify(['redpanda']))}`,
+    });
+    await waitFor(() => expect(visibleLinkNames()).toEqual(['orders-enrichment']));
+    expect(tab('Running')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('orders');
+    expect(screen.getByRole('button', { name: CLEAR_FILTERS_RE })).toBeInTheDocument();
+  });
+
+  it('writes the tab to the URL', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await user.click(tab('Stopped'));
+    expect(router.state.location.search).toMatchObject({ tab: 'stopped' });
+  });
+
+  it('writes the search to the URL, and drops the default tab and a cleared search', async () => {
+    const user = userEvent.setup();
+    const { router } = renderList();
+    await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
+
+    await user.click(tab('Stopped'));
+    await user.click(tab('All'));
+    await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'night');
+    await waitFor(() => expect(router.state.location.search).toEqual({ q: 'night' }));
+
+    await user.click(screen.getByRole('button', { name: CLEAR_FILTERS_RE }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('');
   });
 });

@@ -1,10 +1,20 @@
 import { InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { useState } from 'react';
 
-import globExampleImg from '../../../../../assets/globExample.png';
 import { Code } from '../../../../../utils/tsx-utils';
+
+const GLOB_EXAMPLE_DATA = JSON.stringify(
+  {
+    id: 1111,
+    customer: { id: 2222, firstName: 'John', lastName: 'Example', email: 'john@example.com' },
+    'key.with.dots': { id: 3333, someText: 'abcdefg', nestedObject: { id: 4444 } },
+  },
+  null,
+  2
+);
 
 const globHelp = (
   <div>
@@ -77,7 +87,16 @@ const globHelp = (
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
-        <img alt="Examples for glob patterns" src={globExampleImg} />
+        <SimpleCodeBlock
+          allowCopy={false}
+          allowWrap={false}
+          className="my-0"
+          code={GLOB_EXAMPLE_DATA}
+          language="json"
+          maxHeight="none"
+          size="sm"
+          width="auto"
+        />
       </div>
     </div>
 

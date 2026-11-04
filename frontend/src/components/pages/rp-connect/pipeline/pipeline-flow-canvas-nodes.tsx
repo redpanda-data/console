@@ -32,16 +32,20 @@ import {
   ShieldCheck,
   Shuffle,
   Split,
+  TriangleAlert,
   Workflow,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { pluralize, pluralizeWithNumber } from 'utils/string';
 
+import { StopRow } from './stop-condition';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { sectionLabel } from '../utils/pipeline-flow-parser';
+import { hasStopSlot, type StopSlot, sectionLabel } from '../utils/pipeline-flow-parser';
+import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
@@ -224,6 +228,8 @@ export type FlowCardData = {
   appeared?: boolean;
   /** Lint messages from the server that map to this node's config. */
   lintErrors?: string[];
+  /** Warnings for deprecated components in this node's config, shown as the badge's tooltip. */
+  deprecations?: string[];
   /** Config differs from the last-saved pipeline — flagged with an info-toned "unsaved" dot. */
   unsaved?: boolean;
   // Injected by the canvas (edit mode only).
@@ -235,7 +241,24 @@ export type FlowCardData = {
   addAction?: { payload: FlowInsertPayload; label: string };
   /** Invoke the add affordance (wired by the canvas in edit mode). */
   onAddChild?: () => void;
+  /** An input's stop-condition slot (`read_until`) and how the input ends. */
+  stopSlot?: StopSlot;
+  endBehavior?: InputEndBehavior;
+  /** Set or clear the stop condition (wired by the canvas in edit mode). */
+  onSetStopCondition?: (draft: StopConditionDraft | null) => boolean;
 };
+
+// An input's stop row, on cards and broker/sequence markers that can take a stop condition.
+const InputStopRow = ({ data, isGroup }: { data: FlowCardData; isGroup?: boolean }) =>
+  hasStopSlot(data) ? (
+    <StopRow
+      effective={data.endBehavior}
+      isGroup={isGroup}
+      name={data.label}
+      onApply={data.onSetStopCondition}
+      slot={data.stopSlot}
+    />
+  ) : null;
 
 const HANDLE_IDS = [
   { id: 'l', position: Position.Left, type: 'target' },
@@ -412,6 +435,17 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </ElementTooltip>
   ) : null;
 
+// A warning-toned badge on a node that uses a deprecated component; the warnings are its tooltip.
+const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
+  messages?.length ? (
+    <ElementTooltip content={<span className="whitespace-pre-line">{messages.join('\n')}</span>}>
+      <span className="inline-flex shrink-0 items-center gap-1 rounded border border-warning/50 bg-warning-wash px-1.5 py-0.5 text-2xs font-medium text-warning">
+        <TriangleAlert className="size-3" />
+        Deprecated
+      </span>
+    </ElementTooltip>
+  ) : null;
+
 // An info-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
@@ -460,6 +494,7 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
           {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
+          <DeprecatedBadge messages={data.deprecations} />
           <UnsavedDot show={data.unsaved} />
         </div>
         <div className="flex w-full items-center gap-2 px-3 pb-2.5 text-left">
@@ -476,6 +511,7 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         </div>
       ) : null}
       <MetaRows data={data} />
+      <InputStopRow data={data} />
     </div>
   );
 };
@@ -696,8 +732,10 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           </span>
           {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
+          <DeprecatedBadge messages={data.deprecations} />
           <UnsavedDot show={data.unsaved} />
         </div>
+        <InputStopRow data={data} isGroup />
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button

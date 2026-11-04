@@ -43,7 +43,7 @@ export default function NurturePanel() {
   }
 
   return (
-    <>
+    <div data-builder-content="">
       <Content
         apiKey={BUILDER_API_KEY}
         content={content}
@@ -51,7 +51,7 @@ export default function NurturePanel() {
         enrich={false}
         model={modelName}
       />
-    </>
+    </div>
   );
 }
 

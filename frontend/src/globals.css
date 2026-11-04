@@ -27,6 +27,34 @@
   border-color: revert-layer;
 }
 
+/* Builder.io content (nurture panel, announcement bar) is authored against a white page, and the SDK
+   emits each block's colours as unlayered `.builder-<id>` rules, so it ignores the theme. Every block
+   takes the theme's ink instead: a blanket reset, because marketing can change the content in Builder
+   without a deploy here. Unlayered and (0,2,0) to beat the SDK's (0,1,0). */
+[data-builder-content] .builder-block {
+  color: inherit;
+}
+
+/* A third-party mark or raster we can't recolour sits on a `logo-plate`, so ink drawn for a white page
+   keeps its contrast: each theme decides the plate through the token, and in light it is transparent.
+   The spread paints the plate outside the box, so the mark keeps its size and the caller its padding.
+   cloud-ui's globals.css has a value-identical copy — change both or neither. */
+@theme {
+  --color-logo-plate: transparent;
+}
+
+:root[data-theme="dark"],
+:root.dark {
+  /* White softened toward the ground, so a plate reads as a deliberate light chip rather than a hole. */
+  --color-logo-plate: color-mix(in oklab, var(--color-static-light), var(--color-background) 8%);
+}
+
+@utility logo-plate {
+  border-radius: var(--radius-sm);
+  background-color: var(--color-logo-plate);
+  box-shadow: 0 0 0 0.2rem var(--color-logo-plate);
+}
+
 @layer utilities {
   /* Work surface filling the viewport below whatever chrome sits above it (--console-page-top, measured
      in components/layout/page-column.tsx). The 1rem keeps its bottom border off the viewport edge.

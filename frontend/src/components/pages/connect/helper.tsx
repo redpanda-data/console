@@ -428,7 +428,9 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
       {meta?.logo ? (
         <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
           <ZeroSizeWrapper transform="translateY(-1px)" width="22px">
-            <div style={{ width: '22px', height: '22px' }}>{meta.logo}</div>
+            <div className="logo-plate" style={{ width: '22px', height: '22px' }}>
+              {meta.logo}
+            </div>
           </ZeroSizeWrapper>
         </span>
       ) : null}

@@ -49,6 +49,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
+import { PipelineEndMeta } from './pipeline-end-chip';
 import { PipelineRunButton, PipelineStateBadge } from './pipeline-run-controls';
 import {
   alternateRunIntents,
@@ -59,6 +60,7 @@ import {
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
+import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
@@ -264,6 +266,50 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
   );
 };
 
+// The facts under a pipeline's name: its id, size, topics and end, then its tags and description.
+function PipelineViewMeta({
+  pipeline,
+  units,
+  endSummary,
+}: {
+  pipeline: Pipeline;
+  units: number;
+  endSummary: PipelineEndSummary;
+}) {
+  const description = pipeline.description?.trim();
+  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
+  const topicCount = useMemo(
+    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
+    [pipeline.configYaml]
+  );
+  const editedAt = isDraft(pipeline) ? timestampToMillis(pipeline.updateTime) : null;
+  const items: MetaEntry[] = [
+    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
+    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
+    {
+      key: 'topics',
+      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
+    },
+    { key: 'end', node: endSummary.status === 'none' ? null : <PipelineEndMeta summary={endSummary} /> },
+    {
+      key: 'url',
+      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
+    },
+    { key: 'edited', node: editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null },
+  ];
+  return (
+    <div className="flex flex-col gap-2">
+      <MetaStrip items={items} />
+      {tags.length > 0 ? (
+        <DetailLine label="Tags">
+          <TagBadges tags={tags} />
+        </DetailLine>
+      ) : null}
+      {description ? <DescriptionBlock clamp text={description} /> : null}
+    </div>
+  );
+}
+
 export function PipelineViewHeader({
   pipeline,
   onBack,
@@ -281,32 +327,8 @@ export function PipelineViewHeader({
   const navigate = useNavigate();
   const name = pipeline.displayName || pipeline.id;
   const units = cpuToTasks(pipeline.resources?.cpuShares) ?? 0;
-  const description = pipeline.description?.trim();
-  const tags = useMemo(() => getUserTagEntries(pipeline.tags), [pipeline.tags]);
-  const topicCount = useMemo(
-    () => (pipeline.configYaml ? extractAllTopics(pipeline.configYaml).length : 0),
-    [pipeline.configYaml]
-  );
-
+  const endSummary = useMemo(() => summarizePipelineEndYaml(pipeline.configYaml ?? ''), [pipeline.configYaml]);
   const viewingDraft = isDraft(pipeline);
-  const editedAt = timestampToMillis(pipeline.updateTime);
-
-  const items: MetaEntry[] = [
-    { key: 'id', node: <CopyableMeta label="ID" mono value={pipeline.id} /> },
-    { key: 'units', node: <ComputeUnitsMeta units={units} /> },
-    {
-      key: 'topics',
-      node: topicCount > 0 ? <CountMeta count={topicCount} noun={topicCount === 1 ? 'topic' : 'topics'} /> : null,
-    },
-    {
-      key: 'url',
-      node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
-    },
-    {
-      key: 'edited',
-      node: viewingDraft && editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null,
-    },
-  ];
 
   return (
     <header className={headerClassName(expanded)}>
@@ -345,15 +367,7 @@ export function PipelineViewHeader({
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <MetaStrip items={items} />
-        {tags.length > 0 ? (
-          <DetailLine label="Tags">
-            <TagBadges tags={tags} />
-          </DetailLine>
-        ) : null}
-        {description ? <DescriptionBlock clamp text={description} /> : null}
-      </div>
+      <PipelineViewMeta endSummary={endSummary} pipeline={pipeline} units={units} />
     </header>
   );
 }

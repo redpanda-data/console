@@ -14,12 +14,14 @@ rs.mock('react-query/api/connect', () => ({
 }));
 rs.mock('./monaco-editor', () => ({ default: MockEditor }));
 
-// Monaco calls beforeMount once; the page passes a new callback on every render.
-function MockEditor({ beforeMount }: { beforeMount: () => void }) {
+const MONACO_STUB = { editor: { defineTheme: () => undefined, setTheme: () => undefined } };
+
+// Monaco calls beforeMount once, with its instance; the page passes a new callback on every render.
+function MockEditor({ beforeMount }: { beforeMount: (monaco: typeof MONACO_STUB) => void }) {
   const [mountMonaco] = useState(() => beforeMount);
   useEffect(
     function runBeforeMount() {
-      mountMonaco();
+      mountMonaco(MONACO_STUB);
     },
     [mountMonaco]
   );

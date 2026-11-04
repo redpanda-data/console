@@ -2,6 +2,7 @@ import type React from 'react';
 
 export const GnuLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
+    fill="currentColor"
     preserveAspectRatio="xMidYMid"
     version="1.1"
     viewBox="0 0 256 251"

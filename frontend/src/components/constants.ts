@@ -17,6 +17,9 @@ export const FEATURE_FLAGS = {
   enableConnectSlashMenu: false,
   enableNewTopicMessagesPage: false,
   enableShadowBoxing: false,
+  // Standalone only: from the next page load, shows the header's theme switch and defaults the theme to
+  // the OS preference (theme-init.ts). Embedded Console follows the Cloud UI host.
+  enableDarkMode: false,
 };
 
 // Cloud-managed tag keys for service account integration

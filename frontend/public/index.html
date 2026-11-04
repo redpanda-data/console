@@ -17,6 +17,10 @@
     <!-- end fix https://github.com/webpack/webpack/issues/2882 -->
     <meta charset="utf-8">
     <title>Redpanda Console</title>
+    <!-- The registry's themeScript for AVAILABLE_THEME_INIT or UNAVAILABLE_THEME_INIT, picked by the cached -->
+    <!-- DARK_MODE_AVAILABLE_KEY (src/theme-init.ts): sets the theme before the bundle loads, so a dark -->
+    <!-- preference doesn't paint a white page first. Kept in sync by src/theme-init.test.ts. -->
+    <script>(function(){try{if(localStorage.getItem("redpanda-ui-dark-mode")==="true"){(function(){try{var s=localStorage.getItem("redpanda-ui-theme"),t=s==="dark"||s==="light"||s==="system"?s:"system",r=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t,e=document.documentElement;e.dataset.theme=r;e.classList.toggle("dark",r==="dark");e.style.colorScheme=r}catch{}})()}else{(function(){try{var s=localStorage.getItem("redpanda-ui-theme-unavailable"),t=s==="dark"||s==="light"||s==="system"?s:"light",r=t==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t,e=document.documentElement;e.dataset.theme=r;e.classList.toggle("dark",r==="dark");e.style.colorScheme=r}catch{}})()}}catch{}})()</script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="WebApp to explore Kafka Messages, Topics, ...">
 

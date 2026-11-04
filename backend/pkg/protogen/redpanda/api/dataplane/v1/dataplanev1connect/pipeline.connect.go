@@ -111,6 +111,9 @@ type PipelineServiceClient interface {
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	// It also deploys a draft: the configuration is validated first, and an invalid
 	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
+	// The pipeline's egress gateways are checked as on CreatePipeline; a gateway
+	// it cannot use fails with NOT_FOUND, and one not yet provisioned with
+	// FAILED_PRECONDITION, leaving the pipeline as it was.
 	StartPipeline(context.Context, *connect.Request[v1.StartPipelineRequest]) (*connect.Response[v1.StartPipelineResponse], error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1.GetPipelineServiceConfigSchemaResponse], error)
@@ -311,6 +314,9 @@ type PipelineServiceHandler interface {
 	// StartPipeline starts a specific Redpanda Connect pipeline that has been previously stopped.
 	// It also deploys a draft: the configuration is validated first, and an invalid
 	// one fails with INVALID_ARGUMENT and LintHints, leaving the pipeline a draft.
+	// The pipeline's egress gateways are checked as on CreatePipeline; a gateway
+	// it cannot use fails with NOT_FOUND, and one not yet provisioned with
+	// FAILED_PRECONDITION, leaving the pipeline as it was.
 	StartPipeline(context.Context, *connect.Request[v1.StartPipelineRequest]) (*connect.Response[v1.StartPipelineResponse], error)
 	// The configuration schema includes available [components and processors](https://docs.redpanda.com/redpanda-cloud/develop/connect/components/about) in this Redpanda Connect instance.
 	GetPipelineServiceConfigSchema(context.Context, *connect.Request[v1.GetPipelineServiceConfigSchemaRequest]) (*connect.Response[v1.GetPipelineServiceConfigSchemaResponse], error)

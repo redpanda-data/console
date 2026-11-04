@@ -11,7 +11,7 @@
 
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
-import { AlertCircle, KeyRound, MousePointerClick } from 'lucide-react';
+import { AlertCircle, KeyRound, MousePointerClick, TriangleAlert } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
 
 import { FloatingChipPanel } from './floating-chip-panel';
@@ -36,6 +36,8 @@ type PipelineProblemsPanelProps = {
   missingSecrets?: string[];
   /** Open the add-secrets flow (omit to hide the action, e.g. in view mode). */
   onAddSecrets?: () => void;
+  /** Deprecated components in use: warnings, located like problems. */
+  deprecations?: PipelineProblem[];
 };
 
 // Section heading in the expanded panel, shown only when more than one kind of issue is present.
@@ -45,11 +47,24 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-// One lint problem: clickable row that selects its node, or inert when it maps to no node.
-const ProblemRow = ({ problem, onSelect }: { problem: PipelineProblem; onSelect?: () => void }) => {
+// One problem (or, with `warning`, a deprecation): clickable row that selects its node, or inert
+// when it maps to no node.
+const ProblemRow = ({
+  problem,
+  onSelect,
+  warning,
+}: {
+  problem: PipelineProblem;
+  onSelect?: () => void;
+  warning?: boolean;
+}) => {
   const body = (
     <>
-      <TonedIcon className="mt-0.5 size-3.5 shrink-0" icon={AlertCircle} tone="destructive" />
+      <TonedIcon
+        className="mt-0.5 size-3.5 shrink-0"
+        icon={warning ? TriangleAlert : AlertCircle}
+        tone={warning ? 'warning' : 'destructive'}
+      />
       <span className="flex min-w-0 flex-col">
         <span className="text-body-sm text-foreground">{problem.message}</span>
         {onSelect ? (
@@ -106,33 +121,57 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
 );
 
 // The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
-function issuesLabel(problemCount: number, secretCount: number): string {
-  if (secretCount === 0) {
-    return pluralizeWithNumber(problemCount, 'problem');
+function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number): string {
+  const counts = [problemCount, secretCount, deprecationCount];
+  if (counts.filter((count) => count > 0).length > 1) {
+    return pluralizeWithNumber(problemCount + secretCount + deprecationCount, 'issue');
   }
   if (problemCount > 0) {
-    return pluralizeWithNumber(problemCount + secretCount, 'issue');
+    return pluralizeWithNumber(problemCount, 'problem');
   }
-  return pluralizeWithNumber(secretCount, 'missing secret');
+  if (secretCount > 0) {
+    return pluralizeWithNumber(secretCount, 'missing secret');
+  }
+  return pluralizeWithNumber(deprecationCount, 'deprecated component');
+}
+
+// Clicking a located issue selects its node and collapses the list.
+function selectHandler(
+  problem: PipelineProblem,
+  onSelectProblem: PipelineProblemsPanelProps['onSelectProblem'],
+  close: () => void
+): (() => void) | undefined {
+  const { nodeId, target, caseTarget } = problem;
+  if (!(nodeId && target)) {
+    return;
+  }
+  return () => {
+    onSelectProblem(nodeId, target, caseTarget);
+    close();
+  };
 }
 
 /**
- * Floating "issues" chip on the Visual canvas unifying lint problems and missing secrets.
- * Expands to a list; clicking a problem selects its node (problems without a node are inert).
+ * Floating "issues" chip on the Visual canvas unifying lint problems, missing secrets, and
+ * deprecated components. Expands to a list; clicking an issue selects its node (issues without a
+ * node are inert).
  */
 export function PipelineProblemsPanel({
   problems,
   onSelectProblem,
   missingSecrets = [],
   onAddSecrets,
+  deprecations = [],
 }: PipelineProblemsPanelProps) {
   const hasLint = problems.length > 0;
   const hasSecrets = missingSecrets.length > 0;
-  if (!(hasLint || hasSecrets)) {
+  const hasDeprecations = deprecations.length > 0;
+  if (!(hasLint || hasSecrets || hasDeprecations)) {
     return null;
   }
 
-  const Icon = hasLint ? AlertCircle : KeyRound;
+  const warningIcon = hasSecrets ? KeyRound : TriangleAlert;
+  const Icon = hasLint ? AlertCircle : warningIcon;
   const tone = hasLint
     ? 'border-destructive/40 text-destructive hover:bg-destructive/5'
     : 'border-warning/50 text-warning hover:bg-warning-wash';
@@ -141,7 +180,7 @@ export function PipelineProblemsPanel({
     <FloatingChipPanel
       chipClassName={tone}
       chipTestId="pipeline-problems-chip"
-      label={issuesLabel(problems.length, missingSecrets.length)}
+      label={issuesLabel(problems.length, missingSecrets.length, deprecations.length)}
       leading={<Icon className="size-3.5" />}
       listClassName="w-80"
       listTestId="pipeline-problems-list"
@@ -162,25 +201,32 @@ export function PipelineProblemsPanel({
             />
           ) : null}
 
-          {hasLint && hasSecrets ? (
-            <div className="mt-1 border-t border-border/60 pt-1">
+          {hasLint && (hasSecrets || hasDeprecations) ? (
+            <div className={hasSecrets ? 'mt-1 border-t border-border/60 pt-1' : undefined}>
               <SectionLabel>Problems</SectionLabel>
             </div>
           ) : null}
           {problems.map((problem) => (
-            <ProblemRow
-              key={problem.key}
-              onSelect={
-                problem.nodeId && problem.target
-                  ? () => {
-                      onSelectProblem(problem.nodeId as string, problem.target as EditTarget, problem.caseTarget);
-                      close();
-                    }
-                  : undefined
-              }
-              problem={problem}
-            />
+            <ProblemRow key={problem.key} onSelect={selectHandler(problem, onSelectProblem, close)} problem={problem} />
           ))}
+
+          {hasDeprecations ? (
+            <div data-testid="pipeline-problems-deprecations">
+              {hasLint || hasSecrets ? (
+                <div className="mt-1 border-t border-border/60 pt-1">
+                  <SectionLabel>Deprecated components</SectionLabel>
+                </div>
+              ) : null}
+              {deprecations.map((deprecation) => (
+                <ProblemRow
+                  key={deprecation.key}
+                  onSelect={selectHandler(deprecation, onSelectProblem, close)}
+                  problem={deprecation}
+                  warning
+                />
+              ))}
+            </div>
+          ) : null}
         </>
       )}
     </FloatingChipPanel>

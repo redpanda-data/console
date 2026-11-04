@@ -11,12 +11,14 @@
 
 import type { EditorProps, Monaco } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
+import { useMonacoTheme } from 'hooks/use-monaco-theme';
 import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { lazy, useEffect, useState } from 'react';
+import { lazy, useEffect, useMemo, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
+import { useDeprecationMarkers } from '../pages/rp-connect/pipeline/use-deprecation-markers';
 import { parseSchema } from '../pages/rp-connect/utils/schema';
 import { withYamlDocumentation } from '../pages/rp-connect/utils/yaml-editor-schema';
 import { annotateAnyOfTitles } from '../ui/yaml/yaml-editor';
@@ -89,26 +91,38 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
-export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
-  const { options: givenOptions, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+// The live component catalog, applied to the YAML schema's docs once both have loaded.
+function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
   const { data: componentResponse } = useListComponentsQuery();
   const componentList = componentResponse?.components;
+  const components = useMemo(() => (componentList ? parseSchema(componentList) : undefined), [componentList]);
 
   useEffect(
     function updateYamlDocumentation() {
-      if (yaml && componentList) {
+      if (yaml && components) {
         // The schema applies before update settles; a failed revalidation only leaves stale markers.
         yaml
-          .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, parseSchema(componentList))))
+          .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, components)))
           .catch((error: unknown) => {
             globalThis.reportError(error);
           });
       }
     },
-    [yaml, componentList]
+    [yaml, components]
   );
+
+  return components;
+}
+
+export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
+  const { options: givenOptions, beforeMount, onMount, onChange, ...rest } = props;
+  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const monacoTheme = useMonacoTheme();
+  const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
+  // Callers pass `value` or only `defaultValue`, so track what's typed for the latter.
+  const [typedText, setTypedText] = useState<string>();
+  const components = useDocumentedCatalog(yaml);
+  const deprecations = useDeprecationMarkers(rest.value ?? typedText ?? rest.defaultValue ?? '', components);
 
   useEffect(() => {
     return () => {
@@ -127,7 +141,6 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
       <LazyEditor
-        beforeMount={(monaco) => setMonacoOptions(monaco)}
         defaultLanguage="yaml"
         defaultValue={''}
         loading={<LoadingPlaceholder />}
@@ -138,6 +151,20 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
           style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
         }}
         {...rest}
+        beforeMount={(monaco) => {
+          monacoTheme.beforeMount(monaco);
+          setMonacoOptions(monaco);
+          beforeMount?.(monaco);
+        }}
+        onChange={(value, event) => {
+          setTypedText(value ?? '');
+          onChange?.(value, event);
+        }}
+        onMount={(instance, monaco) => {
+          deprecations.attach(instance, monaco);
+          onMount?.(instance, monaco);
+        }}
+        theme={monacoTheme.theme}
       />
     </LoadingBoundary>
   );
