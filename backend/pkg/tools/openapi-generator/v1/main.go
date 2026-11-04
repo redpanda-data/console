@@ -578,7 +578,7 @@ func updateTransforms(doc3 *openapi3.T) {
 		// that we don't need to construct all properties of the openapi3.Operation struct.
 		transformsOperation := *doc3.Paths.Value("/v1/transforms").Get
 		transformsOperation.OperationID = "TransformService_DeployTransform"
-		transformsOperation.Summary = "Deploy Transform"
+		transformsOperation.Summary = "Deploy transform"
 		transformsOperation.Description = "Initiate deployment of a new Wasm transform. This endpoint uses " +
 			"multipart/form-data encoding. Following deployment, a brief period is required before the Wasm " +
 			"transform becomes operational. Monitor the partition statuses to check whether the " +
