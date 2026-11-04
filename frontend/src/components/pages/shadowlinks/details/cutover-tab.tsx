@@ -134,7 +134,7 @@ const curl = (method: string, body: string) => [
 const settingsCommand = (link: LinkIdentity) => {
   const name = link.authentication === 'none' ? '' : (link.principal ?? '<shadow-link-user>');
   return [
-    '# On the source cluster: let the shadow link keep reading once boxed.',
+    '# On the source cluster: let the shadow link keep reading once fenced.',
     '# This mask only adds names; to remove one, send the whole list with "updateMask":"readPolicy".',
     ADMIN_API_AUTH_NOTE,
     ...curl(
@@ -152,19 +152,19 @@ const statusCommand = () =>
 
 const MANUAL_REASON: Record<Extract<SourceBoxStep, { kind: 'manual' }>['reason'], string> = {
   external:
-    'Redpanda Cloud doesn’t manage this link’s source cluster, so Console can’t read its box. Run these steps with its Admin API.',
+    'Redpanda Cloud doesn’t manage this link’s source cluster, so Console can’t read its fence. Run these steps with its Admin API.',
   unavailable:
-    'Console can’t read the source cluster’s box: it doesn’t serve the Shadow Box API, or you can’t read it. Run these steps with its Admin API.',
+    'Console can’t read the source cluster’s fence: it doesn’t serve the cluster fence API, or you can’t read it. Run these steps with its Admin API.',
   unresolved:
-    'Redpanda Cloud couldn’t tell which cluster this link reads from, so Console can’t read the source’s box. Run these steps with its Admin API.',
+    'Redpanda Cloud couldn’t tell which cluster this link reads from, so Console can’t read the source’s fence. Run these steps with its Admin API.',
   standalone:
-    'A shadow cluster has no view of its source’s box, so Console can’t read it from here. Run these steps with the source cluster’s Admin API.',
+    'A shadow cluster has no view of its source’s fence, so Console can’t read it from here. Run these steps with the source cluster’s Admin API.',
 };
 
 const PEER_UNAVAILABLE: Record<NonNullable<Extract<ShadowLinkPeerBox, { status: 'unavailable' }>['reason']>, string> = {
-  unsupported: 'It doesn’t report a shadow box; it may run a Redpanda version without shadow boxing.',
-  forbidden: 'Only superusers can read a cluster’s shadow box.',
-  inactive: 'Shadow boxing turns on once every broker runs Redpanda v26.3.1 or later.',
+  unsupported: 'It doesn’t report a fence; it may run a Redpanda version without cluster fencing.',
+  forbidden: 'You don’t have permission to view the source cluster’s fence.',
+  inactive: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',
   'no-leader': 'It has no controller leader right now. Redpanda Cloud keeps trying.',
   'not-running': 'It isn’t running.',
   error: 'Redpanda Cloud couldn’t read it.',
@@ -237,8 +237,8 @@ const SettingsStepBody = ({ step, link }: { step: CloudStep; link: LinkIdentity 
           <AlertDescription>
             <p>
               {box.state === 'boxing' || box.state === 'boxed'
-                ? 'Its brokers reject this link’s fetches, so lag can’t reach zero. Saving the user puts the source back in Boxing until every broker has it; writes stay blocked the whole time.'
-                : 'Once the source is boxed, its brokers would reject this link’s fetches and lag couldn’t reach zero. By default a box blocks every consumer, this link’s user included.'}
+                ? 'Its brokers reject this link’s fetches, so lag can’t reach zero. Saving the user puts the source back in Fencing until every broker has it; writes stay blocked the whole time.'
+                : 'Once the source is fenced, its brokers would reject this link’s fetches and lag couldn’t reach zero. By default a fence blocks every consumer, this link’s user included.'}
             </p>
           </AlertDescription>
         </Alert>
@@ -247,7 +247,7 @@ const SettingsStepBody = ({ step, link }: { step: CloudStep; link: LinkIdentity 
         <p className="text-body-sm text-muted-foreground">
           {box.allowAllReads
             ? `Allow all reads is on for ${source.clusterName}, so this link can keep reading.`
-            : `${source.clusterName}’s saved settings let this link keep reading once it’s boxed.`}
+            : `${source.clusterName}’s saved settings let this link keep reading once it’s fenced.`}
         </p>
       ) : null}
       {openSource && step.linkExempt !== true ? (
@@ -279,7 +279,7 @@ const BoxStepBody = ({ step }: { step: CloudStep }) => {
   if (requested) {
     return (
       <p className="text-body-sm text-muted-foreground">
-        Box was called on {source.clusterName}
+        Fence was called on {source.clusterName}
         {since && box.state === 'boxing' ? ` ${formatBoxDuration(now - since.getTime())} ago` : ''}. Each broker rejects
         writes as soon as it picks it up.
       </p>
@@ -288,14 +288,16 @@ const BoxStepBody = ({ step }: { step: CloudStep }) => {
   return (
     <>
       <p className="text-body-sm text-muted-foreground">
-        Box runs on {source.clusterName}, with its saved settings. Each broker there rejects writes as soon as it picks
-        it up, so do this just before you fail over.
+        Fence runs on {source.clusterName}, with its saved settings. Each broker there rejects writes as soon as it
+        picks it up, so do this just before you fail over.
       </p>
       {openSource ? (
         <div className="flex flex-wrap gap-2">
           <DisabledReasonTooltip
             reason={
-              step.linkExempt === false ? 'Exempt this link’s user first, or the box would stop it reading.' : undefined
+              step.linkExempt === false
+                ? 'Exempt this link’s user first, or the fence would stop it reading.'
+                : undefined
             }
           >
             <Button
@@ -305,7 +307,7 @@ const BoxStepBody = ({ step }: { step: CloudStep }) => {
               testId="cutover-open-source"
               variant="primary"
             >
-              Box {source.clusterName}
+              Fence {source.clusterName}
             </Button>
           </DisabledReasonTooltip>
         </div>
@@ -341,15 +343,15 @@ const BoxedStepBody = ({ step }: { step: CloudStep }) => {
         <p className="text-body-sm text-muted-foreground" data-testid="cutover-boxing-progress">
           {total > 0 ? `${confirmed} of ${total} brokers have confirmed. ` : ''}
           {down.length > 0
-            ? `${unreachableBrokersSubject(down)} answering, so ${source.clusterName} stays boxing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`
+            ? `${unreachableBrokersSubject(down)} answering, so ${source.clusterName} stays fencing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`
             : ''}
           {down.length === 0 && behind.length > 0 ? `Waiting on ${brokersPhrase(behind)}.` : ''}
         </p>
       ) : null}
       {box.state === 'boxed' ? (
         <p className="text-body-sm text-muted-foreground">
-          Every broker confirmed, so nothing new is written to {source.clusterName}. Writes accepted just before the box
-          can still arrive here.
+          Every broker confirmed, so nothing new is written to {source.clusterName}. Writes accepted just before the
+          fence can still arrive here.
         </p>
       ) : null}
       {openSource && (box.state === 'boxing' || box.state === 'boxed') ? (
@@ -363,7 +365,7 @@ const BoxedStepBody = ({ step }: { step: CloudStep }) => {
             testId="cutover-unbox-source"
             variant="outline"
           >
-            Unbox {source.clusterName}
+            Unfence {source.clusterName}
           </Button>
         </div>
       ) : null}
@@ -397,8 +399,8 @@ const describeLag = (lag: LagStep): string => {
 
 const LAG_NOTE: Partial<Record<LagStep['status'], string>> = {
   'waiting-for-box':
-    'Lag can still grow until the source reports Boxed, because some of its brokers may still take writes.',
-  blocked: 'The source’s box blocks this link’s fetches, so lag can’t drain until the link’s user is exempt.',
+    'Lag can still grow until the source reports Fenced, because some of its brokers may still take writes.',
+  blocked: 'The source’s fence blocks this link’s fetches, so lag can’t drain until the link’s user is exempt.',
 };
 
 const LagStaleAlert = ({ onRetry }: { onRetry: () => void }) => (
@@ -456,7 +458,7 @@ const LagStepBody = ({ lag, failedOver, onRetry }: { lag: LagStep; failedOver: b
       </p>
       <p className="text-body-sm text-muted-foreground">
         {LAG_NOTE[lag.status] ??
-          'With the source boxed, nothing new is written there, so lag drains. Writes accepted just before the box can still arrive.'}
+          'With the source fenced, nothing new is written there, so lag drains. Writes accepted just before the fence can still arrive.'}
       </p>
       {lag.paused.length > 0 ? (
         <Alert testId="cutover-paused-topics" variant="warning">
@@ -504,7 +506,7 @@ const LAG_BADGE: Record<LagStep['status'], ReactNode> = {
   ),
   'waiting-for-box': (
     <StatusBadge size="sm" variant="disabled">
-      Waiting for Boxed
+      Waiting for Fenced
     </StatusBadge>
   ),
   blocked: (
@@ -592,7 +594,7 @@ const FailoverStepBody = ({
         ) : null}
       </div>
       <p className="text-body-sm text-muted-foreground">
-        If {sourceName} is down and can’t be boxed, use Fail over all topics at the top of the page instead.
+        If {sourceName} is down and can’t be fenced, use Fail over all topics at the top of the page instead.
       </p>
     </>
   );
@@ -614,9 +616,9 @@ const MoveClientsStepBody = ({
     <ul className="list-disc space-y-1 pl-5">
       <li>Repoint producers and consumers to {clusterName}.</li>
       <li>Re-create any Redpanda Connect pipelines here.</li>
-      <li>Leave {sourceName} boxed until they have moved, so nothing writes to it by mistake.</li>
+      <li>Leave {sourceName} fenced until they have moved, so nothing writes to it by mistake.</li>
       <li>
-        To fail back later, unbox {sourceName} first: a boxed cluster rejects a new shadow link with UNAVAILABLE, and
+        To fail back later, unfence {sourceName} first: a fenced cluster rejects a new shadow link with UNAVAILABLE, and
         retrying won’t help.
       </li>
     </ul>
@@ -655,7 +657,7 @@ const SourceLaneSteps = ({
       <li className="py-5">
         <p className="flex items-center gap-2 text-body text-muted-foreground" data-testid="cutover-box-loading">
           <Spinner className="size-4" />
-          {box.source ? `Reading the box on ${box.source.clusterName}…` : 'Finding the cluster this link reads from…'}
+          {box.source ? `Reading the fence on ${box.source.clusterName}…` : 'Finding the cluster this link reads from…'}
         </p>
       </li>
     );
@@ -679,10 +681,10 @@ const SourceLaneSteps = ({
         <Step index={1} state={states.settings} testId="cutover-step-settings" title="Save settings">
           <ManualCommand code={settingsCommand(linkIdentity)} testId="cutover-admin-api-settings" />
         </Step>
-        <Step index={2} state={states.box} testId="cutover-step-box" title="Box">
+        <Step index={2} state={states.box} testId="cutover-step-box" title="Fence">
           <ManualCommand code={boxCommand()} testId="cutover-admin-api-box" />
         </Step>
-        <Step index={3} state={states.boxed} testId="cutover-step-boxed" title="Wait for Boxed">
+        <Step index={3} state={states.boxed} testId="cutover-step-boxed" title="Wait for Fenced">
           <ManualCommand code={statusCommand()} testId="cutover-admin-api-status" />
           <div className="flex items-start gap-2">
             <Checkbox
@@ -692,11 +694,11 @@ const SourceLaneSteps = ({
               testId="cutover-source-boxed-confirmation"
             />
             <Label htmlFor="cutover-source-boxed-confirmation">
-              <span className="font-normal">The source cluster reports Boxed, with this link’s user exempt</span>
+              <span className="font-normal">The source cluster reports Fenced, with this link’s user exempt</span>
             </Label>
           </div>
           <p className="text-body-sm text-muted-foreground">
-            This is your confirmation, not a status Console has read, so make sure the box is in place before you fail
+            This is your confirmation, not a status Console has read, so make sure the fence is in place before you fail
             over.
           </p>
         </Step>
@@ -719,11 +721,11 @@ const SourceLaneSteps = ({
         state={states.box}
         status={states.box === 'done' ? DONE_BADGE : null}
         testId="cutover-step-box"
-        title="Box"
+        title="Fence"
       >
         <BoxStepBody step={box} />
       </Step>
-      <Step index={3} state={states.boxed} testId="cutover-step-boxed" title="Wait for Boxed">
+      <Step index={3} state={states.boxed} testId="cutover-step-boxed" title="Wait for Fenced">
         <BoxedStepBody step={box} />
       </Step>
     </>
@@ -756,12 +758,12 @@ export const CutoverTab = ({
           <div className="flex flex-col gap-1">
             <h2 className="text-heading-sm">Cut over from {sourceName}</h2>
             <p className="text-body text-muted-foreground">
-              Save the settings, box the source, and wait until it reports Boxed. Then fail the link over here. Don’t
-              skip the settings: by default a box blocks every consumer, this link’s user included.
+              Save the settings, fence the source, and wait until it reports Fenced. Then fail the link over here. Don’t
+              skip the settings: by default a fence blocks every consumer, this link’s user included.
             </p>
           </div>
           <Lane
-            description="The shadow box API on the source cluster. Each change runs on its own page."
+            description="The cluster fence API on the source cluster. Each change runs on its own page."
             testId="cutover-lane-source"
             title={`On ${sourceName}`}
           >

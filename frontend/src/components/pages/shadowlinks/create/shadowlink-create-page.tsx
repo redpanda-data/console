@@ -247,7 +247,7 @@ export const ShadowLinkCreatePage = () => {
     <div className="flex flex-col gap-4">
       {boxedReason ? (
         <Alert testId="shadowlink-create-boxed" variant="warning">
-          <AlertTitle>This cluster is shadow boxed</AlertTitle>
+          <AlertTitle>This cluster is fenced</AlertTitle>
           <AlertDescription>{boxedReason}</AlertDescription>
         </Alert>
       ) : null}

@@ -186,7 +186,7 @@ describe('formatToastErrorMessageGRPC', () => {
   });
 });
 
-describe('formatToastErrorMessageGRPC while the cluster is shadow boxed', () => {
+describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
   const kafkaError = (reason: string, code = Code.InvalidArgument) =>
     new ConnectError('the request was rejected', code, undefined, [
       { desc: ErrorInfoSchema, value: create(ErrorInfoSchema, { reason, domain: 'redpanda.com/kafka' }) },
@@ -196,12 +196,12 @@ describe('formatToastErrorMessageGRPC while the cluster is shadow boxed', () => 
     useShadowBoxStore.setState({ phase: null });
   });
 
-  test('names the box after the broker’s own message for a policy violation', () => {
+  test('names the fence after the broker’s own message for a policy violation', () => {
     useShadowBoxStore.setState({ phase: 'boxed' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
     ).toBe(
-      'Failed to create topic: the request was rejected (reason: POLICY_VIOLATION). This cluster is shadow boxed, which rejects writes and most changes a shadow link copies until it’s unboxed.'
+      'Failed to create topic: the request was rejected (reason: POLICY_VIOLATION). This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.'
     );
   });
 
@@ -209,14 +209,14 @@ describe('formatToastErrorMessageGRPC while the cluster is shadow boxed', () => 
     useShadowBoxStore.setState({ phase: 'unboxing' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
-    ).toContain('being unboxed');
+    ).toContain('being unfenced');
   });
 
-  test('doesn’t blame the box for a timeout', () => {
+  test('doesn’t blame the fence for a timeout', () => {
     useShadowBoxStore.setState({ phase: 'boxed' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('REQUEST_TIMED_OUT'), action: 'start', entity: 'pipeline' })
-    ).not.toContain('shadow boxed');
+    ).not.toContain('fenced');
   });
 
   test('leaves unrelated failed preconditions alone', () => {
@@ -227,11 +227,11 @@ describe('formatToastErrorMessageGRPC while the cluster is shadow boxed', () => 
     );
   });
 
-  test('says nothing about a box when the cluster isn’t boxed', () => {
+  test('says nothing about a fence when the cluster isn’t fenced', () => {
     useShadowBoxStore.setState({ phase: 'unboxed' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
-    ).not.toContain('shadow boxed');
+    ).not.toContain('fenced');
   });
 });
 

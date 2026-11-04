@@ -15,12 +15,13 @@ import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { isBoxedReadError } from './shadow-box-model';
 
 /**
- * Every change a box rejects that Console offers a control for. Topic config changes, DeleteRecords,
- * users and SCRAM passwords still go through, so they aren't here.
+ * Every change a fence rejects that Console offers a control for. DeleteRecords, users and SCRAM
+ * passwords still go through, so they aren't here.
  */
 export type BoxedAction =
   | 'createTopic'
   | 'deleteTopic'
+  | 'editTopicConfig'
   | 'produce'
   | 'editAcls'
   | 'editRoles'
@@ -32,6 +33,7 @@ export type BoxedAction =
 const ACTION_PHRASE: Record<Exclude<BoxedAction, 'createShadowLink'>, string> = {
   createTopic: 'create topics or add partitions',
   deleteTopic: 'delete topics',
+  editTopicConfig: 'change topic configuration',
   produce: 'produce records',
   editAcls: 'create or delete ACLs',
   editRoles: 'create, change or delete roles',
@@ -42,12 +44,8 @@ const ACTION_PHRASE: Record<Exclude<BoxedAction, 'createShadowLink'>, string> = 
 
 const boxedActionReason = (action: BoxedAction) =>
   action === 'createShadowLink'
-    ? 'A shadow boxed cluster rejects new shadow links, and retrying won’t help. Unbox it first.'
-    : `You can’t ${ACTION_PHRASE[action]} while this cluster is shadow boxed. Unbox it first.`;
-
-/** For pages whose changes still go through while boxed, but may not reach a shadow cluster in time. */
-export const BOXED_TOPIC_CONFIG_NOTE =
-  'This cluster is shadow boxed. Topic config changes still go through, but a shadow link copies some topic properties, so a change made now may not reach the shadow before you fail over.';
+    ? 'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
+    : `You can’t ${ACTION_PHRASE[action]} while this cluster is fenced. Unfence it first.`;
 
 /**
  * Disables write controls up front while the cluster blocks, so users get a reason instead of a

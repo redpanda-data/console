@@ -75,7 +75,7 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
         value={named}
       />
       <FieldDescription>
-        While the cluster is boxed, only these users can fetch from user topics. Add each shadow link’s user, or the
+        While the cluster is fenced, only these users can fetch from user topics. Add each shadow link’s user, or the
         link can’t finish copying. Enter bare user names, such as <span className="font-mono">shadow-orders</span>, not{' '}
         <span className="font-mono">User:shadow-orders</span>. {SUPERUSERS_NOT_EXEMPT}
       </FieldDescription>
@@ -194,7 +194,7 @@ const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps,
             <FieldContent>
               <FieldLabel htmlFor="shadow-box-allow-all-reads">Allow all reads</FieldLabel>
               <FieldDescription>
-                Every consumer can keep fetching while the box rejects writes, so the exempt list doesn’t matter.
+                Every consumer can keep fetching while the fence rejects writes, so the exempt list doesn’t matter.
                 Consumers can keep reading while you repoint them.
               </FieldDescription>
             </FieldContent>

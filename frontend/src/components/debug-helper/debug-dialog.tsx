@@ -567,12 +567,12 @@ const SIMULATOR_SWITCHES = [
   {
     id: 'slowCalls',
     label: 'Changes take over 5 seconds',
-    description: 'Box, Unbox and settings changes apply, then return DEADLINE_EXCEEDED.',
+    description: 'Fence, Unfence and settings changes apply, then return DEADLINE_EXCEEDED.',
   },
 ] as const;
 
 const BOX_FAILURES: { value: SimBoxFailure | 'none'; label: string }[] = [
-  { value: 'none', label: 'Box succeeds' },
+  { value: 'none', label: 'Fence succeeds' },
   { value: 'feature-inactive', label: 'Not every broker runs v26.3.1' },
   { value: 'own-shadow-link', label: 'Has a shadow link that hasn’t failed over' },
   { value: 'data-migration', label: 'A data migration is unfinished' },
@@ -607,8 +607,8 @@ function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
     <div className="flex flex-col gap-2.5">
       {flagOn ? null : (
         <div className="rounded-md border border-warning-line bg-warning-wash px-3 py-2 text-body-sm">
-          The <InlineCode>enableShadowBoxing</InlineCode> flag is off, so the shadow boxing UI stays hidden. Turn it on
-          in Feature flags (or in Cloud UI when embedded).
+          The <InlineCode>enableShadowBoxing</InlineCode> flag is off, so the cluster fencing UI stays hidden. Turn it
+          on in Feature flags (or in Cloud UI when embedded).
         </div>
       )}
       <div className="overflow-hidden rounded-md border">
@@ -622,7 +622,7 @@ function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
             testId="debug-shadow-box-simulator"
           />
           <SimulatorRowText
-            description="Answers ClusterFenceService in the browser, per cluster, the way the Admin API does. Cloud UI on the same origin reads the same simulated boxes."
+            description="Answers ClusterFenceService in the browser, per cluster, the way the Admin API does. Cloud UI on the same origin reads the same simulated fences."
             label="Simulate the cluster fence API"
           />
         </SimulatorRow>
@@ -658,8 +658,8 @@ function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
         </SimulatorRow>
         <SimulatorRow>
           <SimulatorRowText
-            description="Box fails with FAILED_PRECONDITION for this reason."
-            label="Box preconditions"
+            description="Fence fails with FAILED_PRECONDITION for this reason."
+            label="Fence preconditions"
           />
           <Select
             disabled={!enabled}
@@ -696,13 +696,13 @@ function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
           icon={<Trash2 />}
           onClick={() => {
             resetShadowBoxSimulator();
-            toast.success('Reset every simulated shadow box to unboxed');
+            toast.success('Reset every simulated fence to unfenced');
             onMutate();
           }}
           size="xs"
           variant="destructive-ghost"
         >
-          Reset simulated boxes
+          Reset simulated fences
         </Button>
       </div>
     </div>
@@ -1088,7 +1088,7 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
       'Override config.featureFlags locally. Overrides persist to localStorage; reload after toggling — most components read flags during render.',
   },
   shadowbox: {
-    title: 'Shadow box',
+    title: 'Cluster fence',
     description:
       'Stand in for the cluster fence API, which no released Redpanda serves yet, and force its failure modes.',
   },
@@ -1120,7 +1120,7 @@ const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: Re
     items: [
       { id: 'visual', label: 'Visual', icon: <Eye className="h-3.5 w-3.5 shrink-0" /> },
       { id: 'flags', label: 'Feature flags', icon: <Flag className="h-3.5 w-3.5 shrink-0" /> },
-      { id: 'shadowbox', label: 'Shadow box', icon: <Box className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'shadowbox', label: 'Cluster fence', icon: <Box className="h-3.5 w-3.5 shrink-0" /> },
     ],
   },
   {

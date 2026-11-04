@@ -109,11 +109,11 @@ const DEFAULT_OPTIONS: SimulatorOptions = {
 const DEFAULT_SETTINGS: SimSettings = { exemptPrincipals: [], allowAllReads: false };
 
 const BOX_FAILURE_MESSAGE: Record<SimBoxFailure, string> = {
-  'feature-inactive': 'cluster fence feature is not active until every broker runs v26.3.1',
-  'own-shadow-link': 'cannot start while a shadow link is configured',
-  'data-migration': 'cannot start while data migration 7 is unfinished',
-  'cluster-recovery': 'cannot start while a cluster recovery is running',
-  'read-replica': "topic orders-replica uses a storage mode the cluster fence doesn't support (read replica)",
+  'feature-inactive': 'Cluster fence feature is not active',
+  'own-shadow-link': 'Cluster fence cannot start while a shadow link is configured',
+  'data-migration': 'Data migrations must finish, be cancelled, or be deleted before fencing',
+  'cluster-recovery': 'Cluster recovery must finish before fencing',
+  'read-replica': "Cluster fence does not support an in-scope topic's storage configuration",
 };
 
 const DOWN_BROKER_MESSAGE = 'rpc::errc::disconnected_endpoint(node down)';

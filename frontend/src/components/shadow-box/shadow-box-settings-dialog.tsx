@@ -128,10 +128,10 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
       { settings: values.settings, expectedRevision: opened.revision },
       {
         onSuccess: () => {
-          toast.success('Shadow box settings saved', {
+          toast.success('Cluster fence settings saved', {
             description: reboxes
-              ? 'The cluster is in Boxing until every broker has them. Writes stay blocked the whole time.'
-              : 'The next Box uses them.',
+              ? 'The cluster is in Fencing until every broker has them. Writes stay blocked the whole time.'
+              : 'The next Fence uses them.',
           });
           onClose();
         },
@@ -142,9 +142,9 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
   return (
     <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
       <DialogHeader align="left">
-        <DialogTitle>Shadow box settings</DialogTitle>
+        <DialogTitle>Cluster fence settings</DialogTitle>
         <DialogDescription>
-          The cluster keeps one set of settings. Box uses them, and they stay saved after Unbox.
+          The cluster keeps one set of settings. Fence uses them, and they stay saved after Unfence.
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="lg">
@@ -154,8 +154,8 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
             <AlertDescription>
               <p>
                 {opened.phase === 'boxed'
-                  ? 'Saving puts the cluster back in Boxing'
-                  : 'Saving keeps the cluster in Boxing'}{' '}
+                  ? 'Saving puts the cluster back in Fencing'
+                  : 'Saving keeps the cluster in Fencing'}{' '}
                 until every broker has the new settings. Writes stay blocked the whole time. A link the old settings
                 blocked can read from each broker once that broker has them.
               </p>

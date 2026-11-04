@@ -234,7 +234,7 @@ const usePublishedBoxPhase = (phase: BoxPhase | null) => {
 /**
  * The cluster's shadow box, polled quickly while brokers are still applying a change. Every
  * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
- * A cluster without the API, or a viewer who isn't a superuser, stops polling: the banner and
+ * A cluster without the API, or a viewer without permission to read it, stops polling: the banner and
  * guards hide, and the Shadow Links page says why.
  */
 export const useShadowBoxStatusQuery = () => {
@@ -285,7 +285,7 @@ const toSettingsInit = (settings: BoxSettingsInput) => ({
 });
 
 /** Matches `isStaleRevisionError`, so it reads like the server's own stale-revision failure. */
-const staleRevision = () => new ConnectError('the shadow box revision has changed', Code.FailedPrecondition);
+const staleRevision = () => new ConnectError('the fence revision has changed', Code.FailedPrecondition);
 
 /**
  * Box always uses the saved settings. When the dialog changed them, this saves them first and boxes
@@ -315,7 +315,7 @@ export const useBoxClusterMutation = () => {
           ).fence
         );
         if (!saved) {
-          throw new ConnectError('the settings were saved, but the response had no box', Code.Internal);
+          throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
         if (!sameBoxSettings(settings, saved)) {
           throw staleRevision();
@@ -373,16 +373,20 @@ const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
   { pattern: /shadow link is configured|shadow link/i, sentence: SHADOW_CLUSTER_CANT_BOX },
   {
     pattern: /not active|feature/i,
-    sentence: 'Shadow boxing turns on once every broker runs Redpanda v26.3.1 or later.',
+    sentence: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',
   },
   {
     pattern: /migration/i,
-    sentence: 'A data migration on this cluster hasn’t finished. Box it once the migration is done.',
+    sentence: 'A data migration on this cluster hasn’t finished. Fence it once the migration is done.',
   },
-  { pattern: /recovery/i, sentence: 'A cluster recovery is running. Box the cluster once it finishes.' },
+  { pattern: /recovery/i, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
   {
-    pattern: /storage mode|read.?replica/i,
-    sentence: 'A topic uses a storage mode shadow boxing doesn’t support, such as a read replica.',
+    pattern: /storage (?:mode|configuration)|read.?replica/i,
+    sentence: 'A topic the fence covers uses a storage configuration it doesn’t support, such as a read replica.',
+  },
+  {
+    pattern: /membership changed/i,
+    sentence: 'A broker joined or left the cluster while the fence was changing. Check its state, then try again.',
   },
 ];
 
@@ -396,10 +400,11 @@ const withServerMessage = (sentence: string, error: ConnectError) =>
 const CHANGE_ERROR_SENTENCE: Partial<Record<Code, string>> = {
   [Code.Unavailable]: 'There’s no controller leader right now, or a broker is shutting down. Try again in a moment.',
   [Code.DeadlineExceeded]:
-    'The call took over 5 seconds and may still apply. Check the box’s state before you try again.',
-  [Code.PermissionDenied]: 'Only superusers can box, unbox or change shadow box settings.',
+    'The call took over 5 seconds and may still apply. Check the fence’s state before you try again.',
+  [Code.PermissionDenied]:
+    'You don’t have permission to fence or unfence this cluster, or to change its fence settings.',
   [Code.Unauthenticated]: 'Redpanda rejected the credentials Console calls its Admin API with.',
-  [Code.Internal]: 'Redpanda couldn’t record the change. Check the box’s state before you try again.',
+  [Code.Internal]: 'Redpanda couldn’t record the change. Check the fence’s state before you try again.',
 };
 
 /** Turns a Shadow Box API failure into a sentence that says what to do next. */
@@ -408,7 +413,7 @@ export const describeShadowBoxError = (error: unknown): string => {
     return error instanceof Error ? error.message : String(error);
   }
   if (isStaleRevisionError(error)) {
-    return 'Someone else changed the box since this page read it. Review its current state, then try again.';
+    return 'Someone else changed the fence since this page read it. Review its current state, then try again.';
   }
   if (error.code === Code.FailedPrecondition) {
     const hint = PRECONDITION_HINTS.find(({ pattern }) => pattern.test(error.rawMessage));
@@ -427,14 +432,14 @@ export const describeShadowBoxReadError = (error: unknown): string => {
   }
   switch (error.code) {
     case Code.PermissionDenied:
-      return 'Only superusers can read a cluster’s shadow box.';
+      return 'You don’t have permission to view this cluster’s fence.';
     case Code.Unavailable:
-      return 'This cluster has no controller leader right now, so its box can’t be read. Console keeps trying.';
+      return 'This cluster has no controller leader right now, so its fence can’t be read. Console keeps trying.';
     case Code.DeadlineExceeded:
       return 'The cluster didn’t answer in time.';
     case Code.Unimplemented:
     case Code.NotFound:
-      return 'This cluster doesn’t report a shadow box. It may run a Redpanda version without shadow boxing.';
+      return 'This cluster doesn’t report a fence. It may run a Redpanda version without cluster fencing.';
     default:
       return describeShadowBoxError(error);
   }

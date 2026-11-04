@@ -51,14 +51,14 @@ const sourceCheck = (readiness: CutoverReadiness): Check => {
     return {
       id: 'source',
       status: 'unknown',
-      text: 'Stop writes to the source cluster first, by boxing it or stopping its producers, so nothing is left behind.',
+      text: 'Stop writes to the source cluster first, by fencing it or stopping its producers, so nothing is left behind.',
     };
   }
   if (getBoxProgress(readiness.box) === 'blocked') {
     return {
       id: 'source',
       status: 'not-ready',
-      text: 'The source cluster is boxed, but its settings block this link’s fetches, so the link can’t finish copying.',
+      text: 'The source cluster is fenced, but its settings block this link’s fetches, so the link can’t finish copying.',
     };
   }
   if (isSourceBoxReady(readiness.box)) {
@@ -67,8 +67,8 @@ const sourceCheck = (readiness: CutoverReadiness): Check => {
       status: 'ready',
       text:
         readiness.box.kind === 'manual'
-          ? 'You confirmed the source cluster is boxed.'
-          : 'The source cluster is boxed, so nothing new is written there.',
+          ? 'You confirmed the source cluster is fenced.'
+          : 'The source cluster is fenced, so nothing new is written there.',
     };
   }
   if (readiness.box.kind === 'cloud') {
@@ -77,14 +77,14 @@ const sourceCheck = (readiness: CutoverReadiness): Check => {
       status: 'not-ready',
       text:
         readiness.box.box.state === 'boxing'
-          ? 'The source cluster hasn’t reported Boxed yet. A broker that hasn’t picked up the box still accepts writes, which would never reach this cluster.'
-          : 'The source cluster isn’t boxed. Writes it accepts after failover never reach this cluster.',
+          ? 'The source cluster hasn’t reported Fenced yet. A broker that hasn’t picked up the fence still accepts writes, which would never reach this cluster.'
+          : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
     };
   }
   return {
     id: 'source',
     status: 'unknown',
-    text: 'Console can’t read the source cluster’s box. Make sure it’s boxed, or that its producers are stopped.',
+    text: 'Console can’t read the source cluster’s fence. Make sure it’s fenced, or that its producers are stopped.',
   };
 };
 

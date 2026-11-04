@@ -18,7 +18,7 @@ import { DropdownMenuShortcut } from 'components/redpanda-ui/components/dropdown
 export const ShadowBoxedMenuHint = ({ reason }: { reason: string | undefined }) =>
   reason ? (
     <DropdownMenuShortcut>
-      <span aria-hidden="true">Boxed</span>
+      <span aria-hidden="true">Fenced</span>
       <span className="sr-only">{reason}</span>
     </DropdownMenuShortcut>
   ) : null;

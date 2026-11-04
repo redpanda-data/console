@@ -118,8 +118,8 @@ const BrokersTable = ({ brokers, phase }: { brokers: BrokerProgress[]; phase: Bo
     </Table>
     <p className="text-body-sm text-muted-foreground">
       {phase === 'boxing' || phase === 'unboxing'
-        ? `A broker holds the cluster in ${BOX_PHASE_LABEL[phase].toLowerCase()} while its copy is missing or doesn’t match the cluster’s box.`
-        : 'Each broker’s copy of the box, as it last answered.'}
+        ? `A broker holds the cluster in ${BOX_PHASE_LABEL[phase].toLowerCase()} while its copy is missing or doesn’t match the cluster’s fence.`
+        : 'Each broker’s copy of the fence, as it last answered.'}
     </p>
   </div>
 );
@@ -256,17 +256,17 @@ const exemptStepText = (access: ReturnType<typeof readerAccess>, summary: BoxSum
   }
   if (access.blocked.length > 0) {
     const names = access.blocked.map((reader) => reader.linkName).join(', ');
-    return `The saved settings block ${names}, so ${access.blocked.length === 1 ? 'it' : 'they'} couldn’t finish copying once boxed. Add ${access.blocked.length === 1 ? 'its user' : 'their users'} to the exempt list.`;
+    return `The saved settings block ${names}, so ${access.blocked.length === 1 ? 'it' : 'they'} couldn’t finish copying once fenced. Add ${access.blocked.length === 1 ? 'its user' : 'their users'} to the exempt list.`;
   }
   if (summary.exemptPrincipals.length === 0) {
-    return 'No one is exempt yet. By default a box blocks every consumer, every shadow link’s user included.';
+    return 'No one is exempt yet. By default a fence blocks every consumer, every shadow link’s user included.';
   }
   if (access.unknown.length > 0) {
     return `Console can’t check ${access.unknown.map((reader) => reader.linkName).join(', ')}: ${MTLS_LINK_NOTE}`;
   }
   return access.total > 0
     ? 'Every shadow link Redpanda Cloud knows can keep reading.'
-    : 'Exempt each shadow link’s user before you box.';
+    : 'Exempt each shadow link’s user before you fence.';
 };
 
 const waitStepState = (phase: BoxPhase): SourceStepState => {
@@ -284,7 +284,7 @@ const waitStepText = (summary: BoxSummary, brokers: BrokerProgress[]) => {
     const confirmed = brokers.filter((broker) => broker.status === 'confirmed').length;
     return `${confirmed} of ${brokers.length} brokers have confirmed.`;
   }
-  return 'Box first. Then wait here until every broker confirms; a healthy cluster takes a second or two.';
+  return 'Fence first. Then wait here until every broker confirms; a healthy cluster takes a second or two.';
 };
 
 /**
@@ -327,17 +327,17 @@ const SourceStepsCard = ({
               index={2}
               state={boxStepState(boxRequested, exemptDone)}
               testId="shadow-box-step-box"
-              title="Box"
+              title="Fence"
             >
               {boxRequested
-                ? 'Box was called. Each broker rejects writes as soon as it picks it up.'
-                : 'Box puts the saved settings in force. It returns at Boxing.'}
+                ? 'Fence was called. Each broker rejects writes as soon as it picks it up.'
+                : 'Fence puts the saved settings in force. It returns at Fencing.'}
             </SourceStep>
             <SourceStep
               index={3}
               state={waitStepState(summary.phase)}
               testId="shadow-box-step-wait"
-              title="Wait for Boxed"
+              title="Wait for Fenced"
             >
               {waitStepText(summary, brokers)}
             </SourceStep>
@@ -387,7 +387,7 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
                 <ExemptValue summary={summary} />
               </dd>
               <dt className="tracking-tight text-muted-foreground">Open transactions</dt>
-              <dd>Ended once the cluster is boxed, as a commit if the coordinator had already decided to commit</dd>
+              <dd>Ended once the cluster is fenced, as a commit if the coordinator had already decided to commit</dd>
             </dl>
             <div className="flex flex-col gap-7">
               {warnings.map((warning) => (
@@ -408,8 +408,8 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
                 </Alert>
               ))}
               <p className="text-body-sm text-muted-foreground">
-                {summary.allowAllReads ? '' : `${SUPERUSERS_NOT_EXEMPT} `}The cluster keeps one set of settings. Box
-                uses them, and they stay saved after Unbox.
+                {summary.allowAllReads ? '' : `${SUPERUSERS_NOT_EXEMPT} `}The cluster keeps one set of settings. Fence
+                uses them, and they stay saved after Unfence.
               </p>
             </div>
           </div>
@@ -471,7 +471,7 @@ const ReadersCard = ({
           {readers === undefined ? (
             <p className="text-body-sm text-muted-foreground">
               Redpanda doesn’t record which shadow links read from a cluster, so Console can’t list them. Check the
-              Shadow Links page on each shadow cluster, and make sure each link’s user is exempt before you box.
+              Shadow Links page on each shadow cluster, and make sure each link’s user is exempt before you fence.
             </p>
           ) : null}
           {readers?.length === 0 && resolving ? (
@@ -488,7 +488,7 @@ const ReadersCard = ({
               <AlertDescription>
                 <p>
                   Redpanda Cloud couldn’t check every shadow link, so this list may be missing some. Make sure each
-                  link’s user is exempt before you box.
+                  link’s user is exempt before you fence.
                 </p>
               </AlertDescription>
             </Alert>
@@ -566,12 +566,13 @@ const ReadersCard = ({
 
 const GOOD_TO_KNOW = [
   'Producers get REQUEST_TIMED_OUT and keep retrying until their delivery timeout, so a rejected write looks like a timeout.',
-  'Topic config changes still go through. A shadow link copies some topic properties, so a change made while boxed can miss the shadow.',
-  'Retention, compaction and DeleteRecords keep running while boxed. Consumer offset expiration pauses.',
-  'Data transforms that write to user topics retry, and catch up after Unbox.',
+  'Topic config changes are rejected too, so the configs a shadow link copies stay as they are.',
+  'Consumer groups can’t join, heartbeat or commit offsets. Clients get COORDINATOR_NOT_AVAILABLE and wait for the fence to lift.',
+  'Retention, compaction and DeleteRecords keep running while fenced. Consumer offset expiration pauses.',
+  'Data transforms that write to user topics retry, and catch up after Unfence.',
   'Internal topics, such as __consumer_offsets and the audit log, stay writable.',
-  'A cluster with a shadow link that hasn’t failed over can’t be boxed, and a boxed cluster rejects new shadow links until it’s unboxed.',
-  'When the Admin API doesn’t require auth (admin_api_require_auth off, the default), anyone who can reach it can box.',
+  'A cluster with a shadow link that hasn’t failed over can’t be fenced, and a fenced cluster rejects new shadow links until it’s unfenced.',
+  'When the Admin API doesn’t require auth (admin_api_require_auth off, the default), anyone who can reach it can fence.',
 ];
 
 const GoodToKnowCard = () => (
@@ -606,12 +607,12 @@ const BoxActions = ({
       reason={stopsBox.length > 0 ? `${SHADOW_CLUSTER_CANT_BOX} Its links: ${stopsBox.join(', ')}.` : undefined}
     >
       <Button disabled={stopsBox.length > 0} onClick={onBox} size="sm" testId="open-box-cluster" variant="destructive">
-        Box cluster
+        Fence cluster
       </Button>
     </DisabledReasonTooltip>
   ) : (
     <Button onClick={onUnbox} size="sm" testId="open-unbox-cluster">
-      Unbox cluster
+      Unfence cluster
     </Button>
   );
 
@@ -641,7 +642,7 @@ const ReadProblem = ({
   onRetry: () => void;
 }) => (
   <Alert testId="shadow-box-status-error" variant="destructive">
-    <AlertTitle>Couldn’t read the shadow box</AlertTitle>
+    <AlertTitle>Couldn’t read the fence</AlertTitle>
     <AlertDescription>
       <p>{describeShadowBoxReadError(error)}</p>
       {ownCopies.length > 0 ? (
@@ -669,7 +670,7 @@ const StaleStatusAlert = ({
   ownCopies,
 }: Pick<StatusQuery, 'error' | 'dataUpdatedAt' | 'ownCopies'> & { now: number }) => (
   <Alert testId="shadow-box-status-stale" variant="warning">
-    <AlertTitle>Couldn’t refresh the shadow box</AlertTitle>
+    <AlertTitle>Couldn’t refresh the fence</AlertTitle>
     <AlertDescription>
       <p>{describeShadowBoxReadError(error)}</p>
       <p>Showing its status from {formatBoxDuration(now - dataUpdatedAt)} ago.</p>
@@ -706,7 +707,7 @@ const BoxStatusCard = ({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-heading-xs">Shadow box</h3>
+                <h3 className="text-heading-xs">Cluster fence</h3>
                 <ShadowBoxStateBadge phase={phase} />
               </div>
               <p className="text-body-sm text-muted-foreground" data-testid="shadow-box-since">
@@ -722,7 +723,7 @@ const BoxStatusCard = ({
           <p className="text-body" data-testid="shadow-box-headline">
             {describeBoxPhase(summary, brokers)}
             {held ? ` ${held}` : ''}
-            {isLongBox(summary, now) ? ' Retention and compaction keep deleting old data while it stays boxed.' : ''}
+            {isLongBox(summary, now) ? ' Retention and compaction keep deleting old data while it stays fenced.' : ''}
           </p>
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-2">
@@ -830,11 +831,11 @@ export const ShadowBoxSourcePanel = () => {
   if (status.access === 'forbidden') {
     return (
       <Alert testId="shadow-box-forbidden" variant="informative">
-        <AlertTitle>Only superusers can see this cluster’s shadow box</AlertTitle>
+        <AlertTitle>You can’t view this cluster’s fence</AlertTitle>
         <AlertDescription>
           <p>
-            The Shadow Box API is for superusers, so Console can’t show whether this cluster is boxed. While it is,
-            writes and most changes a shadow link copies are rejected.
+            You don’t have permission to view this cluster’s fence, so Console can’t show whether it’s fenced. While it
+            is, writes and most changes a shadow link copies are rejected.
           </p>
         </AlertDescription>
       </Alert>
@@ -844,9 +845,9 @@ export const ShadowBoxSourcePanel = () => {
   if (status.unreadable) {
     return (
       <Alert testId="shadow-box-unreadable" variant="warning">
-        <AlertTitle>Console can’t tell what state this box is in</AlertTitle>
+        <AlertTitle>Console can’t tell what state this fence is in</AlertTitle>
         <AlertDescription>
-          <p>The cluster reported a box this version of Console doesn’t understand, so it won’t guess.</p>
+          <p>The cluster reported a fence this version of Console doesn’t understand, so it won’t guess.</p>
         </AlertDescription>
       </Alert>
     );

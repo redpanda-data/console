@@ -83,7 +83,7 @@ const reboxWithNewPrincipal = async (shadowBox: SimulatorClient) => {
   return { boxing, reboxing };
 };
 
-describe('shadow box simulator', () => {
+describe('fence simulator', () => {
   beforeEach(() => {
     rs.useFakeTimers();
     window.localStorage.removeItem(SHADOW_BOX_SIMULATOR_STORAGE_KEY);
@@ -94,8 +94,8 @@ describe('shadow box simulator', () => {
     rs.useRealTimers();
   });
 
-  describe('the box', () => {
-    test('a cluster starts unboxed at revision -1, with no state change yet and default settings', async () => {
+  describe('the fence', () => {
+    test('a cluster starts unfenced at revision -1, with no state change yet and default settings', async () => {
       const status = await call(client().getClusterFenceStatus({}));
       expect(status.fence?.state).toBe(ClusterFenceState.UNFENCED);
       expect(status.fence?.revision).toBe(-1n);
@@ -104,7 +104,7 @@ describe('shadow box simulator', () => {
       expect(status.brokers.map((broker) => broker.nodeId)).toEqual([1, 2, 3]);
     });
 
-    test('a Box returns at boxing, at a revision after the settings it boxes with', async () => {
+    test('a Fence returns at fencing, at a revision after the settings it fences with', async () => {
       const { saved, boxing } = await boxWithExemptPrincipal(client());
       expect(saved.fence?.state).toBe(ClusterFenceState.UNFENCED);
       expect(saved.fence?.revision).toBeGreaterThan(-1n);
@@ -112,7 +112,7 @@ describe('shadow box simulator', () => {
       expect(boxing.fence?.revision).toBeGreaterThan(saved.fence?.revision ?? 0n);
     });
 
-    test('each broker blocks once it picks a Box up', async () => {
+    test('each broker blocks once it picks a Fence up', async () => {
       const shadowBox = client();
       const boxing = await call(shadowBox.fence({}));
       const partway = await statusAfter(shadowBox, 2200);
@@ -125,7 +125,7 @@ describe('shadow box simulator', () => {
       expect(confirmed.length).toBeLessThan(3);
     });
 
-    test('the cluster is boxed, with the settings it boxed with, once every broker has picked the Box up', async () => {
+    test('the cluster is fenced, with the settings it fenced with, once every broker has picked the Fence up', async () => {
       const shadowBox = client();
       const { boxing } = await boxWithExemptPrincipal(shadowBox);
       const status = await statusAfter(shadowBox, SETTLE_MS);
@@ -155,7 +155,7 @@ describe('shadow box simulator', () => {
       expect(steps.every((step) => step >= 2n && step <= 10n)).toBe(true);
     });
 
-    test('a Box while boxing or boxed and an Unbox while unboxed change nothing', async () => {
+    test('a Fence while fencing or fenced and an Unfence while unfenced change nothing', async () => {
       const shadowBox = client();
       const unboxed = await call(shadowBox.unfence({}));
       expect(unboxed.fence?.revision).toBe(-1n);
@@ -173,7 +173,7 @@ describe('shadow box simulator', () => {
   });
 
   describe('down brokers', () => {
-    test('a broker that is down holds the box in boxing with an error, until it comes back', async () => {
+    test('a broker that is down holds the fence in fencing with an error, until it comes back', async () => {
       setShadowBoxSimulatorOptions({ downBrokers: [2] });
       const shadowBox = client();
       await call(shadowBox.fence({}));
@@ -188,7 +188,7 @@ describe('shadow box simulator', () => {
       expect(finished.fence?.state).toBe(ClusterFenceState.FENCED);
     });
 
-    test('a down broker holds Unbox too', async () => {
+    test('a down broker holds Unfence too', async () => {
       const shadowBox = client();
       await call(shadowBox.fence({}));
       await rs.advanceTimersByTimeAsync(SETTLE_MS);
@@ -201,7 +201,7 @@ describe('shadow box simulator', () => {
   });
 
   describe('settings', () => {
-    test('new settings while boxed go back through boxing, and brokers keep blocking on their old copy', async () => {
+    test('new settings while fenced go back through fencing, and brokers keep blocking on their old copy', async () => {
       const shadowBox = client();
       const { boxing, reboxing } = await reboxWithNewPrincipal(shadowBox);
       expect(reboxing.fence?.state).toBe(ClusterFenceState.FENCING);
@@ -217,7 +217,7 @@ describe('shadow box simulator', () => {
       ).toBe(true);
     });
 
-    test('new settings while boxed leave the cluster boxed with them once every broker has them', async () => {
+    test('new settings while fenced leave the cluster fenced with them once every broker has them', async () => {
       const shadowBox = client();
       await reboxWithNewPrincipal(shadowBox);
       const boxed = await statusAfter(shadowBox, SETTLE_MS);
@@ -253,7 +253,7 @@ describe('shadow box simulator', () => {
       expect(replaced.fence?.settings?.readPolicy?.exemptPrincipals).toEqual(['new-user']);
     });
 
-    test('an Unbox keeps the settings saved', async () => {
+    test('an Unfence keeps the settings saved', async () => {
       const shadowBox = client();
       await call(
         shadowBox.updateClusterFenceSettings({
@@ -273,7 +273,7 @@ describe('shadow box simulator', () => {
 
   describe('failures', () => {
     test.each(['feature-inactive', 'own-shadow-link', 'data-migration', 'cluster-recovery', 'read-replica'] as const)(
-      'a Box blocked by %s fails with FAILED_PRECONDITION',
+      'a Fence blocked by %s fails with FAILED_PRECONDITION',
       async (boxFailure) => {
         setShadowBoxSimulatorOptions({ boxFailure });
         const error = await failure(client().fence({}));

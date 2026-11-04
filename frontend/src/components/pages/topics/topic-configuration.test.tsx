@@ -1,4 +1,4 @@
-import { rs } from '@rstest/core';
+import { afterEach, rs } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -23,9 +23,10 @@ rs.mock('../../../config', () => {
   };
 });
 
+const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
+
 rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  BOXED_TOPIC_CONFIG_NOTE: 'boxed',
-  useShadowBoxGuard: () => ({ fenced: false, readsBlocked: false, reasonFor: () => undefined }),
+  useShadowBoxGuard: () => ({ fenced: guard.reason !== undefined, readsBlocked: false, reasonFor: () => guard.reason }),
 }));
 
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
@@ -68,6 +69,42 @@ function getSection(name: string) {
 }
 
 describe('the TopicConfiguration', () => {
+  afterEach(() => {
+    guard.reason = undefined;
+  });
+
+  describe('while the cluster is fenced', () => {
+    const FENCED = 'You can’t change topic configuration while this cluster is fenced. Unfence it first.';
+
+    test('says why up front, and a user topic’s values open no editor', async () => {
+      guard.reason = FENCED;
+      const user = userEvent.setup();
+      renderEditor();
+
+      expect(screen.getByTestId('topic-config-boxed-note')).toHaveTextContent(FENCED);
+      await user.click(within(getSection('Retention')).getByRole('button'));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    test('an internal topic stays editable, since the fence only covers user topics', async () => {
+      guard.reason = FENCED;
+      const user = userEvent.setup();
+      render(
+        <ConfigurationEditor
+          entries={entries}
+          onForceRefresh={() => {
+            // no op - test callback
+          }}
+          targetTopic="_schemas"
+        />
+      );
+
+      expect(screen.queryByTestId('topic-config-boxed-note')).not.toBeInTheDocument();
+      await user.click(within(getSection('Retention')).getByRole('button'));
+      expect(await screen.findByRole('dialog')).toBeVisible();
+    });
+  });
+
   describe('grouped layout', () => {
     test('renders a sidebar preserving backend categories and collapsing only unmapped ones into Other', () => {
       renderEditor();

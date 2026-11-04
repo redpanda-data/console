@@ -73,7 +73,7 @@ const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
   pending: <TonedIcon aria-label="Checking" className="size-4 shrink-0" icon={LoaderCircleIcon} spin tone="muted" />,
   pass: <TonedIcon aria-label="Passed" className="size-4 shrink-0" icon={CircleCheckIcon} tone="success" />,
   warn: <TonedIcon aria-label="Warning" className="size-4 shrink-0" icon={CircleAlertIcon} tone="warning" />,
-  fail: <TonedIcon aria-label="Blocks boxing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
+  fail: <TonedIcon aria-label="Blocks fencing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
 };
 
 const mergePrincipals = (saved: string[], suggestions: PrincipalSuggestion[]) =>
@@ -97,7 +97,7 @@ const boxErrorTitle = (error: unknown, settingsSaved: boolean) => {
   if (error instanceof ConnectError && error.code === Code.DeadlineExceeded) {
     return 'The call timed out, and may still apply';
   }
-  return settingsSaved ? 'Settings saved, but the cluster isn’t boxed' : 'Couldn’t box the cluster';
+  return settingsSaved ? 'Settings saved, but the cluster isn’t fenced' : 'Couldn’t fence the cluster';
 };
 
 /** After this dialog's own save went through, Box failing leaves the new settings in place; says so. */
@@ -118,8 +118,7 @@ const BoxErrorAlert = ({ error, settingsSaved }: { error: unknown; settingsSaved
         <p>{describeShadowBoxError(error)}</p>
         {settingsSaved ? (
           <p>
-            The read policy and transaction setting above are saved. Box again to retry, or cancel to leave the cluster
-            unboxed with them.
+            The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
           </p>
         ) : null}
       </AlertDescription>
@@ -144,14 +143,16 @@ const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): 
 });
 
 const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
-  <section aria-label="What boxing changes" className="grid gap-4 sm:grid-cols-2">
+  <section aria-label="What fencing changes" className="grid gap-4 sm:grid-cols-2">
     <div>
       <h3 className="text-label">Rejects</h3>
       <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
         <li>Producing to user topics. Producers get REQUEST_TIMED_OUT and keep retrying.</li>
         {allowAllReads ? null : <li>Fetching from user topics, except for the exempt users below</li>}
-        <li>Creating or deleting topics, or adding partitions</li>
-        <li>Committing or deleting consumer offsets, and deleting consumer groups</li>
+        <li>Creating or deleting topics, adding partitions, or changing topic configuration</li>
+        <li>
+          Consumer group joins, heartbeats, offset commits and deletes. Clients get COORDINATOR_NOT_AVAILABLE and wait.
+        </li>
         <li>Every Schema Registry write</li>
         <li>Creating or deleting ACLs, and creating, changing or deleting roles</li>
         <li>Creating shadow links, new data migrations and cluster recovery</li>
@@ -161,9 +162,8 @@ const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
       <h3 className="text-label">Keeps working</h3>
       <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
         {allowAllReads ? <li>Fetching from topics</li> : null}
-        <li>Topic config changes, which may not reach the shadow</li>
         <li>DeleteRecords, retention and compaction</li>
-        <li>Consumer group membership and offset fetches</li>
+        <li>Reading consumer group offsets and descriptions</li>
         <li>Users and their SCRAM passwords</li>
         <li>Cluster config, decommission and partition moves</li>
         <li>Internal topics, such as __consumer_offsets</li>
@@ -258,9 +258,9 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
       { settings: values.settings, opened },
       {
         onSuccess: () => {
-          toast.success(`Boxing ${clusterName ?? 'this cluster'}`, {
+          toast.success(`Fencing ${clusterName ?? 'this cluster'}`, {
             description:
-              'Each broker rejects writes as soon as it picks up the box. Wait for Boxed before you fail a link over.',
+              'Each broker rejects writes as soon as it picks up the fence. Wait for Fenced before you fail a link over.',
           });
           onClose();
         },
@@ -271,20 +271,20 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
   return (
     <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
       <DialogHeader align="left">
-        <DialogTitle>Box {clusterName ?? 'this cluster'}?</DialogTitle>
+        <DialogTitle>Fence {clusterName ?? 'this cluster'}?</DialogTitle>
         <DialogDescription>
           {settings.allowAllReads
-            ? 'Each broker rejects writes as soon as it picks up the box, until you unbox it. Consumers keep reading.'
-            : 'Each broker rejects writes as soon as it picks up the box, until you unbox it. Only the exempt users below can still fetch from user topics, so your shadow links can finish copying.'}
+            ? 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Consumers keep reading.'
+            : 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Only the exempt users below can still fetch from user topics, so your shadow links can finish copying.'}
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="lg">
-        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current box" /> : null}
+        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
         {!changed && alreadyBoxed ? (
           <Alert testId="box-cluster-already-boxed" variant="informative">
             <AlertTitle>This cluster is already {BOX_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
             <AlertDescription>
-              <p>It was boxed while this was open. Close this dialog to see its status.</p>
+              <p>It was fenced while this was open. Close this dialog to see its status.</p>
             </AlertDescription>
           </Alert>
         ) : null}
@@ -294,7 +294,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
         <section aria-label="Settings" className="flex flex-col gap-1">
           <h3 className="text-label">1. Save settings</h3>
           <p className="text-body-sm text-muted-foreground">
-            Box uses the saved settings, so these are saved first if you changed them. The box always covers every
+            Fence uses the saved settings, so these are saved first if you changed them. The fence always covers every
             resource it supports; there’s no scope to choose.
           </p>
         </section>
@@ -307,8 +307,8 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           )}
         />
 
-        <section aria-label="Before you box" className="flex flex-col gap-2">
-          <h3 className="text-label">2. Box</h3>
+        <section aria-label="Before you fence" className="flex flex-col gap-2">
+          <h3 className="text-label">2. Fence</h3>
           <ul className="flex flex-col gap-1.5" data-testid="box-preflight-checks">
             {checks.map((check) => (
               <li
@@ -333,7 +333,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
               testId="box-cluster-lock-out"
             />
             <Label htmlFor="box-cluster-lock-out">
-              <span className="font-normal">Box with no one exempt, blocking every consumer and shadow link</span>
+              <span className="font-normal">Fence with no one exempt, blocking every consumer and shadow link</span>
             </Label>
           </div>
         ) : null}
@@ -366,7 +366,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           type="submit"
           variant="destructive"
         >
-          Box cluster
+          Fence cluster
         </Button>
       </DialogFooter>
     </form>

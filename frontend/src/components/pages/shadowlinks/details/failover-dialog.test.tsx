@@ -112,7 +112,7 @@ describe('the FailoverDialog', () => {
       expect(screen.getByTestId('confirm-failover')).toHaveTextContent('Fail over anyway');
     });
 
-    test('a box that blocks this link’s reads isn’t safe to fail over behind', () => {
+    test('a fence that blocks this link’s reads isn’t safe to fail over behind', () => {
       const blocking = getSourceBoxStep({
         source: {
           kind: 'cloud',
@@ -210,7 +210,7 @@ describe('the FailoverDialog', () => {
     expect(screen.queryByTestId('confirm-failover')).not.toBeInTheDocument();
   });
 
-  test('without shadow boxing, keeps the original confirmation', () => {
+  test('without cluster fencing, keeps the original confirmation', () => {
     render(<FailoverDialog onConfirm={rs.fn()} onOpenChange={rs.fn()} open />);
 
     expect(screen.getByText('Confirm Failover', { selector: 'h2' })).toBeVisible();

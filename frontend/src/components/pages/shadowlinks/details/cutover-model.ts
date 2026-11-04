@@ -212,14 +212,14 @@ export const pausedTopicsReason = (paused: readonly string[]) =>
 const sourceBoxReason = (box: SourceBoxStep): string | undefined => {
   const progress = getBoxProgress(box);
   if (progress === 'blocked') {
-    return 'Available once the source’s box lets this link read, so its lag can reach zero.';
+    return 'Available once the source’s fence lets this link read, so its lag can reach zero.';
   }
   if (progress === 'ready') {
     return;
   }
   return box.kind === 'manual'
-    ? 'Available once you confirm the source cluster is boxed.'
-    : 'Available once the source cluster reports Boxed.';
+    ? 'Available once you confirm the source cluster is fenced.'
+    : 'Available once the source cluster reports Fenced.';
 };
 
 const lagReason = (lag: LagStep): string | undefined => {

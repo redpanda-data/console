@@ -22,10 +22,10 @@ export type BoxPhase = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
 export const BOX_PHASES: readonly BoxPhase[] = ['unboxed', 'boxing', 'boxed', 'unboxing'];
 
 export const BOX_PHASE_LABEL: Record<BoxPhase, string> = {
-  unboxed: 'Unboxed',
-  boxing: 'Boxing',
-  boxed: 'Boxed',
-  unboxing: 'Unboxing',
+  unboxed: 'Unfenced',
+  boxing: 'Fencing',
+  boxed: 'Fenced',
+  unboxing: 'Unfencing',
 };
 
 /**
@@ -198,15 +198,15 @@ const progressCount = (brokers: readonly BrokerProgress[]) =>
 export const describeBoxPhase = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): string => {
   switch (summary.phase) {
     case 'unboxed':
-      return 'Unboxed. Clients write and read as usual.';
+      return 'Unfenced. Clients write and read as usual.';
     case 'boxing':
       return isApplyingNewSettings(summary, brokers)
         ? `Applying new settings. Writes stay blocked on every broker while they pick them up.${progressCount(brokers)}`
-        : `Boxing. Each broker rejects writes as soon as it picks up the box.${progressCount(brokers)}`;
+        : `Fencing. Each broker rejects writes as soon as it picks up the fence.${progressCount(brokers)}`;
     case 'boxed':
-      return 'Boxed. Every broker rejects writes.';
+      return 'Fenced. Every broker rejects writes.';
     default:
-      return `Unboxing. Each broker accepts writes again as soon as it picks up Unbox.${progressCount(brokers)}`;
+      return `Unfencing. Each broker accepts writes again as soon as it picks up Unfence.${progressCount(brokers)}`;
   }
 };
 
@@ -225,7 +225,7 @@ export const describeHeldMove = (
     return down.length > 0 ? `${unreachableBrokersSubject(down)} answering.` : '';
   }
   if (down.length > 0) {
-    return `${unreachableBrokersSubject(down)} answering, so the cluster stays ${summary.phase} until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`;
+    return `${unreachableBrokersSubject(down)} answering, so the cluster stays ${BOX_PHASE_LABEL[summary.phase].toLowerCase()} until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`;
   }
   const behind = idsWith(brokers, 'behind');
   const old = summary.stateChangedAt !== undefined && now - summary.stateChangedAt.getTime() >= BEHIND_NOTICE_MS;
@@ -283,7 +283,7 @@ export type ReadPolicyWarning = {
 };
 
 export const EMPTY_EXEMPT_WARNING =
-  'No one is exempt, so the box blocks every consumer, including every shadow link’s user, and no link can finish copying. Redpanda only warns about this in the controller leader’s log.';
+  'No one is exempt, so the fence blocks every consumer, including every shadow link’s user, and no link can finish copying. Redpanda only warns about this in the controller leader’s log.';
 
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
 
@@ -336,16 +336,16 @@ export const isBoxedReadError = (message: string): boolean => BOXED_READ_REJECTI
 
 /** Box fails while the cluster has a shadow link of its own that hasn't failed over. */
 export const SHADOW_CLUSTER_CANT_BOX =
-  'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Box its source instead, or fail the link over first.';
+  'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Fence its source instead, or fail the link over first.';
 
 /** A link that has failed over no longer makes its cluster a shadow, so it doesn't stop Box. */
 export const linksThatStopBox = <Link extends { state: ShadowLinkState }>(links: readonly Link[]): Link[] =>
   links.filter((link) => link.state !== ShadowLinkState.FAILED_OVER);
 
 /** For a message search the box rejected; Console's own user is rarely exempt. */
-export const BOXED_READS_TITLE = 'Reading is blocked while this cluster is shadow boxed';
+export const BOXED_READS_TITLE = 'Reading is blocked while this cluster is fenced';
 export const BOXED_READS_DESCRIPTION =
-  'The box only lets exempt users read topics, and superusers aren’t exempt unless they’re listed. Add Console’s user to the exempt list, turn on Allow all reads, or unbox the cluster.';
+  'The fence only lets exempt users read topics, and superusers aren’t exempt unless they’re listed. Add Console’s user to the exempt list, turn on Allow all reads, or unfence the cluster.';
 
 /** `unknown` when Console can't tell, such as for a link that uses mTLS. */
 export type ClientEffectVerdict = 'allowed' | 'rejected' | 'partly' | 'ended' | 'open' | 'unknown';
@@ -371,8 +371,8 @@ const rejectionVerdict = (
       verdict: 'partly',
       detail:
         summary.phase === 'unboxing'
-          ? `Allowed again on ${brokersPhrase(open)}. Still rejected on ${brokersPhrase(blocking)} until ${blocking.length === 1 ? 'it picks' : 'they pick'} up Unbox: ${rejection}.`
-          : `Rejected on ${brokersPhrase(blocking)}: ${rejection}. Still allowed on ${brokersPhrase(open)} until ${open.length === 1 ? 'it picks' : 'they pick'} up the box.`,
+          ? `Allowed again on ${brokersPhrase(open)}. Still rejected on ${brokersPhrase(blocking)} until ${blocking.length === 1 ? 'it picks' : 'they pick'} up Unfence: ${rejection}.`
+          : `Rejected on ${brokersPhrase(blocking)}: ${rejection}. Still allowed on ${brokersPhrase(open)} until ${open.length === 1 ? 'it picks' : 'they pick'} up the fence.`,
     };
   }
   const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
@@ -392,12 +392,12 @@ const transactionEffect = (summary: Pick<BoxSummary, 'phase'>, wasBoxed: boolean
         ...base,
         verdict: 'ended',
         detail:
-          'Ended by the box, as a commit if the coordinator had already decided to commit, so readers can move past it.',
+          'Ended by the fence, as a commit if the coordinator had already decided to commit, so readers can move past it.',
       }
     : {
         ...base,
         verdict: 'open',
-        detail: 'Can commit or abort, but not grow. The box ends it once the cluster is boxed.',
+        detail: 'Can commit or abort, but not grow. The fence ends it once the cluster is fenced.',
       };
 };
 
@@ -452,7 +452,16 @@ export const getClientEffects = ({
     ...linkRows,
     {
       id: 'commit',
-      label: 'A consumer commits an offset',
+      label: 'A consumer group joins, heartbeats or commits',
+      ...rejectionVerdict(
+        summary,
+        brokers,
+        'COORDINATOR_NOT_AVAILABLE (15), which clients retry until the fence lifts'
+      ),
+    },
+    {
+      id: 'topic-config',
+      label: 'A topic config change',
       ...rejectionVerdict(summary, brokers, 'POLICY_VIOLATION (44)'),
     },
     { id: 'schema', label: 'A Schema Registry write', ...rejectionVerdict(summary, brokers, 'HTTP 412') },

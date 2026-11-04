@@ -189,8 +189,8 @@ const shadowBoxHint = (error: ConnectError): string | undefined => {
     return;
   }
   return phase === 'unboxing'
-    ? 'This cluster is being unboxed, and brokers that haven’t picked up Unbox yet still reject writes.'
-    : 'This cluster is shadow boxed, which rejects writes and most changes a shadow link copies until it’s unboxed.';
+    ? 'This cluster is being unfenced, and brokers that haven’t picked up Unfence yet still reject writes.'
+    : 'This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.';
 };
 
 export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {

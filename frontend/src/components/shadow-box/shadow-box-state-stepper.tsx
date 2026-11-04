@@ -25,7 +25,7 @@ export const ShadowBoxStateStepper = ({ phase }: { phase: BoxPhase }) => (
     className="grid max-w-3xl grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-x-1.5 gap-y-1"
     data-testid="shadow-box-states"
   >
-    <ol aria-label="Shadow box states" className="contents">
+    <ol aria-label="Cluster fence states" className="contents">
       {BOX_PHASES.map((state, index) => (
         <Fragment key={state}>
           {index > 0 ? (

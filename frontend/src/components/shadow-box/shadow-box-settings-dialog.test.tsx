@@ -78,17 +78,19 @@ describe('the ShadowBoxSettingsDialog', () => {
       },
       expectedRevision: 4n,
     });
-    expect(toast.success).toHaveBeenCalledWith('Shadow box settings saved', { description: 'The next Box uses them.' });
+    expect(toast.success).toHaveBeenCalledWith('Cluster fence settings saved', {
+      description: 'The next Fence uses them.',
+    });
   });
 
-  test('says a save while boxed re-applies the box', async () => {
+  test('says a save while fenced re-applies the fence', async () => {
     mockStatus('boxed');
     renderWithFileRoutes(<Harness />);
 
-    expect(await screen.findByTestId('shadow-box-settings-rebox')).toHaveTextContent('back in Boxing');
+    expect(await screen.findByTestId('shadow-box-settings-rebox')).toHaveTextContent('back in Fencing');
   });
 
-  test('a save while unboxing doesn’t claim to re-apply the box', async () => {
+  test('a save while unfencing doesn’t claim to re-apply the fence', async () => {
     mockStatus('unboxing');
     renderWithFileRoutes(<Harness />);
 

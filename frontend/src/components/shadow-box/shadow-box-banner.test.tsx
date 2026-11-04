@@ -55,26 +55,26 @@ describe('the ShadowBoxBanner', () => {
     rs.useRealTimers();
   });
 
-  test('renders nothing while the cluster is unboxed', () => {
+  test('renders nothing while the cluster is unfenced', () => {
     mockStatus('unboxed');
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
     expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
   });
 
-  test('says a boxed cluster rejects writes, what clients see, and offers Unbox', () => {
+  test('says a fenced cluster rejects writes, what clients see, and offers Unfence', () => {
     mockStatus('boxed');
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
     const banner = screen.getByTestId('shadow-box-banner');
-    expect(banner).toHaveTextContent('This cluster is shadow boxed');
-    expect(banner).toHaveTextContent('Boxed. Every broker rejects writes.');
+    expect(banner).toHaveTextContent('This cluster is fenced');
+    expect(banner).toHaveTextContent('Fenced. Every broker rejects writes.');
     expect(banner).toHaveTextContent('Producers get REQUEST_TIMED_OUT and keep retrying');
-    expect(banner).toHaveTextContent('Topic config changes still go through.');
+    expect(banner).toHaveTextContent('consumer groups wait on COORDINATOR_NOT_AVAILABLE');
     expect(screen.getByTestId('shadow-box-banner-view-status')).toHaveAttribute('href', '/shadowlinks?tab=source');
     expect(screen.getByTestId('shadow-box-banner-unbox')).toBeVisible();
   });
 
-  test('while boxing, says brokers block as they pick it up, and names one that isn’t answering', () => {
+  test('while fencing, says brokers block as they pick it up, and names one that isn’t answering', () => {
     mockStatus('boxing', { stateChangedAt: new Date(NOW) }, [
       { nodeId: 1, status: 'confirmed', blocks: true },
       { nodeId: 2, status: 'not-answering', blocks: undefined },
@@ -82,12 +82,12 @@ describe('the ShadowBoxBanner', () => {
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
     const banner = screen.getByTestId('shadow-box-banner');
-    expect(banner).toHaveTextContent('Each broker rejects writes as soon as it picks up the box. 1 of 2 have.');
+    expect(banner).toHaveTextContent('Each broker rejects writes as soon as it picks up the fence. 1 of 2 have.');
     expect(banner).toHaveTextContent('Broker 2 isn’t answering');
     expect(banner).toHaveTextContent('There’s no timeout.');
   });
 
-  test('a settings change while boxed reads as writes staying blocked, not as a new box', () => {
+  test('a settings change while fenced reads as writes staying blocked, not as a new fence', () => {
     mockStatus('boxing', {}, [
       { nodeId: 1, status: 'confirmed', blocks: true },
       { nodeId: 2, status: 'behind', blocks: true },
@@ -95,11 +95,11 @@ describe('the ShadowBoxBanner', () => {
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
     const banner = screen.getByTestId('shadow-box-banner');
-    expect(banner).toHaveTextContent('This cluster is applying new shadow box settings');
+    expect(banner).toHaveTextContent('This cluster is applying new fence settings');
     expect(banner).toHaveTextContent('Writes stay blocked on every broker');
   });
 
-  test('warns that retention keeps running once a box has been held for long', () => {
+  test('warns that retention keeps running once a fence has been held for long', () => {
     mockStatus('boxed', { stateChangedAt: new Date(NOW - 3 * 60 * MINUTE) });
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
@@ -108,11 +108,11 @@ describe('the ShadowBoxBanner', () => {
     );
   });
 
-  test('leaves out reads when every consumer may still read, and Unbox while unboxing', () => {
+  test('leaves out reads when every consumer may still read, and Unfence while unfencing', () => {
     mockStatus('unboxing', { allowAllReads: true });
     renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
 
-    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent('This cluster is being unboxed');
+    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent('This cluster is being unfenced');
     expect(screen.queryByTestId('shadow-box-banner-unbox')).not.toBeInTheDocument();
   });
 });

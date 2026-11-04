@@ -93,7 +93,7 @@ describe('the ShadowLinkDetailsPage', () => {
     route.search = {};
   });
 
-  test('with shadow boxing off, looks and fetches exactly as before', async () => {
+  test('with cluster fencing off, looks and fetches exactly as before', async () => {
     const user = renderAtCutoverTab(false);
 
     expect(screen.queryByTestId('cutover-tab-trigger')).not.toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('the ShadowLinkDetailsPage', () => {
     expect(await screen.findByText('Confirm Failover', { selector: 'h2' })).toBeVisible();
   });
 
-  test('with shadow boxing on, adds the Cutover tab, reads lag, and checks readiness before failing over', async () => {
+  test('with cluster fencing on, adds the Cutover tab, reads lag, and checks readiness before failing over', async () => {
     const user = renderAtCutoverTab(true);
 
     expect(screen.getByTestId('cutover-tab-trigger')).toBeInTheDocument();

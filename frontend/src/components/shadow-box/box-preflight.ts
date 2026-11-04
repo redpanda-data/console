@@ -49,7 +49,7 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopBox']): PreflightChec
     return {
       id: 'own-links',
       status: 'warn',
-      message: 'Couldn’t check this cluster’s own shadow links. Box fails while one of them hasn’t failed over.',
+      message: 'Couldn’t check this cluster’s own shadow links. Fence fails while one of them hasn’t failed over.',
     };
   }
   if (links === 'disabled') {
@@ -72,7 +72,7 @@ const brokersCheck = (brokers: BrokerProgress[]): PreflightCheck | undefined => 
   return {
     id: 'brokers',
     status: 'warn',
-    message: `${unreachableBrokersSubject(down)} answering. Box would stay in Boxing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster; there’s no timeout.`,
+    message: `${unreachableBrokersSubject(down)} answering. Fence would stay in Fencing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster; there’s no timeout.`,
   };
 };
 
@@ -101,7 +101,7 @@ const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incompl
   return {
     id: 'readers',
     status: 'warn',
-    message: 'No shadow link in Redpanda Cloud reads from this cluster. Box it only if a link outside Cloud does.',
+    message: 'No shadow link in Redpanda Cloud reads from this cluster. Fence it only if a link outside Cloud does.',
   };
 };
 

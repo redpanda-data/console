@@ -45,7 +45,7 @@ const box = (state: ClusterFenceState, revision: number) =>
   create(ClusterFenceSchema, { state, revision: BigInt(revision) });
 
 describe('toBoxPhase', () => {
-  test('maps the four states, and leaves an unset or unknown one undefined rather than calling it unboxed', () => {
+  test('maps the four states, and leaves an unset or unknown one undefined rather than calling it unfenced', () => {
     expect(toBoxPhase(ClusterFenceState.UNFENCED)).toBe('unboxed');
     expect(toBoxPhase(ClusterFenceState.FENCING)).toBe('boxing');
     expect(toBoxPhase(ClusterFenceState.FENCED)).toBe('boxed');
@@ -56,7 +56,7 @@ describe('toBoxPhase', () => {
 });
 
 describe('phase rules', () => {
-  test('blocking begins in boxing, not boxed, and stops in unboxing', () => {
+  test('blocking begins in fencing, not fenced, and stops in unfencing', () => {
     expect(['unboxed', 'boxing', 'boxed', 'unboxing'].filter((phase) => isBlockingPhase(phase as never))).toEqual([
       'boxing',
       'boxed',
@@ -65,7 +65,7 @@ describe('phase rules', () => {
     expect(hasBoxActivity('unboxed')).toBe(false);
   });
 
-  test('a Box is accepted while unboxed or unboxing; a Box while boxing or boxed changes nothing', () => {
+  test('a Fence is accepted while unfenced or unfencing; a Fence while fencing or fenced changes nothing', () => {
     expect(canBoxFromPhase('unboxed')).toBe(true);
     expect(canBoxFromPhase('unboxing')).toBe(true);
     expect(canBoxFromPhase('boxing')).toBe(false);
@@ -74,7 +74,7 @@ describe('phase rules', () => {
 });
 
 describe('getBrokerProgress', () => {
-  test('a broker has confirmed only when its copy matches the cluster’s box in state and revision', () => {
+  test('a broker has confirmed only when its copy matches the cluster’s fence in state and revision', () => {
     const response = create(GetClusterFenceStatusResponseSchema, {
       fence: box(ClusterFenceState.FENCING, 18),
       brokers: [
@@ -125,7 +125,7 @@ describe('summarizeBox', () => {
     });
   });
 
-  test('a missing box or an unknown state isn’t read as unboxed', () => {
+  test('a missing fence or an unknown state isn’t read as unfenced', () => {
     expect(summarizeBox(undefined)).toBeUndefined();
     expect(summarizeBox(create(ClusterFenceSchema, {}))).toBeUndefined();
   });
@@ -135,20 +135,20 @@ const progress = (...entries: [number, BrokerProgress['status'], boolean | undef
   entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
 
 describe('describeBoxPhase', () => {
-  test('says each broker blocks as soon as it picks up the box, with the count so far', () => {
+  test('says each broker blocks as soon as it picks up the fence, with the count so far', () => {
     expect(describeBoxPhase({ phase: 'boxing' }, progress([1, 'confirmed', true], [2, 'behind', false]))).toBe(
-      'Boxing. Each broker rejects writes as soon as it picks up the box. 1 of 2 have.'
+      'Fencing. Each broker rejects writes as soon as it picks up the fence. 1 of 2 have.'
     );
   });
 
-  test('tells a settings change while boxed apart from a first Box: writes stay blocked', () => {
+  test('tells a settings change while fenced apart from a first Fence: writes stay blocked', () => {
     const brokers = progress([1, 'confirmed', true], [2, 'behind', true]);
     expect(isApplyingNewSettings({ phase: 'boxing' }, brokers)).toBe(true);
     expect(describeBoxPhase({ phase: 'boxing' }, brokers)).toContain('Writes stay blocked on every broker');
   });
 
   test('describes each settled phase', () => {
-    expect(describeBoxPhase({ phase: 'boxed' }, [])).toBe('Boxed. Every broker rejects writes.');
+    expect(describeBoxPhase({ phase: 'boxed' }, [])).toBe('Fenced. Every broker rejects writes.');
     expect(describeBoxPhase({ phase: 'unboxed' }, [])).toContain('as usual');
     expect(describeBoxPhase({ phase: 'unboxing' }, [])).toContain('accepts writes again');
   });
@@ -162,7 +162,7 @@ describe('describeHeldMove', () => {
       NOW
     );
     expect(held).toBe(
-      'Broker 2 isn’t answering, so the cluster stays boxing until it comes back or leaves the cluster. There’s no timeout.'
+      'Broker 2 isn’t answering, so the cluster stays fencing until it comes back or leaves the cluster. There’s no timeout.'
     );
   });
 
@@ -189,7 +189,7 @@ describe('formatBoxDuration', () => {
 });
 
 describe('isLongBox', () => {
-  test('only a settled box held past the threshold counts', () => {
+  test('only a settled fence held past the threshold counts', () => {
     const boxedFor = (ms: number) => ({ phase: 'boxed' as const, stateChangedAt: new Date(NOW - ms) });
     expect(isLongBox(boxedFor(LONG_BOX_THRESHOLD_MS - 1), NOW)).toBe(false);
     expect(isLongBox(boxedFor(LONG_BOX_THRESHOLD_MS), NOW)).toBe(true);
@@ -258,7 +258,7 @@ describe('getClientEffects', () => {
   const verdicts = (effects: ReturnType<typeof getClientEffects>) =>
     Object.fromEntries(effects.map((effect) => [effect.id, effect.verdict]));
 
-  test('unboxed, everything is allowed and transactions stay open', () => {
+  test('unfenced, everything is allowed and transactions stay open', () => {
     expect(verdicts(getClientEffects({ summary: { ...settings, phase: 'unboxed' }, brokers: [] }))).toMatchObject({
       produce: 'allowed',
       consume: 'allowed',
@@ -268,7 +268,7 @@ describe('getClientEffects', () => {
     });
   });
 
-  test('boxed, writes are rejected with what the client sees, exempt links read, and transactions end', () => {
+  test('fenced, writes are rejected with what the client sees, exempt links read, and transactions end', () => {
     const effects = getClientEffects({
       summary: { ...settings, phase: 'boxed' },
       brokers: progress([1, 'confirmed', true]),
@@ -291,7 +291,7 @@ describe('getClientEffects', () => {
     expect(effects.find((effect) => effect.id === 'schema')?.detail).toContain('HTTP 412');
   });
 
-  test('part way through a first Box, only the brokers that picked it up reject', () => {
+  test('part way through a first Fence, only the brokers that picked it up reject', () => {
     const [produce] = getClientEffects({
       summary: { ...settings, phase: 'boxing' },
       brokers: progress([1, 'confirmed', true], [2, 'confirmed', true], [3, 'behind', false]),
@@ -299,7 +299,7 @@ describe('getClientEffects', () => {
     expect(produce).toMatchObject({ verdict: 'partly', detail: expect.stringContaining('Still allowed on broker 3') });
   });
 
-  test('once boxed, open transactions always end', () => {
+  test('once fenced, open transactions always end', () => {
     const effects = getClientEffects({
       summary: { ...settings, phase: 'boxed' },
       brokers: [],

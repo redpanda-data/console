@@ -33,7 +33,8 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { BOXED_TOPIC_CONFIG_NOTE, useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { ShadowBoxedAlert } from 'components/shadow-box/shadow-boxed-alert';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -437,8 +438,9 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  /** Config changes still go through while boxed; they just may not reach a shadow cluster in time. */
-  const { fenced: boxed } = useShadowBoxGuard();
+  const boxedReason = useShadowBoxGuard().reasonFor('editTopicConfig');
+  /** The fence covers user topics only; internal ones, named with a leading underscore, stay editable. */
+  const fenceReason = props.targetTopic?.startsWith('_') ? undefined : boxedReason;
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
   const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 
@@ -492,11 +494,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
       </aside>
 
       <div className="flex min-w-0 flex-col gap-4">
-        {boxed ? (
-          <Alert testId="topic-config-boxed-note" variant="informative">
-            <AlertDescription>{BOXED_TOPIC_CONFIG_NOTE}</AlertDescription>
-          </Alert>
-        ) : null}
+        {fenceReason ? <ShadowBoxedAlert action="editTopicConfig" testId="topic-config-boxed-note" /> : null}
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-[240px] flex-1">
             <InputGroup>
@@ -563,6 +561,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                   {s.rows.map((entry) => (
                     <ConfigRow
                       entry={entry}
+                      fenceReason={fenceReason}
                       hasEditPermissions={hasEditPermissions}
                       key={entry.name}
                       onEditEntry={setEditedEntry}
@@ -581,9 +580,11 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
 const ConfigRow: FC<{
   entry: ConfigEntryExtended;
   hasEditPermissions: boolean;
+  /** Why the cluster fence rejects config changes on this topic right now, if it does. */
+  fenceReason?: string;
   onEditEntry: (entry: ConfigEntryExtended) => void;
-}> = ({ entry, hasEditPermissions, onEditEntry }) => {
-  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions);
+}> = ({ entry, hasEditPermissions, fenceReason, onEditEntry }) => {
+  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions, fenceReason);
   const modified = isConfigModified(entry);
   const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
   const defaultSynonym = getDefaultConfigSynonym(entry);
@@ -665,10 +666,14 @@ export default ConfigurationEditor;
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
-  hasEditPermissions: boolean
+  hasEditPermissions: boolean,
+  fenceReason?: string
 ): { canEdit: boolean; reason?: string } {
   if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
+  }
+  if (fenceReason) {
+    return { canEdit: false, reason: fenceReason };
   }
 
   if (isServerless()) {

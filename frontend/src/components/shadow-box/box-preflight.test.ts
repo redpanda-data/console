@@ -62,7 +62,7 @@ describe('getBoxPreflightChecks', () => {
     expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox: 'error' }))['own-links']).toBe('warn');
   });
 
-  test('a broker that isn’t answering would hold the box in Boxing, with no timeout', () => {
+  test('a broker that isn’t answering would hold the fence in Fencing, with no timeout', () => {
     const checks = getBoxPreflightChecks({
       ...base,
       brokers: [...healthyBrokers.slice(0, 2), { nodeId: 3, status: 'not-answering', blocks: undefined }],

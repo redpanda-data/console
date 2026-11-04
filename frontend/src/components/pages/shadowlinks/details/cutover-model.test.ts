@@ -52,7 +52,7 @@ const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACT
 const caughtUp = [topic('orders-events', 0), topic('orders-audit', 0)];
 
 describe('getSourceBoxStep', () => {
-  test('reads a Cloud source’s box and whether its saved settings let this link fetch, in any phase', () => {
+  test('reads a Cloud source’s fence and whether its saved settings let this link fetch, in any phase', () => {
     expect(step(cloudSource('boxed'))).toMatchObject({ kind: 'cloud', boxed: true, linkExempt: true });
     expect(step(cloudSource('unboxed', []))).toMatchObject({ boxed: false, linkExempt: false });
     expect(step(cloudSource('boxed', ['User:shadow-orders']))).toMatchObject({ linkExempt: false });
@@ -64,7 +64,7 @@ describe('getSourceBoxStep', () => {
     expect(step(cloudSource('boxed'), { authentication: 'mtls' })).toMatchObject({ linkExempt: undefined });
   });
 
-  test('falls back to a manual confirmation when Console can’t read the source’s box', () => {
+  test('falls back to a manual confirmation when Console can’t read the source’s fence', () => {
     expect(step(undefined, sasl, true)).toMatchObject({ kind: 'manual', reason: 'standalone', confirmed: true });
     expect(step({ kind: 'external', bootstrapServers: ['kafka:9092'] })).toMatchObject({
       kind: 'manual',
@@ -91,7 +91,7 @@ describe('getSourceBoxStep', () => {
 });
 
 describe('getLagStep', () => {
-  test('lag only counts as drained once the source is boxed', () => {
+  test('lag only counts as drained once the source is fenced', () => {
     expect(getLagStep(caughtUp, 'ready').status).toBe('caught-up');
     expect(getLagStep(caughtUp, 'waiting').status).toBe('waiting-for-box');
   });
@@ -121,7 +121,7 @@ describe('getLagStep', () => {
 describe('getCutoverReadiness', () => {
   const boxedStep = step(cloudSource('boxed'));
 
-  test('unlocks failover once the source is boxed and lag is zero', () => {
+  test('unlocks failover once the source is fenced and lag is zero', () => {
     expect(getCutoverReadiness({ topics: caughtUp, box: boxedStep }).failover).toEqual({
       done: false,
       inProgress: 0,
@@ -130,7 +130,7 @@ describe('getCutoverReadiness', () => {
     });
   });
 
-  test('a box that blocks this link’s reads isn’t ready, because the link can’t finish copying', () => {
+  test('a fence that blocks this link’s reads isn’t ready, because the link can’t finish copying', () => {
     const readiness = getCutoverReadiness({ topics: caughtUp, box: step(cloudSource('boxed', ['someone-else'])) });
 
     expect(readiness.lag.status).toBe('blocked');
@@ -170,7 +170,7 @@ describe('getCutoverReadiness', () => {
 
   test('keeps failover locked, with a reason, until then', () => {
     expect(getCutoverReadiness({ topics: caughtUp, box: step(cloudSource('unboxed')) }).failover.reason).toBe(
-      'Available once the source cluster reports Boxed.'
+      'Available once the source cluster reports Fenced.'
     );
     expect(getCutoverReadiness({ topics: [topic('a', 5)], box: boxedStep }).failover.reason).toBe(
       'Available when every topic has zero lag.'
@@ -251,7 +251,7 @@ describe('getLinkIdentity', () => {
 });
 
 describe('getCutoverStepStates', () => {
-  test('the source’s three steps go in order: settings, Box, then Boxed', () => {
+  test('the source’s three steps go in order: settings, Fence, then Fenced', () => {
     const states = (source: ShadowLinkSource) =>
       getCutoverStepStates(getCutoverReadiness({ topics: caughtUp, box: step(source) }));
 

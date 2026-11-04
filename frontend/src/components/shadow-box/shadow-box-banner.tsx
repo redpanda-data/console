@@ -18,6 +18,7 @@ import { type BrokerOwnCopy, useShadowBoxStatusQuery } from 'react-query/api/sha
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import {
+  BOX_PHASE_LABEL,
   type BoxPhase,
   type BoxSummary,
   type BrokerProgress,
@@ -33,14 +34,14 @@ import { useNow } from './use-now';
 type ActivePhase = Exclude<BoxPhase, 'unboxed'>;
 
 const TITLE: Record<ActivePhase, string> = {
-  boxing: 'This cluster is being shadow boxed',
-  boxed: 'This cluster is shadow boxed',
-  unboxing: 'This cluster is being unboxed',
+  boxing: 'This cluster is being fenced',
+  boxed: 'This cluster is fenced',
+  unboxing: 'This cluster is being unfenced',
 };
 
 /** What clients run into while the cluster blocks, past the headline. */
 const blockedDetail = (summary: BoxSummary) =>
-  `Producers get REQUEST_TIMED_OUT and keep retrying${summary.allowAllReads ? '' : ', and only exempt users can fetch from user topics'}. Topic config changes still go through.`;
+  `Producers get REQUEST_TIMED_OUT and keep retrying, consumer groups wait on COORDINATOR_NOT_AVAILABLE${summary.allowAllReads ? '' : ', and only exempt users can fetch from user topics'}.`;
 
 /** The banner's sentences: where the box stands, what holds it, and what clients see. */
 export const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[], now: number): string => {
@@ -49,7 +50,7 @@ export const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[], n
     parts.push(blockedDetail(summary));
   }
   if (isLongBox(summary, now)) {
-    parts.push('Retention and compaction keep deleting old data while it stays boxed.');
+    parts.push('Retention and compaction keep deleting old data while it stays fenced.');
   }
   return parts.filter(Boolean).join(' ');
 };
@@ -59,16 +60,17 @@ const brokerName = (nodeId: number | undefined) => (nodeId === undefined ? 'a br
 /** With no controller leader there's no cluster box to read, but a broker's own blocking copy still rejects writes. */
 const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
   const reporting = copies
-    .filter((copy) => copy.phase)
-    .map((copy) => `${brokerName(copy.nodeId)} reports ${copy.phase}`)
+    .flatMap((copy) =>
+      copy.phase ? [`${brokerName(copy.nodeId)} reports ${BOX_PHASE_LABEL[copy.phase].toLowerCase()}`] : []
+    )
     .join(', ');
   return (
     <div data-testid="shadow-box-banner">
       <Alert className="my-4" data-phase="no-leader" icon={<TriangleAlertIcon />} role="region" variant="warning">
-        <AlertTitle>This cluster may be shadow boxed</AlertTitle>
+        <AlertTitle>This cluster may be fenced</AlertTitle>
         <AlertDescription>
           <p>
-            It has no controller leader right now, so Console read each broker’s own copy of the box: {reporting}.
+            It has no controller leader right now, so Console read each broker’s own copy of the fence: {reporting}.
             Writes to those brokers are rejected.
           </p>
         </AlertDescription>
@@ -118,9 +120,7 @@ const ShadowBoxBannerAlert = ({
 }) => {
   const location = useLocation();
   const now = useNow();
-  const title = isApplyingNewSettings(summary, brokers)
-    ? 'This cluster is applying new shadow box settings'
-    : TITLE[phase];
+  const title = isApplyingNewSettings(summary, brokers) ? 'This cluster is applying new fence settings' : TITLE[phase];
   const onBoxStatusPage =
     location.pathname === '/shadowlinks' && (location.search as { tab?: string }).tab === 'source';
 
@@ -152,11 +152,11 @@ const ShadowBoxBannerAlert = ({
               testId="shadow-box-banner-view-status"
               variant="outline"
             >
-              View box status
+              View fence status
             </Button>
             {phase === 'unboxing' ? null : (
               <Button onClick={onUnbox} size="sm" testId="shadow-box-banner-unbox" variant="outline">
-                Unbox
+                Unfence
               </Button>
             )}
           </div>

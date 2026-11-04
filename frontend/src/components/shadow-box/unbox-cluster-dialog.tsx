@@ -65,8 +65,8 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
       { expectedRevision: opened.revision },
       {
         onSuccess: () => {
-          toast.success(`Unboxing ${label}`, {
-            description: 'Each broker accepts writes again as soon as it picks up Unbox. The settings stay saved.',
+          toast.success(`Unfencing ${label}`, {
+            description: 'Each broker accepts writes again as soon as it picks up Unfence. The settings stay saved.',
           });
           onClose();
         },
@@ -77,28 +77,28 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
   return (
     <>
       <DialogHeader align="left">
-        <DialogTitle>Unbox {label}?</DialogTitle>
+        <DialogTitle>Unfence {label}?</DialogTitle>
         <DialogDescription>
-          Each broker accepts writes again as soon as it picks up Unbox, and the cluster is unboxed once every broker
-          has. The settings stay saved for the next Box.
+          Each broker accepts writes again as soon as it picks up Unfence, and the cluster is unfenced once every broker
+          has. The settings stay saved for the next Fence.
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="md">
-        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current box" /> : null}
+        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
         {alreadyReleased ? (
           <Alert testId="unbox-cluster-already-released" variant="informative">
             <AlertTitle>This cluster is already {BOX_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
             <AlertDescription>
-              <p>There’s no box to release. Close this dialog to see its status.</p>
+              <p>There’s no fence to release. Close this dialog to see its status.</p>
             </AlertDescription>
           </Alert>
         ) : (
           <Alert icon={<TriangleAlertIcon />} variant="warning">
-            <AlertTitle>Unbox only if clients won’t write here by mistake</AlertTitle>
+            <AlertTitle>Unfence only if clients won’t write here by mistake</AlertTitle>
             <AlertDescription>
               <p>
                 If a shadow link has already failed over from this cluster, clients still pointed at it start writing
-                here again, and the shadow cluster never sees those writes. Repoint clients first, or unbox only to
+                here again, and the shadow cluster never sees those writes. Repoint clients first, or unfence only to
                 cancel a cutover.
               </p>
             </AlertDescription>
@@ -106,7 +106,7 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
         )}
         {unbox.error && !(changed && isStaleRevisionError(unbox.error)) ? (
           <Alert testId="unbox-cluster-error" variant="destructive">
-            <AlertTitle>Couldn’t unbox the cluster</AlertTitle>
+            <AlertTitle>Couldn’t unfence the cluster</AlertTitle>
             <AlertDescription>
               <p>{describeShadowBoxError(unbox.error)}</p>
             </AlertDescription>
@@ -123,7 +123,7 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
           onClick={handleUnbox}
           testId="confirm-unbox-cluster"
         >
-          Unbox cluster
+          Unfence cluster
         </Button>
       </DialogFooter>
     </>

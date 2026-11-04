@@ -71,23 +71,23 @@ describe('the MessagesTable — error state', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  test('while the cluster is boxed and reads are blocked, explains the failure and keeps the raw error', () => {
+  test('while the cluster is fenced and reads are blocked, explains the failure and keeps the raw error', () => {
     guard.readsBlocked = true;
     try {
       render(<MessagesTable {...baseProps} error="[POLICY_VIOLATION] fetch rejected" />);
-      expect(screen.getByText('Reading is blocked while this cluster is shadow boxed')).toBeInTheDocument();
+      expect(screen.getByText('Reading is blocked while this cluster is fenced')).toBeInTheDocument();
       expect(screen.getByTestId('messages-error-detail')).toHaveTextContent('[POLICY_VIOLATION] fetch rejected');
     } finally {
       guard.readsBlocked = false;
     }
   });
 
-  test('while boxed, an error that isn’t a policy rejection keeps its own message', () => {
+  test('while fenced, an error that isn’t a policy rejection keeps its own message', () => {
     guard.readsBlocked = true;
     try {
       render(<MessagesTable {...baseProps} error="invalid filter: unexpected token" />);
       expect(screen.getByText("Couldn't load messages")).toBeInTheDocument();
-      expect(screen.queryByText('Reading is blocked while this cluster is shadow boxed')).not.toBeInTheDocument();
+      expect(screen.queryByText('Reading is blocked while this cluster is fenced')).not.toBeInTheDocument();
     } finally {
       guard.readsBlocked = false;
     }

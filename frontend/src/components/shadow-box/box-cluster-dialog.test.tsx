@@ -143,7 +143,7 @@ describe('the BoxClusterDialog', () => {
       expect(screen.queryByTestId('shadow-box-exempt-principals-chip-User:shadow-orders')).not.toBeInTheDocument();
     });
 
-    test('with no one exempt, Box waits for an explicit acknowledgement that it locks out every link', async () => {
+    test('with no one exempt, Fence waits for an explicit acknowledgement that it locks out every link', async () => {
       useShadowBoxStore.setState({
         topology: {
           clusterName: 'prod-us-east-1',
@@ -164,7 +164,7 @@ describe('the BoxClusterDialog', () => {
   });
 
   describe('its preflight checks', () => {
-    test('a shadow link that has failed over doesn’t stop Box', async () => {
+    test('a shadow link that has failed over doesn’t stop Fence', async () => {
       rs.mocked(useListShadowLinksQuery).mockReturnValue({
         data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
       } as unknown as ReturnType<typeof useListShadowLinksQuery>);
@@ -193,7 +193,7 @@ describe('the BoxClusterDialog', () => {
       expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
     });
 
-    test('a cluster with shadow links of its own can’t be boxed', async () => {
+    test('a cluster with shadow links of its own can’t be fenced', async () => {
       const user = userEvent.setup();
       mockOwnLinks(['inbound-dr']);
       renderDialog();
@@ -214,7 +214,7 @@ describe('the BoxClusterDialog', () => {
   });
 
   describe('boxing', () => {
-    test('boxes only after the cluster name is typed, with the reviewed settings and revision', async () => {
+    test('fences only after the cluster name is typed, with the reviewed settings and revision', async () => {
       const user = userEvent.setup();
       renderDialog();
 
@@ -247,7 +247,7 @@ describe('the BoxClusterDialog', () => {
       expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 5n } });
     });
 
-    test('says so when someone else boxed the cluster while it was open', async () => {
+    test('says so when someone else fenced the cluster while it was open', async () => {
       const user = userEvent.setup();
       renderDialog();
       await screen.findByTestId('confirm-box-cluster');
@@ -255,11 +255,11 @@ describe('the BoxClusterDialog', () => {
       live.set({ value: { summary: summaryAt(3, { phase: 'boxing' }), brokers: [] } });
       await user.click(await screen.findByTestId('shadow-box-changed-refresh'));
 
-      expect(screen.getByTestId('box-cluster-already-boxed')).toHaveTextContent('already boxing');
+      expect(screen.getByTestId('box-cluster-already-boxed')).toHaveTextContent('already fencing');
       expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
     });
 
-    test('when its own save went through but Box failed, doesn’t blame someone else and lets the user retry', async () => {
+    test('when its own save went through but Fence failed, doesn’t blame someone else and lets the user retry', async () => {
       const user = await renderConfirmed();
 
       const saved = summaryAt(3, { exemptPrincipals: ['shadow-orders'] });
@@ -268,7 +268,7 @@ describe('the BoxClusterDialog', () => {
       live.set({ value: { summary: saved, brokers: [] } });
 
       expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
-        'Settings saved, but the cluster isn’t boxed'
+        'Settings saved, but the cluster isn’t fenced'
       );
       expect(screen.queryByTestId('shadow-box-changed')).not.toBeInTheDocument();
       await user.click(screen.getByTestId('confirm-box-cluster'));
@@ -286,15 +286,15 @@ describe('the BoxClusterDialog', () => {
       expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
     });
 
-    test('explains a failed Box in plain words', async () => {
+    test('explains a failed Fence in plain words', async () => {
       mutation.error = new ConnectError(
-        'Shadow boxing cannot start while a shadow link is configured',
+        'Cluster fence cannot start while a shadow link is configured',
         Code.FailedPrecondition
       );
       renderDialog();
 
       expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
-        'Box its source instead, or fail the link over first.'
+        'Fence its source instead, or fail the link over first.'
       );
     });
   });

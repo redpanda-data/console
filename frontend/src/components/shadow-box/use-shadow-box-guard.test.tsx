@@ -51,10 +51,10 @@ describe('useShadowBoxGuard', () => {
     const { result } = renderHook(() => useShadowBoxGuard());
 
     expect(result.current.reasonFor('editAcls')).toBe(
-      'You can’t create or delete ACLs while this cluster is shadow boxed. Unbox it first.'
+      'You can’t create or delete ACLs while this cluster is fenced. Unfence it first.'
     );
     expect(result.current.reasonFor('createShadowLink')).toBe(
-      'A shadow boxed cluster rejects new shadow links, and retrying won’t help. Unbox it first.'
+      'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
     );
   });
 
@@ -65,7 +65,7 @@ describe('useShadowBoxGuard', () => {
     expect(result.current.reasonFor('produce')).toBeUndefined();
   });
 
-  test('blames the box for a rejected fetch only while it blocks reads', () => {
+  test('blames the fence for a rejected fetch only while it blocks reads', () => {
     mockStatus('boxed');
     expect(renderHook(() => useShadowBoxGuard()).result.current.isBoxedRead(POLICY_VIOLATION)).toBe(true);
 

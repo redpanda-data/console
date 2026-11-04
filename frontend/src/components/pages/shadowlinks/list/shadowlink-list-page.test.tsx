@@ -124,7 +124,7 @@ describe('the ShadowLinkListPage', () => {
   });
 });
 
-describe('the ShadowLinkListPage with shadow boxing', () => {
+describe('the ShadowLinkListPage with cluster fencing', () => {
   const noLinks = () =>
     mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
 
@@ -151,7 +151,7 @@ describe('the ShadowLinkListPage with shadow boxing', () => {
     expect(screen.queryByTestId('shadow-box-source-panel-stub')).not.toBeInTheDocument();
   });
 
-  test('a boxed cluster opens on its box', async () => {
+  test('a fenced cluster opens on its fence', async () => {
     mockBox({ available: true, known: true, phase: 'boxed' });
     noLinks();
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
@@ -159,7 +159,7 @@ describe('the ShadowLinkListPage with shadow boxing', () => {
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
   });
 
-  test('a cluster Cloud knows links read from opens on its box', async () => {
+  test('a cluster Cloud knows links read from opens on its fence', async () => {
     mockBox({ available: true, known: true, phase: 'unboxed' });
     noLinks();
     useShadowBoxStore.setState({
@@ -176,7 +176,7 @@ describe('the ShadowLinkListPage with shadow boxing', () => {
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
   });
 
-  test('waits for the box and the host before choosing a tab', async () => {
+  test('waits for the fence and the host before choosing a tab', async () => {
     mockBox({ available: true, known: false });
     noLinks();
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
@@ -184,7 +184,7 @@ describe('the ShadowLinkListPage with shadow boxing', () => {
     expect(await screen.findByTestId('shadowlinks-tab-loading')).toBeInTheDocument();
   });
 
-  test('a boxed cluster can’t take a new shadow link, and Create says why', async () => {
+  test('a fenced cluster can’t take a new shadow link, and Create says why', async () => {
     mockBox({ available: false, known: true, phase: 'boxed' });
     mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
     renderWithFileRoutes(<ShadowLinkListPage />);

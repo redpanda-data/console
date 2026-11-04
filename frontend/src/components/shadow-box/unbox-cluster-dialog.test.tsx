@@ -53,23 +53,23 @@ describe('the UnboxClusterDialog', () => {
     const user = userEvent.setup();
     renderWithFileRoutes(<UnboxClusterDialog clusterName="prod-us-east-1" onOpenChange={rs.fn()} open />);
 
-    expect(await screen.findByText('Unbox prod-us-east-1?')).toBeVisible();
+    expect(await screen.findByText('Unfence prod-us-east-1?')).toBeVisible();
     expect(screen.getByTestId('unbox-cluster-dialog')).toHaveTextContent('clients still pointed at it start writing');
 
     await user.click(screen.getByTestId('confirm-unbox-cluster'));
     expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: 7n });
   });
 
-  test('says when someone else re-boxed the cluster', async () => {
-    mutation.error = new ConnectError('Shadow boxing revision has changed', Code.FailedPrecondition);
+  test('says when someone else re-fenced the cluster', async () => {
+    mutation.error = new ConnectError('Cluster fencing revision has changed', Code.FailedPrecondition);
     renderWithFileRoutes(<UnboxClusterDialog onOpenChange={rs.fn()} open />);
 
     expect(await screen.findByTestId('unbox-cluster-error')).toHaveTextContent(
-      'Someone else changed the box since this page read it.'
+      'Someone else changed the fence since this page read it.'
     );
   });
 
-  test('won’t release a box that changed after it opened', async () => {
+  test('won’t release a fence that changed after it opened', async () => {
     renderWithFileRoutes(<Harness />);
     await screen.findByTestId('confirm-unbox-cluster');
 
@@ -80,11 +80,11 @@ describe('the UnboxClusterDialog', () => {
     expect(screen.getByTestId('confirm-unbox-cluster')).toBeDisabled();
   });
 
-  test('has nothing to do once the cluster is already unboxing', async () => {
+  test('has nothing to do once the cluster is already unfencing', async () => {
     rs.mocked(useShadowBoxStatusQuery).mockReturnValue(status('unboxing', 8));
     renderWithFileRoutes(<UnboxClusterDialog onOpenChange={rs.fn()} open />);
 
-    expect(await screen.findByTestId('unbox-cluster-already-released')).toHaveTextContent('already unboxing');
+    expect(await screen.findByTestId('unbox-cluster-already-released')).toHaveTextContent('already unfencing');
     expect(screen.getByTestId('confirm-unbox-cluster')).toBeDisabled();
   });
 });

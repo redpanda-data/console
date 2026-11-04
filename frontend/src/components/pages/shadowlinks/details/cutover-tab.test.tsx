@@ -133,7 +133,7 @@ describe('the CutoverTab', () => {
   });
 
   describe('on the source', () => {
-    test('with the link exempt, Box is next; it opens the source, where Box runs', async () => {
+    test('with the link exempt, Fence is next; it opens the source, where Fence runs', async () => {
       const user = userEvent.setup();
       renderTab(cloudReadiness('unboxed', [0, 0]));
 
@@ -141,26 +141,26 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-step-box')).toHaveAttribute('data-state', 'current');
       expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
       expect(screen.getByTestId('cutover-failover-reason')).toHaveTextContent(
-        'Available once the source cluster reports Boxed.'
+        'Available once the source cluster reports Fenced.'
       );
 
       await user.click(screen.getByTestId('cutover-open-source'));
       expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=box');
     });
 
-    test('before boxing, settings that would block this link come first: exempt its user on the source', async () => {
+    test('before fencing, settings that would block this link come first: exempt its user on the source', async () => {
       const user = userEvent.setup();
       renderTab(cloudReadiness('unboxed', [5], []));
 
       expect(screen.getByTestId('cutover-step-settings')).toHaveAttribute('data-state', 'attention');
-      expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Once the source is boxed');
+      expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Once the source is fenced');
       expect(screen.getByTestId('cutover-open-source')).toBeDisabled();
 
       await user.click(screen.getByTestId('cutover-exempt-link'));
       expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source&action=exempt&principal=shadow-orders');
     });
 
-    test('once boxed with the link blocked, says its fetches are rejected and that saving reboxes', () => {
+    test('once fenced with the link blocked, says its fetches are rejected and that saving re-fences', () => {
       renderTab(cloudReadiness('boxed', [0], []));
 
       expect(screen.getByTestId('cutover-link-not-exempt')).toHaveTextContent('Its brokers reject this link’s fetches');
@@ -169,7 +169,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
     });
 
-    test('while boxing, waits for Boxed and names a broker that holds it', () => {
+    test('while fencing, waits for Fenced and names a broker that holds it', () => {
       renderTab(
         readinessFor(
           cloudSource(
@@ -191,7 +191,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-boxing-progress')).toHaveTextContent('There’s no timeout.');
     });
 
-    test('once the source is boxed, offers to open or unbox it there', async () => {
+    test('once the source is fenced, offers to open or unfence it there', async () => {
       const user = userEvent.setup();
       renderTab(cloudReadiness('boxed', [5]));
 
@@ -222,7 +222,7 @@ describe('the CutoverTab', () => {
     });
   });
 
-  describe('without a readable source box', () => {
+  describe('without a readable source fence', () => {
     test('gives each source step its Admin API call', () => {
       renderTab(readinessFor(EXTERNAL_SOURCE, topics([0])));
 
@@ -238,7 +238,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-admin-api-status')).toHaveTextContent('CLUSTER_FENCE_STATE_FENCED');
     });
 
-    test('takes the operator’s word that the source is boxed', async () => {
+    test('takes the operator’s word that the source is fenced', async () => {
       const user = userEvent.setup();
       const onManualConfirmChange = rs.fn();
       renderTab(readinessFor(EXTERNAL_SOURCE, topics([0])), { onManualConfirmChange });
@@ -260,7 +260,9 @@ describe('the CutoverTab', () => {
         )
       );
 
-      expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent('Only superusers can read');
+      expect(screen.getByTestId('cutover-manual-reason')).toHaveTextContent(
+        'You don’t have permission to view the source cluster’s fence.'
+      );
     });
 
     test('embedded, while the host is still resolving links, waits instead of calling the source external', () => {
@@ -283,7 +285,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-failover-all')).toBeDisabled();
     });
 
-    test('unlocks failover once the source is boxed and every topic has caught up', async () => {
+    test('unlocks failover once the source is fenced and every topic has caught up', async () => {
       const user = userEvent.setup();
       const onFailoverAll = rs.fn();
       renderTab(cloudReadiness('boxed', [0, 0]), { onFailoverAll });
@@ -355,7 +357,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-step-clients')).toHaveAttribute('data-state', 'pending');
     });
 
-    test('after failover, moving clients is the last step: repoint them and leave the source boxed', () => {
+    test('after failover, moving clients is the last step: repoint them and leave the source fenced', () => {
       renderTab(
         readinessFor(cloudSource('boxed'), [
           { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
@@ -367,7 +369,7 @@ describe('the CutoverTab', () => {
       expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent(
         'Repoint producers and consumers to dr-us-west-2.'
       );
-      expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent('Leave prod-us-east-1 boxed');
+      expect(screen.getByTestId('cutover-move-clients')).toHaveTextContent('Leave prod-us-east-1 fenced');
       expect(screen.queryByTestId('cutover-failover-all')).not.toBeInTheDocument();
     });
 
