@@ -34,7 +34,6 @@ const cloudSource = (state: ShadowLinkPeerBoxState, exemptPrincipals = ['shadow-
     revision: '18',
     exemptPrincipals,
     allowAllReads: false,
-    skipTransactionExpiration: false,
     brokers: [],
   },
 });

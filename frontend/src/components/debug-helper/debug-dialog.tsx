@@ -562,7 +562,7 @@ const SIMULATOR_SWITCHES = [
   {
     id: 'noLeader',
     label: 'No controller leader',
-    description: 'GetShadowBoxStatus and every change return UNAVAILABLE. Each broker still answers for itself.',
+    description: 'GetClusterFenceStatus and every change return UNAVAILABLE. Each broker still answers for itself.',
   },
   {
     id: 'slowCalls',
@@ -622,8 +622,8 @@ function ShadowBoxPanel({ onMutate }: { onMutate: () => void }) {
             testId="debug-shadow-box-simulator"
           />
           <SimulatorRowText
-            description="Answers ShadowBoxService in the browser, per cluster, the way the Admin API does. Cloud UI on the same origin reads the same simulated boxes."
-            label="Simulate the Shadow Box API"
+            description="Answers ClusterFenceService in the browser, per cluster, the way the Admin API does. Cloud UI on the same origin reads the same simulated boxes."
+            label="Simulate the cluster fence API"
           />
         </SimulatorRow>
         <SimulatorRow>
@@ -1089,7 +1089,8 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
   },
   shadowbox: {
     title: 'Shadow box',
-    description: 'Stand in for the Shadow Box API, which no released Redpanda serves yet, and force its failure modes.',
+    description:
+      'Stand in for the cluster fence API, which no released Redpanda serves yet, and force its failure modes.',
   },
   storage: {
     title: 'Storage',

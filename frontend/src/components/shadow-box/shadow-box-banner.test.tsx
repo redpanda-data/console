@@ -40,7 +40,6 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
       stateChangedAt: new Date(NOW - 12 * MINUTE),
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,
-      skipTransactionExpiration: false,
       ...overrides,
     },
     brokers,

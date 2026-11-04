@@ -109,7 +109,7 @@ export type ShadowLinkPeerBox =
       status: 'unavailable';
       /**
        * Why the host can't show it; absent from hosts that predate it.
-       * - `unsupported`: the cluster doesn't serve the Shadow Box API.
+       * - `unsupported`: the cluster doesn't serve the cluster fence API.
        * - `forbidden`: only superusers can read a box.
        * - `inactive`: the feature turns on once every broker runs Redpanda v26.3.1.
        * - `no-leader`: the cluster has no controller leader right now; the host keeps trying.
@@ -127,7 +127,6 @@ export type ShadowLinkPeerBox =
       stateChangedAt?: string;
       exemptPrincipals: string[];
       allowAllReads: boolean;
-      skipTransactionExpiration: boolean;
       /** Each broker's copy; empty when the cluster reported none. */
       brokers: ShadowLinkPeerBoxBroker[];
     };

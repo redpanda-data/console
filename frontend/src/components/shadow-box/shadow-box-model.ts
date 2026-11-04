@@ -11,10 +11,10 @@
 
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import {
-  type GetShadowBoxStatusResponse,
-  type ShadowBox,
-  ShadowBoxState,
-} from 'protogen/redpanda/core/admin/v2/shadow_box_pb';
+  type ClusterFence,
+  ClusterFenceState,
+  type GetClusterFenceStatusResponse,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 export type BoxPhase = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
@@ -37,15 +37,15 @@ export const LONG_BOX_THRESHOLD_MS = 60 * 60 * 1000;
 /** A move still waiting on an answering broker after this long names that broker. */
 const BEHIND_NOTICE_MS = 30 * 1000;
 
-const PHASE_BY_STATE: Partial<Record<ShadowBoxState, BoxPhase>> = {
-  [ShadowBoxState.UNBOXED]: 'unboxed',
-  [ShadowBoxState.BOXING]: 'boxing',
-  [ShadowBoxState.BOXED]: 'boxed',
-  [ShadowBoxState.UNBOXING]: 'unboxing',
+const PHASE_BY_STATE: Partial<Record<ClusterFenceState, BoxPhase>> = {
+  [ClusterFenceState.UNFENCED]: 'unboxed',
+  [ClusterFenceState.FENCING]: 'boxing',
+  [ClusterFenceState.FENCED]: 'boxed',
+  [ClusterFenceState.UNFENCING]: 'unboxing',
 };
 
 /** Undefined for a state this version of Console doesn't know, which must never read as unboxed. */
-export const toBoxPhase = (state: ShadowBoxState | undefined): BoxPhase | undefined =>
+export const toBoxPhase = (state: ClusterFenceState | undefined): BoxPhase | undefined =>
   state === undefined ? undefined : PHASE_BY_STATE[state];
 
 /** Every phase but `unboxed`: something about the box is in place or still settling. */
@@ -81,18 +81,18 @@ export type BrokerProgress = {
   errorMessage?: string;
 };
 
-export const getBrokerProgress = (response: GetShadowBoxStatusResponse | undefined): BrokerProgress[] => {
-  const box = response?.box;
+export const getBrokerProgress = (response: GetClusterFenceStatusResponse | undefined): BrokerProgress[] => {
+  const box = response?.fence;
   return (response?.brokers ?? []).map((broker): BrokerProgress => {
-    if (!broker.box) {
+    if (!broker.fence) {
       return { nodeId: broker.nodeId, status: 'not-answering', blocks: undefined, errorMessage: broker.errorMessage };
     }
-    const phase = toBoxPhase(broker.box.state);
-    const confirmed = box !== undefined && broker.box.state === box.state && broker.box.revision === box.revision;
+    const phase = toBoxPhase(broker.fence.state);
+    const confirmed = box !== undefined && broker.fence.state === box.state && broker.fence.revision === box.revision;
     return {
       nodeId: broker.nodeId,
       status: confirmed ? 'confirmed' : 'behind',
-      copy: { phase, revision: broker.box.revision },
+      copy: { phase, revision: broker.fence.revision },
       blocks: phase === undefined ? undefined : isBlockingPhase(phase),
     };
   });
@@ -106,7 +106,6 @@ export type BoxSummary = {
   stateChangedAt?: Date;
   exemptPrincipals: string[];
   allowAllReads: boolean;
-  skipTransactionExpiration: boolean;
 };
 
 export const UNBOXED_SUMMARY: BoxSummary = {
@@ -114,11 +113,10 @@ export const UNBOXED_SUMMARY: BoxSummary = {
   revision: -1n,
   exemptPrincipals: [],
   allowAllReads: false,
-  skipTransactionExpiration: false,
 };
 
 /** Undefined when the response has no box, or a state Console doesn't know. */
-export const summarizeBox = (box: ShadowBox | undefined): BoxSummary | undefined => {
+export const summarizeBox = (box: ClusterFence | undefined): BoxSummary | undefined => {
   const phase = toBoxPhase(box?.state);
   if (!(box && phase)) {
     return;
@@ -129,15 +127,13 @@ export const summarizeBox = (box: ShadowBox | undefined): BoxSummary | undefined
     stateChangedAt: box.stateChangedAt ? timestampDate(box.stateChangedAt) : undefined,
     exemptPrincipals: box.settings?.readPolicy?.exemptPrincipals ?? [],
     allowAllReads: box.settings?.readPolicy?.allowAllReads ?? false,
-    skipTransactionExpiration: box.settings?.skipTransactionExpiration ?? false,
   };
 };
 
-type BoxSettingsValues = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads' | 'skipTransactionExpiration'>;
+type BoxSettingsValues = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads'>;
 
 export const sameBoxSettings = (a: BoxSettingsValues, b: BoxSettingsValues): boolean =>
   a.allowAllReads === b.allowAllReads &&
-  a.skipTransactionExpiration === b.skipTransactionExpiration &&
   a.exemptPrincipals.length === b.exemptPrincipals.length &&
   a.exemptPrincipals.every((principal) => b.exemptPrincipals.includes(principal));
 
@@ -328,9 +324,9 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
  * Field mask paths for the settings Console edits. `read_policy` replaces the whole policy, which
  * is the only way to remove a name; `read_policy.exempt_principals` would only add names.
  */
-export const BOX_SETTINGS_UPDATE_PATHS = ['read_policy', 'skip_transaction_expiration'];
+export const BOX_SETTINGS_UPDATE_PATHS = ['read_policy'];
 
-const BOXED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?box/i;
+const BOXED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?box|cluster.?fence/i;
 
 /**
  * A failed message search that reads like the box turned the fetch away, not like a bad filter.
@@ -386,20 +382,10 @@ const rejectionVerdict = (
 };
 
 /** A settings change while boxed finds open transactions already ended by the first Boxed. */
-const transactionEffect = (
-  summary: Pick<BoxSummary, 'phase' | 'skipTransactionExpiration'>,
-  wasBoxed: boolean
-): ClientEffect => {
+const transactionEffect = (summary: Pick<BoxSummary, 'phase'>, wasBoxed: boolean): ClientEffect => {
   const base = { id: 'transaction', label: 'An open transaction' };
   if (!isBlockingPhase(summary.phase)) {
     return { ...base, verdict: 'open', detail: 'Open.' };
-  }
-  if (summary.skipTransactionExpiration) {
-    return {
-      ...base,
-      verdict: 'open',
-      detail: 'Left open: Skip transaction expiration is on. Readers can’t move past it.',
-    };
   }
   return summary.phase === 'boxed' || wasBoxed
     ? {
@@ -424,7 +410,7 @@ export const getClientEffects = ({
   brokers,
   links,
 }: {
-  summary: Pick<BoxSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads' | 'skipTransactionExpiration'>;
+  summary: Pick<BoxSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>;
   brokers: readonly BrokerProgress[];
   links?: readonly (LinkIdentity & { linkName: string })[];
 }): ClientEffect[] => {

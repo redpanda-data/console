@@ -14,18 +14,18 @@ import { Code, ConnectError, createRouterTransport, type Transport } from '@conn
 import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
-  box,
-  getShadowBoxBrokerStatus,
-  getShadowBoxStatus,
-  updateShadowBoxSettings,
-} from 'protogen/redpanda/api/console/v1alpha1/shadowbox-ShadowBoxService_connectquery';
+  ClusterFenceState,
+  FenceResponseSchema,
+  GetClusterFenceBrokerStatusResponseSchema,
+  GetClusterFenceStatusResponseSchema,
+  UpdateClusterFenceSettingsResponseSchema,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import {
-  BoxResponseSchema,
-  GetShadowBoxBrokerStatusResponseSchema,
-  GetShadowBoxStatusResponseSchema,
-  ShadowBoxState,
-  UpdateShadowBoxSettingsResponseSchema,
-} from 'protogen/redpanda/core/admin/v2/shadow_box_pb';
+  fence,
+  getClusterFenceBrokerStatus,
+  getClusterFenceStatus,
+  updateClusterFenceSettings,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { connectQueryWrapper } from 'test-utils';
@@ -48,13 +48,13 @@ import {
   useShadowBoxStatusQuery,
 } from './shadow-box';
 
-const boxedStatus = create(GetShadowBoxStatusResponseSchema, {
-  box: {
-    state: ShadowBoxState.BOXED,
+const boxedStatus = create(GetClusterFenceStatusResponseSchema, {
+  fence: {
+    state: ClusterFenceState.FENCED,
     revision: 3n,
     settings: { readPolicy: { exemptPrincipals: ['shadow-orders'] } },
   },
-  brokers: [{ nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: 3n } }],
+  brokers: [{ nodeId: 1, fence: { state: ClusterFenceState.FENCED, revision: 3n } }],
 });
 
 const renderStatusQuery = (transport: Transport) => {
@@ -65,13 +65,13 @@ const renderStatusQuery = (transport: Transport) => {
 describe('useShadowBoxStatusQuery', () => {
   beforeEach(() => {
     flags.enableShadowBoxing = true;
-    useSupportedFeaturesStore.setState({ shadowBoxService: true });
+    useSupportedFeaturesStore.setState({ clusterFence: true });
     useShadowBoxStore.setState({ phase: null });
   });
 
   test('reads the box when the flag is on and the backend serves the API', async () => {
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowBoxStatus, () => boxedStatus);
+      rpc(getClusterFenceStatus, () => boxedStatus);
     });
 
     const { result } = renderStatusQuery(transport);
@@ -92,7 +92,7 @@ describe('useShadowBoxStatusQuery', () => {
         flags.enableShadowBoxing = false;
       },
     ],
-    ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ shadowBoxService: false })],
+    ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ clusterFence: false })],
   ])('stays idle when %s', async (_label, arrange) => {
     rs.useFakeTimers();
     onTestFinished(() => {
@@ -101,7 +101,7 @@ describe('useShadowBoxStatusQuery', () => {
     arrange();
     const handler = rs.fn(() => boxedStatus);
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowBoxStatus, handler);
+      rpc(getClusterFenceStatus, handler);
     });
 
     const { result } = renderStatusQuery(transport);
@@ -119,15 +119,14 @@ const openedAt = (revision: number) => ({
   revision: BigInt(revision),
   exemptPrincipals: [],
   allowAllReads: false,
-  skipTransactionExpiration: false,
 });
 
 const savedBox = (revision: number, exemptPrincipals: string[]) =>
-  create(UpdateShadowBoxSettingsResponseSchema, {
-    box: {
-      state: ShadowBoxState.UNBOXED,
+  create(UpdateClusterFenceSettingsResponseSchema, {
+    fence: {
+      state: ClusterFenceState.UNFENCED,
       revision: BigInt(revision),
-      settings: { readPolicy: { exemptPrincipals }, skipTransactionExpiration: true },
+      settings: { readPolicy: { exemptPrincipals } },
     },
   });
 
@@ -136,25 +135,25 @@ const boxTransport = (saved: ReturnType<typeof savedBox>, boxError?: ConnectErro
   const saveRequests: unknown[] = [];
   const boxRequests: unknown[] = [];
   const transport = createRouterTransport(({ rpc }) => {
-    rpc(updateShadowBoxSettings, (request) => {
+    rpc(updateClusterFenceSettings, (request) => {
       calls.push('save');
       saveRequests.push(request);
       return saved;
     });
-    rpc(box, (request) => {
+    rpc(fence, (request) => {
       calls.push('box');
       boxRequests.push(request);
       if (boxError) {
         throw boxError;
       }
-      return create(BoxResponseSchema, { box: { state: ShadowBoxState.BOXING, revision: 6n } });
+      return create(FenceResponseSchema, { fence: { state: ClusterFenceState.FENCING, revision: 6n } });
     });
-    rpc(getShadowBoxStatus, () => boxedStatus);
+    rpc(getClusterFenceStatus, () => boxedStatus);
   });
   return { transport, calls, saveRequests, boxRequests };
 };
 
-const reviewed = { exemptPrincipals: ['shadow-orders'], allowAllReads: false, skipTransactionExpiration: true };
+const reviewed = { exemptPrincipals: ['shadow-orders'], allowAllReads: false };
 
 describe('useBoxClusterMutation', () => {
   test('saves changed settings at the opened revision, then boxes at the revision the save returned', async () => {
@@ -169,10 +168,9 @@ describe('useBoxClusterMutation', () => {
     expect(calls).toEqual(['save', 'box']);
     expect(saveRequests[0]).toMatchObject({
       expectedRevision: 4n,
-      updateMask: { paths: ['read_policy', 'skip_transaction_expiration'] },
+      updateMask: { paths: ['read_policy'] },
       settings: {
         readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
-        skipTransactionExpiration: true,
       },
     });
     expect(boxRequests[0]).toMatchObject({ expectedRevision: 5n });
@@ -228,21 +226,21 @@ describe('useBoxClusterMutation', () => {
 describe('useShadowBoxStatusQuery when the status can’t be read', () => {
   beforeEach(() => {
     flags.enableShadowBoxing = true;
-    useSupportedFeaturesStore.setState({ shadowBoxService: true });
+    useSupportedFeaturesStore.setState({ clusterFence: true });
   });
 
   const intervalOf = (queryClient: ReturnType<typeof connectQueryWrapper>['queryClient']) => {
     const query = queryClient
       .getQueryCache()
       .getAll()
-      .find((candidate) => JSON.stringify(candidate.queryKey).includes('GetShadowBoxStatus'));
+      .find((candidate) => JSON.stringify(candidate.queryKey).includes('GetClusterFenceStatus'));
     const interval = query?.observers[0]?.options.refetchInterval as ((q: typeof query) => number | false) | undefined;
     return interval?.(query);
   };
 
   test('a viewer who isn’t a superuser stops polling, and the status says why rather than vanishing', async () => {
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowBoxStatus, () => {
+      rpc(getClusterFenceStatus, () => {
         throw new ConnectError('denied', Code.PermissionDenied);
       });
     });
@@ -258,7 +256,7 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
 
   test('a cluster without the API reads as unavailable', async () => {
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowBoxStatus, () => {
+      rpc(getClusterFenceStatus, () => {
         throw new ConnectError('no such service', Code.Unimplemented);
       });
     });
@@ -272,12 +270,12 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
 
   test('with no controller leader, asks the broker for its own copy and keeps blocking writes it rejects', async () => {
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowBoxStatus, () => {
+      rpc(getClusterFenceStatus, () => {
         throw new ConnectError('no controller leader', Code.Unavailable);
       });
-      rpc(getShadowBoxBrokerStatus, () =>
-        create(GetShadowBoxBrokerStatusResponseSchema, {
-          broker: { nodeId: 1, box: { state: ShadowBoxState.BOXED, revision: 18n } },
+      rpc(getClusterFenceBrokerStatus, () =>
+        create(GetClusterFenceBrokerStatusResponseSchema, {
+          broker: { nodeId: 1, fence: { state: ClusterFenceState.FENCED, revision: 18n } },
         })
       );
     });

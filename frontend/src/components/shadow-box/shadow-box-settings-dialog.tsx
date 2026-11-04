@@ -42,7 +42,6 @@ const formSchema = z.object({
   settings: z.object({
     exemptPrincipals: z.array(z.string()),
     allowAllReads: z.boolean(),
-    skipTransactionExpiration: z.boolean(),
   }),
 });
 
@@ -68,7 +67,6 @@ const toFormValues = (summary: BoxSummary): FormValues => ({
   settings: {
     exemptPrincipals: summary.exemptPrincipals,
     allowAllReads: summary.allowAllReads,
-    skipTransactionExpiration: summary.skipTransactionExpiration,
   },
 });
 

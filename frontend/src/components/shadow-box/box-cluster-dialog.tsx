@@ -63,7 +63,6 @@ const formSchema = z.object({
   settings: z.object({
     exemptPrincipals: z.array(z.string()),
     allowAllReads: z.boolean(),
-    skipTransactionExpiration: z.boolean(),
   }),
   confirmation: z.string(),
 });
@@ -142,7 +141,6 @@ const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
 const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): BoxSettingsInput => ({
   exemptPrincipals: mergePrincipals(summary.exemptPrincipals, suggestions),
   allowAllReads: summary.allowAllReads,
-  skipTransactionExpiration: summary.skipTransactionExpiration,
 });
 
 const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (

@@ -12,10 +12,10 @@
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import {
-  GetShadowBoxStatusResponseSchema,
-  ShadowBoxSchema,
-  ShadowBoxState,
-} from 'protogen/redpanda/core/admin/v2/shadow_box_pb';
+  ClusterFenceSchema,
+  ClusterFenceState,
+  GetClusterFenceStatusResponseSchema,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {
@@ -41,15 +41,16 @@ import { describe, expect, test } from 'bun:test';
 
 const NOW = Date.parse('2026-10-19T12:00:00Z');
 
-const box = (state: ShadowBoxState, revision: number) => create(ShadowBoxSchema, { state, revision: BigInt(revision) });
+const box = (state: ClusterFenceState, revision: number) =>
+  create(ClusterFenceSchema, { state, revision: BigInt(revision) });
 
 describe('toBoxPhase', () => {
   test('maps the four states, and leaves an unset or unknown one undefined rather than calling it unboxed', () => {
-    expect(toBoxPhase(ShadowBoxState.UNBOXED)).toBe('unboxed');
-    expect(toBoxPhase(ShadowBoxState.BOXING)).toBe('boxing');
-    expect(toBoxPhase(ShadowBoxState.BOXED)).toBe('boxed');
-    expect(toBoxPhase(ShadowBoxState.UNBOXING)).toBe('unboxing');
-    expect(toBoxPhase(ShadowBoxState.UNSPECIFIED)).toBeUndefined();
+    expect(toBoxPhase(ClusterFenceState.UNFENCED)).toBe('unboxed');
+    expect(toBoxPhase(ClusterFenceState.FENCING)).toBe('boxing');
+    expect(toBoxPhase(ClusterFenceState.FENCED)).toBe('boxed');
+    expect(toBoxPhase(ClusterFenceState.UNFENCING)).toBe('unboxing');
+    expect(toBoxPhase(ClusterFenceState.UNSPECIFIED)).toBeUndefined();
     expect(toBoxPhase(undefined)).toBeUndefined();
   });
 });
@@ -74,13 +75,13 @@ describe('phase rules', () => {
 
 describe('getBrokerProgress', () => {
   test('a broker has confirmed only when its copy matches the cluster’s box in state and revision', () => {
-    const response = create(GetShadowBoxStatusResponseSchema, {
-      box: box(ShadowBoxState.BOXING, 18),
+    const response = create(GetClusterFenceStatusResponseSchema, {
+      fence: box(ClusterFenceState.FENCING, 18),
       brokers: [
-        { nodeId: 1, box: box(ShadowBoxState.BOXING, 18) },
+        { nodeId: 1, fence: box(ClusterFenceState.FENCING, 18) },
         { nodeId: 2, errorMessage: 'rpc::errc::disconnected_endpoint(node down)' },
-        { nodeId: 3, box: box(ShadowBoxState.UNBOXED, -1) },
-        { nodeId: 4, box: box(ShadowBoxState.BOXED, 18) },
+        { nodeId: 3, fence: box(ClusterFenceState.UNFENCED, -1) },
+        { nodeId: 4, fence: box(ClusterFenceState.FENCED, 18) },
       ],
     });
     expect(getBrokerProgress(response)).toEqual([
@@ -106,13 +107,12 @@ describe('summarizeBox', () => {
     const changedAt = new Date(NOW - 60_000);
     expect(
       summarizeBox(
-        create(ShadowBoxSchema, {
-          state: ShadowBoxState.BOXED,
+        create(ClusterFenceSchema, {
+          state: ClusterFenceState.FENCED,
           revision: 29n,
           stateChangedAt: timestampFromDate(changedAt),
           settings: {
             readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
-            skipTransactionExpiration: true,
           },
         })
       )
@@ -122,13 +122,12 @@ describe('summarizeBox', () => {
       stateChangedAt: changedAt,
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,
-      skipTransactionExpiration: true,
     });
   });
 
   test('a missing box or an unknown state isn’t read as unboxed', () => {
     expect(summarizeBox(undefined)).toBeUndefined();
-    expect(summarizeBox(create(ShadowBoxSchema, {}))).toBeUndefined();
+    expect(summarizeBox(create(ClusterFenceSchema, {}))).toBeUndefined();
   });
 });
 
@@ -255,7 +254,7 @@ describe('linksThatStopBox', () => {
 });
 
 describe('getClientEffects', () => {
-  const settings = { exemptPrincipals: ['shadow-orders'], allowAllReads: false, skipTransactionExpiration: false };
+  const settings = { exemptPrincipals: ['shadow-orders'], allowAllReads: false };
   const verdicts = (effects: ReturnType<typeof getClientEffects>) =>
     Object.fromEntries(effects.map((effect) => [effect.id, effect.verdict]));
 
@@ -300,11 +299,11 @@ describe('getClientEffects', () => {
     expect(produce).toMatchObject({ verdict: 'partly', detail: expect.stringContaining('Still allowed on broker 3') });
   });
 
-  test('with Skip transaction expiration on, the box leaves transactions open', () => {
+  test('once boxed, open transactions always end', () => {
     const effects = getClientEffects({
-      summary: { ...settings, skipTransactionExpiration: true, phase: 'boxed' },
+      summary: { ...settings, phase: 'boxed' },
       brokers: [],
     });
-    expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({ verdict: 'open' });
+    expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({ verdict: 'ended' });
   });
 });

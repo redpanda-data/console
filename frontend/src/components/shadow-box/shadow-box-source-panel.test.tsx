@@ -72,7 +72,6 @@ const mockStatus = (
       stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
       exemptPrincipals,
       allowAllReads: false,
-      skipTransactionExpiration: false,
     },
     brokers,
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);

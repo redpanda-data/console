@@ -12,22 +12,22 @@
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
-import { ShadowBoxService } from 'protogen/redpanda/api/console/v1alpha1/shadowbox_pb';
 import {
-  GetShadowBoxStatusResponseSchema,
-  type ShadowBox,
-  type ShadowBoxBrokerStatus,
-  ShadowBoxBrokerStatusSchema,
-  ShadowBoxSchema,
-  ShadowBoxSettingsSchema,
-  ShadowBoxState,
-  type UpdateShadowBoxSettingsRequest,
-} from 'protogen/redpanda/core/admin/v2/shadow_box_pb';
+  type ClusterFence,
+  type ClusterFenceBrokerStatus,
+  ClusterFenceBrokerStatusSchema,
+  ClusterFenceSchema,
+  ClusterFenceService,
+  ClusterFenceSettingsSchema,
+  ClusterFenceState,
+  GetClusterFenceStatusResponseSchema,
+  type UpdateClusterFenceSettingsRequest,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 
 import { IsDev } from './env';
 
 /**
- * Dev-only stand-in for the Shadow Box API, which no released Redpanda serves yet. It follows the
+ * Dev-only stand-in for the cluster fence API (`ClusterFenceService`), which no released Redpanda serves yet. It follows the
  * API as documented: the controller leader records each change at a new revision, each broker picks
  * it up on its own, and a move finishes only once every broker's copy matches, so a broker that's
  * down holds it for as long as it's down. State lives in localStorage under a key Cloud UI's dev build
@@ -39,12 +39,12 @@ export const SHADOW_BOX_SIMULATOR_STORAGE_KEY = 'redpanda:shadow-box-simulator';
 export const SHADOW_BOX_SIMULATOR_EVENT = 'redpanda:shadow-box-simulator-change';
 
 type SimState =
-  | 'SHADOW_BOX_STATE_UNBOXED'
-  | 'SHADOW_BOX_STATE_BOXING'
-  | 'SHADOW_BOX_STATE_BOXED'
-  | 'SHADOW_BOX_STATE_UNBOXING';
+  | 'CLUSTER_FENCE_STATE_UNFENCED'
+  | 'CLUSTER_FENCE_STATE_FENCING'
+  | 'CLUSTER_FENCE_STATE_FENCED'
+  | 'CLUSTER_FENCE_STATE_UNFENCING';
 
-type SimSettings = { exemptPrincipals: string[]; allowAllReads: boolean; skipTransactionExpiration: boolean };
+type SimSettings = { exemptPrincipals: string[]; allowAllReads: boolean };
 
 type SimCopy = { state: SimState; revision: string; settings: SimSettings };
 
@@ -77,23 +77,24 @@ export type SimulatorOptions = {
   /** Brokers that don't answer. A down broker never picks up a change, so it holds any move. */
   downBrokers: number[];
   boxFailure: SimBoxFailure | null;
-  /** No controller leader: GetShadowBoxStatus and every change return UNAVAILABLE. */
+  /** No controller leader: GetClusterFenceStatus and every change return UNAVAILABLE. */
   noLeader: boolean;
   /** Changes apply, then return DEADLINE_EXCEEDED, the way a call over 5 seconds does. */
   slowCalls: boolean;
 };
 
+/** Version 3 follows ClusterFenceService: its state names, and no transaction setting. Older records are dropped. */
 type SimulatorRecord = {
-  version: 2;
+  version: 3;
   enabled: boolean;
   options: SimulatorOptions;
   clusters: Record<string, SimCluster>;
 };
 
-const UNBOXED: SimState = 'SHADOW_BOX_STATE_UNBOXED';
-const BOXING: SimState = 'SHADOW_BOX_STATE_BOXING';
-const BOXED: SimState = 'SHADOW_BOX_STATE_BOXED';
-const UNBOXING: SimState = 'SHADOW_BOX_STATE_UNBOXING';
+const UNBOXED: SimState = 'CLUSTER_FENCE_STATE_UNFENCED';
+const BOXING: SimState = 'CLUSTER_FENCE_STATE_FENCING';
+const BOXED: SimState = 'CLUSTER_FENCE_STATE_FENCED';
+const UNBOXING: SimState = 'CLUSTER_FENCE_STATE_UNFENCING';
 
 const FINAL_STATE: Partial<Record<SimState, SimState>> = { [BOXING]: BOXED, [UNBOXING]: UNBOXED };
 
@@ -105,29 +106,29 @@ const DEFAULT_OPTIONS: SimulatorOptions = {
   slowCalls: false,
 };
 
-const DEFAULT_SETTINGS: SimSettings = { exemptPrincipals: [], allowAllReads: false, skipTransactionExpiration: false };
+const DEFAULT_SETTINGS: SimSettings = { exemptPrincipals: [], allowAllReads: false };
 
 const BOX_FAILURE_MESSAGE: Record<SimBoxFailure, string> = {
-  'feature-inactive': 'shadow boxing is not active until every broker runs v26.3.1',
+  'feature-inactive': 'cluster fence feature is not active until every broker runs v26.3.1',
   'own-shadow-link': 'cannot start while a shadow link is configured',
   'data-migration': 'cannot start while data migration 7 is unfinished',
   'cluster-recovery': 'cannot start while a cluster recovery is running',
-  'read-replica': "topic orders-replica uses a storage mode shadow boxing doesn't support (read replica)",
+  'read-replica': "topic orders-replica uses a storage mode the cluster fence doesn't support (read replica)",
 };
 
 const DOWN_BROKER_MESSAGE = 'rpc::errc::disconnected_endpoint(node down)';
 
-const emptyRecord = (): SimulatorRecord => ({ version: 2, enabled: false, options: DEFAULT_OPTIONS, clusters: {} });
+const emptyRecord = (): SimulatorRecord => ({ version: 3, enabled: false, options: DEFAULT_OPTIONS, clusters: {} });
 
 const readState = (): SimulatorRecord => {
   try {
     const raw = window.localStorage.getItem(SHADOW_BOX_SIMULATOR_STORAGE_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<SimulatorRecord>) : null;
-    if (parsed?.version !== 2) {
+    if (parsed?.version !== 3) {
       return emptyRecord();
     }
     return {
-      version: 2,
+      version: 3,
       enabled: parsed.enabled === true,
       options: { ...DEFAULT_OPTIONS, ...parsed.options },
       clusters: parsed.clusters ?? {},
@@ -295,7 +296,7 @@ type SimReadPolicy = Pick<SimSettings, 'exemptPrincipals' | 'allowAllReads'>;
 /** An empty mask replaces the whole policy, as `read_policy` does; `read_policy.exempt_principals` only adds names. */
 const applyReadPolicyUpdate = (
   current: SimReadPolicy,
-  request: UpdateShadowBoxSettingsRequest,
+  request: UpdateClusterFenceSettingsRequest,
   paths: string[]
 ): SimReadPolicy => {
   const incoming = request.settings?.readPolicy;
@@ -313,20 +314,11 @@ const applyReadPolicyUpdate = (
   return next;
 };
 
-const applySettingsUpdate = (current: SimSettings, request: UpdateShadowBoxSettingsRequest): SimSettings => {
-  const paths = request.updateMask?.paths ?? [];
-  const replacesSkip = paths.length === 0 || paths.includes('skip_transaction_expiration');
-  return {
-    ...applyReadPolicyUpdate(current, request, paths),
-    skipTransactionExpiration: replacesSkip
-      ? (request.settings?.skipTransactionExpiration ?? false)
-      : current.skipTransactionExpiration,
-  };
-};
+const applySettingsUpdate = (current: SimSettings, request: UpdateClusterFenceSettingsRequest): SimSettings =>
+  applyReadPolicyUpdate(current, request, request.updateMask?.paths ?? []);
 
 const sameSettings = (a: SimSettings, b: SimSettings) =>
   a.allowAllReads === b.allowAllReads &&
-  a.skipTransactionExpiration === b.skipTransactionExpiration &&
   a.exemptPrincipals.length === b.exemptPrincipals.length &&
   a.exemptPrincipals.every((principal, index) => principal === b.exemptPrincipals[index]);
 
@@ -350,35 +342,34 @@ const changeSettings = (
   return { box, brokers: withPending(cluster, options, copyOf(box), now, blocking ? BOX_STEP_MS : null) };
 };
 
-const STATE_ENUM: Record<SimState, ShadowBoxState> = {
-  [UNBOXED]: ShadowBoxState.UNBOXED,
-  [BOXING]: ShadowBoxState.BOXING,
-  [BOXED]: ShadowBoxState.BOXED,
-  [UNBOXING]: ShadowBoxState.UNBOXING,
+const STATE_ENUM: Record<SimState, ClusterFenceState> = {
+  [UNBOXED]: ClusterFenceState.UNFENCED,
+  [BOXING]: ClusterFenceState.FENCING,
+  [BOXED]: ClusterFenceState.FENCED,
+  [UNBOXING]: ClusterFenceState.UNFENCING,
 };
 
-const toBoxMessage = (copy: SimCopy & { stateChangedAt?: string | null }): ShadowBox =>
-  create(ShadowBoxSchema, {
+const toBoxMessage = (copy: SimCopy & { stateChangedAt?: string | null }): ClusterFence =>
+  create(ClusterFenceSchema, {
     state: STATE_ENUM[copy.state],
     revision: BigInt(copy.revision),
     stateChangedAt: copy.stateChangedAt ? timestampFromDate(new Date(copy.stateChangedAt)) : undefined,
-    settings: create(ShadowBoxSettingsSchema, {
+    settings: create(ClusterFenceSettingsSchema, {
       scope: { selection: { case: 'allResources', value: {} } },
       readPolicy: { exemptPrincipals: copy.settings.exemptPrincipals, allowAllReads: copy.settings.allowAllReads },
-      skipTransactionExpiration: copy.settings.skipTransactionExpiration,
     }),
   });
 
-const toBrokerMessage = (broker: ComputedBroker): ShadowBoxBrokerStatus =>
-  create(ShadowBoxBrokerStatusSchema, {
+const toBrokerMessage = (broker: ComputedBroker): ClusterFenceBrokerStatus =>
+  create(ClusterFenceBrokerStatusSchema, {
     nodeId: broker.nodeId,
-    box: broker.copy ? toBoxMessage(broker.copy) : undefined,
+    fence: broker.copy ? toBoxMessage(broker.copy) : undefined,
     errorMessage: broker.errorMessage,
   });
 
 const assertRevision = (cluster: SimCluster, expected: bigint | undefined) => {
   if (expected !== undefined && expected !== BigInt(cluster.box.revision)) {
-    throw new ConnectError('Shadow boxing revision has changed', Code.FailedPrecondition);
+    throw new ConnectError('Cluster fence revision has changed', Code.FailedPrecondition);
   }
 };
 
@@ -403,7 +394,7 @@ const withLatency = async <T>(work: () => T): Promise<T> => {
 };
 
 /**
- * A transport that answers `ShadowBoxService` from the simulator, keyed by cluster so each embedded
+ * A transport that answers `ClusterFenceService` from the simulator, keyed by cluster so each embedded
  * cluster keeps its own box.
  */
 export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport =>
@@ -427,16 +418,16 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
     const statusOf = (state: SimulatorRecord) =>
       computeStatus(state.clusters[clusterKey] ?? newCluster(), state.options, Date.now());
 
-    service(ShadowBoxService, {
-      getShadowBoxStatus: () =>
+    service(ClusterFenceService, {
+      getClusterFenceStatus: () =>
         withLatency(() => {
           const status = statusOf(readLeaderState());
-          return create(GetShadowBoxStatusResponseSchema, {
-            box: toBoxMessage(status.box),
+          return create(GetClusterFenceStatusResponseSchema, {
+            fence: toBoxMessage(status.box),
             brokers: status.brokers.map(toBrokerMessage),
           });
         }),
-      getShadowBoxBrokerStatus: (request) =>
+      getClusterFenceBrokerStatus: (request) =>
         withLatency(() => {
           const state = readState();
           const nodeId = request.nodeId ?? 1;
@@ -449,9 +440,9 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
           }
           return { broker: toBrokerMessage(broker) };
         }),
-      updateShadowBoxSettings: (request) =>
+      updateClusterFenceSettings: (request) =>
         withLatency(() => ({
-          box: mutate((cluster, options, now) => {
+          fence: mutate((cluster, options, now) => {
             assertRevision(cluster, request.expectedRevision);
             const settings = applySettingsUpdate(cluster.box.settings, request);
             return sameSettings(settings, cluster.box.settings)
@@ -459,9 +450,9 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
               : changeSettings(cluster, options, settings, now);
           }),
         })),
-      box: (request) =>
+      fence: (request) =>
         withLatency(() => ({
-          box: mutate((cluster, options, now) => {
+          fence: mutate((cluster, options, now) => {
             assertRevision(cluster, request.expectedRevision);
             if (cluster.box.state === BOXING || cluster.box.state === BOXED) {
               return cluster;
@@ -472,9 +463,9 @@ export const createShadowBoxSimulatorTransport = (clusterKey: string): Transport
             return startMove(cluster, options, BOXING, now);
           }),
         })),
-      unbox: (request) =>
+      unfence: (request) =>
         withLatency(() => ({
-          box: mutate((cluster, options, now) => {
+          fence: mutate((cluster, options, now) => {
             assertRevision(cluster, request.expectedRevision);
             if (cluster.box.state === UNBOXING || cluster.box.state === UNBOXED) {
               return cluster;

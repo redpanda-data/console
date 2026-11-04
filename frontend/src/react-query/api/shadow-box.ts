@@ -28,14 +28,14 @@ import {
   UNBOXED_SUMMARY,
 } from 'components/shadow-box/shadow-box-model';
 import { config, isFeatureFlagEnabled, isServerless } from 'config';
+import type { GetClusterFenceStatusResponse } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import {
-  box,
-  getShadowBoxBrokerStatus,
-  getShadowBoxStatus,
-  unbox,
-  updateShadowBoxSettings,
-} from 'protogen/redpanda/api/console/v1alpha1/shadowbox-ShadowBoxService_connectquery';
-import type { GetShadowBoxStatusResponse } from 'protogen/redpanda/core/admin/v2/shadow_box_pb';
+  fence,
+  getClusterFenceBrokerStatus,
+  getClusterFenceStatus,
+  unfence,
+  updateClusterFenceSettings,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
@@ -52,8 +52,8 @@ const STEADY_POLL_MS = 15_000;
 const STALLED_TRANSITION_MS = 2 * 60 * 1000;
 const STALLED_POLL_MS = 10_000;
 
-const transitionPollMs = (data: GetShadowBoxStatusResponse | undefined): number => {
-  const changedAt = data?.box?.stateChangedAt;
+const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): number => {
+  const changedAt = data?.fence?.stateChangedAt;
   const stalled = changedAt !== undefined && Date.now() - timestampDate(changedAt).getTime() > STALLED_TRANSITION_MS;
   return stalled ? STALLED_POLL_MS : TRANSITION_POLL_MS;
 };
@@ -74,7 +74,7 @@ const subscribeToSimulator = (onChange: () => void) => {
 
 /**
  * The Cutover tab reads the source's box through the host, or has the operator confirm it by hand,
- * so it needs only the flag: whether this shadow cluster serves the Shadow Box API doesn't matter.
+ * so it needs only the flag: whether this shadow cluster serves the cluster fence API doesn't matter.
  */
 export const isCutoverAvailable = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
 
@@ -82,11 +82,11 @@ const useShadowBoxSimulatorEnabled = () =>
   useSyncExternalStore(subscribeToSimulator, isShadowBoxSimulatorEnabled, () => false);
 
 /**
- * Shadow boxing is shown when its flag is on and this cluster's backend serves the Shadow Box API,
- * or when the dev simulator stands in for it. Serverless clusters can't be shadow link sources.
+ * Shadow boxing is shown when its flag is on, this cluster's backend serves ClusterFenceService and
+ * the cluster supports fencing, or when the dev simulator stands in for it. Serverless clusters can't be shadow link sources.
  */
 const useShadowBoxAvailability = (): boolean => {
-  const supported = useSupportedFeaturesStore((state) => state.shadowBoxService);
+  const supported = useSupportedFeaturesStore((state) => state.clusterFence);
   const simulated = useShadowBoxSimulatorEnabled();
   return isFeatureFlagEnabled('enableShadowBoxing') && !isServerless() && (supported || simulated);
 };
@@ -109,7 +109,7 @@ const useShadowBoxTransport = () => {
   return simulated ? getSimulatorTransport(config.clusterId ?? 'default') : transport;
 };
 
-const statusQueryKey = () => createConnectQueryKey({ schema: getShadowBoxStatus, cardinality: 'finite' });
+const statusQueryKey = () => createConnectQueryKey({ schema: getClusterFenceStatus, cardinality: 'finite' });
 
 const invalidateStatus = (queryClient: QueryClient, options?: { cancelRefetch: boolean }) =>
   queryClient.invalidateQueries({ queryKey: statusQueryKey(), exact: false }, options);
@@ -143,7 +143,7 @@ const accessOf = (error: unknown): ShadowBoxAccess => {
 export type BrokerOwnCopy = { nodeId?: number; phase?: BoxPhase; revision?: bigint; errorMessage?: string };
 
 /**
- * GetShadowBoxStatus needs the controller leader; GetShadowBoxBrokerStatus doesn't. While the first
+ * GetClusterFenceStatus needs the controller leader; GetClusterFenceBrokerStatus doesn't. While the first
  * fails with UNAVAILABLE, this asks each broker the last status listed (or the broker that takes the
  * call, when none was) for its own copy, so Console still knows whether brokers are blocking.
  */
@@ -156,7 +156,7 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   const results = useQueries({
     queries: targets.map((nodeId) => ({
       queryKey: ['shadow-box-broker-status', nodeId ?? 'self'],
-      queryFn: () => callUnaryMethod(transport, getShadowBoxBrokerStatus, { nodeId }),
+      queryFn: () => callUnaryMethod(transport, getClusterFenceBrokerStatus, { nodeId }),
       enabled,
       retry: false,
       refetchInterval: NO_LEADER_POLL_MS,
@@ -167,8 +167,8 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
       enabled
         ? results.map((result, index) => {
             const broker = result.data?.broker;
-            if (broker?.box) {
-              return { nodeId: broker.nodeId, phase: toBoxPhase(broker.box.state), revision: broker.box.revision };
+            if (broker?.fence) {
+              return { nodeId: broker.nodeId, phase: toBoxPhase(broker.fence.state), revision: broker.fence.revision };
             }
             return {
               nodeId: targets[index],
@@ -186,7 +186,7 @@ const useShadowBoxStatusRead = (available: boolean) => {
   const queryClient = useQueryClient();
 
   const query = useQuery(
-    getShadowBoxStatus,
+    getClusterFenceStatus,
     {},
     {
       transport,
@@ -200,7 +200,7 @@ const useShadowBoxStatusRead = (available: boolean) => {
         if (isNoLeaderError(error)) {
           return NO_LEADER_POLL_MS;
         }
-        const phase = toBoxPhase(data?.box?.state);
+        const phase = toBoxPhase(data?.fence?.state);
         return phase && isTransitionPhase(phase) ? transitionPollMs(data) : STEADY_POLL_MS;
       },
       refetchOnWindowFocus: (state) => !isSettledReadError(state.state.error),
@@ -242,7 +242,7 @@ export const useShadowBoxStatusQuery = () => {
   const query = useShadowBoxStatusRead(available);
   const access = accessOf(query.error);
   const { parsed, brokers } = useMemo(
-    () => ({ parsed: summarizeBox(query.data?.box), brokers: getBrokerProgress(query.data) }),
+    () => ({ parsed: summarizeBox(query.data?.fence), brokers: getBrokerProgress(query.data) }),
     [query.data]
   );
   const noLeader = available && isNoLeaderError(query.error);
@@ -278,12 +278,10 @@ export const useShadowBoxStatusQuery = () => {
 export type BoxSettingsInput = {
   exemptPrincipals: string[];
   allowAllReads: boolean;
-  skipTransactionExpiration: boolean;
 };
 
 const toSettingsInit = (settings: BoxSettingsInput) => ({
   readPolicy: { exemptPrincipals: settings.exemptPrincipals, allowAllReads: settings.allowAllReads },
-  skipTransactionExpiration: settings.skipTransactionExpiration,
 });
 
 /** Matches `isStaleRevisionError`, so it reads like the server's own stale-revision failure. */
@@ -309,12 +307,12 @@ export const useBoxClusterMutation = () => {
       if (!sameBoxSettings(settings, opened)) {
         const saved = summarizeBox(
           (
-            await callUnaryMethod(transport, updateShadowBoxSettings, {
+            await callUnaryMethod(transport, updateClusterFenceSettings, {
               settings: toSettingsInit(settings),
               updateMask: { paths: BOX_SETTINGS_UPDATE_PATHS },
               expectedRevision: opened.revision,
             })
-          ).box
+          ).fence
         );
         if (!saved) {
           throw new ConnectError('the settings were saved, but the response had no box', Code.Internal);
@@ -325,7 +323,7 @@ export const useBoxClusterMutation = () => {
         setSavedBox(saved);
         ({ revision } = saved);
       }
-      return callUnaryMethod(transport, box, { expectedRevision: revision });
+      return callUnaryMethod(transport, fence, { expectedRevision: revision });
     },
     onSettled: () => invalidateStatus(queryClient),
   });
@@ -344,7 +342,7 @@ export const useUpdateShadowBoxSettingsMutation = () => {
 
   return useMutation({
     mutationFn: ({ settings, expectedRevision }: { settings: BoxSettingsInput; expectedRevision: bigint }) =>
-      callUnaryMethod(transport, updateShadowBoxSettings, {
+      callUnaryMethod(transport, updateClusterFenceSettings, {
         settings: toSettingsInit(settings),
         updateMask: { paths: BOX_SETTINGS_UPDATE_PATHS },
         expectedRevision,
@@ -360,7 +358,7 @@ export const useUnboxClusterMutation = () => {
 
   return useMutation({
     mutationFn: ({ expectedRevision }: { expectedRevision: bigint }) =>
-      callUnaryMethod(transport, unbox, { expectedRevision }),
+      callUnaryMethod(transport, unfence, { expectedRevision }),
     onSettled: () => invalidateStatus(queryClient),
   });
 };

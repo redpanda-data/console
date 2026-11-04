@@ -128,7 +128,7 @@ const ADMIN_API_AUTH_NOTE =
 
 const curl = (method: string, body: string) => [
   'curl -u "$ADMIN_USER:$ADMIN_PASSWORD" -H "Content-Type: application/json" \\',
-  `  "$ADMIN_API/redpanda.core.admin.v2.ShadowBoxService/${method}" -d '${body}'`,
+  `  "$ADMIN_API/redpanda.core.admin.v2.ClusterFenceService/${method}" -d '${body}'`,
 ];
 
 const settingsCommand = (link: LinkIdentity) => {
@@ -138,16 +138,17 @@ const settingsCommand = (link: LinkIdentity) => {
     '# This mask only adds names; to remove one, send the whole list with "updateMask":"readPolicy".',
     ADMIN_API_AUTH_NOTE,
     ...curl(
-      'UpdateShadowBoxSettings',
+      'UpdateClusterFenceSettings',
       `{"settings":{"readPolicy":{"exemptPrincipals":["${name}"]}},"updateMask":"readPolicy.exemptPrincipals"}`
     ),
   ].join('\n');
 };
 
-const boxCommand = () => ['# On the source cluster. Box returns at boxing.', ...curl('Box', '{}')].join('\n');
+const boxCommand = () =>
+  ['# On the source cluster. Fence returns while the cluster is still fencing.', ...curl('Fence', '{}')].join('\n');
 
 const statusCommand = () =>
-  ['# Repeat until the state is SHADOW_BOX_STATE_BOXED.', ...curl('GetShadowBoxStatus', '{}')].join('\n');
+  ['# Repeat until the state is CLUSTER_FENCE_STATE_FENCED.', ...curl('GetClusterFenceStatus', '{}')].join('\n');
 
 const MANUAL_REASON: Record<Extract<SourceBoxStep, { kind: 'manual' }>['reason'], string> = {
   external:

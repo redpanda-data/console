@@ -84,7 +84,7 @@ const BrokerCopy = ({ broker }: { broker: BrokerProgress }) => {
   );
 };
 
-/** Each broker's own copy, as GetShadowBoxStatus lists it: a move waits until every copy matches. */
+/** Each broker's own copy, as GetClusterFenceStatus lists it: a move waits until every copy matches. */
 const BrokersTable = ({ brokers, phase }: { brokers: BrokerProgress[]; phase: BoxPhase }) => (
   <div className="flex flex-col gap-2">
     <h4 className="text-label">Brokers</h4>
@@ -387,11 +387,7 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
                 <ExemptValue summary={summary} />
               </dd>
               <dt className="tracking-tight text-muted-foreground">Open transactions</dt>
-              <dd>
-                {summary.skipTransactionExpiration
-                  ? 'Left open: Skip transaction expiration is on'
-                  : 'Ended once the cluster is boxed, as a commit if the coordinator had already decided to commit'}
-              </dd>
+              <dd>Ended once the cluster is boxed, as a commit if the coordinator had already decided to commit</dd>
             </dl>
             <div className="flex flex-col gap-7">
               {warnings.map((warning) => (

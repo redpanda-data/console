@@ -158,7 +158,7 @@ const UnauthenticatedExemptField = ({ value, setPrincipals, suggestions }: Polic
 };
 
 const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps, 'value' | 'onChange'>) => {
-  const advancedInUse = value.allowAllReads || value.skipTransactionExpiration;
+  const advancedInUse = value.allowAllReads;
   const [advancedOpen, setAdvancedOpen] = useState(advancedInUse);
 
   // Settings loaded after opening (another tab saved them) can turn an advanced option on; show it.
@@ -199,22 +199,6 @@ const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps,
               </FieldDescription>
             </FieldContent>
           </Field>
-          <Field orientation="horizontal">
-            <Switch
-              checked={value.skipTransactionExpiration}
-              id="shadow-box-skip-transaction-expiration"
-              onCheckedChange={(skipTransactionExpiration) => onChange({ ...value, skipTransactionExpiration })}
-              testId="shadow-box-skip-transaction-expiration"
-            />
-            <FieldContent>
-              <FieldLabel htmlFor="shadow-box-skip-transaction-expiration">Skip transaction expiration</FieldLabel>
-              <FieldDescription>
-                By default, once the cluster is boxed the box ends open transactions, as a commit if the coordinator had
-                already decided to commit, so readers can move past them. Turn this on to leave them open. Redpanda
-                doesn’t report open transactions, so Console can’t list them.
-              </FieldDescription>
-            </FieldContent>
-          </Field>
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -222,7 +206,7 @@ const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps,
 };
 
 /**
- * The read policy and transaction setting, with the warnings the broker would otherwise only log on
+ * The read policy, with the warnings the broker would otherwise only log on
  * the controller leader. The empty name, which exempts clients without SASL or mTLS, can't be typed
  * as a chip, so it has its own switch.
  */

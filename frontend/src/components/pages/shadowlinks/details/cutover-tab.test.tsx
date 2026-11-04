@@ -46,7 +46,6 @@ const cloudSource = (
     revision: '18',
     exemptPrincipals,
     allowAllReads: false,
-    skipTransactionExpiration: false,
     brokers,
   },
 });
@@ -235,8 +234,8 @@ describe('the CutoverTab', () => {
         '"updateMask":"readPolicy.exemptPrincipals"'
       );
       expect(screen.getByTestId('cutover-admin-api-settings')).toHaveTextContent('admin_api_require_auth');
-      expect(screen.getByTestId('cutover-admin-api-box')).toHaveTextContent('ShadowBoxService/Box');
-      expect(screen.getByTestId('cutover-admin-api-status')).toHaveTextContent('SHADOW_BOX_STATE_BOXED');
+      expect(screen.getByTestId('cutover-admin-api-box')).toHaveTextContent('ClusterFenceService/Fence');
+      expect(screen.getByTestId('cutover-admin-api-status')).toHaveTextContent('CLUSTER_FENCE_STATE_FENCED');
     });
 
     test('takes the operator’s word that the source is boxed', async () => {

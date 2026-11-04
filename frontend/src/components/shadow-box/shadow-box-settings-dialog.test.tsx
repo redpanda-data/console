@@ -42,7 +42,6 @@ const mockStatus = (phase: BoxPhase, revision = 4) =>
       revision: BigInt(revision),
       exemptPrincipals: ['shadow-orders'],
       allowAllReads: false,
-      skipTransactionExpiration: false,
     },
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
 
@@ -76,7 +75,6 @@ describe('the ShadowBoxSettingsDialog', () => {
       settings: {
         exemptPrincipals: ['shadow-orders', 'shadow-telemetry'],
         allowAllReads: false,
-        skipTransactionExpiration: false,
       },
       expectedRevision: 4n,
     });
