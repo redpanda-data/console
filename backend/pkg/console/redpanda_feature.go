@@ -46,8 +46,8 @@ const (
 	// redpandaFeatureShadowLinkRoleSync represents shadow link role sync feature.
 	redpandaFeatureShadowLinkRoleSync redpandaFeature = "redpanda_feature_shadow_link_role_sync"
 
-	// redpandaFeatureShadowBox represents the Admin API V2 shadow box feature.
-	redpandaFeatureShadowBox redpandaFeature = "redpanda_feature_shadow_box"
+	// redpandaFeatureClusterFence represents the Admin API V2 cluster fence feature.
+	redpandaFeatureClusterFence redpandaFeature = "redpanda_feature_cluster_fence"
 )
 
 // redpandaFeatureMinVersions maps features that are detected by cluster version
@@ -55,7 +55,7 @@ const (
 var redpandaFeatureMinVersions = map[redpandaFeature]redpanda.Version{
 	redpandaFeatureShadowLinkSchemaRegistrySync: redpanda.MustParseVersion("26.2.0"),
 	redpandaFeatureShadowLinkRoleSync:           redpanda.MustParseVersion("26.2.0"),
-	redpandaFeatureShadowBox:                    redpanda.MustParseVersion("26.3.1"),
+	redpandaFeatureClusterFence:                 redpanda.MustParseVersion("26.3.1"),
 }
 
 // checkClusterVersionAtLeast reports whether the cluster runs at least the given

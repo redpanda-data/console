@@ -10,10 +10,10 @@ buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233f
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.33.0-20230913231627-233fca715f49.1/go.mod h1:v0PWlly2hqVEW2IZSPlvPHELTvdHD5hBsA0+KlCfTQk=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260323171043-6e06f84ad823.1 h1:AZVH8d9Xh0ar1BbxDiY+2urib65GfAcT8rPZfM++N/Q=
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.36.11-20260323171043-6e06f84ad823.1/go.mod h1:3w7EzexwlL6PIFGbbeKZ0yHfUlAmI0aBVzF/QoFb8Cg=
-buf.build/gen/go/redpandadata/core/connectrpc/go v1.21.0-20261027183222-7c410e23a924.1 h1:CclB8r7Q85B6FV6LQ+C5S7FNDt/QAO75v4WiwDrFcxw=
-buf.build/gen/go/redpandadata/core/connectrpc/go v1.21.0-20261027183222-7c410e23a924.1/go.mod h1:BUT0LS4vAXUrOFr84bqyrMWPoAIfIslVygMWdsHYTx0=
-buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.12-20261027183222-7c410e23a924.2 h1:DF5UZI1hpoR4M9UagLrtb/3OULUzzt/WnP0Uemj0cSY=
-buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.12-20261027183222-7c410e23a924.2/go.mod h1:d9lUXnbf1/9H3xSUutCtB11clg6KoilGsb0lAuypzbs=
+buf.build/gen/go/redpandadata/core/connectrpc/go v1.21.0-20261103054415-6eaf797d9b29.1 h1:R2W4X8ZlEzD4kPyKGcv9TqridJPJ1qOFgW/fcZVFqx4=
+buf.build/gen/go/redpandadata/core/connectrpc/go v1.21.0-20261103054415-6eaf797d9b29.1/go.mod h1:NktdaCx6VjzQJKpKxpyFYiulazsIhR8bZ0BNYx9zg+E=
+buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.12-20261103054415-6eaf797d9b29.2 h1:HLwtNRtICa2vTuCK9jul6h7BrQ9q9x0abXmP+OgV44Y=
+buf.build/gen/go/redpandadata/core/protocolbuffers/go v1.36.12-20261103054415-6eaf797d9b29.2/go.mod h1:d9lUXnbf1/9H3xSUutCtB11clg6KoilGsb0lAuypzbs=
 buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1 h1:4jqc94IBC9Ea9GaMbmgfhczXZzCkA4ZWfon3/uI3KV0=
 buf.build/gen/go/redpandadata/otel/protocolbuffers/go v1.36.11-20251216164002-58c749b888d8.1/go.mod h1:akvBCH3f6fL10sDu4NppgjHrQITLe1m5YWLt/yiLEKI=
 buf.build/go/protovalidate v1.0.1 h1:Fwmf08OOUuKVeMvEnDmcKxQam4PJc/zFgvVX64BhTms=
@@ -394,8 +394,8 @@ github.com/redpanda-data/common-go/api v0.0.0-20260130192523-413455981e59 h1:eAO
 github.com/redpanda-data/common-go/api v0.0.0-20260130192523-413455981e59/go.mod h1:klAmWfc8Q3hEZk8geFTMu6f2sk3VUKRS7cv/LvB05ig=
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7 h1:MXLdjFdFjOtyuUR4TdVVsqFP8xnru2YDwzH9bJTUr1M=
 github.com/redpanda-data/common-go/net v0.1.1-0.20240429123545-4da3d2b371f7/go.mod h1:UJIi/yUxGOBYXUrfUsOkxfYxcb/ll7mZrwae/i+U2kc=
-github.com/redpanda-data/common-go/rpadmin v0.2.12 h1:OOjDy8pabeo0q0XrqkPYmyR7AZrk9ME7ACK0X80y68k=
-github.com/redpanda-data/common-go/rpadmin v0.2.12/go.mod h1:aTgwMyknl89u6Mqu1lVv1FAGyM++fgSL49XaT8rXIvs=
+github.com/redpanda-data/common-go/rpadmin v0.2.13 h1:IK9KdkygSiegSl/TVLW9tEPPBcO1vJsNhgpmR/5WQPM=
+github.com/redpanda-data/common-go/rpadmin v0.2.13/go.mod h1:pzlVEAkKERukbRpChOJERPpI5JzUJZ68vEl3LbS899U=
 github.com/redpanda-data/common-go/rpsr v0.1.4 h1:d9lu5q5wyhZWBYR1GnZkq+eZGKU0qoaSwwybRS9Uk2k=
 github.com/redpanda-data/common-go/rpsr v0.1.4/go.mod h1:qVa7b0yaCRdZDn5dcZ9CazqVr4jYbgtOJUywI2X3G3I=
 github.com/rickb777/period v1.0.15 h1:nWR4rgCtImT0CXw5kAsjHv+ExCEFt/18zAySOi7pWI8=
