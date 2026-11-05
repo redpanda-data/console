@@ -176,6 +176,32 @@ describe('the ShadowLinkListPage with cluster fencing', () => {
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
   });
 
+  test('writes the tab it opened on into the URL', async () => {
+    mockBox({ available: true, known: true, phase: 'boxed' });
+    noLinks();
+    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
+      initialLocation: '/shadowlinks',
+      transport: routeLoaderTransport,
+    });
+
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'source' }));
+  });
+
+  test('doesn’t pull the user back once the router has moved on to another page', async () => {
+    mockBox({ available: true, known: true, phase: 'boxed' });
+    noLinks();
+    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
+      initialLocation: '/topics',
+      transport: routeLoaderTransport,
+    });
+
+    expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+    expect(router.state.location.pathname).toBe('/topics');
+  });
+
   test('waits for the fence and the host before choosing a tab', async () => {
     mockBox({ available: true, known: false });
     noLinks();
