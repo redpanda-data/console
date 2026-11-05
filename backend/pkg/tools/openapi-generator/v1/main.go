@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -528,8 +529,13 @@ func updateTransforms(doc3 *openapi3.T) {
 				},
 			},
 		}
-		deployTransformReqMarshaled, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&deployTransformReq)
+		deployTransformReqJSON, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&deployTransformReq)
 		if err != nil {
+			panic(err)
+		}
+		// protojson output is deliberately unstable, so compact it to keep the spec deterministic.
+		var deployTransformReqMarshaled bytes.Buffer
+		if err := json.Compact(&deployTransformReqMarshaled, deployTransformReqJSON); err != nil {
 			panic(err)
 		}
 
@@ -540,7 +546,7 @@ func updateTransforms(doc3 *openapi3.T) {
 				AllowEmptyValue: false,
 				Type:            &openapi3.Types{openapi3.TypeString},
 				Description:     "Serialized JSON object containing metadata for the transform. This includes information such as the transform name, description, env vars, etc.",
-				Example:         string(deployTransformReqMarshaled),
+				Example:         deployTransformReqMarshaled.String(),
 			},
 		}
 		multipartProps["wasm_binary"] = &openapi3.SchemaRef{
@@ -591,7 +597,7 @@ func updateTransforms(doc3 *openapi3.T) {
 				Content: openapi3.NewContentWithFormDataSchemaRef(&openapi3.SchemaRef{
 					Value: &openapi3.Schema{
 						Type:       &openapi3.Types{openapi3.TypeObject},
-						Example:    string(deployTransformReqMarshaled),
+						Example:    deployTransformReqMarshaled.String(),
 						Properties: multipartProps,
 					},
 				}),
@@ -603,13 +609,12 @@ func updateTransforms(doc3 *openapi3.T) {
 					Description: new("Created"),
 					Content: openapi3.NewContentWithJSONSchemaRef(&openapi3.SchemaRef{
 						Ref: "#/components/schemas/TransformMetadata",
-						Value: &openapi3.Schema{
-							Example: toExample(&deployTransformResponse, "Deploy Transform Response", "Sample res", false),
-						},
 					}),
 				},
 			}),
 		)
+		// A schema ref serializes only its $ref, so the example goes on the media type.
+		transformsOperation.Responses.Status(http.StatusCreated).Value.Content.Get("application/json").Example = toExample(&deployTransformResponse, "Deploy transform response", "Sample response", true).Value
 		doc3.Paths.Value("/v1/transforms").Put = &transformsOperation
 	}
 	// Get /transforms/{name}

@@ -8548,6 +8548,23 @@ paths:
         "201":
           content:
             application/json:
+              example:
+                environment_variables:
+                  - key: LOGGER_LEVEL
+                    value: DEBUG
+                input_topic_name: orders
+                name: redact-orders
+                output_topic_names:
+                  - orders-redacted
+                statuses:
+                  - broker_id: 0
+                    lag: 0
+                    partition_id: 0
+                    status: PARTITION_STATUS_UNKNOWN
+                  - broker_id: 1
+                    lag: 0
+                    partition_id: 1
+                    status: PARTITION_STATUS_UNKNOWN
               schema:
                 $ref: '#/components/schemas/TransformMetadata'
           description: Created
