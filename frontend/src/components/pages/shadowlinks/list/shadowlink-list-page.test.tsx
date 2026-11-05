@@ -195,11 +195,9 @@ describe('the ShadowLinkListPage with cluster fencing', () => {
       transport: routeLoaderTransport,
     });
 
+    // The page has rendered and its effects have run; a memory history records a push at once.
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
-    await new Promise((resolve) => {
-      setTimeout(resolve, 50);
-    });
-    expect(router.state.location.pathname).toBe('/topics');
+    expect(router.history.location.pathname).toBe('/topics');
   });
 
   test('waits for the fence and the host before choosing a tab', async () => {

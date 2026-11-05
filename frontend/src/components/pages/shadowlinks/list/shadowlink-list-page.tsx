@@ -314,19 +314,18 @@ const useRequestedTab = (): ShadowLinksTab | undefined => {
   return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
 };
 
-export const ShadowLinkListPage = () => {
+/**
+ * Writes the resolved default tab into the URL, so the banner and the host see which tab is showing.
+ * Only while the location is this page: the router keeps the page mounted while the next one loads,
+ * and writing the tab then would send the user straight back here.
+ */
+const useDefaultTabInUrl = (
+  available: boolean,
+  requestedTab: ShadowLinksTab | undefined,
+  defaultTab: ShadowLinksTab | undefined
+) => {
   const navigate = useNavigate();
   const onThisPage = useLocation().pathname === '/shadowlinks';
-  const requestedTab = useRequestedTab();
-  const { available } = useShadowBoxStatusQuery();
-  const defaultTab = useDefaultTab();
-  const tab = requestedTab ?? defaultTab;
-
-  useShadowLinksPageTitle();
-
-  // Write the resolved default into the URL, so the banner and the host see which tab is showing.
-  // Only while the location is this page: the router keeps the page mounted while the next one
-  // loads, and writing the tab then would send the user straight back here.
   useEffect(() => {
     if (onThisPage && available && defaultTab && !requestedTab) {
       navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true }).catch((error: unknown) => {
@@ -334,6 +333,17 @@ export const ShadowLinkListPage = () => {
       });
     }
   }, [onThisPage, available, requestedTab, defaultTab, navigate]);
+};
+
+export const ShadowLinkListPage = () => {
+  const navigate = useNavigate();
+  const requestedTab = useRequestedTab();
+  const { available } = useShadowBoxStatusQuery();
+  const defaultTab = useDefaultTab();
+  const tab = requestedTab ?? defaultTab;
+
+  useShadowLinksPageTitle();
+  useDefaultTabInUrl(available, requestedTab, defaultTab);
 
   if (!available) {
     return <ShadowLinksOnThisCluster />;
