@@ -338,7 +338,7 @@ func (c *CachedClient) ParseAvroSchemaWithReferences(ctx context.Context, schema
 	if err := c.parseAvroReferences(ctx, &cache, schema, make(map[string]bool)); err != nil {
 		return nil, err
 	}
-	return cache.Parse(schema.Schema)
+	return cache.Parse(stripArrayAndMapNames(schema.Schema))
 }
 
 // parseAvroReferences recursively fetches and parses all schema references
@@ -365,7 +365,7 @@ func (c *CachedClient) parseAvroReferences(ctx context.Context, cache *avro.Sche
 					ref.Subject, ref.Version, err)
 			}
 		}
-		if _, err := cache.Parse(schemaRef.Schema.Schema); err != nil {
+		if _, err := cache.Parse(stripArrayAndMapNames(schemaRef.Schema.Schema)); err != nil {
 			delete(stack, refKey)
 			return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
 				ref.Subject, ref.Version, err)
