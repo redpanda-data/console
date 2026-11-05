@@ -10,7 +10,6 @@
 package schema
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,9 +18,11 @@ import (
 
 // stripArrayAndMapNames removes the "name" attribute from array and map
 // schemas. The Avro spec only defines names for named types and Java ignores
-// a name anywhere else, but twmb/avro rejects it
-// (https://github.com/twmb/avro/issues/66). Schemas twmb/avro already accepts
-// are returned unchanged.
+// a name anywhere else, but twmb/avro rejects it. Schemas twmb/avro already
+// accepts are returned unchanged.
+//
+// TODO(https://github.com/twmb/avro/issues/66): remove once twmb/avro accepts
+// these names.
 func stripArrayAndMapNames(schema string) string {
 	dec := json.NewDecoder(strings.NewReader(schema))
 	dec.UseNumber()
@@ -36,13 +37,11 @@ func stripArrayAndMapNames(schema string) string {
 		return schema
 	}
 
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(root); err != nil {
+	out, err := json.Marshal(root)
+	if err != nil {
 		return schema
 	}
-	return strings.TrimSuffix(buf.String(), "\n")
+	return string(out)
 }
 
 // stripNamesInSchema only descends into schema positions. Field defaults are

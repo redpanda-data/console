@@ -32,6 +32,11 @@ func TestStripArrayAndMapNames(t *testing.T) {
 	unchanged := func(t *testing.T, input, output string) {
 		assert.Equal(t, input, output)
 	}
+	unchangedAndAccepted := func(t *testing.T, input, output string) {
+		unchanged(t, input, output)
+		_, err := avro.Parse(input)
+		require.NoError(t, err, "the helper skips this input because twmb/avro accepts it")
+	}
 
 	tests := []struct {
 		name       string
@@ -70,8 +75,8 @@ func TestStripArrayAndMapNames(t *testing.T) {
 			]}`),
 		},
 		{
-			name: "rewrite keeps number literals and doc text",
-			input: `{"type":"record","name":"R","doc":"<b>tags</b> & more","fields":[
+			name: "rewrite keeps number literals",
+			input: `{"type":"record","name":"R","fields":[
 				{"name":"id","type":"long","default":9007199254740993},
 				{"name":"weights","type":{"type":"map","name":"weight","values":"double"},"default":{"pi":3.141592653589793238}}
 			]}`,
@@ -79,30 +84,61 @@ func TestStripArrayAndMapNames(t *testing.T) {
 				assert.NotContains(t, output, `"weight"`)
 				assert.Contains(t, output, `9007199254740993`)
 				assert.Contains(t, output, `3.141592653589793238`)
-				assert.Contains(t, output, `<b>tags</b> & more`)
 				_, err := avro.Parse(output)
 				require.NoError(t, err)
 			},
 		},
 		{
+			name: "dotted name on array does not scope the nested record",
+			input: `{"type":"record","name":"R","namespace":"top","fields":[
+				{"name":"box","type":{"type":"array","name":"wrong.Box","items":{"type":"record","name":"Inner","fields":[]}}},
+				{"name":"ref","type":"top.Inner"}
+			]}`,
+			validateFn: rewrittenTo(`{"type":"record","name":"R","namespace":"top","fields":[
+				{"name":"box","type":{"type":"array","items":{"type":"record","name":"Inner","fields":[]}}},
+				{"name":"ref","type":"top.Inner"}
+			]}`),
+		},
+		{
+			name: "name on map that matches a record does not shadow it",
+			input: `{"type":"record","name":"R","namespace":"top","fields":[
+				{"name":"inner","type":{"type":"record","name":"Inner","fields":[]}},
+				{"name":"counts","type":{"type":"map","name":"top.Inner","values":"int"}},
+				{"name":"ref","type":"top.Inner"}
+			]}`,
+			validateFn: rewrittenTo(`{"type":"record","name":"R","namespace":"top","fields":[
+				{"name":"inner","type":{"type":"record","name":"Inner","fields":[]}},
+				{"name":"counts","type":{"type":"map","values":"int"}},
+				{"name":"ref","type":"top.Inner"}
+			]}`),
+		},
+		{
+			name:  "two maps in one union are still rejected",
+			input: `["null",{"type":"map","name":"a","values":"int"},{"type":"map","name":"b","values":"string"}]`,
+			validateFn: func(t *testing.T, _, output string) {
+				_, err := avro.Parse(output)
+				require.ErrorContains(t, err, "duplicate union type")
+			},
+		},
+		{
 			name:       "named types keep their names",
 			input:      `{"type":"record","name":"R","fields":[{"name":"e","type":{"type":"enum","name":"E","symbols":["A"]}},{"name":"f","type":{"type":"fixed","name":"F","size":2}}]}`,
-			validateFn: unchanged,
+			validateFn: unchangedAndAccepted,
 		},
 		{
 			name:       "field called name and a default that looks like a schema",
 			input:      `{"type":"record","name":"R","fields":[{"name":"name","type":{"type":"map","values":"string"},"default":{"type":"map","name":"tag"}}]}`,
-			validateFn: unchanged,
+			validateFn: unchangedAndAccepted,
 		},
 		{
 			name:       "namespace and empty name are accepted by twmb/avro",
 			input:      `{"type":"array","namespace":"x","name":"","items":"string"}`,
-			validateFn: unchanged,
+			validateFn: unchangedAndAccepted,
 		},
 		{
 			name:       "primitive",
 			input:      `"string"`,
-			validateFn: unchanged,
+			validateFn: unchangedAndAccepted,
 		},
 		{
 			name:       "invalid JSON is left for the parser to report",

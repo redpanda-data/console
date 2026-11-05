@@ -433,10 +433,12 @@ func TestAvroSerde_NameOnArrayAndMap(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		if json.NewEncoder(w).Encode(resp) != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		body, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		_, _ = w.Write(body)
 	}))
 	defer ts.Close()
 
