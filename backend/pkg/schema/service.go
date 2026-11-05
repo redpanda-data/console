@@ -343,7 +343,7 @@ func (s *Service) ParseAvroSchemaWithReferences(ctx context.Context, schema *Sch
 	if err := s.parseAvroReferences(ctx, &cache, schema, make(map[string]bool)); err != nil {
 		return nil, err
 	}
-	return cache.Parse(schema.Schema)
+	return cache.Parse(stripArrayAndMapNames(schema.Schema))
 }
 
 // parseAvroReferences recursively fetches and parses all schema references
@@ -371,7 +371,7 @@ func (s *Service) parseAvroReferences(ctx context.Context, cache *avro.SchemaCac
 					reference.Subject, reference.Version, err)
 			}
 		}
-		if _, err := cache.Parse(schemaRef.Schema); err != nil {
+		if _, err := cache.Parse(stripArrayAndMapNames(schemaRef.Schema)); err != nil {
 			delete(stack, refKey)
 			return fmt.Errorf("failed to parse schema reference (subject: %q, version %d): %w",
 				reference.Subject, reference.Version, err)
