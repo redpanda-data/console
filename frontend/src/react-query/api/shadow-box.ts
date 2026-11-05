@@ -10,7 +10,7 @@
  */
 
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { Code, ConnectError, type Transport } from '@connectrpc/connect';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { callUnaryMethod, createConnectQueryKey, useQuery, useTransport } from '@connectrpc/connect-query';
 import { type QueryClient, useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,7 +27,7 @@ import {
   toBoxPhase,
   UNBOXED_SUMMARY,
 } from 'components/shadow-box/shadow-box-model';
-import { config, isFeatureFlagEnabled, isServerless } from 'config';
+import { isFeatureFlagEnabled, isServerless } from 'config';
 import type { GetClusterFenceStatusResponse } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import {
   fence,
@@ -36,15 +36,9 @@ import {
   unfence,
   updateClusterFenceSettings,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
-import {
-  createShadowBoxSimulatorTransport,
-  isShadowBoxSimulatorEnabled,
-  SHADOW_BOX_SIMULATOR_EVENT,
-  SHADOW_BOX_SIMULATOR_STORAGE_KEY,
-} from 'utils/shadow-box-simulator';
 
 const TRANSITION_POLL_MS = 1500;
 const STEADY_POLL_MS = 15_000;
@@ -58,61 +52,25 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
   return stalled ? STALLED_POLL_MS : TRANSITION_POLL_MS;
 };
 
-const subscribeToSimulator = (onChange: () => void) => {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === SHADOW_BOX_SIMULATOR_STORAGE_KEY) {
-      onChange();
-    }
-  };
-  window.addEventListener(SHADOW_BOX_SIMULATOR_EVENT, onChange);
-  window.addEventListener('storage', onStorage);
-  return () => {
-    window.removeEventListener(SHADOW_BOX_SIMULATOR_EVENT, onChange);
-    window.removeEventListener('storage', onStorage);
-  };
-};
-
 /**
  * The Cutover tab reads the source's box through the host, or has the operator confirm it by hand,
  * so it needs only the flag: whether this shadow cluster serves the cluster fence API doesn't matter.
  */
 export const isCutoverAvailable = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
 
-const useShadowBoxSimulatorEnabled = () =>
-  useSyncExternalStore(subscribeToSimulator, isShadowBoxSimulatorEnabled, () => false);
-
 /**
- * Shadow boxing is shown when its flag is on, this cluster's backend serves ClusterFenceService and
- * the cluster supports fencing, or when the dev simulator stands in for it. Serverless clusters can't be shadow link sources.
+ * Shadow boxing is shown when its flag is on and this cluster's backend serves ClusterFenceService for
+ * a cluster that supports fencing. Serverless clusters can't be shadow link sources.
  */
 const useShadowBoxAvailability = (): boolean => {
   const supported = useSupportedFeaturesStore((state) => state.clusterFence);
-  const simulated = useShadowBoxSimulatorEnabled();
-  return isFeatureFlagEnabled('enableShadowBoxing') && !isServerless() && (supported || simulated);
-};
-
-/** One simulator transport per cluster, so every consumer shares the same status query. */
-const simulatorTransports = new Map<string, Transport>();
-
-const getSimulatorTransport = (clusterKey: string): Transport => {
-  let transport = simulatorTransports.get(clusterKey);
-  if (!transport) {
-    transport = createShadowBoxSimulatorTransport(clusterKey);
-    simulatorTransports.set(clusterKey, transport);
-  }
-  return transport;
-};
-
-const useShadowBoxTransport = () => {
-  const transport = useTransport();
-  const simulated = useShadowBoxSimulatorEnabled();
-  return simulated ? getSimulatorTransport(config.clusterId ?? 'default') : transport;
+  return isFeatureFlagEnabled('enableShadowBoxing') && !isServerless() && supported;
 };
 
 const statusQueryKey = () => createConnectQueryKey({ schema: getClusterFenceStatus, cardinality: 'finite' });
 
-const invalidateStatus = (queryClient: QueryClient, options?: { cancelRefetch: boolean }) =>
-  queryClient.invalidateQueries({ queryKey: statusQueryKey(), exact: false }, options);
+const invalidateStatus = (queryClient: QueryClient) =>
+  queryClient.invalidateQueries({ queryKey: statusQueryKey(), exact: false });
 
 /** The API isn't there for this cluster, which reads as "no box to show", not as an error. */
 const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound]);
@@ -148,7 +106,7 @@ export type BrokerOwnCopy = { nodeId?: number; phase?: BoxPhase; revision?: bigi
  * call, when none was) for its own copy, so Console still knows whether brokers are blocking.
  */
 const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
-  const transport = useShadowBoxTransport();
+  const transport = useTransport();
   const targets = useMemo<(number | undefined)[]>(
     () => (brokers.length > 0 ? brokers.map((broker) => broker.nodeId) : [undefined]),
     [brokers]
@@ -181,10 +139,9 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   );
 };
 
-/** The status query, polled at the pace the box's state calls for and refetched when the simulator changes. */
+/** The status query, polled at the pace the box's state calls for. */
 const useShadowBoxStatusRead = (available: boolean) => {
-  const transport = useShadowBoxTransport();
-  const queryClient = useQueryClient();
+  const transport = useTransport();
 
   const query = useQuery(
     getClusterFenceStatus,
@@ -209,17 +166,6 @@ const useShadowBoxStatusRead = (available: boolean) => {
       retryOnMount: false,
     }
   );
-
-  useEffect(() => {
-    if (!available) {
-      return;
-    }
-    // Every mounted consumer hears the same event; joining the refetch already in flight keeps it to one.
-    return subscribeToSimulator(() => {
-      // A failed refetch doesn't reject invalidateQueries; the query keeps the error for its readers.
-      void invalidateStatus(queryClient, { cancelRefetch: false });
-    });
-  }, [available, queryClient]);
 
   return query;
 };
@@ -298,7 +244,7 @@ const staleRevision = () => new ConnectError('the fence revision has changed', C
  * the box has moved on to that revision because of this call, not someone else.
  */
 export const useBoxClusterMutation = () => {
-  const transport = useShadowBoxTransport();
+  const transport = useTransport();
   const queryClient = useQueryClient();
   const [savedBox, setSavedBox] = useState<BoxSummary>();
 
@@ -338,7 +284,7 @@ export const useBoxClusterMutation = () => {
 };
 
 export const useUpdateShadowBoxSettingsMutation = () => {
-  const transport = useShadowBoxTransport();
+  const transport = useTransport();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -354,7 +300,7 @@ export const useUpdateShadowBoxSettingsMutation = () => {
 
 /** Sends the revision the dialog opened with, so a stale tab can't release a box someone has since re-applied. */
 export const useUnboxClusterMutation = () => {
-  const transport = useShadowBoxTransport();
+  const transport = useTransport();
   const queryClient = useQueryClient();
 
   return useMutation({
