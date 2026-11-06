@@ -289,23 +289,37 @@ const ShadowLinksOnThisCluster = () => {
 type ShadowLinksTab = 'links' | 'source';
 
 /**
- * Open on the box only when this cluster is plainly acting as a source: it's boxed, or Cloud knows
- * links that read from it. Otherwise Links on this cluster, with its Create shadow link prompt.
- * Undefined until everything that decides it has loaded.
+ * Whether the Cluster fence tab applies: the cluster can be fenced, and it matters as a source,
+ * because Cloud knows links that read from it or its fence isn't unfenced. A cluster that's only a
+ * shadow doesn't get it. Undefined until that's known.
  */
-const useDefaultTab = (): ShadowLinksTab | undefined => {
-  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery({});
-  const { known, summary, isError } = useShadowBoxStatusQuery();
+const useFenceTabShown = (): boolean | undefined => {
+  const { available, known, summary, unreadable, blocking, isLoading, isError } = useShadowBoxStatusQuery();
   const topology = useShadowBoxStore((state) => state.topology);
+  if (!available) {
+    return false;
+  }
+  const fenceInUse = (known && hasBoxActivity(summary.phase)) || unreadable || blocking;
+  if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
+    return true;
+  }
+  const settled = !isLoading && (known || isError) && !topology?.resolving;
+  return settled ? false : undefined;
+};
 
+/**
+ * Open on the fence when the tab shows, unless this cluster has shadow links of its own; otherwise
+ * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
+ */
+const useDefaultTab = (fenceTab: boolean | undefined): ShadowLinksTab | undefined => {
+  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery({});
   if ((shadowLinksData?.shadowLinks.length ?? 0) > 0) {
     return 'links';
   }
-  if ((known && hasBoxActivity(summary.phase)) || (topology?.readers.length ?? 0) > 0) {
-    return 'source';
+  if (fenceTab === undefined || (fenceTab && isLoading)) {
+    return;
   }
-  const settled = !isLoading && (known || isError) && !topology?.resolving;
-  return settled ? 'links' : undefined;
+  return fenceTab ? 'source' : 'links';
 };
 
 const useRequestedTab = (): ShadowLinksTab | undefined => {
@@ -320,33 +334,41 @@ const useRequestedTab = (): ShadowLinksTab | undefined => {
  * and writing the tab then would send the user straight back here.
  */
 const useDefaultTabInUrl = (
-  available: boolean,
+  fenceTab: boolean | undefined,
   requestedTab: ShadowLinksTab | undefined,
   defaultTab: ShadowLinksTab | undefined
 ) => {
   const navigate = useNavigate();
   const onThisPage = useLocation().pathname === '/shadowlinks';
   useEffect(() => {
-    if (onThisPage && available && defaultTab && !requestedTab) {
+    if (onThisPage && fenceTab && defaultTab && !requestedTab) {
       navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true }).catch((error: unknown) => {
         toast.error('Failed to open the shadow links tab', { description: String(error) });
       });
     }
-  }, [onThisPage, available, requestedTab, defaultTab, navigate]);
+  }, [onThisPage, fenceTab, requestedTab, defaultTab, navigate]);
+};
+
+/** The tab to show, and whether the fence tab applies here at all. */
+const useShadowLinksTab = () => {
+  const requestedTab = useRequestedTab();
+  const fenceTab = useFenceTabShown();
+  const defaultTab = useDefaultTab(fenceTab);
+  useDefaultTabInUrl(fenceTab, requestedTab, defaultTab);
+  return { fenceTab, tab: requestedTab ?? defaultTab };
 };
 
 export const ShadowLinkListPage = () => {
   const navigate = useNavigate();
-  const requestedTab = useRequestedTab();
-  const { available } = useShadowBoxStatusQuery();
-  const defaultTab = useDefaultTab();
-  const tab = requestedTab ?? defaultTab;
-
+  const { fenceTab, tab } = useShadowLinksTab();
   useShadowLinksPageTitle();
-  useDefaultTabInUrl(available, requestedTab, defaultTab);
 
-  if (!available) {
+  // While it isn't known whether the fence tab applies, a link to it keeps it; anything else shows the links.
+  if (fenceTab === false || (fenceTab === undefined && tab === 'links')) {
     return <ShadowLinksOnThisCluster />;
+  }
+  if (!tab) {
+    return <Skeleton className="h-48" testId="shadowlinks-tab-loading" />;
   }
 
   return (
@@ -354,28 +376,24 @@ export const ShadowLinkListPage = () => {
       onValueChange={(value) =>
         navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true })
       }
-      value={tab ?? null}
+      value={tab}
     >
       <TabsList testId="shadowlinks-tabs" variant="underline">
         <TabsTrigger testId="shadowlinks-tab-links" value="links" variant="underline">
           Links on this cluster
         </TabsTrigger>
         <TabsTrigger testId="shadowlinks-tab-source" value="source" variant="underline">
-          This cluster as a source
+          Cluster fence
         </TabsTrigger>
       </TabsList>
-      {tab ? (
-        <TabsContents className="mt-4">
-          <TabsContent value="links">
-            <ShadowLinksOnThisCluster />
-          </TabsContent>
-          <TabsContent value="source">
-            <ShadowBoxSourcePanel />
-          </TabsContent>
-        </TabsContents>
-      ) : (
-        <Skeleton className="mt-4 h-48" testId="shadowlinks-tab-loading" />
-      )}
+      <TabsContents className="mt-4">
+        <TabsContent value="links">
+          <ShadowLinksOnThisCluster />
+        </TabsContent>
+        <TabsContent value="source">
+          <ShadowBoxSourcePanel />
+        </TabsContent>
+      </TabsContents>
     </Tabs>
   );
 };

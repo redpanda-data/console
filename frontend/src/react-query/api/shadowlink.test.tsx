@@ -448,7 +448,7 @@ describe('useFailoverShadowLinkMutation', () => {
     await waitFor(() => expect(reads.topics).toBe(2));
   });
 
-  test('leaves the topics alone unless asked, as it did before the Cutover tab', async () => {
+  test('leaves the topics alone unless asked, as it did before the Failover tab', async () => {
     const { reads, result, onSuccess, failOverLink } = setup(false);
     await waitFor(() => expect(result.current.topics.isSuccess).toBe(true));
 

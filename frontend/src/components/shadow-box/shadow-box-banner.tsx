@@ -13,9 +13,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
-import { useState } from 'react';
 import { type BrokerOwnCopy, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import {
   BOX_PHASE_LABEL,
@@ -23,14 +21,10 @@ import {
   type BoxSummary,
   type BrokerProgress,
   describeBoxPhase,
-  describeHeldMove,
   hasBoxActivity,
   isApplyingNewSettings,
   isBlockingPhase,
-  isLongBox,
 } from './shadow-box-model';
-import { UnboxClusterDialog } from './unbox-cluster-dialog';
-import { useNow } from './use-now';
 
 type ActivePhase = Exclude<BoxPhase, 'unboxed'>;
 
@@ -40,20 +34,13 @@ const TITLE: Record<ActivePhase, string> = {
   unboxing: 'This cluster is being unfenced',
 };
 
-/** What clients run into while the cluster blocks, past the headline. */
-const blockedDetail = (summary: BoxSummary) =>
-  `Producers get REQUEST_TIMED_OUT and keep retrying, consumer groups wait on COORDINATOR_NOT_AVAILABLE${summary.allowAllReads ? '' : ', and only exempt users can fetch from user topics'}.`;
-
-/** The banner's sentences: where the box stands, what holds it, and what clients see. */
-export const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[], now: number): string => {
-  const parts = [describeBoxPhase(summary, brokers), describeHeldMove(summary, brokers, now)];
-  if (summary.phase !== 'unboxing') {
-    parts.push(blockedDetail(summary));
-  }
-  if (isLongBox(summary, now)) {
-    parts.push('Retention and compaction keep deleting old data while it stays fenced.');
-  }
-  return parts.filter(Boolean).join(' ');
+/** What the phase means for writes, and a warning when the fence lets no one read. */
+const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[]): string => {
+  const exemptsNobody =
+    isBlockingPhase(summary.phase) && !summary.allowAllReads && summary.exemptPrincipals.length === 0;
+  return exemptsNobody
+    ? `${describeBoxPhase(summary, brokers)} It exempts nobody, so no consumer or shadow link can read from it.`
+    : describeBoxPhase(summary, brokers);
 };
 
 const brokerName = (nodeId: number | undefined) => (nodeId === undefined ? 'a broker' : `broker ${nodeId}`);
@@ -91,48 +78,34 @@ const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
 
 /**
  * Shown on every page while a box is anywhere but released, because writes start failing as soon
- * as boxing begins and keep failing on some brokers until unboxing finishes.
+ * as boxing begins and keep failing on some brokers until unboxing finishes. Not on the Cluster fence
+ * tab, which shows the same and more.
  */
 export const ShadowBoxBanner = () => {
   const { known, summary, brokers, blocking, ownCopies } = useShadowBoxStatusQuery();
-  const clusterName = useShadowBoxStore((state) => state.topology?.clusterName);
-  /** Held here, not in the alert: an Unbox that lands mid-dialog removes the alert but not the dialog. */
-  const [unboxOpen, setUnboxOpen] = useState(false);
-  const active = known && hasBoxActivity(summary.phase);
+  const location = useLocation();
+  const onFenceTab = location.pathname === '/shadowlinks' && (location.search as { tab?: string }).tab === 'source';
+  if (onFenceTab) {
+    return null;
+  }
   if (!known && blocking) {
     return <NoLeaderBanner copies={ownCopies} />;
   }
-  return (
-    <>
-      {active ? (
-        <ShadowBoxBannerAlert
-          brokers={brokers}
-          onUnbox={() => setUnboxOpen(true)}
-          phase={summary.phase as ActivePhase}
-          summary={summary}
-        />
-      ) : null}
-      <UnboxClusterDialog clusterName={clusterName} onOpenChange={setUnboxOpen} open={unboxOpen} />
-    </>
-  );
+  return known && hasBoxActivity(summary.phase) ? (
+    <ShadowBoxBannerAlert brokers={brokers} phase={summary.phase as ActivePhase} summary={summary} />
+  ) : null;
 };
 
 const ShadowBoxBannerAlert = ({
   phase,
   summary,
   brokers,
-  onUnbox,
 }: {
   phase: ActivePhase;
   summary: BoxSummary;
   brokers: BrokerProgress[];
-  onUnbox: () => void;
 }) => {
-  const location = useLocation();
-  const now = useNow();
   const title = isApplyingNewSettings(summary, brokers) ? 'This cluster is applying new fence settings' : TITLE[phase];
-  const onBoxStatusPage =
-    location.pathname === '/shadowlinks' && (location.search as { tab?: string }).tab === 'source';
 
   return (
     <div data-testid="shadow-box-banner">
@@ -143,34 +116,26 @@ const ShadowBoxBannerAlert = ({
         className="my-4"
         data-phase={phase}
         icon={phase === 'unboxing' ? <InfoIcon /> : <TriangleAlertIcon />}
-        // A region, not an alert: its counts and elapsed time change while it stays on screen, and an
-        // alert would be announced again on every change.
+        // A region, not an alert: it stays on screen while the fence moves, and an alert would be
+        // announced again on every change.
         role="region"
         variant={phase === 'unboxing' ? 'informative' : 'warning'}
       >
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
-          <p>{describeBanner(summary, brokers, now)}</p>
+          <p>{describeBanner(summary, brokers)}</p>
         </AlertDescription>
-        {/* Outside AlertDescription, which restyles every descendant anchor as an inline link. The box
-            status page has these actions on its own card. */}
-        {onBoxStatusPage ? null : (
-          <div className="col-start-2 mt-2 flex flex-wrap gap-2">
-            <Button
-              render={<Link search={{ tab: 'source' }} to="/shadowlinks" />}
-              size="sm"
-              testId="shadow-box-banner-view-status"
-              variant="outline"
-            >
-              View fence status
-            </Button>
-            {phase === 'unboxing' ? null : (
-              <Button onClick={onUnbox} size="sm" testId="shadow-box-banner-unbox" variant="outline">
-                Unfence
-              </Button>
-            )}
-          </div>
-        )}
+        {/* Outside AlertDescription, which restyles every descendant anchor as an inline link. */}
+        <div className="col-start-2 mt-2">
+          <Button
+            render={<Link search={{ tab: 'source' }} to="/shadowlinks" />}
+            size="sm"
+            testId="shadow-box-banner-view-status"
+            variant="outline"
+          >
+            View fence status
+          </Button>
+        </div>
       </Alert>
     </div>
   );

@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const flags = rs.hoisted(() => ({ enableShadowBoxing: false }));
@@ -63,54 +63,80 @@ function MockShadowLinkConfiguration() {
   return null;
 }
 
-function MockCutoverTab() {
-  return <div data-testid="cutover-stub" />;
+function MockFailoverTab() {
+  return <div data-testid="failover-stub" />;
 }
 
 rs.mock('./shadow-link-details', () => ({ ShadowLinkDetails: MockShadowLinkDetails }));
 rs.mock('./tasks-table', () => ({ TasksTable: MockTasksTable }));
 rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: MockShadowLinkConfiguration }));
-rs.mock('./cutover-tab', () => ({ CutoverTab: MockCutoverTab }));
+rs.mock('./failover-tab', () => ({ FailoverTab: MockFailoverTab }));
 rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
 
+import type { ShadowLinkSource } from 'federation/types';
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { render } from 'test-utils';
 
 import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
-/** Opens the page at ?tab=cutover, which only means something with shadow boxing on. */
-const renderAtCutoverTab = (shadowBoxing: boolean) => {
+const FENCED_SOURCE: ShadowLinkSource = {
+  kind: 'cloud',
+  clusterId: 'prod',
+  clusterName: 'prod',
+  box: { status: 'known', state: 'boxed', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
+};
+
+const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
+  useShadowBoxStore.setState({
+    topology: {
+      clusterName: 'dr',
+      readers: [],
+      sources: source ? { 'orders-dr': source } : {},
+      resolving,
+      readersIncomplete: false,
+    },
+  });
+
+/** Opens the page at ?tab=failover, which only means something with the Failover tab. */
+const renderAtFailoverTab = (shadowBoxing: boolean) => {
   const user = userEvent.setup();
   flags.enableShadowBoxing = shadowBoxing;
-  route.search = { tab: 'cutover' };
+  route.search = { tab: 'failover' };
   render(<ShadowLinkDetailsPage />);
   return user;
+};
+
+/** As before cluster fencing: no Failover tab, no lag polling, and the original confirmation. */
+const expectPageAsBefore = async (user: ReturnType<typeof userEvent.setup>) => {
+  expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
+  expect(screen.getByTestId('overview-stub')).toBeInTheDocument();
+  for (const [, options] of rs.mocked(useListShadowTopicQuery).mock.calls) {
+    expect(options).toMatchObject({ enabled: false });
+  }
+
+  await user.click(screen.getByRole('button', { name: 'Failover all topics' }));
+  expect(await screen.findByText('Confirm Failover', { selector: 'h2' })).toBeVisible();
 };
 
 describe('the ShadowLinkDetailsPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     route.search = {};
+    useShadowBoxStore.setState({ topology: null });
   });
 
   test('with cluster fencing off, looks and fetches exactly as before', async () => {
-    const user = renderAtCutoverTab(false);
-
-    expect(screen.queryByTestId('cutover-tab-trigger')).not.toBeInTheDocument();
-    expect(screen.getByTestId('overview-stub')).toBeInTheDocument();
-    for (const [, options] of rs.mocked(useListShadowTopicQuery).mock.calls) {
-      expect(options).toMatchObject({ enabled: false });
-    }
-
-    await user.click(screen.getByRole('button', { name: 'Failover all topics' }));
-    expect(await screen.findByText('Confirm Failover', { selector: 'h2' })).toBeVisible();
+    hostWith(FENCED_SOURCE);
+    await expectPageAsBefore(renderAtFailoverTab(false));
   });
 
-  test('with cluster fencing on, adds the Cutover tab, reads lag, and checks readiness before failing over', async () => {
-    const user = renderAtCutoverTab(true);
+  test('with cluster fencing on and the source’s fence readable, adds the Failover tab and checks readiness', async () => {
+    hostWith(FENCED_SOURCE);
+    const user = renderAtFailoverTab(true);
 
-    expect(screen.getByTestId('cutover-tab-trigger')).toBeInTheDocument();
-    expect(screen.getByTestId('cutover-stub')).toBeInTheDocument();
+    expect(screen.getByTestId('failover-tab-trigger')).toHaveTextContent('Failover');
+    expect(screen.getByTestId('failover-stub')).toBeInTheDocument();
     const options = rs.mocked(useListShadowTopicQuery).mock.calls.at(-1)?.[1] as {
       enabled: boolean;
       refetchInterval: (query: { state: { status: string } }) => number | false;
@@ -120,5 +146,78 @@ describe('the ShadowLinkDetailsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Fail over all topics' }));
     expect(await screen.findByTestId('failover-readiness')).toBeVisible();
+  });
+
+  test.each([
+    ['standalone, with no host', () => useShadowBoxStore.setState({ topology: null })],
+    ['the source is outside Cloud', () => hostWith({ kind: 'external', bootstrapServers: ['kafka:9092'] })],
+    [
+      'the source’s fence can’t be read',
+      () =>
+        hostWith({
+          kind: 'cloud',
+          clusterId: 'prod',
+          clusterName: 'prod',
+          box: { status: 'unavailable', reason: 'unsupported' },
+        }),
+    ],
+    ['the host couldn’t resolve the source', () => hostWith(undefined)],
+    [
+      'the source was already unreadable when the page opened',
+      () =>
+        hostWith({
+          kind: 'cloud',
+          clusterId: 'prod',
+          clusterName: 'prod',
+          box: { status: 'unavailable', reason: 'no-leader' },
+        }),
+    ],
+  ])('with cluster fencing on but %s, the page is as before', async (_label, arrange) => {
+    arrange();
+    await expectPageAsBefore(renderAtFailoverTab(true));
+  });
+
+  describe('once the source’s fence has been read', () => {
+    const sourceBecomes = (reason: 'error' | 'unsupported') =>
+      act(() =>
+        hostWith({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason } })
+      );
+
+    test('a passing read failure keeps the Failover tab and the guided failover', () => {
+      hostWith(FENCED_SOURCE);
+      renderAtFailoverTab(true);
+      sourceBecomes('error');
+
+      expect(screen.getByTestId('failover-tab-trigger')).toBeInTheDocument();
+      expect(screen.getByTestId('failover-stub')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Fail over all topics' })).toBeVisible();
+    });
+
+    test('a source that says it doesn’t support fencing falls back to the page as before', () => {
+      hostWith(FENCED_SOURCE);
+      renderAtFailoverTab(true);
+      sourceBecomes('unsupported');
+
+      expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
+      expect(screen.getByTestId('overview-stub')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Failover all topics' })).toBeVisible();
+    });
+  });
+
+  test('while the host is still resolving the source, a link to the Failover tab keeps it', () => {
+    hostWith(undefined, true);
+    renderAtFailoverTab(true);
+
+    expect(screen.getByTestId('failover-tab-trigger')).toBeInTheDocument();
+    expect(screen.getByTestId('failover-stub')).toBeInTheDocument();
+  });
+
+  test('while the host is still resolving the source, the page opens as before unless asked for the tab', () => {
+    hostWith(undefined, true);
+    flags.enableShadowBoxing = true;
+    render(<ShadowLinkDetailsPage />);
+
+    expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Failover all topics' })).toBeVisible();
   });
 });

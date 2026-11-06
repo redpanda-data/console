@@ -254,18 +254,24 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
     expect(intervalOf(queryClient)).toBe(false);
   });
 
-  test('a cluster without the API reads as unavailable', async () => {
+  test.each([
+    ['without the API', new ConnectError('no such service', Code.Unimplemented)],
+    ['without the endpoint', new ConnectError('not found', Code.NotFound)],
+    ['where fencing isn’t active on every broker', new ConnectError('feature is not active', Code.FailedPrecondition)],
+  ])('a cluster %s has no fencing, and stops asking', async (_label, error) => {
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getClusterFenceStatus, () => {
-        throw new ConnectError('no such service', Code.Unimplemented);
+        throw error;
       });
     });
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+    const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
     const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
 
     await waitFor(() => expect(result.current.available).toBe(false));
     expect(result.current.access).toBe('unsupported');
+    expect(result.current.blocking).toBe(false);
+    expect(intervalOf(queryClient)).toBe(false);
   });
 
   test('with no controller leader, asks the broker for its own copy and keeps blocking writes it rejects', async () => {

@@ -133,17 +133,19 @@ describe('the BoxClusterDialog', () => {
       expect(screen.getByTestId('box-preflight-readers')).toHaveAttribute('data-status', 'pass');
     });
 
-    test('a User: name gets a one-click fix to the bare name', async () => {
+    test('a User: name is flagged once, in the field, with a one-click fix to the bare name', async () => {
       const user = userEvent.setup();
       live.value = { summary: summaryAt(2, { exemptPrincipals: ['User:shadow-orders'] }), brokers: [] };
       renderDialog();
 
-      await user.click(await screen.findByRole('button', { name: 'Use shadow-orders' }));
+      expect(await screen.findAllByText('matches nobody', { exact: false })).toHaveLength(1);
+      expect(screen.queryByTestId('box-preflight-policy-prefix-User:shadow-orders')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Use shadow-orders' }));
       expect(screen.getByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
       expect(screen.queryByTestId('shadow-box-exempt-principals-chip-User:shadow-orders')).not.toBeInTheDocument();
     });
 
-    test('with no one exempt, Fence waits for an explicit acknowledgement that it locks out every link', async () => {
+    test('with no one exempt, warns in the field, and typing the name is still all it takes', async () => {
       useShadowBoxStore.setState({
         topology: {
           clusterName: 'prod-us-east-1',
@@ -153,12 +155,9 @@ describe('the BoxClusterDialog', () => {
           readersIncomplete: false,
         },
       });
-      const user = await renderConfirmed();
+      await renderConfirmed();
 
       expect(screen.getByTestId('shadow-box-settings-warning-empty')).toHaveTextContent('every shadow link’s user');
-      expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-
-      await user.click(screen.getByTestId('box-cluster-lock-out'));
       expect(screen.getByTestId('confirm-box-cluster')).toBeEnabled();
     });
   });

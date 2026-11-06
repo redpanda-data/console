@@ -277,7 +277,7 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
 export const useFailoverShadowLinkMutation = (options?: {
   onSuccess?: () => void;
   onError?: (error: ConnectError) => void;
-  /** Re-read the link's topics too, so the Cutover tab says failing over now rather than at its next poll. */
+  /** Re-read the link's topics too, so the Failover tab says failing over now rather than at its next poll. */
   refreshTopics?: boolean;
 }) => {
   const queryClient = useQueryClient();

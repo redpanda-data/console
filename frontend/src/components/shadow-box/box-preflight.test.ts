@@ -97,12 +97,9 @@ describe('getBoxPreflightChecks', () => {
       expect(statuses(checks).readers).toBe('pass');
     });
 
-    test('flags a User: name, which matches nobody', () => {
+    test('a User: name blocks the reader it was meant for, and is left to the fields to explain', () => {
       const checks = getBoxPreflightChecks({ ...base, exemptPrincipals: ['User:shadow-orders'] });
-      expect(statuses(checks)).toMatchObject({
-        'reader-orders-dr': 'warn',
-        'policy-prefix-User:shadow-orders': 'warn',
-      });
+      expect(statuses(checks)).toEqual({ 'own-links': 'pass', brokers: 'pass', 'reader-orders-dr': 'warn' });
     });
 
     test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {

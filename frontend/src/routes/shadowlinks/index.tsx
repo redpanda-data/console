@@ -21,10 +21,6 @@ import { z } from 'zod';
 
 const searchSchema = z.object({
   tab: z.enum(['links', 'source']).optional().catch(undefined),
-  /** Opens that dialog on the source tab, for links from other pages. */
-  action: z.enum(['box', 'unbox', 'exempt']).optional().catch(undefined),
-  /** With `action=exempt`: the user the box settings dialog adds to the exempt principals. */
-  principal: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/shadowlinks/')({

@@ -28,12 +28,6 @@ export const BOX_PHASE_LABEL: Record<BoxPhase, string> = {
   unboxing: 'Unfencing',
 };
 
-/**
- * A box that has been running this long is probably forgotten, not part of a cutover. Housekeeping
- * keeps running while boxed, so the UI starts saying so.
- */
-export const LONG_BOX_THRESHOLD_MS = 60 * 60 * 1000;
-
 /** A move still waiting on an answering broker after this long names that broker. */
 const BEHIND_NOTICE_MS = 30 * 1000;
 
@@ -164,11 +158,6 @@ export const formatBoxDuration = (elapsedMs: number): string => {
   return days === 1 ? '1 day' : `${days} days`;
 };
 
-export const isLongBox = (summary: Pick<BoxSummary, 'phase' | 'stateChangedAt'>, now: number): boolean =>
-  summary.phase === 'boxed' &&
-  summary.stateChangedAt !== undefined &&
-  now - summary.stateChangedAt.getTime() >= LONG_BOX_THRESHOLD_MS;
-
 /** "broker 2" or "brokers 1 and 3", for the middle of a sentence. */
 export const brokersPhrase = (nodeIds: readonly number[]) => {
   if (nodeIds.length === 1) {
@@ -197,22 +186,22 @@ export const isApplyingNewSettings = (
 ): boolean =>
   summary.phase === 'boxing' && brokers.some((broker) => broker.status === 'behind' && broker.blocks === true);
 
-const progressCount = (brokers: readonly BrokerProgress[]) =>
-  brokers.length > 0 ? ` ${idsWith(brokers, 'confirmed').length} of ${brokers.length} have.` : '';
-
-/** The sentence for where the box stands, as the cluster's brokers report it. */
+/**
+ * One sentence for what the phase means for writes. It doesn't name the phase, which the badge or
+ * title next to it already shows.
+ */
 export const describeBoxPhase = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): string => {
   switch (summary.phase) {
     case 'unboxed':
-      return 'Unfenced. Clients write and read as usual.';
+      return 'Clients write and read as usual.';
     case 'boxing':
       return isApplyingNewSettings(summary, brokers)
-        ? `Applying new settings. Writes stay blocked on every broker while they pick them up.${progressCount(brokers)}`
-        : `Fencing. Each broker rejects writes as soon as it picks up the fence.${progressCount(brokers)}`;
+        ? 'Writes stay blocked on every broker while they pick up the new settings.'
+        : 'Each broker rejects writes as soon as it picks up the fence.';
     case 'boxed':
-      return 'Fenced. Every broker rejects writes.';
+      return 'Every broker rejects writes.';
     default:
-      return `Unfencing. Each broker accepts writes again as soon as it picks up Unfence.${progressCount(brokers)}`;
+      return 'Each broker accepts writes again as soon as it picks up Unfence.';
   }
 };
 

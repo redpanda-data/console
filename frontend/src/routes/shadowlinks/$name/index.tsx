@@ -21,7 +21,7 @@ import { z } from 'zod';
 import { ShadowLinkDetailsPage } from '../../../components/pages/shadowlinks/details/shadowlink-details-page';
 
 const searchSchema = z.object({
-  tab: z.enum(['overview', 'tasks', 'configuration', 'cutover']).optional().catch(undefined),
+  tab: z.enum(['overview', 'tasks', 'configuration', 'failover']).optional().catch(undefined),
 });
 
 function ShadowLinkNotFound() {

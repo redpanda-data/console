@@ -14,30 +14,30 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
-import { getCutoverReadiness, getSourceBoxStep } from './cutover-model';
 import { FailoverDialog } from './failover-dialog';
+import { getFailoverReadiness, getSourceBoxStep, type SourceBoxStep } from './failover-model';
+
+const sourceStep = (state: 'boxed' | 'unboxed', allowAllReads: boolean): SourceBoxStep => {
+  const step = getSourceBoxStep({
+    source: {
+      kind: 'cloud',
+      clusterId: 'prod',
+      clusterName: 'prod-us-east-1',
+      box: { status: 'known', state, revision: '18', exemptPrincipals: [], allowAllReads, brokers: [] },
+    },
+    link: { authentication: 'sasl', principal: 'shadow-orders' },
+    resolving: false,
+  });
+  if (!step) {
+    throw new Error('A known Cloud source always has a step');
+  }
+  return step;
+};
 
 const readiness = (boxed: boolean, lag: number) =>
-  getCutoverReadiness({
+  getFailoverReadiness({
     topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: BigInt(lag) }],
-    box: getSourceBoxStep({
-      source: {
-        kind: 'cloud',
-        clusterId: 'prod',
-        clusterName: 'prod-us-east-1',
-        box: {
-          status: 'known',
-          state: boxed ? 'boxed' : 'unboxed',
-          revision: '18',
-          exemptPrincipals: [],
-          allowAllReads: true,
-          brokers: [],
-        },
-      },
-      link: { authentication: 'sasl', principal: 'shadow-orders' },
-      topology: 'resolved',
-      manuallyConfirmed: false,
-    }),
+    box: sourceStep(boxed ? 'boxed' : 'unboxed', true),
   });
 
 const EXACTLY_FAIL_OVER = /^Fail over$/;
@@ -87,7 +87,7 @@ describe('the FailoverDialog', () => {
           onConfirm={rs.fn()}
           onOpenChange={rs.fn()}
           open
-          readiness={getCutoverReadiness({ topics: undefined, box: readiness(true, 0).box })}
+          readiness={getFailoverReadiness({ topics: undefined, box: readiness(true, 0).box })}
         />
       );
 
@@ -100,7 +100,7 @@ describe('the FailoverDialog', () => {
           onConfirm={rs.fn()}
           onOpenChange={rs.fn()}
           open
-          readiness={getCutoverReadiness({
+          readiness={getFailoverReadiness({
             topics: [{ topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n }],
             box: readiness(true, 0).box,
           })}
@@ -113,30 +113,13 @@ describe('the FailoverDialog', () => {
     });
 
     test('a fence that blocks this link’s reads isn’t safe to fail over behind', () => {
-      const blocking = getSourceBoxStep({
-        source: {
-          kind: 'cloud',
-          clusterId: 'prod',
-          clusterName: 'prod-us-east-1',
-          box: {
-            status: 'known',
-            state: 'boxed',
-            revision: '18',
-            exemptPrincipals: [],
-            allowAllReads: false,
-            brokers: [],
-          },
-        },
-        link: { authentication: 'sasl', principal: 'shadow-orders' },
-        topology: 'resolved',
-        manuallyConfirmed: false,
-      });
+      const blocking = sourceStep('boxed', false);
       render(
         <FailoverDialog
           onConfirm={rs.fn()}
           onOpenChange={rs.fn()}
           open
-          readiness={getCutoverReadiness({
+          readiness={getFailoverReadiness({
             topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
             box: blocking,
           })}
@@ -154,7 +137,7 @@ describe('the FailoverDialog', () => {
           onConfirm={rs.fn()}
           onOpenChange={rs.fn()}
           open
-          readiness={getCutoverReadiness({
+          readiness={getFailoverReadiness({
             topics: [{ topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n }],
             topicsFailed: true,
             box: readiness(true, 0).box,
@@ -172,7 +155,7 @@ describe('the FailoverDialog', () => {
           onConfirm={rs.fn()}
           onOpenChange={rs.fn()}
           open
-          readiness={getCutoverReadiness({
+          readiness={getFailoverReadiness({
             topics: [{ topicName: 'orders-events', state: ShadowTopicState.PAUSED, totalLag: 0n }],
             box: readiness(true, 0).box,
           })}
@@ -199,7 +182,7 @@ describe('the FailoverDialog', () => {
         onConfirm={rs.fn()}
         onOpenChange={rs.fn()}
         open
-        readiness={getCutoverReadiness({
+        readiness={getFailoverReadiness({
           topics: [{ topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n }],
           box: readiness(true, 0).box,
         })}
@@ -210,7 +193,38 @@ describe('the FailoverDialog', () => {
     expect(screen.queryByTestId('confirm-failover')).not.toBeInTheDocument();
   });
 
-  test('without cluster fencing, keeps the original confirmation', () => {
+  test('while the host is still finding the source, leaves the source check open', () => {
+    render(
+      <FailoverDialog
+        onConfirm={rs.fn()}
+        onOpenChange={rs.fn()}
+        open
+        readiness={getFailoverReadiness({ topics: [], box: { kind: 'loading', source: undefined } })}
+      />
+    );
+
+    expect(screen.getByTestId('failover-check-source')).toHaveAttribute('data-status', 'unknown');
+  });
+
+  test('when the source’s fence can’t be read right now, leaves the source check to the user', () => {
+    const { source } = sourceStep('boxed', true);
+    if (!source) {
+      throw new Error('A known Cloud source always has a source');
+    }
+    render(
+      <FailoverDialog
+        onConfirm={rs.fn()}
+        onOpenChange={rs.fn()}
+        open
+        readiness={getFailoverReadiness({ topics: [], box: { kind: 'unreadable', source, reason: 'error' } })}
+      />
+    );
+
+    expect(screen.getByTestId('failover-check-source')).toHaveAttribute('data-status', 'unknown');
+    expect(screen.getByTestId('failover-check-source')).toHaveTextContent('can’t read the source cluster’s fence');
+  });
+
+  test('without the Failover tab, keeps the original confirmation', () => {
     render(<FailoverDialog onConfirm={rs.fn()} onOpenChange={rs.fn()} open />);
 
     expect(screen.getByText('Confirm Failover', { selector: 'h2' })).toBeVisible();

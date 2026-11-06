@@ -99,7 +99,7 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
               <p>
                 If a shadow link has already failed over from this cluster, clients still pointed at it start writing
                 here again, and the shadow cluster never sees those writes. Repoint clients first, or unfence only to
-                cancel a cutover.
+                cancel a failover.
               </p>
             </AlertDescription>
           </Alert>

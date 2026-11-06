@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
@@ -32,19 +32,11 @@ rs.mock('react-query/api/shadowlink', () => ({
   useListShadowLinksQuery: rs.fn(() => ({ data: { shadowLinks: [] } })),
 }));
 
-import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 
 import { type BoxPhase, type BrokerProgress, isBlockingPhase } from './shadow-box-model';
 import { ShadowBoxSourcePanel } from './shadow-box-source-panel';
-
-// The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
-const routeLoaderTransport = createRouterTransport(({ rpc }) => {
-  rpc(listShadowLinks, () => ({ shadowLinks: [] }));
-});
-
-const BOX_DIALOG_NAME = /Fence this cluster/;
 
 const mockStatus = (
   phase: BoxPhase,
@@ -161,15 +153,28 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('shadow-orders');
     });
 
-    test('with no one exempt, says loudly that the fence locks out every shadow link', () => {
+    test('names the phase once, in the badge and the stepper, and keeps the settings to the settings', () => {
+      mockStatus('boxed', [confirmed(1)]);
+      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+
+      expect(screen.getByTestId('shadow-box-since')).toHaveTextContent('Since');
+      expect(screen.getByTestId('shadow-box-since')).not.toHaveTextContent('Fenced');
+      expect(screen.getByTestId('shadow-box-headline')).toHaveTextContent('Every broker rejects writes.');
+      expect(screen.getByTestId('shadow-box-headline')).not.toHaveTextContent('Fenced');
+      expect(screen.getByTestId('shadow-box-settings-card')).not.toHaveTextContent('Scope');
+      expect(screen.getByTestId('shadow-box-good-to-know')).not.toHaveTextContent('REQUEST_TIMED_OUT');
+    });
+
+    test('with no one exempt, says once, loudly, that the fence locks out every shadow link', () => {
       mockStatus('unboxed', [], []);
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
       expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('No one');
       expect(screen.getByTestId('shadow-box-policy-empty')).toHaveTextContent('every shadow link’s user');
       expect(screen.getByTestId('shadow-box-step-settings')).toHaveTextContent(
-        'By default a fence blocks every consumer'
+        'Add each shadow link’s user to the exempt list.'
       );
+      expect(screen.getByTestId('shadow-box-step-settings')).not.toHaveTextContent('No one');
     });
 
     test('a cluster with a shadow link that hasn’t failed over can’t be fenced; one that has failed over can', () => {
@@ -264,7 +269,7 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('shadow-box-step-settings')).toHaveAttribute('data-state', 'attention');
     });
 
-    test('embedded, a reader’s name opens its cutover on the shadow cluster', async () => {
+    test('embedded, a reader’s name opens its Failover tab on the shadow cluster', async () => {
       const user = userEvent.setup();
       const openCluster = rs.fn();
       useShadowBoxStore.setState({
@@ -275,7 +280,7 @@ describe('the ShadowBoxSourcePanel', () => {
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
       await user.click(screen.getByRole('button', { name: 'orders-dr' }));
-      expect(openCluster).toHaveBeenCalledWith('dr', '/shadowlinks/orders-dr?tab=cutover');
+      expect(openCluster).toHaveBeenCalledWith('dr', '/shadowlinks/orders-dr?tab=failover');
     });
 
     test('embedded, while Cloud is still finding links, doesn’t say that none read from the cluster', () => {
@@ -310,47 +315,6 @@ describe('the ShadowBoxSourcePanel', () => {
 
       expect(screen.getByTestId('shadow-box-readers-incomplete')).toHaveTextContent('may be missing some');
       expect(screen.queryByText('No links read from this cluster')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('arriving with an action', () => {
-    test('arriving with action=fence opens Fence, and keeps the action in the URL until the dialog closes', async () => {
-      const user = userEvent.setup();
-      mockStatus('unboxed');
-      const { router } = renderWithFileRoutes(<ShadowBoxSourcePanel />, {
-        transport: routeLoaderTransport,
-        initialLocation: '/shadowlinks?tab=source&action=box',
-      });
-
-      expect(await screen.findByRole('dialog', { name: BOX_DIALOG_NAME })).toBeVisible();
-      expect(router.state.location.search).toMatchObject({ action: 'box' });
-
-      await user.click(screen.getByRole('button', { name: 'Cancel' }));
-      await waitFor(() => expect(router.state.location.search).not.toHaveProperty('action'));
-      expect(router.state.location.search).toMatchObject({ tab: 'source' });
-    });
-
-    test('an action the fence’s state doesn’t allow opens nothing and leaves the URL', async () => {
-      mockStatus('unboxed');
-      const { router } = renderWithFileRoutes(<ShadowBoxSourcePanel />, {
-        transport: routeLoaderTransport,
-        initialLocation: '/shadowlinks?tab=source&action=unbox',
-      });
-
-      await waitFor(() => expect(router.state.location.search).not.toHaveProperty('action'));
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    test('arriving with action=exempt opens the settings with that user added, ready to save', async () => {
-      mockStatus('boxed', [], []);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />, {
-        transport: routeLoaderTransport,
-        initialLocation: '/shadowlinks?tab=source&action=exempt&principal=shadow-orders',
-      });
-
-      const dialog = await screen.findByTestId('shadow-box-settings-dialog');
-      expect(dialog).toHaveTextContent('shadow-orders');
-      expect(screen.getByTestId('save-shadow-box-settings')).toBeEnabled();
     });
   });
 });

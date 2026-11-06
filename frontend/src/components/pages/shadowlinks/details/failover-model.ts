@@ -15,32 +15,40 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 
 import type { UnifiedShadowLink } from '../model';
 
-export type CutoverTopic = { topicName: string; state: ShadowTopicState; totalLag: bigint };
+export type FailoverTopic = { topicName: string; state: ShadowTopicState; totalLag: bigint };
+
+export type CloudSource = Extract<ShadowLinkSource, { kind: 'cloud' }>;
+
+type PeerUnavailableReason = Extract<ShadowLinkPeerBox, { status: 'unavailable' }>['reason'];
+
+type NoFenceReason = 'unsupported' | 'inactive' | 'forbidden';
+
+/** The source can't be fenced, or this viewer can't read its fence: no guided failover then. */
+const isNoFenceReason = (reason: PeerUnavailableReason): reason is NoFenceReason =>
+  reason === 'unsupported' || reason === 'inactive' || reason === 'forbidden';
+
+/** Why a fence that was readable earlier in this visit can't be read now, when the host says. */
+export type TransientReason = Exclude<PeerUnavailableReason, NoFenceReason>;
 
 /**
- * Where the source's box stands, from this shadow cluster's point of view. Only Cloud can read a
- * source cluster's box; everywhere else the operator boxes it by hand and confirms here.
+ * Where the source's fence stands, from this shadow cluster's point of view. Only Cloud can read a
+ * source cluster's fence, so the Failover tab exists only once it has.
  */
 export type SourceBoxStep =
   /** Without a source, the host is still working out which cluster the link reads from. */
-  | { kind: 'loading'; source: Extract<ShadowLinkSource, { kind: 'cloud' }> | undefined }
+  | { kind: 'loading'; source: CloudSource | undefined }
+  /** Read earlier in this visit, but not right now, such as while the source has no controller leader. */
+  | { kind: 'unreadable'; source: CloudSource; reason: TransientReason }
   | {
       kind: 'cloud';
-      source: Extract<ShadowLinkSource, { kind: 'cloud' }>;
+      source: CloudSource;
       box: Extract<ShadowLinkPeerBox, { status: 'known' }>;
       boxed: boolean;
       /**
-       * Whether the source's saved settings let this link fetch once boxed. They exist before the
-       * first Box, so this is known in every phase. Undefined when Console can't tell, as for mTLS.
+       * Whether the source's saved settings let this link fetch once fenced. They exist before the
+       * first Fence, so this is known in every phase. Undefined when Console can't tell, as for mTLS.
        */
       linkExempt: boolean | undefined;
-    }
-  | {
-      kind: 'manual';
-      /** Why Console can't read the source's box. */
-      reason: 'external' | 'unavailable' | 'unresolved' | 'standalone';
-      source: ShadowLinkSource | undefined;
-      confirmed: boolean;
     };
 
 export type LagStep = {
@@ -61,15 +69,13 @@ type FailoverStep = {
   done: boolean;
   /** Topics a failover has started on but not finished. */
   inProgress: number;
-  enabled: boolean;
-  /** Why Fail over is unavailable, when it is. */
+  /** Safe to fail over: the source is fenced and every topic has caught up. */
+  ready: boolean;
+  /** Why it isn't safe yet, when it isn't. */
   reason?: string;
 };
 
-/** What the page knows about which cluster each link reads from. */
-export type TopologyState = 'none' | 'resolving' | 'resolved';
-
-export type CutoverReadiness = {
+export type FailoverReadiness = {
   box: SourceBoxStep;
   lag: LagStep;
   failover: FailoverStep;
@@ -97,49 +103,61 @@ export const getLinkIdentity = (link: UnifiedShadowLink | undefined): LinkIdenti
   return link ? { authentication: 'none' } : {};
 };
 
-const manualReason = (
-  source: ShadowLinkSource | undefined,
-  topology: TopologyState
-): Extract<SourceBoxStep, { kind: 'manual' }>['reason'] => {
-  if (source?.kind === 'external') {
-    return 'external';
+const cloudSourceStep = (
+  source: CloudSource,
+  link: LinkIdentity,
+  lastKnown: CloudSource | undefined
+): SourceBoxStep | undefined => {
+  if (source.box.status === 'loading') {
+    return { kind: 'loading', source };
   }
-  return topology === 'resolved' ? 'unresolved' : 'standalone';
+  if (source.box.status === 'known') {
+    const { box } = source;
+    return { kind: 'cloud', source, box, boxed: box.state === 'boxed', linkExempt: linkCanRead(box, link) };
+  }
+  const { reason } = source.box;
+  if (isNoFenceReason(reason) || !lastKnown) {
+    return;
+  }
+  return { kind: 'unreadable', source, reason };
 };
 
+/**
+ * Undefined when there's no guided failover: no host, a source outside Cloud, one that can't be
+ * fenced or whose fence this viewer can't read, or one whose fence hasn't been read in this visit
+ * (a source already down when the page opened). A fence read earlier in the visit (`lastKnown`)
+ * keeps it through a passing failure, which reads as `unreadable`.
+ */
 export const getSourceBoxStep = ({
   source,
   link,
-  topology,
-  manuallyConfirmed,
+  resolving,
+  lastKnown,
 }: {
   source: ShadowLinkSource | undefined;
   link: LinkIdentity;
-  /** `none` when no host shares its topology: standalone Console, or a host that predates it. */
-  topology: TopologyState;
-  manuallyConfirmed: boolean;
-}): SourceBoxStep => {
+  /** The host is still resolving links, so a missing source may yet turn up. */
+  resolving: boolean;
+  /** The source as it was last read with a known fence during this visit. */
+  lastKnown?: CloudSource;
+}): SourceBoxStep | undefined => {
   if (source?.kind === 'cloud') {
-    if (source.box.status === 'loading') {
-      return { kind: 'loading', source };
-    }
-    if (source.box.status === 'known') {
-      const { box } = source;
-      return { kind: 'cloud', source, box, boxed: box.state === 'boxed', linkExempt: linkCanRead(box, link) };
-    }
-    return { kind: 'manual', reason: 'unavailable', source, confirmed: manuallyConfirmed };
+    return cloudSourceStep(source, link, lastKnown);
   }
-  if (source === undefined && topology === 'resolving') {
-    return { kind: 'loading', source: undefined };
+  if (source !== undefined) {
+    return;
   }
-  return { kind: 'manual', reason: manualReason(source, topology), source, confirmed: manuallyConfirmed };
+  if (resolving) {
+    return { kind: 'loading', source: lastKnown };
+  }
+  return lastKnown ? { kind: 'unreadable', source: lastKnown, reason: undefined } : undefined;
 };
 
-/** Boxed, and still readable by this link: a box that blocks the link would leave its lag stuck. */
+/** Fenced, and still readable by this link: a fence that blocks the link would leave its lag stuck. */
 export const isSourceBoxReady = (step: SourceBoxStep): boolean =>
-  (step.kind === 'cloud' && step.boxed && step.linkExempt !== false) || (step.kind === 'manual' && step.confirmed);
+  step.kind === 'cloud' && step.boxed && step.linkExempt !== false;
 
-/** `blocked` when the box is in place but stops this link reading, so its lag can't drain. */
+/** `blocked` when the fence is in place but stops this link reading, so its lag can't drain. */
 type BoxProgress = 'waiting' | 'ready' | 'blocked';
 
 export const getBoxProgress = (step: SourceBoxStep): BoxProgress => {
@@ -170,7 +188,7 @@ const lagStatus = (behind: number, faulted: number, box: BoxProgress): LagStep['
 };
 
 /** `topics` is undefined until they load; `failed` says the latest read didn't succeed. */
-export const getLagStep = (topics: CutoverTopic[] | undefined, box: BoxProgress, failed = false): LagStep => {
+export const getLagStep = (topics: FailoverTopic[] | undefined, box: BoxProgress, failed = false): LagStep => {
   if (topics === undefined) {
     return {
       status: failed ? 'unavailable' : 'loading',
@@ -205,21 +223,19 @@ export const getLagStep = (topics: CutoverTopic[] | undefined, box: BoxProgress,
 export const topicsSubject = (names: readonly string[], one: string, many: string) =>
   names.length === 1 ? `${names[0]} ${one}` : `${names.length} topics ${many}`;
 
-/** Why Fail over all topics is locked while a topic is paused, worded the same wherever it shows. */
+/** Why Fail over all topics is refused while a topic is paused, worded the same wherever it shows. */
 export const pausedTopicsReason = (paused: readonly string[]) =>
   `${topicsSubject(paused, 'is', 'are')} paused, and Fail over all topics is refused while any topic is paused. Resume ${paused.length === 1 ? 'it' : 'them'} first.`;
 
 const sourceBoxReason = (box: SourceBoxStep): string | undefined => {
+  if (box.kind === 'unreadable') {
+    return 'Not ready until Console can read the source’s fence again.';
+  }
   const progress = getBoxProgress(box);
   if (progress === 'blocked') {
-    return 'Available once the source’s fence lets this link read, so its lag can reach zero.';
+    return 'Not ready until the source’s fence lets this link read, so its lag can reach zero.';
   }
-  if (progress === 'ready') {
-    return;
-  }
-  return box.kind === 'manual'
-    ? 'Available once you confirm the source cluster is fenced.'
-    : 'Available once the source cluster reports Fenced.';
+  return progress === 'ready' ? undefined : 'Not ready until the source cluster reports Fenced.';
 };
 
 const lagReason = (lag: LagStep): string | undefined => {
@@ -230,15 +246,16 @@ const lagReason = (lag: LagStep): string | undefined => {
     return pausedTopicsReason(lag.paused);
   }
   if (lag.behind.length > 0) {
-    return 'Available when every topic has zero lag.';
+    return 'Not ready until every topic has zero lag.';
   }
   if (lag.faulted.length > 0) {
-    return `${topicsSubject(lag.faulted, 'has', 'have')} faulted, so ${lag.faulted.length === 1 ? 'it' : 'they'} may be missing records. Fix ${lag.faulted.length === 1 ? 'it' : 'them'}, or fail over anyway from the top of the page.`;
+    const one = lag.faulted.length === 1;
+    return `${topicsSubject(lag.faulted, 'has', 'have')} faulted, so ${one ? 'it' : 'they'} may be missing records. Fix ${one ? 'it' : 'them'} first, or fail over anyway.`;
   }
 };
 
 const failoverReason = (
-  topics: CutoverTopic[] | undefined,
+  topics: FailoverTopic[] | undefined,
   topicsFailed: boolean,
   box: SourceBoxStep,
   lag: LagStep
@@ -251,17 +268,17 @@ const failoverReason = (
   return sourceBoxReason(box) ?? lagReason(lag);
 };
 
-export const getCutoverReadiness = ({
+export const getFailoverReadiness = ({
   topics,
   topicsFailed = false,
   box,
 }: {
   /** The last ones read, even when a later read failed. */
-  topics: CutoverTopic[] | undefined;
+  topics: FailoverTopic[] | undefined;
   /** The latest read of the topics failed. */
   topicsFailed?: boolean;
   box: SourceBoxStep;
-}): CutoverReadiness => {
+}): FailoverReadiness => {
   const lag = getLagStep(topics, getBoxProgress(box), topicsFailed);
   const inProgress = topics?.filter((topic) => FAILING_OVER_STATES.has(topic.state)).length ?? 0;
   const done =
@@ -276,20 +293,17 @@ export const getCutoverReadiness = ({
     reason = failoverReason(topics, topicsFailed, box, lag);
   }
 
-  return { box, lag, failover: { done, inProgress, enabled: reason === undefined, reason } };
+  return { box, lag, failover: { done, inProgress, ready: reason === undefined, reason } };
 };
 
-export type CutoverStepState = 'done' | 'current' | 'pending' | 'attention';
+export type FailoverStepState = 'done' | 'current' | 'pending' | 'attention';
 
-export type CutoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
+export type FailoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
 
-type SourceStepStates = Pick<Record<CutoverStepId, CutoverStepState>, 'settings' | 'box' | 'boxed'>;
+type SourceStepStates = Pick<Record<FailoverStepId, FailoverStepState>, 'settings' | 'box' | 'boxed'>;
 
-/** The three steps on the source. Without a Cloud box to read, the operator confirms all three at once. */
+/** The three steps on the source, as its fence reports them. */
 const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
-  if (box.kind === 'manual' && box.confirmed) {
-    return { settings: 'done', box: 'done', boxed: 'done' };
-  }
   if (box.kind !== 'cloud') {
     return { settings: 'current', box: 'pending', boxed: 'pending' };
   }
@@ -305,13 +319,13 @@ const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
 /**
  * The reference's six steps, three on the source and three here. Each unlocks when the one before
  * it is done; a finished failover marks the first five done and makes moving clients current. A
- * settings problem shows on step 1 whatever the phase, since the settings exist before Box.
+ * settings problem shows on step 1 whatever the phase, since the settings exist before Fence.
  */
-export const getCutoverStepStates = ({
+export const getFailoverStepStates = ({
   box,
   lag,
   failover,
-}: CutoverReadiness): Record<CutoverStepId, CutoverStepState> => {
+}: FailoverReadiness): Record<FailoverStepId, FailoverStepState> => {
   if (failover.done) {
     return { settings: 'done', box: 'done', boxed: 'done', lag: 'done', failover: 'done', clients: 'current' };
   }

@@ -13,7 +13,6 @@ import type { ShadowLinkReader } from 'federation/types';
 
 import {
   type BrokerProgress,
-  getReadPolicyWarnings,
   linkCanRead,
   MTLS_LINK_NOTE,
   SHADOW_CLUSTER_CANT_BOX,
@@ -149,7 +148,8 @@ const readerChecks = (
 
 /**
  * Checks Console can run before Box. Box has no dry run, so these cover what the page already
- * knows; anything else, such as an unfinished data migration, comes back from Box itself.
+ * knows; anything else, such as an unfinished data migration, comes back from Box itself. Warnings
+ * about the exempt names themselves show in the settings fields, not here.
  */
 export const getBoxPreflightChecks = ({
   linksThatStopBox,
@@ -173,11 +173,6 @@ export const getBoxPreflightChecks = ({
         { resolving: readersResolving, incomplete: readersIncomplete }
       )
     );
-  }
-  for (const warning of getReadPolicyWarnings(exemptPrincipals, allowAllReads)) {
-    if (warning.severity === 'warning') {
-      checks.push({ id: `policy-${warning.id}`, status: 'warn', message: warning.message });
-    }
   }
   return checks;
 };

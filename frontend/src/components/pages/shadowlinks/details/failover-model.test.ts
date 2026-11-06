@@ -14,13 +14,14 @@ import type { ShadowLinkPeerBoxState, ShadowLinkSource } from 'federation/types'
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {
-  type CutoverTopic,
-  getCutoverReadiness,
-  getCutoverStepStates,
+  type FailoverTopic,
+  getFailoverReadiness,
+  getFailoverStepStates,
   getLagStep,
   getLinkIdentity,
   getSourceBoxStep,
-} from './cutover-model';
+  type SourceBoxStep,
+} from './failover-model';
 import { describe, expect, test } from 'bun:test';
 import type { UnifiedShadowLink } from '../model';
 
@@ -40,10 +41,15 @@ const cloudSource = (state: ShadowLinkPeerBoxState, exemptPrincipals = ['shadow-
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const step = (source: ShadowLinkSource | undefined, link: LinkIdentity = sasl, manuallyConfirmed = false) =>
-  getSourceBoxStep({ source, link, topology: source ? 'resolved' : 'none', manuallyConfirmed });
+const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceBoxStep => {
+  const result = getSourceBoxStep({ source, link, resolving: false });
+  if (!result) {
+    throw new Error('No guided failover for this source');
+  }
+  return result;
+};
 
-const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACTIVE): CutoverTopic => ({
+const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACTIVE): FailoverTopic => ({
   topicName,
   state,
   totalLag: BigInt(totalLag),
@@ -64,29 +70,92 @@ describe('getSourceBoxStep', () => {
     expect(step(cloudSource('boxed'), { authentication: 'mtls' })).toMatchObject({ linkExempt: undefined });
   });
 
-  test('falls back to a manual confirmation when Console can’t read the source’s fence', () => {
-    expect(step(undefined, sasl, true)).toMatchObject({ kind: 'manual', reason: 'standalone', confirmed: true });
-    expect(step({ kind: 'external', bootstrapServers: ['kafka:9092'] })).toMatchObject({
-      kind: 'manual',
-      reason: 'external',
-    });
-    expect(
-      step({
-        kind: 'cloud',
-        clusterId: 'prod',
-        clusterName: 'prod',
-        box: { status: 'unavailable', reason: 'forbidden' },
-      })
-    ).toMatchObject({ kind: 'manual', reason: 'unavailable' });
+  test('has no guided failover when Console can’t read the source’s fence', () => {
+    const unreadable = (source: ShadowLinkSource | undefined) =>
+      getSourceBoxStep({ source, link: sasl, resolving: false });
+
+    expect(unreadable(undefined)).toBeUndefined();
+    expect(unreadable({ kind: 'external', bootstrapServers: ['kafka:9092'] })).toBeUndefined();
+    for (const reason of ['unsupported', 'forbidden', 'inactive'] as const) {
+      expect(
+        unreadable({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason } })
+      ).toBeUndefined();
+    }
   });
 
-  test('waits while the host resolves links, and says when it couldn’t resolve this one', () => {
+  describe('once the fence has been read in this visit', () => {
+    const lastKnown = cloudSource('boxed') as Extract<ShadowLinkSource, { kind: 'cloud' }>;
+    const unavailable = (reason: 'no-leader' | 'not-running' | 'error' | 'unsupported' | 'inactive' | 'forbidden') =>
+      getSourceBoxStep({
+        source: {
+          kind: 'cloud',
+          clusterId: 'prod',
+          clusterName: 'prod-us-east-1',
+          box: { status: 'unavailable', reason },
+        },
+        link: sasl,
+        resolving: false,
+        lastKnown,
+      });
+
+    test('a passing read failure keeps the guided failover, as unreadable', () => {
+      for (const reason of ['no-leader', 'not-running', 'error'] as const) {
+        expect(unavailable(reason)).toMatchObject({ kind: 'unreadable', reason, source: { clusterId: 'prod' } });
+      }
+      expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: false, lastKnown })).toMatchObject({
+        kind: 'unreadable',
+        source: { clusterName: 'prod-us-east-1' },
+      });
+    });
+
+    test('a source that can’t be fenced, or that the viewer can’t read, still ends it', () => {
+      for (const reason of ['unsupported', 'inactive', 'forbidden'] as const) {
+        expect(unavailable(reason)).toBeUndefined();
+      }
+    });
+
+    test('an unreadable source isn’t ready, and says why', () => {
+      const box = unavailable('no-leader');
+      if (!box) {
+        throw new Error('expected an unreadable step');
+      }
+      expect(getFailoverReadiness({ topics: caughtUp, box }).failover).toMatchObject({
+        ready: false,
+        reason: 'Not ready until Console can read the source’s fence again.',
+      });
+    });
+  });
+
+  test('a source that was never read in this visit has no guided failover, even if the failure passes', () => {
     expect(
-      getSourceBoxStep({ source: undefined, link: sasl, topology: 'resolving', manuallyConfirmed: false })
-    ).toEqual({ kind: 'loading', source: undefined });
+      getSourceBoxStep({
+        source: {
+          kind: 'cloud',
+          clusterId: 'prod',
+          clusterName: 'prod',
+          box: { status: 'unavailable', reason: 'no-leader' },
+        },
+        link: sasl,
+        resolving: false,
+      })
+    ).toBeUndefined();
+  });
+
+  test('waits while the host resolves links or reads the source’s fence', () => {
+    expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: true })).toEqual({
+      kind: 'loading',
+      source: undefined,
+    });
     expect(
-      getSourceBoxStep({ source: undefined, link: sasl, topology: 'resolved', manuallyConfirmed: false })
-    ).toMatchObject({ kind: 'manual', reason: 'unresolved' });
+      getSourceBoxStep({
+        source: { kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'loading' } },
+        link: sasl,
+        resolving: false,
+      })
+    ).toMatchObject({ kind: 'loading', source: { clusterId: 'prod' } });
+    expect(
+      getSourceBoxStep({ source: { kind: 'external', bootstrapServers: ['kafka:9092'] }, link: sasl, resolving: true })
+    ).toBeUndefined();
   });
 });
 
@@ -118,27 +187,27 @@ describe('getLagStep', () => {
   });
 });
 
-describe('getCutoverReadiness', () => {
+describe('getFailoverReadiness', () => {
   const boxedStep = step(cloudSource('boxed'));
 
   test('unlocks failover once the source is fenced and lag is zero', () => {
-    expect(getCutoverReadiness({ topics: caughtUp, box: boxedStep }).failover).toEqual({
+    expect(getFailoverReadiness({ topics: caughtUp, box: boxedStep }).failover).toEqual({
       done: false,
       inProgress: 0,
-      enabled: true,
+      ready: true,
       reason: undefined,
     });
   });
 
   test('a fence that blocks this link’s reads isn’t ready, because the link can’t finish copying', () => {
-    const readiness = getCutoverReadiness({ topics: caughtUp, box: step(cloudSource('boxed', ['someone-else'])) });
+    const readiness = getFailoverReadiness({ topics: caughtUp, box: step(cloudSource('boxed', ['someone-else'])) });
 
     expect(readiness.lag.status).toBe('blocked');
     expect(readiness.failover).toMatchObject({
-      enabled: false,
+      ready: false,
       reason: expect.stringContaining('lets this link read'),
     });
-    expect(getCutoverStepStates(readiness)).toMatchObject({
+    expect(getFailoverStepStates(readiness)).toMatchObject({
       settings: 'attention',
       box: 'done',
       boxed: 'done',
@@ -147,15 +216,15 @@ describe('getCutoverReadiness', () => {
   });
 
   test('a failed refresh keeps the last lag but won’t call it caught up', () => {
-    const readiness = getCutoverReadiness({ topics: caughtUp, topicsFailed: true, box: boxedStep });
+    const readiness = getFailoverReadiness({ topics: caughtUp, topicsFailed: true, box: boxedStep });
 
     expect(readiness.lag).toMatchObject({ status: 'caught-up', stale: true, caughtUp: 2 });
-    expect(readiness.failover).toMatchObject({ enabled: false, reason: expect.stringContaining('Couldn’t refresh') });
-    expect(getCutoverStepStates(readiness)).toMatchObject({ lag: 'current', failover: 'pending' });
+    expect(readiness.failover).toMatchObject({ ready: false, reason: expect.stringContaining('Couldn’t refresh') });
+    expect(getFailoverStepStates(readiness)).toMatchObject({ lag: 'current', failover: 'pending' });
   });
 
   test('isn’t done while topics are still failing over', () => {
-    const readiness = getCutoverReadiness({
+    const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.FAILING_OVER)],
       box: boxedStep,
     });
@@ -163,39 +232,40 @@ describe('getCutoverReadiness', () => {
     expect(readiness.failover).toEqual({
       done: false,
       inProgress: 1,
-      enabled: false,
+      ready: false,
       reason: 'Failing over 1 topic…',
     });
   });
 
-  test('keeps failover locked, with a reason, until then', () => {
-    expect(getCutoverReadiness({ topics: caughtUp, box: step(cloudSource('unboxed')) }).failover.reason).toBe(
-      'Available once the source cluster reports Fenced.'
+  test('isn’t ready, with a reason, until then', () => {
+    expect(getFailoverReadiness({ topics: caughtUp, box: step(cloudSource('unboxed')) }).failover.reason).toBe(
+      'Not ready until the source cluster reports Fenced.'
     );
-    expect(getCutoverReadiness({ topics: [topic('a', 5)], box: boxedStep }).failover.reason).toBe(
-      'Available when every topic has zero lag.'
+    expect(getFailoverReadiness({ topics: [topic('a', 5)], box: boxedStep }).failover.reason).toBe(
+      'Not ready until every topic has zero lag.'
     );
-    expect(getCutoverReadiness({ topics: undefined, box: boxedStep }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: undefined, box: boxedStep }).failover.reason).toBe(
       'Loading the link’s topics.'
     );
-    expect(getCutoverReadiness({ topics: undefined, topicsFailed: true, box: boxedStep }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: undefined, topicsFailed: true, box: boxedStep }).failover.reason).toBe(
       'Couldn’t load the link’s topics, so Console can’t check their lag.'
     );
     expect(
-      getCutoverReadiness({ topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep }).failover
-    ).toMatchObject({ enabled: false, reason: expect.stringContaining('b has faulted') });
+      getFailoverReadiness({ topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep })
+        .failover
+    ).toMatchObject({ ready: false, reason: expect.stringContaining('b has faulted') });
     expect(
-      getCutoverReadiness({ topics: [topic('a', 0, ShadowTopicState.PAUSED)], box: boxedStep }).failover.reason
+      getFailoverReadiness({ topics: [topic('a', 0, ShadowTopicState.PAUSED)], box: boxedStep }).failover.reason
     ).toContain('a is paused');
   });
 
   test('is done when every topic has failed over, leaving only moving clients', () => {
-    const readiness = getCutoverReadiness({
+    const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.PROMOTED)],
       box: boxedStep,
     });
-    expect(readiness.failover).toMatchObject({ done: true, enabled: false });
-    expect(getCutoverStepStates(readiness)).toEqual({
+    expect(readiness.failover).toMatchObject({ done: true, ready: false });
+    expect(getFailoverStepStates(readiness)).toEqual({
       settings: 'done',
       box: 'done',
       boxed: 'done',
@@ -206,13 +276,13 @@ describe('getCutoverReadiness', () => {
   });
 
   test('is done when the only topics left are faulted ones, which a failover leaves alone', () => {
-    const readiness = getCutoverReadiness({
+    const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.FAULTED)],
       box: boxedStep,
     });
     expect(readiness.failover.done).toBe(true);
     expect(
-      getCutoverReadiness({ topics: [topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep }).failover.done
+      getFailoverReadiness({ topics: [topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep }).failover.done
     ).toBe(false);
   });
 });
@@ -250,10 +320,10 @@ describe('getLinkIdentity', () => {
   });
 });
 
-describe('getCutoverStepStates', () => {
+describe('getFailoverStepStates', () => {
   test('the source’s three steps go in order: settings, Fence, then Fenced', () => {
     const states = (source: ShadowLinkSource) =>
-      getCutoverStepStates(getCutoverReadiness({ topics: caughtUp, box: step(source) }));
+      getFailoverStepStates(getFailoverReadiness({ topics: caughtUp, box: step(source) }));
 
     expect(states(cloudSource('unboxed', []))).toMatchObject({
       settings: 'attention',
@@ -268,29 +338,5 @@ describe('getCutoverStepStates', () => {
       lag: 'pending',
     });
     expect(states(cloudSource('boxed'))).toMatchObject({ boxed: 'done', lag: 'done', failover: 'current' });
-  });
-
-  test('a manual confirmation covers the source’s three steps', () => {
-    const manual = step(undefined);
-    expect(getCutoverStepStates(getCutoverReadiness({ topics: caughtUp, box: manual }))).toMatchObject({
-      settings: 'current',
-      box: 'pending',
-      boxed: 'pending',
-      lag: 'pending',
-    });
-
-    const confirmed = step(undefined, sasl, true);
-    expect(getCutoverStepStates(getCutoverReadiness({ topics: [topic('a', 9)], box: confirmed }))).toMatchObject({
-      settings: 'done',
-      box: 'done',
-      boxed: 'done',
-      lag: 'current',
-      failover: 'pending',
-    });
-    expect(getCutoverStepStates(getCutoverReadiness({ topics: caughtUp, box: confirmed }))).toMatchObject({
-      lag: 'done',
-      failover: 'current',
-      clients: 'pending',
-    });
   });
 });

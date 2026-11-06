@@ -53,10 +53,10 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
 };
 
 /**
- * The Cutover tab reads the source's box through the host, or has the operator confirm it by hand,
- * so it needs only the flag: whether this shadow cluster serves the cluster fence API doesn't matter.
+ * The Failover tab reads the source's fence through the host, so on this shadow cluster it needs
+ * only the flag; whether the host can read that fence decides the rest (see useFailoverReadiness).
  */
-export const isCutoverAvailable = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
+export const isGuidedFailoverEnabled = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
 
 /**
  * Shadow boxing is shown when its flag is on and this cluster's backend serves ClusterFenceService for
@@ -72,8 +72,11 @@ const statusQueryKey = () => createConnectQueryKey({ schema: getClusterFenceStat
 const invalidateStatus = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({ queryKey: statusQueryKey(), exact: false });
 
-/** The API isn't there for this cluster, which reads as "no box to show", not as an error. */
-const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound]);
+/**
+ * No fencing on this cluster, which reads as "no fence to show", not as an error: the API isn't
+ * there, or a read fails its precondition while some broker runs a Redpanda without the feature.
+ */
+const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound, Code.FailedPrecondition]);
 
 /** Not answered for this viewer, and asking again won't change that until they sign in as someone else. */
 const isSettledReadError = (error: unknown): boolean =>
@@ -181,8 +184,8 @@ const usePublishedBoxPhase = (phase: BoxPhase | null) => {
 /**
  * The cluster's shadow box, polled quickly while brokers are still applying a change. Every
  * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
- * A cluster without the API, or a viewer without permission to read it, stops polling: the banner and
- * guards hide, and the Shadow Links page says why.
+ * A cluster without fencing, or a viewer without permission to read it, stops polling and the banner
+ * and guards hide; without fencing, the Shadow Links page shows no fence at all.
  */
 export const useShadowBoxStatusQuery = () => {
   const available = useShadowBoxAvailability();
@@ -200,7 +203,7 @@ export const useShadowBoxStatusQuery = () => {
 
   return {
     ...query,
-    /** The flag is on and this cluster can serve the API, and it hasn't said it doesn't. */
+    /** The flag is on and this cluster can serve the API, and it hasn't said it has no fencing. */
     available: available && access !== 'unsupported',
     access,
     /** True once a status with a state Console understands has loaded; until then, treat the cluster as unboxed. */
@@ -385,9 +388,6 @@ export const describeShadowBoxReadError = (error: unknown): string => {
       return 'This cluster has no controller leader right now, so its fence can’t be read. Console keeps trying.';
     case Code.DeadlineExceeded:
       return 'The cluster didn’t answer in time.';
-    case Code.Unimplemented:
-    case Code.NotFound:
-      return 'This cluster doesn’t report a fence. It may run a Redpanda version without cluster fencing.';
     default:
       return describeShadowBoxError(error);
   }

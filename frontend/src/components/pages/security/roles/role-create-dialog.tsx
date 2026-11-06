@@ -29,8 +29,8 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
-import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
 import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
@@ -62,7 +62,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
-  const boxed = Boolean(useShadowBoxGuard().reasonFor('editRoles'));
+  const boxedReason = useShadowBoxGuard().reasonFor('editRoles');
 
   const handleClose = () => {
     setRoleName('');
@@ -74,7 +74,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists || boxed) {
+    if (!trimmed || alreadyExists || boxedReason) {
       return;
     }
     setIsSubmitting(true);
@@ -94,7 +94,6 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <DialogTitle>Create role</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <ShadowBoxedAlert action="editRoles" />
           <div className="flex flex-col gap-2 py-2">
             <Label htmlFor="role-name">Role name</Label>
             <Input
@@ -112,9 +111,14 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting || boxed} onClick={handleSubmit}>
-            Create
-          </Button>
+          <DisabledReasonTooltip reason={boxedReason}>
+            <Button
+              disabled={!trimmed || (submitted && alreadyExists) || isSubmitting || Boolean(boxedReason)}
+              onClick={handleSubmit}
+            >
+              Create
+            </Button>
+          </DisabledReasonTooltip>
         </DialogFooter>
       </DialogContent>
     </Dialog>

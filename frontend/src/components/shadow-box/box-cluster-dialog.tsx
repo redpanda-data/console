@@ -15,7 +15,6 @@ import { isShadowLinkingDisabledError } from 'components/pages/shadowlinks/shado
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   Dialog,
   DialogBody,
@@ -27,10 +26,9 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Label } from 'components/redpanda-ui/components/label';
 import type { ShadowLinkTopology } from 'federation/types';
 import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   type BoxSettingsInput,
@@ -243,13 +241,10 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
     checks,
     blocked,
   } = useBoxClusterForm();
-  /** An empty exempt list locks every shadow link out, and the broker only logs it, so ask first. */
-  const [lockOutAcknowledged, setLockOutAcknowledged] = useState(false);
   const clusterName = topology?.clusterName;
   const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;
   const alreadyBoxed = !canBoxFromPhase(opened.phase);
-  const locksOutReaders = !settings.allowAllReads && settings.exemptPrincipals.length === 0;
 
   const handleRefresh = () => {
     refresh();
@@ -262,10 +257,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
       { settings: values.settings, opened },
       {
         onSuccess: () => {
-          toast.success(`Fencing ${clusterName ?? 'this cluster'}`, {
-            description:
-              'Each broker rejects writes as soon as it picks up the fence. Wait for Fenced before you fail a link over.',
-          });
+          toast.success(`Fencing ${clusterName ?? 'this cluster'}`);
           onClose();
         },
       }
@@ -328,20 +320,6 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           </ul>
         </section>
 
-        {locksOutReaders ? (
-          <div className="flex items-start gap-2">
-            <Checkbox
-              checked={lockOutAcknowledged}
-              id="box-cluster-lock-out"
-              onCheckedChange={(checked) => setLockOutAcknowledged(checked === true)}
-              testId="box-cluster-lock-out"
-            />
-            <Label htmlFor="box-cluster-lock-out">
-              <span className="font-normal">Fence with no one exempt, blocking every consumer and shadow link</span>
-            </Label>
-          </div>
-        ) : null}
-
         <Field>
           <FieldLabel htmlFor="box-cluster-confirmation">
             Type <span className="font-mono">{confirmationTarget}</span> to confirm
@@ -364,7 +342,7 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           Cancel
         </Button>
         <Button
-          disabled={blocked || !confirmed || changed || alreadyBoxed || (locksOutReaders && !lockOutAcknowledged)}
+          disabled={blocked || !confirmed || changed || alreadyBoxed}
           isLoading={boxCluster.isPending}
           testId="confirm-box-cluster"
           type="submit"

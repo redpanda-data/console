@@ -24,13 +24,13 @@ import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon } from 'lucide-react
 import type { ReactNode } from 'react';
 
 import {
-  type CutoverReadiness,
+  type FailoverReadiness,
   getBoxProgress,
   isSourceBoxReady,
   type LagStep,
   pausedTopicsReason,
   topicsSubject,
-} from './cutover-model';
+} from './failover-model';
 
 type CheckStatus = 'ready' | 'not-ready' | 'unknown';
 
@@ -46,45 +46,42 @@ const CHECK_ICON: Record<CheckStatus, ReactNode> = {
 
 type Check = { id: string; status: CheckStatus; text: string };
 
-const sourceCheck = (readiness: CutoverReadiness): Check => {
-  if (readiness.box.kind === 'loading') {
+const sourceCheck = ({ box }: FailoverReadiness): Check => {
+  if (box.kind === 'loading') {
     return {
       id: 'source',
       status: 'unknown',
       text: 'Stop writes to the source cluster first, by fencing it or stopping its producers, so nothing is left behind.',
     };
   }
-  if (getBoxProgress(readiness.box) === 'blocked') {
+  if (box.kind === 'unreadable') {
+    return {
+      id: 'source',
+      status: 'unknown',
+      text: 'Console can’t read the source cluster’s fence right now. Make sure it’s fenced, or that its producers are stopped.',
+    };
+  }
+  if (getBoxProgress(box) === 'blocked') {
     return {
       id: 'source',
       status: 'not-ready',
       text: 'The source cluster is fenced, but its settings block this link’s fetches, so the link can’t finish copying.',
     };
   }
-  if (isSourceBoxReady(readiness.box)) {
+  if (isSourceBoxReady(box)) {
     return {
       id: 'source',
       status: 'ready',
-      text:
-        readiness.box.kind === 'manual'
-          ? 'You confirmed the source cluster is fenced.'
-          : 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
-    };
-  }
-  if (readiness.box.kind === 'cloud') {
-    return {
-      id: 'source',
-      status: 'not-ready',
-      text:
-        readiness.box.box.state === 'boxing'
-          ? 'The source cluster hasn’t reported Fenced yet. A broker that hasn’t picked up the fence still accepts writes, which would never reach this cluster.'
-          : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
+      text: 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
     };
   }
   return {
     id: 'source',
-    status: 'unknown',
-    text: 'Console can’t read the source cluster’s fence. Make sure it’s fenced, or that its producers are stopped.',
+    status: 'not-ready',
+    text:
+      box.box.state === 'boxing'
+        ? 'The source cluster hasn’t reported Fenced yet. A broker that hasn’t picked up the fence still accepts writes, which would never reach this cluster.'
+        : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
   };
 };
 
@@ -132,7 +129,7 @@ const caughtUpCheck = (lag: LagStep, topicName: string | undefined): Check => {
   };
 };
 
-const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, checking: boolean): Check => {
+const lagCheck = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Check => {
   if (lag.status === 'loading' || checking) {
     return { id: 'lag', status: 'unknown', text: 'Checking each topic’s lag…' };
   }
@@ -147,7 +144,7 @@ const lagCheck = ({ lag }: CutoverReadiness, topicName: string | undefined, chec
 };
 
 /** Fail over all topics is refused while any topic is paused, so say so before the request fails. */
-const pausedCheck = ({ lag }: CutoverReadiness): Check | undefined => {
+const pausedCheck = ({ lag }: FailoverReadiness): Check | undefined => {
   if (lag.paused.length === 0) {
     return;
   }
@@ -167,25 +164,25 @@ type FailoverDialogProps = {
   topicName?: string;
   onConfirm: () => void;
   isLoading?: boolean;
-  /** What Console knows about the source's box and each topic's lag; only while shadow boxing is on. */
-  readiness?: CutoverReadiness;
+  /** What Console knows about the source's fence and each topic's lag; only with the Failover tab. */
+  readiness?: FailoverReadiness;
   /** A fresh read of the topics' lag is on its way. */
   checkingLag?: boolean;
 };
 
 export const FailoverDialog = (props: FailoverDialogProps) =>
   props.readiness ? (
-    <CutoverFailoverDialog {...props} readiness={props.readiness} />
+    <GuidedFailoverDialog {...props} readiness={props.readiness} />
   ) : (
     <LegacyFailoverDialog {...props} />
   );
 
 /**
- * Failover stays available even when the checks fail: in a real outage the source can't be boxed,
+ * Failover stays available even when the checks fail: in a real outage the source can't be fenced,
  * and failing over anyway is the point. The checks follow the safe order: stop writes, let lag
  * drain, fail over, then repoint clients.
  */
-const CutoverFailoverDialog = ({
+const GuidedFailoverDialog = ({
   open,
   onOpenChange,
   topicName,
@@ -193,7 +190,7 @@ const CutoverFailoverDialog = ({
   isLoading,
   readiness,
   checkingLag = false,
-}: FailoverDialogProps & { readiness: CutoverReadiness }) => {
+}: FailoverDialogProps & { readiness: FailoverReadiness }) => {
   if (!topicName && (readiness.failover.done || readiness.failover.inProgress > 0)) {
     return <FailoverUnderWayDialog onOpenChange={onOpenChange} open={open} readiness={readiness} />;
   }
@@ -260,7 +257,7 @@ const FailoverUnderWayDialog = ({
   open,
   onOpenChange,
   readiness,
-}: Pick<FailoverDialogProps, 'open' | 'onOpenChange'> & { readiness: CutoverReadiness }) => {
+}: Pick<FailoverDialogProps, 'open' | 'onOpenChange'> & { readiness: FailoverReadiness }) => {
   const { inProgress, done } = readiness.failover;
   return (
     <AlertDialog onOpenChange={onOpenChange} open={open}>
@@ -283,7 +280,7 @@ const FailoverUnderWayDialog = ({
   );
 };
 
-/** The dialog as it was before shadow boxing, shown while that feature is off. */
+/** The dialog as it was before cluster fencing, shown without the Failover tab. */
 const LegacyFailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoading }: FailoverDialogProps) => {
   const handleCancel = () => {
     onOpenChange(false);

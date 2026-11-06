@@ -81,12 +81,12 @@ describe('the TopicConfiguration', () => {
   describe('while the cluster is fenced', () => {
     const FENCED = 'You can’t change topic configuration while this cluster is fenced. Unfence it first.';
 
-    test('says why up front, and a user topic’s values open no editor', async () => {
+    test('a user topic’s values open no editor, and the banner alone says why up front', async () => {
       guard.reason = FENCED;
       const user = userEvent.setup();
       renderEditor();
 
-      expect(screen.getByTestId('topic-config-boxed-note')).toHaveTextContent(FENCED);
+      expect(screen.queryByText(FENCED)).not.toBeInTheDocument();
       await user.click(within(getSection('Retention')).getByRole('button'));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
@@ -104,7 +104,6 @@ describe('the TopicConfiguration', () => {
         />
       );
 
-      expect(screen.queryByTestId('topic-config-boxed-note')).not.toBeInTheDocument();
       await user.click(within(getSection('Retention')).getByRole('button'));
       expect(await screen.findByRole('dialog')).toBeVisible();
     });

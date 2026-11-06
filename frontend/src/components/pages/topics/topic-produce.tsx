@@ -49,8 +49,6 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
-import { isFencedTopicWrite } from '../../shadow-box/shadow-box-model';
-import { ShadowBoxedAlert } from '../../shadow-box/shadow-boxed-alert';
 import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { DisabledReasonTooltip } from '../../ui/disabled-reason-tooltip';
 import { subjectSchemaContext } from '../schemas/schema-context-utils';
@@ -399,7 +397,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
   return (
     <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
-      {isFencedTopicWrite(topicName) ? <ShadowBoxedAlert action="produce" testId="produce-shadow-boxed-alert" /> : null}
       <div className="flex flex-row gap-4">
         <Controller
           control={control}

@@ -30,8 +30,6 @@ import {
   hasBoxActivity,
   isApplyingNewSettings,
   isBlockingPhase,
-  isLongBox,
-  LONG_BOX_THRESHOLD_MS,
   linkCanRead,
   linksThatStopBox,
   summarizeBox,
@@ -135,9 +133,9 @@ const progress = (...entries: [number, BrokerProgress['status'], boolean | undef
   entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
 
 describe('describeBoxPhase', () => {
-  test('says each broker blocks as soon as it picks up the fence, with the count so far', () => {
+  test('says each broker blocks as soon as it picks up the fence, without naming the phase', () => {
     expect(describeBoxPhase({ phase: 'boxing' }, progress([1, 'confirmed', true], [2, 'behind', false]))).toBe(
-      'Fencing. Each broker rejects writes as soon as it picks up the fence. 1 of 2 have.'
+      'Each broker rejects writes as soon as it picks up the fence.'
     );
   });
 
@@ -148,7 +146,7 @@ describe('describeBoxPhase', () => {
   });
 
   test('describes each settled phase', () => {
-    expect(describeBoxPhase({ phase: 'boxed' }, [])).toBe('Fenced. Every broker rejects writes.');
+    expect(describeBoxPhase({ phase: 'boxed' }, [])).toBe('Every broker rejects writes.');
     expect(describeBoxPhase({ phase: 'unboxed' }, [])).toContain('as usual');
     expect(describeBoxPhase({ phase: 'unboxing' }, [])).toContain('accepts writes again');
   });
@@ -185,15 +183,6 @@ describe('formatBoxDuration', () => {
     [9 * 24 * 60 * 60 * 1000, '9 days'],
   ])('%i ms reads as %s', (elapsed, label) => {
     expect(formatBoxDuration(elapsed)).toBe(label);
-  });
-});
-
-describe('isLongBox', () => {
-  test('only a settled fence held past the threshold counts', () => {
-    const boxedFor = (ms: number) => ({ phase: 'boxed' as const, stateChangedAt: new Date(NOW - ms) });
-    expect(isLongBox(boxedFor(LONG_BOX_THRESHOLD_MS - 1), NOW)).toBe(false);
-    expect(isLongBox(boxedFor(LONG_BOX_THRESHOLD_MS), NOW)).toBe(true);
-    expect(isLongBox({ phase: 'boxing', stateChangedAt: new Date(NOW - 2 * LONG_BOX_THRESHOLD_MS) }, NOW)).toBe(false);
   });
 });
 

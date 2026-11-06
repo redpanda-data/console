@@ -50,15 +50,13 @@ type FormValues = z.infer<typeof formSchema>;
 type ShadowBoxSettingsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** A user to add to the exempt principals as the dialog opens, such as a link the box blocks. */
-  addPrincipal?: string;
 };
 
 /** The form mounts with the dialog's content, so every opening starts from the saved settings. */
-export const ShadowBoxSettingsDialog = ({ open, onOpenChange, addPrincipal }: ShadowBoxSettingsDialogProps) => (
+export const ShadowBoxSettingsDialog = ({ open, onOpenChange }: ShadowBoxSettingsDialogProps) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent size="lg" testId="shadow-box-settings-dialog">
-      <ShadowBoxSettingsForm addPrincipal={addPrincipal} onClose={() => onOpenChange(false)} />
+      <ShadowBoxSettingsForm onClose={() => onOpenChange(false)} />
     </DialogContent>
   </Dialog>
 );
@@ -90,7 +88,7 @@ const SaveErrorAlert = ({ error }: { error: unknown }) => {
   );
 };
 
-const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
+const ShadowBoxSettingsForm = ({ onClose }: { onClose: () => void }) => {
   const { summary } = useShadowBoxStatusQuery();
   const updateSettings = useUpdateShadowBoxSettingsMutation();
   const { opened, changed, refresh } = useOpenedBox(summary, updateSettings.isPending || updateSettings.isSuccess);
@@ -103,19 +101,6 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
     resolver: zodResolver(formSchema),
     defaultValues: toFormValues(opened),
   });
-
-  /** Added as an edit, not a default, so the dialog opens ready to save it. */
-  useEffect(() => {
-    const settings = form.getValues('settings');
-    if (addPrincipal !== undefined && !settings.exemptPrincipals.includes(addPrincipal)) {
-      // The whole object, not the nested path: the fields render from the `settings` Controller.
-      form.setValue(
-        'settings',
-        { ...settings, exemptPrincipals: [...settings.exemptPrincipals, addPrincipal] },
-        { shouldDirty: true }
-      );
-    }
-  }, [addPrincipal, form]);
 
   const handleRefresh = () => {
     refresh();
