@@ -22,11 +22,11 @@ import {
   isBlockingPhase,
   type LinkIdentity,
   MTLS_LINK_NOTE,
-  type StepState,
   unreachableBrokersSubject,
 } from 'components/shadow-box/shadow-box-model';
-import { CanReadBadge, ShadowBoxStateBadge, StepMarker, StepTitle, useNow } from 'components/shadow-box/shadow-box-ui';
+import { CanReadBadge, ShadowBoxStateBadge, useNow } from 'components/shadow-box/shadow-box-ui';
 import type { ShadowLinkPeerBox } from 'federation/types';
+import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
@@ -35,6 +35,7 @@ import {
   getFailoverStepStates,
   type LagStep,
   type SourceBoxStep,
+  type StepState,
   type TransientReason,
   topicsSubject,
 } from './failover-model';
@@ -42,6 +43,13 @@ import type { UnifiedShadowLink } from '../model';
 
 type CloudStep = Extract<SourceBoxStep, { kind: 'cloud' }>;
 type KnownPeerBox = Extract<ShadowLinkPeerBox, { status: 'known' }>;
+
+const MARKER_STYLE: Record<StepState, string> = {
+  done: 'border-success bg-success text-success-foreground',
+  current: 'border-primary text-primary',
+  attention: 'border-warning text-warning',
+  pending: 'border-border text-muted-foreground',
+};
 
 type BadgeSpec = { label: string; variant: StatusBadgeVariant; pulsing?: boolean };
 
@@ -65,10 +73,21 @@ const Step = ({
     data-state={state}
     data-testid={testId}
   >
-    <StepMarker index={index} large state={state} />
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-label tabular-nums',
+        MARKER_STYLE[state]
+      )}
+    >
+      {state === 'done' ? <CheckIcon className="size-4" /> : String(index)}
+    </span>
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <StepTitle index={index} large state={state} title={title} />
+        <h4 className="text-heading-xs">
+          <span className="sr-only">{`Step ${index}${state === 'done' ? ', complete' : ''}: `}</span>
+          {title}
+        </h4>
         {status ? (
           <StatusBadge pulsing={status.pulsing} size="sm" variant={status.variant}>
             {status.label}

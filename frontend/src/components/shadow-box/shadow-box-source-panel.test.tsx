@@ -116,18 +116,14 @@ describe('the ShadowBoxSourcePanel', () => {
   });
 
   describe('its fence', () => {
-    test('an unfenced cluster offers Fence, marks its state among the four, and lists the source’s three steps', () => {
+    test('an unfenced cluster offers Fence and shows its state', () => {
       mockStatus('unboxed', [confirmed(1, 'unboxed')]);
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
       expect(screen.getByTestId('shadow-box-state-badge')).toHaveTextContent('Unfenced');
       expect(screen.getByTestId('open-box-cluster')).toBeVisible();
       expect(screen.queryByTestId('open-unbox-cluster')).not.toBeInTheDocument();
-      expect(screen.getByRole('listitem', { current: 'step' })).toHaveTextContent('Unfenced');
       expect(screen.getByTestId('shadow-box-headline')).toHaveTextContent('Clients write and read as usual.');
-      expect(screen.getByTestId('shadow-box-step-settings')).toBeVisible();
-      expect(screen.getByTestId('shadow-box-step-settings')).toHaveAttribute('data-state', 'done');
-      expect(screen.getByTestId('shadow-box-step-box')).toHaveAttribute('data-state', 'current');
     });
 
     test('fencing: each broker’s copy and status, and a broker that isn’t answering holds it with no timeout', () => {
@@ -162,7 +158,6 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('shadow-box-effect-consume')).toHaveTextContent('POLICY_VIOLATION (44)');
       expect(screen.getByTestId('shadow-box-effect-schema')).toHaveTextContent('HTTP 412');
       expect(screen.getByTestId('shadow-box-effect-transaction')).toHaveTextContent('Ended by the fence');
-      expect(screen.getByTestId('shadow-box-step-wait')).toHaveAttribute('data-state', 'done');
       expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('shadow-orders');
     });
 
@@ -172,10 +167,6 @@ describe('the ShadowBoxSourcePanel', () => {
 
       expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('No one');
       expect(screen.getByTestId('shadow-box-policy-empty')).toHaveTextContent('every shadow link’s user');
-      expect(screen.getByTestId('shadow-box-step-settings')).toHaveTextContent(
-        'Add each shadow link’s user to the exempt list.'
-      );
-      expect(screen.getByTestId('shadow-box-step-settings')).not.toHaveTextContent('No one');
     });
 
     test('a cluster with a shadow link that hasn’t failed over can’t be fenced; one that has failed over can', () => {
@@ -265,7 +256,6 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('shadow-box-reader-edge-dr')).toHaveTextContent('mTLS certificate');
       expect(screen.getByTestId('shadow-box-reader-edge-dr')).toHaveTextContent('Can’t check');
       expect(screen.getByTestId('shadow-box-effect-link-telemetry-dr')).toHaveAttribute('data-verdict', 'rejected');
-      expect(screen.getByTestId('shadow-box-step-settings')).toHaveAttribute('data-state', 'attention');
     });
 
     test('embedded, a reader’s name opens its Failover tab on the shadow cluster', async () => {

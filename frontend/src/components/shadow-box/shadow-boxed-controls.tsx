@@ -9,11 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
 import { DropdownMenuItem, DropdownMenuShortcut } from 'components/redpanda-ui/components/dropdown-menu';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
-import { TriangleAlertIcon } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 import { type BoxedAction, useShadowBoxGuard } from './use-shadow-box-guard';
@@ -30,19 +28,6 @@ export const ShadowBoxedButton = ({
     <DisabledReasonTooltip reason={reason}>
       <Button disabled={disabled || Boolean(reason)} {...props} />
     </DisabledReasonTooltip>
-  );
-};
-
-/** For a form whose submit the fence would reject: says why up front. Renders nothing otherwise. */
-export const ShadowBoxedAlert = ({ action, testId }: { action: BoxedAction; testId?: string }) => {
-  const reason = useShadowBoxGuard().reasonFor(action);
-  if (!reason) {
-    return null;
-  }
-  return (
-    <Alert icon={<TriangleAlertIcon />} testId={testId ?? 'shadow-boxed-alert'} variant="warning">
-      <AlertDescription>{reason}</AlertDescription>
-    </Alert>
   );
 };
 

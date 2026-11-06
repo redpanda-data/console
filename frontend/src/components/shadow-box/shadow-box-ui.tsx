@@ -11,11 +11,9 @@
 
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
-import { cn } from 'components/redpanda-ui/lib/utils';
-import { CheckIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { BOX_PHASE_LABEL, type BoxPhase, type StepState } from './shadow-box-model';
+import { BOX_PHASE_LABEL, type BoxPhase } from './shadow-box-model';
 
 /** The current time, refreshed on an interval so time-in-state labels keep counting. */
 export const useNow = (intervalMs = 30_000): number => {
@@ -62,42 +60,3 @@ export const CanReadBadge = ({ canRead, yes, no }: { canRead: boolean | undefine
     </Badge>
   );
 };
-
-const STEP_MARKER: Record<StepState, string> = {
-  done: 'border-success bg-success text-success-foreground',
-  current: 'border-primary text-primary',
-  attention: 'border-warning text-warning',
-  pending: 'border-border text-muted-foreground',
-};
-
-/** A step's number, or a check once it's done. */
-export const StepMarker = ({ index, state, large = false }: { index: number; state: StepState; large?: boolean }) => (
-  <span
-    aria-hidden="true"
-    className={cn(
-      'flex shrink-0 items-center justify-center rounded-full border-2 tabular-nums',
-      large ? 'size-7 text-label' : 'size-6 text-caption',
-      STEP_MARKER[state]
-    )}
-  >
-    {state === 'done' ? <CheckIcon className={large ? 'size-4' : 'size-3.5'} /> : String(index)}
-  </span>
-);
-
-/** A step's title, numbered for screen readers, which skip the marker. */
-export const StepTitle = ({
-  index,
-  state,
-  title,
-  large = false,
-}: {
-  index: number;
-  state: StepState;
-  title: string;
-  large?: boolean;
-}) => (
-  <h4 className={large ? 'text-heading-xs' : 'text-label'}>
-    <span className="sr-only">{`Step ${index}${state === 'done' ? ', complete' : ''}: `}</span>
-    {title}
-  </h4>
-);

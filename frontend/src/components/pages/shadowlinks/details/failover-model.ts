@@ -9,12 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  isBlockingPhase,
-  type LinkIdentity,
-  linkCanRead,
-  type StepState,
-} from 'components/shadow-box/shadow-box-model';
+import { isBlockingPhase, type LinkIdentity, linkCanRead } from 'components/shadow-box/shadow-box-model';
 import type { ShadowLinkPeerBox, ShadowLinkSource } from 'federation/types';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
@@ -300,6 +295,8 @@ export const getFailoverReadiness = ({
 
   return { box, lag, failover: { done, inProgress, ready: reason === undefined, reason } };
 };
+
+export type StepState = 'done' | 'current' | 'pending' | 'attention';
 
 type FailoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
 

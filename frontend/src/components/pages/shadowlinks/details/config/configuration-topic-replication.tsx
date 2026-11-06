@@ -91,7 +91,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-heading-lg" data-testid="shadowing-title">
-        Topic properties
+        Topic config shadow
       </h2>
       {groupPropertiesByCategory(allProperties).map(({ category, properties }) => {
         const categoryKey = category.toLowerCase().replace(/\s+/g, '-');

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
@@ -22,8 +21,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/r
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
-import { ArrowRightIcon } from 'lucide-react';
-import { Fragment, type ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
@@ -31,7 +29,6 @@ import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { BoxClusterDialog } from './box-cluster-dialog';
 import {
   BOX_PHASE_LABEL,
-  BOX_PHASES,
   type BoxPhase,
   type BoxSummary,
   type BrokerProgress,
@@ -42,16 +39,13 @@ import {
   formatBoxDuration,
   getClientEffects,
   getReadPolicyWarnings,
-  isBlockingPhase,
   linkCanRead,
   linksThatStopBox,
-  MTLS_LINK_NOTE,
   SHADOW_CLUSTER_CANT_BOX,
-  type StepState,
 } from './shadow-box-model';
 import { ShadowBoxSettingsDialog } from './shadow-box-settings-dialog';
 import { WARNING_VARIANT } from './shadow-box-settings-fields';
-import { CanReadBadge, ShadowBoxStateBadge, StepMarker, StepTitle, useNow } from './shadow-box-ui';
+import { CanReadBadge, ShadowBoxStateBadge, useNow } from './shadow-box-ui';
 import { UnboxClusterDialog } from './unbox-cluster-dialog';
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -117,49 +111,6 @@ const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
   </div>
 );
 
-/**
- * The four states in order, the cluster's current one marked, with the two that reject writes
- * bracketed: blocking starts in Boxing, not Boxed, and stops in Unboxing.
- */
-const StateStepper = ({ phase }: { phase: BoxPhase }) => (
-  <div
-    className="grid max-w-3xl grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-x-1.5 gap-y-1"
-    data-testid="shadow-box-states"
-  >
-    <ol aria-label="Cluster fence states" className="contents">
-      {BOX_PHASES.map((state, index) => (
-        <Fragment key={state}>
-          {index > 0 ? (
-            <li aria-hidden="true" className="flex items-center" role="presentation">
-              <TonedIcon className="size-3.5" icon={ArrowRightIcon} tone="muted" />
-            </li>
-          ) : null}
-          <li
-            aria-current={state === phase ? 'step' : undefined}
-            className={cn(
-              'rounded-full border px-2 py-1 text-center text-body-sm',
-              state === phase
-                ? 'border-selected bg-selected-wash font-medium text-selected'
-                : 'border-border text-muted-foreground'
-            )}
-            data-state={state}
-          >
-            {BOX_PHASE_LABEL[state]}
-          </li>
-        </Fragment>
-      ))}
-    </ol>
-    <div
-      className="col-start-3 col-end-6 flex items-center gap-1.5 text-caption text-muted-foreground"
-      data-testid="shadow-box-blocks-bracket"
-    >
-      <span aria-hidden="true" className="h-2 flex-1 rounded-bl-sm border-b border-l border-warning-line" />
-      <span>Rejects writes</span>
-      <span aria-hidden="true" className="h-2 flex-1 rounded-br-sm border-r border-b border-warning-line" />
-    </div>
-  </div>
-);
-
 const VERDICT_BAR: Record<ClientEffect['verdict'], string> = {
   allowed: 'border-l-success',
   rejected: 'border-l-destructive',
@@ -184,158 +135,6 @@ const ClientEffects = ({ effects }: { effects: ClientEffect[] }) => (
     ))}
   </ul>
 );
-
-const SourceStep = ({
-  index,
-  state,
-  title,
-  children,
-  testId,
-}: {
-  index: number;
-  state: StepState;
-  title: string;
-  children: ReactNode;
-  testId: string;
-}) => (
-  <li className="grid grid-cols-[1.5rem_1fr] gap-3" data-state={state} data-testid={testId}>
-    <StepMarker index={index} state={state} />
-    <div className="flex min-w-0 flex-col gap-1">
-      <StepTitle index={index} state={state} title={title} />
-      <div className="text-body-sm text-muted-foreground">{children}</div>
-    </div>
-  </li>
-);
-
-const exemptStepState = (
-  exemptDone: boolean,
-  boxRequested: boolean,
-  summary: BoxSummary,
-  access: ReturnType<typeof readerAccess>
-): StepState => {
-  if (exemptDone) {
-    return 'done';
-  }
-  if (!boxRequested && summary.exemptPrincipals.length === 0 && access.total === 0) {
-    return 'current';
-  }
-  return 'attention';
-};
-
-const boxStepState = (requested: boolean, settingsDone: boolean): StepState => {
-  if (requested) {
-    return 'done';
-  }
-  return settingsDone ? 'current' : 'pending';
-};
-
-/** How many of the links Cloud knows can read from this cluster under the saved settings. */
-const readerAccess = (readers: ShadowLinkReader[] | undefined, summary: BoxSummary) => {
-  const results = (readers ?? []).map((reader) => ({ reader, canRead: linkCanRead(summary, reader) }));
-  return {
-    blocked: results.filter(({ canRead }) => canRead === false).map(({ reader }) => reader),
-    unknown: results.filter(({ canRead }) => canRead === undefined).map(({ reader }) => reader),
-    total: results.length,
-  };
-};
-
-const exemptStepText = (access: ReturnType<typeof readerAccess>, summary: BoxSummary) => {
-  if (summary.allowAllReads) {
-    return 'Allow all reads is on, so every shadow link can keep reading.';
-  }
-  if (access.blocked.length > 0) {
-    const names = access.blocked.map((reader) => reader.linkName).join(', ');
-    return `The saved settings block ${names}, so ${access.blocked.length === 1 ? 'it' : 'they'} couldn’t finish copying once fenced. Add ${access.blocked.length === 1 ? 'its user' : 'their users'} to the exempt list.`;
-  }
-  if (summary.exemptPrincipals.length === 0) {
-    return 'Add each shadow link’s user to the exempt list.';
-  }
-  if (access.unknown.length > 0) {
-    return `Console can’t check ${access.unknown.map((reader) => reader.linkName).join(', ')}: ${MTLS_LINK_NOTE}`;
-  }
-  return access.total > 0
-    ? 'Every shadow link Redpanda Cloud knows can keep reading.'
-    : 'Exempt each shadow link’s user before you fence.';
-};
-
-const waitStepState = (phase: BoxPhase): StepState => {
-  if (phase === 'boxed') {
-    return 'done';
-  }
-  return isBlockingPhase(phase) ? 'current' : 'pending';
-};
-
-const waitStepText = (summary: BoxSummary, brokers: BrokerProgress[]) => {
-  if (summary.phase === 'boxed') {
-    return 'Fail each link over on its shadow cluster.';
-  }
-  if (summary.phase === 'boxing') {
-    const confirmed = brokers.filter((broker) => broker.status === 'confirmed').length;
-    return brokers.length > 0
-      ? `${confirmed} of ${brokers.length} brokers have confirmed.`
-      : 'Waiting for every broker to confirm.';
-  }
-  return 'Fence first. Then wait here until every broker confirms; a healthy cluster takes a second or two.';
-};
-
-/**
- * The source cluster's half of a failover, as the reference lays it out: save the settings, fence,
- * and wait until it reports Fenced. Then each link fails over on its own shadow cluster.
- */
-const SourceStepsCard = ({
-  summary,
-  readers,
-  brokers,
-}: {
-  summary: BoxSummary;
-  readers: ShadowLinkReader[] | undefined;
-  brokers: BrokerProgress[];
-}) => {
-  const access = readerAccess(readers, summary);
-  const exemptDone = summary.allowAllReads || (access.blocked.length === 0 && summary.exemptPrincipals.length > 0);
-  const boxRequested = isBlockingPhase(summary.phase);
-  return (
-    <Card size="full" testId="shadow-box-source-steps" variant="standard">
-      <CardContent>
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-heading-xs">Before a shadow link fails over</h3>
-            <p className="text-body-sm text-muted-foreground">
-              These steps run here, on the source cluster. Zero lag, the failover and moving clients happen on each
-              shadow cluster.
-            </p>
-          </div>
-          <ol className="flex flex-col gap-4">
-            <SourceStep
-              index={1}
-              state={exemptStepState(exemptDone, boxRequested, summary, access)}
-              testId="shadow-box-step-settings"
-              title="Save settings"
-            >
-              {exemptStepText(access, summary)}
-            </SourceStep>
-            <SourceStep
-              index={2}
-              state={boxStepState(boxRequested, exemptDone)}
-              testId="shadow-box-step-box"
-              title="Fence"
-            >
-              {boxRequested ? 'Fence was called.' : 'Fence puts the saved settings in force. It returns at Fencing.'}
-            </SourceStep>
-            <SourceStep
-              index={3}
-              state={waitStepState(summary.phase)}
-              testId="shadow-box-step-wait"
-              title="Wait for Fenced"
-            >
-              {waitStepText(summary, brokers)}
-            </SourceStep>
-          </ol>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 
 const ExemptValue = ({ summary }: { summary: BoxSummary }) => {
   if (summary.allowAllReads) {
@@ -511,30 +310,6 @@ const ReadersCard = ({
   );
 };
 
-/** Only what the cards above don't already say. */
-const GOOD_TO_KNOW = [
-  'Retention, compaction and DeleteRecords keep running while fenced. Consumer offset expiration pauses.',
-  'Data transforms that write to user topics retry, and catch up after Unfence.',
-  'Internal topics, such as __consumer_offsets and the audit log, stay writable.',
-  'A cluster with a shadow link that hasn’t failed over can’t be fenced, and a fenced cluster rejects new shadow links until it’s unfenced.',
-  'When the Admin API doesn’t require auth (admin_api_require_auth off, the default), anyone who can reach it can fence.',
-];
-
-const GoodToKnowCard = () => (
-  <Card size="full" testId="shadow-box-good-to-know" variant="standard">
-    <CardContent>
-      <div className="flex flex-col gap-6">
-        <h3 className="text-heading-xs">Good to know</h3>
-        <ul className="list-disc space-y-1 pl-5 text-body-sm">
-          {GOOD_TO_KNOW.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </div>
-    </CardContent>
-  </Card>
-);
-
 const BoxActions = ({
   phase,
   stopsBox,
@@ -658,7 +433,6 @@ const BoxStatusCard = ({
             </div>
             {actions}
           </div>
-          <StateStepper phase={phase} />
           <p className="text-body" data-testid="shadow-box-headline">
             {describeBoxPhase(summary, brokers)}
             {held ? ` ${held}` : ''}
@@ -704,8 +478,6 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
         summary={summary}
       />
 
-      <SourceStepsCard brokers={brokers} readers={readers} summary={summary} />
-
       <SettingsCard onEdit={() => setSettingsOpen(true)} summary={summary} />
 
       <ReadersCard
@@ -714,8 +486,6 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
         resolving={topology?.resolving ?? false}
         summary={summary}
       />
-
-      <GoodToKnowCard />
 
       <BoxClusterDialog onOpenChange={setBoxOpen} open={boxOpen} />
       <UnboxClusterDialog clusterName={topology?.clusterName} onOpenChange={setUnboxOpen} open={unboxOpen} />

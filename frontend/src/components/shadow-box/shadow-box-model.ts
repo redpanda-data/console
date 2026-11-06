@@ -19,11 +19,6 @@ import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb'
 
 export type BoxPhase = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
 
-export const BOX_PHASES: readonly BoxPhase[] = ['unboxed', 'boxing', 'boxed', 'unboxing'];
-
-/** A numbered step on the Cluster fence and Failover tabs. */
-export type StepState = 'done' | 'current' | 'pending' | 'attention';
-
 export const BOX_PHASE_LABEL: Record<BoxPhase, string> = {
   unboxed: 'Unfenced',
   boxing: 'Fencing',

@@ -38,8 +38,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
 import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
-import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -128,7 +126,6 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
   );
   const { data: usersData } = useListUsersQuery(create(ListUsersRequestSchema));
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
-  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
   const allMembers = membersData?.members ?? [];
 
   const addMember = async (userName: string) => {
@@ -173,20 +170,18 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
     <ListLayout className="my-4 min-h-0">
       <ListLayoutFilters
         actions={
-          <DisabledReasonTooltip reason={editRolesReason}>
-            <Combobox
-              className="w-56"
-              clearable={false}
-              creatable
-              createLabel="principal"
-              disabled={isSubmitting || Boolean(editRolesReason)}
-              onChange={addMember}
-              options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
-              placeholder="Select or type a principal..."
-              testId="add-principal-combobox"
-              value=""
-            />
-          </DisabledReasonTooltip>
+          <Combobox
+            className="w-56"
+            clearable={false}
+            creatable
+            createLabel="principal"
+            disabled={isSubmitting}
+            onChange={addMember}
+            options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
+            placeholder="Select or type a principal..."
+            testId="add-principal-combobox"
+            value=""
+          />
         }
       >
         <h2 className="text-heading-sm">Principals</h2>
