@@ -132,7 +132,7 @@ service ShadowLinkService {
       body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Fail Over Shadow Link"
+      summary: "Fail over shadow link"
       description: "Fail over a shadow link or a specific shadow topic within a link."
       responses: {
         key: "202"
@@ -151,7 +151,7 @@ service ShadowLinkService {
   rpc ListShadowLinkTopics(ListShadowLinkTopicsRequest) returns (ListShadowLinkTopicsResponse) {
     option (google.api.http) = {get: "/v1/shadow-links/{shadow_link_name}/topic"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "List Shadow Link Topics"
+      summary: "List shadow link topics"
       description: "List shadow topic status information for a specific shadow link. Optional: filter based on topic name."
       responses: {
         key: "200"
@@ -170,7 +170,7 @@ service ShadowLinkService {
   rpc GetShadowTopic(GetShadowTopicRequest) returns (GetShadowTopicResponse) {
     option (google.api.http) = {get: "/v1/shadow-links/{shadow_link_name}/topic/{topic_name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Topic"
+      summary: "Get shadow topic"
       description: "Retrieve details of a specific shadow topic within a shadow link."
       responses: {
         key: "200"
@@ -189,7 +189,7 @@ service ShadowLinkService {
   rpc GetShadowMetrics(GetShadowMetricsRequest) returns (GetShadowMetricsResponse) {
     option (google.api.http) = {get: "/v1/shadow-links/{name}/metrics"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link Metrics"
+      summary: "Get shadow link metrics"
       description: "Retrieve metrics for a specific shadow link, including total topics replicated, failed over topics, and error topics."
       responses: {
         key: "200"
@@ -208,7 +208,7 @@ service ShadowLinkService {
   rpc GetShadowLink(GetShadowLinkRequest) returns (GetShadowLinkResponse) {
     option (google.api.http) = {get: "/v1/shadow-links/{name}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Get Shadow Link"
+      summary: "Get shadow link"
       description: "Retrieve details of a specific shadow link by name."
       responses: {
         key: "200"

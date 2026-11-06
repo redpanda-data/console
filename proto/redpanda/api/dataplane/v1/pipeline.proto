@@ -341,7 +341,7 @@ service PipelineService {
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {
     option (google.api.http) = {put: "/v1/redpanda-connect/pipelines/{id}/stop"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Stops a Redpanda Connect pipeline"
+      summary: "Stop a Redpanda Connect pipeline"
       description: "Stop a running Redpanda Connect pipeline."
       responses: {
         key: "200"
