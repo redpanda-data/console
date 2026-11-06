@@ -38,17 +38,31 @@ const (
 	// SignupServiceLicenseSignupProcedure is the fully-qualified name of the SignupService's
 	// LicenseSignup RPC.
 	SignupServiceLicenseSignupProcedure = "/redpanda.api.console.v1alpha1.SignupService/LicenseSignup"
+	// SignupServiceResendPasswordSetupEmailProcedure is the fully-qualified name of the SignupService's
+	// ResendPasswordSetupEmail RPC.
+	SignupServiceResendPasswordSetupEmailProcedure = "/redpanda.api.console.v1alpha1.SignupService/ResendPasswordSetupEmail"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	signupServiceServiceDescriptor             = v1alpha1.File_redpanda_api_console_v1alpha1_signup_proto.Services().ByName("SignupService")
-	signupServiceLicenseSignupMethodDescriptor = signupServiceServiceDescriptor.Methods().ByName("LicenseSignup")
+	signupServiceServiceDescriptor                        = v1alpha1.File_redpanda_api_console_v1alpha1_signup_proto.Services().ByName("SignupService")
+	signupServiceLicenseSignupMethodDescriptor            = signupServiceServiceDescriptor.Methods().ByName("LicenseSignup")
+	signupServiceResendPasswordSetupEmailMethodDescriptor = signupServiceServiceDescriptor.Methods().ByName("ResendPasswordSetupEmail")
 )
 
 // SignupServiceClient is a client for the redpanda.api.console.v1alpha1.SignupService service.
 type SignupServiceClient interface {
+	// LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+	// license straight away, Console installs it and returns it in license.
+	// Otherwise the trial belongs to a Redpanda Cloud account, and the response
+	// says how the user gets the license: verification_required after a
+	// set-password email, or sign_in_required when the email already has an
+	// account. The user then applies the license with LicenseService.SetLicense.
 	LicenseSignup(context.Context, *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error)
+	// ResendPasswordSetupEmail sends the set-password link again. It succeeds
+	// for any well-formed address, so it does not reveal which emails have
+	// accounts.
+	ResendPasswordSetupEmail(context.Context, *connect.Request[v1alpha1.ResendPasswordSetupEmailRequest]) (*connect.Response[v1alpha1.ResendPasswordSetupEmailResponse], error)
 }
 
 // NewSignupServiceClient constructs a client for the redpanda.api.console.v1alpha1.SignupService
@@ -67,12 +81,19 @@ func NewSignupServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(signupServiceLicenseSignupMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		resendPasswordSetupEmail: connect.NewClient[v1alpha1.ResendPasswordSetupEmailRequest, v1alpha1.ResendPasswordSetupEmailResponse](
+			httpClient,
+			baseURL+SignupServiceResendPasswordSetupEmailProcedure,
+			connect.WithSchema(signupServiceResendPasswordSetupEmailMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // signupServiceClient implements SignupServiceClient.
 type signupServiceClient struct {
-	licenseSignup *connect.Client[v1alpha1.LicenseSignupRequest, v1alpha1.LicenseSignupResponse]
+	licenseSignup            *connect.Client[v1alpha1.LicenseSignupRequest, v1alpha1.LicenseSignupResponse]
+	resendPasswordSetupEmail *connect.Client[v1alpha1.ResendPasswordSetupEmailRequest, v1alpha1.ResendPasswordSetupEmailResponse]
 }
 
 // LicenseSignup calls redpanda.api.console.v1alpha1.SignupService.LicenseSignup.
@@ -80,10 +101,26 @@ func (c *signupServiceClient) LicenseSignup(ctx context.Context, req *connect.Re
 	return c.licenseSignup.CallUnary(ctx, req)
 }
 
+// ResendPasswordSetupEmail calls
+// redpanda.api.console.v1alpha1.SignupService.ResendPasswordSetupEmail.
+func (c *signupServiceClient) ResendPasswordSetupEmail(ctx context.Context, req *connect.Request[v1alpha1.ResendPasswordSetupEmailRequest]) (*connect.Response[v1alpha1.ResendPasswordSetupEmailResponse], error) {
+	return c.resendPasswordSetupEmail.CallUnary(ctx, req)
+}
+
 // SignupServiceHandler is an implementation of the redpanda.api.console.v1alpha1.SignupService
 // service.
 type SignupServiceHandler interface {
+	// LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+	// license straight away, Console installs it and returns it in license.
+	// Otherwise the trial belongs to a Redpanda Cloud account, and the response
+	// says how the user gets the license: verification_required after a
+	// set-password email, or sign_in_required when the email already has an
+	// account. The user then applies the license with LicenseService.SetLicense.
 	LicenseSignup(context.Context, *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error)
+	// ResendPasswordSetupEmail sends the set-password link again. It succeeds
+	// for any well-formed address, so it does not reveal which emails have
+	// accounts.
+	ResendPasswordSetupEmail(context.Context, *connect.Request[v1alpha1.ResendPasswordSetupEmailRequest]) (*connect.Response[v1alpha1.ResendPasswordSetupEmailResponse], error)
 }
 
 // NewSignupServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -98,10 +135,18 @@ func NewSignupServiceHandler(svc SignupServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(signupServiceLicenseSignupMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	signupServiceResendPasswordSetupEmailHandler := connect.NewUnaryHandler(
+		SignupServiceResendPasswordSetupEmailProcedure,
+		svc.ResendPasswordSetupEmail,
+		connect.WithSchema(signupServiceResendPasswordSetupEmailMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/redpanda.api.console.v1alpha1.SignupService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SignupServiceLicenseSignupProcedure:
 			signupServiceLicenseSignupHandler.ServeHTTP(w, r)
+		case SignupServiceResendPasswordSetupEmailProcedure:
+			signupServiceResendPasswordSetupEmailHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -113,4 +158,8 @@ type UnimplementedSignupServiceHandler struct{}
 
 func (UnimplementedSignupServiceHandler) LicenseSignup(context.Context, *connect.Request[v1alpha1.LicenseSignupRequest]) (*connect.Response[v1alpha1.LicenseSignupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SignupService.LicenseSignup is not implemented"))
+}
+
+func (UnimplementedSignupServiceHandler) ResendPasswordSetupEmail(context.Context, *connect.Request[v1alpha1.ResendPasswordSetupEmailRequest]) (*connect.Response[v1alpha1.ResendPasswordSetupEmailResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("redpanda.api.console.v1alpha1.SignupService.ResendPasswordSetupEmail is not implemented"))
 }
