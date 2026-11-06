@@ -88,7 +88,7 @@ const ShadowLinkDetailsTabs = ({
   return (
     // Keyed, so the tabs remount rather than switch between controlled and uncontrolled.
     <Tabs key={readiness ? 'failover' : 'default'} {...tabState}>
-      <TabsList testId="shadowlink-details-tabs">
+      <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
         <TabsTrigger testId="overview-tab" value="overview" variant="underline">
           Overview
         </TabsTrigger>
