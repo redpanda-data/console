@@ -22,7 +22,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/r
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
@@ -452,31 +452,47 @@ const BoxStatusCard = ({
   );
 };
 
+type SourceDialog = 'box' | 'unbox' | 'settings';
+
+const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'box', unfence: 'unbox' } as const;
+
+const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_ACTION)[];
+
 /**
- * `?action=exempt&principal=…`, from a shadow cluster's Failover tab, opens the settings with that
- * user already added. Both stay in the URL until the dialog closes: embedded, Console can remount
- * while the host settles its route, and the dialog then reopens instead of vanishing.
+ * `?action=` opens a dialog for links from elsewhere: `exempt` the settings with `principal` already
+ * added (from a shadow cluster's Failover tab), `fence` the Fence dialog, and `unfence` the Unfence
+ * dialog unless the cluster is already unfenced. The params stay in the URL until the dialog
+ * closes: embedded, Console can remount while the host settles its route, and the dialog then
+ * reopens instead of vanishing. Returns the principal and an `onOpenChange` for each dialog.
  */
-const useExemptFromUrl = (setSettingsOpen: (open: boolean) => void) => {
+const useDialogFromUrl = (phase: BoxPhase, setDialog: (dialog: SourceDialog | null) => void) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const exempt = (location.search as { action?: unknown }).action === 'exempt';
-  // The raw query string: the parsed search turns a name like `1001` into a number.
-  const principal = exempt ? (new URLSearchParams(location.searchStr).get('principal') ?? undefined) : undefined;
+  const requested = (location.search as { action?: unknown }).action;
+  const action = URL_ACTIONS.find((candidate) => candidate === requested);
+  const handled = useRef(false);
   useEffect(() => {
-    if (exempt) {
-      setSettingsOpen(true);
+    if (!action || handled.current) {
+      return;
     }
-  }, [exempt, setSettingsOpen]);
-  const onOpenChange = (open: boolean) => {
-    setSettingsOpen(open);
-    if (!open && exempt) {
-      navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
-      });
+    handled.current = true;
+    if (!(action === 'unfence' && phase === 'unboxed')) {
+      setDialog(DIALOG_FOR_ACTION[action]);
     }
+  }, [action, phase, setDialog]);
+  return {
+    // The raw query string: the parsed search turns a name like `1001` into a number.
+    principal:
+      action === 'exempt' ? (new URLSearchParams(location.searchStr).get('principal') ?? undefined) : undefined,
+    onOpenChange: (dialog: SourceDialog) => (open: boolean) => {
+      setDialog(open ? dialog : null);
+      if (!open && action) {
+        navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
+          toast.error('Failed to navigate', { description: String(error) });
+        });
+      }
+    },
   };
-  return { principal, onOpenChange };
 };
 
 const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
@@ -484,10 +500,8 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   const topology = useShadowBoxStore((state) => state.topology);
   const ownLinks = useListShadowLinksQuery({}).data?.shadowLinks ?? [];
   const now = useNow();
-  const [boxOpen, setBoxOpen] = useState(false);
-  const [unboxOpen, setUnboxOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const exemptFromUrl = useExemptFromUrl(setSettingsOpen);
+  const [dialog, setDialog] = useState<SourceDialog | null>(null);
+  const fromUrl = useDialogFromUrl(summary.phase, setDialog);
   const readers = topology ? topology.readers : undefined;
 
   return (
@@ -496,8 +510,8 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
       <BoxStatusCard
         actions={
           <BoxActions
-            onBox={() => setBoxOpen(true)}
-            onUnbox={() => setUnboxOpen(true)}
+            onBox={() => setDialog('box')}
+            onUnbox={() => setDialog('unbox')}
             phase={summary.phase}
             stopsBox={linksThatStopBox(ownLinks).map((link) => link.name)}
           />
@@ -508,7 +522,7 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
         summary={summary}
       />
 
-      <SettingsCard onEdit={() => setSettingsOpen(true)} summary={summary} />
+      <SettingsCard onEdit={() => setDialog('settings')} summary={summary} />
 
       <ReadersCard
         incomplete={topology?.readersIncomplete ?? false}
@@ -517,12 +531,16 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
         summary={summary}
       />
 
-      <BoxClusterDialog onOpenChange={setBoxOpen} open={boxOpen} />
-      <UnboxClusterDialog clusterName={topology?.clusterName} onOpenChange={setUnboxOpen} open={unboxOpen} />
+      <BoxClusterDialog onOpenChange={fromUrl.onOpenChange('box')} open={dialog === 'box'} />
+      <UnboxClusterDialog
+        clusterName={topology?.clusterName}
+        onOpenChange={fromUrl.onOpenChange('unbox')}
+        open={dialog === 'unbox'}
+      />
       <ShadowBoxSettingsDialog
-        addPrincipal={exemptFromUrl.principal}
-        onOpenChange={exemptFromUrl.onOpenChange}
-        open={settingsOpen}
+        addPrincipal={fromUrl.principal}
+        onOpenChange={fromUrl.onOpenChange('settings')}
+        open={dialog === 'settings'}
       />
     </div>
   );

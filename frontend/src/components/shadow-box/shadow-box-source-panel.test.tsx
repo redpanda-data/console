@@ -283,7 +283,7 @@ describe('the ShadowBoxSourcePanel', () => {
     });
   });
 
-  describe('a link to exempt a user, from a shadow cluster’s Failover tab', () => {
+  describe('a link that opens a dialog', () => {
     // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
     const routeLoaderTransport = createRouterTransport(({ rpc }) => {
       rpc(listShadowLinks, () => ({ shadowLinks: [] }));
@@ -300,15 +300,39 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('save-shadow-box-settings')).toBeEnabled();
     });
 
-    test('clears the link from the URL once the dialog closes, so it doesn’t open again', async () => {
-      const user = userEvent.setup();
-      mockStatus('unboxed');
-      const { router } = renderAt('/shadowlinks?tab=source&action=exempt&principal=shadow-telemetry');
+    test.each([
+      ['fence', 'unboxed', 'box-cluster-dialog'],
+      ['unfence', 'boxed', 'unbox-cluster-dialog'],
+    ] as const)('%s on a cluster that’s %s opens its dialog', async (action, phase, testId) => {
+      mockStatus(phase);
+      renderAt(`/shadowlinks?tab=source&action=${action}`);
 
-      await user.click(await screen.findByRole('button', { name: 'Cancel' }));
-      await waitFor(() => expect(router.state.location.search).toEqual({ tab: 'source' }));
-      expect(screen.queryByTestId('shadow-box-settings-dialog')).not.toBeInTheDocument();
+      expect(await screen.findByTestId(testId)).toBeVisible();
     });
+
+    test('unfence on a cluster that’s already unfenced does nothing', async () => {
+      mockStatus('unboxed');
+      renderAt('/shadowlinks?tab=source&action=unfence');
+
+      expect(await screen.findByTestId('shadow-box-source-panel')).toBeVisible();
+      expect(screen.queryByTestId('unbox-cluster-dialog')).not.toBeInTheDocument();
+    });
+
+    test.each([
+      ['exempt', 'unboxed', 'shadow-box-settings-dialog'],
+      ['unfence', 'boxed', 'unbox-cluster-dialog'],
+    ] as const)(
+      'clears %s from the URL once its dialog closes, so it doesn’t open again',
+      async (action, phase, testId) => {
+        const user = userEvent.setup();
+        mockStatus(phase);
+        const { router } = renderAt(`/shadowlinks?tab=source&action=${action}&principal=shadow-telemetry`);
+
+        await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+        await waitFor(() => expect(router.state.location.search).toEqual({ tab: 'source' }));
+        expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
+      }
+    );
 
     test('ignores any other action', async () => {
       mockStatus('unboxed');
