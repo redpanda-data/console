@@ -22,8 +22,9 @@ import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skele
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
+import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
@@ -71,19 +72,6 @@ function useSchemaRegistryPermissions() {
     canManageSchemaRegistry: capabilities?.includes(SchemaRegistryCapability.WRITE),
     canCreateSchemas: capabilities?.includes(SchemaRegistryCapability.WRITE),
     canDeleteSchemas: capabilities?.includes(SchemaRegistryCapability.DELETE),
-  };
-}
-
-// A box reason only where the user has the permission, so a missing permission keeps its own tooltip.
-function useEditSchemasBoxedReasons({
-  canCreateSchemas,
-  canDeleteSchemas,
-}: Pick<ReturnType<typeof useSchemaRegistryPermissions>, 'canCreateSchemas' | 'canDeleteSchemas'>) {
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
-  return {
-    editSchemasReason,
-    createBoxedReason: canCreateSchemas === false ? undefined : editSchemasReason,
-    deleteBoxedReason: canDeleteSchemas === false ? undefined : editSchemasReason,
   };
 }
 
@@ -180,11 +168,10 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   const { subject, isLoadingSubject, isSoftDeleted } = useSubjectDetailsData(subjectNameRaw);
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
-  const {
-    editSchemasReason,
-    createBoxedReason: addVersionBoxedReason,
-    deleteBoxedReason: deleteSubjectBoxedReason,
-  } = useEditSchemasBoxedReasons({ canCreateSchemas, canDeleteSchemas });
+  // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
+  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
+  const addVersionBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
+  const deleteSubjectBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
 
   if (isLoadingSubject || !subject) {
     return (
@@ -209,22 +196,20 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <div className="flex items-center gap-1">
             {subject.mode}
             {canManageSchemaRegistry !== false && (
-              <DisabledReasonTooltip reason={editSchemasReason}>
-                <Button
-                  data-testid="schema-details-edit-mode-icon"
-                  disabled={Boolean(editSchemasReason)}
-                  onClick={() =>
-                    navigate({
-                      to: '/schema-registry/subjects/$subjectName/edit-mode',
-                      params: { subjectName: subjectNameEncoded },
-                    })
-                  }
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <EditIcon />
-                </Button>
-              </DisabledReasonTooltip>
+              <ShadowBoxedButton
+                action="editSchemas"
+                data-testid="schema-details-edit-mode-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-mode',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                size="icon-xs"
+                variant="ghost"
+              >
+                <EditIcon />
+              </ShadowBoxedButton>
             )}
           </div>
         </SmallStat>
@@ -234,22 +219,20 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <div className="flex items-center gap-1">
             {subject.compatibility}
             {canManageSchemaRegistry !== false && (
-              <DisabledReasonTooltip reason={editSchemasReason}>
-                <Button
-                  data-testid="schema-details-edit-compatibility-icon"
-                  disabled={Boolean(editSchemasReason)}
-                  onClick={() =>
-                    navigate({
-                      to: '/schema-registry/subjects/$subjectName/edit-compatibility',
-                      params: { subjectName: subjectNameEncoded },
-                    })
-                  }
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <EditIcon />
-                </Button>
-              </DisabledReasonTooltip>
+              <ShadowBoxedButton
+                action="editSchemas"
+                data-testid="schema-details-edit-compatibility-icon"
+                onClick={() =>
+                  navigate({
+                    to: '/schema-registry/subjects/$subjectName/edit-compatibility',
+                    params: { subjectName: subjectNameEncoded },
+                  })
+                }
+                size="icon-xs"
+                variant="ghost"
+              >
+                <EditIcon />
+              </ShadowBoxedButton>
             )}
           </div>
         </SmallStat>
@@ -361,6 +344,8 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   return schema.schema;
 }
 
+// Version shown when the URL doesn't pick one that exists: the latest active
+// version, or the newest one when every version is soft-deleted.
 function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryVersion: string | undefined) {
   const versionNumber = requestedVersionNumber(queryVersion);
 
@@ -565,8 +550,9 @@ const SubjectVersionDefinition = ({
   const { versionDeleteKind, setVersionDeleteKind, executePermanentDelete, handleRecover, executeSoftDelete } =
     useSchemaVersionActions(subjectData, schema, setSelectedVersion);
   const versionSelectId = useId();
-  const { createBoxedReason: recoverBoxedReason, deleteBoxedReason: deleteVersionBoxedReason } =
-    useEditSchemasBoxedReasons({ canCreateSchemas, canDeleteSchemas });
+  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
+  const recoverBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
+  const deleteVersionBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
 
   return (
     <div className="flex gap-10">

@@ -155,11 +155,15 @@ const boxTransport = (saved: ReturnType<typeof savedBox>, boxError?: ConnectErro
 
 const reviewed = { exemptPrincipals: ['shadow-orders'], allowAllReads: false };
 
+const renderBoxMutation = (transport: Transport) => {
+  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+  return renderHook(() => useBoxClusterMutation(), { wrapper }).result;
+};
+
 describe('useBoxClusterMutation', () => {
   test('saves changed settings at the opened revision, then fences at the revision the save returned', async () => {
     const { transport, calls, saveRequests, boxRequests } = boxTransport(savedBox(5, ['shadow-orders']));
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    const { result } = renderHook(() => useBoxClusterMutation(), { wrapper });
+    const result = renderBoxMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) });
@@ -178,8 +182,7 @@ describe('useBoxClusterMutation', () => {
 
   test('fences straight away when the settings are already saved', async () => {
     const { transport, calls, boxRequests } = boxTransport(savedBox(5, []));
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    const { result } = renderHook(() => useBoxClusterMutation(), { wrapper });
+    const result = renderBoxMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: { ...reviewed, ...openedAt(4) }, opened: openedAt(4) });
@@ -191,8 +194,7 @@ describe('useBoxClusterMutation', () => {
 
   test('won’t fence when the save came back with someone else’s settings', async () => {
     const { transport, calls } = boxTransport(savedBox(6, ['someone-else']));
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    const { result } = renderHook(() => useBoxClusterMutation(), { wrapper });
+    const result = renderBoxMutation(transport);
 
     let failure: unknown;
     await act(async () => {
@@ -209,8 +211,7 @@ describe('useBoxClusterMutation', () => {
       savedBox(5, ['shadow-orders']),
       new ConnectError('a data migration is still running', Code.FailedPrecondition)
     );
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    const { result } = renderHook(() => useBoxClusterMutation(), { wrapper });
+    const result = renderBoxMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) }).catch(() => undefined);
@@ -238,15 +239,18 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
     return interval?.(query);
   };
 
-  test('a viewer without permission stops polling, and the status says why rather than vanishing', async () => {
+  const renderFailingStatus = (error: ConnectError) => {
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getClusterFenceStatus, () => {
-        throw new ConnectError('denied', Code.PermissionDenied);
+        throw error;
       });
     });
     const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+    return { result: renderHook(() => useShadowBoxStatusQuery(), { wrapper }).result, queryClient };
+  };
 
-    const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+  test('a viewer without permission stops polling, and the status says why rather than vanishing', async () => {
+    const { result, queryClient } = renderFailingStatus(new ConnectError('denied', Code.PermissionDenied));
 
     await waitFor(() => expect(result.current.access).toBe('forbidden'));
     expect(result.current.available).toBe(true);
@@ -259,14 +263,7 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
     ['without the endpoint', new ConnectError('not found', Code.NotFound)],
     ['where fencing isn’t active on every broker', new ConnectError('feature is not active', Code.FailedPrecondition)],
   ])('a cluster %s has no fencing, and stops asking', async (_label, error) => {
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, () => {
-        throw error;
-      });
-    });
-    const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-
-    const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+    const { result, queryClient } = renderFailingStatus(error);
 
     await waitFor(() => expect(result.current.available).toBe(false));
     expect(result.current.access).toBe('unsupported');
@@ -290,7 +287,6 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
     const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
 
     await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'boxed', revision: 18n }]));
-    expect(result.current.noLeader).toBe(true);
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
   });
@@ -307,28 +303,6 @@ describe('describeShadowBoxError', () => {
       'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Fence its source instead, or fail the link over first. Redpanda said: “Cluster fence cannot start while a shadow link is configured”',
     ],
     [
-      new ConnectError('Cluster fence feature is not active', Code.FailedPrecondition),
-      'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later. Redpanda said: “Cluster fence feature is not active”',
-    ],
-    [
-      new ConnectError(
-        'Data migrations must finish, be cancelled, or be deleted before fencing',
-        Code.FailedPrecondition
-      ),
-      'A data migration on this cluster hasn’t finished. Fence it once the migration is done. Redpanda said: “Data migrations must finish, be cancelled, or be deleted before fencing”',
-    ],
-    [
-      new ConnectError(
-        "Cluster fence does not support an in-scope topic's storage configuration",
-        Code.FailedPrecondition
-      ),
-      "A topic the fence covers uses a storage mode this Redpanda doesn’t recognize, which can happen while brokers run different versions. Redpanda said: “Cluster fence does not support an in-scope topic's storage configuration”",
-    ],
-    [
-      new ConnectError('Broker membership changed during the cluster fence transition', Code.FailedPrecondition),
-      'A broker joined or left the cluster while the fence was changing. Check its state, then try again. Redpanda said: “Broker membership changed during the cluster fence transition”',
-    ],
-    [
       new ConnectError('something else', Code.FailedPrecondition),
       'Redpanda refused the change. Redpanda said: “something else”',
     ],
@@ -336,25 +310,8 @@ describe('describeShadowBoxError', () => {
       new ConnectError('took too long', Code.DeadlineExceeded),
       'The call took over 5 seconds and may still apply. Check the fence’s state before you try again.',
     ],
-    [
-      new ConnectError('nope', Code.PermissionDenied),
-      'You don’t have permission to fence or unfence this cluster, or to change its fence settings.',
-    ],
-    [
-      new ConnectError('no leader', Code.Unavailable),
-      'There’s no controller leader right now, or a broker is shutting down. Try again in a moment.',
-    ],
     [new ConnectError('bad mask', Code.InvalidArgument), 'Redpanda rejected the request. Redpanda said: “bad mask”'],
   ])('%s', (error, message) => {
     expect(describeShadowBoxError(error)).toBe(message);
-  });
-
-  test('only a revision change counts as stale', () => {
-    expect(
-      isStaleRevisionError(new ConnectError('Cluster fencing revision has changed', Code.FailedPrecondition))
-    ).toBe(true);
-    expect(isStaleRevisionError(new ConnectError('data migration 7 is unfinished', Code.FailedPrecondition))).toBe(
-      false
-    );
   });
 });

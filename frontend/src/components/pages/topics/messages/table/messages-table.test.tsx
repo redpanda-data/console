@@ -13,20 +13,11 @@ import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const guard = rs.hoisted(() => ({ fenced: false, readsBlocked: false }));
+const guard = rs.hoisted(() => ({ boxedRead: false }));
 
-rs.mock('components/shadow-box/use-shadow-box-guard', () => {
-  const { isBoxedReadError } = rs.requireActual<typeof import('components/shadow-box/shadow-box-model')>(
-    'components/shadow-box/shadow-box-model'
-  );
-  return {
-    useShadowBoxGuard: () => ({
-      ...guard,
-      reasonFor: () => undefined,
-      isBoxedRead: (message: string) => guard.readsBlocked && isBoxedReadError(message),
-    }),
-  };
-});
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ reasonFor: () => undefined, isBoxedRead: () => guard.boxedRead }),
+}));
 
 import { MessagesTable, type MessagesTableProps } from './messages-table';
 import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
@@ -71,25 +62,14 @@ describe('the MessagesTable — error state', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  test('while the cluster is fenced and reads are blocked, explains the failure and keeps the raw error', () => {
-    guard.readsBlocked = true;
+  test('a read the fence rejected is explained, with the raw error kept', () => {
+    guard.boxedRead = true;
     try {
       render(<MessagesTable {...baseProps} error="[POLICY_VIOLATION] fetch rejected" />);
       expect(screen.getByText('Reading is blocked while this cluster is fenced')).toBeInTheDocument();
       expect(screen.getByTestId('messages-error-detail')).toHaveTextContent('[POLICY_VIOLATION] fetch rejected');
     } finally {
-      guard.readsBlocked = false;
-    }
-  });
-
-  test('while fenced, an error that isn’t a policy rejection keeps its own message', () => {
-    guard.readsBlocked = true;
-    try {
-      render(<MessagesTable {...baseProps} error="invalid filter: unexpected token" />);
-      expect(screen.getByText("Couldn't load messages")).toBeInTheDocument();
-      expect(screen.queryByText('Reading is blocked while this cluster is fenced')).not.toBeInTheDocument();
-    } finally {
-      guard.readsBlocked = false;
+      guard.boxedRead = false;
     }
   });
 

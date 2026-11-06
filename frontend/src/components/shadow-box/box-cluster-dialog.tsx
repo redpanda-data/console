@@ -28,21 +28,15 @@ import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import type { ShadowLinkTopology } from 'federation/types';
 import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import {
-  type BoxSettingsInput,
-  describeShadowBoxError,
-  isStaleRevisionError,
-  useBoxClusterMutation,
-  useShadowBoxStatusQuery,
-} from 'react-query/api/shadow-box';
+import { isStaleRevisionError, useBoxClusterMutation, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { z } from 'zod';
 
-import { BoxChangedNotice } from './box-changed-notice';
+import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
 import { getBoxPreflightChecks, type PreflightStatus } from './box-preflight';
 import {
   BOX_PHASE_LABEL,
@@ -50,20 +44,18 @@ import {
   type BrokerProgress,
   canBoxFromPhase,
   linksThatStopBox,
+  type ReadPolicy,
 } from './shadow-box-model';
-import { type PrincipalSuggestion, ShadowBoxSettingsFields } from './shadow-box-settings-fields';
-import { useOpenedBox } from './use-opened-box';
-import { useReaderSuggestions } from './use-reader-suggestions';
+import {
+  type PrincipalSuggestion,
+  readPolicySchema,
+  ShadowBoxSettingsFields,
+  useReaderSuggestions,
+} from './shadow-box-settings-fields';
 
 const FALLBACK_CONFIRMATION = 'fence';
 
-const formSchema = z.object({
-  settings: z.object({
-    exemptPrincipals: z.array(z.string()),
-    allowAllReads: z.boolean(),
-  }),
-  confirmation: z.string(),
-});
+const formSchema = z.object({ settings: readPolicySchema, confirmation: z.string() });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -74,16 +66,8 @@ const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
   fail: <TonedIcon aria-label="Blocks fencing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
 };
 
-const mergePrincipals = (saved: string[], suggestions: PrincipalSuggestion[]) =>
-  Array.from(new Set([...saved, ...suggestions.map(({ principal }) => principal)]));
-
-type BoxClusterDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-};
-
 /** The form mounts with the dialog's content, so every opening starts from the box as it is then. */
-export const BoxClusterDialog = ({ open, onOpenChange }: BoxClusterDialogProps) => (
+export const BoxClusterDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent size="lg" testId="box-cluster-dialog">
       <BoxClusterForm onClose={() => onOpenChange(false)} />
@@ -98,32 +82,6 @@ const boxErrorTitle = (error: unknown, settingsSaved: boolean) => {
   return settingsSaved ? 'Settings saved, but the cluster isn’t fenced' : 'Couldn’t fence the cluster';
 };
 
-/** After this dialog's own save went through, Box failing leaves the new settings in place; says so. */
-const BoxErrorAlert = ({ error, settingsSaved }: { error: unknown; settingsSaved: boolean }) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  // The error renders below the fold of a long dialog body; bring it into view.
-  useEffect(() => {
-    if (error) {
-      ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  }, [error]);
-
-  return (
-    <Alert ref={ref} testId="box-cluster-error" variant="destructive">
-      <AlertTitle>{boxErrorTitle(error, settingsSaved)}</AlertTitle>
-      <AlertDescription>
-        <p>{describeShadowBoxError(error)}</p>
-        {settingsSaved ? (
-          <p>
-            The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
-          </p>
-        ) : null}
-      </AlertDescription>
-    </Alert>
-  );
-};
-
 /** This cluster's own links that haven't failed over: while any remain, it's a shadow and Box fails. */
 const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   if (query.data) {
@@ -135,8 +93,10 @@ const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   return query.isError ? 'error' : 'loading';
 };
 
-const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): BoxSettingsInput => ({
-  exemptPrincipals: mergePrincipals(summary.exemptPrincipals, suggestions),
+const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
+  exemptPrincipals: Array.from(
+    new Set([...summary.exemptPrincipals, ...suggestions.map(({ principal }) => principal)])
+  ),
   allowAllReads: summary.allowAllReads,
 });
 
@@ -193,11 +153,7 @@ const useBoxSettingsForm = (opened: BoxSummary, suggestions: PrincipalSuggestion
   return { form, settings, confirmation };
 };
 
-const useBoxPreflight = (
-  topology: ShadowLinkTopology | null,
-  brokers: BrokerProgress[],
-  settings: BoxSettingsInput
-) => {
+const useBoxPreflight = (topology: ShadowLinkTopology | null, brokers: BrokerProgress[], settings: ReadPolicy) => {
   const ownLinksQuery = useListShadowLinksQuery({});
   const checks = getBoxPreflightChecks({
     linksThatStopBox: ownLinksState(ownLinksQuery),
@@ -334,7 +290,18 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
         </Field>
 
         {boxCluster.error && !(changed && isStaleRevisionError(boxCluster.error)) ? (
-          <BoxErrorAlert error={boxCluster.error} settingsSaved={boxCluster.savedBox !== undefined} />
+          <BoxWriteErrorAlert
+            error={boxCluster.error}
+            testId="box-cluster-error"
+            title={boxErrorTitle(boxCluster.error, boxCluster.savedBox !== undefined)}
+          >
+            {/* After this dialog's own save went through, a failed Fence leaves the new settings in place. */}
+            {boxCluster.savedBox ? (
+              <p>
+                The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
+              </p>
+            ) : null}
+          </BoxWriteErrorAlert>
         ) : null}
       </DialogBody>
       <DialogFooter>

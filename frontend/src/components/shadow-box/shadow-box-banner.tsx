@@ -26,9 +26,7 @@ import {
   isBlockingPhase,
 } from './shadow-box-model';
 
-type ActivePhase = Exclude<BoxPhase, 'unboxed'>;
-
-const TITLE: Record<ActivePhase, string> = {
+const TITLE: Record<Exclude<BoxPhase, 'unboxed'>, string> = {
   boxing: 'This cluster is being fenced',
   boxed: 'This cluster is fenced',
   unboxing: 'This cluster is being unfenced',
@@ -43,37 +41,31 @@ const describeBanner = (summary: BoxSummary, brokers: BrokerProgress[]): string 
     : describeBoxPhase(summary, brokers);
 };
 
-const brokerName = (nodeId: number | undefined) => (nodeId === undefined ? 'a broker' : `broker ${nodeId}`);
-
 /** With no controller leader there's no cluster box to read, but a broker's own blocking copy still rejects writes. */
-const NoLeaderBanner = ({ copies }: { copies: BrokerOwnCopy[] }) => {
-  const reporting = copies
-    .flatMap((copy) =>
-      copy.phase ? [`${brokerName(copy.nodeId)} reports ${BOX_PHASE_LABEL[copy.phase].toLowerCase()}`] : []
-    )
-    .join(', ');
+const describeOwnCopies = (copies: BrokerOwnCopy[]): string => {
+  const reporting = copies.flatMap(({ nodeId, phase }) => {
+    if (!phase) {
+      return [];
+    }
+    const broker = nodeId === undefined ? 'a broker' : `broker ${nodeId}`;
+    return [`${broker} reports ${BOX_PHASE_LABEL[phase].toLowerCase()}`];
+  });
   const blockingCount = copies.filter((copy) => copy.phase && isBlockingPhase(copy.phase)).length;
-  const reported = copies.filter((copy) => copy.phase).length;
   let consequence = '';
   if (blockingCount > 0) {
     consequence =
-      blockingCount === reported
+      blockingCount === reporting.length
         ? ' Writes to those brokers are rejected.'
         : ' Writes are rejected on the brokers that report fencing or fenced.';
   }
-  return (
-    <div data-testid="shadow-box-banner">
-      <Alert className="my-4" data-phase="no-leader" icon={<TriangleAlertIcon />} role="region" variant="warning">
-        <AlertTitle>This cluster may be fenced</AlertTitle>
-        <AlertDescription>
-          <p>
-            It has no controller leader right now, so Console read each broker’s own copy of the fence: {reporting}.
-            {consequence}
-          </p>
-        </AlertDescription>
-      </Alert>
-    </div>
-  );
+  return `It has no controller leader right now, so Console read each broker’s own copy of the fence: ${reporting.join(', ')}.${consequence}`;
+};
+
+const bannerTitle = (known: boolean, summary: BoxSummary, brokers: BrokerProgress[]) => {
+  if (!known || summary.phase === 'unboxed') {
+    return 'This cluster may be fenced';
+  }
+  return isApplyingNewSettings(summary, brokers) ? 'This cluster is applying new fence settings' : TITLE[summary.phase];
 };
 
 /**
@@ -85,27 +77,12 @@ export const ShadowBoxBanner = () => {
   const { known, summary, brokers, blocking, ownCopies } = useShadowBoxStatusQuery();
   const location = useLocation();
   const onFenceTab = location.pathname === '/shadowlinks' && (location.search as { tab?: string }).tab === 'source';
-  if (onFenceTab) {
+  const { phase } = summary;
+  if (onFenceTab || !(known ? hasBoxActivity(phase) : blocking)) {
     return null;
   }
-  if (!known && blocking) {
-    return <NoLeaderBanner copies={ownCopies} />;
-  }
-  return known && hasBoxActivity(summary.phase) ? (
-    <ShadowBoxBannerAlert brokers={brokers} phase={summary.phase as ActivePhase} summary={summary} />
-  ) : null;
-};
-
-const ShadowBoxBannerAlert = ({
-  phase,
-  summary,
-  brokers,
-}: {
-  phase: ActivePhase;
-  summary: BoxSummary;
-  brokers: BrokerProgress[];
-}) => {
-  const title = isApplyingNewSettings(summary, brokers) ? 'This cluster is applying new fence settings' : TITLE[phase];
+  const title = bannerTitle(known, summary, brokers);
+  const unboxing = known && phase === 'unboxing';
 
   return (
     <div data-testid="shadow-box-banner">
@@ -114,28 +91,30 @@ const ShadowBoxBannerAlert = ({
         // my-4 on the Alert, not the wrapper: the wrapper is a direct child of #mainLayout, whose
         // `margin: 0 !important` (index-cloud-integration.scss) would drop it.
         className="my-4"
-        data-phase={phase}
-        icon={phase === 'unboxing' ? <InfoIcon /> : <TriangleAlertIcon />}
+        data-phase={known ? phase : 'no-leader'}
+        icon={unboxing ? <InfoIcon /> : <TriangleAlertIcon />}
         // A region, not an alert: it stays on screen while the fence moves, and an alert would be
         // announced again on every change.
         role="region"
-        variant={phase === 'unboxing' ? 'informative' : 'warning'}
+        variant={unboxing ? 'informative' : 'warning'}
       >
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
-          <p>{describeBanner(summary, brokers)}</p>
+          <p>{known ? describeBanner(summary, brokers) : describeOwnCopies(ownCopies)}</p>
         </AlertDescription>
-        {/* Outside AlertDescription, which restyles every descendant anchor as an inline link. */}
-        <div className="col-start-2 mt-2">
-          <Button
-            render={<Link search={{ tab: 'source' }} to="/shadowlinks" />}
-            size="sm"
-            testId="shadow-box-banner-view-status"
-            variant="outline"
-          >
-            View fence status
-          </Button>
-        </div>
+        {known ? (
+          // Outside AlertDescription, which restyles every descendant anchor as an inline link.
+          <div className="col-start-2 mt-2">
+            <Button
+              render={<Link search={{ tab: 'source' }} to="/shadowlinks" />}
+              size="sm"
+              testId="shadow-box-banner-view-status"
+              variant="outline"
+            >
+              View fence status
+            </Button>
+          </div>
+        ) : null}
       </Alert>
     </div>
   );

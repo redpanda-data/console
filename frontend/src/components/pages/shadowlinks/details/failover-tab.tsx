@@ -10,30 +10,28 @@
  */
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Progress } from 'components/redpanda-ui/components/progress';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
+import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   brokersPhrase,
   formatBoxDuration,
+  isBlockingPhase,
   type LinkIdentity,
   MTLS_LINK_NOTE,
+  type StepState,
   unreachableBrokersSubject,
 } from 'components/shadow-box/shadow-box-model';
-import { ShadowBoxStateBadge } from 'components/shadow-box/shadow-box-state-badge';
-import { useNow } from 'components/shadow-box/use-now';
+import { CanReadBadge, ShadowBoxStateBadge, StepMarker, StepTitle, useNow } from 'components/shadow-box/shadow-box-ui';
 import type { ShadowLinkPeerBox } from 'federation/types';
-import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import {
   type FailoverReadiness,
-  type FailoverStepState,
   getFailoverStepStates,
   type LagStep,
   type SourceBoxStep,
@@ -45,12 +43,7 @@ import type { UnifiedShadowLink } from '../model';
 type CloudStep = Extract<SourceBoxStep, { kind: 'cloud' }>;
 type KnownPeerBox = Extract<ShadowLinkPeerBox, { status: 'known' }>;
 
-const MARKER_STYLE: Record<FailoverStepState, string> = {
-  done: 'border-success bg-success text-success-foreground',
-  current: 'border-primary text-primary',
-  attention: 'border-warning text-warning',
-  pending: 'border-border text-muted-foreground',
-};
+type BadgeSpec = { label: string; variant: StatusBadgeVariant; pulsing?: boolean };
 
 const Step = ({
   index,
@@ -61,9 +54,9 @@ const Step = ({
   testId,
 }: {
   index: number;
-  state: FailoverStepState;
+  state: StepState;
   title: string;
-  status?: ReactNode;
+  status?: BadgeSpec;
   children: ReactNode;
   testId: string;
 }) => (
@@ -72,22 +65,15 @@ const Step = ({
     data-state={state}
     data-testid={testId}
   >
-    <span
-      aria-hidden="true"
-      className={cn(
-        'flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-label tabular-nums',
-        MARKER_STYLE[state]
-      )}
-    >
-      {state === 'done' ? <CheckIcon className="size-4" /> : String(index)}
-    </span>
+    <StepMarker index={index} large state={state} />
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h4 className="text-heading-xs">
-          <span className="sr-only">{`Step ${index}${state === 'done' ? ', complete' : ''}: `}</span>
-          {title}
-        </h4>
-        {status}
+        <StepTitle index={index} large state={state} title={title} />
+        {status ? (
+          <StatusBadge pulsing={status.pulsing} size="sm" variant={status.variant}>
+            {status.label}
+          </StatusBadge>
+        ) : null}
       </div>
       {children}
     </div>
@@ -145,25 +131,6 @@ const OpenSourceButton = ({ source }: { source: SourceBoxStep['source'] }) => {
   );
 };
 
-const ExemptBadge = ({ exempt }: { exempt: boolean | undefined }) => {
-  if (exempt === undefined) {
-    return (
-      <Badge tone="default" variant="subtle">
-        Can’t check
-      </Badge>
-    );
-  }
-  return exempt ? (
-    <Badge tone="success" variant="subtle">
-      Exempt
-    </Badge>
-  ) : (
-    <Badge tone="warning" variant="subtle">
-      Not exempt
-    </Badge>
-  );
-};
-
 const linkUserLabel = (link: LinkIdentity) => {
   if (link.authentication === 'mtls') {
     return 'an mTLS certificate';
@@ -182,7 +149,7 @@ const exemptNote = ({ box, source, linkExempt }: CloudStep, link: LinkIdentity) 
       : 'Console can’t tell which user this link reads as, so it can’t check the exempt list.';
   }
   if (linkExempt === false) {
-    return box.state === 'boxing' || box.state === 'boxed'
+    return isBlockingPhase(box.state)
       ? `${source.clusterName}’s fence rejects this link’s fetches, so lag can’t reach zero.`
       : `Once ${source.clusterName} is fenced, it would reject this link’s fetches, so lag couldn’t reach zero.`;
   }
@@ -196,7 +163,7 @@ const SettingsStepBody = ({ step, link }: { step: CloudStep; link: LinkIdentity 
       <p className="flex flex-wrap items-center gap-2 text-body-sm">
         <span className="text-muted-foreground">This link reads as</span>
         <span className={link.authentication === 'sasl' ? 'font-mono' : undefined}>{user ?? 'an unknown user'}</span>
-        <ExemptBadge exempt={step.linkExempt} />
+        <CanReadBadge canRead={step.linkExempt} no="Not exempt" yes="Exempt" />
       </p>
       {note ? (
         <p
@@ -214,7 +181,7 @@ const BoxStepBody = ({ step }: { step: CloudStep }) => {
   const { box, source } = step;
   return (
     <p className="text-body-sm text-muted-foreground">
-      {box.state === 'boxing' || box.state === 'boxed'
+      {isBlockingPhase(box.state)
         ? `Fence was called on ${source.clusterName}. Each broker rejects writes as soon as it picks it up.`
         : `Fence runs on ${source.clusterName}, with its saved settings. Each broker there rejects writes as soon as it picks it up, so do this just before you fail over.`}
     </p>
@@ -364,62 +331,26 @@ const LagStepBody = ({ lag, failedOver, onRetry }: { lag: LagStep; failedOver: b
   );
 };
 
-const LAG_BADGE: Record<LagStep['status'], ReactNode> = {
-  loading: null,
-  unavailable: null,
-  faulted: (
-    <StatusBadge size="sm" variant="destructive">
-      Topics faulted
-    </StatusBadge>
-  ),
-  'caught-up': (
-    <StatusBadge size="sm" variant="success">
-      Caught up
-    </StatusBadge>
-  ),
-  draining: (
-    <StatusBadge pulsing size="sm" variant="informative">
-      Draining
-    </StatusBadge>
-  ),
-  'waiting-for-box': (
-    <StatusBadge size="sm" variant="disabled">
-      Waiting
-    </StatusBadge>
-  ),
-  blocked: (
-    <StatusBadge size="sm" variant="warning">
-      Link can’t read
-    </StatusBadge>
-  ),
+const LAG_BADGE: Partial<Record<LagStep['status'], BadgeSpec>> = {
+  faulted: { label: 'Topics faulted', variant: 'destructive' },
+  'caught-up': { label: 'Caught up', variant: 'success' },
+  draining: { label: 'Draining', variant: 'informative', pulsing: true },
+  'waiting-for-box': { label: 'Waiting', variant: 'disabled' },
+  blocked: { label: 'Link can’t read', variant: 'warning' },
 };
 
-const STALE_BADGE = (
-  <StatusBadge size="sm" variant="warning">
-    Out of date
-  </StatusBadge>
-);
-
-const lagBadge = (lag: LagStep, failedOver: boolean): ReactNode => {
+const lagBadge = (lag: LagStep, failedOver: boolean): BadgeSpec | undefined => {
   if (failedOver) {
-    return null;
+    return;
   }
-  return lag.stale ? STALE_BADGE : LAG_BADGE[lag.status];
+  return lag.stale ? { label: 'Out of date', variant: 'warning' } : LAG_BADGE[lag.status];
 };
 
-const failoverBadge = ({ done, inProgress }: FailoverReadiness['failover']): ReactNode => {
+const failoverBadge = ({ done, inProgress }: FailoverReadiness['failover']): BadgeSpec | undefined => {
   if (done) {
-    return (
-      <StatusBadge size="sm" variant="success">
-        Failed over
-      </StatusBadge>
-    );
+    return { label: 'Failed over', variant: 'success' };
   }
-  return inProgress > 0 ? (
-    <StatusBadge pulsing size="sm" variant="informative">
-      Failing over
-    </StatusBadge>
-  ) : null;
+  return inProgress > 0 ? { label: 'Failing over', variant: 'informative', pulsing: true } : undefined;
 };
 
 /** Status only: Fail over all topics at the top of the page is the one way to fail over. */

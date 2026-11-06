@@ -576,7 +576,6 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
 const ConfigRow: FC<{
   entry: ConfigEntryExtended;
   hasEditPermissions: boolean;
-  /** Why the cluster fence rejects config changes on this topic right now, if it does. */
   fenceReason?: string;
   onEditEntry: (entry: ConfigEntryExtended) => void;
 }> = ({ entry, hasEditPermissions, fenceReason, onEditEntry }) => {

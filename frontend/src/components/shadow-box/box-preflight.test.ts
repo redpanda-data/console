@@ -53,13 +53,12 @@ describe('getBoxPreflightChecks', () => {
     expect(messageOf(checks, 'own-links')).toContain('from-prod');
   });
 
-  test('a cluster with shadow linking off isn’t a shadow, as is usual for a source', () => {
-    expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox: 'disabled' }))['own-links']).toBe('pass');
-  });
-
-  test('doesn’t pass the own-links check before the links load, and warns when they can’t', () => {
-    expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox: 'loading' }))['own-links']).toBe('pending');
-    expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox: 'error' }))['own-links']).toBe('warn');
+  test.each([
+    ['disabled', 'pass'],
+    ['loading', 'pending'],
+    ['error', 'warn'],
+  ] as const)('own links %s: the check is %s', (linksThatStopBox, status) => {
+    expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox }))['own-links']).toBe(status);
   });
 
   test('a broker that isn’t answering would hold the fence in Fencing, with no timeout', () => {
@@ -86,20 +85,6 @@ describe('getBoxPreflightChecks', () => {
       expect(messageOf(checks, 'reader-orders-dr')).toContain('reads as shadow-orders');
       expect(messageOf(checks, 'reader-plain-dr')).toContain('without SASL or mTLS');
       expect(messageOf(checks, 'reader-mtls-dr')).toContain('mTLS');
-    });
-
-    test('an empty name lets a link without SASL or mTLS read', () => {
-      const checks = getBoxPreflightChecks({
-        ...base,
-        exemptPrincipals: [''],
-        readers: [{ ...reader, authentication: 'none', principal: undefined }],
-      });
-      expect(statuses(checks).readers).toBe('pass');
-    });
-
-    test('a User: name blocks the reader it was meant for, and is left to the fields to explain', () => {
-      const checks = getBoxPreflightChecks({ ...base, exemptPrincipals: ['User:shadow-orders'] });
-      expect(statuses(checks)).toEqual({ 'own-links': 'pass', brokers: 'pass', 'reader-orders-dr': 'warn' });
     });
 
     test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {

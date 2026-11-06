@@ -21,27 +21,23 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { TriangleAlertIcon } from 'lucide-react';
-import {
-  describeShadowBoxError,
-  isStaleRevisionError,
-  useShadowBoxStatusQuery,
-  useUnboxClusterMutation,
-} from 'react-query/api/shadow-box';
+import { isStaleRevisionError, useShadowBoxStatusQuery, useUnboxClusterMutation } from 'react-query/api/shadow-box';
 import { toast } from 'sonner';
 
-import { BoxChangedNotice } from './box-changed-notice';
+import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
 import { BOX_PHASE_LABEL, isBlockingPhase } from './shadow-box-model';
-import { useOpenedBox } from './use-opened-box';
-
-type UnboxClusterDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Shown in the title; standalone Console doesn't know the cluster's name. */
-  clusterName?: string;
-};
 
 /** The body mounts with the dialog's content, so it pins the box as it was when the dialog opened. */
-export const UnboxClusterDialog = ({ open, onOpenChange, clusterName }: UnboxClusterDialogProps) => (
+export const UnboxClusterDialog = ({
+  open,
+  onOpenChange,
+  clusterName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Standalone Console doesn't know the cluster's name. */
+  clusterName?: string;
+}) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent testId="unbox-cluster-dialog">
       <UnboxClusterBody label={clusterName ?? 'this cluster'} onClose={() => onOpenChange(false)} />
@@ -105,12 +101,7 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
           </Alert>
         )}
         {unbox.error && !(changed && isStaleRevisionError(unbox.error)) ? (
-          <Alert testId="unbox-cluster-error" variant="destructive">
-            <AlertTitle>Couldn’t unfence the cluster</AlertTitle>
-            <AlertDescription>
-              <p>{describeShadowBoxError(unbox.error)}</p>
-            </AlertDescription>
-          </Alert>
+          <BoxWriteErrorAlert error={unbox.error} testId="unbox-cluster-error" title="Couldn’t unfence the cluster" />
         ) : null}
       </DialogBody>
       <DialogFooter>

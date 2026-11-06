@@ -32,8 +32,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
+import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
@@ -289,7 +288,6 @@ function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
   const [deleteRecordsModalAlive, setDeleteRecordsModalAlive] = useState(false);
-  const produceReason = useShadowBoxGuard().reasonFor('produce', topicName);
 
   const topicAcls = useApiStoreHook((s) => s.topicAcls.get(topicName));
   const modifiedConfigCount = useModifiedConfigCount(topicName);
@@ -419,18 +417,17 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
           <TopicQuickInfoStatistic topic={topic} />
           <div className="flex shrink-0 items-center gap-2 md:ml-auto">
-            <DisabledReasonTooltip reason={produceReason}>
-              <Button
-                data-testid="produce-record-button"
-                disabled={Boolean(produceReason)}
-                onClick={() => {
-                  appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
-                }}
-                variant="outline"
-              >
-                Produce Record
-              </Button>
-            </DisabledReasonTooltip>
+            <ShadowBoxedButton
+              action="produce"
+              data-testid="produce-record-button"
+              onClick={() => {
+                appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
+              }}
+              topic={topicName}
+              variant="outline"
+            >
+              Produce Record
+            </ShadowBoxedButton>
             {deleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
               setDeleteRecordsModalAlive(true);
             })}

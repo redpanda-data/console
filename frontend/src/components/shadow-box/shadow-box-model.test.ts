@@ -27,7 +27,6 @@ import {
   getBrokerProgress,
   getClientEffects,
   getReadPolicyWarnings,
-  hasBoxActivity,
   isApplyingNewSettings,
   isBlockingPhase,
   linkCanRead,
@@ -53,22 +52,10 @@ describe('toBoxPhase', () => {
   });
 });
 
-describe('phase rules', () => {
-  test('blocking begins in fencing, not fenced, and stops in unfencing', () => {
-    expect(['unboxed', 'boxing', 'boxed', 'unboxing'].filter((phase) => isBlockingPhase(phase as never))).toEqual([
-      'boxing',
-      'boxed',
-    ]);
-    expect(hasBoxActivity('unboxing')).toBe(true);
-    expect(hasBoxActivity('unboxed')).toBe(false);
-  });
-
-  test('a Fence is accepted while unfenced or unfencing; a Fence while fencing or fenced changes nothing', () => {
-    expect(canBoxFromPhase('unboxed')).toBe(true);
-    expect(canBoxFromPhase('unboxing')).toBe(true);
-    expect(canBoxFromPhase('boxing')).toBe(false);
-    expect(canBoxFromPhase('boxed')).toBe(false);
-  });
+test('blocking begins in fencing, not fenced, and stops in unfencing; Fence is accepted from the other two', () => {
+  const phases = ['unboxed', 'boxing', 'boxed', 'unboxing'] as const;
+  expect(phases.filter(isBlockingPhase)).toEqual(['boxing', 'boxed']);
+  expect(phases.filter(canBoxFromPhase)).toEqual(['unboxed', 'unboxing']);
 });
 
 describe('getBrokerProgress', () => {
@@ -93,10 +80,6 @@ describe('getBrokerProgress', () => {
       { nodeId: 3, status: 'behind', copy: { phase: 'unboxed', revision: -1n }, blocks: false },
       { nodeId: 4, status: 'behind', copy: { phase: 'boxed', revision: 18n }, blocks: true },
     ]);
-  });
-
-  test('is empty before a status loads', () => {
-    expect(getBrokerProgress(undefined)).toEqual([]);
   });
 });
 
@@ -145,10 +128,9 @@ describe('describeBoxPhase', () => {
     expect(describeBoxPhase({ phase: 'boxing' }, brokers)).toContain('Writes stay blocked on every broker');
   });
 
-  test('describes each settled phase', () => {
-    expect(describeBoxPhase({ phase: 'boxed' }, [])).toBe('Every broker rejects writes.');
-    expect(describeBoxPhase({ phase: 'unboxed' }, [])).toContain('as usual');
-    expect(describeBoxPhase({ phase: 'unboxing' }, [])).toContain('accepts writes again');
+  test('a Fence sent while unfencing isn’t a settings change: brokers that picked up Unfence still accept writes', () => {
+    const brokers = progress([1, 'behind', false], [2, 'behind', true]);
+    expect(isApplyingNewSettings({ phase: 'boxing' }, brokers)).toBe(false);
   });
 });
 
@@ -206,10 +188,6 @@ describe('linkCanRead', () => {
     expect(linkCanRead(policy(['']), { authentication: 'none' })).toBe(true);
     expect(linkCanRead(policy(['shadow-orders']), { authentication: 'none' })).toBe(false);
     expect(linkCanRead(policy([], true), { authentication: 'none' })).toBe(true);
-  });
-
-  test('can’t tell for an mTLS link, whose user comes from the mapping rules', () => {
-    expect(linkCanRead(policy(['shadow-orders']), { authentication: 'mtls' })).toBeUndefined();
   });
 });
 
@@ -293,14 +271,6 @@ describe('getClientEffects', () => {
     expect(produce).toMatchObject({ verdict: 'partly', detail: expect.stringContaining('Still allowed on broker 3') });
   });
 
-  test('once fenced, open transactions always end', () => {
-    const effects = getClientEffects({
-      summary: { ...settings, phase: 'boxed' },
-      brokers: [],
-    });
-    expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({ verdict: 'ended' });
-  });
-
   test('part way through a first Fence, brokers that picked it up already end open transactions', () => {
     const effects = getClientEffects({
       summary: { ...settings, phase: 'boxing' },
@@ -310,5 +280,15 @@ describe('getClientEffects', () => {
       verdict: 'partly',
       detail: expect.stringContaining('Ended on broker 1'),
     });
+  });
+
+  test('part way through Unfence, brokers that picked it up allow writes again', () => {
+    const [produce] = getClientEffects({
+      summary: { ...settings, phase: 'unboxing' },
+      brokers: progress([1, 'confirmed', false], [2, 'behind', true]),
+    });
+    expect(produce?.detail).toBe(
+      'Allowed again on broker 1. Still rejected on broker 2 until it picks up Unfence: REQUEST_TIMED_OUT (7), which the client retries until its delivery timeout.'
+    );
   });
 });

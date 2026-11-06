@@ -10,17 +10,17 @@
  */
 
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { Code, ConnectError } from '@connectrpc/connect';
+import { Code, ConnectError, type Transport } from '@connectrpc/connect';
 import { callUnaryMethod, createConnectQueryKey, useQuery, useTransport } from '@connectrpc/connect-query';
 import { type QueryClient, useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import {
-  BOX_SETTINGS_UPDATE_PATHS,
   type BoxPhase,
   type BoxSummary,
   type BrokerProgress,
   getBrokerProgress,
   isBlockingPhase,
   isTransitionPhase,
+  type ReadPolicy,
   SHADOW_CLUSTER_CANT_BOX,
   sameBoxSettings,
   summarizeBox,
@@ -53,24 +53,17 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
 };
 
 /**
- * The Failover tab reads the source's fence through the host, so on this shadow cluster it needs
- * only the flag; whether the host can read that fence decides the rest (see useFailoverReadiness).
+ * Serverless clusters can't be shadow link sources. The Failover tab reads the source's fence
+ * through the host, so on a shadow cluster this is all it needs; fencing this cluster also needs
+ * its backend to serve ClusterFenceService for a cluster that supports fencing.
  */
 export const isGuidedFailoverEnabled = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
 
-/**
- * Shadow boxing is shown when its flag is on and this cluster's backend serves ClusterFenceService for
- * a cluster that supports fencing. Serverless clusters can't be shadow link sources.
- */
-const useShadowBoxAvailability = (): boolean => {
-  const supported = useSupportedFeaturesStore((state) => state.clusterFence);
-  return isFeatureFlagEnabled('enableShadowBoxing') && !isServerless() && supported;
-};
-
-const statusQueryKey = () => createConnectQueryKey({ schema: getClusterFenceStatus, cardinality: 'finite' });
-
 const invalidateStatus = (queryClient: QueryClient) =>
-  queryClient.invalidateQueries({ queryKey: statusQueryKey(), exact: false });
+  queryClient.invalidateQueries({
+    queryKey: createConnectQueryKey({ schema: getClusterFenceStatus, cardinality: 'finite' }),
+    exact: false,
+  });
 
 /**
  * No fencing on this cluster, which reads as "no fence to show", not as an error: the API isn't
@@ -78,19 +71,8 @@ const invalidateStatus = (queryClient: QueryClient) =>
  */
 const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound, Code.FailedPrecondition]);
 
-/** Not answered for this viewer, and asking again won't change that until they sign in as someone else. */
-const isSettledReadError = (error: unknown): boolean =>
-  error instanceof ConnectError && (UNSUPPORTED_CODES.has(error.code) || error.code === Code.PermissionDenied);
-
-const isNoLeaderError = (error: unknown): boolean => error instanceof ConnectError && error.code === Code.Unavailable;
-
-/** No controller leader is usually brief, so ask again soon. */
-const NO_LEADER_POLL_MS = 5000;
-
 /** Why the status can't be shown, when it can't. */
-export type ShadowBoxAccess = 'ok' | 'unsupported' | 'forbidden';
-
-const accessOf = (error: unknown): ShadowBoxAccess => {
+const accessOf = (error: unknown): 'ok' | 'unsupported' | 'forbidden' => {
   if (!(error instanceof ConnectError)) {
     return 'ok';
   }
@@ -99,6 +81,14 @@ const accessOf = (error: unknown): ShadowBoxAccess => {
   }
   return error.code === Code.PermissionDenied ? 'forbidden' : 'ok';
 };
+
+/** Not answered for this viewer, and asking again won't change that until they sign in as someone else. */
+const isSettledReadError = (error: unknown): boolean => accessOf(error) !== 'ok';
+
+const isNoLeaderError = (error: unknown): boolean => error instanceof ConnectError && error.code === Code.Unavailable;
+
+/** No controller leader is usually brief, so ask again soon. */
+const NO_LEADER_POLL_MS = 5000;
 
 /** One broker's own copy, read straight from that broker while the cluster has no controller leader. */
 export type BrokerOwnCopy = { nodeId?: number; phase?: BoxPhase; revision?: bigint; errorMessage?: string };
@@ -143,14 +133,11 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
 };
 
 /** The status query, polled at the pace the box's state calls for. */
-const useShadowBoxStatusRead = (available: boolean) => {
-  const transport = useTransport();
-
-  const query = useQuery(
+const useShadowBoxStatusRead = (available: boolean) =>
+  useQuery(
     getClusterFenceStatus,
     {},
     {
-      transport,
       enabled: available,
       retry: (failureCount, error) => !(isSettledReadError(error) || isNoLeaderError(error)) && failureCount < 2,
       refetchInterval: (state) => {
@@ -170,15 +157,11 @@ const useShadowBoxStatusRead = (available: boolean) => {
     }
   );
 
-  return query;
-};
-
-/** Hands the phase to the store the write guards read, or null while it isn't known. */
+/** Hands the phase to the store that code outside React reads, or null while it isn't known. */
 const usePublishedBoxPhase = (phase: BoxPhase | null) => {
-  const setPhase = useShadowBoxStore((state) => state.setPhase);
   useEffect(() => {
-    setPhase(phase);
-  }, [phase, setPhase]);
+    useShadowBoxStore.getState().setPhase(phase);
+  }, [phase]);
 };
 
 /**
@@ -188,7 +171,7 @@ const usePublishedBoxPhase = (phase: BoxPhase | null) => {
  * and guards hide; without fencing, the Shadow Links page shows no fence at all.
  */
 export const useShadowBoxStatusQuery = () => {
-  const available = useShadowBoxAvailability();
+  const available = useSupportedFeaturesStore((state) => state.clusterFence) && isGuidedFailoverEnabled();
   const query = useShadowBoxStatusRead(available);
   const access = accessOf(query.error);
   const { parsed, brokers } = useMemo(
@@ -210,8 +193,7 @@ export const useShadowBoxStatusQuery = () => {
     known,
     /** A status loaded, but with no box or a state this version of Console doesn't know. */
     unreadable: available && query.data !== undefined && parsed === undefined,
-    /** The cluster has no controller leader right now, so `ownCopies` stand in for the status. */
-    noLeader,
+    /** Each broker's own copy, read while the cluster has no controller leader to give the status. */
     ownCopies,
     /**
      * Whether some broker rejects writes now, as far as Console can tell. Without a status, a broker's
@@ -225,17 +207,18 @@ export const useShadowBoxStatusQuery = () => {
   };
 };
 
-export type BoxSettingsInput = {
-  exemptPrincipals: string[];
-  allowAllReads: boolean;
-};
-
-const toSettingsInit = (settings: BoxSettingsInput) => ({
-  readPolicy: { exemptPrincipals: settings.exemptPrincipals, allowAllReads: settings.allowAllReads },
-});
-
-/** Matches `isStaleRevisionError`, so it reads like the server's own stale-revision failure. */
-const staleRevision = () => new ConnectError('the fence revision has changed', Code.FailedPrecondition);
+/**
+ * `read_policy` replaces the whole policy, which is the only way to remove a name;
+ * `read_policy.exempt_principals` would only add names.
+ */
+const saveSettings = async (transport: Transport, settings: ReadPolicy, expectedRevision: bigint) =>
+  (
+    await callUnaryMethod(transport, updateClusterFenceSettings, {
+      settings: { readPolicy: settings },
+      updateMask: { paths: ['read_policy'] },
+      expectedRevision,
+    })
+  ).fence;
 
 /**
  * Box always uses the saved settings. When the dialog changed them, this saves them first and boxes
@@ -252,23 +235,16 @@ export const useBoxClusterMutation = () => {
   const [savedBox, setSavedBox] = useState<BoxSummary>();
 
   const mutation = useMutation({
-    mutationFn: async ({ settings, opened }: { settings: BoxSettingsInput; opened: BoxSummary }) => {
+    mutationFn: async ({ settings, opened }: { settings: ReadPolicy; opened: BoxSummary }) => {
       let { revision } = opened;
       if (!sameBoxSettings(settings, opened)) {
-        const saved = summarizeBox(
-          (
-            await callUnaryMethod(transport, updateClusterFenceSettings, {
-              settings: toSettingsInit(settings),
-              updateMask: { paths: BOX_SETTINGS_UPDATE_PATHS },
-              expectedRevision: opened.revision,
-            })
-          ).fence
-        );
+        const saved = summarizeBox(await saveSettings(transport, settings, opened.revision));
         if (!saved) {
           throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
         if (!sameBoxSettings(settings, saved)) {
-          throw staleRevision();
+          // Worded to match isStaleRevisionError, like the server's own stale-revision failure.
+          throw new ConnectError('the fence revision has changed', Code.FailedPrecondition);
         }
         setSavedBox(saved);
         ({ revision } = saved);
@@ -291,12 +267,8 @@ export const useUpdateShadowBoxSettingsMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ settings, expectedRevision }: { settings: BoxSettingsInput; expectedRevision: bigint }) =>
-      callUnaryMethod(transport, updateClusterFenceSettings, {
-        settings: toSettingsInit(settings),
-        updateMask: { paths: BOX_SETTINGS_UPDATE_PATHS },
-        expectedRevision,
-      }),
+    mutationFn: ({ settings, expectedRevision }: { settings: ReadPolicy; expectedRevision: bigint }) =>
+      saveSettings(transport, settings, expectedRevision),
     onSettled: () => invalidateStatus(queryClient),
   });
 };
@@ -320,7 +292,7 @@ const STALE_REVISION = /revision has changed/i;
  * apart. These are hints: the server's own message is always shown with them.
  */
 const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
-  { pattern: /shadow link is configured|shadow link/i, sentence: SHADOW_CLUSTER_CANT_BOX },
+  { pattern: /shadow link/i, sentence: SHADOW_CLUSTER_CANT_BOX },
   {
     pattern: /not active|feature/i,
     sentence: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',

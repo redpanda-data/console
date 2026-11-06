@@ -34,8 +34,7 @@ import {
   getSubjectTooltipText,
   hasConfiguredOperation,
 } from './acl-rule-editing';
-import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { useAclRulesEditor } from '../hooks/use-acl-rules-editor';
 import { useAclSharedConfig } from '../hooks/use-acl-shared-config';
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
@@ -805,8 +804,6 @@ export default function CreateACL({
   renderPrincipal,
 }: CreateACLProps) {
   const schemaRegistryEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryACLApi);
-  const boxedAction = principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls';
-  const boxedReason = useShadowBoxGuard().reasonFor(boxedAction);
   const { sharedConfig, setSharedConfig, principalError, submitIfPrincipalNamed } = useAclSharedConfig(
     propSharedConfig,
     principalType
@@ -841,17 +838,16 @@ export default function CreateACL({
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />
                 <div className="mt-4 flex items-center gap-2">
-                  <DisabledReasonTooltip reason={boxedReason}>
-                    <Button
-                      data-testid="submit-acl-button"
-                      disabled={!!principalError || !hasConfiguredOperation(rules) || Boolean(boxedReason)}
-                      onClick={() =>
-                        submitIfPrincipalNamed(() => onSubmit?.(sharedConfig.principal, sharedConfig.host, rules))
-                      }
-                    >
-                      {edit ? 'Save' : 'Create'}
-                    </Button>
-                  </DisabledReasonTooltip>
+                  <ShadowBoxedButton
+                    action={principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls'}
+                    data-testid="submit-acl-button"
+                    disabled={!!principalError || !hasConfiguredOperation(rules)}
+                    onClick={() =>
+                      submitIfPrincipalNamed(() => onSubmit?.(sharedConfig.principal, sharedConfig.host, rules))
+                    }
+                  >
+                    {edit ? 'Save' : 'Create'}
+                  </ShadowBoxedButton>
                   <Button onClick={onCancel} variant="ghost">
                     Cancel
                   </Button>

@@ -47,7 +47,7 @@ import {
 } from '../../../../protogen/redpanda/api/dataplane/v1/topic_pb';
 import { useCreateTopicMutation, useTopicConfigQuery } from '../../../../react-query/api/topic';
 import { convertRetentionSizeToBytes, convertRetentionTimeToMs } from '../../../../utils/topic-utils';
-import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import {
   type AddTopicFormData,

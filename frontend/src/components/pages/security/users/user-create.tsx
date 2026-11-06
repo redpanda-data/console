@@ -28,7 +28,7 @@ import { SimpleMultiSelect } from '../../../redpanda-ui/components/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../redpanda-ui/components/select';
 import { Spinner } from '../../../redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
-import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { useCreateUserForm } from '../hooks/use-create-user-form';
 

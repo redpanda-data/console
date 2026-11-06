@@ -22,10 +22,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
-import { isFencedTopic } from 'components/shadow-box/shadow-box-model';
-import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
+import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -53,12 +50,7 @@ import {
   type DataTableRow,
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../redpanda-ui/components/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../../redpanda-ui/components/dropdown-menu';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
@@ -236,10 +228,7 @@ function useTopicNameFilter(setPageIndex: SetPageIndex) {
   return { columnFilters, handleColumnFiltersChange };
 }
 
-function buildTopicColumns(
-  onDeleteTopic: (topic: Topic) => void,
-  deleteTopicReason: string | undefined
-): DataTableColumnDef<Topic>[] {
+function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColumnDef<Topic>[] {
   return [
     {
       accessorKey: 'topicName',
@@ -290,41 +279,39 @@ function buildTopicColumns(
       header: '',
       enableSorting: false,
       meta: columnMeta({ align: 'right' as const, headWidth: 'fit' as const }),
-      cell: ({ row: { original: topic } }) => {
-        const fenceReason = isFencedTopic(topic.topicName) ? deleteTopicReason : undefined;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  aria-label={`Actions for ${topic.topicName}`}
-                  className="deleteButton"
-                  data-testid={`topic-actions-trigger-${topic.topicName}`}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <MoreHorizontalIcon className="h-4 w-4" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                data-testid={`delete-topic-button-${topic.topicName}`}
-                disabled={!hasDeletePrivilege() || Boolean(fenceReason) || undefined}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTopic(topic);
-                }}
-                variant="destructive"
+      cell: ({ row: { original: topic } }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                aria-label={`Actions for ${topic.topicName}`}
+                className="deleteButton"
+                data-testid={`topic-actions-trigger-${topic.topicName}`}
+                size="icon-sm"
+                variant="ghost"
               >
-                <TrashIcon />
-                Delete
-                <ShadowBoxedMenuHint reason={hasDeletePrivilege() ? fenceReason : undefined} />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent>
+            <ShadowBoxedMenuItem
+              action="deleteTopic"
+              data-testid={`delete-topic-button-${topic.topicName}`}
+              disabled={!hasDeletePrivilege() || undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteTopic(topic);
+              }}
+              topic={topic.topicName}
+              variant="destructive"
+            >
+              <TrashIcon />
+              Delete
+            </ShadowBoxedMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 }
@@ -341,8 +328,7 @@ function useTopicListTable({
   const { pageIndex, setPageIndex, pagination, handlePaginationChange } = useTopicListPagination();
   const { sorting, handleSortingChange } = useTopicListSorting(setPageIndex);
   const { columnFilters, handleColumnFiltersChange } = useTopicNameFilter(setPageIndex);
-  const deleteTopicReason = useShadowBoxGuard().reasonFor('deleteTopic');
-  const columns = buildTopicColumns(onDeleteTopic, deleteTopicReason);
+  const columns = buildTopicColumns(onDeleteTopic);
 
   const table = useDataTable({
     data: topics,
@@ -386,17 +372,6 @@ type TopicTableBodyProps = {
   showSkeleton: boolean;
   isFiltered: boolean;
   onCreateTopic: () => void;
-};
-
-const CreateTopicButton = ({ onClick, testId }: { onClick: () => void; testId?: string }) => {
-  const createTopicReason = useShadowBoxGuard().reasonFor('createTopic');
-  return (
-    <DisabledReasonTooltip reason={createTopicReason}>
-      <Button data-testid={testId} disabled={Boolean(createTopicReason)} onClick={onClick}>
-        Create topic
-      </Button>
-    </DisabledReasonTooltip>
-  );
 };
 
 const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreateTopic }: TopicTableBodyProps) => {
@@ -449,7 +424,9 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <CreateTopicButton onClick={onCreateTopic} />
+              <ShadowBoxedButton action="createTopic" onClick={onCreateTopic}>
+                Create topic
+              </ShadowBoxedButton>
             </EmptyContent>
           )}
         </Empty>
@@ -524,7 +501,15 @@ const TopicList: FC = () => {
         </div>
 
         <ListLayoutFilters
-          actions={<CreateTopicButton onClick={() => setIsCreateTopicModalOpen(true)} testId="create-topic-button" />}
+          actions={
+            <ShadowBoxedButton
+              action="createTopic"
+              data-testid="create-topic-button"
+              onClick={() => setIsCreateTopicModalOpen(true)}
+            >
+              Create topic
+            </ShadowBoxedButton>
+          }
         >
           <div className="relative">
             {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}

@@ -15,8 +15,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
+import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -201,8 +200,6 @@ export const ShadowLinkCreatePage = () => {
 
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
-  /** A boxed cluster rejects a new shadow link with UNAVAILABLE, and retrying won't help. */
-  const boxedReason = useShadowBoxGuard().reasonFor('createShadowLink');
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
@@ -286,11 +283,13 @@ export const ShadowLinkCreatePage = () => {
             <div className="w-1/2">
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
-                  <DisabledReasonTooltip reason={boxedReason}>
-                    <Button disabled={isCreating || Boolean(boxedReason)} onClick={form.handleSubmit(onSubmit)}>
-                      Create shadow link
-                    </Button>
-                  </DisabledReasonTooltip>
+                  <ShadowBoxedButton
+                    action="createShadowLink"
+                    disabled={isCreating}
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
+                    Create shadow link
+                  </ShadowBoxedButton>
                 ) : (
                   <Button onClick={() => next(methods)} type="button">
                     Next

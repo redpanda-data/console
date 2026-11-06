@@ -128,32 +128,36 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
   </>
 );
 
-const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => {
-  const boxed = useShadowBoxGuard().isBoxedRead(message);
-  const title = boxed ? BOXED_READS_TITLE : "Couldn't load messages";
-  const description = boxed ? BOXED_READS_DESCRIPTION : message;
-  return (
-    <Empty data-testid="messages-error">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">{boxed ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-        {boxed ? (
-          <EmptyDescription data-testid="messages-error-detail">
-            <div className="font-mono text-body-sm leading-relaxed">{message}</div>
-          </EmptyDescription>
-        ) : null}
-      </EmptyHeader>
-      {onRetry ? (
-        <EmptyContent>
-          <Button onClick={onRetry} size="sm" testId="messages-error-retry" variant="outline">
-            Retry
-          </Button>
-        </EmptyContent>
+export const ErrorState = ({
+  message,
+  onRetry,
+  boxed = false,
+}: {
+  message: string;
+  onRetry?: () => void;
+  /** The cluster fence most likely rejected the read. */
+  boxed?: boolean;
+}) => (
+  <Empty data-testid="messages-error">
+    <EmptyHeader>
+      <EmptyMedia variant="icon">{boxed ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
+      <EmptyTitle>{boxed ? BOXED_READS_TITLE : "Couldn't load messages"}</EmptyTitle>
+      <EmptyDescription>{boxed ? BOXED_READS_DESCRIPTION : message}</EmptyDescription>
+      {boxed ? (
+        <EmptyDescription data-testid="messages-error-detail">
+          <div className="font-mono text-body-sm leading-relaxed">{message}</div>
+        </EmptyDescription>
       ) : null}
-    </Empty>
-  );
-};
+    </EmptyHeader>
+    {onRetry ? (
+      <EmptyContent>
+        <Button onClick={onRetry} size="sm" testId="messages-error-retry" variant="outline">
+          Retry
+        </Button>
+      </EmptyContent>
+    ) : null}
+  </Empty>
+);
 
 const LiveWaitingState = () => (
   <Empty data-testid="messages-live-waiting">
@@ -243,6 +247,7 @@ export const MessagesTable = ({
   // states below — those read as "this topic genuinely has no matching messages," which is not
   // what a network/auth/timeout failure means.
   const showEmpty = !(error || isLoading) && rows.length === 0;
+  const boxedRead = useShadowBoxGuard().isBoxedRead(error ?? '');
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
@@ -322,7 +327,7 @@ export const MessagesTable = ({
           })}
         </TableBody>
       </Table>
-      {error ? <ErrorState message={error} onRetry={onRetry} /> : null}
+      {error ? <ErrorState boxed={boxedRead} message={error} onRetry={onRetry} /> : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
         <Empty data-testid="messages-empty">

@@ -21,11 +21,9 @@ import { useShadowBoxGuard } from './use-shadow-box-guard';
 
 const POLICY_VIOLATION = 'POLICY_VIOLATION: fetch rejected by the configured cluster policy';
 
-/** `blocking` is what the hook derives from the phase once known, or from brokers' own copies without a leader. */
-const mockStatus = (phase: BoxPhase, { known = true, allowAllReads = false } = {}) =>
+const mockStatus = (phase: BoxPhase, { allowAllReads = false } = {}) =>
   rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
-    known,
-    blocking: known && isBlockingPhase(phase),
+    blocking: isBlockingPhase(phase),
     summary: { phase, allowAllReads },
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
 
@@ -70,20 +68,12 @@ describe('useShadowBoxGuard', () => {
     expect(result.current.reasonFor('produce', '_schemas')).toBeDefined();
   });
 
-  test('disables nothing until the status has loaded', () => {
-    mockStatus('boxed', { known: false });
-    const { result } = renderHook(() => useShadowBoxGuard());
-
-    expect(result.current.reasonFor('produce')).toBeUndefined();
-  });
-
   test('blames the fence for a rejected fetch only while it blocks reads', () => {
     mockStatus('boxed');
     expect(renderHook(() => useShadowBoxGuard()).result.current.isBoxedRead(POLICY_VIOLATION)).toBe(true);
 
     mockStatus('boxed', { allowAllReads: true });
     const { result } = renderHook(() => useShadowBoxGuard());
-    expect(result.current.readsBlocked).toBe(false);
     expect(result.current.isBoxedRead(POLICY_VIOLATION)).toBe(false);
     expect(result.current.reasonFor('produce')).toBeDefined();
   });

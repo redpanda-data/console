@@ -63,7 +63,7 @@ import { SASL_MECHANISMS } from 'utils/user';
 
 import { StepSurface } from './step-surface';
 import { useListACLsQuery } from '../../../../react-query/api/acl';
-import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-alert';
+import { ShadowBoxedAlert } from '../../../shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { userSecretIds } from '../types/constants';
 import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';

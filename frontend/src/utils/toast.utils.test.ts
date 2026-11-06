@@ -212,26 +212,17 @@ describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
     ).toContain('being unfenced');
   });
 
-  test('doesn’t blame the fence for a timeout', () => {
-    useShadowBoxStore.setState({ phase: 'boxed' });
-    expect(
-      formatToastErrorMessageGRPC({ error: kafkaError('REQUEST_TIMED_OUT'), action: 'start', entity: 'pipeline' })
-    ).not.toContain('fenced');
-  });
-
-  test('leaves unrelated failed preconditions alone', () => {
-    useShadowBoxStore.setState({ phase: 'boxed' });
-    const error = new ConnectError('the group is not empty', Code.FailedPrecondition);
-    expect(formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'consumer group' })).toBe(
-      'Failed to delete consumer group: the group is not empty'
-    );
-  });
-
-  test('says nothing about a fence when the cluster isn’t fenced', () => {
-    useShadowBoxStore.setState({ phase: 'unboxed' });
-    expect(
-      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
-    ).not.toContain('fenced');
+  test.each([
+    ['a timeout', 'boxed' as const, kafkaError('REQUEST_TIMED_OUT')],
+    [
+      'an unrelated failed precondition',
+      'boxed' as const,
+      new ConnectError('group not empty', Code.FailedPrecondition),
+    ],
+    ['anything, while unfenced', 'unboxed' as const, kafkaError('POLICY_VIOLATION')],
+  ])('doesn’t blame the fence for %s', (_label, phase, error) => {
+    useShadowBoxStore.setState({ phase });
+    expect(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'topic' })).not.toContain('fence');
   });
 });
 

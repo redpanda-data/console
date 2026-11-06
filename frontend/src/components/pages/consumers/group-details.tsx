@@ -404,7 +404,6 @@ type PartitionTableProps = {
   group: GroupDescription;
   featurePatchGroup: boolean;
   featureDeleteGroupOffsets: boolean;
-  offsetsBoxedReason: string | undefined;
   onEditOffsets: (offsets: GroupOffset[]) => void;
   onDeleteOffsets: (offsets: GroupOffset[], mode: GroupDeletingMode) => void;
 };
@@ -414,12 +413,12 @@ const PartitionTable = ({
   group,
   featurePatchGroup,
   featureDeleteGroupOffsets,
-  offsetsBoxedReason,
   onEditOffsets,
   onDeleteOffsets,
 }: PartitionTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE });
+  const offsetsBoxedReason = useShadowBoxGuard().reasonFor('editConsumerOffsets');
 
   const columns: DataTableColumnDef<PartitionRow>[] = [
     {
@@ -711,7 +710,6 @@ const GroupByTopics = (groupProps: {
               featureDeleteGroupOffsets={featureDeleteGroupOffsets}
               featurePatchGroup={featurePatchGroup}
               group={groupProps.group}
-              offsetsBoxedReason={offsetsBoxedReason}
               onDeleteOffsets={groupProps.onDeleteOffsets}
               onEditOffsets={groupProps.onEditOffsets}
               partitions={entry.partitions}

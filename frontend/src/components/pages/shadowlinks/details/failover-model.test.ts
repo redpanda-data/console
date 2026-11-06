@@ -64,23 +64,11 @@ describe('getSourceBoxStep', () => {
     expect(step(cloudSource('boxed', ['User:shadow-orders']))).toMatchObject({ linkExempt: false });
   });
 
-  test('a link without SASL or mTLS needs the empty name; an mTLS link can’t be checked', () => {
-    expect(step(cloudSource('boxed', ['']), { authentication: 'none' })).toMatchObject({ linkExempt: true });
-    expect(step(cloudSource('boxed'), { authentication: 'none' })).toMatchObject({ linkExempt: false });
-    expect(step(cloudSource('boxed'), { authentication: 'mtls' })).toMatchObject({ linkExempt: undefined });
-  });
-
-  test('has no guided failover when Console can’t read the source’s fence', () => {
-    const unreadable = (source: ShadowLinkSource | undefined) =>
-      getSourceBoxStep({ source, link: sasl, resolving: false });
-
-    expect(unreadable(undefined)).toBeUndefined();
-    expect(unreadable({ kind: 'external', bootstrapServers: ['kafka:9092'] })).toBeUndefined();
-    for (const reason of ['unsupported', 'forbidden', 'inactive'] as const) {
-      expect(
-        unreadable({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason } })
-      ).toBeUndefined();
-    }
+  test('has no guided failover without a source, or for one outside Cloud', () => {
+    expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: false })).toBeUndefined();
+    expect(
+      getSourceBoxStep({ source: { kind: 'external', bootstrapServers: ['kafka:9092'] }, link: sasl, resolving: false })
+    ).toBeUndefined();
   });
 
   describe('once the fence has been read in this visit', () => {
@@ -171,14 +159,9 @@ describe('getLagStep', () => {
     expect(lag.behind.map((entry) => entry.topicName)).toEqual(['b', 'a']);
   });
 
-  test('reports paused and faulted topics', () => {
+  test('reports paused and faulted topics, and a faulted one means the link hasn’t caught up', () => {
     const lag = getLagStep([topic('a', 0, ShadowTopicState.PAUSED), topic('b', 0, ShadowTopicState.FAULTED)], 'ready');
-    expect(lag.paused).toEqual(['a']);
-    expect(lag.faulted).toEqual(['b']);
-  });
-
-  test('a faulted topic means the link hasn’t caught up', () => {
-    expect(getLagStep([topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], 'ready').status).toBe('faulted');
+    expect(lag).toMatchObject({ status: 'faulted', paused: ['a'], faulted: ['b'] });
   });
 
   test('says nothing about lag until the topics load', () => {

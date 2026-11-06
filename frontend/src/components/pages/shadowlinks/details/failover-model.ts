@@ -9,7 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { type LinkIdentity, linkCanRead } from 'components/shadow-box/shadow-box-model';
+import {
+  isBlockingPhase,
+  type LinkIdentity,
+  linkCanRead,
+  type StepState,
+} from 'components/shadow-box/shadow-box-model';
 import type { ShadowLinkPeerBox, ShadowLinkSource } from 'federation/types';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
@@ -296,11 +301,9 @@ export const getFailoverReadiness = ({
   return { box, lag, failover: { done, inProgress, ready: reason === undefined, reason } };
 };
 
-export type FailoverStepState = 'done' | 'current' | 'pending' | 'attention';
+type FailoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
 
-export type FailoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
-
-type SourceStepStates = Pick<Record<FailoverStepId, FailoverStepState>, 'settings' | 'box' | 'boxed'>;
+type SourceStepStates = Pick<Record<FailoverStepId, StepState>, 'settings' | 'box' | 'boxed'>;
 
 /** The three steps on the source, as its fence reports them. */
 const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
@@ -309,8 +312,7 @@ const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
   }
   /** A link Console can't check, such as one that uses mTLS, isn't done: the operator still has to look. */
   const settings = box.linkExempt === true ? 'done' : 'attention';
-  const phase = box.box.state;
-  if (phase === 'boxing' || phase === 'boxed') {
+  if (isBlockingPhase(box.box.state)) {
     return { settings, box: 'done', boxed: box.boxed ? 'done' : 'current' };
   }
   return { settings, box: box.linkExempt === false ? 'pending' : 'current', boxed: 'pending' };
@@ -321,11 +323,7 @@ const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
  * it is done; a finished failover marks the first five done and makes moving clients current. A
  * settings problem shows on step 1 whatever the phase, since the settings exist before Fence.
  */
-export const getFailoverStepStates = ({
-  box,
-  lag,
-  failover,
-}: FailoverReadiness): Record<FailoverStepId, FailoverStepState> => {
+export const getFailoverStepStates = ({ box, lag, failover }: FailoverReadiness): Record<FailoverStepId, StepState> => {
   if (failover.done) {
     return { settings: 'done', box: 'done', boxed: 'done', lag: 'done', failover: 'done', clients: 'current' };
   }

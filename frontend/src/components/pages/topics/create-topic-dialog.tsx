@@ -47,8 +47,7 @@ import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from '../../ui/disabled-reason-tooltip';
+import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { TonedIcon } from '../shared/toned-icon';
 
 const createTopicFormSchema = z
@@ -572,23 +571,6 @@ function refreshClusterAfterCreate() {
   });
 }
 
-/** The dialog can already be open when the box lands; a submit then would only be rejected. */
-function CreateTopicSubmitButton({ disabled, isLoading }: { disabled: boolean; isLoading: boolean }) {
-  const boxedReason = useShadowBoxGuard().reasonFor('createTopic');
-  return (
-    <DisabledReasonTooltip reason={boxedReason}>
-      <Button
-        data-testid="onOk-button"
-        disabled={disabled || Boolean(boxedReason)}
-        form="create-topic-form"
-        type="submit"
-      >
-        {isLoading ? 'Creating…' : 'Create'}
-      </Button>
-    </DisabledReasonTooltip>
-  );
-}
-
 export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { mutateAsync: createTopic } = useCreateTopicMutation();
   const [isLoading, setIsLoading] = useState(false);
@@ -721,7 +703,15 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button onClick={handleClose} variant="outline">
                 Cancel
               </Button>
-              <CreateTopicSubmitButton disabled={!form.formState.isValid || isLoading} isLoading={isLoading} />
+              <ShadowBoxedButton
+                action="createTopic"
+                data-testid="onOk-button"
+                disabled={!form.formState.isValid || isLoading}
+                form="create-topic-form"
+                type="submit"
+              >
+                {isLoading ? 'Creating…' : 'Create'}
+              </ShadowBoxedButton>
             </>
           )}
         </DialogFooter>

@@ -178,7 +178,7 @@ const TRAILING_PERIOD = /\.$/;
  * likely cause, after the broker's own message.
  */
 const shadowBoxHint = (error: ConnectError): string | undefined => {
-  const phase = useShadowBoxStore.getState().phase;
+  const { phase } = useShadowBoxStore.getState();
   if (!(phase && hasBoxActivity(phase))) {
     return;
   }

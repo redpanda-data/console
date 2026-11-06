@@ -45,7 +45,7 @@ rs.mock('../../../../react-query/api/user', () => ({
 }));
 
 rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ fenced: false, readsBlocked: false, reasonFor: () => undefined }),
+  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
 }));
 
 import { RoleDetailPageNew } from './role-detail-page-new';

@@ -61,7 +61,6 @@ const boxedActionReason = (action: BoxedAction) =>
  */
 export const useShadowBoxGuard = () => {
   const { blocking, summary } = useShadowBoxStatusQuery();
-  /** Fetches are blocked too, except for exempt users, unless the box allows every reader. */
   const readsBlocked = blocking && !summary.allowAllReads;
 
   /** Pass `topic` for a change to one topic, so the fence's internal-topic exemption applies. */
@@ -79,5 +78,5 @@ export const useShadowBoxGuard = () => {
     [readsBlocked]
   );
 
-  return { fenced: blocking, readsBlocked, reasonFor, isBoxedRead };
+  return { reasonFor, isBoxedRead };
 };

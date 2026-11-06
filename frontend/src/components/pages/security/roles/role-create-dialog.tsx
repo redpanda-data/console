@@ -29,8 +29,8 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
@@ -38,14 +38,30 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function useCreateAndOpenRole(onCreated: () => void) {
+/** The name checks, plus whether the fence rejects creating roles right now. */
+const useRoleNameChecks = (roleName: string) => ({
+  ...useRoleNameAvailability(roleName),
+  boxed: Boolean(useShadowBoxGuard().reasonFor('editRoles')),
+});
+
+export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
+  const [roleName, setRoleName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
+  const { trimmed, alreadyExists, boxed } = useRoleNameChecks(roleName);
 
-  return async (name: string) => {
+  const handleClose = () => {
+    setRoleName('');
+    setSubmitted(false);
+    onOpenChange(false);
+  };
+
+  const createAndOpenRole = async (name: string) => {
     await createRole(create(CreateRoleRequestSchema, { role: { name } }));
     toast.success(`Role "${name}" created`);
-    onCreated();
+    handleClose();
     // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
       to: '/security/roles/$roleName/details',
@@ -55,26 +71,10 @@ function useCreateAndOpenRole(onCreated: () => void) {
       toast.error('Failed to navigate', { description: String(error) });
     });
   };
-}
-
-export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
-  const [roleName, setRoleName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
-  const boxedReason = useShadowBoxGuard().reasonFor('editRoles');
-
-  const handleClose = () => {
-    setRoleName('');
-    setSubmitted(false);
-    onOpenChange(false);
-  };
-
-  const createAndOpenRole = useCreateAndOpenRole(handleClose);
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists || boxedReason) {
+    if (!trimmed || alreadyExists || boxed) {
       return;
     }
     setIsSubmitting(true);
@@ -111,14 +111,13 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <DisabledReasonTooltip reason={boxedReason}>
-            <Button
-              disabled={!trimmed || (submitted && alreadyExists) || isSubmitting || Boolean(boxedReason)}
-              onClick={handleSubmit}
-            >
-              Create
-            </Button>
-          </DisabledReasonTooltip>
+          <ShadowBoxedButton
+            action="editRoles"
+            disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
+            onClick={handleSubmit}
+          >
+            Create
+          </ShadowBoxedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

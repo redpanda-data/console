@@ -66,8 +66,7 @@ import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
-import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from '../../ui/disabled-reason-tooltip';
+import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -217,10 +216,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
     This component is about the "Save", "Validate", and "Cancel" buttons at the bottom of the page.
     Those buttons are shared across both page variants, thus it was extracted into its own component
  */
-const SchemaPageButtons = ({
-  parentSubjectName,
-  editorState,
-}: {
+const SchemaPageButtons = (p: {
   parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
   editorState: SchemaEditorStateHelper;
 }) => {
@@ -235,9 +231,9 @@ const SchemaPageButtons = ({
   } | null>(null);
   const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
+  const { editorState } = p;
   const isMissingName = !editorState.computedSubjectName;
   const isMissingContext = srContextsEnabled && !editorState.context;
-  const boxedReason = useShadowBoxGuard().reasonFor('editSchemas');
 
   return (
     <>
@@ -271,41 +267,33 @@ const SchemaPageButtons = ({
         </Alert>
       ) : null}
       <div className="mt-4 flex gap-4">
-        <DisabledReasonTooltip reason={boxedReason}>
-          <Button
-            disabled={
-              Boolean(boxedReason) ||
-              isCreating ||
-              isMissingName ||
-              isMissingContext ||
-              isValidating ||
-              editorState.isInvalidKeyOrValue
+        <ShadowBoxedButton
+          action="editSchemas"
+          disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
+          onClick={async () => {
+            // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
+            setValidating(true);
+            const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
+
+            if (!validationResponse.isValid || validationResponse.isCompatible === false) {
+              // Something is wrong with the schema, abort
+              // Persist error only after user closes the modal
+              setValidationDialogResult(validationResponse);
+              return;
             }
-            onClick={async () => {
-              // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
-              setValidating(true);
-              const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
 
-              if (!validationResponse.isValid || validationResponse.isCompatible === false) {
-                // Something is wrong with the schema, abort
-                // Persist error only after user closes the modal
-                setValidationDialogResult(validationResponse);
-                return;
-              }
+            // Clear any previous validation errors
+            setPersistentValidationError(null);
 
-              // Clear any previous validation errors
-              setPersistentValidationError(null);
-
-              // try to create the schema
-              setCreating(true);
-              await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
-            }}
-            testId="schema-create-save-btn"
-            variant="primary"
-          >
-            {isCreating ? 'Creating...' : 'Save'}
-          </Button>
-        </DisabledReasonTooltip>
+            // try to create the schema
+            setCreating(true);
+            await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
+          }}
+          testId="schema-create-save-btn"
+          variant="primary"
+        >
+          {isCreating ? 'Creating...' : 'Save'}
+        </ShadowBoxedButton>
 
         <Button
           disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}
@@ -330,8 +318,8 @@ const SchemaPageButtons = ({
 
         <Button
           onClick={() => {
-            if (parentSubjectName) {
-              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(parentSubjectName)}`);
+            if (p.parentSubjectName) {
+              appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
             } else {
               appGlobal.historyReplace('/schema-registry');
             }

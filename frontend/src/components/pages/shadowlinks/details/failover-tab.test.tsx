@@ -32,6 +32,10 @@ const topics = (lags: number[]): FailoverTopic[] =>
     totalLag: BigInt(lag),
   }));
 
+/** orders-events, then orders-audit, each with no lag, in these states. */
+const inStates = (...states: ShadowTopicState[]): FailoverTopic[] =>
+  states.map((state, index) => ({ topicName: ['orders-events', 'orders-audit'][index] ?? '', state, totalLag: 0n }));
+
 const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
@@ -270,12 +274,7 @@ describe('the FailoverTab', () => {
     });
 
     test('a faulted topic keeps failover not ready and names the topic', () => {
-      renderTab(
-        readinessFor(cloudSource('boxed'), [
-          { topicName: 'orders-events', state: ShadowTopicState.ACTIVE, totalLag: 0n },
-          { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
-        ])
-      );
+      renderTab(readinessFor(cloudSource('boxed'), inStates(ShadowTopicState.ACTIVE, ShadowTopicState.FAULTED)));
 
       expect(screen.getByTestId('failover-faulted-topics')).toHaveTextContent('orders-audit has faulted');
       expect(screen.getByTestId('failover-step-lag')).toHaveTextContent('Topics faulted');
@@ -286,10 +285,7 @@ describe('the FailoverTab', () => {
   describe('once failover starts', () => {
     test('while topics are still failing over, says so and keeps moving clients for later', () => {
       renderTab(
-        readinessFor(cloudSource('boxed'), [
-          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-          { topicName: 'orders-audit', state: ShadowTopicState.FAILING_OVER, totalLag: 0n },
-        ])
+        readinessFor(cloudSource('boxed'), inStates(ShadowTopicState.FAILED_OVER, ShadowTopicState.FAILING_OVER))
       );
 
       expect(screen.queryByTestId('failover-done')).not.toBeInTheDocument();
@@ -299,11 +295,7 @@ describe('the FailoverTab', () => {
     });
 
     test('after failover, moving clients is the last step: repoint them and leave the source fenced', () => {
-      renderTab(
-        readinessFor(cloudSource('boxed'), [
-          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-        ])
-      );
+      renderTab(readinessFor(cloudSource('boxed'), inStates(ShadowTopicState.FAILED_OVER)));
 
       expect(screen.getByTestId('failover-done')).toHaveTextContent('Every topic of orders-dr has failed over');
       expect(screen.getByTestId('failover-step-clients')).toHaveAttribute('data-state', 'current');
@@ -315,12 +307,7 @@ describe('the FailoverTab', () => {
     });
 
     test('a failover that left a faulted topic behind still finishes', () => {
-      renderTab(
-        readinessFor(cloudSource('boxed'), [
-          { topicName: 'orders-events', state: ShadowTopicState.FAILED_OVER, totalLag: 0n },
-          { topicName: 'orders-audit', state: ShadowTopicState.FAULTED, totalLag: 0n },
-        ])
-      );
+      renderTab(readinessFor(cloudSource('boxed'), inStates(ShadowTopicState.FAILED_OVER, ShadowTopicState.FAULTED)));
 
       expect(screen.getByTestId('failover-done')).toHaveTextContent('apart from orders-audit, which has faulted');
     });

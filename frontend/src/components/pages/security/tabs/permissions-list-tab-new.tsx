@@ -19,9 +19,7 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
+import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, Trash2Icon, UserIcon, UsersIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -96,17 +94,9 @@ type PrincipalRowProps = {
   onToggle: () => void;
   onDelete: (deleteUser: boolean, deleteAcls: boolean) => Promise<void>;
   canDeleteUser: boolean;
-  editAclsReason?: string;
 };
 
-const PrincipalRow: FC<PrincipalRowProps> = ({
-  group,
-  isExpanded,
-  onToggle,
-  onDelete,
-  canDeleteUser,
-  editAclsReason,
-}) => {
+const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDelete, canDeleteUser }) => {
   const [pendingDelete, setPendingDelete] = useState<'user-and-acls' | 'user-only' | 'acls-only' | null>(null);
   const aclsDelete = usePendingAction();
   const closeAclsDialog = () => {
@@ -243,8 +233,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({
                     <DropdownMenuContent>
                       {group.principalType === 'User' && (
                         <>
-                          <DropdownMenuItem
-                            disabled={!canDeleteUser || Boolean(editAclsReason)}
+                          <ShadowBoxedMenuItem
+                            action="editAcls"
+                            disabled={!canDeleteUser}
                             onClick={(e) => {
                               e.stopPropagation();
                               setPendingDelete('user-and-acls');
@@ -253,8 +244,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({
                           >
                             <Trash2Icon />
                             Delete (User and ACLs)
-                            <ShadowBoxedMenuHint reason={canDeleteUser ? editAclsReason : undefined} />
-                          </DropdownMenuItem>
+                          </ShadowBoxedMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
                             onClick={(e) => {
@@ -268,8 +258,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({
                           </DropdownMenuItem>
                         </>
                       )}
-                      <DropdownMenuItem
-                        disabled={Boolean(editAclsReason)}
+                      <ShadowBoxedMenuItem
+                        action="editAcls"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPendingDelete('acls-only');
@@ -278,8 +268,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({
                       >
                         <Trash2Icon />
                         Delete (ACLs only)
-                        <ShadowBoxedMenuHint reason={editAclsReason} />
-                      </DropdownMenuItem>
+                      </ShadowBoxedMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -362,17 +351,6 @@ const PrincipalRowsSkeleton = () => (
   </div>
 );
 
-const CreateAclButton = ({ onClick }: { onClick: () => void }) => {
-  const editAclsReason = useShadowBoxGuard().reasonFor('editAcls');
-  return (
-    <DisabledReasonTooltip reason={editAclsReason}>
-      <Button disabled={Boolean(editAclsReason)} onClick={onClick}>
-        Create ACL
-      </Button>
-    </DisabledReasonTooltip>
-  );
-};
-
 const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCreateAcl: () => void }) => {
   if (searchQuery) {
     return <div className="py-8 text-center text-body text-muted-foreground">No principals match your search.</div>;
@@ -380,7 +358,11 @@ const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCre
   return (
     <div className="rounded-md border">
       <SecurityEmptyState
-        action={<CreateAclButton onClick={onCreateAcl} />}
+        action={
+          <ShadowBoxedButton action="editAcls" onClick={onCreateAcl}>
+            Create ACL
+          </ShadowBoxedButton>
+        }
         description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
         docsHref={docsLinks.selfManaged.acl}
         icon={<KeyRoundIcon />}
@@ -402,8 +384,6 @@ const PrincipalList = ({ groups, isLoading, searchQuery, onCreateAcl, rows }: Pr
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const deletePrincipal = usePrincipalDeletion((err) => setAclFailed({ err }));
-  const { reasonFor } = useShadowBoxGuard();
-  const editAclsReason = reasonFor('editAcls');
 
   const renderContent = () => {
     if (isLoading) {
@@ -417,7 +397,6 @@ const PrincipalList = ({ groups, isLoading, searchQuery, onCreateAcl, rows }: Pr
         {groups.map((group) => (
           <PrincipalRow
             canDeleteUser={Boolean(featureDeleteUser) && group.isScramUser}
-            editAclsReason={editAclsReason}
             group={group}
             isExpanded={rows.isExpanded(group.principal)}
             key={group.principal}
@@ -475,7 +454,13 @@ export const PermissionsListTabNew: FC = () => {
           </DescriptionWithHelp>
         </div>
 
-        <ListLayoutFilters actions={<CreateAclButton onClick={() => setCreateAclOpen(true)} />}>
+        <ListLayoutFilters
+          actions={
+            <ShadowBoxedButton action="editAcls" onClick={() => setCreateAclOpen(true)}>
+              Create ACL
+            </ShadowBoxedButton>
+          }
+        >
           <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."

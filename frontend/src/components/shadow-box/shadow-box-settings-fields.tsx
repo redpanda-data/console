@@ -18,22 +18,38 @@ import { Field, FieldContent, FieldDescription, FieldLabel } from 'components/re
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronRightIcon, PlusIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { BoxSettingsInput } from 'react-query/api/shadow-box';
+import { useEffect, useMemo, useState } from 'react';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { z } from 'zod';
 
-import { getReadPolicyWarnings, SUPERUSERS_NOT_EXEMPT } from './shadow-box-model';
+import { exemptNameFor, getReadPolicyWarnings, type ReadPolicy, SUPERUSERS_NOT_EXEMPT } from './shadow-box-model';
+
+export const readPolicySchema = z.object({ exemptPrincipals: z.array(z.string()), allowAllReads: z.boolean() });
 
 /** A user a link that reads from this cluster authenticates as; `''` for a link with no SASL or mTLS. */
 export type PrincipalSuggestion = { principal: string; linkName: string };
 
+/** The users of the shadow links that read from this cluster, offered as exempt principals. */
+export const useReaderSuggestions = () => {
+  const readers = useShadowBoxStore((state) => state.topology?.readers);
+  return useMemo<PrincipalSuggestion[]>(
+    () =>
+      (readers ?? []).flatMap((reader) => {
+        const principal = exemptNameFor(reader);
+        return principal === undefined ? [] : [{ principal, linkName: reader.linkName }];
+      }),
+    [readers]
+  );
+};
+
 type ShadowBoxSettingsFieldsProps = {
-  value: BoxSettingsInput;
-  onChange: (value: BoxSettingsInput) => void;
+  value: ReadPolicy;
+  onChange: (value: ReadPolicy) => void;
   /** Users the links that read from this cluster authenticate as, when the host knows them. */
   suggestions: PrincipalSuggestion[];
 };
 
-const WARNING_VARIANT = { danger: 'destructive', warning: 'warning', info: 'informative' } as const;
+export const WARNING_VARIANT = { danger: 'destructive', warning: 'warning', info: 'informative' } as const;
 
 /** Which links each principal lets finish copying, so a pre-added name explains itself. */
 const linkNotesFor = (suggestions: PrincipalSuggestion[]) => {
@@ -45,7 +61,7 @@ const linkNotesFor = (suggestions: PrincipalSuggestion[]) => {
 };
 
 type PolicyFieldProps = {
-  value: BoxSettingsInput;
+  value: ReadPolicy;
   setPrincipals: (exemptPrincipals: string[]) => void;
   suggestions: PrincipalSuggestion[];
 };

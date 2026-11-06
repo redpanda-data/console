@@ -17,7 +17,6 @@ import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import {
@@ -26,13 +25,12 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
-import { createContext, useContext, useState } from 'react';
+import { useState } from 'react';
 import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
 
@@ -69,9 +67,6 @@ const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValu
 
 const ROLE_SKELETON_WIDTHS = { name: 'md', assignedPrincipals: 'sm' } as const;
 
-// Context, not props, so `roleColumns` closes over nothing and lives at module scope.
-const EditRolesReasonContext = createContext<string | undefined>(undefined);
-
 const roleColumns: DataTableColumnDef<RoleEntry>[] = [
   {
     accessorKey: 'name',
@@ -103,22 +98,9 @@ const roleColumns: DataTableColumnDef<RoleEntry>[] = [
   },
 ];
 
-// The box only adds a reason to Create role where the user could otherwise create one.
-function useRoleWriteReasons() {
-  const createRole = useCreateRoleAvailability();
-  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
-  const createRoleBoxedReason = createRole.disabled ? undefined : editRolesReason;
-  return {
-    editRolesReason,
-    createRoleBoxedReason,
-    createRoleDisabled: createRole.disabled || Boolean(createRoleBoxedReason),
-    createRoleTooltip: [createRole.reason, createRoleBoxedReason].filter(Boolean).join(' '),
-  };
-}
-
 export const RolesTabNew: FC = () => {
   useSecurityPageHeader('roles');
-  const { editRolesReason, createRoleBoxedReason, createRoleDisabled, createRoleTooltip } = useRoleWriteReasons();
+  const createRole = useCreateRoleAvailability();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { roles, isLoading, isError, error } = useRoleListData();
   const columnFilters = useNameColumnFilter();
@@ -154,17 +136,18 @@ export const RolesTabNew: FC = () => {
             <Tooltip>
               <TooltipTrigger
                 render={hoverableWhenDisabled(
-                  createRoleBoxedReason,
+                  createRole.boxedReason,
                   <Button
                     data-testid="create-role-button"
-                    disabled={createRoleDisabled}
+                    disabled={createRole.disabled || Boolean(createRole.boxedReason)}
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     Create role
                   </Button>
                 )}
               />
-              {Boolean(createRoleTooltip) && <TooltipContent>{createRoleTooltip}</TooltipContent>}
+              {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
+              {createRole.boxedReason ? <TooltipContent>{createRole.boxedReason}</TooltipContent> : null}
             </Tooltip>
           }
         >
@@ -176,34 +159,35 @@ export const RolesTabNew: FC = () => {
         </ListLayoutFilters>
 
         <ListLayoutContent>
-          <EditRolesReasonContext.Provider value={editRolesReason}>
-            <SecurityListTable
-              emptyState={
-                <SecurityEmptyState
-                  action={
-                    isFiltered ? undefined : (
-                      <DisabledReasonTooltip reason={createRoleBoxedReason}>
-                        <Button disabled={createRoleDisabled} onClick={() => setCreateDialogOpen(true)}>
-                          Create role
-                        </Button>
-                      </DisabledReasonTooltip>
-                    )
-                  }
-                  description={
-                    isFiltered
-                      ? 'Try adjusting your filters.'
-                      : 'Roles are groups of ACLs that can be assigned to principals. Create one to start managing access control.'
-                  }
-                  docsHref={docsLinks.selfManaged.rbac}
-                  icon={<ShieldCheckIcon />}
-                  title={isFiltered ? 'No roles match your search' : 'No roles yet'}
-                />
-              }
-              isLoading={isLoading}
-              skeletonWidths={ROLE_SKELETON_WIDTHS}
-              table={table}
-            />
-          </EditRolesReasonContext.Provider>
+          <SecurityListTable
+            emptyState={
+              <SecurityEmptyState
+                action={
+                  isFiltered ? undefined : (
+                    <DisabledReasonTooltip reason={createRole.boxedReason}>
+                      <Button
+                        disabled={createRole.disabled || Boolean(createRole.boxedReason)}
+                        onClick={() => setCreateDialogOpen(true)}
+                      >
+                        Create role
+                      </Button>
+                    </DisabledReasonTooltip>
+                  )
+                }
+                description={
+                  isFiltered
+                    ? 'Try adjusting your filters.'
+                    : 'Roles are groups of ACLs that can be assigned to principals. Create one to start managing access control.'
+                }
+                docsHref={docsLinks.selfManaged.rbac}
+                icon={<ShieldCheckIcon />}
+                title={isFiltered ? 'No roles match your search' : 'No roles yet'}
+              />
+            }
+            isLoading={isLoading}
+            skeletonWidths={ROLE_SKELETON_WIDTHS}
+            table={table}
+          />
         </ListLayoutContent>
 
         <DataTablePagination table={table} />
@@ -216,7 +200,6 @@ export const RolesTabNew: FC = () => {
 const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount: number }) => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const { mutateAsync: deleteRoleMutation } = useDeleteRoleMutation();
-  const boxedReason = useContext(EditRolesReasonContext);
   const onDelete = async () => {
     await deleteRoleMutation(create(DeleteRoleRequestSchema, { roleName, deleteAcls: true }));
   };
@@ -246,9 +229,9 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           }
         />
         <DropdownMenuContent>
-          <DropdownMenuItem
+          <ShadowBoxedMenuItem
+            action="editRoles"
             data-testid={`delete-role-button-${roleName}`}
-            disabled={Boolean(boxedReason)}
             onClick={(e) => {
               e.stopPropagation();
               setIsDeleteOpen(true);
@@ -257,8 +240,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           >
             <Trash2Icon />
             Delete
-            <ShadowBoxedMenuHint reason={boxedReason} />
-          </DropdownMenuItem>
+          </ShadowBoxedMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

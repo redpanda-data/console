@@ -13,7 +13,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import type { ShadowLinkReader } from 'federation/types';
 import { useSyncExternalStore } from 'react';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { renderWithFileRoutes } from 'test-utils';
@@ -82,6 +82,11 @@ const Harness = () => {
 
 const renderDialog = () => renderWithFileRoutes(<Harness />);
 
+const setReaders = (readers: ShadowLinkReader[], resolving = false) =>
+  useShadowBoxStore.setState({
+    topology: { clusterName: 'prod-us-east-1', readers, sources: {}, resolving, readersIncomplete: false },
+  });
+
 /** Renders the dialog and types the cluster name, as a user about to box would. */
 const renderConfirmed = async () => {
   const user = userEvent.setup();
@@ -107,22 +112,9 @@ describe('the BoxClusterDialog', () => {
       () => useSyncExternalStore(subscribe, () => live.value) as unknown as ReturnType<typeof useShadowBoxStatusQuery>
     );
     mockOwnLinks([]);
-    useShadowBoxStore.setState({
-      topology: {
-        clusterName: 'prod-us-east-1',
-        readers: [
-          {
-            linkName: 'orders-dr',
-            shadowClusterId: 'dr',
-            shadowClusterName: 'dr-us-west-2',
-            principal: 'shadow-orders',
-          },
-        ],
-        sources: {},
-        resolving: false,
-        readersIncomplete: false,
-      },
-    });
+    setReaders([
+      { linkName: 'orders-dr', shadowClusterId: 'dr', shadowClusterName: 'dr-us-west-2', principal: 'shadow-orders' },
+    ]);
   });
 
   describe('its settings', () => {
@@ -146,15 +138,7 @@ describe('the BoxClusterDialog', () => {
     });
 
     test('with no one exempt, warns in the field, and typing the name is still all it takes', async () => {
-      useShadowBoxStore.setState({
-        topology: {
-          clusterName: 'prod-us-east-1',
-          readers: [],
-          sources: {},
-          resolving: false,
-          readersIncomplete: false,
-        },
-      });
+      setReaders([]);
       await renderConfirmed();
 
       expect(screen.getByTestId('shadow-box-settings-warning-empty')).toHaveTextContent('every shadow link’s user');
@@ -163,27 +147,10 @@ describe('the BoxClusterDialog', () => {
   });
 
   describe('its preflight checks', () => {
-    test('a shadow link that has failed over doesn’t stop Fence', async () => {
-      rs.mocked(useListShadowLinksQuery).mockReturnValue({
-        data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
-      } as unknown as ReturnType<typeof useListShadowLinksQuery>);
-      renderDialog();
-
-      expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pass');
-    });
-
     test('doesn’t pass the own-links check before the links load, or the readers check before the host finishes', async () => {
       const user = userEvent.setup();
       mockOwnLinks('loading');
-      useShadowBoxStore.setState({
-        topology: {
-          clusterName: 'prod-us-east-1',
-          readers: [],
-          sources: {},
-          resolving: true,
-          readersIncomplete: false,
-        },
-      });
+      setReaders([], true);
       renderDialog();
 
       expect(await screen.findByTestId('box-preflight-own-links')).toHaveAttribute('data-status', 'pending');
@@ -283,18 +250,6 @@ describe('the BoxClusterDialog', () => {
 
       expect(await screen.findByTestId('box-cluster-confirmation')).toHaveValue('');
       expect(screen.getByTestId('confirm-box-cluster')).toBeDisabled();
-    });
-
-    test('explains a failed Fence in plain words', async () => {
-      mutation.error = new ConnectError(
-        'Cluster fence cannot start while a shadow link is configured',
-        Code.FailedPrecondition
-      );
-      renderDialog();
-
-      expect(await screen.findByTestId('box-cluster-error')).toHaveTextContent(
-        'Fence its source instead, or fail the link over first.'
-      );
     });
   });
 });

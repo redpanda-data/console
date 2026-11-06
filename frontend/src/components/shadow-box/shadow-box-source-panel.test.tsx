@@ -13,6 +13,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ShadowLinkTopology } from 'federation/types';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { renderWithFileRoutes } from 'test-utils';
@@ -55,7 +56,6 @@ const mockStatus = (
     available: true,
     access: 'ok',
     unreadable: false,
-    noLeader: false,
     ownCopies: [],
     blocking: isBlockingPhase(phase),
     summary: {
@@ -92,6 +92,19 @@ const readers = [
   },
   { linkName: 'edge-dr', shadowClusterId: 'edge', shadowClusterName: 'edge-dr', authentication: 'mtls' as const },
 ];
+
+const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = rs.fn()) =>
+  useShadowBoxStore.setState({
+    openCluster,
+    topology: {
+      clusterName: 'prod-us-east-1',
+      readers,
+      sources: {},
+      resolving: false,
+      readersIncomplete: false,
+      ...overrides,
+    },
+  });
 
 describe('the ShadowBoxSourcePanel', () => {
   beforeEach(() => {
@@ -151,18 +164,6 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(screen.getByTestId('shadow-box-effect-transaction')).toHaveTextContent('Ended by the fence');
       expect(screen.getByTestId('shadow-box-step-wait')).toHaveAttribute('data-state', 'done');
       expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('shadow-orders');
-    });
-
-    test('names the phase once, in the badge and the stepper, and keeps the settings to the settings', () => {
-      mockStatus('boxed', [confirmed(1)]);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
-
-      expect(screen.getByTestId('shadow-box-since')).toHaveTextContent('Since');
-      expect(screen.getByTestId('shadow-box-since')).not.toHaveTextContent('Fenced');
-      expect(screen.getByTestId('shadow-box-headline')).toHaveTextContent('Every broker rejects writes.');
-      expect(screen.getByTestId('shadow-box-headline')).not.toHaveTextContent('Fenced');
-      expect(screen.getByTestId('shadow-box-settings-card')).not.toHaveTextContent('Scope');
-      expect(screen.getByTestId('shadow-box-good-to-know')).not.toHaveTextContent('REQUEST_TIMED_OUT');
     });
 
     test('with no one exempt, says once, loudly, that the fence locks out every shadow link', () => {
@@ -255,9 +256,7 @@ describe('the ShadowBoxSourcePanel', () => {
     });
 
     test('embedded, lists Cloud’s readers and whether the settings let each read', () => {
-      useShadowBoxStore.setState({
-        topology: { clusterName: 'prod-us-east-1', readers, sources: {}, resolving: false, readersIncomplete: false },
-      });
+      setTopology();
       mockStatus('boxed');
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
@@ -272,10 +271,7 @@ describe('the ShadowBoxSourcePanel', () => {
     test('embedded, a reader’s name opens its Failover tab on the shadow cluster', async () => {
       const user = userEvent.setup();
       const openCluster = rs.fn();
-      useShadowBoxStore.setState({
-        openCluster,
-        topology: { clusterName: 'prod-us-east-1', readers, sources: {}, resolving: false, readersIncomplete: false },
-      });
+      setTopology({}, openCluster);
       mockStatus('boxed');
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
@@ -283,37 +279,15 @@ describe('the ShadowBoxSourcePanel', () => {
       expect(openCluster).toHaveBeenCalledWith('dr', '/shadowlinks/orders-dr?tab=failover');
     });
 
-    test('embedded, while Cloud is still finding links, doesn’t say that none read from the cluster', () => {
-      useShadowBoxStore.setState({
-        topology: {
-          clusterName: 'prod-us-east-1',
-          readers: [],
-          sources: {},
-          resolving: true,
-          readersIncomplete: false,
-        },
-      });
+    test.each([
+      ['still finding links', { resolving: true }, 'shadow-box-readers-loading'],
+      ['couldn’t check every link', { readersIncomplete: true }, 'shadow-box-readers-incomplete'],
+    ])('embedded, when Cloud is %s, doesn’t say that none read from the cluster', (_label, overrides, testId) => {
+      setTopology({ readers: [], ...overrides });
       mockStatus('unboxed');
       renderWithFileRoutes(<ShadowBoxSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-readers-loading')).toBeVisible();
-      expect(screen.queryByText('No links read from this cluster')).not.toBeInTheDocument();
-    });
-
-    test('embedded, when Cloud couldn’t check every link, says the list may be missing some', () => {
-      useShadowBoxStore.setState({
-        topology: {
-          clusterName: 'prod-us-east-1',
-          readers: [],
-          sources: {},
-          resolving: false,
-          readersIncomplete: true,
-        },
-      });
-      mockStatus('unboxed');
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
-
-      expect(screen.getByTestId('shadow-box-readers-incomplete')).toHaveTextContent('may be missing some');
+      expect(screen.getByTestId(testId)).toBeVisible();
       expect(screen.queryByText('No links read from this cluster')).not.toBeInTheDocument();
     });
   });

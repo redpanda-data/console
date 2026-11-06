@@ -26,10 +26,8 @@ rs.mock('../../../config', () => {
 const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
 
 rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  /** Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic. */
+  // Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic.
   useShadowBoxGuard: () => ({
-    fenced: guard.reason !== undefined,
-    readsBlocked: false,
     reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
   }),
 }));
@@ -57,14 +55,14 @@ const entries: ConfigEntryExtended[] = [
   makeEntry({ name: 'some.unknown.option', category: 'Totally Unknown' }),
 ];
 
-function renderEditor() {
+function renderEditor(targetTopic = 'my-topic') {
   return render(
     <ConfigurationEditor
       entries={entries}
       onForceRefresh={() => {
         // no op - test callback
       }}
-      targetTopic="my-topic"
+      targetTopic={targetTopic}
     />
   );
 }
@@ -78,35 +76,16 @@ describe('the TopicConfiguration', () => {
     guard.reason = undefined;
   });
 
-  describe('while the cluster is fenced', () => {
-    const FENCED = 'You can’t change topic configuration while this cluster is fenced. Unfence it first.';
+  test.each([
+    ['a user topic opens no editor', 'my-topic', 0],
+    ['an internal topic stays editable, since the fence only covers user topics', '_schemas', 1],
+  ])('while the cluster is fenced, %s', async (_case, topic, dialogs) => {
+    guard.reason = 'You can’t change topic configuration while this cluster is fenced. Unfence it first.';
+    const user = userEvent.setup();
+    renderEditor(topic);
 
-    test('a user topic’s values open no editor, and the banner alone says why up front', async () => {
-      guard.reason = FENCED;
-      const user = userEvent.setup();
-      renderEditor();
-
-      expect(screen.queryByText(FENCED)).not.toBeInTheDocument();
-      await user.click(within(getSection('Retention')).getByRole('button'));
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    test('an internal topic stays editable, since the fence only covers user topics', async () => {
-      guard.reason = FENCED;
-      const user = userEvent.setup();
-      render(
-        <ConfigurationEditor
-          entries={entries}
-          onForceRefresh={() => {
-            // no op - test callback
-          }}
-          targetTopic="_schemas"
-        />
-      );
-
-      await user.click(within(getSection('Retention')).getByRole('button'));
-      expect(await screen.findByRole('dialog')).toBeVisible();
-    });
+    await user.click(within(getSection('Retention')).getByRole('button'));
+    expect(screen.queryAllByRole('dialog')).toHaveLength(dialogs);
   });
 
   describe('grouped layout', () => {

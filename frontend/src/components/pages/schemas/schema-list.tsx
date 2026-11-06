@@ -28,7 +28,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { InputStart } from 'components/redpanda-ui/components/input';
@@ -38,7 +37,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ShadowBoxedMenuHint } from 'components/shadow-box/shadow-boxed-menu-hint';
+import { ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
@@ -159,6 +158,7 @@ function useSchemaRegistryOverview() {
   const { data: contexts } = useSchemaRegistryContextsQuery(schemaRegistryContextsSupported);
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
+  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
 
   const refreshData = useCallback(() => {
     refetchMode();
@@ -180,6 +180,9 @@ function useSchemaRegistryOverview() {
     isError,
     schemaMode,
     schemaCompatibility,
+    // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
+    manageBoxedReason: api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason,
+    createBoxedReason: api.userData?.canCreateSchemas === false ? undefined : editSchemasReason,
   };
 }
 
@@ -357,8 +360,6 @@ function useSchemaListColumns(
   selectedContext: string,
   setDeleteTarget: (target: DeleteTarget) => void
 ) {
-  const { reasonFor } = useShadowBoxGuard();
-  const editSchemasReason = reasonFor('editSchemas');
   return useMemo<DataTableColumnDef<EnrichedSubject>[]>(
     () => [
       {
@@ -504,9 +505,10 @@ function useSchemaListColumns(
               }
             />
             <DropdownMenuContent>
-              <DropdownMenuItem
+              <ShadowBoxedMenuItem
+                action="editSchemas"
                 data-testid={`schema-list-delete-btn-${subject.name}`}
-                disabled={api.userData?.canDeleteSchemas === false || Boolean(editSchemasReason) || undefined}
+                disabled={api.userData?.canDeleteSchemas === false || undefined}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
@@ -516,16 +518,13 @@ function useSchemaListColumns(
               >
                 <TrashIcon />
                 {subject.isSoftDeleted ? 'Delete permanently' : 'Delete'}
-                <ShadowBoxedMenuHint
-                  reason={api.userData?.canDeleteSchemas === false ? undefined : editSchemasReason}
-                />
-              </DropdownMenuItem>
+              </ShadowBoxedMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
       },
     ],
-    [isAllContext, selectedContext, setDeleteTarget, editSchemasReason]
+    [isAllContext, selectedContext, setDeleteTarget]
   );
 }
 
@@ -655,86 +654,6 @@ function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteT
   );
 }
 
-// The mode and compatibility edit buttons; a missing permission is shown instead of the shadow box.
-function EditRegistrySettingButton({
-  ariaLabel,
-  testId,
-  onClick,
-}: {
-  ariaLabel: string;
-  testId: string;
-  onClick: () => void;
-}) {
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
-  const boxedReason = api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={hoverableWhenDisabled(
-          boxedReason,
-          <Button
-            aria-label={ariaLabel}
-            data-testid={testId}
-            disabled={api.userData?.canManageSchemaRegistry === false || Boolean(boxedReason)}
-            onClick={onClick}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <EditIcon />
-          </Button>
-        )}
-      />
-      {api.userData?.canManageSchemaRegistry === false && (
-        <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-      )}
-      {boxedReason ? <TooltipContent side="top">{boxedReason}</TooltipContent> : null}
-    </Tooltip>
-  );
-}
-
-function CreateSchemaButton({
-  schemaRegistryContextsSupported,
-  selectedContext,
-}: {
-  schemaRegistryContextsSupported: boolean;
-  selectedContext: string;
-}) {
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
-  const boxedReason = api.userData?.canCreateSchemas === false ? undefined : editSchemasReason;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={hoverableWhenDisabled(
-          boxedReason,
-          <Button
-            data-testid="schema-list-create-btn"
-            disabled={api.userData?.canCreateSchemas === false || Boolean(boxedReason)}
-            onClick={() => {
-              // Carry the selected context into the create page URL so the
-              // form pre-fills it and survives a reload. "All" has no single
-              // context to pre-fill, so it uses the plain create page.
-              if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
-                const contextName = selectedContext === DEFAULT_CONTEXT_ID ? 'default' : selectedContext;
-                appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);
-              } else {
-                appGlobal.historyPush('/schema-registry/create');
-              }
-            }}
-          >
-            Create new schema
-          </Button>
-        )}
-      />
-      {api.userData?.canCreateSchemas === false && (
-        <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
-      )}
-      {boxedReason ? <TooltipContent side="top">{boxedReason}</TooltipContent> : null}
-    </Tooltip>
-  );
-}
-
 const SchemaList: FC = () => {
   const { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted } = useSchemaListSearch();
   const {
@@ -745,6 +664,8 @@ const SchemaList: FC = () => {
     isError,
     schemaMode,
     schemaCompatibility,
+    manageBoxedReason,
+    createBoxedReason,
   } = useSchemaRegistryOverview();
   const { selectedContext, setSelectedContext, derivedContexts, displayMode, displayCompat, isAllContext } =
     useSelectedSchemaContext({
@@ -808,17 +729,33 @@ const SchemaList: FC = () => {
           value={
             <div className="flex items-center gap-1.5">
               {displayMode ?? <Skeleton variant="text" width="sm" />}
-              <EditRegistrySettingButton
-                ariaLabel="Edit mode"
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-mode')
-                }
-                testId="schema-list-edit-mode-btn"
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  render={hoverableWhenDisabled(
+                    manageBoxedReason,
+                    <Button
+                      aria-label="Edit mode"
+                      data-testid="schema-list-edit-mode-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageBoxedReason)}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-mode')
+                      }
+                      size="icon-xs"
+                      variant="ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  )}
+                />
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+                {manageBoxedReason ? <TooltipContent side="top">{manageBoxedReason}</TooltipContent> : null}
+              </Tooltip>
             </div>
           }
         />
@@ -832,17 +769,33 @@ const SchemaList: FC = () => {
           value={
             <div className="flex items-center gap-1.5">
               {displayCompat ?? <Skeleton variant="text" width="sm" />}
-              <EditRegistrySettingButton
-                ariaLabel="Edit compatibility"
-                onClick={() =>
-                  isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                    ? appGlobal.historyPush(
-                        `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                      )
-                    : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                }
-                testId="schema-list-edit-compatibility-btn"
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  render={hoverableWhenDisabled(
+                    manageBoxedReason,
+                    <Button
+                      aria-label="Edit compatibility"
+                      data-testid="schema-list-edit-compatibility-btn"
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageBoxedReason)}
+                      onClick={() =>
+                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
+                          ? appGlobal.historyPush(
+                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
+                            )
+                          : appGlobal.historyPush('/schema-registry/edit-compatibility')
+                      }
+                      size="icon-xs"
+                      variant="ghost"
+                    >
+                      <EditIcon />
+                    </Button>
+                  )}
+                />
+                {api.userData?.canManageSchemaRegistry === false && (
+                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
+                )}
+                {manageBoxedReason ? <TooltipContent side="top">{manageBoxedReason}</TooltipContent> : null}
+              </Tooltip>
             </div>
           }
         />
@@ -893,10 +846,34 @@ const SchemaList: FC = () => {
           </div>
           <ListLayoutFilters
             actions={
-              <CreateSchemaButton
-                schemaRegistryContextsSupported={schemaRegistryContextsSupported}
-                selectedContext={selectedContext}
-              />
+              <Tooltip>
+                <TooltipTrigger
+                  render={hoverableWhenDisabled(
+                    createBoxedReason,
+                    <Button
+                      data-testid="schema-list-create-btn"
+                      disabled={api.userData?.canCreateSchemas === false || Boolean(createBoxedReason)}
+                      onClick={() => {
+                        // Carry the selected context into the create page URL so the
+                        // form pre-fills it and survives a reload. "All" has no single
+                        // context to pre-fill, so it uses the plain create page.
+                        if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
+                          const contextName = selectedContext === DEFAULT_CONTEXT_ID ? 'default' : selectedContext;
+                          appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);
+                        } else {
+                          appGlobal.historyPush('/schema-registry/create');
+                        }
+                      }}
+                    >
+                      Create new schema
+                    </Button>
+                  )}
+                />
+                {api.userData?.canCreateSchemas === false && (
+                  <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
+                )}
+                {createBoxedReason ? <TooltipContent side="top">{createBoxedReason}</TooltipContent> : null}
+              </Tooltip>
             }
           >
             <div data-testid="schema-list-search-field">

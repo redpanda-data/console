@@ -83,19 +83,15 @@ describe('the ShadowBoxSettingsDialog', () => {
     });
   });
 
-  test('says a save while fenced re-applies the fence', async () => {
-    mockStatus('boxed');
-    renderWithFileRoutes(<Harness />);
-
-    expect(await screen.findByTestId('shadow-box-settings-rebox')).toHaveTextContent('back in Fencing');
-  });
-
-  test('a save while unfencing doesn’t claim to re-apply the fence', async () => {
-    mockStatus('unboxing');
+  test.each([
+    ['boxed', true],
+    ['unboxing', false],
+  ] as const)('a save while %s re-applies the fence: %s', async (phase, reboxes) => {
+    mockStatus(phase);
     renderWithFileRoutes(<Harness />);
 
     await screen.findByTestId('save-shadow-box-settings');
-    expect(screen.queryByTestId('shadow-box-settings-rebox')).not.toBeInTheDocument();
+    expect(screen.queryByText('back in Fencing', { exact: false }) !== null).toBe(reboxes);
   });
 
   test('drops unsaved edits on Cancel', async () => {

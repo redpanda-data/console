@@ -21,6 +21,9 @@ export type BoxPhase = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
 
 export const BOX_PHASES: readonly BoxPhase[] = ['unboxed', 'boxing', 'boxed', 'unboxing'];
 
+/** A numbered step on the Cluster fence and Failover tabs. */
+export type StepState = 'done' | 'current' | 'pending' | 'attention';
+
 export const BOX_PHASE_LABEL: Record<BoxPhase, string> = {
   unboxed: 'Unfenced',
   boxing: 'Fencing',
@@ -42,7 +45,6 @@ const PHASE_BY_STATE: Partial<Record<ClusterFenceState, BoxPhase>> = {
 export const toBoxPhase = (state: ClusterFenceState | undefined): BoxPhase | undefined =>
   state === undefined ? undefined : PHASE_BY_STATE[state];
 
-/** Every phase but `unboxed`: something about the box is in place or still settling. */
 export const hasBoxActivity = (phase: BoxPhase): boolean => phase !== 'unboxed';
 
 /**
@@ -54,22 +56,15 @@ export const isBlockingPhase = (phase: BoxPhase): boolean => phase === 'boxing' 
 
 export const isTransitionPhase = (phase: BoxPhase): boolean => phase === 'boxing' || phase === 'unboxing';
 
-/** Box is accepted from these phases; Box while boxing or boxed changes nothing. */
+/** Box while boxing or boxed changes nothing. */
 export const canBoxFromPhase = (phase: BoxPhase): boolean => phase === 'unboxed' || phase === 'unboxing';
-
-/**
- * - `confirmed`: its copy matches the cluster's box, state and revision.
- * - `behind`: it answered with an older copy, so it holds the move.
- * - `not-answering`: it didn't answer, so it holds the move until it comes back or leaves the cluster.
- */
-export type BrokerCopyStatus = 'confirmed' | 'behind' | 'not-answering';
 
 export type BrokerProgress = {
   nodeId: number;
-  status: BrokerCopyStatus;
-  /** The broker's own copy, when it answered. */
+  /** `confirmed` once its copy matches the cluster's box in state and revision; either other status holds a move. */
+  status: 'confirmed' | 'behind' | 'not-answering';
   copy?: { phase: BoxPhase | undefined; revision: bigint };
-  /** Whether this broker rejects writes now: its copy is boxing or boxed. Undefined when it didn't answer. */
+  /** Whether this broker rejects writes now. Undefined when it didn't answer. */
   blocks: boolean | undefined;
   /** As the broker reported it. Its wording varies, so show it, never match on it. */
   errorMessage?: string;
@@ -92,14 +87,14 @@ export const getBrokerProgress = (response: GetClusterFenceStatusResponse | unde
   });
 };
 
-export type BoxSummary = {
+export type ReadPolicy = { exemptPrincipals: string[]; allowAllReads: boolean };
+
+export type BoxSummary = ReadPolicy & {
   phase: BoxPhase;
   /** An int64 that grows by uneven steps; compare for equality only. */
   revision: bigint;
   /** Absent until the state first changes. */
   stateChangedAt?: Date;
-  exemptPrincipals: string[];
-  allowAllReads: boolean;
 };
 
 export const UNBOXED_SUMMARY: BoxSummary = {
@@ -124,10 +119,8 @@ export const summarizeBox = (box: ClusterFence | undefined): BoxSummary | undefi
   };
 };
 
-type BoxSettingsValues = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads'>;
-
 /** Redpanda keeps exempt names as a set, so order and repeats don't count. */
-export const sameBoxSettings = (a: BoxSettingsValues, b: BoxSettingsValues): boolean => {
+export const sameBoxSettings = (a: ReadPolicy, b: ReadPolicy): boolean => {
   const names = new Set(a.exemptPrincipals);
   const otherNames = new Set(b.exemptPrincipals);
   return (
@@ -172,19 +165,22 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 export const unreachableBrokersSubject = (nodeIds: readonly number[]) =>
   `${capitalize(brokersPhrase(nodeIds))} ${nodeIds.length === 1 ? 'isn’t' : 'aren’t'}`;
 
-const idsWith = (brokers: readonly BrokerProgress[], status: BrokerCopyStatus) =>
+const idsWith = (brokers: readonly BrokerProgress[], status: BrokerProgress['status']) =>
   brokers.filter((broker) => broker.status === status).map((broker) => broker.nodeId);
 
 /**
  * A settings change while boxed puts the cluster back in Boxing, but brokers keep blocking on their
  * old copy, so writes never unblock. Told apart from a first Box by a broker still holding a
- * blocking copy of an earlier revision.
+ * blocking copy of an earlier revision, and none that accepts writes: a Box sent while unboxing
+ * also leaves blocking copies behind, next to brokers that already picked up Unbox.
  */
 export const isApplyingNewSettings = (
   summary: Pick<BoxSummary, 'phase'>,
   brokers: readonly BrokerProgress[]
 ): boolean =>
-  summary.phase === 'boxing' && brokers.some((broker) => broker.status === 'behind' && broker.blocks === true);
+  summary.phase === 'boxing' &&
+  brokers.some((broker) => broker.status === 'behind' && broker.blocks === true) &&
+  !brokers.some((broker) => broker.blocks === false);
 
 /**
  * One sentence for what the phase means for writes. It doesn't name the phase, which the badge or
@@ -231,11 +227,7 @@ export const describeHeldMove = (
 };
 
 /** How a shadow link authenticates to its source, which decides which exempt name lets it read. */
-export type LinkAuthentication = 'sasl' | 'mtls' | 'none';
-
-export type LinkIdentity = { authentication?: LinkAuthentication; principal?: string };
-
-type ReadPolicy = Pick<BoxSummary, 'exemptPrincipals' | 'allowAllReads'>;
+export type LinkIdentity = { authentication?: 'sasl' | 'mtls' | 'none'; principal?: string };
 
 /**
  * Whether a box with this read policy lets the link fetch. Names are bare user names, matched
@@ -271,7 +263,7 @@ export const MTLS_LINK_NOTE =
 
 const USER_PREFIX = 'User:';
 
-export type ReadPolicyWarning = {
+type ReadPolicyWarning = {
   id: string;
   /** `danger` locks out every shadow link; `warning` matches nobody; `info` explains a rule. */
   severity: 'danger' | 'warning' | 'info';
@@ -280,7 +272,7 @@ export type ReadPolicyWarning = {
   fix?: { label: string; principals: (principals: string[]) => string[] };
 };
 
-export const EMPTY_EXEMPT_WARNING =
+const EMPTY_EXEMPT_WARNING =
   'No one is exempt, so the fence blocks every consumer, including every shadow link’s user, and no link can finish copying. Redpanda only warns about this in the controller leader’s log.';
 
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
@@ -318,12 +310,6 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   return warnings;
 };
 
-/**
- * Field mask paths for the settings Console edits. `read_policy` replaces the whole policy, which
- * is the only way to remove a name; `read_policy.exempt_principals` would only add names.
- */
-export const BOX_SETTINGS_UPDATE_PATHS = ['read_policy'];
-
 const BOXED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?box|cluster.?fence/i;
 
 /**
@@ -358,31 +344,33 @@ export const BOXED_READS_DESCRIPTION =
   'The fence only lets exempt users read topics, and superusers aren’t exempt unless they’re listed. Add Console’s user to the exempt list, turn on Allow all reads, or unfence the cluster.';
 
 /** `unknown` when Console can't tell, such as for a link that uses mTLS. */
-export type ClientEffectVerdict = 'allowed' | 'rejected' | 'partly' | 'ended' | 'open' | 'unknown';
+type ClientEffectVerdict = 'allowed' | 'rejected' | 'partly' | 'ended' | 'open' | 'unknown';
 
 export type ClientEffect = { id: string; label: string; verdict: ClientEffectVerdict; detail: string };
 
-const PRODUCE_REJECTION = 'REQUEST_TIMED_OUT (7), which the client retries until its delivery timeout';
+type Verdict = Pick<ClientEffect, 'verdict' | 'detail'>;
 
-/** Who rejects what right now: during a move, only the brokers that picked it up. */
-const blockingSplit = (brokers: readonly BrokerProgress[]) => ({
-  blocking: brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId),
-  open: brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId),
-});
+const picks = (nodeIds: readonly number[]) => (nodeIds.length === 1 ? 'it picks' : 'they pick');
 
-const rejectionVerdict = (
+/**
+ * During a move only the brokers that picked it up reject. `rejection` is what a client sees from
+ * them; a transaction isn't rejected but ended, so it has its own words.
+ */
+const splitVerdict = (
   summary: Pick<BoxSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
-  rejection: string
-): Pick<ClientEffect, 'verdict' | 'detail'> => {
-  const { blocking, open } = blockingSplit(brokers);
-  if (brokers.length > 0 && blocking.length > 0 && open.length > 0) {
+  rejection: string,
+  words = { allowed: 'Allowed', rejected: 'Rejected', unboxingReason: `: ${rejection}` }
+): Verdict => {
+  const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
+  const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
+  if (blocking.length > 0 && open.length > 0) {
     return {
       verdict: 'partly',
       detail:
         summary.phase === 'unboxing'
-          ? `Allowed again on ${brokersPhrase(open)}. Still rejected on ${brokersPhrase(blocking)} until ${blocking.length === 1 ? 'it picks' : 'they pick'} up Unfence: ${rejection}.`
-          : `Rejected on ${brokersPhrase(blocking)}: ${rejection}. Still allowed on ${brokersPhrase(open)} until ${open.length === 1 ? 'it picks' : 'they pick'} up the fence.`,
+          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until ${picks(blocking)} up Unfence${words.unboxingReason}.`
+          : `${words.rejected} on ${brokersPhrase(blocking)}: ${rejection}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until ${picks(open)} up the fence.`,
     };
   }
   const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
@@ -391,29 +379,21 @@ const rejectionVerdict = (
     : { verdict: 'allowed', detail: 'Allowed.' };
 };
 
+const PRODUCE_REJECTION = 'REQUEST_TIMED_OUT (7), which the client retries until its delivery timeout';
+const FETCH_REJECTION = 'POLICY_VIOLATION (44)';
 const TRANSACTION_ENDING = 'aborted, or committed if the coordinator had already decided to commit';
 
-/**
- * Each broker ends the open transactions it coordinates as soon as it picks up the fence, not once
- * the cluster is fenced, and keeps retrying the ones that fail.
- */
-const transactionEffect = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): ClientEffect => {
-  const base = { id: 'transaction', label: 'An open transaction' };
-  const { blocking, open } = blockingSplit(brokers);
-  if (brokers.length > 0 && blocking.length > 0 && open.length > 0) {
-    return {
-      ...base,
-      verdict: 'partly',
-      detail:
-        summary.phase === 'unboxing'
-          ? `Open again on ${brokersPhrase(open)}. Still ended on ${brokersPhrase(blocking)} until ${blocking.length === 1 ? 'it picks' : 'they pick'} up Unfence.`
-          : `Ended on ${brokersPhrase(blocking)}: ${TRANSACTION_ENDING}. Still open on ${brokersPhrase(open)} until ${open.length === 1 ? 'it picks' : 'they pick'} up the fence.`,
-    };
+/** Each broker ends the open transactions it coordinates as soon as it picks up the fence. */
+const transactionVerdict = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
+  const verdict = splitVerdict(summary, brokers, TRANSACTION_ENDING, {
+    allowed: 'Open',
+    rejected: 'Ended',
+    unboxingReason: '',
+  });
+  if (verdict.verdict === 'rejected') {
+    return { verdict: 'ended', detail: `Ended by the fence as each broker picks it up: ${TRANSACTION_ENDING}.` };
   }
-  const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
-  return blocks
-    ? { ...base, verdict: 'ended', detail: `Ended by the fence as each broker picks it up: ${TRANSACTION_ENDING}.` }
-    : { ...base, verdict: 'open', detail: 'Open.' };
+  return verdict.verdict === 'allowed' ? { verdict: 'open', detail: 'Open.' } : verdict;
 };
 
 /**
@@ -430,21 +410,20 @@ export const getClientEffects = ({
   links?: readonly (LinkIdentity & { linkName: string })[];
 }): ClientEffect[] => {
   const anyBlocking = brokers.length > 0 ? brokers.some((broker) => broker.blocks) : isBlockingPhase(summary.phase);
-  const reads = (rejection: string, canRead: boolean | undefined): Pick<ClientEffect, 'verdict' | 'detail'> => {
+  const linkRead = (canRead: boolean | undefined): Verdict => {
     if (canRead === undefined && anyBlocking) {
       return { verdict: 'unknown', detail: MTLS_LINK_NOTE };
     }
     return canRead === false
-      ? rejectionVerdict(summary, brokers, rejection)
+      ? splitVerdict(summary, brokers, FETCH_REJECTION)
       : { verdict: 'allowed', detail: 'Allowed.' };
   };
-  const fetchRejection = 'POLICY_VIOLATION (44)';
   const linkRows: ClientEffect[] =
     links && links.length > 0
       ? links.map((link) => ({
           id: `link-${link.linkName}`,
           label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
-          ...reads(fetchRejection, linkCanRead(summary, link)),
+          ...linkRead(linkCanRead(summary, link)),
         }))
       : [
           {
@@ -455,31 +434,24 @@ export const getClientEffects = ({
               : { verdict: 'unknown' as const, detail: 'Allowed only if its user is on the exempt list.' }),
           },
         ];
+  const rejected = (rejection: string) => splitVerdict(summary, brokers, rejection);
   return [
-    { id: 'produce', label: 'A producer writes', ...rejectionVerdict(summary, brokers, PRODUCE_REJECTION) },
+    { id: 'produce', label: 'A producer writes', ...rejected(PRODUCE_REJECTION) },
     {
       id: 'consume',
       label: 'An app’s consumer fetches',
       ...(summary.allowAllReads
         ? { verdict: 'allowed' as const, detail: 'Allowed: Allow all reads is on.' }
-        : rejectionVerdict(summary, brokers, fetchRejection)),
+        : rejected(FETCH_REJECTION)),
     },
     ...linkRows,
     {
       id: 'commit',
       label: 'A consumer group joins, heartbeats or commits',
-      ...rejectionVerdict(
-        summary,
-        brokers,
-        'COORDINATOR_NOT_AVAILABLE (15), which clients retry until the fence lifts'
-      ),
+      ...rejected('COORDINATOR_NOT_AVAILABLE (15), which clients retry until the fence lifts'),
     },
-    {
-      id: 'topic-config',
-      label: 'A topic config change',
-      ...rejectionVerdict(summary, brokers, 'POLICY_VIOLATION (44)'),
-    },
-    { id: 'schema', label: 'A Schema Registry write', ...rejectionVerdict(summary, brokers, 'HTTP 412') },
-    transactionEffect(summary, brokers),
+    { id: 'topic-config', label: 'A topic config change', ...rejected(FETCH_REJECTION) },
+    { id: 'schema', label: 'A Schema Registry write', ...rejected('HTTP 412') },
+    { id: 'transaction', label: 'An open transaction', ...transactionVerdict(summary, brokers) },
   ];
 };

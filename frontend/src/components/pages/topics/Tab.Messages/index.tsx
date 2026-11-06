@@ -13,17 +13,7 @@ import '../../../../utils/array-extensions';
 import { ErrorIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from 'components/redpanda-ui/components/empty';
-import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
 import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
-import { LockIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 
@@ -38,6 +28,7 @@ import {
 import { MessageSearchControls } from './message-search-controls';
 import { MessagesResults } from './messages-results';
 import type { Topic } from '../../../../state/rest-interfaces';
+import { ErrorState } from '../messages/table/messages-table';
 
 type TopicMessageViewProps = {
   topic: Topic;
@@ -50,31 +41,10 @@ type TopicMessageViewProps = {
         - add back summary of quick search  <this.FilterSummary />
 */
 
-/** A read the box rejects isn't an outage, so it gets an explanation rather than an error. */
-const BoxedReadState = ({ message, onRetry }: { message: string; onRetry: () => void }) => (
-  <Empty data-testid="messages-boxed">
-    <EmptyHeader>
-      <EmptyMedia variant="icon">
-        <LockIcon />
-      </EmptyMedia>
-      <EmptyTitle>{BOXED_READS_TITLE}</EmptyTitle>
-      <EmptyDescription>{BOXED_READS_DESCRIPTION}</EmptyDescription>
-      <EmptyDescription>
-        <div className="font-mono text-body-sm leading-relaxed">{message}</div>
-      </EmptyDescription>
-    </EmptyHeader>
-    <EmptyContent>
-      <Button onClick={onRetry} size="sm" variant="outline">
-        Retry
-      </Button>
-    </EmptyContent>
-  </Empty>
-);
-
 const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
   const boxed = useShadowBoxGuard().isBoxedRead(error.message);
   if (boxed) {
-    return <BoxedReadState message={error.message} onRetry={onRetry} />;
+    return <ErrorState boxed message={error.message} onRetry={onRetry} />;
   }
   return (
     <Alert icon={<ErrorIcon />} variant="destructive">

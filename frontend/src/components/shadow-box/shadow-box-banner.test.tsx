@@ -49,6 +49,9 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
     ownCopies: [],
   } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
 
+const renderBanner = (initialLocation = '/topics') =>
+  renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation, transport: routeLoaderTransport });
+
 describe('the ShadowBoxBanner', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -59,70 +62,62 @@ describe('the ShadowBoxBanner', () => {
     rs.useRealTimers();
   });
 
-  test('renders nothing while the cluster is unfenced', () => {
+  test('renders nothing while the cluster is unfenced, or on the Cluster fence tab', () => {
     mockStatus('unboxed');
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
+    const { unmount } = renderBanner();
+    expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
+    unmount();
+
+    mockStatus('boxed');
+    renderBanner('/shadowlinks?tab=source');
     expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
   });
 
   test('a fenced cluster gets a title, one sentence, and one way to its fence status', () => {
     mockStatus('boxed');
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
+    renderBanner();
 
     const banner = screen.getByTestId('shadow-box-banner');
     expect(banner).toHaveTextContent('This cluster is fenced');
     expect(banner).toHaveTextContent('Every broker rejects writes.');
-    expect(banner).not.toHaveTextContent('REQUEST_TIMED_OUT');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByRole('link')).toBe(screen.getByTestId('shadow-box-banner-view-status'));
     expect(screen.getByTestId('shadow-box-banner-view-status')).toHaveAttribute('href', '/shadowlinks?tab=source');
   });
 
+  test.each([
+    ['fencing', 'boxing', [{ nodeId: 2, status: 'behind', blocks: false }], 'This cluster is being fenced'],
+    // A settings change while fenced: writes stay blocked, so it isn't a new fence.
+    ['applying settings', 'boxing', [{ nodeId: 2, status: 'behind', blocks: true }], 'applying new fence settings'],
+    ['unfencing', 'unboxing', [], 'This cluster is being unfenced'],
+  ] as const)('while %s, the title says so', (_label, phase, brokers, title) => {
+    mockStatus(phase, {}, [...brokers]);
+    renderBanner();
+    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent(title);
+  });
+
   test('warns when the fence exempts nobody', () => {
     mockStatus('boxed', { exemptPrincipals: [] });
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
-
+    renderBanner();
     expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent('It exempts nobody');
   });
 
-  test('while fencing, says brokers block as they pick it up', () => {
-    mockStatus('boxing', { stateChangedAt: new Date(NOW) }, [
-      { nodeId: 1, status: 'confirmed', blocks: true },
-      { nodeId: 2, status: 'not-answering', blocks: undefined },
-    ]);
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
+  test('with no controller leader, reports each broker’s own copy and whether writes are rejected', () => {
+    rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+      known: false,
+      blocking: true,
+      summary: { phase: 'unboxed', revision: -1n, exemptPrincipals: [], allowAllReads: false },
+      brokers: [],
+      ownCopies: [
+        { nodeId: 1, phase: 'boxed', revision: 4n },
+        { nodeId: 2, errorMessage: 'timed out' },
+      ],
+    } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
+    renderBanner();
 
     const banner = screen.getByTestId('shadow-box-banner');
-    expect(banner).toHaveTextContent('This cluster is being fenced');
-    expect(banner).toHaveTextContent('Each broker rejects writes as soon as it picks up the fence.');
-  });
-
-  test('a settings change while fenced reads as writes staying blocked, not as a new fence', () => {
-    mockStatus('boxing', {}, [
-      { nodeId: 1, status: 'confirmed', blocks: true },
-      { nodeId: 2, status: 'behind', blocks: true },
-    ]);
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
-
-    const banner = screen.getByTestId('shadow-box-banner');
-    expect(banner).toHaveTextContent('This cluster is applying new fence settings');
-    expect(banner).toHaveTextContent('Writes stay blocked on every broker');
-  });
-
-  test('while unfencing, says writes come back as brokers pick it up', () => {
-    mockStatus('unboxing', { allowAllReads: true });
-    renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation: '/topics' });
-
-    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent('This cluster is being unfenced');
-  });
-
-  test('isn’t shown on the Cluster fence tab, which shows the same and more', () => {
-    mockStatus('boxed');
-    renderWithFileRoutes(<ShadowBoxBanner />, {
-      initialLocation: '/shadowlinks?tab=source',
-      transport: routeLoaderTransport,
-    });
-
-    expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
+    expect(banner).toHaveTextContent('This cluster may be fenced');
+    expect(banner).toHaveTextContent('broker 1 reports fenced. Writes to those brokers are rejected.');
+    expect(screen.queryByTestId('shadow-box-banner-view-status')).not.toBeInTheDocument();
   });
 });

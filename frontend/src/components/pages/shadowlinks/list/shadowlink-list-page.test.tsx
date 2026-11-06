@@ -133,13 +133,17 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     useShadowBoxStore.setState({ topology: null });
   });
 
-  test('without the API for this viewer, shows the page as it was, with no tabs', async () => {
+  test.each([
+    ['', '/shadowlinks'],
+    [', even when linked to the fence tab', '/shadowlinks?tab=source'],
+  ])('without the API for this viewer, shows the page as it was, with no tabs%s', async (_label, initialLocation) => {
     mockBox({ available: false });
     noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+    renderWithFileRoutes(<ShadowLinkListPage />, { initialLocation, transport: routeLoaderTransport });
 
     expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeInTheDocument();
     expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('shadow-box-source-panel-stub')).not.toBeInTheDocument();
   });
 
   test('an unfenced cluster no link reads from gets no fence tab', async () => {
@@ -189,18 +193,6 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
 
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
   });
-
-  test('a link to the fence tab of a cluster without one shows its links', async () => {
-    mockBox({ available: false });
-    noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks?tab=source',
-      transport: routeLoaderTransport,
-    });
-
-    expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeInTheDocument();
-    expect(screen.queryByTestId('shadow-box-source-panel-stub')).not.toBeInTheDocument();
-  });
 });
 
 describe('the tab the ShadowLinkListPage opens on', () => {
@@ -209,13 +201,17 @@ describe('the tab the ShadowLinkListPage opens on', () => {
     useShadowBoxStore.setState({ topology: null });
   });
 
-  test('a fenced cluster opens on its fence, in a tab called Cluster fence', async () => {
+  test('a fenced cluster opens on its fence, in a tab called Cluster fence, and writes the tab into the URL', async () => {
     mockBox({ available: true, known: true, phase: 'boxed' });
     noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
+      initialLocation: '/shadowlinks',
+      transport: routeLoaderTransport,
+    });
 
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
     expect(screen.getByTestId('shadowlinks-tab-source')).toHaveTextContent('Cluster fence');
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'source' }));
   });
 
   test('a cluster Cloud knows links read from opens on its fence', async () => {
@@ -233,17 +229,6 @@ describe('the tab the ShadowLinkListPage opens on', () => {
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
 
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
-  });
-
-  test('writes the tab it opened on into the URL', async () => {
-    mockBox({ available: true, known: true, phase: 'boxed' });
-    noLinks();
-    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks',
-      transport: routeLoaderTransport,
-    });
-
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'source' }));
   });
 
   test('doesn’t pull the user back once the router has moved on to another page', async () => {

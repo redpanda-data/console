@@ -10,7 +10,7 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { act, screen } from '@testing-library/react';
+import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const flags = rs.hoisted(() => ({ enableShadowBoxing: false }));
@@ -87,6 +87,13 @@ const FENCED_SOURCE: ShadowLinkSource = {
   box: { status: 'known', state: 'boxed', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
+const unavailable = (reason: 'error' | 'unsupported' | 'no-leader'): ShadowLinkSource => ({
+  kind: 'cloud',
+  clusterId: 'prod',
+  clusterName: 'prod',
+  box: { status: 'unavailable', reason },
+});
+
 const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
   useShadowBoxStore.setState({
     topology: {
@@ -151,37 +158,16 @@ describe('the ShadowLinkDetailsPage', () => {
   test.each([
     ['standalone, with no host', () => useShadowBoxStore.setState({ topology: null })],
     ['the source is outside Cloud', () => hostWith({ kind: 'external', bootstrapServers: ['kafka:9092'] })],
-    [
-      'the source’s fence can’t be read',
-      () =>
-        hostWith({
-          kind: 'cloud',
-          clusterId: 'prod',
-          clusterName: 'prod',
-          box: { status: 'unavailable', reason: 'unsupported' },
-        }),
-    ],
+    ['the source’s fence can’t be read', () => hostWith(unavailable('unsupported'))],
     ['the host couldn’t resolve the source', () => hostWith(undefined)],
-    [
-      'the source was already unreadable when the page opened',
-      () =>
-        hostWith({
-          kind: 'cloud',
-          clusterId: 'prod',
-          clusterName: 'prod',
-          box: { status: 'unavailable', reason: 'no-leader' },
-        }),
-    ],
+    ['the source was already unreadable when the page opened', () => hostWith(unavailable('no-leader'))],
   ])('with cluster fencing on but %s, the page is as before', async (_label, arrange) => {
     arrange();
     await expectPageAsBefore(renderAtFailoverTab(true));
   });
 
   describe('once the source’s fence has been read', () => {
-    const sourceBecomes = (reason: 'error' | 'unsupported') =>
-      act(() =>
-        hostWith({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason } })
-      );
+    const sourceBecomes = (reason: 'error' | 'unsupported') => act(() => hostWith(unavailable(reason)));
 
     test('a passing read failure keeps the Failover tab and the guided failover', () => {
       hostWith(FENCED_SOURCE);
@@ -204,19 +190,14 @@ describe('the ShadowLinkDetailsPage', () => {
     });
   });
 
-  test('while the host is still resolving the source, a link to the Failover tab keeps it', () => {
+  test('while the host is still resolving the source, only a link to the Failover tab shows it', () => {
     hostWith(undefined, true);
     renderAtFailoverTab(true);
-
-    expect(screen.getByTestId('failover-tab-trigger')).toBeInTheDocument();
     expect(screen.getByTestId('failover-stub')).toBeInTheDocument();
-  });
+    cleanup();
 
-  test('while the host is still resolving the source, the page opens as before unless asked for the tab', () => {
-    hostWith(undefined, true);
-    flags.enableShadowBoxing = true;
+    route.search = {};
     render(<ShadowLinkDetailsPage />);
-
     expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Failover all topics' })).toBeVisible();
   });

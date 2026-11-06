@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
 import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import {
   type FailoverReadiness,
@@ -32,51 +31,41 @@ import {
   topicsSubject,
 } from './failover-model';
 
-type CheckStatus = 'ready' | 'not-ready' | 'unknown';
+const CHECK_ICON = {
+  ready: { label: 'Ready', icon: CircleCheckIcon, tone: 'success' },
+  'not-ready': { label: 'Not ready', icon: CircleAlertIcon, tone: 'warning' },
+  unknown: { label: 'Check yourself', icon: CircleDashedIcon, tone: 'muted' },
+} as const;
 
-const CHECK_ICON: Record<CheckStatus, ReactNode> = {
-  ready: <TonedIcon aria-label="Ready" className="mt-0.5 size-4 shrink-0" icon={CircleCheckIcon} tone="success" />,
-  'not-ready': (
-    <TonedIcon aria-label="Not ready" className="mt-0.5 size-4 shrink-0" icon={CircleAlertIcon} tone="warning" />
-  ),
-  unknown: (
-    <TonedIcon aria-label="Check yourself" className="mt-0.5 size-4 shrink-0" icon={CircleDashedIcon} tone="muted" />
-  ),
-};
+type Verdict = { status: keyof typeof CHECK_ICON; text: string };
+type Check = Verdict & { id: string };
 
-type Check = { id: string; status: CheckStatus; text: string };
-
-const sourceCheck = ({ box }: FailoverReadiness): Check => {
+const sourceVerdict = ({ box }: FailoverReadiness): Verdict => {
   if (box.kind === 'loading') {
     return {
-      id: 'source',
       status: 'unknown',
       text: 'Stop writes to the source cluster first, by fencing it or stopping its producers, so nothing is left behind.',
     };
   }
   if (box.kind === 'unreadable') {
     return {
-      id: 'source',
       status: 'unknown',
       text: 'Console can’t read the source cluster’s fence right now. Make sure it’s fenced, or that its producers are stopped.',
     };
   }
   if (getBoxProgress(box) === 'blocked') {
     return {
-      id: 'source',
       status: 'not-ready',
       text: 'The source cluster is fenced, but its settings block this link’s fetches, so the link can’t finish copying.',
     };
   }
   if (isSourceBoxReady(box)) {
     return {
-      id: 'source',
       status: 'ready',
       text: 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
     };
   }
   return {
-    id: 'source',
     status: 'not-ready',
     text:
       box.box.state === 'boxing'
@@ -85,62 +74,57 @@ const sourceCheck = ({ box }: FailoverReadiness): Check => {
   };
 };
 
-const behindCheck = (behind: LagStep['behind'], topicName: string | undefined): Check => ({
-  id: 'lag',
+const behindVerdict = (behind: LagStep['behind'], topicName: string | undefined): Verdict => ({
   status: 'not-ready',
   text: topicName
     ? `${topicName} is still behind, so its newest records won’t be on this cluster.`
     : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
 });
 
-const faultedCheck = (faulted: string[], topicName: string | undefined): Check => {
+const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdict => {
   const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
   return {
-    id: 'lag',
     status: 'not-ready',
     text: `${subject} faulted, so ${faulted.length === 1 ? 'it' : 'they'} may be missing records.`,
   };
 };
 
 /** A topic still behind or faulted, among the one being failed over or all of them. */
-const lagProblemCheck = (lag: LagStep, topicName: string | undefined): Check | undefined => {
+const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict | undefined => {
   const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
   if (behind.length > 0) {
-    return behindCheck(behind, topicName);
+    return behindVerdict(behind, topicName);
   }
   const faulted = topicName ? lag.faulted.filter((name) => name === topicName) : lag.faulted;
   if (faulted.length > 0) {
-    return faultedCheck(faulted, topicName);
+    return faultedVerdict(faulted, topicName);
   }
 };
 
-const caughtUpCheck = (lag: LagStep, topicName: string | undefined): Check => {
+const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict => {
   if (lag.stale) {
     return {
-      id: 'lag',
       status: 'unknown',
       text: 'Console couldn’t refresh the topics’ lag, so the last reading may be out of date. Check that every topic has caught up.',
     };
   }
   return {
-    id: 'lag',
     status: 'ready',
     text: topicName ? `${topicName} has caught up.` : 'Every topic has caught up.',
   };
 };
 
-const lagCheck = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Check => {
+const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Verdict => {
   if (lag.status === 'loading' || checking) {
-    return { id: 'lag', status: 'unknown', text: 'Checking each topic’s lag…' };
+    return { status: 'unknown', text: 'Checking each topic’s lag…' };
   }
   if (lag.status === 'unavailable') {
     return {
-      id: 'lag',
       status: 'unknown',
       text: 'Console couldn’t read the topics’ lag. Check that every topic has caught up.',
     };
   }
-  return lagProblemCheck(lag, topicName) ?? caughtUpCheck(lag, topicName);
+  return lagProblemVerdict(lag, topicName) ?? caughtUpVerdict(lag, topicName);
 };
 
 /** Fail over all topics is refused while any topic is paused, so say so before the request fails. */
@@ -195,7 +179,11 @@ const GuidedFailoverDialog = ({
     return <FailoverUnderWayDialog onOpenChange={onOpenChange} open={open} readiness={readiness} />;
   }
   const paused = topicName ? undefined : pausedCheck(readiness);
-  const checks = [sourceCheck(readiness), lagCheck(readiness, topicName, checkingLag), ...(paused ? [paused] : [])];
+  const checks: Check[] = [
+    { id: 'source', ...sourceVerdict(readiness) },
+    { id: 'lag', ...lagVerdict(readiness, topicName, checkingLag) },
+    ...(paused ? [paused] : []),
+  ];
   const unsafe = checks.some((check) => check.status === 'not-ready');
 
   return (
@@ -220,7 +208,12 @@ const GuidedFailoverDialog = ({
                       data-testid={`failover-check-${check.id}`}
                       key={check.id}
                     >
-                      {CHECK_ICON[check.status]}
+                      <TonedIcon
+                        aria-label={CHECK_ICON[check.status].label}
+                        className="mt-0.5 size-4 shrink-0"
+                        icon={CHECK_ICON[check.status].icon}
+                        tone={CHECK_ICON[check.status].tone}
+                      />
                       {check.text}
                     </li>
                   ))}

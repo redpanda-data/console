@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
@@ -21,19 +22,20 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/r
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
-import { CheckIcon } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { ArrowRightIcon } from 'lucide-react';
+import { Fragment, type ReactNode, useState } from 'react';
 import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import { BoxClusterDialog } from './box-cluster-dialog';
-import { ShadowBoxClientEffects } from './shadow-box-client-effects';
 import {
   BOX_PHASE_LABEL,
+  BOX_PHASES,
   type BoxPhase,
   type BoxSummary,
   type BrokerProgress,
+  type ClientEffect,
   canBoxFromPhase,
   describeBoxPhase,
   describeHeldMove,
@@ -45,12 +47,12 @@ import {
   linksThatStopBox,
   MTLS_LINK_NOTE,
   SHADOW_CLUSTER_CANT_BOX,
+  type StepState,
 } from './shadow-box-model';
 import { ShadowBoxSettingsDialog } from './shadow-box-settings-dialog';
-import { ShadowBoxStateBadge } from './shadow-box-state-badge';
-import { ShadowBoxStateStepper } from './shadow-box-state-stepper';
+import { WARNING_VARIANT } from './shadow-box-settings-fields';
+import { CanReadBadge, ShadowBoxStateBadge, StepMarker, StepTitle, useNow } from './shadow-box-ui';
 import { UnboxClusterDialog } from './unbox-cluster-dialog';
-import { useNow } from './use-now';
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const clockFormatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
@@ -115,14 +117,73 @@ const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
   </div>
 );
 
-type SourceStepState = 'done' | 'current' | 'pending' | 'attention';
+/**
+ * The four states in order, the cluster's current one marked, with the two that reject writes
+ * bracketed: blocking starts in Boxing, not Boxed, and stops in Unboxing.
+ */
+const StateStepper = ({ phase }: { phase: BoxPhase }) => (
+  <div
+    className="grid max-w-3xl grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-x-1.5 gap-y-1"
+    data-testid="shadow-box-states"
+  >
+    <ol aria-label="Cluster fence states" className="contents">
+      {BOX_PHASES.map((state, index) => (
+        <Fragment key={state}>
+          {index > 0 ? (
+            <li aria-hidden="true" className="flex items-center" role="presentation">
+              <TonedIcon className="size-3.5" icon={ArrowRightIcon} tone="muted" />
+            </li>
+          ) : null}
+          <li
+            aria-current={state === phase ? 'step' : undefined}
+            className={cn(
+              'rounded-full border px-2 py-1 text-center text-body-sm',
+              state === phase
+                ? 'border-selected bg-selected-wash font-medium text-selected'
+                : 'border-border text-muted-foreground'
+            )}
+            data-state={state}
+          >
+            {BOX_PHASE_LABEL[state]}
+          </li>
+        </Fragment>
+      ))}
+    </ol>
+    <div
+      className="col-start-3 col-end-6 flex items-center gap-1.5 text-caption text-muted-foreground"
+      data-testid="shadow-box-blocks-bracket"
+    >
+      <span aria-hidden="true" className="h-2 flex-1 rounded-bl-sm border-b border-l border-warning-line" />
+      <span>Rejects writes</span>
+      <span aria-hidden="true" className="h-2 flex-1 rounded-br-sm border-r border-b border-warning-line" />
+    </div>
+  </div>
+);
 
-const STEP_MARKER: Record<SourceStepState, string> = {
-  done: 'border-success bg-success text-success-foreground',
-  current: 'border-primary text-primary',
-  attention: 'border-warning text-warning',
-  pending: 'border-border text-muted-foreground',
+const VERDICT_BAR: Record<ClientEffect['verdict'], string> = {
+  allowed: 'border-l-success',
+  rejected: 'border-l-destructive',
+  partly: 'border-l-warning',
+  ended: 'border-l-surface-strong',
+  open: 'border-l-surface-strong',
+  unknown: 'border-l-surface-strong',
 };
+
+const ClientEffects = ({ effects }: { effects: ClientEffect[] }) => (
+  <ul aria-label="What clients see now" className="flex flex-col gap-2" data-testid="shadow-box-client-effects">
+    {effects.map((effect) => (
+      <li
+        className={cn('border-l-4 py-0.5 pl-3', VERDICT_BAR[effect.verdict])}
+        data-testid={`shadow-box-effect-${effect.id}`}
+        data-verdict={effect.verdict}
+        key={effect.id}
+      >
+        <div className="text-body-sm font-medium">{effect.label}</div>
+        <div className="text-body-sm text-muted-foreground">{effect.detail}</div>
+      </li>
+    ))}
+  </ul>
+);
 
 const SourceStep = ({
   index,
@@ -132,26 +193,15 @@ const SourceStep = ({
   testId,
 }: {
   index: number;
-  state: SourceStepState;
+  state: StepState;
   title: string;
   children: ReactNode;
   testId: string;
 }) => (
   <li className="grid grid-cols-[1.5rem_1fr] gap-3" data-state={state} data-testid={testId}>
-    <span
-      aria-hidden="true"
-      className={cn(
-        'flex size-6 items-center justify-center rounded-full border-2 text-caption tabular-nums',
-        STEP_MARKER[state]
-      )}
-    >
-      {state === 'done' ? <CheckIcon className="size-3.5" /> : String(index)}
-    </span>
+    <StepMarker index={index} state={state} />
     <div className="flex min-w-0 flex-col gap-1">
-      <h4 className="text-label">
-        <span className="sr-only">{`Step ${index}${state === 'done' ? ', complete' : ''}: `}</span>
-        {title}
-      </h4>
+      <StepTitle index={index} state={state} title={title} />
       <div className="text-body-sm text-muted-foreground">{children}</div>
     </div>
   </li>
@@ -162,7 +212,7 @@ const exemptStepState = (
   boxRequested: boolean,
   summary: BoxSummary,
   access: ReturnType<typeof readerAccess>
-): SourceStepState => {
+): StepState => {
   if (exemptDone) {
     return 'done';
   }
@@ -172,7 +222,7 @@ const exemptStepState = (
   return 'attention';
 };
 
-const boxStepState = (requested: boolean, settingsDone: boolean): SourceStepState => {
+const boxStepState = (requested: boolean, settingsDone: boolean): StepState => {
   if (requested) {
     return 'done';
   }
@@ -208,7 +258,7 @@ const exemptStepText = (access: ReturnType<typeof readerAccess>, summary: BoxSum
     : 'Exempt each shadow link’s user before you fence.';
 };
 
-const waitStepState = (phase: BoxPhase): SourceStepState => {
+const waitStepState = (phase: BoxPhase): StepState => {
   if (phase === 'boxed') {
     return 'done';
   }
@@ -305,8 +355,6 @@ const ExemptValue = ({ summary }: { summary: BoxSummary }) => {
   );
 };
 
-const WARNING_VARIANT = { danger: 'destructive', warning: 'warning', info: 'informative' } as const;
-
 const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => void }) => {
   const warnings = getReadPolicyWarnings(summary.exemptPrincipals, summary.allowAllReads);
   return (
@@ -344,24 +392,6 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
       </CardContent>
     </Card>
   );
-};
-
-const READER_ACCESS_BADGE: Record<'yes' | 'no' | 'unknown', ReactNode> = {
-  yes: (
-    <Badge tone="success" variant="subtle">
-      Can read
-    </Badge>
-  ),
-  no: (
-    <Badge tone="warning" variant="subtle">
-      Blocked
-    </Badge>
-  ),
-  unknown: (
-    <Badge tone="default" variant="subtle">
-      Can’t check
-    </Badge>
-  ),
 };
 
 const readerUser = (reader: ShadowLinkReader) => {
@@ -442,41 +472,36 @@ const ReadersCard = ({
                 </TableRow>
               </TableHeader>
               <tbody className="[&_tr:last-child]:border-0">
-                {readers.map((reader) => {
-                  const canRead = linkCanRead(summary, reader);
-                  let access: 'yes' | 'no' | 'unknown' = 'unknown';
-                  if (canRead !== undefined) {
-                    access = canRead ? 'yes' : 'no';
-                  }
-                  return (
-                    <TableRow
-                      key={`${reader.shadowClusterId}-${reader.linkName}`}
-                      testId={`shadow-box-reader-${reader.linkName}`}
-                    >
-                      <TableCell weight="medium">
-                        {openCluster ? (
-                          <button
-                            className={cn(buttonVariants({ variant: 'link' }), 'h-auto p-0')}
-                            onClick={() =>
-                              openCluster(
-                                reader.shadowClusterId,
-                                `/shadowlinks/${encodeURIComponent(reader.linkName)}?tab=failover`
-                              )
-                            }
-                            type="button"
-                          >
-                            {reader.linkName}
-                          </button>
-                        ) : (
-                          reader.linkName
-                        )}
-                      </TableCell>
-                      <TableCell>{reader.shadowClusterName}</TableCell>
-                      <TableCell>{readerUser(reader)}</TableCell>
-                      <TableCell>{READER_ACCESS_BADGE[access]}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {readers.map((reader) => (
+                  <TableRow
+                    key={`${reader.shadowClusterId}-${reader.linkName}`}
+                    testId={`shadow-box-reader-${reader.linkName}`}
+                  >
+                    <TableCell weight="medium">
+                      {openCluster ? (
+                        <button
+                          className={cn(buttonVariants({ variant: 'link' }), 'h-auto p-0')}
+                          onClick={() =>
+                            openCluster(
+                              reader.shadowClusterId,
+                              `/shadowlinks/${encodeURIComponent(reader.linkName)}?tab=failover`
+                            )
+                          }
+                          type="button"
+                        >
+                          {reader.linkName}
+                        </button>
+                      ) : (
+                        reader.linkName
+                      )}
+                    </TableCell>
+                    <TableCell>{reader.shadowClusterName}</TableCell>
+                    <TableCell>{readerUser(reader)}</TableCell>
+                    <TableCell>
+                      <CanReadBadge canRead={linkCanRead(summary, reader)} no="Blocked" yes="Can read" />
+                    </TableCell>
+                  </TableRow>
+                ))}
               </tbody>
             </Table>
           ) : null}
@@ -537,18 +562,22 @@ const BoxActions = ({
   );
 
 /** Each broker's own copy, read one by one while there's no controller leader to give the whole status. */
-const OwnCopiesList = ({ copies }: { copies: BrokerOwnCopy[] }) => (
-  <ul className="mt-1 flex flex-col gap-0.5" data-testid="shadow-box-own-copies">
-    {copies.map((copy, index) => (
-      <li key={copy.nodeId ?? `self-${index}`}>
-        {copy.nodeId === undefined ? 'The broker that answered' : `Broker ${copy.nodeId}`}:{' '}
-        {copy.phase
-          ? `${BOX_PHASE_LABEL[copy.phase]}, revision ${copy.revision?.toString()}`
-          : copy.errorMessage || 'no answer'}
-      </li>
-    ))}
-  </ul>
-);
+const OwnCopies = ({ copies }: { copies: BrokerOwnCopy[] }) =>
+  copies.length > 0 ? (
+    <div className="text-body-sm">
+      Each broker’s own copy, read from that broker:
+      <ul className="mt-1 flex flex-col gap-0.5" data-testid="shadow-box-own-copies">
+        {copies.map((copy, index) => (
+          <li key={copy.nodeId ?? `self-${index}`}>
+            {copy.nodeId === undefined ? 'The broker that answered' : `Broker ${copy.nodeId}`}:{' '}
+            {copy.phase
+              ? `${BOX_PHASE_LABEL[copy.phase]}, revision ${copy.revision?.toString()}`
+              : copy.errorMessage || 'no answer'}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
 
 const ReadProblem = ({
   error,
@@ -565,12 +594,7 @@ const ReadProblem = ({
     <AlertTitle>Couldn’t read the fence</AlertTitle>
     <AlertDescription>
       <p>{describeShadowBoxReadError(error)}</p>
-      {ownCopies.length > 0 ? (
-        <div className="text-body-sm">
-          Each broker’s own copy, read from that broker:
-          <OwnCopiesList copies={ownCopies} />
-        </div>
-      ) : null}
+      <OwnCopies copies={ownCopies} />
     </AlertDescription>
     <div className="col-start-2 mt-2">
       <Button isLoading={isRefetching} onClick={onRetry} size="sm" variant="outline">
@@ -594,12 +618,7 @@ const StaleStatusAlert = ({
     <AlertDescription>
       <p>{describeShadowBoxReadError(error)}</p>
       <p>Showing its status from {formatBoxDuration(now - dataUpdatedAt)} ago.</p>
-      {ownCopies.length > 0 ? (
-        <div className="text-body-sm">
-          Each broker’s own copy, read from that broker:
-          <OwnCopiesList copies={ownCopies} />
-        </div>
-      ) : null}
+      <OwnCopies copies={ownCopies} />
     </AlertDescription>
   </Alert>
 );
@@ -639,7 +658,7 @@ const BoxStatusCard = ({
             </div>
             {actions}
           </div>
-          <ShadowBoxStateStepper phase={phase} />
+          <StateStepper phase={phase} />
           <p className="text-body" data-testid="shadow-box-headline">
             {describeBoxPhase(summary, brokers)}
             {held ? ` ${held}` : ''}
@@ -647,7 +666,7 @@ const BoxStatusCard = ({
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-2">
               <h4 className="text-label">What clients see now</h4>
-              <ShadowBoxClientEffects effects={getClientEffects({ summary, brokers, links: readers })} />
+              <ClientEffects effects={getClientEffects({ summary, brokers, links: readers })} />
             </div>
             {brokers.length > 0 ? <BrokersTable brokers={brokers} /> : null}
           </div>

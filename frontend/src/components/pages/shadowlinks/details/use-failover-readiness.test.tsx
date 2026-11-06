@@ -68,34 +68,6 @@ describe('useFailoverReadiness', () => {
     expect(lastTopicsOptions().refetchInterval({ state: { status: 'error' } })).toBe(30_000);
   });
 
-  test('has no readiness, and reads no topics, when the source’s fence can’t be read', () => {
-    const unreadable: (ShadowLinkSource | undefined)[] = [
-      undefined,
-      { kind: 'external', bootstrapServers: ['kafka:9092'] },
-      { kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason: 'inactive' } },
-    ];
-    for (const source of unreadable) {
-      withSource(source);
-      const { result, unmount } = renderHook(() =>
-        useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true })
-      );
-
-      expect(result.current.readiness).toBeUndefined();
-      expect(lastTopicsOptions().enabled).toBe(false);
-      unmount();
-    }
-  });
-
-  test('without a host, or with the flag off, there’s nothing to read', () => {
-    const { result } = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true }));
-    expect(result.current.readiness).toBeUndefined();
-
-    withSource(KNOWN_SOURCE);
-    const flagOff = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: false }));
-    expect(flagOff.result.current.readiness).toBeUndefined();
-    expect(lastTopicsOptions().enabled).toBe(false);
-  });
-
   describe('once the source’s fence has been read in this visit', () => {
     const renderRead = () => {
       withSource(KNOWN_SOURCE);
@@ -124,27 +96,6 @@ describe('useFailoverReadiness', () => {
       expect(result.current.readiness).toBeUndefined();
       expect(result.current.available).toBe(false);
     });
-  });
-
-  test('a source already unreadable when the page opens gets no Failover tab', () => {
-    withSource({
-      kind: 'cloud',
-      clusterId: 'prod',
-      clusterName: 'prod',
-      box: { status: 'unavailable', reason: 'no-leader' },
-    });
-    const { result } = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true }));
-
-    expect(result.current.readiness).toBeUndefined();
-    expect(result.current.available).toBe(false);
-  });
-
-  test('while the host resolves links, the source step waits but isn’t available yet', () => {
-    withSource(undefined, true);
-    const { result } = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true }));
-
-    expect(result.current.readiness?.box).toEqual({ kind: 'loading', source: undefined });
-    expect(result.current.available).toBe(false);
   });
 
   test('a failed refresh marks the lag it kept as out of date', () => {

@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
@@ -21,10 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { useEffect, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  describeShadowBoxError,
   isStaleRevisionError,
   useShadowBoxStatusQuery,
   useUpdateShadowBoxSettingsMutation,
@@ -32,28 +30,22 @@ import {
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { BoxChangedNotice } from './box-changed-notice';
+import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
 import { type BoxSummary, isBlockingPhase } from './shadow-box-model';
-import { ShadowBoxSettingsFields } from './shadow-box-settings-fields';
-import { useOpenedBox } from './use-opened-box';
-import { useReaderSuggestions } from './use-reader-suggestions';
+import { readPolicySchema, ShadowBoxSettingsFields, useReaderSuggestions } from './shadow-box-settings-fields';
 
-const formSchema = z.object({
-  settings: z.object({
-    exemptPrincipals: z.array(z.string()),
-    allowAllReads: z.boolean(),
-  }),
-});
+const formSchema = z.object({ settings: readPolicySchema });
 
 type FormValues = z.infer<typeof formSchema>;
 
-type ShadowBoxSettingsDialogProps = {
+/** The form mounts with the dialog's content, so every opening starts from the saved settings. */
+export const ShadowBoxSettingsDialog = ({
+  open,
+  onOpenChange,
+}: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-};
-
-/** The form mounts with the dialog's content, so every opening starts from the saved settings. */
-export const ShadowBoxSettingsDialog = ({ open, onOpenChange }: ShadowBoxSettingsDialogProps) => (
+}) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent size="lg" testId="shadow-box-settings-dialog">
       <ShadowBoxSettingsForm onClose={() => onOpenChange(false)} />
@@ -62,31 +54,8 @@ export const ShadowBoxSettingsDialog = ({ open, onOpenChange }: ShadowBoxSetting
 );
 
 const toFormValues = (summary: BoxSummary): FormValues => ({
-  settings: {
-    exemptPrincipals: summary.exemptPrincipals,
-    allowAllReads: summary.allowAllReads,
-  },
+  settings: { exemptPrincipals: summary.exemptPrincipals, allowAllReads: summary.allowAllReads },
 });
-
-const SaveErrorAlert = ({ error }: { error: unknown }) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  // The error renders below the fold of a long dialog body; bring it into view.
-  useEffect(() => {
-    if (error) {
-      ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  }, [error]);
-
-  return (
-    <Alert ref={ref} testId="shadow-box-settings-error" variant="destructive">
-      <AlertTitle>Couldn’t save the settings</AlertTitle>
-      <AlertDescription>
-        <p>{describeShadowBoxError(error)}</p>
-      </AlertDescription>
-    </Alert>
-  );
-};
 
 const ShadowBoxSettingsForm = ({ onClose }: { onClose: () => void }) => {
   const { summary } = useShadowBoxStatusQuery();
@@ -155,7 +124,11 @@ const ShadowBoxSettingsForm = ({ onClose }: { onClose: () => void }) => {
           )}
         />
         {updateSettings.error && !(changed && isStaleRevisionError(updateSettings.error)) ? (
-          <SaveErrorAlert error={updateSettings.error} />
+          <BoxWriteErrorAlert
+            error={updateSettings.error}
+            testId="shadow-box-settings-error"
+            title="Couldn’t save the settings"
+          />
         ) : null}
       </DialogBody>
       <DialogFooter>
