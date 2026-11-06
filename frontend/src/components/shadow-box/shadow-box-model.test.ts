@@ -33,6 +33,7 @@ import {
   linksThatStopBox,
   summarizeBox,
   toBoxPhase,
+  toExemptName,
 } from './shadow-box-model';
 import { describe, expect, test } from 'bun:test';
 
@@ -189,6 +190,11 @@ describe('linkCanRead', () => {
     expect(linkCanRead(policy(['shadow-orders']), { authentication: 'none' })).toBe(false);
     expect(linkCanRead(policy([], true), { authentication: 'none' })).toBe(true);
   });
+});
+
+test('toExemptName trims a principal and drops a User: prefix', () => {
+  expect(toExemptName(' User:shadow-orders ')).toBe('shadow-orders');
+  expect(toExemptName('shadow-orders')).toBe('shadow-orders');
 });
 
 describe('getReadPolicyWarnings', () => {

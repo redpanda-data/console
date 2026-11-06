@@ -152,6 +152,20 @@ describe('the FailoverTab', () => {
       expect(screen.getByTestId('failover-step-lag')).not.toHaveTextContent('exempt');
     });
 
+    test('when the settings would block this link, its one button exempts the link’s user on the source', async () => {
+      const user = userEvent.setup();
+      const identity: LinkIdentity = { authentication: 'sasl', principal: 'shadow/orders' };
+      renderTab(readinessFor(cloudSource('unboxed', []), topics([0]), { identity }), { identity });
+
+      const lane = screen.getByTestId('failover-lane-source');
+      expect(within(lane).getAllByRole('button')).toHaveLength(1);
+      await user.click(within(lane).getByRole('button', { name: 'Exempt shadow/orders on prod-us-east-1' }));
+      expect(openCluster).toHaveBeenCalledWith(
+        'prod',
+        '/shadowlinks?tab=source&action=exempt&principal=shadow%2Forders'
+      );
+    });
+
     test('once fenced with the link blocked, says its fetches are rejected and lag can’t drain', () => {
       renderTab(cloudReadiness('boxed', [0], []));
 

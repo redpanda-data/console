@@ -21,6 +21,9 @@ import { z } from 'zod';
 
 const searchSchema = z.object({
   tab: z.enum(['links', 'source']).optional().catch(undefined),
+  /** On the Cluster fence tab, opens its settings with `principal` added to the exempt users. */
+  action: z.enum(['exempt']).optional().catch(undefined),
+  principal: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute('/shadowlinks/')({

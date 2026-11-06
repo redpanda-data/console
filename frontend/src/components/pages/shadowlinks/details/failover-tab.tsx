@@ -132,20 +132,32 @@ const Lane = ({
   </section>
 );
 
-/** The source's steps run on its own Console, so this lane only reports them and links there. */
-const OpenSourceButton = ({ source }: { source: SourceBoxStep['source'] }) => {
+/**
+ * The source's steps run on its own Console, so this lane only reports them and links there: to the
+ * settings with this link's user already added when they would block it, otherwise to the fence.
+ */
+const OpenSourceButton = ({ box, link }: { box: SourceBoxStep; link: LinkIdentity }) => {
   const openCluster = useShadowBoxStore((state) => state.openCluster);
+  const { source } = box;
   if (!(openCluster && source)) {
     return null;
   }
+  const exempt = box.kind === 'cloud' && box.linkExempt === false ? link.principal : undefined;
   return (
     <Button
-      onClick={() => openCluster(source.clusterId, '/shadowlinks?tab=source')}
+      onClick={() =>
+        openCluster(
+          source.clusterId,
+          exempt
+            ? `/shadowlinks?tab=source&action=exempt&principal=${encodeURIComponent(exempt)}`
+            : '/shadowlinks?tab=source'
+        )
+      }
       size="sm"
       testId="failover-open-source"
       variant="outline"
     >
-      Open {source.clusterName}
+      {exempt ? `Exempt ${exempt} on ${source.clusterName}` : `Open ${source.clusterName}`}
     </Button>
   );
 };
@@ -508,7 +520,7 @@ export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics
         <div className="flex flex-col gap-8">
           <h2 className="text-heading-sm">Fail over from {sourceName}</h2>
           <Lane
-            action={<OpenSourceButton source={box.source} />}
+            action={<OpenSourceButton box={box} link={linkIdentity} />}
             description={`These run on ${sourceName}’s Cluster fence tab.`}
             testId="failover-lane-source"
             title={`On ${sourceName}`}

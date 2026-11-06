@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
@@ -21,9 +22,10 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/r
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import { toast } from 'sonner';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import { BoxClusterDialog } from './box-cluster-dialog';
@@ -450,6 +452,33 @@ const BoxStatusCard = ({
   );
 };
 
+/**
+ * `?action=exempt&principal=…`, from a shadow cluster's Failover tab, opens the settings with that
+ * user already added. Both stay in the URL until the dialog closes: embedded, Console can remount
+ * while the host settles its route, and the dialog then reopens instead of vanishing.
+ */
+const useExemptFromUrl = (setSettingsOpen: (open: boolean) => void) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const exempt = (location.search as { action?: unknown }).action === 'exempt';
+  // The raw query string: the parsed search turns a name like `1001` into a number.
+  const principal = exempt ? (new URLSearchParams(location.searchStr).get('principal') ?? undefined) : undefined;
+  useEffect(() => {
+    if (exempt) {
+      setSettingsOpen(true);
+    }
+  }, [exempt, setSettingsOpen]);
+  const onOpenChange = (open: boolean) => {
+    setSettingsOpen(open);
+    if (!open && exempt) {
+      navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
+    }
+  };
+  return { principal, onOpenChange };
+};
+
 const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   const { summary, brokers, error, dataUpdatedAt, ownCopies } = status;
   const topology = useShadowBoxStore((state) => state.topology);
@@ -458,6 +487,7 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   const [boxOpen, setBoxOpen] = useState(false);
   const [unboxOpen, setUnboxOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const exemptFromUrl = useExemptFromUrl(setSettingsOpen);
   const readers = topology ? topology.readers : undefined;
 
   return (
@@ -489,7 +519,11 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
 
       <BoxClusterDialog onOpenChange={setBoxOpen} open={boxOpen} />
       <UnboxClusterDialog clusterName={topology?.clusterName} onOpenChange={setUnboxOpen} open={unboxOpen} />
-      <ShadowBoxSettingsDialog onOpenChange={setSettingsOpen} open={settingsOpen} />
+      <ShadowBoxSettingsDialog
+        addPrincipal={exemptFromUrl.principal}
+        onOpenChange={exemptFromUrl.onOpenChange}
+        open={settingsOpen}
+      />
     </div>
   );
 };

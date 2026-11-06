@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code, ConnectError } from '@connectrpc/connect';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ShadowLinkTopology } from 'federation/types';
+import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { renderWithFileRoutes } from 'test-utils';
@@ -279,6 +280,43 @@ describe('the ShadowBoxSourcePanel', () => {
 
       expect(screen.getByTestId(testId)).toBeVisible();
       expect(screen.queryByText('No links read from this cluster')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('a link to exempt a user, from a shadow cluster’s Failover tab', () => {
+    // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
+    const routeLoaderTransport = createRouterTransport(({ rpc }) => {
+      rpc(listShadowLinks, () => ({ shadowLinks: [] }));
+    });
+    const renderAt = (initialLocation: string) =>
+      renderWithFileRoutes(<ShadowBoxSourcePanel />, { initialLocation, transport: routeLoaderTransport });
+
+    test('opens the settings with the user already added, so Save is all that’s left', async () => {
+      mockStatus('unboxed');
+      renderAt('/shadowlinks?tab=source&action=exempt&principal=shadow-telemetry');
+
+      expect(await screen.findByTestId('shadow-box-exempt-principals-chip-shadow-telemetry')).toBeVisible();
+      expect(screen.getByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
+      expect(screen.getByTestId('save-shadow-box-settings')).toBeEnabled();
+    });
+
+    test('clears the link from the URL once the dialog closes, so it doesn’t open again', async () => {
+      const user = userEvent.setup();
+      mockStatus('unboxed');
+      const { router } = renderAt('/shadowlinks?tab=source&action=exempt&principal=shadow-telemetry');
+
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(router.state.location.search).toEqual({ tab: 'source' }));
+      expect(screen.queryByTestId('shadow-box-settings-dialog')).not.toBeInTheDocument();
+    });
+
+    test('ignores any other action', async () => {
+      mockStatus('unboxed');
+      renderAt('/shadowlinks?tab=source&action=box&principal=shadow-telemetry');
+
+      expect(await screen.findByTestId('shadow-box-source-panel')).toBeVisible();
+      expect(screen.queryByTestId('shadow-box-settings-dialog')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('box-cluster-dialog')).not.toBeInTheDocument();
     });
   });
 });

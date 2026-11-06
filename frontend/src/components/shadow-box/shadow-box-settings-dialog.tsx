@@ -21,7 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import { Controller, useForm } from 'react-hook-form';
+import { useEffect } from 'react';
+import { Controller, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   isStaleRevisionError,
   useShadowBoxStatusQuery,
@@ -31,7 +32,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
-import { type BoxSummary, isBlockingPhase } from './shadow-box-model';
+import { type BoxSummary, isBlockingPhase, toExemptName } from './shadow-box-model';
 import { readPolicySchema, ShadowBoxSettingsFields, useReaderSuggestions } from './shadow-box-settings-fields';
 
 const formSchema = z.object({ settings: readPolicySchema });
@@ -42,22 +43,41 @@ type FormValues = z.infer<typeof formSchema>;
 export const ShadowBoxSettingsDialog = ({
   open,
   onOpenChange,
+  addPrincipal,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** A user to add to the exempt list as an unsaved edit, such as a shadow link's user. */
+  addPrincipal?: string;
 }) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
     <DialogContent size="lg" testId="shadow-box-settings-dialog">
-      <ShadowBoxSettingsForm onClose={() => onOpenChange(false)} />
+      <ShadowBoxSettingsForm addPrincipal={addPrincipal} onClose={() => onOpenChange(false)} />
     </DialogContent>
   </Dialog>
 );
+
+/** Added as an edit, not a default, so the dialog opens ready to save it. */
+const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string | undefined) => {
+  useEffect(() => {
+    const name = addPrincipal === undefined ? '' : toExemptName(addPrincipal);
+    const settings = form.getValues('settings');
+    if (name && !settings.exemptPrincipals.includes(name)) {
+      // The whole object, not the nested path: the fields render from the `settings` Controller.
+      form.setValue(
+        'settings',
+        { ...settings, exemptPrincipals: [...settings.exemptPrincipals, name] },
+        { shouldDirty: true }
+      );
+    }
+  }, [addPrincipal, form]);
+};
 
 const toFormValues = (summary: BoxSummary): FormValues => ({
   settings: { exemptPrincipals: summary.exemptPrincipals, allowAllReads: summary.allowAllReads },
 });
 
-const ShadowBoxSettingsForm = ({ onClose }: { onClose: () => void }) => {
+const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
   const { summary } = useShadowBoxStatusQuery();
   const updateSettings = useUpdateShadowBoxSettingsMutation();
   const { opened, changed, refresh } = useOpenedBox(summary, updateSettings.isPending || updateSettings.isSuccess);
@@ -70,6 +90,7 @@ const ShadowBoxSettingsForm = ({ onClose }: { onClose: () => void }) => {
     resolver: zodResolver(formSchema),
     defaultValues: toFormValues(opened),
   });
+  useAddedPrincipal(form, addPrincipal);
 
   const handleRefresh = () => {
     refresh();

@@ -258,6 +258,12 @@ export const MTLS_LINK_NOTE =
 
 const USER_PREFIX = 'User:';
 
+/** Exempt names are bare user names, so a `User:` principal loses its prefix. */
+export const toExemptName = (principal: string) => {
+  const name = principal.trim();
+  return name.startsWith(USER_PREFIX) ? name.slice(USER_PREFIX.length) : name;
+};
+
 type ReadPolicyWarning = {
   id: string;
   /** `danger` locks out every shadow link; `warning` matches nobody; `info` explains a rule. */
@@ -273,7 +279,7 @@ const EMPTY_EXEMPT_WARNING =
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
 
 const userPrefixWarning = (principal: string): ReadPolicyWarning => {
-  const bare = principal.slice(USER_PREFIX.length);
+  const bare = toExemptName(principal);
   return {
     id: `prefix-${principal}`,
     severity: 'warning',
