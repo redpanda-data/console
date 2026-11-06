@@ -11,6 +11,7 @@ package serde
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -421,5 +422,71 @@ func TestAvroSerde_SerializeObject(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, expectData, actualData)
+	})
+}
+
+// A name on an array or map is metadata to the Avro spec and Java ignores it,
+// but twmb/avro rejects it: https://github.com/redpanda-data/console/issues/2715
+func TestAvroSerde_NameOnArrayAndMap(t *testing.T) {
+	const (
+		orderSchemaID = 4000
+		tagsSchema    = `{"type":"record","name":"Tags","namespace":"com.acme","fields":[{"name":"values","type":{"type":"map","name":"tag","values":"string"}}]}`
+		orderSchema   = `{"type":"record","name":"Order","namespace":"com.acme","fields":[{"name":"tags","type":"com.acme.Tags"},{"name":"items","type":{"type":"array","name":"item","items":"string"}}]}`
+		recordJSON    = `{"tags":{"values":{"env":"prod"}},"items":["a"]}`
+	)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("content-type", "application/vnd.schemaregistry.v1+json")
+		var resp any
+		switch r.URL.Path {
+		case "/schemas/ids/4000":
+			resp = map[string]any{
+				"schema":     orderSchema,
+				"references": []map[string]any{{"name": "com.acme.Tags", "subject": "tags", "version": 1}},
+			}
+		case "/subjects/tags/versions/1":
+			resp = map[string]any{"subject": "tags", "version": 1, "id": 4001, "schema": tagsSchema}
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		body, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+	defer ts.Close()
+
+	singleClientProvider, err := schemafactory.NewSingleClientProvider(&config.Config{
+		SchemaRegistry: config.Schema{
+			Enabled: true,
+			URLs:    []string{ts.URL},
+		},
+	})
+	require.NoError(t, err)
+	schemaCachedClient, err := schema.NewCachedClient(singleClientProvider, func(context.Context) (string, error) {
+		return "single/", nil
+	})
+	require.NoError(t, err)
+	serde := AvroSerde{schemaClient: schemaCachedClient}
+
+	// The names don't change the wire format: tags.values={"env":"prod"}, items=["a"].
+	record := binary.BigEndian.AppendUint32([]byte{0}, orderSchemaID)
+	record = append(record, 0x02, 0x06, 'e', 'n', 'v', 0x08, 'p', 'r', 'o', 'd', 0x00, 0x02, 0x02, 'a', 0x00)
+
+	t.Run("deserialize", func(t *testing.T) {
+		payload, err := serde.DeserializePayload(t.Context(), &kgo.Record{Value: record}, PayloadTypeValue)
+		require.NoError(t, err)
+		assert.Equal(t, PayloadEncodingAvro, payload.Encoding)
+		assert.Equal(t, uint32(orderSchemaID), *payload.SchemaID)
+		assert.JSONEq(t, recordJSON, string(payload.NormalizedPayload))
+	})
+
+	t.Run("serialize", func(t *testing.T) {
+		serialized, err := serde.SerializeObject(t.Context(), recordJSON, PayloadTypeValue, WithSchemaID(orderSchemaID))
+		require.NoError(t, err)
+		assert.Equal(t, record, serialized)
 	})
 }
