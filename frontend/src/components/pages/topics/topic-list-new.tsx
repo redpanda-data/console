@@ -22,6 +22,7 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -49,12 +50,7 @@ import {
   type DataTableRow,
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../redpanda-ui/components/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../../redpanda-ui/components/dropdown-menu';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
@@ -299,18 +295,20 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             }
           />
           <DropdownMenuContent>
-            <DropdownMenuItem
+            <ShadowBoxedMenuItem
+              action="deleteTopic"
               data-testid={`delete-topic-button-${topic.topicName}`}
               disabled={!hasDeletePrivilege() || undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteTopic(topic);
               }}
+              topic={topic.topicName}
               variant="destructive"
             >
               <TrashIcon />
               Delete
-            </DropdownMenuItem>
+            </ShadowBoxedMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -426,7 +424,9 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <Button onClick={onCreateTopic}>Create topic</Button>
+              <ShadowBoxedButton action="createTopic" onClick={onCreateTopic}>
+                Create topic
+              </ShadowBoxedButton>
             </EmptyContent>
           )}
         </Empty>
@@ -502,9 +502,13 @@ const TopicList: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <Button data-testid="create-topic-button" onClick={() => setIsCreateTopicModalOpen(true)}>
+            <ShadowBoxedButton
+              action="createTopic"
+              data-testid="create-topic-button"
+              onClick={() => setIsCreateTopicModalOpen(true)}
+            >
               Create topic
-            </Button>
+            </ShadowBoxedButton>
           }
         >
           <div className="relative">

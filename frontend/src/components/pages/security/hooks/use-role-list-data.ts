@@ -4,6 +4,7 @@ import { useStore } from 'zustand';
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { rolesApi, useApiStoreHook, useRolesStore } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 
 export type RoleEntry = {
   name: string;
@@ -28,13 +29,19 @@ export function useRoleListData() {
   return { roles, isLoading, isError, error };
 }
 
-/** Whether the current user can create roles, and why not. */
+/**
+ * Whether the current user can create roles, and why not. `boxedReason` is the fence's, only where
+ * the user could otherwise create one, so a missing permission keeps its own tooltip.
+ */
 export function useCreateRoleAvailability() {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const canCreateRoles = useApiStoreHook((s) => s.userData?.canCreateRoles);
+  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
+  const disabled = canCreateRoles === false || !featureRolesApi;
 
   return {
-    disabled: canCreateRoles === false || !featureRolesApi,
+    disabled,
+    boxedReason: disabled ? undefined : editRolesReason,
     reason: [
       canCreateRoles === false &&
         'You need KafkaAclOperation.KAFKA_ACL_OPERATION_ALTER and RedpandaCapability.MANAGE_RBAC permissions.',

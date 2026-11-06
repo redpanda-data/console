@@ -23,25 +23,30 @@ export type ShadowLinkConfigurationProps = {
 };
 
 export const ShadowLinkConfiguration = ({ shadowLink }: ShadowLinkConfigurationProps) => (
-  <Tabs defaultValue="all">
-    <TabsList testId="configuration-subtabs">
-      <TabsTrigger testId="all-tab" value="all" variant="underline">
+  <Tabs className="items-start" defaultValue="all" orientation="vertical">
+    <TabsList
+      aria-label="Configuration sections"
+      className="sticky top-4 mr-6 w-52 shrink-0"
+      testId="configuration-subtabs"
+      variant="nav"
+    >
+      <TabsTrigger testId="all-tab" value="all" variant="nav">
         All
       </TabsTrigger>
-      <TabsTrigger testId="source-tab" value="source" variant="underline">
+      <TabsTrigger testId="source-tab" value="source" variant="nav">
         Source
       </TabsTrigger>
-      <TabsTrigger testId="shadowing-tab" value="shadowing" variant="underline">
+      <TabsTrigger testId="shadowing-tab" value="shadowing" variant="nav">
         Shadowing
       </TabsTrigger>
-      <TabsTrigger testId="topic-config-replication-tab" value="topic-config-replication" variant="underline">
-        Topic properties shadowed
+      <TabsTrigger testId="topic-config-replication-tab" value="topic-config-replication" variant="nav">
+        Topic properties
       </TabsTrigger>
     </TabsList>
 
-    <TabsContents className="w-2/3">
+    <TabsContents className="max-w-4xl min-w-0 flex-1">
       <TabsContent testId="all-content" value="all">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-12">
           <ConfigurationSource shadowLink={shadowLink} />
           <ConfigurationShadowing shadowLink={shadowLink} />
           <ConfigurationTopicReplication shadowLink={shadowLink} />

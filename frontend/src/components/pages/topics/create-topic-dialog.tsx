@@ -47,6 +47,7 @@ import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
+import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { TonedIcon } from '../shared/toned-icon';
 
 const createTopicFormSchema = z
@@ -702,14 +703,15 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button onClick={handleClose} variant="outline">
                 Cancel
               </Button>
-              <Button
+              <ShadowBoxedButton
+                action="createTopic"
                 data-testid="onOk-button"
                 disabled={!form.formState.isValid || isLoading}
                 form="create-topic-form"
                 type="submit"
               >
                 {isLoading ? 'Creating…' : 'Create'}
-              </Button>
+              </ShadowBoxedButton>
             </>
           )}
         </DialogFooter>

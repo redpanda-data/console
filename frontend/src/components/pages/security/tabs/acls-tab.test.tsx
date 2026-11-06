@@ -82,6 +82,10 @@ rs.mock('../../../../react-query/api/acl', () => ({
   }),
 }));
 
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
+}));
+
 const SORT_ASC = /Asc/;
 const ACL_ROW_TESTID = /^acl-list-item-/;
 

@@ -12,9 +12,10 @@ import {
   QuotaFailureSchema,
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
 
 import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
-import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 
 // Spies on the real manager: the unit project shares module caches across files, so a module mock
 // only takes effect when this file happens to load `toast.utils` first.
@@ -182,6 +183,46 @@ describe('formatToastErrorMessageGRPC', () => {
       const result = formatToastErrorMessageGRPC({ error, action: 'create', entity: 'role' });
       expect(result).toBe('Failed to create role: invalid input (reason: VALIDATION_ERROR) — name: is required');
     });
+  });
+});
+
+describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
+  const kafkaError = (reason: string, code = Code.InvalidArgument) =>
+    new ConnectError('the request was rejected', code, undefined, [
+      { desc: ErrorInfoSchema, value: create(ErrorInfoSchema, { reason, domain: 'redpanda.com/kafka' }) },
+    ]);
+
+  afterEach(() => {
+    useShadowBoxStore.setState({ phase: null });
+  });
+
+  test('names the fence after the broker’s own message for a policy violation', () => {
+    useShadowBoxStore.setState({ phase: 'boxed' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
+    ).toBe(
+      'Failed to create topic: the request was rejected (reason: POLICY_VIOLATION). This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.'
+    );
+  });
+
+  test('says brokers may still be rejecting while it unboxes', () => {
+    useShadowBoxStore.setState({ phase: 'unboxing' });
+    expect(
+      formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
+    ).toContain('being unfenced');
+  });
+
+  test.each([
+    ['a timeout', 'boxed' as const, kafkaError('REQUEST_TIMED_OUT')],
+    [
+      'an unrelated failed precondition',
+      'boxed' as const,
+      new ConnectError('group not empty', Code.FailedPrecondition),
+    ],
+    ['anything, while unfenced', 'unboxed' as const, kafkaError('POLICY_VIOLATION')],
+  ])('doesn’t blame the fence for %s', (_label, phase, error) => {
+    useShadowBoxStore.setState({ phase });
+    expect(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'topic' })).not.toContain('fence');
   });
 });
 

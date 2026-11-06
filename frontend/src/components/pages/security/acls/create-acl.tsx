@@ -34,6 +34,7 @@ import {
   getSubjectTooltipText,
   hasConfiguredOperation,
 } from './acl-rule-editing';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { useAclRulesEditor } from '../hooks/use-acl-rules-editor';
 import { useAclSharedConfig } from '../hooks/use-acl-shared-config';
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
@@ -52,6 +53,7 @@ import {
   OperationTypeNotSet,
   type PrincipalFieldProps,
   type PrincipalType,
+  PrincipalTypeRedpandaRole,
   parsePrincipal,
   type ResourcePatternType,
   ResourcePatternTypeAny,
@@ -836,7 +838,8 @@ export default function CreateACL({
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />
                 <div className="mt-4 flex items-center gap-2">
-                  <Button
+                  <ShadowBoxedButton
+                    action={principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls'}
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !hasConfiguredOperation(rules)}
                     onClick={() =>
@@ -844,7 +847,7 @@ export default function CreateACL({
                     }
                   >
                     {edit ? 'Save' : 'Create'}
-                  </Button>
+                  </ShadowBoxedButton>
                   <Button onClick={onCancel} variant="ghost">
                     Cancel
                   </Button>

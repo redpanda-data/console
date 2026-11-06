@@ -16,6 +16,7 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
@@ -119,13 +120,15 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <ShadowBoxedMenuItem action="editAcls" disabled={!canDeleteUser} onClick={handle(true, true)}>
           Delete (User and ACLs)
-        </DropdownMenuItem>
+        </ShadowBoxedMenuItem>
         <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+        <ShadowBoxedMenuItem action="editAcls" onClick={handle(false, true)}>
+          Delete (ACLs only)
+        </ShadowBoxedMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -238,7 +241,8 @@ const AclsTabBody = ({
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={onDismissFailure} />
 
-        <Button
+        <ShadowBoxedButton
+          action="editAcls"
           data-testid="create-acls"
           onClick={() => {
             navigate({
@@ -250,7 +254,7 @@ const AclsTabBody = ({
           }}
         >
           Create ACLs
-        </Button>
+        </ShadowBoxedButton>
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>

@@ -49,6 +49,7 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
+import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { subjectSchemaContext } from '../schemas/schema-context-utils';
 
 type EncodingOption = {
@@ -650,9 +651,15 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
+        <ShadowBoxedButton
+          action="produce"
+          data-testid="produce-button"
+          isLoading={isSubmitting}
+          topic={topicName}
+          type="submit"
+        >
           Produce
-        </Button>
+        </ShadowBoxedButton>
         <Button
           nativeButton={false}
           render={

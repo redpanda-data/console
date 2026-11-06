@@ -66,6 +66,7 @@ import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
+import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -266,7 +267,8 @@ const SchemaPageButtons = (p: {
         </Alert>
       ) : null}
       <div className="mt-4 flex gap-4">
-        <Button
+        <ShadowBoxedButton
+          action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
@@ -291,7 +293,7 @@ const SchemaPageButtons = (p: {
           variant="primary"
         >
           {isCreating ? 'Creating...' : 'Save'}
-        </Button>
+        </ShadowBoxedButton>
 
         <Button
           disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}

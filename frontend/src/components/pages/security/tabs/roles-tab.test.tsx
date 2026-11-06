@@ -138,6 +138,10 @@ rs.mock('react-query/api/security', () => ({
   }),
 }));
 
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
+}));
+
 import { RolesTab } from './roles-tab';
 
 describe('the RolesTab role navigation', () => {

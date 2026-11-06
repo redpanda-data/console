@@ -15,6 +15,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
+import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -282,9 +283,13 @@ export const ShadowLinkCreatePage = () => {
             <div className="w-1/2">
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
-                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)}>
+                  <ShadowBoxedButton
+                    action="createShadowLink"
+                    disabled={isCreating}
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
                     Create shadow link
-                  </Button>
+                  </ShadowBoxedButton>
                 ) : (
                   <Button onClick={() => next(methods)} type="button">
                     Next

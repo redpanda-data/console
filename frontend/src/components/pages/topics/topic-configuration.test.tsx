@@ -1,4 +1,4 @@
-import { rs } from '@rstest/core';
+import { afterEach, rs } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -23,6 +23,15 @@ rs.mock('../../../config', () => {
   };
 });
 
+const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
+
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  // Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic.
+  useShadowBoxGuard: () => ({
+    reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
+  }),
+}));
+
 import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
 const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }): ConfigEntryExtended => ({
@@ -46,14 +55,14 @@ const entries: ConfigEntryExtended[] = [
   makeEntry({ name: 'some.unknown.option', category: 'Totally Unknown' }),
 ];
 
-function renderEditor() {
+function renderEditor(targetTopic = 'my-topic') {
   return render(
     <ConfigurationEditor
       entries={entries}
       onForceRefresh={() => {
         // no op - test callback
       }}
-      targetTopic="my-topic"
+      targetTopic={targetTopic}
     />
   );
 }
@@ -63,6 +72,22 @@ function getSection(name: string) {
 }
 
 describe('the TopicConfiguration', () => {
+  afterEach(() => {
+    guard.reason = undefined;
+  });
+
+  test.each([
+    ['a user topic opens no editor', 'my-topic', 0],
+    ['an internal topic stays editable, since the fence only covers user topics', '_schemas', 1],
+  ])('while the cluster is fenced, %s', async (_case, topic, dialogs) => {
+    guard.reason = 'You can’t change topic configuration while this cluster is fenced. Unfence it first.';
+    const user = userEvent.setup();
+    renderEditor(topic);
+
+    await user.click(within(getSection('Retention')).getByRole('button'));
+    expect(screen.queryAllByRole('dialog')).toHaveLength(dialogs);
+  });
+
   describe('grouped layout', () => {
     test('renders a sidebar preserving backend categories and collapsing only unmapped ones into Other', () => {
       renderEditor();

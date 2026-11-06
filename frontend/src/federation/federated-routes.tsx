@@ -27,6 +27,7 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
+import { ShadowBoxBanner } from '../components/shadow-box/shadow-box-banner';
 import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
@@ -135,6 +136,9 @@ function FederatedAppContent() {
     >
       <NullFallbackBoundary>
         <LicenseNotification />
+      </NullFallbackBoundary>
+      <NullFallbackBoundary>
+        <ShadowBoxBanner />
       </NullFallbackBoundary>
       <ModalContainer />
       <AppPageHeader />

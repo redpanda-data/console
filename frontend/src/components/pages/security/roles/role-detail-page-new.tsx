@@ -37,6 +37,7 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -102,7 +103,8 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
           <span className="font-mono">{displayName}</span>
         </TableCell>
         <TableCell align="right">
-          <Button
+          <ShadowBoxedButton
+            action="editRoles"
             data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
             disabled={isRemoveDisabled(member.principal)}
             onClick={() => onRemove(member.principal)}
@@ -110,7 +112,7 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
             variant="destructive-ghost"
           >
             <Trash2 className="h-4 w-4" />
-          </Button>
+          </ShadowBoxedButton>
         </TableCell>
       </TableRow>
     );

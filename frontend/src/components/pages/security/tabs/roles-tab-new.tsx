@@ -17,7 +17,6 @@ import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import {
@@ -26,6 +25,8 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
+import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
@@ -134,17 +135,19 @@ export const RolesTabNew: FC = () => {
           actions={
             <Tooltip>
               <TooltipTrigger
-                render={
+                render={hoverableWhenDisabled(
+                  createRole.boxedReason,
                   <Button
                     data-testid="create-role-button"
-                    disabled={createRole.disabled}
+                    disabled={createRole.disabled || Boolean(createRole.boxedReason)}
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     Create role
                   </Button>
-                }
+                )}
               />
               {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
+              {createRole.boxedReason ? <TooltipContent>{createRole.boxedReason}</TooltipContent> : null}
             </Tooltip>
           }
         >
@@ -161,9 +164,14 @@ export const RolesTabNew: FC = () => {
               <SecurityEmptyState
                 action={
                   isFiltered ? undefined : (
-                    <Button disabled={createRole.disabled} onClick={() => setCreateDialogOpen(true)}>
-                      Create role
-                    </Button>
+                    <DisabledReasonTooltip reason={createRole.boxedReason}>
+                      <Button
+                        disabled={createRole.disabled || Boolean(createRole.boxedReason)}
+                        onClick={() => setCreateDialogOpen(true)}
+                      >
+                        Create role
+                      </Button>
+                    </DisabledReasonTooltip>
                   )
                 }
                 description={
@@ -221,7 +229,8 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           }
         />
         <DropdownMenuContent>
-          <DropdownMenuItem
+          <ShadowBoxedMenuItem
+            action="editRoles"
             data-testid={`delete-role-button-${roleName}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -231,7 +240,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           >
             <Trash2Icon />
             Delete
-          </DropdownMenuItem>
+          </ShadowBoxedMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

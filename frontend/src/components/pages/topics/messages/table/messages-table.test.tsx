@@ -13,6 +13,12 @@ import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+const guard = rs.hoisted(() => ({ boxedRead: false }));
+
+rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
+  useShadowBoxGuard: () => ({ reasonFor: () => undefined, isBoxedRead: () => guard.boxedRead }),
+}));
+
 import { MessagesTable, type MessagesTableProps } from './messages-table';
 import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
 import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
@@ -54,6 +60,17 @@ describe('the MessagesTable — error state', () => {
     render(<MessagesTable {...baseProps} error="network error" onRetry={onRetry} />);
     await userEvent.click(screen.getByTestId('messages-error-retry'));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  test('a read the fence rejected is explained, with the raw error kept', () => {
+    guard.boxedRead = true;
+    try {
+      render(<MessagesTable {...baseProps} error="[POLICY_VIOLATION] fetch rejected" />);
+      expect(screen.getByText('Reading is blocked while this cluster is fenced')).toBeInTheDocument();
+      expect(screen.getByTestId('messages-error-detail')).toHaveTextContent('[POLICY_VIOLATION] fetch rejected');
+    } finally {
+      guard.boxedRead = false;
+    }
   });
 
   test('no error falls back to the normal empty state (regression guard)', () => {

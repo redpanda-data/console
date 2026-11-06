@@ -23,7 +23,9 @@ import {
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { ArrowDownIcon, ArrowUpIcon, TriangleAlertIcon } from 'lucide-react';
+import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
+import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import { ArrowDownIcon, ArrowUpIcon, LockIcon, TriangleAlertIcon } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
 import { KeyCell, OffsetCell, SizeCell, TimestampCell, ValueCell, type ValuePreviewConfig } from './message-cells';
@@ -126,14 +128,26 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
   </>
 );
 
-const ErrorState = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+export const ErrorState = ({
+  message,
+  onRetry,
+  boxed = false,
+}: {
+  message: string;
+  onRetry?: () => void;
+  /** The cluster fence most likely rejected the read. */
+  boxed?: boolean;
+}) => (
   <Empty data-testid="messages-error">
     <EmptyHeader>
-      <EmptyMedia variant="icon">
-        <TriangleAlertIcon />
-      </EmptyMedia>
-      <EmptyTitle>Couldn't load messages</EmptyTitle>
-      <EmptyDescription>{message}</EmptyDescription>
+      <EmptyMedia variant="icon">{boxed ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
+      <EmptyTitle>{boxed ? BOXED_READS_TITLE : "Couldn't load messages"}</EmptyTitle>
+      <EmptyDescription>{boxed ? BOXED_READS_DESCRIPTION : message}</EmptyDescription>
+      {boxed ? (
+        <EmptyDescription data-testid="messages-error-detail">
+          <div className="font-mono text-body-sm leading-relaxed">{message}</div>
+        </EmptyDescription>
+      ) : null}
     </EmptyHeader>
     {onRetry ? (
       <EmptyContent>
@@ -233,6 +247,7 @@ export const MessagesTable = ({
   // states below — those read as "this topic genuinely has no matching messages," which is not
   // what a network/auth/timeout failure means.
   const showEmpty = !(error || isLoading) && rows.length === 0;
+  const boxedRead = useShadowBoxGuard().isBoxedRead(error ?? '');
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
@@ -312,7 +327,7 @@ export const MessagesTable = ({
           })}
         </TableBody>
       </Table>
-      {error ? <ErrorState message={error} onRetry={onRetry} /> : null}
+      {error ? <ErrorState boxed={boxedRead} message={error} onRetry={onRetry} /> : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
         <Empty data-testid="messages-empty">

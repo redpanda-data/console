@@ -57,6 +57,7 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { useRowSelection } from '../hooks/use-row-selection';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
@@ -341,18 +342,28 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           actions={
             <div className="flex items-center gap-2">
               {selection.someSelected && (
-                <Button disabled={isDeleting} onClick={deleteSelected} variant="destructive">
+                <ShadowBoxedButton
+                  action="editAcls"
+                  disabled={isDeleting}
+                  onClick={deleteSelected}
+                  variant="destructive"
+                >
                   Delete selected ({selection.selected.size})
-                </Button>
+                </ShadowBoxedButton>
               )}
               {principal && (
-                <Button onClick={() => setGrantAllOpen(true)} variant="outline">
+                <ShadowBoxedButton action="editAcls" onClick={() => setGrantAllOpen(true)} variant="outline">
                   Allow all operations
-                </Button>
+                </ShadowBoxedButton>
               )}
-              <Button onClick={() => setDialogOpen(true)} testId="add-acl-button" variant="outline">
+              <ShadowBoxedButton
+                action="editAcls"
+                onClick={() => setDialogOpen(true)}
+                testId="add-acl-button"
+                variant="outline"
+              >
                 + Add ACL
-              </Button>
+              </ShadowBoxedButton>
             </div>
           }
         >

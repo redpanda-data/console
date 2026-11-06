@@ -19,6 +19,7 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, Trash2Icon, UserIcon, UsersIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -232,7 +233,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                     <DropdownMenuContent>
                       {group.principalType === 'User' && (
                         <>
-                          <DropdownMenuItem
+                          <ShadowBoxedMenuItem
+                            action="editAcls"
                             disabled={!canDeleteUser}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -242,7 +244,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           >
                             <Trash2Icon />
                             Delete (User and ACLs)
-                          </DropdownMenuItem>
+                          </ShadowBoxedMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
                             onClick={(e) => {
@@ -256,7 +258,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           </DropdownMenuItem>
                         </>
                       )}
-                      <DropdownMenuItem
+                      <ShadowBoxedMenuItem
+                        action="editAcls"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPendingDelete('acls-only');
@@ -265,7 +268,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       >
                         <Trash2Icon />
                         Delete (ACLs only)
-                      </DropdownMenuItem>
+                      </ShadowBoxedMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -355,7 +358,11 @@ const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCre
   return (
     <div className="rounded-md border">
       <SecurityEmptyState
-        action={<Button onClick={onCreateAcl}>Create ACL</Button>}
+        action={
+          <ShadowBoxedButton action="editAcls" onClick={onCreateAcl}>
+            Create ACL
+          </ShadowBoxedButton>
+        }
         description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
         docsHref={docsLinks.selfManaged.acl}
         icon={<KeyRoundIcon />}
@@ -447,7 +454,13 @@ export const PermissionsListTabNew: FC = () => {
           </DescriptionWithHelp>
         </div>
 
-        <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
+        <ListLayoutFilters
+          actions={
+            <ShadowBoxedButton action="editAcls" onClick={() => setCreateAclOpen(true)}>
+              Create ACL
+            </ShadowBoxedButton>
+          }
+        >
           <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."

@@ -29,6 +29,8 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
+import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
+import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
@@ -36,13 +38,19 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+/** The name checks, plus whether the fence rejects creating roles right now. */
+const useRoleNameChecks = (roleName: string) => ({
+  ...useRoleNameAvailability(roleName),
+  boxed: Boolean(useShadowBoxGuard().reasonFor('editRoles')),
+});
+
 export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
   const [roleName, setRoleName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
+  const { trimmed, alreadyExists, boxed } = useRoleNameChecks(roleName);
 
   const handleClose = () => {
     setRoleName('');
@@ -66,7 +74,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists) {
+    if (!trimmed || alreadyExists || boxed) {
       return;
     }
     setIsSubmitting(true);
@@ -103,9 +111,13 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting} onClick={handleSubmit}>
+          <ShadowBoxedButton
+            action="editRoles"
+            disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
+            onClick={handleSubmit}
+          >
             Create
-          </Button>
+          </ShadowBoxedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

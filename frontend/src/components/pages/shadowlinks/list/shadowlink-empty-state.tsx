@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
 import { AlertCircle, Info, Lock, SearchX } from 'lucide-react';
 
 const ShadowingDescription = () => (
@@ -47,9 +48,9 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+        <ShadowBoxedButton action="createShadowLink" onClick={onCreateClick} testId="create-shadowlink-button">
           Create shadow link
-        </Button>
+        </ShadowBoxedButton>
       </div>
     </CardContent>
   </Card>
@@ -64,9 +65,9 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+        <ShadowBoxedButton action="createShadowLink" onClick={onCreateClick} testId="create-shadowlink-button">
           Create shadow link in Redpanda Cloud
-        </Button>
+        </ShadowBoxedButton>
       </div>
     </CardContent>
   </Card>

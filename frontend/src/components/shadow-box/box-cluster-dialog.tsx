@@ -1,0 +1,323 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import { Code, ConnectError } from '@connectrpc/connect';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { isShadowLinkingDisabledError } from 'components/pages/shadowlinks/shadowlink-helpers';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Input } from 'components/redpanda-ui/components/input';
+import type { ShadowLinkTopology } from 'federation/types';
+import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
+import { isStaleRevisionError, useBoxClusterMutation, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import { toast } from 'sonner';
+import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { z } from 'zod';
+
+import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
+import { getBoxPreflightChecks, type PreflightStatus } from './box-preflight';
+import {
+  BOX_PHASE_LABEL,
+  type BoxSummary,
+  type BrokerProgress,
+  canBoxFromPhase,
+  linksThatStopBox,
+  type ReadPolicy,
+} from './shadow-box-model';
+import {
+  type PrincipalSuggestion,
+  readPolicySchema,
+  ShadowBoxSettingsFields,
+  useReaderSuggestions,
+} from './shadow-box-settings-fields';
+
+const FALLBACK_CONFIRMATION = 'fence';
+
+const formSchema = z.object({ settings: readPolicySchema, confirmation: z.string() });
+
+type FormValues = z.infer<typeof formSchema>;
+
+const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
+  pending: <TonedIcon aria-label="Checking" className="size-4 shrink-0" icon={LoaderCircleIcon} spin tone="muted" />,
+  pass: <TonedIcon aria-label="Passed" className="size-4 shrink-0" icon={CircleCheckIcon} tone="success" />,
+  warn: <TonedIcon aria-label="Warning" className="size-4 shrink-0" icon={CircleAlertIcon} tone="warning" />,
+  fail: <TonedIcon aria-label="Blocks fencing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
+};
+
+/** The form mounts with the dialog's content, so every opening starts from the box as it is then. */
+export const BoxClusterDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
+  <Dialog onOpenChange={onOpenChange} open={open}>
+    <DialogContent size="lg" testId="box-cluster-dialog">
+      <BoxClusterForm onClose={() => onOpenChange(false)} />
+    </DialogContent>
+  </Dialog>
+);
+
+const boxErrorTitle = (error: unknown, settingsSaved: boolean) => {
+  if (error instanceof ConnectError && error.code === Code.DeadlineExceeded) {
+    return 'The call timed out, and may still apply';
+  }
+  return settingsSaved ? 'Settings saved, but the cluster isn’t fenced' : 'Couldn’t fence the cluster';
+};
+
+/** This cluster's own links that haven't failed over: while any remain, it's a shadow and Box fails. */
+const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
+  if (query.data) {
+    return linksThatStopBox(query.data.shadowLinks).map((link) => link.name);
+  }
+  if (isShadowLinkingDisabledError(query.error)) {
+    return 'disabled';
+  }
+  return query.isError ? 'error' : 'loading';
+};
+
+const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
+  exemptPrincipals: Array.from(
+    new Set([...summary.exemptPrincipals, ...suggestions.map(({ principal }) => principal)])
+  ),
+  allowAllReads: summary.allowAllReads,
+});
+
+const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
+  <section aria-label="What fencing changes" className="grid gap-4 sm:grid-cols-2">
+    <div>
+      <h3 className="text-label">Rejects</h3>
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
+        <li>Producing to user topics. Producers get REQUEST_TIMED_OUT and keep retrying.</li>
+        {allowAllReads ? null : <li>Fetching from user topics, except for the exempt users below</li>}
+        <li>Creating or deleting topics, adding partitions, or changing topic configuration</li>
+        <li>
+          Consumer group joins, heartbeats, offset commits and deletes. Clients get COORDINATOR_NOT_AVAILABLE and wait.
+        </li>
+        <li>Every Schema Registry write</li>
+        <li>Creating or deleting ACLs, and creating, changing or deleting roles</li>
+        <li>Creating shadow links, new data migrations and cluster recovery</li>
+      </ul>
+    </div>
+    <div>
+      <h3 className="text-label">Keeps working</h3>
+      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
+        {allowAllReads ? <li>Fetching from topics</li> : null}
+        <li>DeleteRecords, retention and compaction</li>
+        <li>Reading consumer group offsets and descriptions</li>
+        <li>Users and their SCRAM passwords</li>
+        <li>Cluster config, decommission and partition moves</li>
+        <li>Internal topics, such as __consumer_offsets</li>
+      </ul>
+    </div>
+    <p className="text-body-sm sm:col-span-2">
+      Each broker also ends open transactions as it picks up the fence: aborted, or committed if the coordinator had
+      already decided to commit.
+    </p>
+  </section>
+);
+
+const useBoxSettingsForm = (opened: BoxSummary, suggestions: PrincipalSuggestion[]) => {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
+  });
+
+  // Readers can arrive from the host after the dialog opens; pre-add their users until the user edits.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a new set of suggestions reseeds
+  useEffect(() => {
+    if (!form.getFieldState('settings').isDirty) {
+      form.resetField('settings', { defaultValue: seedSettings(opened, suggestions) });
+    }
+  }, [suggestions]);
+
+  const settings = useWatch({ control: form.control, name: 'settings' });
+  const confirmation = useWatch({ control: form.control, name: 'confirmation' });
+  return { form, settings, confirmation };
+};
+
+const useBoxPreflight = (topology: ShadowLinkTopology | null, brokers: BrokerProgress[], settings: ReadPolicy) => {
+  const ownLinksQuery = useListShadowLinksQuery({});
+  const checks = getBoxPreflightChecks({
+    linksThatStopBox: ownLinksState(ownLinksQuery),
+    brokers,
+    exemptPrincipals: settings.exemptPrincipals,
+    allowAllReads: settings.allowAllReads,
+    readers: topology ? topology.readers : undefined,
+    readersResolving: topology?.resolving ?? false,
+    readersIncomplete: topology?.readersIncomplete ?? false,
+  });
+  /** A shadow cluster can't be boxed, so Box waits until the own-links check has an answer. */
+  const blocked = checks.some(
+    (check) => check.status === 'fail' || (check.id === 'own-links' && check.status === 'pending')
+  );
+  return { checks, blocked };
+};
+
+const useBoxClusterForm = () => {
+  const { summary, brokers } = useShadowBoxStatusQuery();
+  const topology = useShadowBoxStore((state) => state.topology);
+  const boxCluster = useBoxClusterMutation();
+  const openedBox = useOpenedBox(summary, boxCluster.isPending || boxCluster.isSuccess, boxCluster.savedBox);
+  const suggestions = useReaderSuggestions();
+  const settingsForm = useBoxSettingsForm(openedBox.opened, suggestions);
+  const preflight = useBoxPreflight(topology, brokers, settingsForm.settings);
+  return { summary, topology, boxCluster, ...openedBox, suggestions, ...settingsForm, ...preflight };
+};
+
+const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
+  const {
+    summary,
+    topology,
+    boxCluster,
+    opened,
+    changed,
+    refresh,
+    suggestions,
+    form,
+    settings,
+    confirmation,
+    checks,
+    blocked,
+  } = useBoxClusterForm();
+  const clusterName = topology?.clusterName;
+  const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
+  const confirmed = confirmation.trim() === confirmationTarget;
+  const alreadyBoxed = !canBoxFromPhase(opened.phase);
+
+  const handleRefresh = () => {
+    refresh();
+    form.resetField('settings', { defaultValue: seedSettings(summary, suggestions) });
+    boxCluster.reset();
+  };
+
+  const handleSubmit = form.handleSubmit((values) => {
+    boxCluster.mutate(
+      { settings: values.settings, opened },
+      {
+        onSuccess: () => {
+          toast.success(`Fencing ${clusterName ?? 'this cluster'}`);
+          onClose();
+        },
+      }
+    );
+  });
+
+  return (
+    <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
+      <DialogHeader align="left">
+        <DialogTitle>Fence {clusterName ?? 'this cluster'}?</DialogTitle>
+        <DialogDescription>
+          {settings.allowAllReads
+            ? 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Consumers keep reading.'
+            : 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Only the exempt users below can still fetch from user topics, so your shadow links can finish copying.'}
+        </DialogDescription>
+      </DialogHeader>
+      <DialogBody spacing="lg">
+        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
+        {!changed && alreadyBoxed ? (
+          <Alert testId="box-cluster-already-boxed" variant="informative">
+            <AlertTitle>This cluster is already {BOX_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
+            <AlertDescription>
+              <p>It was fenced while this was open. Close this dialog to see its status.</p>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        <BoxEffects allowAllReads={settings.allowAllReads} />
+
+        <section aria-label="Settings" className="flex flex-col gap-1">
+          <h3 className="text-label">1. Save settings</h3>
+          <p className="text-body-sm text-muted-foreground">
+            Fence uses the saved settings, so these are saved first if you changed them. The fence always covers every
+            resource it supports; there’s no scope to choose.
+          </p>
+        </section>
+
+        <Controller
+          control={form.control}
+          name="settings"
+          render={({ field }) => (
+            <ShadowBoxSettingsFields onChange={field.onChange} suggestions={suggestions} value={field.value} />
+          )}
+        />
+
+        <section aria-label="Before you fence" className="flex flex-col gap-2">
+          <h3 className="text-label">2. Fence</h3>
+          <ul className="flex flex-col gap-1.5" data-testid="box-preflight-checks">
+            {checks.map((check) => (
+              <li
+                className="flex items-start gap-2 text-body-sm"
+                data-status={check.status}
+                data-testid={`box-preflight-${check.id}`}
+                key={check.id}
+              >
+                <span className="mt-0.5">{PREFLIGHT_ICON[check.status]}</span>
+                {check.message}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <Field>
+          <FieldLabel htmlFor="box-cluster-confirmation">
+            Type <span className="font-mono">{confirmationTarget}</span> to confirm
+          </FieldLabel>
+          <Input
+            autoComplete="off"
+            id="box-cluster-confirmation"
+            placeholder={confirmationTarget}
+            testId="box-cluster-confirmation"
+            {...form.register('confirmation')}
+          />
+        </Field>
+
+        {boxCluster.error && !(changed && isStaleRevisionError(boxCluster.error)) ? (
+          <BoxWriteErrorAlert
+            error={boxCluster.error}
+            testId="box-cluster-error"
+            title={boxErrorTitle(boxCluster.error, boxCluster.savedBox !== undefined)}
+          >
+            {/* After this dialog's own save went through, a failed Fence leaves the new settings in place. */}
+            {boxCluster.savedBox ? (
+              <p>
+                The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
+              </p>
+            ) : null}
+          </BoxWriteErrorAlert>
+        ) : null}
+      </DialogBody>
+      <DialogFooter>
+        <Button onClick={onClose} type="button" variant="outline">
+          Cancel
+        </Button>
+        <Button
+          disabled={blocked || !confirmed || changed || alreadyBoxed}
+          isLoading={boxCluster.isPending}
+          testId="confirm-box-cluster"
+          type="submit"
+          variant="destructive"
+        >
+          Fence cluster
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
