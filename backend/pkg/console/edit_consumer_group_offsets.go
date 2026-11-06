@@ -11,12 +11,15 @@ package console
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
@@ -52,26 +55,13 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 
 	// 0. Check if consumer group is empty, otherwise we can't edit the group offsets and want to provide a proper
 	// error message for the frontend.
-	describedGroups, err := adminCl.DescribeGroups(ctx, groupID)
-	if err != nil {
-		return nil, &rest.Error{
-			Err:     fmt.Errorf("failed to check group state: %w", err),
-			Status:  http.StatusServiceUnavailable,
-			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
-		}
+	state, restErr := groupState(ctx, cl, adminCl, groupID)
+	if restErr != nil {
+		return nil, restErr
 	}
-	describedGroup, exists := describedGroups[groupID]
-	if !exists {
-		return nil, &rest.Error{
-			Err:     fmt.Errorf("failed to check group state, group does not exist in response: %w", err),
-			Status:  http.StatusServiceUnavailable,
-			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
-		}
-	}
-
-	if !strings.EqualFold(describedGroup.State, "empty") {
+	if !strings.EqualFold(state, "empty") {
 		return &EditConsumerGroupOffsetsResponse{
-			Error:  fmt.Sprintf("Consumer group is still active and therefore can't be edited. Current Group State is: %v", describedGroup.State),
+			Error:  fmt.Sprintf("Consumer group is still active and therefore can't be edited. Current Group State is: %v", state),
 			Topics: nil,
 		}, nil
 	}
@@ -184,4 +174,60 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		Error:  "",
 		Topics: editedTopics,
 	}, nil
+}
+
+// groupState reads the state of one group. DescribeGroups answers for a classic group. It reports
+// a KIP-848 group and a missing group alike as Dead (Kafka) or GROUP_ID_NOT_FOUND, so that answer
+// is checked against ConsumerGroupDescribe before it counts.
+func groupState(ctx context.Context, cl *kgo.Client, adminCl *kadm.Client, groupID string) (string, *rest.Error) {
+	stateCheckFailed := func(err error) *rest.Error {
+		return &rest.Error{
+			Err:     fmt.Errorf("failed to check group state: %w", err),
+			Status:  http.StatusServiceUnavailable,
+			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
+		}
+	}
+
+	described, err := adminCl.DescribeGroups(ctx, groupID)
+	if err != nil {
+		return "", stateCheckFailed(err)
+	}
+	classic, exists := described[groupID]
+	if !exists {
+		return "", stateCheckFailed(fmt.Errorf("group '%v' is missing from the DescribeGroups response", groupID))
+	}
+	if classic.Err != nil && !errors.Is(classic.Err, kerr.GroupIDNotFound) {
+		return "", stateCheckFailed(classic.Err)
+	}
+	if classic.Err == nil && !strings.EqualFold(classic.State, "dead") {
+		return classic.State, nil
+	}
+
+	consumer, err := describeConsumerGroups(ctx, cl, []string{groupID})
+	if err != nil {
+		var ae *kadm.AuthError
+		if errors.As(err, &ae) {
+			return "", errorToRestError(err)
+		}
+		// The broker has no ConsumerGroupDescribe, so the classic answer stands.
+		if classic.Err == nil {
+			return classic.State, nil
+		}
+		return "", stateCheckFailed(err)
+	}
+	group, exists := consumer[groupID]
+	if !exists {
+		return "", stateCheckFailed(fmt.Errorf("group '%v' is missing from the ConsumerGroupDescribe response", groupID))
+	}
+	if errors.Is(group.Err, kerr.GroupIDNotFound) {
+		return "", &rest.Error{
+			Err:     fmt.Errorf("failed to check group state, group '%v' does not exist", groupID),
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("Consumer group '%v' does not exist in the Kafka cluster", groupID),
+		}
+	}
+	if group.Err != nil {
+		return "", stateCheckFailed(group.Err)
+	}
+	return group.State, nil
 }
