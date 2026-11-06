@@ -9,13 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckCircleIcon, FlameIcon, HelpIcon, HourglassIcon, RefreshIcon, WarningIcon } from 'components/icons';
-import type { ReactNode } from 'react';
 import type { GroupType } from 'state/rest-interfaces';
 
 import { groupTypeLabels } from './consumer-group-type';
+import { StatusDot } from '../../redpanda-ui/components/status-dot';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
-import { cn } from '../../redpanda-ui/lib/utils';
+import { cn, type SemanticVariant } from '../../redpanda-ui/lib/utils';
 
 type StateIconKey =
   | 'stable'
@@ -27,15 +26,15 @@ type StateIconKey =
   | 'dead'
   | 'unknown';
 
-const stateIcons: Record<StateIconKey, ReactNode> = {
-  stable: <CheckCircleIcon className="text-success" size={16} />,
-  completingrebalance: <HourglassIcon className="text-success" size={16} />,
-  preparingrebalance: <HourglassIcon className="text-warning" size={16} />,
-  assigning: <HourglassIcon className="text-warning" size={16} />,
-  reconciling: <RefreshIcon className="text-warning" size={16} />,
-  empty: <WarningIcon className="text-warning" size={16} />,
-  dead: <FlameIcon className="text-destructive" size={16} />,
-  unknown: <HelpIcon size={16} />,
+const stateDotVariants: Record<StateIconKey, SemanticVariant> = {
+  stable: 'success',
+  completingrebalance: 'success',
+  preparingrebalance: 'warning',
+  assigning: 'warning',
+  reconciling: 'warning',
+  empty: 'warning',
+  dead: 'destructive',
+  unknown: 'disabled',
 };
 
 export const consumerGroupStateNames: Record<StateIconKey, string> = {
@@ -86,11 +85,11 @@ export const consumerGroupStatesByType: Record<GroupType, StateIconKey[]> = {
 
 const normalizeStateKey = (state: string): StateIconKey => {
   const key = state.toLowerCase().replace(/\s+/g, '') as StateIconKey;
-  return key in stateIcons ? key : 'unknown';
+  return key in stateDotVariants ? key : 'unknown';
 };
 
 /**
- * Renders a consumer group's state as an icon + label. The tooltip lists the states a group
+ * Renders a consumer group's state as a status dot + label. The tooltip lists the states a group
  * of this type can be in and highlights the current one. Shared between the consumer groups
  * list and detail pages.
  */
@@ -105,7 +104,7 @@ export const ConsumerGroupStateCell = ({ state, groupType = 'classic' }: { state
         <TooltipTrigger
           render={
             <span className="inline-flex items-center gap-2">
-              {stateIcons[key]}
+              <StatusDot size="sm" variant={stateDotVariants[key]} />
               <span>{consumerGroupStateNames[key]}</span>
             </span>
           }
@@ -130,7 +129,7 @@ export const ConsumerGroupStateCell = ({ state, groupType = 'classic' }: { state
                 )}
                 key={s}
               >
-                {stateIcons[s]}
+                <StatusDot className="mt-px" size="sm" variant={stateDotVariants[s]} />
                 <span className="font-semibold text-foreground">{consumerGroupStateNames[s]}</span>
                 <span className="text-muted-foreground">{stateDescriptions[s]}</span>
               </li>
