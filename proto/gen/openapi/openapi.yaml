@@ -5949,7 +5949,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: List Recent Connections
+      summary: List recent connections
       tags:
         - Monitoring
   /v1/quotas:
@@ -7073,7 +7073,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Stops a Redpanda Connect pipeline
+      summary: Stop a Redpanda Connect pipeline
       tags:
         - Redpanda Connect Pipelines
   /v1/redpanda-connect/pipelines:lint-config:
@@ -7781,7 +7781,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Get Shadow Link
+      summary: Get shadow link
       tags:
         - Shadow Links (Data Plane)
   /v1/shadow-links/{name}/failover:
@@ -7827,7 +7827,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Fail Over Shadow Link
+      summary: Fail over shadow link
       tags:
         - Shadow Links (Data Plane)
   /v1/shadow-links/{name}/metrics:
@@ -7865,7 +7865,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Get Shadow Link Metrics
+      summary: Get shadow link metrics
       tags:
         - Shadow Links (Data Plane)
   /v1/shadow-links/{shadow_link_name}/topic:
@@ -7921,7 +7921,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: List Shadow Link Topics
+      summary: List shadow link topics
       tags:
         - Shadow Links (Data Plane)
   /v1/shadow-links/{shadow_link_name}/topic/{topic_name}:
@@ -7964,7 +7964,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpc.Status'
           description: An unexpected error response.
-      summary: Get Shadow Topic
+      summary: Get shadow topic
       tags:
         - Shadow Links (Data Plane)
   /v1/topics:
@@ -8533,7 +8533,7 @@ paths:
         content:
           multipart/form-data:
             schema:
-              example: '{"name":"redact-orders", "input_topic_name":"orders", "output_topic_names":["orders-redacted"], "environment_variables":[{"key":"LOGGER_LEVEL", "value":"DEBUG"}]}'
+              example: '{"name":"redact-orders","input_topic_name":"orders","output_topic_names":["orders-redacted"],"environment_variables":[{"key":"LOGGER_LEVEL","value":"DEBUG"}]}'
               properties:
                 metadata:
                   $ref: '#/components/schemas/DeployTransformRequest'
@@ -8548,10 +8548,27 @@ paths:
         "201":
           content:
             application/json:
+              example:
+                environment_variables:
+                  - key: LOGGER_LEVEL
+                    value: DEBUG
+                input_topic_name: orders
+                name: redact-orders
+                output_topic_names:
+                  - orders-redacted
+                statuses:
+                  - broker_id: 0
+                    lag: 0
+                    partition_id: 0
+                    status: PARTITION_STATUS_UNKNOWN
+                  - broker_id: 1
+                    lag: 0
+                    partition_id: 1
+                    status: PARTITION_STATUS_UNKNOWN
               schema:
                 $ref: '#/components/schemas/TransformMetadata'
           description: Created
-      summary: Deploy Transform
+      summary: Deploy transform
       tags:
         - Wasm Transforms
   /v1/transforms/{name}:

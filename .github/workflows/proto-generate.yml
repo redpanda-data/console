@@ -25,11 +25,13 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: aws-actions/configure-aws-credentials@v6
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         with:
           aws-region: ${{ vars.RP_AWS_CRED_REGION }}
           role-to-assume: arn:aws:iam::${{ secrets.RP_AWS_CRED_ACCOUNT_ID }}:role/${{ vars.RP_AWS_CRED_BASE_ROLE_NAME }}${{ github.event.repository.name }}
 
       - uses: aws-actions/aws-secretsmanager-get-secrets@v3
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         with:
           secret-ids: |
             ,sdlc/prod/github/buf_token
