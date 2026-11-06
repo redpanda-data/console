@@ -361,6 +361,11 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				fetchReq, ok := req.(*kmsg.FetchRequest)
 				assert.True(ok, "request is not a list offset request: %+T", req)
 
+				// The client closes its fetch session with an empty fetch when it shuts down.
+				if fetchReq.SessionEpoch == -1 && len(fetchReq.Topics) == 0 {
+					return nil, nil, false
+				}
+
 				require.Len(fetchReq.Topics, 1)
 				require.NotEmpty(fetchReq.Topics[0].TopicID)
 
@@ -378,6 +383,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 					assert.Fail("unexpected call to fake fetch request")
 				}
 
+				return nil, nil, false
+			case *kmsg.GetTelemetrySubscriptionsRequest, *kmsg.PushTelemetryRequest:
 				return nil, nil, false
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
@@ -447,6 +454,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 				return mdRes, nil, true
 
+			case *kmsg.GetTelemetrySubscriptionsRequest, *kmsg.PushTelemetryRequest:
+				return nil, nil, false
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
 
@@ -524,6 +533,8 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 				loRes.Topics[0].Partitions[0].ErrorCode = kerr.NotLeaderForPartition.Code
 
 				return loRes, nil, true
+			case *kmsg.GetTelemetrySubscriptionsRequest, *kmsg.PushTelemetryRequest:
+				return nil, nil, false
 			default:
 				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
 
