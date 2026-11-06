@@ -18,13 +18,14 @@ import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
+import type { GroupDescription, GroupMemberAssignment, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../redpanda-ui/components/accordion';
+import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
 import { Card, CardContent } from '../../redpanda-ui/components/card';
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
@@ -42,12 +43,13 @@ import { Stat } from '../../redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../redpanda-ui/components/tabs';
 import { ConsumerGroupStateCell } from '../../ui/consumer-group/consumer-group-state-cell';
+import { formatGroupType } from '../../ui/consumer-group/consumer-group-type';
 import { DisabledReasonButton } from '../../ui/disabled-reason-button';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 import AclList from '../topics/Tab.Acl/acl-list';
 
-type GroupTab = 'topics' | 'acl';
+type GroupTab = 'topics' | 'members' | 'acl';
 
 type GroupSearchParams = {
   q?: string;
@@ -169,6 +171,7 @@ const toGroupOffsets = (group: GroupDescription): GroupOffset[] =>
 
 const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
   const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds?.length ?? 0);
+  const isConsumerGroup = group.groupType === 'consumer';
 
   return (
     // The small card carries px-6 py-4; max-w-none lifts its width cap. Its single child makes the gap moot.
@@ -176,10 +179,22 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
       <CardContent>
         {/* The stats sit in a row, so they need a flex child rather than CardContent's vertical stack. */}
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <Stat label="State" value={<ConsumerGroupStateCell state={group.state} />} />
+          <Stat label="State" value={<ConsumerGroupStateCell groupType={group.groupType} state={group.state} />} />
+          <Stat label="Type" value={formatGroupType(group.groupType)} />
+          {isConsumerGroup && (
+            <>
+              <Stat label="Assignor" value={group.protocol || '—'} />
+              <Stat label="Group Epoch" mono value={group.groupEpoch ?? '—'} />
+              <Stat label="Target Assignment Epoch" mono value={group.targetAssignmentEpoch ?? '—'} />
+            </>
+          )}
           <Stat label="Assigned Partitions" mono value={totalPartitions} />
-          <Stat label="Protocol" value={group.protocol || '—'} />
-          <Stat label="Protocol Type" value={group.protocolType || '—'} />
+          {!isConsumerGroup && (
+            <>
+              <Stat label="Protocol" value={group.protocol || '—'} />
+              <Stat label="Protocol Type" value={group.protocolType || '—'} />
+            </>
+          )}
           <Stat
             label="Coordinator ID"
             mono
@@ -197,6 +212,133 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
   );
 };
 
+const isConsumerGroupWithoutDetails = (group: GroupDescription) =>
+  group.groupType === 'consumer' && group.groupEpoch === undefined;
+
+const isBehindGroupEpoch = (group: GroupDescription, member: GroupMemberDescription) =>
+  group.groupType === 'consumer' &&
+  group.groupEpoch !== undefined &&
+  member.memberEpoch !== undefined &&
+  member.memberEpoch < group.groupEpoch;
+
+const formatAssignment = (assignment: GroupMemberAssignment) =>
+  `${assignment.topicName}: ${[...(assignment.partitionIds ?? [])].sort((a, b) => a - b).join(', ')}`;
+
+const AssignmentCell = ({ assignments }: { assignments: GroupMemberAssignment[] | undefined }) => {
+  if (!assignments?.length) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="flex flex-col gap-0.5 font-mono text-xs">
+      {assignments.map((a) => (
+        <span key={a.topicName}>{formatAssignment(a)}</span>
+      ))}
+    </div>
+  );
+};
+
+const MemberFilterInput = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+  <Input
+    containerClassName="w-[300px]"
+    onChange={(e) => onChange(e.target.value)}
+    placeholder="Filter by member"
+    size="sm"
+    value={value}
+  >
+    <InputStart>
+      <TonedIcon className="size-4" icon={Search} tone="muted" />
+    </InputStart>
+    {value !== '' && (
+      <InputEnd className="pointer-events-auto">
+        <Button aria-label="Clear member filter" onClick={() => onChange('')} size="icon-xs" variant="ghost">
+          <X />
+        </Button>
+      </InputEnd>
+    )}
+  </Input>
+);
+
+const useFilteredMembers = (group: GroupDescription, quickSearch: string) => {
+  const quickSearchRegExp = useMemo(() => getQuickSearchRegex(quickSearch), [quickSearch]);
+  return group.members.filter((m) => quickSearchRegExp.test(m.id) || quickSearchRegExp.test(m.clientId));
+};
+
+const membersSummary = (group: GroupDescription, members: GroupMemberDescription[]) => {
+  let summary = `${members.length} ${members.length === 1 ? 'member' : 'members'}`;
+  if (group.groupType === 'consumer') {
+    const behindCount = members.filter((m) => isBehindGroupEpoch(group, m)).length;
+    summary += behindCount > 0 ? `, ${behindCount} behind the group epoch` : ', all at the group epoch';
+  }
+  return summary;
+};
+
+const GroupMembersTable = ({ group, members }: { group: GroupDescription; members: GroupMemberDescription[] }) => {
+  const isConsumerGroup = group.groupType === 'consumer';
+
+  if (group.members.length === 0) {
+    return (
+      <div className="rounded-lg border border-solid border-border bg-card py-8">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Search />
+            </EmptyMedia>
+            <EmptyTitle>No members</EmptyTitle>
+            <EmptyDescription>This consumer group has no connected members.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Member ID</TableHead>
+            <TableHead width="sm">Client ID</TableHead>
+            <TableHead width="sm">Host</TableHead>
+            {isConsumerGroup && <TableHead width="sm">Member Epoch</TableHead>}
+            <TableHead>Assignment</TableHead>
+            {isConsumerGroup && <TableHead>Target Assignment</TableHead>}
+            {isConsumerGroup && <TableHead width="sm">Subscribed Topics</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {members.map((m) => {
+            const behind = isBehindGroupEpoch(group, m);
+            return (
+              <TableRow
+                data-behind={behind || undefined}
+                key={m.id}
+                style={behind ? { backgroundColor: 'var(--color-warning-wash)' } : undefined}
+                testId={`group-member-${m.id}`}
+              >
+                <TableCell>
+                  <span className="font-mono text-xs">{m.id}</span>
+                </TableCell>
+                <TableCell>{m.clientId}</TableCell>
+                <TableCell>{m.clientHost}</TableCell>
+                {isConsumerGroup && <TableCell>{m.memberEpoch ?? '—'}</TableCell>}
+                <TableCell>
+                  <AssignmentCell assignments={m.assignments} />
+                </TableCell>
+                {isConsumerGroup && (
+                  <TableCell>
+                    <AssignmentCell assignments={m.targetAssignments} />
+                  </TableCell>
+                )}
+                {isConsumerGroup && <TableCell>{m.subscribedTopics?.join(', ') || '—'}</TableCell>}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
+
 type GroupDetailsTabsProps = Omit<GroupDetailsProps, 'groupId'> & {
   group: GroupDescription;
   onEditOffsets: (offsets: GroupOffset[]) => void;
@@ -209,12 +351,16 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
   const activeTab: GroupTab = search?.tab ?? 'topics';
   const withLagCheckboxId = useId();
   const consumerGroupAcl = useApiStoreHook((s) => s.consumerGroupAcls.get(group.groupId));
+  const filteredMembers = useFilteredMembers(group, quickSearch);
 
   return (
     <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
       <TabsList className="w-fit" variant="underline">
         <TabsTrigger value="topics" variant="underline">
           Topics
+        </TabsTrigger>
+        <TabsTrigger value="members" variant="underline">
+          Members
         </TabsTrigger>
         <TabsTrigger value="acl" variant="underline">
           ACL
@@ -223,35 +369,13 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
 
       <TabsContent className="mt-4" value="topics">
         <div className="mb-6 flex items-center gap-4">
-          <Input
-            containerClassName="w-[300px]"
-            onChange={(e) => {
-              setQuickSearch(e.target.value);
-              onSearchChange({ q: e.target.value });
+          <MemberFilterInput
+            onChange={(value) => {
+              setQuickSearch(value);
+              onSearchChange({ q: value });
             }}
-            placeholder="Filter by member"
-            size="sm"
             value={quickSearch}
-          >
-            <InputStart>
-              <TonedIcon className="size-4" icon={Search} tone="muted" />
-            </InputStart>
-            {quickSearch !== '' && (
-              <InputEnd className="pointer-events-auto">
-                <Button
-                  aria-label="Clear member filter"
-                  onClick={() => {
-                    setQuickSearch('');
-                    onSearchChange({ q: '' });
-                  }}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <X />
-                </Button>
-              </InputEnd>
-            )}
-          </Input>
+          />
           <div className="flex items-center gap-2">
             <Checkbox
               checked={showWithLagOnly}
@@ -269,6 +393,24 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
           onlyShowPartitionsWithLag={showWithLagOnly}
           quickSearch={quickSearch}
         />
+      </TabsContent>
+
+      <TabsContent className="mt-4" value="members">
+        <div className="mb-6 flex items-center gap-4">
+          <MemberFilterInput
+            onChange={(value) => {
+              setQuickSearch(value);
+              onSearchChange({ q: value });
+            }}
+            value={quickSearch}
+          />
+          {group.members.length > 0 && (
+            <span className="text-body text-muted-foreground" data-testid="group-members-summary">
+              {membersSummary(group, filteredMembers)}
+            </span>
+          )}
+        </div>
+        <GroupMembersTable group={group} members={filteredMembers} />
       </TabsContent>
 
       <TabsContent className="mt-4" value="acl">
@@ -323,6 +465,16 @@ const GroupDetailsContent = ({
 
       {/* Statistics Card */}
       <GroupStatisticsCard group={group} />
+
+      {isConsumerGroupWithoutDetails(group) && (
+        <Alert data-testid="group-details-unavailable" variant="informative">
+          <AlertTitle>Member details are unavailable</AlertTitle>
+          <AlertDescription>
+            The broker did not answer the ConsumerGroupDescribe request for this KIP-848 group, so only its state and
+            committed offsets are shown. On Redpanda, make sure that group_consumer_protocol_enabled is true.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Main Card */}
       <GroupDetailsTabs

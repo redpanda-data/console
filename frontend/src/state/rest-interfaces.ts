@@ -320,9 +320,15 @@ export type GroupMemberAssignment = {
 };
 export type GroupMemberDescription = {
   id: string; // unique ID assigned to the member after login
+  instanceId?: string;
   clientId: string; // custom id reported by the member
   clientHost: string; // address/host of the connection
   assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
+
+  // consumer (KIP-848) groups only
+  memberEpoch?: number;
+  targetAssignments?: GroupMemberAssignment[];
+  subscribedTopics?: string[];
 
   // added by frontend:
   hasMissingPartitionIds: boolean;
@@ -332,11 +338,17 @@ export type GroupMemberDescription = {
 export const GroupActions = ['seeConsumerGroup', 'editConsumerGroup', 'deleteConsumerGroup'] as const;
 export type GroupAction = 'all' | (typeof GroupActions)[number];
 
+export type GroupType = 'classic' | 'consumer';
+
 export type GroupDescription = {
   groupId: string; // name of the group
-  state: string; // Dead, Initializing, Rebalancing, Stable
-  protocol: string;
+  groupType: GroupType;
+  state: string;
+  protocol: string; // balancer of a classic group, assignor of a consumer group
   protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
+  // consumer (KIP-848) groups only; missing when the broker could not describe the group
+  groupEpoch?: number;
+  targetAssignmentEpoch?: number;
   members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
   coordinatorId: number;
   topicOffsets: GroupTopicOffsets[];

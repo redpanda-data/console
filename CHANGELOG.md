@@ -1,6 +1,7 @@
 # Changelog
 
 ## Master / Unreleased
+- [IMPROVEMENT] Support KIP-848 consumer groups: list groups by type, describe them with the ConsumerGroupDescribe API, show the Assigning and Reconciling states, add a Type column and filter, a Members tab with member epochs and target assignments, and the assignor and group epochs on the detail page.
 - [BUGFIX] Fix the Redpanda Connect pipeline list snapping back to page 1, which stopped the Next and Last buttons from working once a cluster had more than one page of pipelines.
 
 ## v3.13.1 / 2026-10-22
