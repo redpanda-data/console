@@ -25,6 +25,8 @@ permissions:
 jobs:
   audit:
     name: Audit registry usage
+    # The private registry and PR comments require credentials unavailable to forks.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     # Advisory, and that has to hold for infrastructure too: a PR that moves a lot of registry files
     # (a data-table resync, say) gives the audit far more work, and a job that overruns its timeout
     # reports as a failed check no matter how forgiving the steps below are. Hence the generous
@@ -71,7 +73,7 @@ jobs:
         with:
           # Pinned: bun generates yarn.lock (bunfig print = "yarn") and the output
           # changes between bun versions, which trips the lint job's dirty-tree check.
-          bun-version-file: frontend/.bun-version
+          bun-version-file: console/frontend/.bun-version
       - name: Build registry manifest
         # audit-changes reads packages/registry/registry.json, a gitignored
         # build artifact — generate it before running the audit.
