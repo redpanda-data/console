@@ -367,7 +367,7 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent className="mt-4" value="topics">
+      <TabsContent className="mt-4" keepMounted value="topics">
         <div className="mb-6 flex items-center gap-4">
           <MemberFilterInput
             onChange={(value) => {
