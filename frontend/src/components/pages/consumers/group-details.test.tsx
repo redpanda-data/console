@@ -10,6 +10,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { type ComponentProps, useState } from 'react';
 import { act, screen } from 'test-utils';
 
 const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = rs.hoisted(() => ({
@@ -98,6 +101,37 @@ const renderGroupDetails = (search: { tab?: 'topics' | 'members' | 'acl' } = {})
   renderWithFileRoutes(
     <GroupDetails groupId={GROUP_ID} matchedPath={`/groups/${GROUP_ID}`} onSearchChange={() => {}} search={search} />
   );
+
+type GroupSearch = ComponentProps<typeof GroupDetails>['search'];
+
+/** Holds the search params in state, as the route does, so a tab switch really changes the tab. */
+const StatefulGroupDetails = () => {
+  const [search, setSearch] = useState<GroupSearch>({ tab: 'topics' });
+  return (
+    <GroupDetails
+      groupId={GROUP_ID}
+      matchedPath={`/groups/${GROUP_ID}`}
+      onSearchChange={(updates) => setSearch((prev) => ({ ...prev, ...updates }))}
+      search={search}
+    />
+  );
+};
+
+const partitionTable = () => {
+  const table = screen.getByRole('columnheader', { name: 'Partition' }).closest('table');
+  if (!table) {
+    throw new Error('Missing partition table');
+  }
+  return table;
+};
+
+const sortPartitionsDescending = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByRole('button', { name: 'Partition' }));
+  await user.click(screen.getByRole('menuitem', { name: 'Desc' }));
+};
+
+const firstRowPartitionCell = (table: HTMLElement) =>
+  within(within(table).getAllByRole('row')[1]).getAllByRole('cell')[0];
 
 const partitionOffset = (partitionId: number, groupOffset: number) => ({
   partitionId,
@@ -265,5 +299,20 @@ describe('the GroupDetails - consumer (KIP-848) group', () => {
     renderGroupDetails();
 
     expect(await screen.findByTestId('group-details-unavailable')).toBeInTheDocument();
+  });
+  test('the partition sort survives a switch to the Members tab and back', async () => {
+    useApiStore.setState({ consumerGroups: new Map([[GROUP_ID, mockGroup]]), consumerGroupAcls: new Map() });
+    const user = userEvent.setup();
+    renderWithFileRoutes(<StatefulGroupDetails />);
+    expect(await screen.findByTestId('partition-edit-0')).toBeInTheDocument();
+
+    await sortPartitionsDescending(user);
+    expect(firstRowPartitionCell(partitionTable())).toHaveTextContent('2');
+
+    await user.click(screen.getByRole('tab', { name: 'Members' }));
+    await waitFor(() => expect(screen.queryByRole('columnheader', { name: 'Partition' })).not.toBeInTheDocument());
+    await user.click(screen.getByRole('tab', { name: 'Topics' }));
+
+    expect(firstRowPartitionCell(partitionTable())).toHaveTextContent('2');
   });
 });
