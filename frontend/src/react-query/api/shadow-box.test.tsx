@@ -31,11 +31,13 @@ import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { connectQueryWrapper } from 'test-utils';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
+const host = rs.hoisted(() => ({ embedded: true }));
 
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
+    isEmbedded: rs.fn(() => host.embedded),
     isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
     isServerless: rs.fn(() => false),
   };
@@ -65,6 +67,7 @@ const renderStatusQuery = (transport: Transport) => {
 describe('useShadowBoxStatusQuery', () => {
   beforeEach(() => {
     flags.enableClusterFencing = true;
+    host.embedded = true;
     useSupportedFeaturesStore.setState({ clusterFence: true });
     useShadowBoxStore.setState({ phase: null });
   });
@@ -85,11 +88,31 @@ describe('useShadowBoxStatusQuery', () => {
     expect(useShadowBoxStore.getState().phase).toBe('boxed');
   });
 
+  test('self-hosted, reads the fence whenever the backend serves the API, with no flag', async () => {
+    host.embedded = false;
+    flags.enableClusterFencing = false;
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getClusterFenceStatus, () => boxedStatus);
+    });
+
+    const { result } = renderStatusQuery(transport);
+
+    await waitFor(() => expect(result.current.known).toBe(true));
+    expect(result.current.available).toBe(true);
+  });
+
   test.each([
     [
-      'the flag is off',
+      'the host’s flag is off',
       () => {
         flags.enableClusterFencing = false;
+      },
+    ],
+    [
+      'self-hosted, the backend doesn’t serve the API',
+      () => {
+        host.embedded = false;
+        useSupportedFeaturesStore.setState({ clusterFence: false });
       },
     ],
     ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ clusterFence: false })],
@@ -227,6 +250,7 @@ describe('useBoxClusterMutation', () => {
 describe('useShadowBoxStatusQuery when the status can’t be read', () => {
   beforeEach(() => {
     flags.enableClusterFencing = true;
+    host.embedded = true;
     useSupportedFeaturesStore.setState({ clusterFence: true });
   });
 

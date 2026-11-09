@@ -14,6 +14,7 @@ import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: false }));
+const host = rs.hoisted(() => ({ embedded: true }));
 const route = rs.hoisted(() => ({ search: {} as { tab?: string } }));
 
 rs.mock('@tanstack/react-router', () => {
@@ -29,6 +30,7 @@ rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
   return {
     ...actual,
+    isEmbedded: rs.fn(() => host.embedded),
     isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
     isServerless: rs.fn(() => false),
   };
@@ -129,11 +131,12 @@ const expectPageAsBefore = async (user: ReturnType<typeof userEvent.setup>) => {
 describe('the ShadowLinkDetailsPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
+    host.embedded = true;
     route.search = {};
     useShadowBoxStore.setState({ topology: null });
   });
 
-  test('with cluster fencing off, looks and fetches exactly as before', async () => {
+  test('in Cloud with cluster fencing off, looks and fetches exactly as before', async () => {
     hostWith(FENCED_SOURCE);
     await expectPageAsBefore(renderAtFailoverTab(false));
   });
@@ -156,7 +159,13 @@ describe('the ShadowLinkDetailsPage', () => {
   });
 
   test.each([
-    ['standalone, with no host', () => useShadowBoxStore.setState({ topology: null })],
+    [
+      'self-hosted, with no host to read the source',
+      () => {
+        host.embedded = false;
+        useShadowBoxStore.setState({ topology: null });
+      },
+    ],
     ['the source is outside Cloud', () => hostWith({ kind: 'external', bootstrapServers: ['kafka:9092'] })],
     ['the source’s fence can’t be read', () => hostWith(unavailable('unsupported'))],
     ['the host couldn’t resolve the source', () => hostWith(undefined)],

@@ -27,7 +27,7 @@ import {
   toBoxPhase,
   UNBOXED_SUMMARY,
 } from 'components/shadow-box/shadow-box-model';
-import { isFeatureFlagEnabled, isServerless } from 'config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import type { GetClusterFenceStatusResponse } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import {
   fence,
@@ -53,11 +53,14 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
 };
 
 /**
- * Serverless clusters can't be shadow link sources. The Failover tab reads the source's fence
- * through the host, so on a shadow cluster this is all it needs; fencing this cluster also needs
- * its backend to serve ClusterFenceService for a cluster that supports fencing.
+ * In Cloud, fencing waits for the host's `enableClusterFencing` flag; self-hosted Console has no
+ * flag for it, so only whether the cluster supports fencing decides. Serverless clusters can't be
+ * shadow link sources. The Failover tab reads the source's fence through the host, so on a shadow
+ * cluster this is all it needs; fencing this cluster also needs its backend to serve
+ * ClusterFenceService for a cluster that supports fencing.
  */
-export const isGuidedFailoverEnabled = (): boolean => isFeatureFlagEnabled('enableClusterFencing') && !isServerless();
+export const isGuidedFailoverEnabled = (): boolean =>
+  !isServerless() && (!isEmbedded() || isFeatureFlagEnabled('enableClusterFencing'));
 
 const invalidateStatus = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
