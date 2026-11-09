@@ -1,7 +1,18 @@
 # Changelog
 
 ## Master / Unreleased
+
+## v3.14.0 / 2026-11-04
+- [IMPROVEMENT] Edit Redpanda Connect input stop conditions in the visual editor: every input card can stop after N messages, when idle, or on a Bloblang check (`read_until` wrappers are now unwrapped and editable), and the canvas, page header, and YAML outline show whether a pipeline stops on its own.
+- [IMPROVEMENT] Add a "Runs" column and filter to the Redpanda Connect pipelines list, and keep the list's tab, search, filters, sort, and page in the URL so views survive reloads and can be shared.
+- [IMPROVEMENT] Hide deprecated Redpanda Connect components from pickers, search, and YAML autocomplete, and flag existing usages, including nested ones, with their replacement and a docs link.
+- [IMPROVEMENT] Show connector and field descriptions while editing Redpanda Connect pipeline YAML.
+- [IMPROVEMENT] Add an "Unsaved edits" bar with Apply, Cmd+Enter, and commit-on-blur to the pipeline inspector's raw YAML editor.
+- [IMPROVEMENT] Prepare dark mode behind the `enableDarkMode` flag (off by default), with a System / Light / Dark switcher and themed Monaco editors, connector logos, and Overview content.
 - [BUGFIX] Fix the Redpanda Connect pipeline list snapping back to page 1, which stopped the Next and Last buttons from working once a cluster had more than one page of pipelines.
+- [BUGFIX] Fix pipeline canvas edges and their "+" insert points sometimes disappearing after opening the editor.
+- [BUGFIX] Fix new Kafka Connect connector forms opening in update mode with secrets read-only, and the ACL filter and expanded permission rows resetting after a failed refetch.
+- [SECURITY] Update transitive frontend dependencies to resolve 44 security advisories.
 
 ## v3.13.1 / 2026-10-22
 - [CHANGE] No functional changes; `v3.13.1` points to the same commit as `v3.13.0`.
