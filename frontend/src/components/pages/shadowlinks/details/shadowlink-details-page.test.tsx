@@ -22,7 +22,7 @@ rs.mock('@tanstack/react-router', () => {
     ...actual,
     useParams: () => ({ name: 'orders-dr' }),
     useSearch: () => route.search,
-    useNavigate: () => rs.fn(),
+    useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
 rs.mock('config', () => {
@@ -187,6 +187,35 @@ describe('the ShadowLinkDetailsPage', () => {
       expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
       expect(screen.getByTestId('overview-stub')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Failover all topics' })).toBeVisible();
+    });
+  });
+
+  describe('a tab the user picked', () => {
+    const renderWithFencing = () => {
+      const user = userEvent.setup();
+      flags.enableShadowBoxing = true;
+      render(<ShadowLinkDetailsPage />);
+      return user;
+    };
+
+    test('stays open when the Failover tab appears', async () => {
+      hostWith(undefined, true);
+      const user = renderWithFencing();
+      await user.click(screen.getByTestId('tasks-tab'));
+      act(() => hostWith(FENCED_SOURCE));
+
+      expect(screen.getByTestId('failover-tab-trigger')).toBeInTheDocument();
+      expect(screen.getByTestId('tasks-tab')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    test('stays open when the Failover tab goes', async () => {
+      hostWith(FENCED_SOURCE);
+      const user = renderWithFencing();
+      await user.click(screen.getByTestId('configuration-tab'));
+      act(() => hostWith(unavailable('unsupported')));
+
+      expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
+      expect(screen.getByTestId('configuration-tab')).toHaveAttribute('aria-selected', 'true');
     });
   });
 

@@ -50,6 +50,7 @@ const BACKGROUND_POLL_MS = 60_000;
 type ShadowLinkDetailsTabsProps = {
   name: string;
   tab: DetailsTab;
+  onTabChange: (tab: DetailsTab) => void;
   shadowLink: UnifiedShadowLink;
   hasPartialData: boolean;
   /** Set only while the Failover tab shows; otherwise the tabs are as they were before it. */
@@ -63,6 +64,7 @@ type ShadowLinkDetailsTabsProps = {
 const ShadowLinkDetailsTabs = ({
   name,
   tab,
+  onTabChange,
   shadowLink,
   hasPartialData,
   readiness,
@@ -70,67 +72,78 @@ const ShadowLinkDetailsTabs = ({
   onRefresh,
   onFailoverTopic,
   onRetryTopics,
-}: ShadowLinkDetailsTabsProps) => {
+}: ShadowLinkDetailsTabsProps) => (
+  <Tabs onValueChange={(value) => onTabChange(value as DetailsTab)} value={tab}>
+    <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
+      <TabsTrigger testId="overview-tab" value="overview" variant="underline">
+        Overview
+      </TabsTrigger>
+      <TabsTrigger testId="tasks-tab" value="tasks" variant="underline">
+        Tasks
+      </TabsTrigger>
+      <TabsTrigger testId="configuration-tab" value="configuration" variant="underline">
+        Configuration
+      </TabsTrigger>
+      {readiness ? (
+        <TabsTrigger testId="failover-tab-trigger" value="failover" variant="underline">
+          Failover
+        </TabsTrigger>
+      ) : null}
+    </TabsList>
+
+    <TabsContents>
+      <TabsContent testId="overview-content" value="overview">
+        <ShadowLinkDetails onFailoverTopic={onFailoverTopic} shadowLink={shadowLink} shadowLinkName={name} />
+      </TabsContent>
+
+      <TabsContent testId="tasks-content" value="tasks">
+        <TasksTable dataUnavailable={hasPartialData} onRefresh={onRefresh} tasks={shadowLink.tasksStatus} />
+      </TabsContent>
+
+      <TabsContent testId="configuration-content" value="configuration">
+        <ShadowLinkConfiguration shadowLink={shadowLink} />
+      </TabsContent>
+
+      {readiness ? (
+        <TabsContent testId="failover-content" value="failover">
+          <FailoverTab
+            linkIdentity={linkIdentity}
+            onRetryTopics={onRetryTopics}
+            readiness={readiness}
+            shadowLink={shadowLink}
+          />
+        </TabsContent>
+      ) : null}
+    </TabsContents>
+  </Tabs>
+);
+
+/**
+ * The open tab: a link that names one opens it, and the user's pick stays put while the Failover tab
+ * comes and goes, instead of the tabs resetting to Overview. `pick` writes the tab to the URL only
+ * with Failover, which other clusters' pages link to directly.
+ */
+const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
   const navigate = useNavigate();
-  // The tab lives in the URL only with Failover, which other clusters' pages link to directly.
-  const tabState = readiness
-    ? {
-        value: tab,
-        onValueChange: (value: string) =>
-          navigate({
-            to: '/shadowlinks/$name',
-            params: { name },
-            search: { tab: value as DetailsTab },
-            replace: true,
-          }),
-      }
-    : { defaultValue: 'overview' };
-  return (
-    // Keyed, so the tabs remount rather than switch between controlled and uncontrolled.
-    <Tabs key={readiness ? 'failover' : 'default'} {...tabState}>
-      <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
-        <TabsTrigger testId="overview-tab" value="overview" variant="underline">
-          Overview
-        </TabsTrigger>
-        <TabsTrigger testId="tasks-tab" value="tasks" variant="underline">
-          Tasks
-        </TabsTrigger>
-        <TabsTrigger testId="configuration-tab" value="configuration" variant="underline">
-          Configuration
-        </TabsTrigger>
-        {readiness ? (
-          <TabsTrigger testId="failover-tab-trigger" value="failover" variant="underline">
-            Failover
-          </TabsTrigger>
-        ) : null}
-      </TabsList>
-
-      <TabsContents>
-        <TabsContent testId="overview-content" value="overview">
-          <ShadowLinkDetails onFailoverTopic={onFailoverTopic} shadowLink={shadowLink} shadowLinkName={name} />
-        </TabsContent>
-
-        <TabsContent testId="tasks-content" value="tasks">
-          <TasksTable dataUnavailable={hasPartialData} onRefresh={onRefresh} tasks={shadowLink.tasksStatus} />
-        </TabsContent>
-
-        <TabsContent testId="configuration-content" value="configuration">
-          <ShadowLinkConfiguration shadowLink={shadowLink} />
-        </TabsContent>
-
-        {readiness ? (
-          <TabsContent testId="failover-content" value="failover">
-            <FailoverTab
-              linkIdentity={linkIdentity}
-              onRetryTopics={onRetryTopics}
-              readiness={readiness}
-              shadowLink={shadowLink}
-            />
-          </TabsContent>
-        ) : null}
-      </TabsContents>
-    </Tabs>
-  );
+  const [picked, setPicked] = useState<DetailsTab>(requested ?? 'overview');
+  const [lastRequested, setLastRequested] = useState(requested);
+  if (requested !== lastRequested) {
+    setLastRequested(requested);
+    if (requested) {
+      setPicked(requested);
+    }
+  }
+  const pick = (next: DetailsTab, inUrl: boolean) => {
+    setPicked(next);
+    if (inUrl) {
+      navigate({ to: '/shadowlinks/$name', params: { name }, search: { tab: next }, replace: true }).catch(
+        (error: unknown) => {
+          toast.error('Failed to navigate', { description: String(error) });
+        }
+      );
+    }
+  };
+  return { picked, pick };
 };
 
 /**
@@ -295,13 +308,14 @@ type ShadowLinkDetailsViewProps = {
 const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: ShadowLinkDetailsViewProps) => {
   const navigate = useNavigate();
   const search = useSearch({ from: '/shadowlinks/$name/' });
+  const detailsTab = useDetailsTab(name, search.tab);
   const failoverReadiness = useFailoverReadiness(shadowLink, {
-    pollMs: search.tab === 'failover' ? FAILOVER_POLL_MS : BACKGROUND_POLL_MS,
+    pollMs: detailsTab.picked === 'failover' ? FAILOVER_POLL_MS : BACKGROUND_POLL_MS,
     enabled: isGuidedFailoverEnabled(),
   });
   const { linkIdentity, refetchTopics } = failoverReadiness;
-  const guided = guidedReadiness(failoverReadiness, search.tab);
-  const tab = resolveDetailsTab(search.tab, guided !== undefined);
+  const guided = guidedReadiness(failoverReadiness, detailsTab.picked);
+  const tab = resolveDetailsTab(detailsTab.picked, guided !== undefined);
   const { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete } = useShadowLinkDelete(name);
   const failover = useShadowLinkFailover(name, refetch, { guided: guided !== undefined, refetchTopics });
 
@@ -352,6 +366,7 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         onFailoverTopic={failover.openFailoverDialog}
         onRefresh={refetch}
         onRetryTopics={() => refetchTopics()}
+        onTabChange={(next) => detailsTab.pick(next, guided !== undefined)}
         readiness={guided}
         shadowLink={shadowLink}
         tab={tab}
