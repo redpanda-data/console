@@ -57,7 +57,7 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
  * through the host, so on a shadow cluster this is all it needs; fencing this cluster also needs
  * its backend to serve ClusterFenceService for a cluster that supports fencing.
  */
-export const isGuidedFailoverEnabled = (): boolean => isFeatureFlagEnabled('enableShadowBoxing') && !isServerless();
+export const isGuidedFailoverEnabled = (): boolean => isFeatureFlagEnabled('enableClusterFencing') && !isServerless();
 
 const invalidateStatus = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({

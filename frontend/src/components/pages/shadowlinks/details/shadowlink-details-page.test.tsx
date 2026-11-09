@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const flags = rs.hoisted(() => ({ enableShadowBoxing: false }));
+const flags = rs.hoisted(() => ({ enableClusterFencing: false }));
 const route = rs.hoisted(() => ({ search: {} as { tab?: string } }));
 
 rs.mock('@tanstack/react-router', () => {
@@ -106,9 +106,9 @@ const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
   });
 
 /** Opens the page at ?tab=failover, which only means something with the Failover tab. */
-const renderAtFailoverTab = (shadowBoxing: boolean) => {
+const renderAtFailoverTab = (clusterFencing: boolean) => {
   const user = userEvent.setup();
-  flags.enableShadowBoxing = shadowBoxing;
+  flags.enableClusterFencing = clusterFencing;
   route.search = { tab: 'failover' };
   render(<ShadowLinkDetailsPage />);
   return user;
@@ -193,7 +193,7 @@ describe('the ShadowLinkDetailsPage', () => {
   describe('a tab the user picked', () => {
     const renderWithFencing = () => {
       const user = userEvent.setup();
-      flags.enableShadowBoxing = true;
+      flags.enableClusterFencing = true;
       render(<ShadowLinkDetailsPage />);
       return user;
     };

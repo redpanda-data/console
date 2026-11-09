@@ -30,7 +30,7 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useShadowBoxStore } from 'stores/shadow-box-store';
 import { connectQueryWrapper } from 'test-utils';
 
-const flags = rs.hoisted(() => ({ enableShadowBoxing: true }));
+const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
@@ -64,7 +64,7 @@ const renderStatusQuery = (transport: Transport) => {
 
 describe('useShadowBoxStatusQuery', () => {
   beforeEach(() => {
-    flags.enableShadowBoxing = true;
+    flags.enableClusterFencing = true;
     useSupportedFeaturesStore.setState({ clusterFence: true });
     useShadowBoxStore.setState({ phase: null });
   });
@@ -89,7 +89,7 @@ describe('useShadowBoxStatusQuery', () => {
     [
       'the flag is off',
       () => {
-        flags.enableShadowBoxing = false;
+        flags.enableClusterFencing = false;
       },
     ],
     ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ clusterFence: false })],
@@ -226,7 +226,7 @@ describe('useBoxClusterMutation', () => {
 
 describe('useShadowBoxStatusQuery when the status can’t be read', () => {
   beforeEach(() => {
-    flags.enableShadowBoxing = true;
+    flags.enableClusterFencing = true;
     useSupportedFeaturesStore.setState({ clusterFence: true });
   });
 
