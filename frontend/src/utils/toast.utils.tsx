@@ -1,4 +1,4 @@
-import { Code, type ConnectError } from '@connectrpc/connect';
+import type { ConnectError } from '@connectrpc/connect';
 import { toast } from 'components/redpanda-ui/components/toast';
 import { hasBoxActivity } from 'components/shadow-box/shadow-box-model';
 import {
@@ -169,7 +169,12 @@ function collectErrorDetails(error: ConnectError): string[] {
  * a failure to blame on the box.
  */
 const BOX_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
-const BOX_MENTION = /shadow.?box|\bboxed\b/i;
+/**
+ * Redpanda's own text when the fence refuses a request outside Kafka: a role change (FAILED_PRECONDITION
+ * from Admin API v2, 409 from v1) or a new shadow link. The fence's own errors, such as a stale revision,
+ * say "Cluster fence" and must not match.
+ */
+const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/i;
 const TRAILING_PERIOD = /\.$/;
 
 /**
@@ -184,7 +189,7 @@ const shadowBoxHint = (error: ConnectError): string | undefined => {
   }
   const rejected =
     error.findDetails(ErrorInfoSchema).some((info) => BOX_REJECTION_REASONS.has(info.reason)) ||
-    (error.code === Code.FailedPrecondition && BOX_MENTION.test(error.rawMessage));
+    FENCE_REFUSAL.test(error.rawMessage);
   if (!rejected) {
     return;
   }
