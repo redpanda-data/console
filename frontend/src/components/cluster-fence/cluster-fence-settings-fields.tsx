@@ -19,10 +19,10 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { z } from 'zod';
 
-import { exemptNameFor, getReadPolicyWarnings, type ReadPolicy, SUPERUSERS_NOT_EXEMPT } from './shadow-box-model';
+import { exemptNameFor, getReadPolicyWarnings, type ReadPolicy, SUPERUSERS_NOT_EXEMPT } from './cluster-fence-model';
 
 export const readPolicySchema = z.object({ exemptPrincipals: z.array(z.string()), allowAllReads: z.boolean() });
 
@@ -31,7 +31,7 @@ export type PrincipalSuggestion = { principal: string; linkName: string };
 
 /** The users of the shadow links that read from this cluster, offered as exempt principals. */
 export const useReaderSuggestions = () => {
-  const readers = useShadowBoxStore((state) => state.topology?.readers);
+  const readers = useClusterFenceStore((state) => state.topology?.readers);
   return useMemo<PrincipalSuggestion[]>(
     () =>
       (readers ?? []).flatMap((reader) => {
@@ -42,7 +42,7 @@ export const useReaderSuggestions = () => {
   );
 };
 
-type ShadowBoxSettingsFieldsProps = {
+type ClusterFenceSettingsFieldsProps = {
   value: ReadPolicy;
   onChange: (value: ReadPolicy) => void;
   /** Users the links that read from this cluster authenticate as, when the host knows them. */
@@ -80,14 +80,14 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
 
   return (
     <Field data-disabled={value.allowAllReads}>
-      <FieldLabel htmlFor="shadow-box-exempt-principals-input">Exempt users</FieldLabel>
+      <FieldLabel htmlFor="cluster-fence-exempt-principals-input">Exempt users</FieldLabel>
       <TagChipInput
-        id="shadow-box-exempt-principals-input"
+        id="cluster-fence-exempt-principals-input"
         mono
         noteFor={(principal) => linkNotes.get(principal)}
         onChange={setNamed}
         placeholder={named.length === 0 ? 'shadow-link-user' : 'Add a user'}
-        testId="shadow-box-exempt-principals"
+        testId="cluster-fence-exempt-principals"
         value={named}
       />
       <FieldDescription>
@@ -96,7 +96,7 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
         <span className="font-mono">User:shadow-orders</span>. {SUPERUSERS_NOT_EXEMPT}
       </FieldDescription>
       {missingSuggestions.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2" data-testid="shadow-box-principal-suggestions">
+        <div className="flex flex-wrap items-center gap-2" data-testid="cluster-fence-principal-suggestions">
           <span className="text-body-sm text-muted-foreground">From shadow links that read from this cluster:</span>
           {missingSuggestions.map(({ principal, linkName }) => (
             <Badge
@@ -121,7 +121,7 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
       {warnings.map((warning) => (
         <Alert
           key={warning.id}
-          testId={`shadow-box-settings-warning-${warning.id}`}
+          testId={`cluster-fence-settings-warning-${warning.id}`}
           variant={WARNING_VARIANT[warning.severity]}
         >
           <AlertDescription>
@@ -156,12 +156,12 @@ const UnauthenticatedExemptField = ({ value, setPrincipals, suggestions }: Polic
     <Field data-disabled={value.allowAllReads} orientation="horizontal">
       <Switch
         checked={blankExempt}
-        id="shadow-box-exempt-unauthenticated"
+        id="cluster-fence-exempt-unauthenticated"
         onCheckedChange={(on) => setPrincipals(on ? [...named, ''] : named)}
-        testId="shadow-box-exempt-unauthenticated"
+        testId="cluster-fence-exempt-unauthenticated"
       />
       <FieldContent>
-        <FieldLabel htmlFor="shadow-box-exempt-unauthenticated">Exempt clients without SASL or mTLS</FieldLabel>
+        <FieldLabel htmlFor="cluster-fence-exempt-unauthenticated">Exempt clients without SASL or mTLS</FieldLabel>
         <FieldDescription>
           Adds an empty name to the list, which matches clients that connect without SASL or mTLS.
           {unauthenticatedLinks.length > 0
@@ -173,7 +173,7 @@ const UnauthenticatedExemptField = ({ value, setPrincipals, suggestions }: Polic
   );
 };
 
-const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps, 'value' | 'onChange'>) => {
+const AdvancedOptions = ({ value, onChange }: Pick<ClusterFenceSettingsFieldsProps, 'value' | 'onChange'>) => {
   const advancedInUse = value.allowAllReads;
   const [advancedOpen, setAdvancedOpen] = useState(advancedInUse);
 
@@ -203,12 +203,12 @@ const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps,
           <Field orientation="horizontal">
             <Switch
               checked={value.allowAllReads}
-              id="shadow-box-allow-all-reads"
+              id="cluster-fence-allow-all-reads"
               onCheckedChange={(allowAllReads) => onChange({ ...value, allowAllReads })}
-              testId="shadow-box-allow-all-reads"
+              testId="cluster-fence-allow-all-reads"
             />
             <FieldContent>
-              <FieldLabel htmlFor="shadow-box-allow-all-reads">Allow all reads</FieldLabel>
+              <FieldLabel htmlFor="cluster-fence-allow-all-reads">Allow all reads</FieldLabel>
               <FieldDescription>
                 Every consumer can keep fetching while the fence rejects writes, so the exempt list doesn’t matter.
                 Consumers can keep reading while you repoint them.
@@ -226,7 +226,7 @@ const AdvancedOptions = ({ value, onChange }: Pick<ShadowBoxSettingsFieldsProps,
  * the controller leader. The empty name, which exempts clients without SASL or mTLS, can't be typed
  * as a chip, so it has its own switch.
  */
-export const ShadowBoxSettingsFields = ({ value, onChange, suggestions }: ShadowBoxSettingsFieldsProps) => {
+export const ClusterFenceSettingsFields = ({ value, onChange, suggestions }: ClusterFenceSettingsFieldsProps) => {
   const setPrincipals = (exemptPrincipals: string[]) => onChange({ ...value, exemptPrincipals });
 
   return (

@@ -12,41 +12,41 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 
-rs.mock('react-query/api/shadow-box', () => ({ useShadowBoxStatusQuery: rs.fn() }));
+rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
 
-import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 
-import { type BoxPhase, isBlockingPhase } from './shadow-box-model';
-import { useShadowBoxGuard } from './use-shadow-box-guard';
+import { type FencePhase, isBlockingPhase } from './cluster-fence-model';
+import { useClusterFenceGuard } from './use-cluster-fence-guard';
 
 const POLICY_VIOLATION = 'POLICY_VIOLATION: fetch rejected by the configured cluster policy';
 
-const mockStatus = (phase: BoxPhase, { allowAllReads = false } = {}) =>
-  rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+const mockStatus = (phase: FencePhase, { allowAllReads = false } = {}) =>
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
     blocking: isBlockingPhase(phase),
     summary: { phase, allowAllReads },
-  } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
+  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
 
-describe('useShadowBoxGuard', () => {
+describe('useClusterFenceGuard', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
 
   test.each([
-    ['boxing', true],
-    ['boxed', true],
-    ['unboxing', false],
-    ['unboxed', false],
+    ['fencing', true],
+    ['fenced', true],
+    ['unfencing', false],
+    ['unfenced', false],
   ] as const)('while %s, disables writes: %s', (phase, disabled) => {
     mockStatus(phase);
-    const { result } = renderHook(() => useShadowBoxGuard());
+    const { result } = renderHook(() => useClusterFenceGuard());
 
     expect(result.current.reasonFor('createTopic') !== undefined).toBe(disabled);
   });
 
   test('names the action it blocks and how to undo it', () => {
-    mockStatus('boxed');
-    const { result } = renderHook(() => useShadowBoxGuard());
+    mockStatus('fenced');
+    const { result } = renderHook(() => useClusterFenceGuard());
 
     expect(result.current.reasonFor('editAcls')).toBe(
       'You can’t create or delete ACLs while this cluster is fenced. Unfence it first.'
@@ -57,8 +57,8 @@ describe('useShadowBoxGuard', () => {
   });
 
   test('only user topics are fenced: Redpanda’s internal topics stay open, and _schemas only takes no produce', () => {
-    mockStatus('boxed');
-    const { result } = renderHook(() => useShadowBoxGuard());
+    mockStatus('fenced');
+    const { result } = renderHook(() => useClusterFenceGuard());
 
     expect(result.current.reasonFor('editTopicConfig', '_orders')).toBeDefined();
     expect(result.current.reasonFor('deleteTopic', 'orders')).toBeDefined();
@@ -69,12 +69,12 @@ describe('useShadowBoxGuard', () => {
   });
 
   test('blames the fence for a rejected fetch only while it blocks reads', () => {
-    mockStatus('boxed');
-    expect(renderHook(() => useShadowBoxGuard()).result.current.isBoxedRead(POLICY_VIOLATION)).toBe(true);
+    mockStatus('fenced');
+    expect(renderHook(() => useClusterFenceGuard()).result.current.isFencedRead(POLICY_VIOLATION)).toBe(true);
 
-    mockStatus('boxed', { allowAllReads: true });
-    const { result } = renderHook(() => useShadowBoxGuard());
-    expect(result.current.isBoxedRead(POLICY_VIOLATION)).toBe(false);
+    mockStatus('fenced', { allowAllReads: true });
+    const { result } = renderHook(() => useClusterFenceGuard());
+    expect(result.current.isFencedRead(POLICY_VIOLATION)).toBe(false);
     expect(result.current.reasonFor('produce')).toBeDefined();
   });
 });

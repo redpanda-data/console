@@ -15,15 +15,15 @@ import { screen } from '@testing-library/react';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { renderWithFileRoutes } from 'test-utils';
 
-rs.mock('react-query/api/shadow-box', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/shadow-box')>('react-query/api/shadow-box');
-  return { ...actual, useShadowBoxStatusQuery: rs.fn() };
+rs.mock('react-query/api/cluster-fence', () => {
+  const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
+  return { ...actual, useClusterFenceStatusQuery: rs.fn() };
 });
 
-import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 
-import { ShadowBoxBanner } from './shadow-box-banner';
-import type { BoxPhase, BoxSummary, BrokerProgress } from './shadow-box-model';
+import { ClusterFenceBanner } from './cluster-fence-banner';
+import type { BrokerProgress, FencePhase, FenceSummary } from './cluster-fence-model';
 
 // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {
@@ -33,8 +33,8 @@ const routeLoaderTransport = createRouterTransport(({ rpc }) => {
 const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
-const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, brokers: BrokerProgress[] = []) =>
-  rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+const mockStatus = (phase: FencePhase, overrides: Partial<FenceSummary> = {}, brokers: BrokerProgress[] = []) =>
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
     known: true,
     available: true,
     summary: {
@@ -47,12 +47,12 @@ const mockStatus = (phase: BoxPhase, overrides: Partial<BoxSummary> = {}, broker
     },
     brokers,
     ownCopies: [],
-  } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
+  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
 
 const renderBanner = (initialLocation = '/topics') =>
-  renderWithFileRoutes(<ShadowBoxBanner />, { initialLocation, transport: routeLoaderTransport });
+  renderWithFileRoutes(<ClusterFenceBanner />, { initialLocation, transport: routeLoaderTransport });
 
-describe('the ShadowBoxBanner', () => {
+describe('the ClusterFenceBanner', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     rs.setSystemTime(NOW);
@@ -63,61 +63,61 @@ describe('the ShadowBoxBanner', () => {
   });
 
   test('renders nothing while the cluster is unfenced, or on the Cluster fence tab', () => {
-    mockStatus('unboxed');
+    mockStatus('unfenced');
     const { unmount } = renderBanner();
-    expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cluster-fence-banner')).not.toBeInTheDocument();
     unmount();
 
-    mockStatus('boxed');
+    mockStatus('fenced');
     renderBanner('/shadowlinks?tab=source');
-    expect(screen.queryByTestId('shadow-box-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cluster-fence-banner')).not.toBeInTheDocument();
   });
 
   test('a fenced cluster gets a title, one sentence, and one way to its fence status', () => {
-    mockStatus('boxed');
+    mockStatus('fenced');
     renderBanner();
 
-    const banner = screen.getByTestId('shadow-box-banner');
+    const banner = screen.getByTestId('cluster-fence-banner');
     expect(banner).toHaveTextContent('This cluster is fenced');
     expect(banner).toHaveTextContent('Every broker rejects writes.');
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.getByRole('link')).toBe(screen.getByTestId('shadow-box-banner-view-status'));
-    expect(screen.getByTestId('shadow-box-banner-view-status')).toHaveAttribute('href', '/shadowlinks?tab=source');
+    expect(screen.getByRole('link')).toBe(screen.getByTestId('cluster-fence-banner-view-status'));
+    expect(screen.getByTestId('cluster-fence-banner-view-status')).toHaveAttribute('href', '/shadowlinks?tab=source');
   });
 
   test.each([
-    ['fencing', 'boxing', [{ nodeId: 2, status: 'behind', blocks: false }], 'This cluster is being fenced'],
+    ['fencing', 'fencing', [{ nodeId: 2, status: 'behind', blocks: false }], 'This cluster is being fenced'],
     // A settings change while fenced: writes stay blocked, so it isn't a new fence.
-    ['applying settings', 'boxing', [{ nodeId: 2, status: 'behind', blocks: true }], 'applying new fence settings'],
-    ['unfencing', 'unboxing', [], 'This cluster is being unfenced'],
+    ['applying settings', 'fencing', [{ nodeId: 2, status: 'behind', blocks: true }], 'applying new fence settings'],
+    ['unfencing', 'unfencing', [], 'This cluster is being unfenced'],
   ] as const)('while %s, the title says so', (_label, phase, brokers, title) => {
     mockStatus(phase, {}, [...brokers]);
     renderBanner();
-    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent(title);
+    expect(screen.getByTestId('cluster-fence-banner')).toHaveTextContent(title);
   });
 
   test('warns when the fence exempts nobody', () => {
-    mockStatus('boxed', { exemptPrincipals: [] });
+    mockStatus('fenced', { exemptPrincipals: [] });
     renderBanner();
-    expect(screen.getByTestId('shadow-box-banner')).toHaveTextContent('It exempts nobody');
+    expect(screen.getByTestId('cluster-fence-banner')).toHaveTextContent('It exempts nobody');
   });
 
   test('with no controller leader, reports each broker’s own copy and whether writes are rejected', () => {
-    rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+    rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
       known: false,
       blocking: true,
-      summary: { phase: 'unboxed', revision: -1n, exemptPrincipals: [], allowAllReads: false },
+      summary: { phase: 'unfenced', revision: -1n, exemptPrincipals: [], allowAllReads: false },
       brokers: [],
       ownCopies: [
-        { nodeId: 1, phase: 'boxed', revision: 4n },
+        { nodeId: 1, phase: 'fenced', revision: 4n },
         { nodeId: 2, errorMessage: 'timed out' },
       ],
-    } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
+    } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
     renderBanner();
 
-    const banner = screen.getByTestId('shadow-box-banner');
+    const banner = screen.getByTestId('cluster-fence-banner');
     expect(banner).toHaveTextContent('This cluster may be fenced');
     expect(banner).toHaveTextContent('broker 1 reports fenced. Writes to those brokers are rejected.');
-    expect(screen.queryByTestId('shadow-box-banner-view-status')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cluster-fence-banner-view-status')).not.toBeInTheDocument();
   });
 });

@@ -17,48 +17,48 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
-export type BoxPhase = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
+export type FencePhase = 'unfenced' | 'fencing' | 'fenced' | 'unfencing';
 
-export const BOX_PHASE_LABEL: Record<BoxPhase, string> = {
-  unboxed: 'Unfenced',
-  boxing: 'Fencing',
-  boxed: 'Fenced',
-  unboxing: 'Unfencing',
+export const FENCE_PHASE_LABEL: Record<FencePhase, string> = {
+  unfenced: 'Unfenced',
+  fencing: 'Fencing',
+  fenced: 'Fenced',
+  unfencing: 'Unfencing',
 };
 
 /** A move still waiting on an answering broker after this long names that broker. */
 const BEHIND_NOTICE_MS = 30 * 1000;
 
-const PHASE_BY_STATE: Partial<Record<ClusterFenceState, BoxPhase>> = {
-  [ClusterFenceState.UNFENCED]: 'unboxed',
-  [ClusterFenceState.FENCING]: 'boxing',
-  [ClusterFenceState.FENCED]: 'boxed',
-  [ClusterFenceState.UNFENCING]: 'unboxing',
+const PHASE_BY_STATE: Partial<Record<ClusterFenceState, FencePhase>> = {
+  [ClusterFenceState.UNFENCED]: 'unfenced',
+  [ClusterFenceState.FENCING]: 'fencing',
+  [ClusterFenceState.FENCED]: 'fenced',
+  [ClusterFenceState.UNFENCING]: 'unfencing',
 };
 
-/** Undefined for a state this version of Console doesn't know, which must never read as unboxed. */
-export const toBoxPhase = (state: ClusterFenceState | undefined): BoxPhase | undefined =>
+/** Undefined for a state this version of Console doesn't know, which must never read as unfenced. */
+export const toFencePhase = (state: ClusterFenceState | undefined): FencePhase | undefined =>
   state === undefined ? undefined : PHASE_BY_STATE[state];
 
-export const hasBoxActivity = (phase: BoxPhase): boolean => phase !== 'unboxed';
+export const hasFenceActivity = (phase: FencePhase): boolean => phase !== 'unfenced';
 
 /**
- * Each broker starts blocking as soon as it picks up Box, and stops as soon as it picks up Unbox,
- * so the cluster blocks while boxing and boxed. Console disables the writes a box rejects in these
- * phases; while unboxing they stay enabled, since brokers accept them again as they pick up Unbox.
+ * Each broker starts blocking as soon as it picks up Fence, and stops as soon as it picks up Unfence,
+ * so the cluster blocks while fencing and fenced. Console disables the writes a fence rejects in these
+ * phases; while unfencing they stay enabled, since brokers accept them again as they pick up Unfence.
  */
-export const isBlockingPhase = (phase: BoxPhase): boolean => phase === 'boxing' || phase === 'boxed';
+export const isBlockingPhase = (phase: FencePhase): boolean => phase === 'fencing' || phase === 'fenced';
 
-export const isTransitionPhase = (phase: BoxPhase): boolean => phase === 'boxing' || phase === 'unboxing';
+export const isTransitionPhase = (phase: FencePhase): boolean => phase === 'fencing' || phase === 'unfencing';
 
-/** Box while boxing or boxed changes nothing. */
-export const canBoxFromPhase = (phase: BoxPhase): boolean => phase === 'unboxed' || phase === 'unboxing';
+/** Fence while fencing or fenced changes nothing. */
+export const canFenceFromPhase = (phase: FencePhase): boolean => phase === 'unfenced' || phase === 'unfencing';
 
 export type BrokerProgress = {
   nodeId: number;
-  /** `confirmed` once its copy matches the cluster's box in state and revision; either other status holds a move. */
+  /** `confirmed` once its copy matches the cluster's fence in state and revision; either other status holds a move. */
   status: 'confirmed' | 'behind' | 'not-answering';
-  copy?: { phase: BoxPhase | undefined; revision: bigint };
+  copy?: { phase: FencePhase | undefined; revision: bigint };
   /** Whether this broker rejects writes now. Undefined when it didn't answer. */
   blocks: boolean | undefined;
   /** As the broker reported it. Its wording varies, so show it, never match on it. */
@@ -66,13 +66,14 @@ export type BrokerProgress = {
 };
 
 export const getBrokerProgress = (response: GetClusterFenceStatusResponse | undefined): BrokerProgress[] => {
-  const box = response?.fence;
+  const fence = response?.fence;
   return (response?.brokers ?? []).map((broker): BrokerProgress => {
     if (!broker.fence) {
       return { nodeId: broker.nodeId, status: 'not-answering', blocks: undefined, errorMessage: broker.errorMessage };
     }
-    const phase = toBoxPhase(broker.fence.state);
-    const confirmed = box !== undefined && broker.fence.state === box.state && broker.fence.revision === box.revision;
+    const phase = toFencePhase(broker.fence.state);
+    const confirmed =
+      fence !== undefined && broker.fence.state === fence.state && broker.fence.revision === fence.revision;
     return {
       nodeId: broker.nodeId,
       status: confirmed ? 'confirmed' : 'behind',
@@ -84,38 +85,38 @@ export const getBrokerProgress = (response: GetClusterFenceStatusResponse | unde
 
 export type ReadPolicy = { exemptPrincipals: string[]; allowAllReads: boolean };
 
-export type BoxSummary = ReadPolicy & {
-  phase: BoxPhase;
+export type FenceSummary = ReadPolicy & {
+  phase: FencePhase;
   /** An int64 that grows by uneven steps; compare for equality only. */
   revision: bigint;
   /** Absent until the state first changes. */
   stateChangedAt?: Date;
 };
 
-export const UNBOXED_SUMMARY: BoxSummary = {
-  phase: 'unboxed',
+export const UNFENCED_SUMMARY: FenceSummary = {
+  phase: 'unfenced',
   revision: -1n,
   exemptPrincipals: [],
   allowAllReads: false,
 };
 
-/** Undefined when the response has no box, or a state Console doesn't know. */
-export const summarizeBox = (box: ClusterFence | undefined): BoxSummary | undefined => {
-  const phase = toBoxPhase(box?.state);
-  if (!(box && phase)) {
+/** Undefined when the response has no fence, or a state Console doesn't know. */
+export const summarizeFence = (fence: ClusterFence | undefined): FenceSummary | undefined => {
+  const phase = toFencePhase(fence?.state);
+  if (!(fence && phase)) {
     return;
   }
   return {
     phase,
-    revision: box.revision,
-    stateChangedAt: box.stateChangedAt ? timestampDate(box.stateChangedAt) : undefined,
-    exemptPrincipals: box.settings?.readPolicy?.exemptPrincipals ?? [],
-    allowAllReads: box.settings?.readPolicy?.allowAllReads ?? false,
+    revision: fence.revision,
+    stateChangedAt: fence.stateChangedAt ? timestampDate(fence.stateChangedAt) : undefined,
+    exemptPrincipals: fence.settings?.readPolicy?.exemptPrincipals ?? [],
+    allowAllReads: fence.settings?.readPolicy?.allowAllReads ?? false,
   };
 };
 
 /** Redpanda keeps exempt names as a set, so order and repeats don't count. */
-export const sameBoxSettings = (a: ReadPolicy, b: ReadPolicy): boolean => {
+export const sameFenceSettings = (a: ReadPolicy, b: ReadPolicy): boolean => {
   const names = new Set(a.exemptPrincipals);
   const otherNames = new Set(b.exemptPrincipals);
   return (
@@ -130,7 +131,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 /** Compact time-in-state, such as `12 min`, `2 h 14 min` or `3 days`. */
-export const formatBoxDuration = (elapsedMs: number): string => {
+export const formatFenceDuration = (elapsedMs: number): string => {
   if (elapsedMs < MINUTE_MS) {
     return 'less than a minute';
   }
@@ -164,16 +165,16 @@ const idsWith = (brokers: readonly BrokerProgress[], status: BrokerProgress['sta
   brokers.filter((broker) => broker.status === status).map((broker) => broker.nodeId);
 
 /**
- * A settings change while boxed puts the cluster back in Boxing, but brokers keep blocking on their
- * old copy, so writes never unblock. Told apart from a first Box by a broker still holding a
- * blocking copy of an earlier revision, and none that accepts writes: a Box sent while unboxing
- * also leaves blocking copies behind, next to brokers that already picked up Unbox.
+ * A settings change while fenced puts the cluster back in Fencing, but brokers keep blocking on their
+ * old copy, so writes never unblock. Told apart from a first Fence by a broker still holding a
+ * blocking copy of an earlier revision, and none that accepts writes: a Fence sent while unfencing
+ * also leaves blocking copies behind, next to brokers that already picked up Unfence.
  */
 export const isApplyingNewSettings = (
-  summary: Pick<BoxSummary, 'phase'>,
+  summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[]
 ): boolean =>
-  summary.phase === 'boxing' &&
+  summary.phase === 'fencing' &&
   brokers.some((broker) => broker.status === 'behind' && broker.blocks === true) &&
   !brokers.some((broker) => broker.blocks === false);
 
@@ -181,15 +182,18 @@ export const isApplyingNewSettings = (
  * One sentence for what the phase means for writes. It doesn't name the phase, which the badge or
  * title next to it already shows.
  */
-export const describeBoxPhase = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): string => {
+export const describeFencePhase = (
+  summary: Pick<FenceSummary, 'phase'>,
+  brokers: readonly BrokerProgress[]
+): string => {
   switch (summary.phase) {
-    case 'unboxed':
+    case 'unfenced':
       return 'Clients write and read as usual.';
-    case 'boxing':
+    case 'fencing':
       return isApplyingNewSettings(summary, brokers)
         ? 'Writes stay blocked on every broker while they pick up the new settings.'
         : 'Each broker rejects writes as soon as it picks up the fence.';
-    case 'boxed':
+    case 'fenced':
       return 'Every broker rejects writes.';
     default:
       return 'Each broker accepts writes again as soon as it picks up Unfence.';
@@ -202,7 +206,7 @@ export const describeBoxPhase = (summary: Pick<BoxSummary, 'phase'>, brokers: re
  * old enough to be worth mentioning; a healthy cluster finishes in a second or two.
  */
 export const describeHeldMove = (
-  summary: Pick<BoxSummary, 'phase' | 'stateChangedAt'>,
+  summary: Pick<FenceSummary, 'phase' | 'stateChangedAt'>,
   brokers: readonly BrokerProgress[],
   now: number
 ): string => {
@@ -211,7 +215,7 @@ export const describeHeldMove = (
     return down.length > 0 ? `${unreachableBrokersSubject(down)} answering.` : '';
   }
   if (down.length > 0) {
-    return `${unreachableBrokersSubject(down)} answering, so the cluster stays ${BOX_PHASE_LABEL[summary.phase].toLowerCase()} until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`;
+    return `${unreachableBrokersSubject(down)} answering, so the cluster stays ${FENCE_PHASE_LABEL[summary.phase].toLowerCase()} until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`;
   }
   const behind = idsWith(brokers, 'behind');
   const old = summary.stateChangedAt !== undefined && now - summary.stateChangedAt.getTime() >= BEHIND_NOTICE_MS;
@@ -225,7 +229,7 @@ export const describeHeldMove = (
 export type LinkIdentity = { authentication?: 'sasl' | 'mtls' | 'none'; principal?: string };
 
 /**
- * Whether a box with this read policy lets the link fetch. Names are bare user names, matched
+ * Whether a fence with this read policy lets the link fetch. Names are bare user names, matched
  * exactly; an empty name matches clients without SASL or mTLS; superusers get no pass; an empty list
  * blocks every link. Otherwise undefined when Console can't tell: an mTLS link reads as whatever the
  * cluster's mapping rules make of its certificate.
@@ -311,13 +315,13 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   return warnings;
 };
 
-const BOXED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?box|cluster.?fence/i;
+const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?fence|cluster.?fence/i;
 
 /**
- * A failed message search that reads like the box turned the fetch away, not like a bad filter.
+ * A failed message search that reads like the fence turned the fetch away, not like a bad filter.
  * Only a hint: it's asked only while the cluster is known to block reads.
  */
-export const isBoxedReadError = (message: string): boolean => BOXED_READ_REJECTION.test(message);
+export const isFencedReadError = (message: string): boolean => FENCED_READ_REJECTION.test(message);
 
 /**
  * The Kafka-namespace topics Redpanda doesn't count as user topics. Any other name is fenced,
@@ -331,17 +335,17 @@ export const isFencedTopic = (topic: string): boolean => !NON_USER_TOPICS.has(to
 /** Whether a fence rejects producing to this topic: `_schemas` too, since the fence covers Schema Registry. */
 export const isFencedTopicWrite = (topic: string): boolean => topic === '_schemas' || isFencedTopic(topic);
 
-/** Box fails while the cluster has a shadow link of its own that hasn't failed over. */
-export const SHADOW_CLUSTER_CANT_BOX =
+/** Fence fails while the cluster has a shadow link of its own that hasn't failed over. */
+export const SHADOW_CLUSTER_CANT_FENCE =
   'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Fence its source instead, or fail the link over first.';
 
-/** A link that has failed over no longer makes its cluster a shadow, so it doesn't stop Box. */
-export const linksThatStopBox = <Link extends { state: ShadowLinkState }>(links: readonly Link[]): Link[] =>
+/** A link that has failed over no longer makes its cluster a shadow, so it doesn't stop Fence. */
+export const linksThatStopFence = <Link extends { state: ShadowLinkState }>(links: readonly Link[]): Link[] =>
   links.filter((link) => link.state !== ShadowLinkState.FAILED_OVER);
 
-/** For a message search the box rejected; Console's own user is rarely exempt. */
-export const BOXED_READS_TITLE = 'Reading is blocked while this cluster is fenced';
-export const BOXED_READS_DESCRIPTION =
+/** For a message search the fence rejected; Console's own user is rarely exempt. */
+export const FENCED_READS_TITLE = 'Reading is blocked while this cluster is fenced';
+export const FENCED_READS_DESCRIPTION =
   'The fence only lets exempt users read topics, and superusers aren’t exempt unless they’re listed. Add Console’s user to the exempt list, turn on Allow all reads, or unfence the cluster.';
 
 /** `unknown` when Console can't tell, such as for a link that uses mTLS. */
@@ -358,10 +362,10 @@ const picks = (nodeIds: readonly number[]) => (nodeIds.length === 1 ? 'it picks'
  * them; a transaction isn't rejected but ended, so it has its own words.
  */
 const splitVerdict = (
-  summary: Pick<BoxSummary, 'phase'>,
+  summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
   rejection: string,
-  words = { allowed: 'Allowed', rejected: 'Rejected', unboxingReason: `: ${rejection}` }
+  words = { allowed: 'Allowed', rejected: 'Rejected', unfencingReason: `: ${rejection}` }
 ): Verdict => {
   const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
   const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
@@ -369,8 +373,8 @@ const splitVerdict = (
     return {
       verdict: 'partly',
       detail:
-        summary.phase === 'unboxing'
-          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until ${picks(blocking)} up Unfence${words.unboxingReason}.`
+        summary.phase === 'unfencing'
+          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until ${picks(blocking)} up Unfence${words.unfencingReason}.`
           : `${words.rejected} on ${brokersPhrase(blocking)}: ${rejection}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until ${picks(open)} up the fence.`,
     };
   }
@@ -385,11 +389,11 @@ const FETCH_REJECTION = 'POLICY_VIOLATION (44)';
 const TRANSACTION_ENDING = 'aborted, or committed if the coordinator had already decided to commit';
 
 /** Each broker ends the open transactions it coordinates as soon as it picks up the fence. */
-const transactionVerdict = (summary: Pick<BoxSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
+const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
   const verdict = splitVerdict(summary, brokers, TRANSACTION_ENDING, {
     allowed: 'Open',
     rejected: 'Ended',
-    unboxingReason: '',
+    unfencingReason: '',
   });
   if (verdict.verdict === 'rejected') {
     return { verdict: 'ended', detail: `Ended by the fence as each broker picks it up: ${TRANSACTION_ENDING}.` };
@@ -406,7 +410,7 @@ export const getClientEffects = ({
   brokers,
   links,
 }: {
-  summary: Pick<BoxSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>;
+  summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>;
   brokers: readonly BrokerProgress[];
   links?: readonly (LinkIdentity & { linkName: string })[];
 }): ClientEffect[] => {

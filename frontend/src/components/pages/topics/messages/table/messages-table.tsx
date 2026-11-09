@@ -10,6 +10,8 @@
  */
 
 import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
+import { FENCED_READS_DESCRIPTION, FENCED_READS_TITLE } from 'components/cluster-fence/cluster-fence-model';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import {
@@ -23,8 +25,6 @@ import {
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { BOXED_READS_DESCRIPTION, BOXED_READS_TITLE } from 'components/shadow-box/shadow-box-model';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { ArrowDownIcon, ArrowUpIcon, LockIcon, TriangleAlertIcon } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 
@@ -131,19 +131,19 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
 export const ErrorState = ({
   message,
   onRetry,
-  boxed = false,
+  fenced = false,
 }: {
   message: string;
   onRetry?: () => void;
   /** The cluster fence most likely rejected the read. */
-  boxed?: boolean;
+  fenced?: boolean;
 }) => (
   <Empty data-testid="messages-error">
     <EmptyHeader>
-      <EmptyMedia variant="icon">{boxed ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
-      <EmptyTitle>{boxed ? BOXED_READS_TITLE : "Couldn't load messages"}</EmptyTitle>
-      <EmptyDescription>{boxed ? BOXED_READS_DESCRIPTION : message}</EmptyDescription>
-      {boxed ? (
+      <EmptyMedia variant="icon">{fenced ? <LockIcon /> : <TriangleAlertIcon />}</EmptyMedia>
+      <EmptyTitle>{fenced ? FENCED_READS_TITLE : "Couldn't load messages"}</EmptyTitle>
+      <EmptyDescription>{fenced ? FENCED_READS_DESCRIPTION : message}</EmptyDescription>
+      {fenced ? (
         <EmptyDescription data-testid="messages-error-detail">
           <div className="font-mono text-body-sm leading-relaxed">{message}</div>
         </EmptyDescription>
@@ -247,7 +247,7 @@ export const MessagesTable = ({
   // states below — those read as "this topic genuinely has no matching messages," which is not
   // what a network/auth/timeout failure means.
   const showEmpty = !(error || isLoading) && rows.length === 0;
-  const boxedRead = useShadowBoxGuard().isBoxedRead(error ?? '');
+  const fencedRead = useClusterFenceGuard().isFencedRead(error ?? '');
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
@@ -327,7 +327,7 @@ export const MessagesTable = ({
           })}
         </TableBody>
       </Table>
-      {error ? <ErrorState boxed={boxedRead} message={error} onRetry={onRetry} /> : null}
+      {error ? <ErrorState fenced={fencedRead} message={error} onRetry={onRetry} /> : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
         <Empty data-testid="messages-empty">

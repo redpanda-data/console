@@ -64,9 +64,9 @@ import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { SchemaRegistryValidateSchemaResponse, SchemaTypeType } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
-import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -267,7 +267,7 @@ const SchemaPageButtons = (p: {
         </Alert>
       ) : null}
       <div className="mt-4 flex gap-4">
-        <ShadowBoxedButton
+        <FenceGuardedButton
           action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
@@ -293,7 +293,7 @@ const SchemaPageButtons = (p: {
           variant="primary"
         >
           {isCreating ? 'Creating...' : 'Save'}
-        </ShadowBoxedButton>
+        </FenceGuardedButton>
 
         <Button
           disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}

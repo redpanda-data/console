@@ -21,7 +21,7 @@ rs.mock('react-query/api/shadowlink', () => ({
 }));
 
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import { useFailoverReadiness } from './use-failover-readiness';
 import type { UnifiedShadowLink } from '../model';
@@ -32,11 +32,11 @@ const KNOWN_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
-  box: { status: 'known', state: 'boxed', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
+  fence: { status: 'known', state: 'fenced', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
 const withSource = (source: ShadowLinkSource | undefined, resolving = false) =>
-  useShadowBoxStore.setState({
+  useClusterFenceStore.setState({
     topology: {
       clusterName: 'dr',
       readers: [],
@@ -55,14 +55,14 @@ const lastTopicsOptions = () =>
 describe('useFailoverReadiness', () => {
   beforeEach(() => {
     rs.clearAllMocks();
-    useShadowBoxStore.setState({ topology: null });
+    useClusterFenceStore.setState({ topology: null });
   });
 
   test('reads the source’s fence through the host, and polls lag at the given pace', () => {
     withSource(KNOWN_SOURCE);
     const { result } = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true }));
 
-    expect(result.current.readiness?.box).toMatchObject({ kind: 'cloud', boxed: true });
+    expect(result.current.readiness?.fence).toMatchObject({ kind: 'cloud', fenced: true });
     expect(lastTopicsOptions().enabled).toBe(true);
     expect(lastTopicsOptions().refetchInterval({ state: { status: 'success' } })).toBe(3000);
     expect(lastTopicsOptions().refetchInterval({ state: { status: 'error' } })).toBe(30_000);
@@ -77,7 +77,7 @@ describe('useFailoverReadiness', () => {
     };
     const sourceBecomes = (reason: 'error' | 'unsupported') =>
       act(() =>
-        withSource({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'unavailable', reason } })
+        withSource({ kind: 'cloud', clusterId: 'prod', clusterName: 'prod', fence: { status: 'unavailable', reason } })
       );
 
     test('a passing read failure keeps the Failover tab, and says the fence can’t be read right now', () => {
@@ -85,7 +85,7 @@ describe('useFailoverReadiness', () => {
       sourceBecomes('error');
 
       expect(result.current.available).toBe(true);
-      expect(result.current.readiness?.box).toMatchObject({ kind: 'unreadable', reason: 'error' });
+      expect(result.current.readiness?.fence).toMatchObject({ kind: 'unreadable', reason: 'error' });
       expect(result.current.readiness?.failover.ready).toBe(false);
     });
 

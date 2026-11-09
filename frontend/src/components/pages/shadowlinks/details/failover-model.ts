@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { isBlockingPhase, type LinkIdentity, linkCanRead } from 'components/shadow-box/shadow-box-model';
-import type { ShadowLinkPeerBox, ShadowLinkSource } from 'federation/types';
+import { isBlockingPhase, type LinkIdentity, linkCanRead } from 'components/cluster-fence/cluster-fence-model';
+import type { ShadowLinkPeerFence, ShadowLinkSource } from 'federation/types';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import type { UnifiedShadowLink } from '../model';
@@ -19,7 +19,7 @@ export type FailoverTopic = { topicName: string; state: ShadowTopicState; totalL
 
 export type CloudSource = Extract<ShadowLinkSource, { kind: 'cloud' }>;
 
-type PeerUnavailableReason = Extract<ShadowLinkPeerBox, { status: 'unavailable' }>['reason'];
+type PeerUnavailableReason = Extract<ShadowLinkPeerFence, { status: 'unavailable' }>['reason'];
 
 type NoFenceReason = 'unsupported' | 'inactive' | 'forbidden';
 
@@ -34,7 +34,7 @@ export type TransientReason = Exclude<PeerUnavailableReason, NoFenceReason>;
  * Where the source's fence stands, from this shadow cluster's point of view. Only Cloud can read a
  * source cluster's fence, so the Failover tab exists only once it has.
  */
-export type SourceBoxStep =
+export type SourceFenceStep =
   /** Without a source, the host is still working out which cluster the link reads from. */
   | { kind: 'loading'; source: CloudSource | undefined }
   /** Read earlier in this visit, but not right now, such as while the source has no controller leader. */
@@ -42,8 +42,8 @@ export type SourceBoxStep =
   | {
       kind: 'cloud';
       source: CloudSource;
-      box: Extract<ShadowLinkPeerBox, { status: 'known' }>;
-      boxed: boolean;
+      fence: Extract<ShadowLinkPeerFence, { status: 'known' }>;
+      fenced: boolean;
       /**
        * Whether the source's saved settings let this link fetch once fenced. They exist before the
        * first Fence, so this is known in every phase. Undefined when Console can't tell, as for mTLS.
@@ -53,7 +53,7 @@ export type SourceBoxStep =
 
 export type LagStep = {
   /** `loading` and `unavailable` mean the topics haven't loaded, so nothing is known about lag. */
-  status: 'loading' | 'unavailable' | 'caught-up' | 'draining' | 'faulted' | 'waiting-for-box' | 'blocked';
+  status: 'loading' | 'unavailable' | 'caught-up' | 'draining' | 'faulted' | 'waiting-for-fence' | 'blocked';
   /** The latest read failed, so these counts are the last ones Console had and may be out of date. */
   stale: boolean;
   /** Topics still syncing, so the ones a link failover converts. */
@@ -76,7 +76,7 @@ type FailoverStep = {
 };
 
 export type FailoverReadiness = {
-  box: SourceBoxStep;
+  fence: SourceFenceStep;
   lag: LagStep;
   failover: FailoverStep;
 };
@@ -107,15 +107,15 @@ const cloudSourceStep = (
   source: CloudSource,
   link: LinkIdentity,
   lastKnown: CloudSource | undefined
-): SourceBoxStep | undefined => {
-  if (source.box.status === 'loading') {
+): SourceFenceStep | undefined => {
+  if (source.fence.status === 'loading') {
     return { kind: 'loading', source };
   }
-  if (source.box.status === 'known') {
-    const { box } = source;
-    return { kind: 'cloud', source, box, boxed: box.state === 'boxed', linkExempt: linkCanRead(box, link) };
+  if (source.fence.status === 'known') {
+    const { fence } = source;
+    return { kind: 'cloud', source, fence, fenced: fence.state === 'fenced', linkExempt: linkCanRead(fence, link) };
   }
-  const { reason } = source.box;
+  const { reason } = source.fence;
   if (isNoFenceReason(reason) || !lastKnown) {
     return;
   }
@@ -128,7 +128,7 @@ const cloudSourceStep = (
  * (a source already down when the page opened). A fence read earlier in the visit (`lastKnown`)
  * keeps it through a passing failure, which reads as `unreadable`.
  */
-export const getSourceBoxStep = ({
+export const getSourceFenceStep = ({
   source,
   link,
   resolving,
@@ -140,7 +140,7 @@ export const getSourceBoxStep = ({
   resolving: boolean;
   /** The source as it was last read with a known fence during this visit. */
   lastKnown?: CloudSource;
-}): SourceBoxStep | undefined => {
+}): SourceFenceStep | undefined => {
   if (source?.kind === 'cloud') {
     return cloudSourceStep(source, link, lastKnown);
   }
@@ -154,17 +154,17 @@ export const getSourceBoxStep = ({
 };
 
 /** Fenced, and still readable by this link: a fence that blocks the link would leave its lag stuck. */
-export const isSourceBoxReady = (step: SourceBoxStep): boolean =>
-  step.kind === 'cloud' && step.boxed && step.linkExempt !== false;
+export const isSourceFenceReady = (step: SourceFenceStep): boolean =>
+  step.kind === 'cloud' && step.fenced && step.linkExempt !== false;
 
 /** `blocked` when the fence is in place but stops this link reading, so its lag can't drain. */
-type BoxProgress = 'waiting' | 'ready' | 'blocked';
+type FenceProgress = 'waiting' | 'ready' | 'blocked';
 
-export const getBoxProgress = (step: SourceBoxStep): BoxProgress => {
-  if (isSourceBoxReady(step)) {
+export const getFenceProgress = (step: SourceFenceStep): FenceProgress => {
+  if (isSourceFenceReady(step)) {
     return 'ready';
   }
-  return step.kind === 'cloud' && step.boxed ? 'blocked' : 'waiting';
+  return step.kind === 'cloud' && step.fenced ? 'blocked' : 'waiting';
 };
 
 const byLagDescending = (a: { lag: bigint }, b: { lag: bigint }) => {
@@ -174,11 +174,11 @@ const byLagDescending = (a: { lag: bigint }, b: { lag: bigint }) => {
   return a.lag > b.lag ? -1 : 1;
 };
 
-const lagStatus = (behind: number, faulted: number, box: BoxProgress): LagStep['status'] => {
-  if (box === 'waiting') {
-    return 'waiting-for-box';
+const lagStatus = (behind: number, faulted: number, fence: FenceProgress): LagStep['status'] => {
+  if (fence === 'waiting') {
+    return 'waiting-for-fence';
   }
-  if (box === 'blocked') {
+  if (fence === 'blocked') {
     return 'blocked';
   }
   if (behind > 0) {
@@ -188,7 +188,7 @@ const lagStatus = (behind: number, faulted: number, box: BoxProgress): LagStep['
 };
 
 /** `topics` is undefined until they load; `failed` says the latest read didn't succeed. */
-export const getLagStep = (topics: FailoverTopic[] | undefined, box: BoxProgress, failed = false): LagStep => {
+export const getLagStep = (topics: FailoverTopic[] | undefined, fence: FenceProgress, failed = false): LagStep => {
   if (topics === undefined) {
     return {
       status: failed ? 'unavailable' : 'loading',
@@ -209,7 +209,7 @@ export const getLagStep = (topics: FailoverTopic[] | undefined, box: BoxProgress
     .sort(byLagDescending);
   const faulted = topics.filter((topic) => topic.state === ShadowTopicState.FAULTED).map((topic) => topic.topicName);
   return {
-    status: lagStatus(behind.length, faulted.length, box),
+    status: lagStatus(behind.length, faulted.length, fence),
     stale: failed,
     syncing: syncingTopics.length,
     caughtUp: syncingTopics.length - behind.length,
@@ -227,11 +227,11 @@ export const topicsSubject = (names: readonly string[], one: string, many: strin
 export const pausedTopicsReason = (paused: readonly string[]) =>
   `${topicsSubject(paused, 'is', 'are')} paused, and Fail over all topics is refused while any topic is paused. Resume ${paused.length === 1 ? 'it' : 'them'} first.`;
 
-const sourceBoxReason = (box: SourceBoxStep): string | undefined => {
-  if (box.kind === 'unreadable') {
+const sourceFenceReason = (fence: SourceFenceStep): string | undefined => {
+  if (fence.kind === 'unreadable') {
     return 'Not ready until Console can read the source’s fence again.';
   }
-  const progress = getBoxProgress(box);
+  const progress = getFenceProgress(fence);
   if (progress === 'blocked') {
     return 'Not ready until the source’s fence lets this link read, so its lag can reach zero.';
   }
@@ -257,7 +257,7 @@ const lagReason = (lag: LagStep): string | undefined => {
 const failoverReason = (
   topics: FailoverTopic[] | undefined,
   topicsFailed: boolean,
-  box: SourceBoxStep,
+  fence: SourceFenceStep,
   lag: LagStep
 ): string | undefined => {
   if (topics === undefined) {
@@ -265,21 +265,21 @@ const failoverReason = (
       ? 'Couldn’t load the link’s topics, so Console can’t check their lag.'
       : 'Loading the link’s topics.';
   }
-  return sourceBoxReason(box) ?? lagReason(lag);
+  return sourceFenceReason(fence) ?? lagReason(lag);
 };
 
 export const getFailoverReadiness = ({
   topics,
   topicsFailed = false,
-  box,
+  fence,
 }: {
   /** The last ones read, even when a later read failed. */
   topics: FailoverTopic[] | undefined;
   /** The latest read of the topics failed. */
   topicsFailed?: boolean;
-  box: SourceBoxStep;
+  fence: SourceFenceStep;
 }): FailoverReadiness => {
-  const lag = getLagStep(topics, getBoxProgress(box), topicsFailed);
+  const lag = getLagStep(topics, getFenceProgress(fence), topicsFailed);
   const inProgress = topics?.filter((topic) => FAILING_OVER_STATES.has(topic.state)).length ?? 0;
   const done =
     (topics?.some((topic) => FAILED_OVER_STATES.has(topic.state)) ?? false) &&
@@ -290,29 +290,29 @@ export const getFailoverReadiness = ({
   } else if (inProgress > 0) {
     reason = `Failing over ${inProgress} ${inProgress === 1 ? 'topic' : 'topics'}…`;
   } else {
-    reason = failoverReason(topics, topicsFailed, box, lag);
+    reason = failoverReason(topics, topicsFailed, fence, lag);
   }
 
-  return { box, lag, failover: { done, inProgress, ready: reason === undefined, reason } };
+  return { fence, lag, failover: { done, inProgress, ready: reason === undefined, reason } };
 };
 
 export type StepState = 'done' | 'current' | 'pending' | 'attention';
 
-type FailoverStepId = 'settings' | 'box' | 'boxed' | 'lag' | 'failover' | 'clients';
+type FailoverStepId = 'settings' | 'fence' | 'fenced' | 'lag' | 'failover' | 'clients';
 
-type SourceStepStates = Pick<Record<FailoverStepId, StepState>, 'settings' | 'box' | 'boxed'>;
+type SourceStepStates = Pick<Record<FailoverStepId, StepState>, 'settings' | 'fence' | 'fenced'>;
 
 /** The three steps on the source, as its fence reports them. */
-const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
-  if (box.kind !== 'cloud') {
-    return { settings: 'current', box: 'pending', boxed: 'pending' };
+const getSourceStepStates = (fence: SourceFenceStep): SourceStepStates => {
+  if (fence.kind !== 'cloud') {
+    return { settings: 'current', fence: 'pending', fenced: 'pending' };
   }
   /** A link Console can't check, such as one that uses mTLS, isn't done: the operator still has to look. */
-  const settings = box.linkExempt === true ? 'done' : 'attention';
-  if (isBlockingPhase(box.box.state)) {
-    return { settings, box: 'done', boxed: box.boxed ? 'done' : 'current' };
+  const settings = fence.linkExempt === true ? 'done' : 'attention';
+  if (isBlockingPhase(fence.fence.state)) {
+    return { settings, fence: 'done', fenced: fence.fenced ? 'done' : 'current' };
   }
-  return { settings, box: box.linkExempt === false ? 'pending' : 'current', boxed: 'pending' };
+  return { settings, fence: fence.linkExempt === false ? 'pending' : 'current', fenced: 'pending' };
 };
 
 /**
@@ -320,12 +320,16 @@ const getSourceStepStates = (box: SourceBoxStep): SourceStepStates => {
  * it is done; a finished failover marks the first five done and makes moving clients current. A
  * settings problem shows on step 1 whatever the phase, since the settings exist before Fence.
  */
-export const getFailoverStepStates = ({ box, lag, failover }: FailoverReadiness): Record<FailoverStepId, StepState> => {
+export const getFailoverStepStates = ({
+  fence,
+  lag,
+  failover,
+}: FailoverReadiness): Record<FailoverStepId, StepState> => {
   if (failover.done) {
-    return { settings: 'done', box: 'done', boxed: 'done', lag: 'done', failover: 'done', clients: 'current' };
+    return { settings: 'done', fence: 'done', fenced: 'done', lag: 'done', failover: 'done', clients: 'current' };
   }
-  const sourceSteps = getSourceStepStates(box);
-  if (!isSourceBoxReady(box)) {
+  const sourceSteps = getSourceStepStates(fence);
+  if (!isSourceFenceReady(fence)) {
     return { ...sourceSteps, lag: 'pending', failover: 'pending', clients: 'pending' };
   }
   const lagDone = lag.status === 'caught-up' && !lag.stale;

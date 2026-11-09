@@ -11,23 +11,23 @@
 
 import { create } from 'zustand';
 
-import type { BoxPhase } from '../components/shadow-box/shadow-box-model';
+import type { FencePhase } from '../components/cluster-fence/cluster-fence-model';
 import type { ShadowLinkTopology } from '../federation/types';
 
-type ShadowBoxStore = {
-  /** The box phase the status query last saw, for code outside React such as toast formatting. */
-  phase: BoxPhase | null;
+type ClusterFenceStore = {
+  /** The fence phase the status query last saw, for code outside React such as toast formatting. */
+  phase: FencePhase | null;
   /** Set by the Cloud host; `null` when standalone or when the host shares nothing. */
   topology: ShadowLinkTopology | null;
   openCluster: ((clusterId: string, path: string) => void) | null;
-  setPhase: (phase: BoxPhase | null) => void;
+  setPhase: (phase: FencePhase | null) => void;
   setHostContext: (
     topology: ShadowLinkTopology | null,
     openCluster: ((clusterId: string, path: string) => void) | null
   ) => void;
 };
 
-export const useShadowBoxStore = create<ShadowBoxStore>((set) => ({
+export const useClusterFenceStore = create<ClusterFenceStore>((set) => ({
   phase: null,
   topology: null,
   openCluster: null,

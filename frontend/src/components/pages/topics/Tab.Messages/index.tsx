@@ -10,10 +10,10 @@
  */
 
 import '../../../../utils/array-extensions';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ErrorIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 
@@ -42,9 +42,9 @@ type TopicMessageViewProps = {
 */
 
 const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
-  const boxed = useShadowBoxGuard().isBoxedRead(error.message);
-  if (boxed) {
-    return <ErrorState boxed message={error.message} onRetry={onRetry} />;
+  const fenced = useClusterFenceGuard().isFencedRead(error.message);
+  if (fenced) {
+    return <ErrorState fenced message={error.message} onRetry={onRetry} />;
   }
   return (
     <Alert icon={<ErrorIcon />} variant="destructive">

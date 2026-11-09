@@ -14,19 +14,19 @@ import { Code, ConnectError, type Transport } from '@connectrpc/connect';
 import { callUnaryMethod, createConnectQueryKey, useQuery, useTransport } from '@connectrpc/connect-query';
 import { type QueryClient, useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import {
-  type BoxPhase,
-  type BoxSummary,
   type BrokerProgress,
+  type FencePhase,
+  type FenceSummary,
   getBrokerProgress,
   isBlockingPhase,
   isTransitionPhase,
   type ReadPolicy,
-  SHADOW_CLUSTER_CANT_BOX,
-  sameBoxSettings,
-  summarizeBox,
-  toBoxPhase,
-  UNBOXED_SUMMARY,
-} from 'components/shadow-box/shadow-box-model';
+  SHADOW_CLUSTER_CANT_FENCE,
+  sameFenceSettings,
+  summarizeFence,
+  toFencePhase,
+  UNFENCED_SUMMARY,
+} from 'components/cluster-fence/cluster-fence-model';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import type { GetClusterFenceStatusResponse } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import {
@@ -38,7 +38,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 const TRANSITION_POLL_MS = 1500;
 const STEADY_POLL_MS = 15_000;
@@ -94,7 +94,7 @@ const isNoLeaderError = (error: unknown): boolean => error instanceof ConnectErr
 const NO_LEADER_POLL_MS = 5000;
 
 /** One broker's own copy, read straight from that broker while the cluster has no controller leader. */
-export type BrokerOwnCopy = { nodeId?: number; phase?: BoxPhase; revision?: bigint; errorMessage?: string };
+export type BrokerOwnCopy = { nodeId?: number; phase?: FencePhase; revision?: bigint; errorMessage?: string };
 
 /**
  * GetClusterFenceStatus needs the controller leader; GetClusterFenceBrokerStatus doesn't. While the first
@@ -109,7 +109,7 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   );
   const results = useQueries({
     queries: targets.map((nodeId) => ({
-      queryKey: ['shadow-box-broker-status', nodeId ?? 'self'],
+      queryKey: ['cluster-fence-broker-status', nodeId ?? 'self'],
       queryFn: () => callUnaryMethod(transport, getClusterFenceBrokerStatus, { nodeId }),
       enabled,
       retry: false,
@@ -122,7 +122,11 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
         ? results.map((result, index) => {
             const broker = result.data?.broker;
             if (broker?.fence) {
-              return { nodeId: broker.nodeId, phase: toBoxPhase(broker.fence.state), revision: broker.fence.revision };
+              return {
+                nodeId: broker.nodeId,
+                phase: toFencePhase(broker.fence.state),
+                revision: broker.fence.revision,
+              };
             }
             return {
               nodeId: broker?.nodeId ?? targets[index],
@@ -135,8 +139,8 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   );
 };
 
-/** The status query, polled at the pace the box's state calls for. */
-const useShadowBoxStatusRead = (available: boolean) =>
+/** The status query, polled at the pace the fence's state calls for. */
+const useClusterFenceStatusRead = (available: boolean) =>
   useQuery(
     getClusterFenceStatus,
     {},
@@ -151,7 +155,7 @@ const useShadowBoxStatusRead = (available: boolean) =>
         if (isNoLeaderError(error)) {
           return NO_LEADER_POLL_MS;
         }
-        const phase = toBoxPhase(data?.fence?.state);
+        const phase = toFencePhase(data?.fence?.state);
         return phase && isTransitionPhase(phase) ? transitionPollMs(data) : STEADY_POLL_MS;
       },
       refetchOnWindowFocus: (state) => !isSettledReadError(state.state.error),
@@ -161,40 +165,40 @@ const useShadowBoxStatusRead = (available: boolean) =>
   );
 
 /** Hands the phase to the store that code outside React reads, or null while it isn't known. */
-const usePublishedBoxPhase = (phase: BoxPhase | null) => {
+const usePublishedFencePhase = (phase: FencePhase | null) => {
   useEffect(() => {
-    useShadowBoxStore.getState().setPhase(phase);
+    useClusterFenceStore.getState().setPhase(phase);
   }, [phase]);
 };
 
 /**
- * The cluster's shadow box, polled quickly while brokers are still applying a change. Every
+ * The cluster's cluster fence, polled quickly while brokers are still applying a change. Every
  * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
  * A cluster without fencing, or a viewer without permission to read it, stops polling and the banner
  * and guards hide; without fencing, the Shadow Links page shows no fence at all.
  */
-export const useShadowBoxStatusQuery = () => {
+export const useClusterFenceStatusQuery = () => {
   const available = useSupportedFeaturesStore((state) => state.clusterFence) && isGuidedFailoverEnabled();
-  const query = useShadowBoxStatusRead(available);
+  const query = useClusterFenceStatusRead(available);
   const access = accessOf(query.error);
   const { parsed, brokers } = useMemo(
-    () => ({ parsed: summarizeBox(query.data?.fence), brokers: getBrokerProgress(query.data) }),
+    () => ({ parsed: summarizeFence(query.data?.fence), brokers: getBrokerProgress(query.data) }),
     [query.data]
   );
   const noLeader = available && isNoLeaderError(query.error);
   const ownCopies = useBrokerOwnCopies(noLeader, brokers);
   const known = available && access === 'ok' && parsed !== undefined;
-  const summary = parsed ?? UNBOXED_SUMMARY;
-  usePublishedBoxPhase(known ? summary.phase : null);
+  const summary = parsed ?? UNFENCED_SUMMARY;
+  usePublishedFencePhase(known ? summary.phase : null);
 
   return {
     ...query,
     /** The flag is on and this cluster can serve the API, and it hasn't said it has no fencing. */
     available: available && access !== 'unsupported',
     access,
-    /** True once a status with a state Console understands has loaded; until then, treat the cluster as unboxed. */
+    /** True once a status with a state Console understands has loaded; until then, treat the cluster as unfenced. */
     known,
-    /** A status loaded, but with no box or a state this version of Console doesn't know. */
+    /** A status loaded, but with no fence or a state this version of Console doesn't know. */
     unreadable: available && query.data !== undefined && parsed === undefined,
     /** Each broker's own copy, read while the cluster has no controller leader to give the status. */
     ownCopies,
@@ -224,32 +228,32 @@ const saveSettings = async (transport: Transport, settings: ReadPolicy, expected
   ).fence;
 
 /**
- * Box always uses the saved settings. When the dialog changed them, this saves them first and boxes
- * at the revision the save returned, but only if that box still carries exactly these settings: the
- * response can already include someone else's later change, and Box must not apply settings nobody
+ * Fence always uses the saved settings. When the dialog changed them, this saves them first and fences
+ * at the revision the save returned, but only if that fence still carries exactly these settings: the
+ * response can already include someone else's later change, and Fence must not apply settings nobody
  * here reviewed.
  *
- * `savedBox` is the box as this hook's own save left it, until `reset`. When Box fails after the save,
- * the box has moved on to that revision because of this call, not someone else.
+ * `savedFence` is the fence as this hook's own save left it, until `reset`. When Fence fails after the save,
+ * the fence has moved on to that revision because of this call, not someone else.
  */
-export const useBoxClusterMutation = () => {
+export const useFenceClusterMutation = () => {
   const transport = useTransport();
   const queryClient = useQueryClient();
-  const [savedBox, setSavedBox] = useState<BoxSummary>();
+  const [savedFence, setSavedFence] = useState<FenceSummary>();
 
   const mutation = useMutation({
-    mutationFn: async ({ settings, opened }: { settings: ReadPolicy; opened: BoxSummary }) => {
+    mutationFn: async ({ settings, opened }: { settings: ReadPolicy; opened: FenceSummary }) => {
       let { revision } = opened;
-      if (!sameBoxSettings(settings, opened)) {
-        const saved = summarizeBox(await saveSettings(transport, settings, opened.revision));
+      if (!sameFenceSettings(settings, opened)) {
+        const saved = summarizeFence(await saveSettings(transport, settings, opened.revision));
         if (!saved) {
           throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
-        if (!sameBoxSettings(settings, saved)) {
+        if (!sameFenceSettings(settings, saved)) {
           // Worded to match isStaleRevisionError, like the server's own stale-revision failure.
           throw new ConnectError('the fence revision has changed', Code.FailedPrecondition);
         }
-        setSavedBox(saved);
+        setSavedFence(saved);
         ({ revision } = saved);
       }
       return callUnaryMethod(transport, fence, { expectedRevision: revision });
@@ -259,13 +263,13 @@ export const useBoxClusterMutation = () => {
 
   const { reset: resetMutation } = mutation;
   const reset = useCallback(() => {
-    setSavedBox(undefined);
+    setSavedFence(undefined);
     resetMutation();
   }, [resetMutation]);
-  return { ...mutation, savedBox, reset };
+  return { ...mutation, savedFence, reset };
 };
 
-export const useUpdateShadowBoxSettingsMutation = () => {
+export const useUpdateClusterFenceSettingsMutation = () => {
   const transport = useTransport();
   const queryClient = useQueryClient();
 
@@ -276,8 +280,8 @@ export const useUpdateShadowBoxSettingsMutation = () => {
   });
 };
 
-/** Sends the revision the dialog opened with, so a stale tab can't release a box someone has since re-applied. */
-export const useUnboxClusterMutation = () => {
+/** Sends the revision the dialog opened with, so a stale tab can't release a fence someone has since re-applied. */
+export const useUnfenceClusterMutation = () => {
   const transport = useTransport();
   const queryClient = useQueryClient();
 
@@ -291,11 +295,11 @@ export const useUnboxClusterMutation = () => {
 const STALE_REVISION = /revision has changed/i;
 
 /**
- * Box's preconditions all fail with FAILED_PRECONDITION, so the message is the only way to tell them
+ * Fence's preconditions all fail with FAILED_PRECONDITION, so the message is the only way to tell them
  * apart. These are hints: the server's own message is always shown with them.
  */
 const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
-  { pattern: /shadow link/i, sentence: SHADOW_CLUSTER_CANT_BOX },
+  { pattern: /shadow link/i, sentence: SHADOW_CLUSTER_CANT_FENCE },
   {
     pattern: /not active|feature/i,
     sentence: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',
@@ -316,7 +320,7 @@ const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
   },
 ];
 
-/** A stale `expected_revision`: someone else changed the box since this page read it. */
+/** A stale `expected_revision`: someone else changed the fence since this page read it. */
 export const isStaleRevisionError = (error: unknown): boolean =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && STALE_REVISION.test(error.rawMessage);
 
@@ -333,8 +337,8 @@ const CHANGE_ERROR_SENTENCE: Partial<Record<Code, string>> = {
   [Code.Internal]: 'Redpanda couldn’t record the change. Check the fence’s state before you try again.',
 };
 
-/** Turns a Shadow Box API failure into a sentence that says what to do next. */
-export const describeShadowBoxError = (error: unknown): string => {
+/** Turns a cluster fence API failure into a sentence that says what to do next. */
+export const describeClusterFenceError = (error: unknown): string => {
   if (!(error instanceof ConnectError)) {
     return error instanceof Error ? error.message : String(error);
   }
@@ -352,9 +356,9 @@ export const describeShadowBoxError = (error: unknown): string => {
 };
 
 /** A sentence for a status read that failed, which unlike a change has nothing that may still apply. */
-export const describeShadowBoxReadError = (error: unknown): string => {
+export const describeClusterFenceReadError = (error: unknown): string => {
   if (!(error instanceof ConnectError)) {
-    return describeShadowBoxError(error);
+    return describeClusterFenceError(error);
   }
   switch (error.code) {
     case Code.PermissionDenied:
@@ -364,6 +368,6 @@ export const describeShadowBoxReadError = (error: unknown): string => {
     case Code.DeadlineExceeded:
       return 'The cluster didn’t answer in time.';
     default:
-      return describeShadowBoxError(error);
+      return describeClusterFenceError(error);
   }
 };

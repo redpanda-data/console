@@ -12,7 +12,7 @@ import {
   QuotaFailureSchema,
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
 import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
@@ -193,11 +193,11 @@ describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
     ]);
 
   afterEach(() => {
-    useShadowBoxStore.setState({ phase: null });
+    useClusterFenceStore.setState({ phase: null });
   });
 
   test('names the fence after the broker’s own message for a policy violation', () => {
-    useShadowBoxStore.setState({ phase: 'boxed' });
+    useClusterFenceStore.setState({ phase: 'fenced' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
     ).toBe(
@@ -213,34 +213,34 @@ describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
     ['a role change Admin API v1 refuses', new ConnectError('Operation blocked by the cluster fence', Code.Unknown)],
     ['a refused shadow link', new ConnectError('The cluster is fenced', Code.Unavailable)],
   ])('names the fence for %s', (_label, error) => {
-    useShadowBoxStore.setState({ phase: 'boxed' });
+    useClusterFenceStore.setState({ phase: 'fenced' });
     expect(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'role' })).toContain(
       'This cluster is fenced, which rejects writes'
     );
   });
 
-  test('says brokers may still be rejecting while it unboxes', () => {
-    useShadowBoxStore.setState({ phase: 'unboxing' });
+  test('says brokers may still be rejecting while it unfences', () => {
+    useClusterFenceStore.setState({ phase: 'unfencing' });
     expect(
       formatToastErrorMessageGRPC({ error: kafkaError('POLICY_VIOLATION'), action: 'create', entity: 'topic' })
     ).toContain('being unfenced');
   });
 
   test.each([
-    ['a timeout', 'boxed' as const, kafkaError('REQUEST_TIMED_OUT')],
+    ['a timeout', 'fenced' as const, kafkaError('REQUEST_TIMED_OUT')],
     [
       'an unrelated failed precondition',
-      'boxed' as const,
+      'fenced' as const,
       new ConnectError('group not empty', Code.FailedPrecondition),
     ],
     [
       'the fence’s own error',
-      'boxed' as const,
+      'fenced' as const,
       new ConnectError('Cluster fence revision has changed', Code.FailedPrecondition),
     ],
-    ['anything, while unfenced', 'unboxed' as const, kafkaError('POLICY_VIOLATION')],
+    ['anything, while unfenced', 'unfenced' as const, kafkaError('POLICY_VIOLATION')],
   ])('doesn’t blame the fence for %s', (_label, phase, error) => {
-    useShadowBoxStore.setState({ phase });
+    useClusterFenceStore.setState({ phase });
     expect(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'topic' })).not.toContain('This cluster is');
   });
 });

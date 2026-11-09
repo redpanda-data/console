@@ -23,32 +23,36 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ShadowLinkReader } from 'federation/types';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { type BrokerOwnCopy, describeShadowBoxReadError, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import {
+  type BrokerOwnCopy,
+  describeClusterFenceReadError,
+  useClusterFenceStatusQuery,
+} from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
-import { BoxClusterDialog } from './box-cluster-dialog';
 import {
-  BOX_PHASE_LABEL,
-  type BoxPhase,
-  type BoxSummary,
   type BrokerProgress,
   type ClientEffect,
-  canBoxFromPhase,
-  describeBoxPhase,
+  canFenceFromPhase,
+  describeFencePhase,
   describeHeldMove,
-  formatBoxDuration,
+  FENCE_PHASE_LABEL,
+  type FencePhase,
+  type FenceSummary,
+  formatFenceDuration,
   getClientEffects,
   getReadPolicyWarnings,
   linkCanRead,
-  linksThatStopBox,
-  SHADOW_CLUSTER_CANT_BOX,
-} from './shadow-box-model';
-import { ShadowBoxSettingsDialog } from './shadow-box-settings-dialog';
-import { WARNING_VARIANT } from './shadow-box-settings-fields';
-import { CanReadBadge, ShadowBoxStateBadge, useNow } from './shadow-box-ui';
-import { UnboxClusterDialog } from './unbox-cluster-dialog';
+  linksThatStopFence,
+  SHADOW_CLUSTER_CANT_FENCE,
+} from './cluster-fence-model';
+import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
+import { WARNING_VARIANT } from './cluster-fence-settings-fields';
+import { CanReadBadge, ClusterFenceStateBadge, useNow } from './cluster-fence-ui';
+import { FenceClusterDialog } from './fence-cluster-dialog';
+import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const clockFormatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
@@ -70,7 +74,7 @@ const BrokerCopy = ({ broker }: { broker: BrokerProgress }) => {
   if (!broker.copy) {
     return <span className="font-mono text-body-sm text-muted-foreground">{broker.errorMessage || 'No answer'}</span>;
   }
-  const phase = broker.copy.phase ? BOX_PHASE_LABEL[broker.copy.phase] : 'Unknown state';
+  const phase = broker.copy.phase ? FENCE_PHASE_LABEL[broker.copy.phase] : 'Unknown state';
   return (
     <span className="text-body-sm">
       {phase} <span className="text-muted-foreground">· revision {broker.copy.revision.toString()}</span>
@@ -82,7 +86,7 @@ const BrokerCopy = ({ broker }: { broker: BrokerProgress }) => {
 const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
   <div className="flex flex-col gap-2">
     <h4 className="text-label">Brokers</h4>
-    <Table testId="shadow-box-brokers">
+    <Table testId="cluster-fence-brokers">
       <TableHeader>
         <TableRow>
           <TableHead>Broker</TableHead>
@@ -95,7 +99,7 @@ const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
         {brokers.map((broker) => {
           const status = BROKER_STATUS[broker.status];
           return (
-            <TableRow key={broker.nodeId} testId={`shadow-box-broker-${broker.nodeId}`}>
+            <TableRow key={broker.nodeId} testId={`cluster-fence-broker-${broker.nodeId}`}>
               <TableCell className="tabular-nums">{broker.nodeId}</TableCell>
               <TableCell>
                 <BrokerCopy broker={broker} />
@@ -123,11 +127,11 @@ const VERDICT_BAR: Record<ClientEffect['verdict'], string> = {
 };
 
 const ClientEffects = ({ effects }: { effects: ClientEffect[] }) => (
-  <ul aria-label="What clients see now" className="flex flex-col gap-2" data-testid="shadow-box-client-effects">
+  <ul aria-label="What clients see now" className="flex flex-col gap-2" data-testid="cluster-fence-client-effects">
     {effects.map((effect) => (
       <li
         className={cn('border-l-4 py-0.5 pl-3', VERDICT_BAR[effect.verdict])}
-        data-testid={`shadow-box-effect-${effect.id}`}
+        data-testid={`cluster-fence-effect-${effect.id}`}
         data-verdict={effect.verdict}
         key={effect.id}
       >
@@ -138,7 +142,7 @@ const ClientEffects = ({ effects }: { effects: ClientEffect[] }) => (
   </ul>
 );
 
-const ExemptValue = ({ summary }: { summary: BoxSummary }) => {
+const ExemptValue = ({ summary }: { summary: FenceSummary }) => {
   if (summary.allowAllReads) {
     return 'Not needed: Allow all reads is on';
   }
@@ -156,22 +160,22 @@ const ExemptValue = ({ summary }: { summary: BoxSummary }) => {
   );
 };
 
-const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => void }) => {
+const SettingsCard = ({ summary, onEdit }: { summary: FenceSummary; onEdit: () => void }) => {
   const warnings = getReadPolicyWarnings(summary.exemptPrincipals, summary.allowAllReads);
   return (
-    <Card size="full" testId="shadow-box-settings-card" variant="standard">
+    <Card size="full" testId="cluster-fence-settings-card" variant="standard">
       <CardContent>
         <div className="flex flex-col gap-7">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-heading-xs">Settings</h3>
-            <Button onClick={onEdit} size="sm" testId="edit-shadow-box-settings" variant="outline">
+            <Button onClick={onEdit} size="sm" testId="edit-cluster-fence-settings" variant="outline">
               Edit settings
             </Button>
           </div>
           <div className="flex flex-col gap-3">
             <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-body-sm">
               <dt className="tracking-tight text-muted-foreground">Exempt users</dt>
-              <dd data-testid="shadow-box-read-policy">
+              <dd data-testid="cluster-fence-read-policy">
                 <ExemptValue summary={summary} />
               </dd>
             </dl>
@@ -179,7 +183,7 @@ const SettingsCard = ({ summary, onEdit }: { summary: BoxSummary; onEdit: () => 
               {warnings.map((warning) => (
                 <Alert
                   key={warning.id}
-                  testId={`shadow-box-policy-${warning.id}`}
+                  testId={`cluster-fence-policy-${warning.id}`}
                   variant={WARNING_VARIANT[warning.severity]}
                 >
                   <AlertDescription>
@@ -216,13 +220,13 @@ const ReadersCard = ({
   resolving: boolean;
   /** The host couldn't check every link, so the list may be missing some. */
   incomplete: boolean;
-  summary: BoxSummary;
+  summary: FenceSummary;
 }) => {
-  const openCluster = useShadowBoxStore((state) => state.openCluster);
+  const openCluster = useClusterFenceStore((state) => state.openCluster);
   const settledEmpty = readers?.length === 0 && !resolving && !incomplete;
 
   return (
-    <Card size="full" testId="shadow-box-readers" variant="standard">
+    <Card size="full" testId="cluster-fence-readers" variant="standard">
       <CardContent>
         <div className="flex flex-col gap-7">
           <h3 className="text-heading-xs">Links reading from this cluster</h3>
@@ -235,14 +239,14 @@ const ReadersCard = ({
           {readers?.length === 0 && resolving ? (
             <p
               className="flex items-center gap-2 text-body-sm text-muted-foreground"
-              data-testid="shadow-box-readers-loading"
+              data-testid="cluster-fence-readers-loading"
             >
               <Spinner className="size-4" />
               Finding the shadow links that read from this cluster…
             </p>
           ) : null}
           {readers && incomplete ? (
-            <Alert testId="shadow-box-readers-incomplete" variant="warning">
+            <Alert testId="cluster-fence-readers-incomplete" variant="warning">
               <AlertDescription>
                 <p>
                   Redpanda Cloud couldn’t check every shadow link, so this list may be missing some. Make sure each
@@ -276,7 +280,7 @@ const ReadersCard = ({
                 {readers.map((reader) => (
                   <TableRow
                     key={`${reader.shadowClusterId}-${reader.linkName}`}
-                    testId={`shadow-box-reader-${reader.linkName}`}
+                    testId={`cluster-fence-reader-${reader.linkName}`}
                   >
                     <TableCell weight="medium">
                       {openCluster ? (
@@ -312,28 +316,34 @@ const ReadersCard = ({
   );
 };
 
-const BoxActions = ({
+const FenceActions = ({
   phase,
-  stopsBox,
-  onBox,
-  onUnbox,
+  stopsFence,
+  onFence,
+  onUnfence,
 }: {
-  phase: BoxPhase;
-  /** Names of this cluster's own shadow links that haven't failed over: while any remain, it's a shadow and Box fails. */
-  stopsBox: string[];
-  onBox: () => void;
-  onUnbox: () => void;
+  phase: FencePhase;
+  /** Names of this cluster's own shadow links that haven't failed over: while any remain, it's a shadow and Fence fails. */
+  stopsFence: string[];
+  onFence: () => void;
+  onUnfence: () => void;
 }) =>
-  canBoxFromPhase(phase) ? (
+  canFenceFromPhase(phase) ? (
     <DisabledReasonTooltip
-      reason={stopsBox.length > 0 ? `${SHADOW_CLUSTER_CANT_BOX} Its links: ${stopsBox.join(', ')}.` : undefined}
+      reason={stopsFence.length > 0 ? `${SHADOW_CLUSTER_CANT_FENCE} Its links: ${stopsFence.join(', ')}.` : undefined}
     >
-      <Button disabled={stopsBox.length > 0} onClick={onBox} size="sm" testId="open-box-cluster" variant="destructive">
+      <Button
+        disabled={stopsFence.length > 0}
+        onClick={onFence}
+        size="sm"
+        testId="open-fence-cluster"
+        variant="destructive"
+      >
         Fence cluster
       </Button>
     </DisabledReasonTooltip>
   ) : (
-    <Button onClick={onUnbox} size="sm" testId="open-unbox-cluster">
+    <Button onClick={onUnfence} size="sm" testId="open-unfence-cluster">
       Unfence cluster
     </Button>
   );
@@ -343,12 +353,12 @@ const OwnCopies = ({ copies }: { copies: BrokerOwnCopy[] }) =>
   copies.length > 0 ? (
     <div className="text-body-sm">
       Each broker’s own copy, read from that broker:
-      <ul className="mt-1 flex flex-col gap-0.5" data-testid="shadow-box-own-copies">
+      <ul className="mt-1 flex flex-col gap-0.5" data-testid="cluster-fence-own-copies">
         {copies.map((copy, index) => (
           <li key={copy.nodeId ?? `self-${index}`}>
             {copy.nodeId === undefined ? 'The broker that answered' : `Broker ${copy.nodeId}`}:{' '}
             {copy.phase
-              ? `${BOX_PHASE_LABEL[copy.phase]}, revision ${copy.revision?.toString()}`
+              ? `${FENCE_PHASE_LABEL[copy.phase]}, revision ${copy.revision?.toString()}`
               : copy.errorMessage || 'no answer'}
           </li>
         ))}
@@ -367,10 +377,10 @@ const ReadProblem = ({
   isRefetching: boolean;
   onRetry: () => void;
 }) => (
-  <Alert testId="shadow-box-status-error" variant="destructive">
+  <Alert testId="cluster-fence-status-error" variant="destructive">
     <AlertTitle>Couldn’t read the fence</AlertTitle>
     <AlertDescription>
-      <p>{describeShadowBoxReadError(error)}</p>
+      <p>{describeClusterFenceReadError(error)}</p>
       <OwnCopies copies={ownCopies} />
     </AlertDescription>
     <div className="col-start-2 mt-2">
@@ -381,33 +391,33 @@ const ReadProblem = ({
   </Alert>
 );
 
-type StatusQuery = ReturnType<typeof useShadowBoxStatusQuery>;
+type StatusQuery = ReturnType<typeof useClusterFenceStatusQuery>;
 
-/** Shown above the box when a refresh failed, so the status below reads as possibly out of date. */
+/** Shown above the fence when a refresh failed, so the status below reads as possibly out of date. */
 const StaleStatusAlert = ({
   error,
   now,
   dataUpdatedAt,
   ownCopies,
 }: Pick<StatusQuery, 'error' | 'dataUpdatedAt' | 'ownCopies'> & { now: number }) => (
-  <Alert testId="shadow-box-status-stale" variant="warning">
+  <Alert testId="cluster-fence-status-stale" variant="warning">
     <AlertTitle>Couldn’t refresh the fence</AlertTitle>
     <AlertDescription>
-      <p>{describeShadowBoxReadError(error)}</p>
-      <p>Showing its status from {formatBoxDuration(now - dataUpdatedAt)} ago.</p>
+      <p>{describeClusterFenceReadError(error)}</p>
+      <p>Showing its status from {formatFenceDuration(now - dataUpdatedAt)} ago.</p>
       <OwnCopies copies={ownCopies} />
     </AlertDescription>
   </Alert>
 );
 
-const BoxStatusCard = ({
+const FenceStatusCard = ({
   summary,
   brokers,
   readers,
   now,
   actions,
 }: {
-  summary: BoxSummary;
+  summary: FenceSummary;
   brokers: BrokerProgress[];
   readers: ShadowLinkReader[] | undefined;
   now: number;
@@ -417,26 +427,26 @@ const BoxStatusCard = ({
   const changedAt = summary.stateChangedAt;
   const held = describeHeldMove(summary, brokers, now);
   return (
-    <Card size="full" testId="shadow-box-status-card" variant="standard">
+    <Card size="full" testId="cluster-fence-status-card" variant="standard">
       <CardContent>
         <div className="flex flex-col gap-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-heading-xs">Cluster fence</h3>
-                <ShadowBoxStateBadge phase={phase} />
+                <ClusterFenceStateBadge phase={phase} />
               </div>
-              <p className="text-body-sm text-muted-foreground" data-testid="shadow-box-since">
+              <p className="text-body-sm text-muted-foreground" data-testid="cluster-fence-since">
                 {changedAt
-                  ? `Since ${formatSince(changedAt, now)}, ${formatBoxDuration(now - changedAt.getTime())} ago · `
+                  ? `Since ${formatSince(changedAt, now)}, ${formatFenceDuration(now - changedAt.getTime())} ago · `
                   : ''}
                 {summary.revision === -1n ? 'No changes yet' : `revision ${summary.revision.toString()}`}
               </p>
             </div>
             {actions}
           </div>
-          <p className="text-body" data-testid="shadow-box-headline">
-            {describeBoxPhase(summary, brokers)}
+          <p className="text-body" data-testid="cluster-fence-headline">
+            {describeFencePhase(summary, brokers)}
             {held ? ` ${held}` : ''}
           </p>
           <div className="grid gap-6 lg:grid-cols-2">
@@ -452,9 +462,9 @@ const BoxStatusCard = ({
   );
 };
 
-type SourceDialog = 'box' | 'unbox' | 'settings';
+type SourceDialog = 'fence' | 'unfence' | 'settings';
 
-const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'box', unfence: 'unbox' } as const;
+const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'fence', unfence: 'unfence' } as const;
 
 const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_ACTION)[];
 
@@ -465,7 +475,7 @@ const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_A
  * closes: embedded, Console can remount while the host settles its route, and the dialog then
  * reopens instead of vanishing. Returns the principal and an `onOpenChange` for each dialog.
  */
-const useDialogFromUrl = (phase: BoxPhase, setDialog: (dialog: SourceDialog | null) => void) => {
+const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | null) => void) => {
   const location = useLocation();
   const navigate = useNavigate();
   const requested = (location.search as { action?: unknown }).action;
@@ -476,7 +486,7 @@ const useDialogFromUrl = (phase: BoxPhase, setDialog: (dialog: SourceDialog | nu
       return;
     }
     handled.current = true;
-    if (!(action === 'unfence' && phase === 'unboxed')) {
+    if (!(action === 'unfence' && phase === 'unfenced')) {
       setDialog(DIALOG_FOR_ACTION[action]);
     }
   }, [action, phase, setDialog]);
@@ -497,7 +507,7 @@ const useDialogFromUrl = (phase: BoxPhase, setDialog: (dialog: SourceDialog | nu
 
 const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   const { summary, brokers, error, dataUpdatedAt, ownCopies } = status;
-  const topology = useShadowBoxStore((state) => state.topology);
+  const topology = useClusterFenceStore((state) => state.topology);
   const ownLinks = useListShadowLinksQuery({}).data?.shadowLinks ?? [];
   const now = useNow();
   const [dialog, setDialog] = useState<SourceDialog | null>(null);
@@ -505,15 +515,15 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   const readers = topology ? topology.readers : undefined;
 
   return (
-    <div className="flex flex-col gap-4" data-testid="shadow-box-source-panel">
+    <div className="flex flex-col gap-4" data-testid="cluster-fence-source-panel">
       {error ? <StaleStatusAlert dataUpdatedAt={dataUpdatedAt} error={error} now={now} ownCopies={ownCopies} /> : null}
-      <BoxStatusCard
+      <FenceStatusCard
         actions={
-          <BoxActions
-            onBox={() => setDialog('box')}
-            onUnbox={() => setDialog('unbox')}
+          <FenceActions
+            onFence={() => setDialog('fence')}
+            onUnfence={() => setDialog('unfence')}
             phase={summary.phase}
-            stopsBox={linksThatStopBox(ownLinks).map((link) => link.name)}
+            stopsFence={linksThatStopFence(ownLinks).map((link) => link.name)}
           />
         }
         brokers={brokers}
@@ -531,13 +541,13 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
         summary={summary}
       />
 
-      <BoxClusterDialog onOpenChange={fromUrl.onOpenChange('box')} open={dialog === 'box'} />
-      <UnboxClusterDialog
+      <FenceClusterDialog onOpenChange={fromUrl.onOpenChange('fence')} open={dialog === 'fence'} />
+      <UnfenceClusterDialog
         clusterName={topology?.clusterName}
-        onOpenChange={fromUrl.onOpenChange('unbox')}
-        open={dialog === 'unbox'}
+        onOpenChange={fromUrl.onOpenChange('unfence')}
+        open={dialog === 'unfence'}
       />
-      <ShadowBoxSettingsDialog
+      <ClusterFenceSettingsDialog
         addPrincipal={fromUrl.principal}
         onOpenChange={fromUrl.onOpenChange('settings')}
         open={dialog === 'settings'}
@@ -546,13 +556,13 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   );
 };
 
-/** The Shadow Links page's view of this cluster as a link source: its box, and who reads from it. */
-export const ShadowBoxSourcePanel = () => {
-  const status = useShadowBoxStatusQuery();
+/** The Shadow Links page's view of this cluster as a link source: its fence, and who reads from it. */
+export const ClusterFenceSourcePanel = () => {
+  const status = useClusterFenceStatusQuery();
 
   if (status.isLoading) {
     return (
-      <div className="flex flex-col gap-4" data-testid="shadow-box-source-loading">
+      <div className="flex flex-col gap-4" data-testid="cluster-fence-source-loading">
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -561,7 +571,7 @@ export const ShadowBoxSourcePanel = () => {
 
   if (status.access === 'forbidden') {
     return (
-      <Alert testId="shadow-box-forbidden" variant="informative">
+      <Alert testId="cluster-fence-forbidden" variant="informative">
         <AlertTitle>You can’t view this cluster’s fence</AlertTitle>
         <AlertDescription>
           <p>
@@ -575,7 +585,7 @@ export const ShadowBoxSourcePanel = () => {
 
   if (status.unreadable) {
     return (
-      <Alert testId="shadow-box-unreadable" variant="warning">
+      <Alert testId="cluster-fence-unreadable" variant="warning">
         <AlertTitle>Console can’t tell what state this fence is in</AlertTitle>
         <AlertDescription>
           <p>The cluster reported a fence this version of Console doesn’t understand, so it won’t guess.</p>

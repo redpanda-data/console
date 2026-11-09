@@ -25,22 +25,22 @@ import { useEffect } from 'react';
 import { Controller, type UseFormReturn, useForm } from 'react-hook-form';
 import {
   isStaleRevisionError,
-  useShadowBoxStatusQuery,
-  useUpdateShadowBoxSettingsMutation,
-} from 'react-query/api/shadow-box';
+  useClusterFenceStatusQuery,
+  useUpdateClusterFenceSettingsMutation,
+} from 'react-query/api/cluster-fence';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
-import { type BoxSummary, isBlockingPhase, toExemptName } from './shadow-box-model';
-import { readPolicySchema, ShadowBoxSettingsFields, useReaderSuggestions } from './shadow-box-settings-fields';
+import { type FenceSummary, isBlockingPhase, toExemptName } from './cluster-fence-model';
+import { ClusterFenceSettingsFields, readPolicySchema, useReaderSuggestions } from './cluster-fence-settings-fields';
+import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';
 
 const formSchema = z.object({ settings: readPolicySchema });
 
 type FormValues = z.infer<typeof formSchema>;
 
 /** The form mounts with the dialog's content, so every opening starts from the saved settings. */
-export const ShadowBoxSettingsDialog = ({
+export const ClusterFenceSettingsDialog = ({
   open,
   onOpenChange,
   addPrincipal,
@@ -51,8 +51,8 @@ export const ShadowBoxSettingsDialog = ({
   addPrincipal?: string;
 }) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
-    <DialogContent size="lg" testId="shadow-box-settings-dialog">
-      <ShadowBoxSettingsForm addPrincipal={addPrincipal} onClose={() => onOpenChange(false)} />
+    <DialogContent size="lg" testId="cluster-fence-settings-dialog">
+      <ClusterFenceSettingsForm addPrincipal={addPrincipal} onClose={() => onOpenChange(false)} />
     </DialogContent>
   </Dialog>
 );
@@ -73,17 +73,17 @@ const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string
   }, [addPrincipal, form]);
 };
 
-const toFormValues = (summary: BoxSummary): FormValues => ({
+const toFormValues = (summary: FenceSummary): FormValues => ({
   settings: { exemptPrincipals: summary.exemptPrincipals, allowAllReads: summary.allowAllReads },
 });
 
-const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
-  const { summary } = useShadowBoxStatusQuery();
-  const updateSettings = useUpdateShadowBoxSettingsMutation();
-  const { opened, changed, refresh } = useOpenedBox(summary, updateSettings.isPending || updateSettings.isSuccess);
+const ClusterFenceSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void; addPrincipal?: string }) => {
+  const { summary } = useClusterFenceStatusQuery();
+  const updateSettings = useUpdateClusterFenceSettingsMutation();
+  const { opened, changed, refresh } = useOpenedFence(summary, updateSettings.isPending || updateSettings.isSuccess);
 
-  /** Saving while a box is requested makes every broker apply the new settings, back through Boxing. */
-  const reboxes = isBlockingPhase(opened.phase);
+  /** Saving while a fence is requested makes every broker apply the new settings, back through Fencing. */
+  const refences = isBlockingPhase(opened.phase);
   const suggestions = useReaderSuggestions();
 
   const form = useForm<FormValues>({
@@ -104,7 +104,7 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
       {
         onSuccess: () => {
           toast.success('Cluster fence settings saved', {
-            description: reboxes
+            description: refences
               ? 'The cluster is in Fencing until every broker has them. Writes stay blocked the whole time.'
               : 'The next Fence uses them.',
           });
@@ -123,12 +123,12 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="lg">
-        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Load the current settings" /> : null}
-        {reboxes ? (
-          <Alert testId="shadow-box-settings-rebox" variant="informative">
+        {changed ? <FenceChangedNotice onRefresh={handleRefresh} refreshLabel="Load the current settings" /> : null}
+        {refences ? (
+          <Alert testId="cluster-fence-settings-refence" variant="informative">
             <AlertDescription>
               <p>
-                {opened.phase === 'boxed'
+                {opened.phase === 'fenced'
                   ? 'Saving puts the cluster back in Fencing'
                   : 'Saving keeps the cluster in Fencing'}{' '}
                 until every broker has the new settings. Writes stay blocked the whole time. A link the old settings
@@ -141,13 +141,13 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
           control={form.control}
           name="settings"
           render={({ field }) => (
-            <ShadowBoxSettingsFields onChange={field.onChange} suggestions={suggestions} value={field.value} />
+            <ClusterFenceSettingsFields onChange={field.onChange} suggestions={suggestions} value={field.value} />
           )}
         />
         {updateSettings.error && !(changed && isStaleRevisionError(updateSettings.error)) ? (
-          <BoxWriteErrorAlert
+          <FenceWriteErrorAlert
             error={updateSettings.error}
-            testId="shadow-box-settings-error"
+            testId="cluster-fence-settings-error"
             title="Couldn’t save the settings"
           />
         ) : null}
@@ -159,7 +159,7 @@ const ShadowBoxSettingsForm = ({ onClose, addPrincipal }: { onClose: () => void;
         <Button
           disabled={!form.formState.isDirty || changed}
           isLoading={updateSettings.isPending}
-          testId="save-shadow-box-settings"
+          testId="save-cluster-fence-settings"
           type="submit"
         >
           Save settings

@@ -16,37 +16,37 @@ import userEvent from '@testing-library/user-event';
 import type { ShadowLinkTopology } from 'federation/types';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
-rs.mock('react-query/api/shadow-box', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/shadow-box')>('react-query/api/shadow-box');
+rs.mock('react-query/api/cluster-fence', () => {
+  const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
   const mutation = { mutate: rs.fn(), reset: rs.fn(), isPending: false, error: null };
   return {
     ...actual,
-    useShadowBoxStatusQuery: rs.fn(),
-    useBoxClusterMutation: rs.fn(() => mutation),
-    useUnboxClusterMutation: rs.fn(() => mutation),
-    useUpdateShadowBoxSettingsMutation: rs.fn(() => mutation),
+    useClusterFenceStatusQuery: rs.fn(),
+    useFenceClusterMutation: rs.fn(() => mutation),
+    useUnfenceClusterMutation: rs.fn(() => mutation),
+    useUpdateClusterFenceSettingsMutation: rs.fn(() => mutation),
   };
 });
 rs.mock('react-query/api/shadowlink', () => ({
   useListShadowLinksQuery: rs.fn(() => ({ data: { shadowLinks: [] } })),
 }));
 
-import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 
-import { type BoxPhase, type BrokerProgress, isBlockingPhase } from './shadow-box-model';
-import { ShadowBoxSourcePanel } from './shadow-box-source-panel';
+import { type BrokerProgress, type FencePhase, isBlockingPhase } from './cluster-fence-model';
+import { ClusterFenceSourcePanel } from './cluster-fence-source-panel';
 
 const mockStatus = (
-  phase: BoxPhase,
+  phase: FencePhase,
   brokers: BrokerProgress[] = [],
   exemptPrincipals = ['shadow-orders'],
   error: unknown = null
 ) =>
-  rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
     isLoading: false,
     error,
     data: {},
@@ -67,9 +67,9 @@ const mockStatus = (
       allowAllReads: false,
     },
     brokers,
-  } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
+  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
 
-const confirmed = (nodeId: number, phase: BoxPhase = 'boxed'): BrokerProgress => ({
+const confirmed = (nodeId: number, phase: FencePhase = 'fenced'): BrokerProgress => ({
   nodeId,
   status: 'confirmed',
   copy: { phase, revision: 18n },
@@ -95,7 +95,7 @@ const readers = [
 ];
 
 const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = rs.fn()) =>
-  useShadowBoxStore.setState({
+  useClusterFenceStore.setState({
     openCluster,
     topology: {
       clusterName: 'prod-us-east-1',
@@ -107,30 +107,30 @@ const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = 
     },
   });
 
-describe('the ShadowBoxSourcePanel', () => {
+describe('the ClusterFenceSourcePanel', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     rs.mocked(useListShadowLinksQuery).mockReturnValue({ data: { shadowLinks: [] } } as unknown as ReturnType<
       typeof useListShadowLinksQuery
     >);
-    useShadowBoxStore.setState({ topology: null, openCluster: null });
+    useClusterFenceStore.setState({ topology: null, openCluster: null });
   });
 
   describe('its fence', () => {
     test('an unfenced cluster offers Fence and shows its state', () => {
-      mockStatus('unboxed', [confirmed(1, 'unboxed')]);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('unfenced', [confirmed(1, 'unfenced')]);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-state-badge')).toHaveTextContent('Unfenced');
-      expect(screen.getByTestId('open-box-cluster')).toBeVisible();
-      expect(screen.queryByTestId('open-unbox-cluster')).not.toBeInTheDocument();
-      expect(screen.getByTestId('shadow-box-headline')).toHaveTextContent('Clients write and read as usual.');
+      expect(screen.getByTestId('cluster-fence-state-badge')).toHaveTextContent('Unfenced');
+      expect(screen.getByTestId('open-fence-cluster')).toBeVisible();
+      expect(screen.queryByTestId('open-unfence-cluster')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cluster-fence-headline')).toHaveTextContent('Clients write and read as usual.');
     });
 
     test('fencing: each broker’s copy and status, and a broker that isn’t answering holds it with no timeout', () => {
-      mockStatus('boxing', [
-        confirmed(1, 'boxing'),
-        { nodeId: 2, status: 'behind', copy: { phase: 'unboxed', revision: -1n }, blocks: false },
+      mockStatus('fencing', [
+        confirmed(1, 'fencing'),
+        { nodeId: 2, status: 'behind', copy: { phase: 'unfenced', revision: -1n }, blocks: false },
         {
           nodeId: 3,
           status: 'not-answering',
@@ -138,45 +138,45 @@ describe('the ShadowBoxSourcePanel', () => {
           errorMessage: 'rpc::errc::disconnected_endpoint(node down)',
         },
       ]);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('open-unbox-cluster')).toBeVisible();
-      expect(screen.getByTestId('shadow-box-broker-1')).toHaveTextContent('Confirmed');
-      expect(screen.getByTestId('shadow-box-broker-2')).toHaveTextContent('Unfenced · revision -1');
-      expect(screen.getByTestId('shadow-box-broker-2')).toHaveTextContent('Behind');
-      expect(screen.getByTestId('shadow-box-broker-3')).toHaveTextContent('disconnected_endpoint');
-      expect(screen.getByTestId('shadow-box-headline')).toHaveTextContent(
+      expect(screen.getByTestId('open-unfence-cluster')).toBeVisible();
+      expect(screen.getByTestId('cluster-fence-broker-1')).toHaveTextContent('Confirmed');
+      expect(screen.getByTestId('cluster-fence-broker-2')).toHaveTextContent('Unfenced · revision -1');
+      expect(screen.getByTestId('cluster-fence-broker-2')).toHaveTextContent('Behind');
+      expect(screen.getByTestId('cluster-fence-broker-3')).toHaveTextContent('disconnected_endpoint');
+      expect(screen.getByTestId('cluster-fence-headline')).toHaveTextContent(
         'Broker 3 isn’t answering, so the cluster stays fencing until it comes back or leaves the cluster. There’s no timeout.'
       );
-      expect(screen.getByTestId('shadow-box-effect-produce')).toHaveAttribute('data-verdict', 'partly');
+      expect(screen.getByTestId('cluster-fence-effect-produce')).toHaveAttribute('data-verdict', 'partly');
     });
 
     test('fenced: what clients see, row by row, with the errors they get', () => {
-      mockStatus('boxed', [confirmed(1), confirmed(2)]);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('fenced', [confirmed(1), confirmed(2)]);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-effect-produce')).toHaveTextContent('REQUEST_TIMED_OUT (7)');
-      expect(screen.getByTestId('shadow-box-effect-consume')).toHaveTextContent('POLICY_VIOLATION (44)');
-      expect(screen.getByTestId('shadow-box-effect-schema')).toHaveTextContent('HTTP 412');
-      expect(screen.getByTestId('shadow-box-effect-transaction')).toHaveTextContent('Ended by the fence');
-      expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('shadow-orders');
+      expect(screen.getByTestId('cluster-fence-effect-produce')).toHaveTextContent('REQUEST_TIMED_OUT (7)');
+      expect(screen.getByTestId('cluster-fence-effect-consume')).toHaveTextContent('POLICY_VIOLATION (44)');
+      expect(screen.getByTestId('cluster-fence-effect-schema')).toHaveTextContent('HTTP 412');
+      expect(screen.getByTestId('cluster-fence-effect-transaction')).toHaveTextContent('Ended by the fence');
+      expect(screen.getByTestId('cluster-fence-read-policy')).toHaveTextContent('shadow-orders');
     });
 
     test('with no one exempt, says once, loudly, that the fence locks out every shadow link', () => {
-      mockStatus('unboxed', [], []);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('unfenced', [], []);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-read-policy')).toHaveTextContent('No one');
-      expect(screen.getByTestId('shadow-box-policy-empty')).toHaveTextContent('every shadow link’s user');
+      expect(screen.getByTestId('cluster-fence-read-policy')).toHaveTextContent('No one');
+      expect(screen.getByTestId('cluster-fence-policy-empty')).toHaveTextContent('every shadow link’s user');
     });
 
     test('a cluster with a shadow link that hasn’t failed over can’t be fenced; one that has failed over can', () => {
       rs.mocked(useListShadowLinksQuery).mockReturnValue({
         data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.ACTIVE }] },
       } as unknown as ReturnType<typeof useListShadowLinksQuery>);
-      mockStatus('unboxed');
-      const { unmount } = renderWithFileRoutes(<ShadowBoxSourcePanel />);
-      expect(screen.getByTestId('open-box-cluster')).toBeDisabled();
+      mockStatus('unfenced');
+      const { unmount } = renderWithFileRoutes(<ClusterFenceSourcePanel />);
+      expect(screen.getByTestId('open-fence-cluster')).toBeDisabled();
       expect(
         screen.getByText('hasn’t failed over, so it’s still a shadow cluster', { exact: false })
       ).toBeInTheDocument();
@@ -185,23 +185,23 @@ describe('the ShadowBoxSourcePanel', () => {
       rs.mocked(useListShadowLinksQuery).mockReturnValue({
         data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
       } as unknown as ReturnType<typeof useListShadowLinksQuery>);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
-      expect(screen.getByTestId('open-box-cluster')).toBeEnabled();
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
+      expect(screen.getByTestId('open-fence-cluster')).toBeEnabled();
     });
 
     test('a failed refresh keeps the last status on screen, with a note', () => {
-      mockStatus('boxed', [], ['shadow-orders'], new ConnectError('no controller leader', Code.Unavailable));
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('fenced', [], ['shadow-orders'], new ConnectError('no controller leader', Code.Unavailable));
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-status-stale')).toHaveTextContent('no controller leader right now');
-      expect(screen.getByTestId('shadow-box-status-card')).toBeVisible();
-      expect(screen.queryByTestId('shadow-box-status-error')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cluster-fence-status-stale')).toHaveTextContent('no controller leader right now');
+      expect(screen.getByTestId('cluster-fence-status-card')).toBeVisible();
+      expect(screen.queryByTestId('cluster-fence-status-error')).not.toBeInTheDocument();
     });
 
     test('when the status can’t load, shows each broker’s own copy and offers a retry', async () => {
       const user = userEvent.setup();
       const refetch = rs.fn();
-      rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+      rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
         isLoading: false,
         error: new ConnectError('no controller leader', Code.Unavailable),
         refetch,
@@ -209,31 +209,31 @@ describe('the ShadowBoxSourcePanel', () => {
         known: false,
         access: 'ok',
         unreadable: false,
-        ownCopies: [{ nodeId: 1, phase: 'boxed', revision: 18n }],
-        summary: { phase: 'unboxed' },
+        ownCopies: [{ nodeId: 1, phase: 'fenced', revision: 18n }],
+        summary: { phase: 'unfenced' },
         brokers: [],
-      } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-status-error')).toHaveTextContent('no controller leader right now');
-      expect(screen.getByTestId('shadow-box-own-copies')).toHaveTextContent('Broker 1: Fenced, revision 18');
+      expect(screen.getByTestId('cluster-fence-status-error')).toHaveTextContent('no controller leader right now');
+      expect(screen.getByTestId('cluster-fence-own-copies')).toHaveTextContent('Broker 1: Fenced, revision 18');
       await user.click(screen.getByRole('button', { name: 'Try again' }));
       expect(refetch).toHaveBeenCalled();
     });
 
     test('a viewer without permission is told why the fence can’t be shown', () => {
-      rs.mocked(useShadowBoxStatusQuery).mockReturnValue({
+      rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
         isLoading: false,
         error: new ConnectError('denied', Code.PermissionDenied),
         known: false,
         access: 'forbidden',
-        summary: { phase: 'unboxed' },
+        summary: { phase: 'unfenced' },
         brokers: [],
         ownCopies: [],
-      } as unknown as ReturnType<typeof useShadowBoxStatusQuery>);
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-forbidden')).toHaveTextContent(
+      expect(screen.getByTestId('cluster-fence-forbidden')).toHaveTextContent(
         'You don’t have permission to view this cluster’s fence'
       );
     });
@@ -241,42 +241,42 @@ describe('the ShadowBoxSourcePanel', () => {
 
   describe('the links that read from the cluster', () => {
     test('without the host, says Console can’t list the links that read from the cluster', () => {
-      mockStatus('unboxed');
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('unfenced');
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-readers')).toHaveTextContent('Console can’t list them');
+      expect(screen.getByTestId('cluster-fence-readers')).toHaveTextContent('Console can’t list them');
     });
 
     test('embedded, lists Cloud’s readers and whether the settings let each read', () => {
       setTopology();
-      mockStatus('boxed');
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('fenced');
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('shadow-box-reader-orders-dr')).toHaveTextContent('Can read');
-      expect(screen.getByTestId('shadow-box-reader-telemetry-dr')).toHaveTextContent('Blocked');
-      expect(screen.getByTestId('shadow-box-reader-edge-dr')).toHaveTextContent('mTLS certificate');
-      expect(screen.getByTestId('shadow-box-reader-edge-dr')).toHaveTextContent('Can’t check');
-      expect(screen.getByTestId('shadow-box-effect-link-telemetry-dr')).toHaveAttribute('data-verdict', 'rejected');
+      expect(screen.getByTestId('cluster-fence-reader-orders-dr')).toHaveTextContent('Can read');
+      expect(screen.getByTestId('cluster-fence-reader-telemetry-dr')).toHaveTextContent('Blocked');
+      expect(screen.getByTestId('cluster-fence-reader-edge-dr')).toHaveTextContent('mTLS certificate');
+      expect(screen.getByTestId('cluster-fence-reader-edge-dr')).toHaveTextContent('Can’t check');
+      expect(screen.getByTestId('cluster-fence-effect-link-telemetry-dr')).toHaveAttribute('data-verdict', 'rejected');
     });
 
     test('embedded, a reader’s name opens its Failover tab on the shadow cluster', async () => {
       const user = userEvent.setup();
       const openCluster = rs.fn();
       setTopology({}, openCluster);
-      mockStatus('boxed');
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('fenced');
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
       await user.click(screen.getByRole('button', { name: 'orders-dr' }));
       expect(openCluster).toHaveBeenCalledWith('dr', '/shadowlinks/orders-dr?tab=failover');
     });
 
     test.each([
-      ['still finding links', { resolving: true }, 'shadow-box-readers-loading'],
-      ['couldn’t check every link', { readersIncomplete: true }, 'shadow-box-readers-incomplete'],
+      ['still finding links', { resolving: true }, 'cluster-fence-readers-loading'],
+      ['couldn’t check every link', { readersIncomplete: true }, 'cluster-fence-readers-incomplete'],
     ])('embedded, when Cloud is %s, doesn’t say that none read from the cluster', (_label, overrides, testId) => {
       setTopology({ readers: [], ...overrides });
-      mockStatus('unboxed');
-      renderWithFileRoutes(<ShadowBoxSourcePanel />);
+      mockStatus('unfenced');
+      renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
       expect(screen.getByTestId(testId)).toBeVisible();
       expect(screen.queryByText('No links read from this cluster')).not.toBeInTheDocument();
@@ -289,20 +289,20 @@ describe('the ShadowBoxSourcePanel', () => {
       rpc(listShadowLinks, () => ({ shadowLinks: [] }));
     });
     const renderAt = (initialLocation: string) =>
-      renderWithFileRoutes(<ShadowBoxSourcePanel />, { initialLocation, transport: routeLoaderTransport });
+      renderWithFileRoutes(<ClusterFenceSourcePanel />, { initialLocation, transport: routeLoaderTransport });
 
     test('opens the settings with the user already added, so Save is all that’s left', async () => {
-      mockStatus('unboxed');
+      mockStatus('unfenced');
       renderAt('/shadowlinks?tab=source&action=exempt&principal=shadow-telemetry');
 
-      expect(await screen.findByTestId('shadow-box-exempt-principals-chip-shadow-telemetry')).toBeVisible();
-      expect(screen.getByTestId('shadow-box-exempt-principals-chip-shadow-orders')).toBeVisible();
-      expect(screen.getByTestId('save-shadow-box-settings')).toBeEnabled();
+      expect(await screen.findByTestId('cluster-fence-exempt-principals-chip-shadow-telemetry')).toBeVisible();
+      expect(screen.getByTestId('cluster-fence-exempt-principals-chip-shadow-orders')).toBeVisible();
+      expect(screen.getByTestId('save-cluster-fence-settings')).toBeEnabled();
     });
 
     test.each([
-      ['fence', 'unboxed', 'box-cluster-dialog'],
-      ['unfence', 'boxed', 'unbox-cluster-dialog'],
+      ['fence', 'unfenced', 'fence-cluster-dialog'],
+      ['unfence', 'fenced', 'unfence-cluster-dialog'],
     ] as const)('%s on a cluster that’s %s opens its dialog', async (action, phase, testId) => {
       mockStatus(phase);
       renderAt(`/shadowlinks?tab=source&action=${action}`);
@@ -311,16 +311,16 @@ describe('the ShadowBoxSourcePanel', () => {
     });
 
     test('unfence on a cluster that’s already unfenced does nothing', async () => {
-      mockStatus('unboxed');
+      mockStatus('unfenced');
       renderAt('/shadowlinks?tab=source&action=unfence');
 
-      expect(await screen.findByTestId('shadow-box-source-panel')).toBeVisible();
-      expect(screen.queryByTestId('unbox-cluster-dialog')).not.toBeInTheDocument();
+      expect(await screen.findByTestId('cluster-fence-source-panel')).toBeVisible();
+      expect(screen.queryByTestId('unfence-cluster-dialog')).not.toBeInTheDocument();
     });
 
     test.each([
-      ['exempt', 'unboxed', 'shadow-box-settings-dialog'],
-      ['unfence', 'boxed', 'unbox-cluster-dialog'],
+      ['exempt', 'unfenced', 'cluster-fence-settings-dialog'],
+      ['unfence', 'fenced', 'unfence-cluster-dialog'],
     ] as const)(
       'clears %s from the URL once its dialog closes, so it doesn’t open again',
       async (action, phase, testId) => {
@@ -335,12 +335,12 @@ describe('the ShadowBoxSourcePanel', () => {
     );
 
     test('ignores any other action', async () => {
-      mockStatus('unboxed');
-      renderAt('/shadowlinks?tab=source&action=box&principal=shadow-telemetry');
+      mockStatus('unfenced');
+      renderAt('/shadowlinks?tab=source&action=archive&principal=shadow-telemetry');
 
-      expect(await screen.findByTestId('shadow-box-source-panel')).toBeVisible();
-      expect(screen.queryByTestId('shadow-box-settings-dialog')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('box-cluster-dialog')).not.toBeInTheDocument();
+      expect(await screen.findByTestId('cluster-fence-source-panel')).toBeVisible();
+      expect(screen.queryByTestId('cluster-fence-settings-dialog')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('fence-cluster-dialog')).not.toBeInTheDocument();
     });
   });
 });

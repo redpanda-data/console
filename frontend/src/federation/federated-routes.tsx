@@ -15,6 +15,7 @@ import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { useLayoutEffect, useRef } from 'react';
 
+import { ClusterFenceBanner } from '../components/cluster-fence/cluster-fence-banner';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
@@ -27,7 +28,6 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
-import { ShadowBoxBanner } from '../components/shadow-box/shadow-box-banner';
 import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
@@ -138,7 +138,7 @@ function FederatedAppContent() {
         <LicenseNotification />
       </NullFallbackBoundary>
       <NullFallbackBoundary>
-        <ShadowBoxBanner />
+        <ClusterFenceBanner />
       </NullFallbackBoundary>
       <ModalContainer />
       <AppPageHeader />

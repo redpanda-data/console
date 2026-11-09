@@ -35,6 +35,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import { setPageHeader, uiState } from '../../../state/ui-state';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import KowlEditor from '../../misc/kowl-editor';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
@@ -49,7 +50,6 @@ import {
 import { Input } from '../../redpanda-ui/components/input';
 import { KeyValueField } from '../../redpanda-ui/components/key-value-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
-import { ShadowBoxedButton } from '../../shadow-box/shadow-boxed-controls';
 import { subjectSchemaContext } from '../schemas/schema-context-utils';
 
 type EncodingOption = {
@@ -651,7 +651,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <ShadowBoxedButton
+        <FenceGuardedButton
           action="produce"
           data-testid="produce-button"
           isLoading={isSubmitting}
@@ -659,7 +659,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           type="submit"
         >
           Produce
-        </ShadowBoxedButton>
+        </FenceGuardedButton>
         <Button
           nativeButton={false}
           render={

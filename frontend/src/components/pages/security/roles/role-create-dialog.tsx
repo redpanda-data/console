@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
@@ -29,8 +31,6 @@ import {
 import { FieldError } from '../../../redpanda-ui/components/field';
 import { Input } from '../../../redpanda-ui/components/input';
 import { Label } from '../../../redpanda-ui/components/label';
-import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
-import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { useRoleNameAvailability } from '../hooks/use-role-name-availability';
 
 type RoleCreateDialogProps = {
@@ -41,7 +41,7 @@ type RoleCreateDialogProps = {
 /** The name checks, plus whether the fence rejects creating roles right now. */
 const useRoleNameChecks = (roleName: string) => ({
   ...useRoleNameAvailability(roleName),
-  boxed: Boolean(useShadowBoxGuard().reasonFor('editRoles')),
+  fenced: Boolean(useClusterFenceGuard().reasonFor('editRoles')),
 });
 
 export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
@@ -50,7 +50,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { trimmed, alreadyExists, boxed } = useRoleNameChecks(roleName);
+  const { trimmed, alreadyExists, fenced } = useRoleNameChecks(roleName);
 
   const handleClose = () => {
     setRoleName('');
@@ -74,7 +74,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists || boxed) {
+    if (!trimmed || alreadyExists || fenced) {
       return;
     }
     setIsSubmitting(true);
@@ -111,13 +111,13 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <ShadowBoxedButton
+          <FenceGuardedButton
             action="editRoles"
             disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
             onClick={handleSubmit}
           >
             Create
-          </ShadowBoxedButton>
+          </FenceGuardedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

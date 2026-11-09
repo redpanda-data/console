@@ -24,8 +24,8 @@ import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon } from 'lucide-react
 
 import {
   type FailoverReadiness,
-  getBoxProgress,
-  isSourceBoxReady,
+  getFenceProgress,
+  isSourceFenceReady,
   type LagStep,
   pausedTopicsReason,
   topicsSubject,
@@ -40,26 +40,26 @@ const CHECK_ICON = {
 type Verdict = { status: keyof typeof CHECK_ICON; text: string };
 type Check = Verdict & { id: string };
 
-const sourceVerdict = ({ box }: FailoverReadiness): Verdict => {
-  if (box.kind === 'loading') {
+const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
+  if (fence.kind === 'loading') {
     return {
       status: 'unknown',
       text: 'Stop writes to the source cluster first, by fencing it or stopping its producers, so nothing is left behind.',
     };
   }
-  if (box.kind === 'unreadable') {
+  if (fence.kind === 'unreadable') {
     return {
       status: 'unknown',
       text: 'Console can’t read the source cluster’s fence right now. Make sure it’s fenced, or that its producers are stopped.',
     };
   }
-  if (getBoxProgress(box) === 'blocked') {
+  if (getFenceProgress(fence) === 'blocked') {
     return {
       status: 'not-ready',
       text: 'The source cluster is fenced, but its settings block this link’s fetches, so the link can’t finish copying.',
     };
   }
-  if (isSourceBoxReady(box)) {
+  if (isSourceFenceReady(fence)) {
     return {
       status: 'ready',
       text: 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
@@ -68,7 +68,7 @@ const sourceVerdict = ({ box }: FailoverReadiness): Verdict => {
   return {
     status: 'not-ready',
     text:
-      box.box.state === 'boxing'
+      fence.fence.state === 'fencing'
         ? 'The source cluster hasn’t reported Fenced yet. A broker that hasn’t picked up the fence still accepts writes, which would never reach this cluster.'
         : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
   };

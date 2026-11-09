@@ -27,7 +27,7 @@ import {
   updateClusterFenceSettings,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
 import { useSupportedFeaturesStore } from 'state/supported-features';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { connectQueryWrapper } from 'test-utils';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
@@ -44,13 +44,13 @@ rs.mock('config', () => {
 });
 
 import {
-  describeShadowBoxError,
+  describeClusterFenceError,
   isStaleRevisionError,
-  useBoxClusterMutation,
-  useShadowBoxStatusQuery,
-} from './shadow-box';
+  useClusterFenceStatusQuery,
+  useFenceClusterMutation,
+} from './cluster-fence';
 
-const boxedStatus = create(GetClusterFenceStatusResponseSchema, {
+const fencedStatus = create(GetClusterFenceStatusResponseSchema, {
   fence: {
     state: ClusterFenceState.FENCED,
     revision: 3n,
@@ -61,38 +61,38 @@ const boxedStatus = create(GetClusterFenceStatusResponseSchema, {
 
 const renderStatusQuery = (transport: Transport) => {
   const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-  return renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+  return renderHook(() => useClusterFenceStatusQuery(), { wrapper });
 };
 
-describe('useShadowBoxStatusQuery', () => {
+describe('useClusterFenceStatusQuery', () => {
   beforeEach(() => {
     flags.enableClusterFencing = true;
     host.embedded = true;
     useSupportedFeaturesStore.setState({ clusterFence: true });
-    useShadowBoxStore.setState({ phase: null });
+    useClusterFenceStore.setState({ phase: null });
   });
 
   test('reads the fence when the flag is on and the backend serves the API', async () => {
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, () => boxedStatus);
+      rpc(getClusterFenceStatus, () => fencedStatus);
     });
 
     const { result } = renderStatusQuery(transport);
 
     await waitFor(() => expect(result.current.known).toBe(true));
-    expect(result.current.summary).toMatchObject({ phase: 'boxed', exemptPrincipals: ['shadow-orders'] });
+    expect(result.current.summary).toMatchObject({ phase: 'fenced', exemptPrincipals: ['shadow-orders'] });
     expect(result.current.brokers).toEqual([
-      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxed', revision: 3n }, blocks: true },
+      { nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true },
     ]);
     expect(result.current.blocking).toBe(true);
-    expect(useShadowBoxStore.getState().phase).toBe('boxed');
+    expect(useClusterFenceStore.getState().phase).toBe('fenced');
   });
 
   test('self-hosted, reads the fence whenever the backend serves the API, with no flag', async () => {
     host.embedded = false;
     flags.enableClusterFencing = false;
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, () => boxedStatus);
+      rpc(getClusterFenceStatus, () => fencedStatus);
     });
 
     const { result } = renderStatusQuery(transport);
@@ -122,7 +122,7 @@ describe('useShadowBoxStatusQuery', () => {
       rs.useRealTimers();
     });
     arrange();
-    const handler = rs.fn(() => boxedStatus);
+    const handler = rs.fn(() => fencedStatus);
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getClusterFenceStatus, handler);
     });
@@ -138,13 +138,13 @@ describe('useShadowBoxStatusQuery', () => {
 });
 
 const openedAt = (revision: number) => ({
-  phase: 'unboxed' as const,
+  phase: 'unfenced' as const,
   revision: BigInt(revision),
   exemptPrincipals: [],
   allowAllReads: false,
 });
 
-const savedBox = (revision: number, exemptPrincipals: string[]) =>
+const savedFence = (revision: number, exemptPrincipals: string[]) =>
   create(UpdateClusterFenceSettingsResponseSchema, {
     fence: {
       state: ClusterFenceState.UNFENCED,
@@ -153,10 +153,10 @@ const savedBox = (revision: number, exemptPrincipals: string[]) =>
     },
   });
 
-const boxTransport = (saved: ReturnType<typeof savedBox>, boxError?: ConnectError) => {
+const fenceTransport = (saved: ReturnType<typeof savedFence>, fenceError?: ConnectError) => {
   const calls: string[] = [];
   const saveRequests: unknown[] = [];
-  const boxRequests: unknown[] = [];
+  const fenceRequests: unknown[] = [];
   const transport = createRouterTransport(({ rpc }) => {
     rpc(updateClusterFenceSettings, (request) => {
       calls.push('save');
@@ -164,35 +164,35 @@ const boxTransport = (saved: ReturnType<typeof savedBox>, boxError?: ConnectErro
       return saved;
     });
     rpc(fence, (request) => {
-      calls.push('box');
-      boxRequests.push(request);
-      if (boxError) {
-        throw boxError;
+      calls.push('fence');
+      fenceRequests.push(request);
+      if (fenceError) {
+        throw fenceError;
       }
       return create(FenceResponseSchema, { fence: { state: ClusterFenceState.FENCING, revision: 6n } });
     });
-    rpc(getClusterFenceStatus, () => boxedStatus);
+    rpc(getClusterFenceStatus, () => fencedStatus);
   });
-  return { transport, calls, saveRequests, boxRequests };
+  return { transport, calls, saveRequests, fenceRequests };
 };
 
 const reviewed = { exemptPrincipals: ['shadow-orders'], allowAllReads: false };
 
-const renderBoxMutation = (transport: Transport) => {
+const renderFenceMutation = (transport: Transport) => {
   const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-  return renderHook(() => useBoxClusterMutation(), { wrapper }).result;
+  return renderHook(() => useFenceClusterMutation(), { wrapper }).result;
 };
 
-describe('useBoxClusterMutation', () => {
+describe('useFenceClusterMutation', () => {
   test('saves changed settings at the opened revision, then fences at the revision the save returned', async () => {
-    const { transport, calls, saveRequests, boxRequests } = boxTransport(savedBox(5, ['shadow-orders']));
-    const result = renderBoxMutation(transport);
+    const { transport, calls, saveRequests, fenceRequests } = fenceTransport(savedFence(5, ['shadow-orders']));
+    const result = renderFenceMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) });
     });
 
-    expect(calls).toEqual(['save', 'box']);
+    expect(calls).toEqual(['save', 'fence']);
     expect(saveRequests[0]).toMatchObject({
       expectedRevision: 4n,
       updateMask: { paths: ['read_policy'] },
@@ -200,24 +200,24 @@ describe('useBoxClusterMutation', () => {
         readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
       },
     });
-    expect(boxRequests[0]).toMatchObject({ expectedRevision: 5n });
+    expect(fenceRequests[0]).toMatchObject({ expectedRevision: 5n });
   });
 
   test('fences straight away when the settings are already saved', async () => {
-    const { transport, calls, boxRequests } = boxTransport(savedBox(5, []));
-    const result = renderBoxMutation(transport);
+    const { transport, calls, fenceRequests } = fenceTransport(savedFence(5, []));
+    const result = renderFenceMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: { ...reviewed, ...openedAt(4) }, opened: openedAt(4) });
     });
 
-    expect(calls).toEqual(['box']);
-    expect(boxRequests[0]).toMatchObject({ expectedRevision: 4n });
+    expect(calls).toEqual(['fence']);
+    expect(fenceRequests[0]).toMatchObject({ expectedRevision: 4n });
   });
 
   test('won’t fence when the save came back with someone else’s settings', async () => {
-    const { transport, calls } = boxTransport(savedBox(6, ['someone-else']));
-    const result = renderBoxMutation(transport);
+    const { transport, calls } = fenceTransport(savedFence(6, ['someone-else']));
+    const result = renderFenceMutation(transport);
 
     let failure: unknown;
     await act(async () => {
@@ -226,28 +226,28 @@ describe('useBoxClusterMutation', () => {
 
     expect(calls).toEqual(['save']);
     expect(isStaleRevisionError(failure)).toBe(true);
-    expect(result.current.savedBox).toBeUndefined();
+    expect(result.current.savedFence).toBeUndefined();
   });
 
   test('when Fence fails after its own save, reports the fence that save left', async () => {
-    const { transport, calls } = boxTransport(
-      savedBox(5, ['shadow-orders']),
+    const { transport, calls } = fenceTransport(
+      savedFence(5, ['shadow-orders']),
       new ConnectError('a data migration is still running', Code.FailedPrecondition)
     );
-    const result = renderBoxMutation(transport);
+    const result = renderFenceMutation(transport);
 
     await act(async () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) }).catch(() => undefined);
     });
 
-    expect(calls).toEqual(['save', 'box']);
-    expect(result.current.savedBox).toMatchObject({ revision: 5n, exemptPrincipals: ['shadow-orders'] });
+    expect(calls).toEqual(['save', 'fence']);
+    expect(result.current.savedFence).toMatchObject({ revision: 5n, exemptPrincipals: ['shadow-orders'] });
     act(() => result.current.reset());
-    expect(result.current.savedBox).toBeUndefined();
+    expect(result.current.savedFence).toBeUndefined();
   });
 });
 
-describe('useShadowBoxStatusQuery when the status can’t be read', () => {
+describe('useClusterFenceStatusQuery when the status can’t be read', () => {
   beforeEach(() => {
     flags.enableClusterFencing = true;
     host.embedded = true;
@@ -270,7 +270,7 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
       });
     });
     const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    return { result: renderHook(() => useShadowBoxStatusQuery(), { wrapper }).result, queryClient };
+    return { result: renderHook(() => useClusterFenceStatusQuery(), { wrapper }).result, queryClient };
   };
 
   test('a viewer without permission stops polling, and the status says why rather than vanishing', async () => {
@@ -308,15 +308,15 @@ describe('useShadowBoxStatusQuery when the status can’t be read', () => {
     });
     const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
 
-    const { result } = renderHook(() => useShadowBoxStatusQuery(), { wrapper });
+    const { result } = renderHook(() => useClusterFenceStatusQuery(), { wrapper });
 
-    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'boxed', revision: 18n }]));
+    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 18n }]));
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
   });
 });
 
-describe('describeShadowBoxError', () => {
+describe('describeClusterFenceError', () => {
   test.each([
     [
       new ConnectError('Cluster fence revision has changed', Code.FailedPrecondition),
@@ -336,6 +336,6 @@ describe('describeShadowBoxError', () => {
     ],
     [new ConnectError('bad mask', Code.InvalidArgument), 'Redpanda rejected the request. Redpanda said: “bad mask”'],
   ])('%s', (error, message) => {
-    expect(describeShadowBoxError(error)).toBe(message);
+    expect(describeClusterFenceError(error)).toBe(message);
   });
 });

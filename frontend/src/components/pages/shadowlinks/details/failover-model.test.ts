@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LinkIdentity } from 'components/shadow-box/shadow-box-model';
-import type { ShadowLinkPeerBoxState, ShadowLinkSource } from 'federation/types';
+import type { LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
+import type { ShadowLinkPeerFenceState, ShadowLinkSource } from 'federation/types';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {
@@ -19,17 +19,17 @@ import {
   getFailoverStepStates,
   getLagStep,
   getLinkIdentity,
-  getSourceBoxStep,
-  type SourceBoxStep,
+  getSourceFenceStep,
+  type SourceFenceStep,
 } from './failover-model';
 import { describe, expect, test } from 'bun:test';
 import type { UnifiedShadowLink } from '../model';
 
-const cloudSource = (state: ShadowLinkPeerBoxState, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
+const cloudSource = (state: ShadowLinkPeerFenceState, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
-  box: {
+  fence: {
     status: 'known',
     state,
     revision: '18',
@@ -41,8 +41,8 @@ const cloudSource = (state: ShadowLinkPeerBoxState, exemptPrincipals = ['shadow-
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceBoxStep => {
-  const result = getSourceBoxStep({ source, link, resolving: false });
+const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceFenceStep => {
+  const result = getSourceFenceStep({ source, link, resolving: false });
   if (!result) {
     throw new Error('No guided failover for this source');
   }
@@ -57,29 +57,33 @@ const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACT
 
 const caughtUp = [topic('orders-events', 0), topic('orders-audit', 0)];
 
-describe('getSourceBoxStep', () => {
+describe('getSourceFenceStep', () => {
   test('reads a Cloud source’s fence and whether its saved settings let this link fetch, in any phase', () => {
-    expect(step(cloudSource('boxed'))).toMatchObject({ kind: 'cloud', boxed: true, linkExempt: true });
-    expect(step(cloudSource('unboxed', []))).toMatchObject({ boxed: false, linkExempt: false });
-    expect(step(cloudSource('boxed', ['User:shadow-orders']))).toMatchObject({ linkExempt: false });
+    expect(step(cloudSource('fenced'))).toMatchObject({ kind: 'cloud', fenced: true, linkExempt: true });
+    expect(step(cloudSource('unfenced', []))).toMatchObject({ fenced: false, linkExempt: false });
+    expect(step(cloudSource('fenced', ['User:shadow-orders']))).toMatchObject({ linkExempt: false });
   });
 
   test('has no guided failover without a source, or for one outside Cloud', () => {
-    expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: false })).toBeUndefined();
+    expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: false })).toBeUndefined();
     expect(
-      getSourceBoxStep({ source: { kind: 'external', bootstrapServers: ['kafka:9092'] }, link: sasl, resolving: false })
+      getSourceFenceStep({
+        source: { kind: 'external', bootstrapServers: ['kafka:9092'] },
+        link: sasl,
+        resolving: false,
+      })
     ).toBeUndefined();
   });
 
   describe('once the fence has been read in this visit', () => {
-    const lastKnown = cloudSource('boxed') as Extract<ShadowLinkSource, { kind: 'cloud' }>;
+    const lastKnown = cloudSource('fenced') as Extract<ShadowLinkSource, { kind: 'cloud' }>;
     const unavailable = (reason: 'no-leader' | 'not-running' | 'error' | 'unsupported' | 'inactive' | 'forbidden') =>
-      getSourceBoxStep({
+      getSourceFenceStep({
         source: {
           kind: 'cloud',
           clusterId: 'prod',
           clusterName: 'prod-us-east-1',
-          box: { status: 'unavailable', reason },
+          fence: { status: 'unavailable', reason },
         },
         link: sasl,
         resolving: false,
@@ -90,7 +94,7 @@ describe('getSourceBoxStep', () => {
       for (const reason of ['no-leader', 'not-running', 'error'] as const) {
         expect(unavailable(reason)).toMatchObject({ kind: 'unreadable', reason, source: { clusterId: 'prod' } });
       }
-      expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: false, lastKnown })).toMatchObject({
+      expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: false, lastKnown })).toMatchObject({
         kind: 'unreadable',
         source: { clusterName: 'prod-us-east-1' },
       });
@@ -103,11 +107,11 @@ describe('getSourceBoxStep', () => {
     });
 
     test('an unreadable source isn’t ready, and says why', () => {
-      const box = unavailable('no-leader');
-      if (!box) {
+      const fence = unavailable('no-leader');
+      if (!fence) {
         throw new Error('expected an unreadable step');
       }
-      expect(getFailoverReadiness({ topics: caughtUp, box }).failover).toMatchObject({
+      expect(getFailoverReadiness({ topics: caughtUp, fence }).failover).toMatchObject({
         ready: false,
         reason: 'Not ready until Console can read the source’s fence again.',
       });
@@ -116,12 +120,12 @@ describe('getSourceBoxStep', () => {
 
   test('a source that was never read in this visit has no guided failover, even if the failure passes', () => {
     expect(
-      getSourceBoxStep({
+      getSourceFenceStep({
         source: {
           kind: 'cloud',
           clusterId: 'prod',
           clusterName: 'prod',
-          box: { status: 'unavailable', reason: 'no-leader' },
+          fence: { status: 'unavailable', reason: 'no-leader' },
         },
         link: sasl,
         resolving: false,
@@ -130,19 +134,23 @@ describe('getSourceBoxStep', () => {
   });
 
   test('waits while the host resolves links or reads the source’s fence', () => {
-    expect(getSourceBoxStep({ source: undefined, link: sasl, resolving: true })).toEqual({
+    expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: true })).toEqual({
       kind: 'loading',
       source: undefined,
     });
     expect(
-      getSourceBoxStep({
-        source: { kind: 'cloud', clusterId: 'prod', clusterName: 'prod', box: { status: 'loading' } },
+      getSourceFenceStep({
+        source: { kind: 'cloud', clusterId: 'prod', clusterName: 'prod', fence: { status: 'loading' } },
         link: sasl,
         resolving: false,
       })
     ).toMatchObject({ kind: 'loading', source: { clusterId: 'prod' } });
     expect(
-      getSourceBoxStep({ source: { kind: 'external', bootstrapServers: ['kafka:9092'] }, link: sasl, resolving: true })
+      getSourceFenceStep({
+        source: { kind: 'external', bootstrapServers: ['kafka:9092'] },
+        link: sasl,
+        resolving: true,
+      })
     ).toBeUndefined();
   });
 });
@@ -150,7 +158,7 @@ describe('getSourceBoxStep', () => {
 describe('getLagStep', () => {
   test('lag only counts as drained once the source is fenced', () => {
     expect(getLagStep(caughtUp, 'ready').status).toBe('caught-up');
-    expect(getLagStep(caughtUp, 'waiting').status).toBe('waiting-for-box');
+    expect(getLagStep(caughtUp, 'waiting').status).toBe('waiting-for-fence');
   });
 
   test('lists the topics still behind, worst first', () => {
@@ -171,10 +179,10 @@ describe('getLagStep', () => {
 });
 
 describe('getFailoverReadiness', () => {
-  const boxedStep = step(cloudSource('boxed'));
+  const fencedStep = step(cloudSource('fenced'));
 
   test('unlocks failover once the source is fenced and lag is zero', () => {
-    expect(getFailoverReadiness({ topics: caughtUp, box: boxedStep }).failover).toEqual({
+    expect(getFailoverReadiness({ topics: caughtUp, fence: fencedStep }).failover).toEqual({
       done: false,
       inProgress: 0,
       ready: true,
@@ -183,7 +191,7 @@ describe('getFailoverReadiness', () => {
   });
 
   test('a fence that blocks this link’s reads isn’t ready, because the link can’t finish copying', () => {
-    const readiness = getFailoverReadiness({ topics: caughtUp, box: step(cloudSource('boxed', ['someone-else'])) });
+    const readiness = getFailoverReadiness({ topics: caughtUp, fence: step(cloudSource('fenced', ['someone-else'])) });
 
     expect(readiness.lag.status).toBe('blocked');
     expect(readiness.failover).toMatchObject({
@@ -192,14 +200,14 @@ describe('getFailoverReadiness', () => {
     });
     expect(getFailoverStepStates(readiness)).toMatchObject({
       settings: 'attention',
-      box: 'done',
-      boxed: 'done',
+      fence: 'done',
+      fenced: 'done',
       failover: 'pending',
     });
   });
 
   test('a failed refresh keeps the last lag but won’t call it caught up', () => {
-    const readiness = getFailoverReadiness({ topics: caughtUp, topicsFailed: true, box: boxedStep });
+    const readiness = getFailoverReadiness({ topics: caughtUp, topicsFailed: true, fence: fencedStep });
 
     expect(readiness.lag).toMatchObject({ status: 'caught-up', stale: true, caughtUp: 2 });
     expect(readiness.failover).toMatchObject({ ready: false, reason: expect.stringContaining('Couldn’t refresh') });
@@ -209,7 +217,7 @@ describe('getFailoverReadiness', () => {
   test('isn’t done while topics are still failing over', () => {
     const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.FAILING_OVER)],
-      box: boxedStep,
+      fence: fencedStep,
     });
 
     expect(readiness.failover).toEqual({
@@ -221,37 +229,37 @@ describe('getFailoverReadiness', () => {
   });
 
   test('isn’t ready, with a reason, until then', () => {
-    expect(getFailoverReadiness({ topics: caughtUp, box: step(cloudSource('unboxed')) }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: caughtUp, fence: step(cloudSource('unfenced')) }).failover.reason).toBe(
       'Not ready until the source cluster reports Fenced.'
     );
-    expect(getFailoverReadiness({ topics: [topic('a', 5)], box: boxedStep }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: [topic('a', 5)], fence: fencedStep }).failover.reason).toBe(
       'Not ready until every topic has zero lag.'
     );
-    expect(getFailoverReadiness({ topics: undefined, box: boxedStep }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: undefined, fence: fencedStep }).failover.reason).toBe(
       'Loading the link’s topics.'
     );
-    expect(getFailoverReadiness({ topics: undefined, topicsFailed: true, box: boxedStep }).failover.reason).toBe(
+    expect(getFailoverReadiness({ topics: undefined, topicsFailed: true, fence: fencedStep }).failover.reason).toBe(
       'Couldn’t load the link’s topics, so Console can’t check their lag.'
     );
     expect(
-      getFailoverReadiness({ topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep })
+      getFailoverReadiness({ topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], fence: fencedStep })
         .failover
     ).toMatchObject({ ready: false, reason: expect.stringContaining('b has faulted') });
     expect(
-      getFailoverReadiness({ topics: [topic('a', 0, ShadowTopicState.PAUSED)], box: boxedStep }).failover.reason
+      getFailoverReadiness({ topics: [topic('a', 0, ShadowTopicState.PAUSED)], fence: fencedStep }).failover.reason
     ).toContain('a is paused');
   });
 
   test('is done when every topic has failed over, leaving only moving clients', () => {
     const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.PROMOTED)],
-      box: boxedStep,
+      fence: fencedStep,
     });
     expect(readiness.failover).toMatchObject({ done: true, ready: false });
     expect(getFailoverStepStates(readiness)).toEqual({
       settings: 'done',
-      box: 'done',
-      boxed: 'done',
+      fence: 'done',
+      fenced: 'done',
       lag: 'done',
       failover: 'done',
       clients: 'current',
@@ -261,11 +269,11 @@ describe('getFailoverReadiness', () => {
   test('is done when the only topics left are faulted ones, which a failover leaves alone', () => {
     const readiness = getFailoverReadiness({
       topics: [topic('a', 0, ShadowTopicState.FAILED_OVER), topic('b', 0, ShadowTopicState.FAULTED)],
-      box: boxedStep,
+      fence: fencedStep,
     });
     expect(readiness.failover.done).toBe(true);
     expect(
-      getFailoverReadiness({ topics: [topic('b', 0, ShadowTopicState.FAULTED)], box: boxedStep }).failover.done
+      getFailoverReadiness({ topics: [topic('b', 0, ShadowTopicState.FAULTED)], fence: fencedStep }).failover.done
     ).toBe(false);
   });
 });
@@ -306,20 +314,20 @@ describe('getLinkIdentity', () => {
 describe('getFailoverStepStates', () => {
   test('the source’s three steps go in order: settings, Fence, then Fenced', () => {
     const states = (source: ShadowLinkSource) =>
-      getFailoverStepStates(getFailoverReadiness({ topics: caughtUp, box: step(source) }));
+      getFailoverStepStates(getFailoverReadiness({ topics: caughtUp, fence: step(source) }));
 
-    expect(states(cloudSource('unboxed', []))).toMatchObject({
+    expect(states(cloudSource('unfenced', []))).toMatchObject({
       settings: 'attention',
-      box: 'pending',
-      boxed: 'pending',
+      fence: 'pending',
+      fenced: 'pending',
     });
-    expect(states(cloudSource('unboxed'))).toMatchObject({ settings: 'done', box: 'current', boxed: 'pending' });
-    expect(states(cloudSource('boxing'))).toMatchObject({
+    expect(states(cloudSource('unfenced'))).toMatchObject({ settings: 'done', fence: 'current', fenced: 'pending' });
+    expect(states(cloudSource('fencing'))).toMatchObject({
       settings: 'done',
-      box: 'done',
-      boxed: 'current',
+      fence: 'done',
+      fenced: 'current',
       lag: 'pending',
     });
-    expect(states(cloudSource('boxed'))).toMatchObject({ boxed: 'done', lag: 'done', failover: 'current' });
+    expect(states(cloudSource('fenced'))).toMatchObject({ fenced: 'done', lag: 'done', failover: 'current' });
   });
 });

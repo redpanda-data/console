@@ -13,7 +13,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { useEffect, useState } from 'react';
 
-import { BOX_PHASE_LABEL, type BoxPhase } from './shadow-box-model';
+import { FENCE_PHASE_LABEL, type FencePhase } from './cluster-fence-model';
 
 /** The current time, refreshed on an interval so time-in-state labels keep counting. */
 export const useNow = (intervalMs = 30_000): number => {
@@ -25,22 +25,22 @@ export const useNow = (intervalMs = 30_000): number => {
   return now;
 };
 
-/** Amber, not red, while it blocks: the box is intentional, but it stops traffic from the moment boxing begins. */
-const PHASE_VARIANT: Record<BoxPhase, StatusBadgeVariant> = {
-  unboxed: 'disabled',
-  boxing: 'warning',
-  boxed: 'warning',
-  unboxing: 'informative',
+/** Amber, not red, while it blocks: the fence is intentional, but it stops traffic from the moment fencing begins. */
+const PHASE_VARIANT: Record<FencePhase, StatusBadgeVariant> = {
+  unfenced: 'disabled',
+  fencing: 'warning',
+  fenced: 'warning',
+  unfencing: 'informative',
 };
 
-export const ShadowBoxStateBadge = ({ phase, testId }: { phase: BoxPhase; testId?: string }) => (
+export const ClusterFenceStateBadge = ({ phase, testId }: { phase: FencePhase; testId?: string }) => (
   <StatusBadge
-    pulsing={phase === 'boxing' || phase === 'unboxing'}
+    pulsing={phase === 'fencing' || phase === 'unfencing'}
     size="sm"
-    testId={testId ?? 'shadow-box-state-badge'}
+    testId={testId ?? 'cluster-fence-state-badge'}
     variant={PHASE_VARIANT[phase]}
   >
-    {BOX_PHASE_LABEL[phase]}
+    {FENCE_PHASE_LABEL[phase]}
   </StatusBadge>
 );
 

@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
+import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
@@ -25,7 +26,6 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
@@ -136,10 +136,10 @@ export const RolesTabNew: FC = () => {
             <Tooltip>
               <TooltipTrigger
                 render={hoverableWhenDisabled(
-                  createRole.boxedReason,
+                  createRole.fencedReason,
                   <Button
                     data-testid="create-role-button"
-                    disabled={createRole.disabled || Boolean(createRole.boxedReason)}
+                    disabled={createRole.disabled || Boolean(createRole.fencedReason)}
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     Create role
@@ -147,7 +147,7 @@ export const RolesTabNew: FC = () => {
                 )}
               />
               {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
-              {createRole.boxedReason ? <TooltipContent>{createRole.boxedReason}</TooltipContent> : null}
+              {createRole.fencedReason ? <TooltipContent>{createRole.fencedReason}</TooltipContent> : null}
             </Tooltip>
           }
         >
@@ -164,9 +164,9 @@ export const RolesTabNew: FC = () => {
               <SecurityEmptyState
                 action={
                   isFiltered ? undefined : (
-                    <DisabledReasonTooltip reason={createRole.boxedReason}>
+                    <DisabledReasonTooltip reason={createRole.fencedReason}>
                       <Button
-                        disabled={createRole.disabled || Boolean(createRole.boxedReason)}
+                        disabled={createRole.disabled || Boolean(createRole.fencedReason)}
                         onClick={() => setCreateDialogOpen(true)}
                       >
                         Create role
@@ -229,7 +229,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           }
         />
         <DropdownMenuContent>
-          <ShadowBoxedMenuItem
+          <FenceGuardedMenuItem
             action="editRoles"
             data-testid={`delete-role-button-${roleName}`}
             onClick={(e) => {
@@ -240,7 +240,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           >
             <Trash2Icon />
             Delete
-          </ShadowBoxedMenuItem>
+          </FenceGuardedMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

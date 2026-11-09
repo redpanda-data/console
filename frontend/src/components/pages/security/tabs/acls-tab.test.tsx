@@ -82,8 +82,8 @@ rs.mock('../../../../react-query/api/acl', () => ({
   }),
 }));
 
-rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
 
 const SORT_ASC = /Asc/;

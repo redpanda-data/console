@@ -10,15 +10,15 @@
  */
 
 import { useCallback } from 'react';
-import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 
-import { isBoxedReadError, isFencedTopic, isFencedTopicWrite } from './shadow-box-model';
+import { isFencedReadError, isFencedTopic, isFencedTopicWrite } from './cluster-fence-model';
 
 /**
  * Every change a fence rejects that Console offers a control for. DeleteRecords, users and SCRAM
  * passwords still go through, so they aren't here.
  */
-export type BoxedAction =
+export type FencedAction =
   | 'createTopic'
   | 'deleteTopic'
   | 'editTopicConfig'
@@ -30,7 +30,7 @@ export type BoxedAction =
   | 'deleteConsumerGroup'
   | 'createShadowLink';
 
-const ACTION_PHRASE: Record<Exclude<BoxedAction, 'createShadowLink'>, string> = {
+const ACTION_PHRASE: Record<Exclude<FencedAction, 'createShadowLink'>, string> = {
   createTopic: 'create topics or add partitions',
   deleteTopic: 'delete topics',
   editTopicConfig: 'change topic configuration',
@@ -43,14 +43,14 @@ const ACTION_PHRASE: Record<Exclude<BoxedAction, 'createShadowLink'>, string> = 
 };
 
 /** For a topic action, whether the fence covers that topic: internal topics stay open. */
-const TOPIC_IN_SCOPE: Partial<Record<BoxedAction, (topic: string) => boolean>> = {
+const TOPIC_IN_SCOPE: Partial<Record<FencedAction, (topic: string) => boolean>> = {
   createTopic: isFencedTopic,
   deleteTopic: isFencedTopic,
   editTopicConfig: isFencedTopic,
   produce: isFencedTopicWrite,
 };
 
-const boxedActionReason = (action: BoxedAction) =>
+const fencedActionReason = (action: FencedAction) =>
   action === 'createShadowLink'
     ? 'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
     : `You can’t ${ACTION_PHRASE[action]} while this cluster is fenced. Unfence it first.`;
@@ -59,24 +59,24 @@ const boxedActionReason = (action: BoxedAction) =>
  * Disables write controls up front while the cluster blocks, so users get a reason instead of a
  * raw POLICY_VIOLATION after they submit. Until a status loads, nothing is disabled.
  */
-export const useShadowBoxGuard = () => {
-  const { blocking, summary } = useShadowBoxStatusQuery();
+export const useClusterFenceGuard = () => {
+  const { blocking, summary } = useClusterFenceStatusQuery();
   const readsBlocked = blocking && !summary.allowAllReads;
 
   /** Pass `topic` for a change to one topic, so the fence's internal-topic exemption applies. */
   const reasonFor = useCallback(
-    (action: BoxedAction, topic?: string): string | undefined => {
+    (action: FencedAction, topic?: string): string | undefined => {
       const covered = topic === undefined || (TOPIC_IN_SCOPE[action]?.(topic) ?? true);
-      return blocking && covered ? boxedActionReason(action) : undefined;
+      return blocking && covered ? fencedActionReason(action) : undefined;
     },
     [blocking]
   );
 
-  /** Whether a failed message search is most likely the box turning Console's fetch away. */
-  const isBoxedRead = useCallback(
-    (message: string): boolean => readsBlocked && isBoxedReadError(message),
+  /** Whether a failed message search is most likely the fence turning Console's fetch away. */
+  const isFencedRead = useCallback(
+    (message: string): boolean => readsBlocked && isFencedReadError(message),
     [readsBlocked]
   );
 
-  return { reasonFor, isBoxedRead };
+  return { reasonFor, isFencedRead };
 };

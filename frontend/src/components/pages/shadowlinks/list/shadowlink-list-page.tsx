@@ -13,6 +13,7 @@
 
 import { Code } from '@connectrpc/connect';
 import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -20,16 +21,15 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import type { ShadowLinkTopology } from 'federation/types';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
-import { useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import {
   ShadowLinkEmptyState,
@@ -41,8 +41,8 @@ import {
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
-import { hasBoxActivity, linksThatStopBox } from '../../../shadow-box/shadow-box-model';
-import { ShadowBoxSourcePanel } from '../../../shadow-box/shadow-box-source-panel';
+import { hasFenceActivity, linksThatStopFence } from '../../../cluster-fence/cluster-fence-model';
+import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-source-panel';
 import { getShadowLinkStateLabel } from '../model';
 import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
 
@@ -187,8 +187,8 @@ type ShadowLinkListToolbarProps = {
 
 const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLinkListToolbarProps) => {
   const navigate = useNavigate();
-  const fenceReason = useShadowBoxGuard().reasonFor('createShadowLink');
-  const boxedReason = hasShadowLink ? undefined : fenceReason;
+  const fenceReason = useClusterFenceGuard().reasonFor('createShadowLink');
+  const fencedReason = hasShadowLink ? undefined : fenceReason;
 
   return (
     <div className="flex items-center gap-2">
@@ -208,7 +208,7 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
           render={
             <span className="inline-block">
               <Button
-                disabled={hasShadowLink || Boolean(boxedReason)}
+                disabled={hasShadowLink || Boolean(fencedReason)}
                 onClick={() => navigate({ to: '/shadowlinks/create' })}
                 size="sm"
               >
@@ -223,7 +223,7 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
             <p>Only one shadowlink can be created at this time</p>
           </TooltipContent>
         )}
-        {boxedReason ? <TooltipContent>{boxedReason}</TooltipContent> : null}
+        {fencedReason ? <TooltipContent>{fencedReason}</TooltipContent> : null}
       </Tooltip>
     </div>
   );
@@ -308,14 +308,22 @@ const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLi
  * a shadow doesn't get it. Undefined until that's known.
  */
 const fenceTabShown = (
-  { available, known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useShadowBoxStatusQuery>,
+  {
+    available,
+    known,
+    summary,
+    unreadable,
+    blocking,
+    isLoading,
+    isError,
+  }: ReturnType<typeof useClusterFenceStatusQuery>,
   topology: ShadowLinkTopology | null,
   ownLinks: ReturnType<typeof useListShadowLinksQuery>
 ): boolean | undefined => {
   if (!available) {
     return false;
   }
-  const fenceInUse = (known && hasBoxActivity(summary.phase)) || unreadable || blocking;
+  const fenceInUse = (known && hasFenceActivity(summary.phase)) || unreadable || blocking;
   if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
     return true;
   }
@@ -323,13 +331,13 @@ const fenceTabShown = (
   if (!statusRead || topology?.resolving || (!topology && isFirstLoad(ownLinks))) {
     return;
   }
-  return !topology && known && linksThatStopBox(ownLinks.data?.shadowLinks ?? []).length === 0;
+  return !topology && known && linksThatStopFence(ownLinks.data?.shadowLinks ?? []).length === 0;
 };
 
 const useFenceTabShown = (): boolean | undefined =>
   fenceTabShown(
-    useShadowBoxStatusQuery(),
-    useShadowBoxStore((state) => state.topology),
+    useClusterFenceStatusQuery(),
+    useClusterFenceStore((state) => state.topology),
     useListShadowLinksQuery({})
   );
 
@@ -417,7 +425,7 @@ export const ShadowLinkListPage = () => {
           <ShadowLinksOnThisCluster />
         </TabsContent>
         <TabsContent value="source">
-          <ShadowBoxSourcePanel />
+          <ClusterFenceSourcePanel />
         </TabsContent>
       </TabsContents>
     </Tabs>

@@ -11,6 +11,8 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { EditIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -22,8 +24,6 @@ import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skele
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ShadowBoxedButton } from 'components/shadow-box/shadow-boxed-controls';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
@@ -169,9 +169,9 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
   // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
-  const addVersionBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
-  const deleteSubjectBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
+  const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
+  const addVersionFencedReason = canCreateSchemas === false ? undefined : editSchemasReason;
+  const deleteSubjectFencedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
 
   if (isLoadingSubject || !subject) {
     return (
@@ -196,7 +196,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <div className="flex items-center gap-1">
             {subject.mode}
             {canManageSchemaRegistry !== false && (
-              <ShadowBoxedButton
+              <FenceGuardedButton
                 action="editSchemas"
                 data-testid="schema-details-edit-mode-icon"
                 onClick={() =>
@@ -209,7 +209,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                 variant="ghost"
               >
                 <EditIcon />
-              </ShadowBoxedButton>
+              </FenceGuardedButton>
             )}
           </div>
         </SmallStat>
@@ -219,7 +219,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           <div className="flex items-center gap-1">
             {subject.compatibility}
             {canManageSchemaRegistry !== false && (
-              <ShadowBoxedButton
+              <FenceGuardedButton
                 action="editSchemas"
                 data-testid="schema-details-edit-compatibility-icon"
                 onClick={() =>
@@ -232,7 +232,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
                 variant="ghost"
               >
                 <EditIcon />
-              </ShadowBoxedButton>
+              </FenceGuardedButton>
             )}
           </div>
         </SmallStat>
@@ -247,10 +247,10 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <Tooltip>
           <TooltipTrigger
             render={hoverableWhenDisabled(
-              addVersionBoxedReason,
+              addVersionFencedReason,
               <Button
                 data-testid="schema-details-add-version-btn"
-                disabled={canCreateSchemas === false || Boolean(addVersionBoxedReason)}
+                disabled={canCreateSchemas === false || Boolean(addVersionFencedReason)}
                 onClick={() =>
                   navigate({
                     to: '/schema-registry/subjects/$subjectName/add-version',
@@ -266,15 +266,15 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {canCreateSchemas === false && (
             <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
           )}
-          {addVersionBoxedReason ? <TooltipContent side="top">{addVersionBoxedReason}</TooltipContent> : null}
+          {addVersionFencedReason ? <TooltipContent side="top">{addVersionFencedReason}</TooltipContent> : null}
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
             render={hoverableWhenDisabled(
-              deleteSubjectBoxedReason,
+              deleteSubjectFencedReason,
               <Button
                 data-testid="schema-details-delete-subject-btn"
-                disabled={canDeleteSchemas === false || Boolean(deleteSubjectBoxedReason)}
+                disabled={canDeleteSchemas === false || Boolean(deleteSubjectFencedReason)}
                 onClick={() => setSubjectDeleteKind(isSoftDeleted ? 'permanent' : 'soft')}
                 variant="outline"
               >
@@ -285,7 +285,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {canDeleteSchemas === false && (
             <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
           )}
-          {deleteSubjectBoxedReason ? <TooltipContent side="top">{deleteSubjectBoxedReason}</TooltipContent> : null}
+          {deleteSubjectFencedReason ? <TooltipContent side="top">{deleteSubjectFencedReason}</TooltipContent> : null}
         </Tooltip>
       </div>
       {/* Definition / Diff */}
@@ -550,9 +550,9 @@ const SubjectVersionDefinition = ({
   const { versionDeleteKind, setVersionDeleteKind, executePermanentDelete, handleRecover, executeSoftDelete } =
     useSchemaVersionActions(subjectData, schema, setSelectedVersion);
   const versionSelectId = useId();
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
-  const recoverBoxedReason = canCreateSchemas === false ? undefined : editSchemasReason;
-  const deleteVersionBoxedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
+  const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
+  const recoverFencedReason = canCreateSchemas === false ? undefined : editSchemasReason;
+  const deleteVersionFencedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
 
   return (
     <div className="flex gap-10">
@@ -588,11 +588,11 @@ const SubjectVersionDefinition = ({
               <Tooltip>
                 <TooltipTrigger
                   render={hoverableWhenDisabled(
-                    deleteVersionBoxedReason,
+                    deleteVersionFencedReason,
                     <Button
                       className="ml-auto"
                       data-testid="schema-definition-permanent-delete-btn"
-                      disabled={canDeleteSchemas === false || Boolean(deleteVersionBoxedReason)}
+                      disabled={canDeleteSchemas === false || Boolean(deleteVersionFencedReason)}
                       onClick={() => setVersionDeleteKind('permanent')}
                       variant="outline"
                     >
@@ -604,18 +604,18 @@ const SubjectVersionDefinition = ({
                 {canDeleteSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
                 )}
-                {deleteVersionBoxedReason ? (
-                  <TooltipContent side="top">{deleteVersionBoxedReason}</TooltipContent>
+                {deleteVersionFencedReason ? (
+                  <TooltipContent side="top">{deleteVersionFencedReason}</TooltipContent>
                 ) : null}
               </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger
                   render={hoverableWhenDisabled(
-                    recoverBoxedReason,
+                    recoverFencedReason,
                     <Button
                       data-testid="schema-definition-recover-btn"
-                      disabled={canCreateSchemas === false || Boolean(recoverBoxedReason)}
+                      disabled={canCreateSchemas === false || Boolean(recoverFencedReason)}
                       onClick={handleRecover}
                       variant="outline"
                     >
@@ -626,18 +626,18 @@ const SubjectVersionDefinition = ({
                 {canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
-                {recoverBoxedReason ? <TooltipContent side="top">{recoverBoxedReason}</TooltipContent> : null}
+                {recoverFencedReason ? <TooltipContent side="top">{recoverFencedReason}</TooltipContent> : null}
               </Tooltip>
             </>
           ) : (
             <Tooltip>
               <TooltipTrigger
                 render={hoverableWhenDisabled(
-                  deleteVersionBoxedReason,
+                  deleteVersionFencedReason,
                   <Button
                     className="ml-auto"
                     data-testid="schema-definition-delete-version-btn"
-                    disabled={canDeleteSchemas === false || Boolean(deleteVersionBoxedReason)}
+                    disabled={canDeleteSchemas === false || Boolean(deleteVersionFencedReason)}
                     onClick={() => setVersionDeleteKind('soft')}
                     variant="outline"
                   >
@@ -649,7 +649,9 @@ const SubjectVersionDefinition = ({
               {canDeleteSchemas === false && (
                 <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
               )}
-              {deleteVersionBoxedReason ? <TooltipContent side="top">{deleteVersionBoxedReason}</TooltipContent> : null}
+              {deleteVersionFencedReason ? (
+                <TooltipContent side="top">{deleteVersionFencedReason}</TooltipContent>
+              ) : null}
             </Tooltip>
           )}
         </div>

@@ -163,8 +163,8 @@ rs.mock('../hooks/use-principal-permissions', () => ({
   }),
 }));
 
-rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
 
 import { PermissionsListTab } from './permissions-list-tab';

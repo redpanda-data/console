@@ -27,6 +27,8 @@ import { docsLinks } from 'utils/docs-links';
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { rolesApi } from '../../../../state/backend-api';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -41,8 +43,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
-import { useShadowBoxGuard } from '../../../shadow-box/use-shadow-box-guard';
 import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 
 type Role = {
@@ -60,7 +60,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
   const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
-  const editRolesReason = useShadowBoxGuard().reasonFor('editRoles');
+  const editRolesReason = useClusterFenceGuard().reasonFor('editRoles');
 
   const availableRoleOptions = (rolesData?.roles ?? [])
     .filter((r) => !roles.some((assigned) => assigned.principalName === r.name))
@@ -131,7 +131,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
         <TableCell align="right">
           <div className="flex items-center justify-end gap-1">
             {Boolean(userName) && (
-              <ShadowBoxedButton
+              <FenceGuardedButton
                 action="editRoles"
                 onClick={() => setPendingRemoveRole(r.principalName)}
                 size="icon-sm"
@@ -139,7 +139,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                 variant="ghost"
               >
                 <Trash2Icon className="h-4 w-4" />
-              </ShadowBoxedButton>
+              </FenceGuardedButton>
             )}
             <Button
               render={

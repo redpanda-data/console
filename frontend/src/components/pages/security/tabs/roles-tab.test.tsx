@@ -138,8 +138,8 @@ rs.mock('react-query/api/security', () => ({
   }),
 }));
 
-rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ reasonFor: () => undefined }),
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
 
 import { RolesTab } from './roles-tab';

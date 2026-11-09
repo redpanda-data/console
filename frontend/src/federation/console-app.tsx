@@ -60,7 +60,7 @@ import { Button } from '../components/redpanda-ui/components/button';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
-import { useShadowBoxStore } from '../stores/shadow-box-store';
+import { useClusterFenceStore } from '../stores/cluster-fence-store';
 
 /**
  * Re-root the generated route tree onto Console's federated root.
@@ -207,7 +207,7 @@ function ConsoleAppInner({
   // Kept out of setup(): the host re-sends the topology every time it polls, and re-running setup
   // would tear Console down.
   useEffect(() => {
-    useShadowBoxStore.getState().setHostContext(shadowLinkTopology ?? null, onOpenCluster ?? null);
+    useClusterFenceStore.getState().setHostContext(shadowLinkTopology ?? null, onOpenCluster ?? null);
   }, [shadowLinkTopology, onOpenCluster]);
 
   // Create stable QueryClient instance

@@ -9,6 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import {
+  brokersPhrase,
+  formatFenceDuration,
+  isBlockingPhase,
+  type LinkIdentity,
+  MTLS_LINK_NOTE,
+  unreachableBrokersSubject,
+} from 'components/cluster-fence/cluster-fence-model';
+import { CanReadBadge, ClusterFenceStateBadge, useNow } from 'components/cluster-fence/cluster-fence-ui';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -16,33 +25,24 @@ import { Progress } from 'components/redpanda-ui/components/progress';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import {
-  brokersPhrase,
-  formatBoxDuration,
-  isBlockingPhase,
-  type LinkIdentity,
-  MTLS_LINK_NOTE,
-  unreachableBrokersSubject,
-} from 'components/shadow-box/shadow-box-model';
-import { CanReadBadge, ShadowBoxStateBadge, useNow } from 'components/shadow-box/shadow-box-ui';
-import type { ShadowLinkPeerBox } from 'federation/types';
+import type { ShadowLinkPeerFence } from 'federation/types';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import {
   type FailoverReadiness,
   getFailoverStepStates,
   type LagStep,
-  type SourceBoxStep,
+  type SourceFenceStep,
   type StepState,
   type TransientReason,
   topicsSubject,
 } from './failover-model';
 import type { UnifiedShadowLink } from '../model';
 
-type CloudStep = Extract<SourceBoxStep, { kind: 'cloud' }>;
-type KnownPeerBox = Extract<ShadowLinkPeerBox, { status: 'known' }>;
+type CloudStep = Extract<SourceFenceStep, { kind: 'cloud' }>;
+type KnownPeerFence = Extract<ShadowLinkPeerFence, { status: 'known' }>;
 
 const MARKER_STYLE: Record<StepState, string> = {
   done: 'border-success bg-success text-success-foreground',
@@ -136,13 +136,13 @@ const Lane = ({
  * The source's steps run on its own Console, so this lane only reports them and links there: to the
  * settings with this link's user already added when they would block it, otherwise to the fence.
  */
-const OpenSourceButton = ({ box, link }: { box: SourceBoxStep; link: LinkIdentity }) => {
-  const openCluster = useShadowBoxStore((state) => state.openCluster);
-  const { source } = box;
+const OpenSourceButton = ({ fence, link }: { fence: SourceFenceStep; link: LinkIdentity }) => {
+  const openCluster = useClusterFenceStore((state) => state.openCluster);
+  const { source } = fence;
   if (!(openCluster && source)) {
     return null;
   }
-  const exempt = box.kind === 'cloud' && box.linkExempt === false ? link.principal : undefined;
+  const exempt = fence.kind === 'cloud' && fence.linkExempt === false ? link.principal : undefined;
   return (
     <Button
       onClick={() =>
@@ -173,14 +173,14 @@ const linkUserLabel = (link: LinkIdentity) => {
 };
 
 /** Says why the exempt badge reads as it does, when it isn't a plain Exempt. */
-const exemptNote = ({ box, source, linkExempt }: CloudStep, link: LinkIdentity) => {
+const exemptNote = ({ fence, source, linkExempt }: CloudStep, link: LinkIdentity) => {
   if (linkExempt === undefined) {
     return link.authentication === 'mtls'
       ? MTLS_LINK_NOTE
       : 'Console can’t tell which user this link reads as, so it can’t check the exempt list.';
   }
   if (linkExempt === false) {
-    return isBlockingPhase(box.state)
+    return isBlockingPhase(fence.state)
       ? `${source.clusterName}’s fence rejects this link’s fetches, so lag can’t reach zero.`
       : `Once ${source.clusterName} is fenced, it would reject this link’s fetches, so lag couldn’t reach zero.`;
   }
@@ -208,19 +208,19 @@ const SettingsStepBody = ({ step, link }: { step: CloudStep; link: LinkIdentity 
   );
 };
 
-const BoxStepBody = ({ step }: { step: CloudStep }) => {
-  const { box, source } = step;
+const FenceStepBody = ({ step }: { step: CloudStep }) => {
+  const { fence, source } = step;
   return (
     <p className="text-body-sm text-muted-foreground">
-      {isBlockingPhase(box.state)
+      {isBlockingPhase(fence.state)
         ? `Fence was called on ${source.clusterName}. Each broker rejects writes as soon as it picks it up.`
         : `Fence runs on ${source.clusterName}, with its saved settings. Each broker there rejects writes as soon as it picks it up, so do this just before you fail over.`}
     </p>
   );
 };
 
-const brokerCount = (box: KnownPeerBox) => {
-  const brokers = box.brokers ?? [];
+const brokerCount = (fence: KnownPeerFence) => {
+  const brokers = fence.brokers ?? [];
   return {
     total: brokers.length,
     confirmed: brokers.filter((broker) => broker.status === 'confirmed').length,
@@ -229,20 +229,20 @@ const brokerCount = (box: KnownPeerBox) => {
   };
 };
 
-const BoxedStepBody = ({ step }: { step: CloudStep }) => {
+const FencedStepBody = ({ step }: { step: CloudStep }) => {
   const now = useNow();
-  const { box, source } = step;
-  const since = box.stateChangedAt ? new Date(box.stateChangedAt) : undefined;
-  const { total, confirmed, down, behind } = brokerCount(box);
+  const { fence, source } = step;
+  const since = fence.stateChangedAt ? new Date(fence.stateChangedAt) : undefined;
+  const { total, confirmed, down, behind } = brokerCount(fence);
   return (
     <>
       <p className="flex flex-wrap items-center gap-2 text-body-sm">
         <span className="text-muted-foreground">{source.clusterName} is</span>
-        <ShadowBoxStateBadge phase={box.state} testId="failover-source-box-state" />
-        {since ? <span className="text-muted-foreground">for {formatBoxDuration(now - since.getTime())}</span> : null}
+        <ClusterFenceStateBadge phase={fence.state} testId="failover-source-fence-state" />
+        {since ? <span className="text-muted-foreground">for {formatFenceDuration(now - since.getTime())}</span> : null}
       </p>
-      {box.state === 'boxing' ? (
-        <p className="text-body-sm text-muted-foreground" data-testid="failover-boxing-progress">
+      {fence.state === 'fencing' ? (
+        <p className="text-body-sm text-muted-foreground" data-testid="failover-fencing-progress">
           {total > 0 ? `${confirmed} of ${total} brokers have confirmed. ` : ''}
           {down.length > 0
             ? `${unreachableBrokersSubject(down)} answering, so ${source.clusterName} stays fencing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`
@@ -250,7 +250,7 @@ const BoxedStepBody = ({ step }: { step: CloudStep }) => {
           {down.length === 0 && behind.length > 0 ? `Waiting on ${brokersPhrase(behind)}.` : ''}
         </p>
       ) : null}
-      {box.state === 'boxed' ? (
+      {fence.state === 'fenced' ? (
         <p className="text-body-sm text-muted-foreground">
           Every broker confirmed, so nothing new is written to {source.clusterName}. Writes accepted just before the
           fence can still arrive here.
@@ -331,7 +331,7 @@ const LagStepBody = ({ lag, failedOver, onRetry }: { lag: LagStep; failedOver: b
       <p className="text-body" data-testid="failover-lag-summary">
         {describeLag(lag)}
       </p>
-      {lag.status === 'waiting-for-box' ? (
+      {lag.status === 'waiting-for-fence' ? (
         <p className="text-body-sm text-muted-foreground">
           Lag can still grow until the source reports Fenced, because some of its brokers may still take writes.
         </p>
@@ -366,7 +366,7 @@ const LAG_BADGE: Partial<Record<LagStep['status'], BadgeSpec>> = {
   faulted: { label: 'Topics faulted', variant: 'destructive' },
   'caught-up': { label: 'Caught up', variant: 'success' },
   draining: { label: 'Draining', variant: 'informative', pulsing: true },
-  'waiting-for-box': { label: 'Waiting', variant: 'disabled' },
+  'waiting-for-fence': { label: 'Waiting', variant: 'disabled' },
   blocked: { label: 'Link can’t read', variant: 'warning' },
 };
 
@@ -440,13 +440,13 @@ const UNREADABLE_SENTENCE: Partial<Record<NonNullable<TransientReason>, string>>
 };
 
 /** In place of the source's steps, when its fence was read earlier in this visit but can't be now. */
-const UnreadableSource = ({ box }: { box: Extract<SourceBoxStep, { kind: 'unreadable' }> }) => (
+const UnreadableSource = ({ fence }: { fence: Extract<SourceFenceStep, { kind: 'unreadable' }> }) => (
   <li className="py-5">
-    <Alert testId="failover-box-unreadable" variant="warning">
-      <AlertTitle>Can’t read {box.source.clusterName}’s fence right now</AlertTitle>
+    <Alert testId="failover-fence-unreadable" variant="warning">
+      <AlertTitle>Can’t read {fence.source.clusterName}’s fence right now</AlertTitle>
       <AlertDescription>
         <p>
-          {box.reason ? (UNREADABLE_SENTENCE[box.reason] ?? '') : ''}Redpanda Cloud keeps trying, and the steps come
+          {fence.reason ? (UNREADABLE_SENTENCE[fence.reason] ?? '') : ''}Redpanda Cloud keeps trying, and the steps come
           back once it can read the fence.
         </p>
       </AlertDescription>
@@ -455,23 +455,25 @@ const UnreadableSource = ({ box }: { box: Extract<SourceBoxStep, { kind: 'unread
 );
 
 const SourceLaneSteps = ({
-  box,
+  fence,
   states,
   linkIdentity,
 }: {
-  box: SourceBoxStep;
+  fence: SourceFenceStep;
   states: ReturnType<typeof getFailoverStepStates>;
   linkIdentity: LinkIdentity;
 }) => {
-  if (box.kind === 'unreadable') {
-    return <UnreadableSource box={box} />;
+  if (fence.kind === 'unreadable') {
+    return <UnreadableSource fence={fence} />;
   }
-  if (box.kind === 'loading') {
+  if (fence.kind === 'loading') {
     return (
       <li className="py-5">
-        <p className="flex items-center gap-2 text-body text-muted-foreground" data-testid="failover-box-loading">
+        <p className="flex items-center gap-2 text-body text-muted-foreground" data-testid="failover-fence-loading">
           <Spinner className="size-4" />
-          {box.source ? `Reading the fence on ${box.source.clusterName}…` : 'Finding the cluster this link reads from…'}
+          {fence.source
+            ? `Reading the fence on ${fence.source.clusterName}…`
+            : 'Finding the cluster this link reads from…'}
         </p>
       </li>
     );
@@ -484,13 +486,13 @@ const SourceLaneSteps = ({
         testId="failover-step-settings"
         title="Save settings: exempt this link’s user"
       >
-        <SettingsStepBody link={linkIdentity} step={box} />
+        <SettingsStepBody link={linkIdentity} step={fence} />
       </Step>
-      <Step index={2} state={states.box} testId="failover-step-box" title="Fence">
-        <BoxStepBody step={box} />
+      <Step index={2} state={states.fence} testId="failover-step-fence" title="Fence">
+        <FenceStepBody step={fence} />
       </Step>
-      <Step index={3} state={states.boxed} testId="failover-step-boxed" title="Wait for Fenced">
-        <BoxedStepBody step={box} />
+      <Step index={3} state={states.fenced} testId="failover-step-fenced" title="Wait for Fenced">
+        <FencedStepBody step={fence} />
       </Step>
     </>
   );
@@ -509,10 +511,10 @@ type FailoverTabProps = {
  * Console; this page only reads its fence, through the host.
  */
 export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics }: FailoverTabProps) => {
-  const clusterName = useShadowBoxStore((state) => state.topology?.clusterName) ?? 'this cluster';
-  const { box, lag, failover } = readiness;
+  const clusterName = useClusterFenceStore((state) => state.topology?.clusterName) ?? 'this cluster';
+  const { fence, lag, failover } = readiness;
   const states = getFailoverStepStates(readiness);
-  const sourceName = box.source?.clusterName ?? 'the source cluster';
+  const sourceName = fence.source?.clusterName ?? 'the source cluster';
 
   return (
     <Card size="full" testId="failover-tab" variant="standard">
@@ -520,12 +522,12 @@ export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics
         <div className="flex flex-col gap-8">
           <h2 className="text-heading-sm">Fail over from {sourceName}</h2>
           <Lane
-            action={<OpenSourceButton box={box} link={linkIdentity} />}
+            action={<OpenSourceButton fence={fence} link={linkIdentity} />}
             description={`These run on ${sourceName}’s Cluster fence tab.`}
             testId="failover-lane-source"
             title={`On ${sourceName}`}
           >
-            <SourceLaneSteps box={box} linkIdentity={linkIdentity} states={states} />
+            <SourceLaneSteps fence={fence} linkIdentity={linkIdentity} states={states} />
           </Lane>
           <Lane
             dashed

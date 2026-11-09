@@ -36,6 +36,7 @@ import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import {
@@ -57,7 +58,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { useRowSelection } from '../hooks/use-row-selection';
 import { AddAclDialog } from '../users/add-acl-dialog';
 
@@ -342,28 +342,28 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           actions={
             <div className="flex items-center gap-2">
               {selection.someSelected && (
-                <ShadowBoxedButton
+                <FenceGuardedButton
                   action="editAcls"
                   disabled={isDeleting}
                   onClick={deleteSelected}
                   variant="destructive"
                 >
                   Delete selected ({selection.selected.size})
-                </ShadowBoxedButton>
+                </FenceGuardedButton>
               )}
               {principal && (
-                <ShadowBoxedButton action="editAcls" onClick={() => setGrantAllOpen(true)} variant="outline">
+                <FenceGuardedButton action="editAcls" onClick={() => setGrantAllOpen(true)} variant="outline">
                   Allow all operations
-                </ShadowBoxedButton>
+                </FenceGuardedButton>
               )}
-              <ShadowBoxedButton
+              <FenceGuardedButton
                 action="editAcls"
                 onClick={() => setDialogOpen(true)}
                 testId="add-acl-button"
                 variant="outline"
               >
                 + Add ACL
-              </ShadowBoxedButton>
+              </FenceGuardedButton>
             </div>
           }
         >

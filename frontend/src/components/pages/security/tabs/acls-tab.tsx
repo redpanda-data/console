@@ -10,13 +10,13 @@
  */
 
 import { Link, useNavigate } from '@tanstack/react-router';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { TrashIcon } from 'components/icons';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
-import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
@@ -120,15 +120,15 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <ShadowBoxedMenuItem action="editAcls" disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <FenceGuardedMenuItem action="editAcls" disabled={!canDeleteUser} onClick={handle(true, true)}>
           Delete (User and ACLs)
-        </ShadowBoxedMenuItem>
+        </FenceGuardedMenuItem>
         <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <ShadowBoxedMenuItem action="editAcls" onClick={handle(false, true)}>
+        <FenceGuardedMenuItem action="editAcls" onClick={handle(false, true)}>
           Delete (ACLs only)
-        </ShadowBoxedMenuItem>
+        </FenceGuardedMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -241,7 +241,7 @@ const AclsTabBody = ({
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={onDismissFailure} />
 
-        <ShadowBoxedButton
+        <FenceGuardedButton
           action="editAcls"
           data-testid="create-acls"
           onClick={() => {
@@ -254,7 +254,7 @@ const AclsTabBody = ({
           }}
         >
           Create ACLs
-        </ShadowBoxedButton>
+        </FenceGuardedButton>
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>

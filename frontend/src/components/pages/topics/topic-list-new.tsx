@@ -11,6 +11,7 @@
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import {
   Empty,
@@ -22,7 +23,6 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
-import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -295,7 +295,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             }
           />
           <DropdownMenuContent>
-            <ShadowBoxedMenuItem
+            <FenceGuardedMenuItem
               action="deleteTopic"
               data-testid={`delete-topic-button-${topic.topicName}`}
               disabled={!hasDeletePrivilege() || undefined}
@@ -308,7 +308,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             >
               <TrashIcon />
               Delete
-            </ShadowBoxedMenuItem>
+            </FenceGuardedMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -424,9 +424,9 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <ShadowBoxedButton action="createTopic" onClick={onCreateTopic}>
+              <FenceGuardedButton action="createTopic" onClick={onCreateTopic}>
                 Create topic
-              </ShadowBoxedButton>
+              </FenceGuardedButton>
             </EmptyContent>
           )}
         </Empty>
@@ -502,13 +502,13 @@ const TopicList: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <ShadowBoxedButton
+            <FenceGuardedButton
               action="createTopic"
               data-testid="create-topic-button"
               onClick={() => setIsCreateTopicModalOpen(true)}
             >
               Create topic
-            </ShadowBoxedButton>
+            </FenceGuardedButton>
           }
         >
           <div className="relative">

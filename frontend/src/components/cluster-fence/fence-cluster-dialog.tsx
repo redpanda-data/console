@@ -30,28 +30,32 @@ import type { ShadowLinkTopology } from 'federation/types';
 import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { isStaleRevisionError, useBoxClusterMutation, useShadowBoxStatusQuery } from 'react-query/api/shadow-box';
+import {
+  isStaleRevisionError,
+  useClusterFenceStatusQuery,
+  useFenceClusterMutation,
+} from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { z } from 'zod';
 
-import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
-import { getBoxPreflightChecks, type PreflightStatus } from './box-preflight';
 import {
-  BOX_PHASE_LABEL,
-  type BoxSummary,
   type BrokerProgress,
-  canBoxFromPhase,
-  linksThatStopBox,
+  canFenceFromPhase,
+  FENCE_PHASE_LABEL,
+  type FenceSummary,
+  linksThatStopFence,
   type ReadPolicy,
-} from './shadow-box-model';
+} from './cluster-fence-model';
 import {
+  ClusterFenceSettingsFields,
   type PrincipalSuggestion,
   readPolicySchema,
-  ShadowBoxSettingsFields,
   useReaderSuggestions,
-} from './shadow-box-settings-fields';
+} from './cluster-fence-settings-fields';
+import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';
+import { getFencePreflightChecks, type PreflightStatus } from './fence-preflight';
 
 const FALLBACK_CONFIRMATION = 'fence';
 
@@ -66,26 +70,32 @@ const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
   fail: <TonedIcon aria-label="Blocks fencing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
 };
 
-/** The form mounts with the dialog's content, so every opening starts from the box as it is then. */
-export const BoxClusterDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
+/** The form mounts with the dialog's content, so every opening starts from the fence as it is then. */
+export const FenceClusterDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
-    <DialogContent size="lg" testId="box-cluster-dialog">
-      <BoxClusterForm onClose={() => onOpenChange(false)} />
+    <DialogContent size="lg" testId="fence-cluster-dialog">
+      <FenceClusterForm onClose={() => onOpenChange(false)} />
     </DialogContent>
   </Dialog>
 );
 
-const boxErrorTitle = (error: unknown, settingsSaved: boolean) => {
+const fenceErrorTitle = (error: unknown, settingsSaved: boolean) => {
   if (error instanceof ConnectError && error.code === Code.DeadlineExceeded) {
     return 'The call timed out, and may still apply';
   }
   return settingsSaved ? 'Settings saved, but the cluster isn’t fenced' : 'Couldn’t fence the cluster';
 };
 
-/** This cluster's own links that haven't failed over: while any remain, it's a shadow and Box fails. */
+/** This cluster's own links that haven't failed over: while any remain, it's a shadow and Fence fails. */
 const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   if (query.data) {
-    return linksThatStopBox(query.data.shadowLinks).map((link) => link.name);
+    return linksThatStopFence(query.data.shadowLinks).map((link) => link.name);
   }
   if (isShadowLinkingDisabledError(query.error)) {
     return 'disabled';
@@ -93,14 +103,14 @@ const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   return query.isError ? 'error' : 'loading';
 };
 
-const seedSettings = (summary: BoxSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
+const seedSettings = (summary: FenceSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
   exemptPrincipals: Array.from(
     new Set([...summary.exemptPrincipals, ...suggestions.map(({ principal }) => principal)])
   ),
   allowAllReads: summary.allowAllReads,
 });
 
-const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
+const FenceEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
   <section aria-label="What fencing changes" className="grid gap-4 sm:grid-cols-2">
     <div>
       <h3 className="text-label">Rejects</h3>
@@ -134,7 +144,7 @@ const BoxEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
   </section>
 );
 
-const useBoxSettingsForm = (opened: BoxSummary, suggestions: PrincipalSuggestion[]) => {
+const useFenceSettingsForm = (opened: FenceSummary, suggestions: PrincipalSuggestion[]) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
@@ -153,10 +163,10 @@ const useBoxSettingsForm = (opened: BoxSummary, suggestions: PrincipalSuggestion
   return { form, settings, confirmation };
 };
 
-const useBoxPreflight = (topology: ShadowLinkTopology | null, brokers: BrokerProgress[], settings: ReadPolicy) => {
+const useFencePreflight = (topology: ShadowLinkTopology | null, brokers: BrokerProgress[], settings: ReadPolicy) => {
   const ownLinksQuery = useListShadowLinksQuery({});
-  const checks = getBoxPreflightChecks({
-    linksThatStopBox: ownLinksState(ownLinksQuery),
+  const checks = getFencePreflightChecks({
+    linksThatStopFence: ownLinksState(ownLinksQuery),
     brokers,
     exemptPrincipals: settings.exemptPrincipals,
     allowAllReads: settings.allowAllReads,
@@ -164,29 +174,33 @@ const useBoxPreflight = (topology: ShadowLinkTopology | null, brokers: BrokerPro
     readersResolving: topology?.resolving ?? false,
     readersIncomplete: topology?.readersIncomplete ?? false,
   });
-  /** A shadow cluster can't be boxed, so Box waits until the own-links check has an answer. */
+  /** A shadow cluster can't be fenced, so Fence waits until the own-links check has an answer. */
   const blocked = checks.some(
     (check) => check.status === 'fail' || (check.id === 'own-links' && check.status === 'pending')
   );
   return { checks, blocked };
 };
 
-const useBoxClusterForm = () => {
-  const { summary, brokers } = useShadowBoxStatusQuery();
-  const topology = useShadowBoxStore((state) => state.topology);
-  const boxCluster = useBoxClusterMutation();
-  const openedBox = useOpenedBox(summary, boxCluster.isPending || boxCluster.isSuccess, boxCluster.savedBox);
+const useFenceClusterForm = () => {
+  const { summary, brokers } = useClusterFenceStatusQuery();
+  const topology = useClusterFenceStore((state) => state.topology);
+  const fenceCluster = useFenceClusterMutation();
+  const openedFence = useOpenedFence(
+    summary,
+    fenceCluster.isPending || fenceCluster.isSuccess,
+    fenceCluster.savedFence
+  );
   const suggestions = useReaderSuggestions();
-  const settingsForm = useBoxSettingsForm(openedBox.opened, suggestions);
-  const preflight = useBoxPreflight(topology, brokers, settingsForm.settings);
-  return { summary, topology, boxCluster, ...openedBox, suggestions, ...settingsForm, ...preflight };
+  const settingsForm = useFenceSettingsForm(openedFence.opened, suggestions);
+  const preflight = useFencePreflight(topology, brokers, settingsForm.settings);
+  return { summary, topology, fenceCluster, ...openedFence, suggestions, ...settingsForm, ...preflight };
 };
 
-const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
+const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
   const {
     summary,
     topology,
-    boxCluster,
+    fenceCluster,
     opened,
     changed,
     refresh,
@@ -196,20 +210,20 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
     confirmation,
     checks,
     blocked,
-  } = useBoxClusterForm();
+  } = useFenceClusterForm();
   const clusterName = topology?.clusterName;
   const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;
-  const alreadyBoxed = !canBoxFromPhase(opened.phase);
+  const alreadyFenced = !canFenceFromPhase(opened.phase);
 
   const handleRefresh = () => {
     refresh();
     form.resetField('settings', { defaultValue: seedSettings(summary, suggestions) });
-    boxCluster.reset();
+    fenceCluster.reset();
   };
 
   const handleSubmit = form.handleSubmit((values) => {
-    boxCluster.mutate(
+    fenceCluster.mutate(
       { settings: values.settings, opened },
       {
         onSuccess: () => {
@@ -231,17 +245,17 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="lg">
-        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
-        {!changed && alreadyBoxed ? (
-          <Alert testId="box-cluster-already-boxed" variant="informative">
-            <AlertTitle>This cluster is already {BOX_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
+        {changed ? <FenceChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
+        {!changed && alreadyFenced ? (
+          <Alert testId="fence-cluster-already-fenced" variant="informative">
+            <AlertTitle>This cluster is already {FENCE_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
             <AlertDescription>
               <p>It was fenced while this was open. Close this dialog to see its status.</p>
             </AlertDescription>
           </Alert>
         ) : null}
 
-        <BoxEffects allowAllReads={settings.allowAllReads} />
+        <FenceEffects allowAllReads={settings.allowAllReads} />
 
         <section aria-label="Settings" className="flex flex-col gap-1">
           <h3 className="text-label">1. Save settings</h3>
@@ -255,18 +269,18 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           control={form.control}
           name="settings"
           render={({ field }) => (
-            <ShadowBoxSettingsFields onChange={field.onChange} suggestions={suggestions} value={field.value} />
+            <ClusterFenceSettingsFields onChange={field.onChange} suggestions={suggestions} value={field.value} />
           )}
         />
 
         <section aria-label="Before you fence" className="flex flex-col gap-2">
           <h3 className="text-label">2. Fence</h3>
-          <ul className="flex flex-col gap-1.5" data-testid="box-preflight-checks">
+          <ul className="flex flex-col gap-1.5" data-testid="fence-preflight-checks">
             {checks.map((check) => (
               <li
                 className="flex items-start gap-2 text-body-sm"
                 data-status={check.status}
-                data-testid={`box-preflight-${check.id}`}
+                data-testid={`fence-preflight-${check.id}`}
                 key={check.id}
               >
                 <span className="mt-0.5">{PREFLIGHT_ICON[check.status]}</span>
@@ -277,31 +291,31 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
         </section>
 
         <Field>
-          <FieldLabel htmlFor="box-cluster-confirmation">
+          <FieldLabel htmlFor="fence-cluster-confirmation">
             Type <span className="font-mono">{confirmationTarget}</span> to confirm
           </FieldLabel>
           <Input
             autoComplete="off"
-            id="box-cluster-confirmation"
+            id="fence-cluster-confirmation"
             placeholder={confirmationTarget}
-            testId="box-cluster-confirmation"
+            testId="fence-cluster-confirmation"
             {...form.register('confirmation')}
           />
         </Field>
 
-        {boxCluster.error && !(changed && isStaleRevisionError(boxCluster.error)) ? (
-          <BoxWriteErrorAlert
-            error={boxCluster.error}
-            testId="box-cluster-error"
-            title={boxErrorTitle(boxCluster.error, boxCluster.savedBox !== undefined)}
+        {fenceCluster.error && !(changed && isStaleRevisionError(fenceCluster.error)) ? (
+          <FenceWriteErrorAlert
+            error={fenceCluster.error}
+            testId="fence-cluster-error"
+            title={fenceErrorTitle(fenceCluster.error, fenceCluster.savedFence !== undefined)}
           >
             {/* After this dialog's own save went through, a failed Fence leaves the new settings in place. */}
-            {boxCluster.savedBox ? (
+            {fenceCluster.savedFence ? (
               <p>
                 The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
               </p>
             ) : null}
-          </BoxWriteErrorAlert>
+          </FenceWriteErrorAlert>
         ) : null}
       </DialogBody>
       <DialogFooter>
@@ -309,9 +323,9 @@ const BoxClusterForm = ({ onClose }: { onClose: () => void }) => {
           Cancel
         </Button>
         <Button
-          disabled={blocked || !confirmed || changed || alreadyBoxed}
-          isLoading={boxCluster.isPending}
-          testId="confirm-box-cluster"
+          disabled={blocked || !confirmed || changed || alreadyFenced}
+          isLoading={fenceCluster.isPending}
+          testId="confirm-fence-cluster"
           type="submit"
           variant="destructive"
         >

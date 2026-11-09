@@ -15,9 +15,9 @@ import {
   type BrokerProgress,
   linkCanRead,
   MTLS_LINK_NOTE,
-  SHADOW_CLUSTER_CANT_BOX,
+  SHADOW_CLUSTER_CANT_FENCE,
   unreachableBrokersSubject,
-} from './shadow-box-model';
+} from './cluster-fence-model';
 
 export type PreflightStatus = 'pending' | 'pass' | 'warn' | 'fail';
 
@@ -26,9 +26,9 @@ export type PreflightCheck = { id: string; status: PreflightStatus; message: str
 type PreflightInput = {
   /**
    * Names of this cluster's own shadow links that haven't failed over; any of them makes it a shadow,
-   * which Box refuses. `disabled` when shadow linking is off here, as it usually is on a source.
+   * which Fence refuses. `disabled` when shadow linking is off here, as it usually is on a source.
    */
-  linksThatStopBox: string[] | 'loading' | 'error' | 'disabled';
+  linksThatStopFence: string[] | 'loading' | 'error' | 'disabled';
   brokers: BrokerProgress[];
   exemptPrincipals: string[];
   allowAllReads: boolean;
@@ -40,7 +40,7 @@ type PreflightInput = {
   readersIncomplete: boolean;
 };
 
-const ownLinksCheck = (links: PreflightInput['linksThatStopBox']): PreflightCheck => {
+const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCheck => {
   if (links === 'loading') {
     return { id: 'own-links', status: 'pending', message: 'Checking whether this cluster is a shadow cluster…' };
   }
@@ -55,7 +55,7 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopBox']): PreflightChec
     return { id: 'own-links', status: 'pass', message: 'Shadow linking is off here, so this isn’t a shadow cluster.' };
   }
   if (links.length > 0) {
-    return { id: 'own-links', status: 'fail', message: `${SHADOW_CLUSTER_CANT_BOX} Its links: ${links.join(', ')}.` };
+    return { id: 'own-links', status: 'fail', message: `${SHADOW_CLUSTER_CANT_FENCE} Its links: ${links.join(', ')}.` };
   }
   return { id: 'own-links', status: 'pass', message: 'This cluster has no shadow link that hasn’t failed over.' };
 };
@@ -147,12 +147,12 @@ const readerChecks = (
 };
 
 /**
- * Checks Console can run before Box. Box has no dry run, so these cover what the page already
- * knows; anything else, such as an unfinished data migration, comes back from Box itself. Warnings
+ * Checks Console can run before Fence. Fence has no dry run, so these cover what the page already
+ * knows; anything else, such as an unfinished data migration, comes back from Fence itself. Warnings
  * about the exempt names themselves show in the settings fields, not here.
  */
-export const getBoxPreflightChecks = ({
-  linksThatStopBox,
+export const getFencePreflightChecks = ({
+  linksThatStopFence,
   brokers,
   exemptPrincipals,
   allowAllReads,
@@ -160,7 +160,7 @@ export const getBoxPreflightChecks = ({
   readersResolving,
   readersIncomplete,
 }: PreflightInput): PreflightCheck[] => {
-  const checks: PreflightCheck[] = [ownLinksCheck(linksThatStopBox)];
+  const checks: PreflightCheck[] = [ownLinksCheck(linksThatStopFence)];
   const brokerCheck = brokersCheck(brokers);
   if (brokerCheck) {
     checks.push(brokerCheck);

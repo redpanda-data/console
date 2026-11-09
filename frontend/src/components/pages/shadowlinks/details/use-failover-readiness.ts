@@ -11,9 +11,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
-import { type CloudSource, getFailoverReadiness, getLinkIdentity, getSourceBoxStep } from './failover-model';
+import { type CloudSource, getFailoverReadiness, getLinkIdentity, getSourceFenceStep } from './failover-model';
 import type { UnifiedShadowLink } from '../model';
 
 /** After a failed read, keep trying, but slowly: the shadow cluster may be struggling. */
@@ -25,7 +25,7 @@ const ERROR_POLL_MS = 30_000;
  */
 const useLastKnownSource = (linkName: string, source: CloudSource | undefined) => {
   const [lastKnown, setLastKnown] = useState<Partial<Record<string, CloudSource>>>({});
-  const known = source?.box.status === 'known' ? source : undefined;
+  const known = source?.fence.status === 'known' ? source : undefined;
   useEffect(() => {
     if (known) {
       setLastKnown((previous) => ({ ...previous, [linkName]: known }));
@@ -46,19 +46,19 @@ export const useFailoverReadiness = (
   { pollMs, enabled }: { pollMs: number; enabled: boolean }
 ) => {
   const linkName = link?.name ?? '';
-  const source = useShadowBoxStore((state) => (linkName ? state.topology?.sources[linkName] : undefined));
-  const resolving = useShadowBoxStore((state) => state.topology?.resolving ?? false);
+  const source = useClusterFenceStore((state) => (linkName ? state.topology?.sources[linkName] : undefined));
+  const resolving = useClusterFenceStore((state) => state.topology?.resolving ?? false);
   const linkIdentity = useMemo(() => getLinkIdentity(link), [link]);
   const lastKnown = useLastKnownSource(linkName, source?.kind === 'cloud' ? source : undefined);
-  const box = useMemo(
-    () => (enabled ? getSourceBoxStep({ source, link: linkIdentity, resolving, lastKnown }) : undefined),
+  const fence = useMemo(
+    () => (enabled ? getSourceFenceStep({ source, link: linkIdentity, resolving, lastKnown }) : undefined),
     [enabled, source, linkIdentity, resolving, lastKnown]
   );
 
   const topicsQuery = useListShadowTopicQuery(
     { shadowLinkName: linkName, pageSize: -1 },
     {
-      enabled: box !== undefined && Boolean(linkName),
+      enabled: fence !== undefined && Boolean(linkName),
       refetchInterval: (query) => (query.state.status === 'error' ? Math.max(pollMs, ERROR_POLL_MS) : pollMs),
     }
   );
@@ -66,8 +66,8 @@ export const useFailoverReadiness = (
   /** A failed refresh keeps the last topics, which readiness then treats as out of date. */
   const topicsFailed = topicsQuery.isError;
   const readiness = useMemo(
-    () => (box ? getFailoverReadiness({ topics: topicsQuery.data?.shadowTopics, topicsFailed, box }) : undefined),
-    [topicsQuery.data, topicsFailed, box]
+    () => (fence ? getFailoverReadiness({ topics: topicsQuery.data?.shadowTopics, topicsFailed, fence }) : undefined),
+    [topicsQuery.data, topicsFailed, fence]
   );
 
   return {

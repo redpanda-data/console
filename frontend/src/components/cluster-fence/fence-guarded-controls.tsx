@@ -14,16 +14,16 @@ import { DropdownMenuItem, DropdownMenuShortcut } from 'components/redpanda-ui/c
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ComponentProps } from 'react';
 
-import { type BoxedAction, useShadowBoxGuard } from './use-shadow-box-guard';
+import { type FencedAction, useClusterFenceGuard } from './use-cluster-fence-guard';
 
 /** A Button the fence disables while it rejects `action`, with the reason in a tooltip. */
-export const ShadowBoxedButton = ({
+export const FenceGuardedButton = ({
   action,
   topic,
   disabled,
   ...props
-}: ButtonProps & { action: BoxedAction; topic?: string }) => {
-  const reason = useShadowBoxGuard().reasonFor(action, topic);
+}: ButtonProps & { action: FencedAction; topic?: string }) => {
+  const reason = useClusterFenceGuard().reasonFor(action, topic);
   return (
     <DisabledReasonTooltip reason={reason}>
       <Button disabled={disabled || Boolean(reason)} {...props} />
@@ -36,14 +36,14 @@ export const ShadowBoxedButton = ({
  * so a trailing hint explains it instead of a tooltip; screen readers get the whole reason. Another
  * reason to disable it (`disabled`) wins, and shows no hint.
  */
-export const ShadowBoxedMenuItem = ({
+export const FenceGuardedMenuItem = ({
   action,
   topic,
   disabled,
   children,
   ...props
-}: ComponentProps<typeof DropdownMenuItem> & { action: BoxedAction; topic?: string }) => {
-  const fenceReason = useShadowBoxGuard().reasonFor(action, topic);
+}: ComponentProps<typeof DropdownMenuItem> & { action: FencedAction; topic?: string }) => {
+  const fenceReason = useClusterFenceGuard().reasonFor(action, topic);
   const reason = disabled ? undefined : fenceReason;
   return (
     <DropdownMenuItem disabled={disabled || Boolean(reason)} {...props}>

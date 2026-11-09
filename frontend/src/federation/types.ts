@@ -81,7 +81,7 @@ export type ConsoleAppProps = {
 
   /**
    * Cloud's view of the shadow links around this cluster. Redpanda doesn't record a link's source,
-   * so only the host can say which clusters read from this one, or show a source cluster's box from
+   * so only the host can say which clusters read from this one, or show a source cluster's fence from
    * its shadow cluster. Updates as the host polls; omitted when the host has nothing to share.
    */
   shadowLinkTopology?: ShadowLinkTopology;
@@ -93,17 +93,17 @@ export type ConsoleAppProps = {
   onOpenCluster?: (clusterId: string, path: string) => void;
 };
 
-export type ShadowLinkPeerBoxState = 'unboxed' | 'boxing' | 'boxed' | 'unboxing';
+export type ShadowLinkPeerFenceState = 'unfenced' | 'fencing' | 'fenced' | 'unfencing';
 
-/** One broker's copy of another cluster's box, as the host last read it. */
-export type ShadowLinkPeerBoxBroker = {
+/** One broker's copy of another cluster's fence, as the host last read it. */
+export type ShadowLinkPeerFenceBroker = {
   nodeId: number;
-  /** `confirmed`: its copy matches the cluster's box. `behind`: it has an older copy. `not-answering`: it didn't answer. */
+  /** `confirmed`: its copy matches the cluster's fence. `behind`: it has an older copy. `not-answering`: it didn't answer. */
   status: 'confirmed' | 'behind' | 'not-answering';
 };
 
-/** Another cluster's shadow box, as the host last read it. */
-export type ShadowLinkPeerBox =
+/** Another cluster's cluster fence, as the host last read it. */
+export type ShadowLinkPeerFence =
   | { status: 'loading' }
   | {
       status: 'unavailable';
@@ -120,7 +120,7 @@ export type ShadowLinkPeerBox =
     }
   | {
       status: 'known';
-      state: ShadowLinkPeerBoxState;
+      state: ShadowLinkPeerFenceState;
       /** An int64 as a decimal string, which grows by uneven steps; compare for equality only. */
       revision: string;
       /** ISO 8601; absent until the state first changes. */
@@ -128,11 +128,11 @@ export type ShadowLinkPeerBox =
       exemptPrincipals: string[];
       allowAllReads: boolean;
       /** Each broker's copy; empty when the cluster reported none. */
-      brokers: ShadowLinkPeerBoxBroker[];
+      brokers: ShadowLinkPeerFenceBroker[];
     };
 
 export type ShadowLinkSource =
-  | { kind: 'cloud'; clusterId: string; clusterName: string; box: ShadowLinkPeerBox }
+  | { kind: 'cloud'; clusterId: string; clusterName: string; fence: ShadowLinkPeerFence }
   /** A source Cloud doesn't manage, such as a seed-URL link to a self-hosted cluster. */
   | { kind: 'external'; bootstrapServers: string[] };
 

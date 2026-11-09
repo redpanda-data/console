@@ -13,30 +13,30 @@ import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/comp
 import { Button } from 'components/redpanda-ui/components/button';
 import { RefreshCwIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { describeShadowBoxError } from 'react-query/api/shadow-box';
+import { describeClusterFenceError } from 'react-query/api/cluster-fence';
 
-import type { BoxSummary } from './shadow-box-model';
+import type { FenceSummary } from './cluster-fence-model';
 
 /**
- * Pins the box a dialog opened against. Writes send its revision, so a change someone else makes
+ * Pins the fence a dialog opened against. Writes send its revision, so a change someone else makes
  * while the dialog is open fails instead of being overwritten, and `changed` says so up front.
  * `settling` covers this dialog's own write, whose new revision isn't someone else's change, and
- * `own` is a box an earlier write of this dialog left behind, which replaces the pinned one.
+ * `own` is a fence an earlier write of this dialog left behind, which replaces the pinned one.
  */
-export const useOpenedBox = (live: BoxSummary, settling: boolean, own?: BoxSummary) => {
+export const useOpenedFence = (live: FenceSummary, settling: boolean, own?: FenceSummary) => {
   const [pinned, setPinned] = useState(live);
   const opened = own ?? pinned;
   return {
     opened,
     changed: !settling && live.revision !== opened.revision,
-    /** Adopts the box as it is now; callers reseed their form from the same value. */
+    /** Adopts the fence as it is now; callers reseed their form from the same value. */
     refresh: () => setPinned(live),
   };
 };
 
-/** Shown in a dialog whose box changed since it opened; its write would fail. */
-export const BoxChangedNotice = ({ onRefresh, refreshLabel }: { onRefresh: () => void; refreshLabel: string }) => (
-  <Alert icon={<RefreshCwIcon />} testId="shadow-box-changed" variant="warning">
+/** Shown in a dialog whose fence changed since it opened; its write would fail. */
+export const FenceChangedNotice = ({ onRefresh, refreshLabel }: { onRefresh: () => void; refreshLabel: string }) => (
+  <Alert icon={<RefreshCwIcon />} testId="cluster-fence-changed" variant="warning">
     <AlertTitle>The fence changed while this was open</AlertTitle>
     <AlertDescription>
       <p>
@@ -45,7 +45,7 @@ export const BoxChangedNotice = ({ onRefresh, refreshLabel }: { onRefresh: () =>
       </p>
     </AlertDescription>
     <div className="col-start-2 mt-2">
-      <Button onClick={onRefresh} size="sm" testId="shadow-box-changed-refresh" variant="outline">
+      <Button onClick={onRefresh} size="sm" testId="cluster-fence-changed-refresh" variant="outline">
         {refreshLabel}
       </Button>
     </div>
@@ -53,7 +53,7 @@ export const BoxChangedNotice = ({ onRefresh, refreshLabel }: { onRefresh: () =>
 );
 
 /** A failed write, scrolled into view: it renders below the fold of a long dialog body. */
-export const BoxWriteErrorAlert = ({
+export const FenceWriteErrorAlert = ({
   error,
   title,
   testId,
@@ -75,7 +75,7 @@ export const BoxWriteErrorAlert = ({
     <Alert ref={ref} testId={testId} variant="destructive">
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>
-        <p>{describeShadowBoxError(error)}</p>
+        <p>{describeClusterFenceError(error)}</p>
         {children}
       </AlertDescription>
     </Alert>

@@ -11,6 +11,8 @@
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, FilterFn, PaginationState, Updater } from '@tanstack/react-table';
+import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
@@ -37,8 +39,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
@@ -158,7 +158,7 @@ function useSchemaRegistryOverview() {
   const { data: contexts } = useSchemaRegistryContextsQuery(schemaRegistryContextsSupported);
   const { data: schemaMode, refetch: refetchMode } = useSchemaModeQuery();
   const { data: schemaCompatibility, refetch: refetchCompatibility } = useSchemaCompatibilityQuery();
-  const editSchemasReason = useShadowBoxGuard().reasonFor('editSchemas');
+  const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
 
   const refreshData = useCallback(() => {
     refetchMode();
@@ -181,8 +181,8 @@ function useSchemaRegistryOverview() {
     schemaMode,
     schemaCompatibility,
     // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
-    manageBoxedReason: api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason,
-    createBoxedReason: api.userData?.canCreateSchemas === false ? undefined : editSchemasReason,
+    manageFencedReason: api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason,
+    createFencedReason: api.userData?.canCreateSchemas === false ? undefined : editSchemasReason,
   };
 }
 
@@ -505,7 +505,7 @@ function useSchemaListColumns(
               }
             />
             <DropdownMenuContent>
-              <ShadowBoxedMenuItem
+              <FenceGuardedMenuItem
                 action="editSchemas"
                 data-testid={`schema-list-delete-btn-${subject.name}`}
                 disabled={api.userData?.canDeleteSchemas === false || undefined}
@@ -518,7 +518,7 @@ function useSchemaListColumns(
               >
                 <TrashIcon />
                 {subject.isSoftDeleted ? 'Delete permanently' : 'Delete'}
-              </ShadowBoxedMenuItem>
+              </FenceGuardedMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ),
@@ -664,8 +664,8 @@ const SchemaList: FC = () => {
     isError,
     schemaMode,
     schemaCompatibility,
-    manageBoxedReason,
-    createBoxedReason,
+    manageFencedReason,
+    createFencedReason,
   } = useSchemaRegistryOverview();
   const { selectedContext, setSelectedContext, derivedContexts, displayMode, displayCompat, isAllContext } =
     useSelectedSchemaContext({
@@ -732,11 +732,11 @@ const SchemaList: FC = () => {
               <Tooltip>
                 <TooltipTrigger
                   render={hoverableWhenDisabled(
-                    manageBoxedReason,
+                    manageFencedReason,
                     <Button
                       aria-label="Edit mode"
                       data-testid="schema-list-edit-mode-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageBoxedReason)}
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageFencedReason)}
                       onClick={() =>
                         isNamedContext(selectedContext) && schemaRegistryContextsSupported
                           ? appGlobal.historyPush(
@@ -754,7 +754,7 @@ const SchemaList: FC = () => {
                 {api.userData?.canManageSchemaRegistry === false && (
                   <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
                 )}
-                {manageBoxedReason ? <TooltipContent side="top">{manageBoxedReason}</TooltipContent> : null}
+                {manageFencedReason ? <TooltipContent side="top">{manageFencedReason}</TooltipContent> : null}
               </Tooltip>
             </div>
           }
@@ -772,11 +772,11 @@ const SchemaList: FC = () => {
               <Tooltip>
                 <TooltipTrigger
                   render={hoverableWhenDisabled(
-                    manageBoxedReason,
+                    manageFencedReason,
                     <Button
                       aria-label="Edit compatibility"
                       data-testid="schema-list-edit-compatibility-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageBoxedReason)}
+                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageFencedReason)}
                       onClick={() =>
                         isNamedContext(selectedContext) && schemaRegistryContextsSupported
                           ? appGlobal.historyPush(
@@ -794,7 +794,7 @@ const SchemaList: FC = () => {
                 {api.userData?.canManageSchemaRegistry === false && (
                   <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
                 )}
-                {manageBoxedReason ? <TooltipContent side="top">{manageBoxedReason}</TooltipContent> : null}
+                {manageFencedReason ? <TooltipContent side="top">{manageFencedReason}</TooltipContent> : null}
               </Tooltip>
             </div>
           }
@@ -849,10 +849,10 @@ const SchemaList: FC = () => {
               <Tooltip>
                 <TooltipTrigger
                   render={hoverableWhenDisabled(
-                    createBoxedReason,
+                    createFencedReason,
                     <Button
                       data-testid="schema-list-create-btn"
-                      disabled={api.userData?.canCreateSchemas === false || Boolean(createBoxedReason)}
+                      disabled={api.userData?.canCreateSchemas === false || Boolean(createFencedReason)}
                       onClick={() => {
                         // Carry the selected context into the create page URL so the
                         // form pre-fills it and survives a reload. "All" has no single
@@ -872,7 +872,7 @@ const SchemaList: FC = () => {
                 {api.userData?.canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
-                {createBoxedReason ? <TooltipContent side="top">{createBoxedReason}</TooltipContent> : null}
+                {createFencedReason ? <TooltipContent side="top">{createFencedReason}</TooltipContent> : null}
               </Tooltip>
             }
           >

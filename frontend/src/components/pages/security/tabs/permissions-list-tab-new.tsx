@@ -10,6 +10,7 @@
  */
 
 import { Link as TanStackLink } from '@tanstack/react-router';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon } from 'components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Empty, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
@@ -19,7 +20,6 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
-import { ShadowBoxedButton, ShadowBoxedMenuItem } from 'components/shadow-box/shadow-boxed-controls';
 import { ChevronDown, ChevronRight, ExternalLink, KeyRoundIcon, Trash2Icon, UserIcon, UsersIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -233,7 +233,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                     <DropdownMenuContent>
                       {group.principalType === 'User' && (
                         <>
-                          <ShadowBoxedMenuItem
+                          <FenceGuardedMenuItem
                             action="editAcls"
                             disabled={!canDeleteUser}
                             onClick={(e) => {
@@ -244,7 +244,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           >
                             <Trash2Icon />
                             Delete (User and ACLs)
-                          </ShadowBoxedMenuItem>
+                          </FenceGuardedMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
                             onClick={(e) => {
@@ -258,7 +258,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           </DropdownMenuItem>
                         </>
                       )}
-                      <ShadowBoxedMenuItem
+                      <FenceGuardedMenuItem
                         action="editAcls"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -268,7 +268,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       >
                         <Trash2Icon />
                         Delete (ACLs only)
-                      </ShadowBoxedMenuItem>
+                      </FenceGuardedMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -359,9 +359,9 @@ const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCre
     <div className="rounded-md border">
       <SecurityEmptyState
         action={
-          <ShadowBoxedButton action="editAcls" onClick={onCreateAcl}>
+          <FenceGuardedButton action="editAcls" onClick={onCreateAcl}>
             Create ACL
-          </ShadowBoxedButton>
+          </FenceGuardedButton>
         }
         description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
         docsHref={docsLinks.selfManaged.acl}
@@ -456,9 +456,9 @@ export const PermissionsListTabNew: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <ShadowBoxedButton action="editAcls" onClick={() => setCreateAclOpen(true)}>
+            <FenceGuardedButton action="editAcls" onClick={() => setCreateAclOpen(true)}>
               Create ACL
-            </ShadowBoxedButton>
+            </FenceGuardedButton>
           }
         >
           <ListLayoutSearchInput

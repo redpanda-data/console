@@ -77,7 +77,7 @@ rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: []
 
 import type { ShadowLinkSource } from 'federation/types';
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useShadowBoxStore } from 'stores/shadow-box-store';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { render } from 'test-utils';
 
 import { ShadowLinkDetailsPage } from './shadowlink-details-page';
@@ -86,18 +86,18 @@ const FENCED_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
-  box: { status: 'known', state: 'boxed', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
+  fence: { status: 'known', state: 'fenced', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
 const unavailable = (reason: 'error' | 'unsupported' | 'no-leader'): ShadowLinkSource => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
-  box: { status: 'unavailable', reason },
+  fence: { status: 'unavailable', reason },
 });
 
 const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
-  useShadowBoxStore.setState({
+  useClusterFenceStore.setState({
     topology: {
       clusterName: 'dr',
       readers: [],
@@ -133,7 +133,7 @@ describe('the ShadowLinkDetailsPage', () => {
     rs.clearAllMocks();
     host.embedded = true;
     route.search = {};
-    useShadowBoxStore.setState({ topology: null });
+    useClusterFenceStore.setState({ topology: null });
   });
 
   test('in Cloud with cluster fencing off, looks and fetches exactly as before', async () => {
@@ -163,7 +163,7 @@ describe('the ShadowLinkDetailsPage', () => {
       'self-hosted, with no host to read the source',
       () => {
         host.embedded = false;
-        useShadowBoxStore.setState({ topology: null });
+        useClusterFenceStore.setState({ topology: null });
       },
     ],
     ['the source is outside Cloud', () => hostWith({ kind: 'external', bootstrapServers: ['kafka:9092'] })],

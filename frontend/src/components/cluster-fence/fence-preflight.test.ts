@@ -11,8 +11,8 @@
 
 import type { ShadowLinkReader } from 'federation/types';
 
-import { getBoxPreflightChecks } from './box-preflight';
-import type { BrokerProgress } from './shadow-box-model';
+import type { BrokerProgress } from './cluster-fence-model';
+import { getFencePreflightChecks } from './fence-preflight';
 import { describe, expect, test } from 'bun:test';
 
 const healthyBrokers: BrokerProgress[] = [1, 2, 3].map((nodeId) => ({ nodeId, status: 'confirmed', blocks: false }));
@@ -26,7 +26,7 @@ const reader: ShadowLinkReader = {
 };
 
 const base = {
-  linksThatStopBox: [] as string[],
+  linksThatStopFence: [] as string[],
   brokers: healthyBrokers,
   exemptPrincipals: ['shadow-orders'],
   allowAllReads: false,
@@ -35,19 +35,19 @@ const base = {
   readersIncomplete: false,
 };
 
-const statuses = (checks: ReturnType<typeof getBoxPreflightChecks>) =>
+const statuses = (checks: ReturnType<typeof getFencePreflightChecks>) =>
   Object.fromEntries(checks.map((check) => [check.id, check.status]));
 
-const messageOf = (checks: ReturnType<typeof getBoxPreflightChecks>, id: string) =>
+const messageOf = (checks: ReturnType<typeof getFencePreflightChecks>, id: string) =>
   checks.find((check) => check.id === id)?.message;
 
-describe('getBoxPreflightChecks', () => {
+describe('getFencePreflightChecks', () => {
   test('passes a source cluster whose readers are exempt', () => {
-    expect(statuses(getBoxPreflightChecks(base))).toEqual({ 'own-links': 'pass', brokers: 'pass', readers: 'pass' });
+    expect(statuses(getFencePreflightChecks(base))).toEqual({ 'own-links': 'pass', brokers: 'pass', readers: 'pass' });
   });
 
   test('blocks a cluster with a shadow link that hasn’t failed over, naming it', () => {
-    const checks = getBoxPreflightChecks({ ...base, linksThatStopBox: ['from-prod'] });
+    const checks = getFencePreflightChecks({ ...base, linksThatStopFence: ['from-prod'] });
     expect(statuses(checks)['own-links']).toBe('fail');
     expect(messageOf(checks, 'own-links')).toContain('hasn’t failed over');
     expect(messageOf(checks, 'own-links')).toContain('from-prod');
@@ -57,12 +57,12 @@ describe('getBoxPreflightChecks', () => {
     ['disabled', 'pass'],
     ['loading', 'pending'],
     ['error', 'warn'],
-  ] as const)('own links %s: the check is %s', (linksThatStopBox, status) => {
-    expect(statuses(getBoxPreflightChecks({ ...base, linksThatStopBox }))['own-links']).toBe(status);
+  ] as const)('own links %s: the check is %s', (linksThatStopFence, status) => {
+    expect(statuses(getFencePreflightChecks({ ...base, linksThatStopFence }))['own-links']).toBe(status);
   });
 
   test('a broker that isn’t answering would hold the fence in Fencing, with no timeout', () => {
-    const checks = getBoxPreflightChecks({
+    const checks = getFencePreflightChecks({
       ...base,
       brokers: [...healthyBrokers.slice(0, 2), { nodeId: 3, status: 'not-answering', blocks: undefined }],
     });
@@ -73,7 +73,7 @@ describe('getBoxPreflightChecks', () => {
 
   describe('the reader checks', () => {
     test('warns about each reader the settings would block, by how it authenticates', () => {
-      const checks = getBoxPreflightChecks({
+      const checks = getFencePreflightChecks({
         ...base,
         exemptPrincipals: ['someone-else'],
         readers: [
@@ -89,21 +89,23 @@ describe('getBoxPreflightChecks', () => {
 
     test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {
       expect(
-        Object.keys(statuses(getBoxPreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
+        Object.keys(statuses(getFencePreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
       ).toEqual(['own-links', 'brokers']);
-      expect(statuses(getBoxPreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
+      expect(statuses(getFencePreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
     });
 
     test('waits for the host before saying no link reads from the cluster', () => {
-      expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersResolving: true })).readers).toBe('pending');
-      expect(messageOf(getBoxPreflightChecks({ ...base, readers: [] }), 'readers')).toContain('No shadow link');
+      expect(statuses(getFencePreflightChecks({ ...base, readers: [], readersResolving: true })).readers).toBe(
+        'pending'
+      );
+      expect(messageOf(getFencePreflightChecks({ ...base, readers: [] }), 'readers')).toContain('No shadow link');
     });
 
     test('when Cloud couldn’t check every link, says the readers it found may not be all of them', () => {
-      expect(statuses(getBoxPreflightChecks({ ...base, readers: [], readersIncomplete: true }))).toMatchObject({
+      expect(statuses(getFencePreflightChecks({ ...base, readers: [], readersIncomplete: true }))).toMatchObject({
         'readers-incomplete': 'warn',
       });
-      expect(statuses(getBoxPreflightChecks({ ...base, readersIncomplete: true }))).toMatchObject({
+      expect(statuses(getFencePreflightChecks({ ...base, readersIncomplete: true }))).toMatchObject({
         readers: 'pass',
         'readers-incomplete': 'warn',
       });

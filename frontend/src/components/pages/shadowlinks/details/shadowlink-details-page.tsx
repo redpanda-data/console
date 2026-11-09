@@ -13,14 +13,14 @@
 
 import { Code } from '@connectrpc/connect';
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import type { LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
-import type { LinkIdentity } from 'components/shadow-box/shadow-box-model';
 import { AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { isGuidedFailoverEnabled } from 'react-query/api/shadow-box';
+import { isGuidedFailoverEnabled } from 'react-query/api/cluster-fence';
 import {
   useDeleteShadowLinkUnified,
   useFailoverShadowLinkMutation,

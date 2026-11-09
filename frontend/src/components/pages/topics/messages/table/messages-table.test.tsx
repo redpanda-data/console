@@ -13,10 +13,10 @@ import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const guard = rs.hoisted(() => ({ boxedRead: false }));
+const guard = rs.hoisted(() => ({ fencedRead: false }));
 
-rs.mock('components/shadow-box/use-shadow-box-guard', () => ({
-  useShadowBoxGuard: () => ({ reasonFor: () => undefined, isBoxedRead: () => guard.boxedRead }),
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined, isFencedRead: () => guard.fencedRead }),
 }));
 
 import { MessagesTable, type MessagesTableProps } from './messages-table';
@@ -63,13 +63,13 @@ describe('the MessagesTable — error state', () => {
   });
 
   test('a read the fence rejected is explained, with the raw error kept', () => {
-    guard.boxedRead = true;
+    guard.fencedRead = true;
     try {
       render(<MessagesTable {...baseProps} error="[POLICY_VIOLATION] fetch rejected" />);
       expect(screen.getByText('Reading is blocked while this cluster is fenced')).toBeInTheDocument();
       expect(screen.getByTestId('messages-error-detail')).toHaveTextContent('[POLICY_VIOLATION] fetch rejected');
     } finally {
-      guard.boxedRead = false;
+      guard.fencedRead = false;
     }
   });
 

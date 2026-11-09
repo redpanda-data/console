@@ -16,17 +16,17 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 import type { ComponentProps } from 'react';
 
 import { FailoverDialog } from './failover-dialog';
-import { type CloudSource, getFailoverReadiness, getSourceBoxStep, type SourceBoxStep } from './failover-model';
+import { type CloudSource, getFailoverReadiness, getSourceFenceStep, type SourceFenceStep } from './failover-model';
 
-const source = (state: 'boxed' | 'unboxed', allowAllReads: boolean): CloudSource => ({
+const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSource => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
-  box: { status: 'known', state, revision: '18', exemptPrincipals: [], allowAllReads, brokers: [] },
+  fence: { status: 'known', state, revision: '18', exemptPrincipals: [], allowAllReads, brokers: [] },
 });
 
-const sourceStep = (state: 'boxed' | 'unboxed', allowAllReads: boolean): SourceBoxStep => {
-  const step = getSourceBoxStep({
+const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean): SourceFenceStep => {
+  const step = getSourceFenceStep({
     source: source(state, allowAllReads),
     link: { authentication: 'sasl', principal: 'shadow-orders' },
     resolving: false,
@@ -37,7 +37,7 @@ const sourceStep = (state: 'boxed' | 'unboxed', allowAllReads: boolean): SourceB
   return step;
 };
 
-const BOXED = sourceStep('boxed', true);
+const FENCED = sourceStep('fenced', true);
 
 const topicIn = (state: ShadowTopicState, topicName = 'orders-events', lag = 0) => ({
   topicName,
@@ -45,10 +45,10 @@ const topicIn = (state: ShadowTopicState, topicName = 'orders-events', lag = 0) 
   totalLag: BigInt(lag),
 });
 
-const readiness = (boxed: boolean, lag: number) =>
+const readiness = (fenced: boolean, lag: number) =>
   getFailoverReadiness({
     topics: [topicIn(ShadowTopicState.ACTIVE, 'orders-events', lag)],
-    box: boxed ? BOXED : sourceStep('unboxed', true),
+    fence: fenced ? FENCED : sourceStep('unfenced', true),
   });
 
 const renderDialog = (props: Partial<ComponentProps<typeof FailoverDialog>> = {}) =>
@@ -93,19 +93,19 @@ describe('the FailoverDialog', () => {
       [
         'a faulted topic',
         'lag',
-        { topics: [topicIn(ShadowTopicState.FAULTED, 'orders-audit')], box: BOXED },
+        { topics: [topicIn(ShadowTopicState.FAULTED, 'orders-audit')], fence: FENCED },
         'orders-audit has faulted',
       ],
       [
         'a fence that blocks this link’s reads',
         'source',
-        { topics: [topicIn(ShadowTopicState.ACTIVE)], box: sourceStep('boxed', false) },
+        { topics: [topicIn(ShadowTopicState.ACTIVE)], fence: sourceStep('fenced', false) },
         'block this link’s fetches',
       ],
       [
         'a paused topic, which Fail over all topics is refused for,',
         'paused',
-        { topics: [topicIn(ShadowTopicState.PAUSED)], box: BOXED },
+        { topics: [topicIn(ShadowTopicState.PAUSED)], fence: FENCED },
         'orders-events is paused',
       ],
     ])('%s isn’t safe to fail over', (_label, check, input, text) => {
@@ -117,21 +117,21 @@ describe('the FailoverDialog', () => {
     });
 
     test.each<[string, string, ReadinessInput]>([
-      ['while the topics load', 'lag', { topics: undefined, box: BOXED }],
+      ['while the topics load', 'lag', { topics: undefined, fence: FENCED }],
       [
         'when the last refresh failed',
         'lag',
-        { topics: [topicIn(ShadowTopicState.ACTIVE)], topicsFailed: true, box: BOXED },
+        { topics: [topicIn(ShadowTopicState.ACTIVE)], topicsFailed: true, fence: FENCED },
       ],
       [
         'while the host is still finding the source',
         'source',
-        { topics: [], box: { kind: 'loading', source: undefined } },
+        { topics: [], fence: { kind: 'loading', source: undefined } },
       ],
       [
         'when the source’s fence can’t be read right now',
         'source',
-        { topics: [], box: { kind: 'unreadable', source: source('boxed', true), reason: 'error' } },
+        { topics: [], fence: { kind: 'unreadable', source: source('fenced', true), reason: 'error' } },
       ],
     ])('%s, leaves the %s check to the user', (_label, check, input) => {
       renderDialog({ readiness: getFailoverReadiness(input) });
@@ -148,7 +148,9 @@ describe('the FailoverDialog', () => {
   });
 
   test('once every topic has failed over, says so instead of offering another failover', () => {
-    renderDialog({ readiness: getFailoverReadiness({ topics: [topicIn(ShadowTopicState.FAILED_OVER)], box: BOXED }) });
+    renderDialog({
+      readiness: getFailoverReadiness({ topics: [topicIn(ShadowTopicState.FAILED_OVER)], fence: FENCED }),
+    });
 
     expect(screen.getByText('Every topic has failed over')).toBeVisible();
     expect(screen.queryByTestId('confirm-failover')).not.toBeInTheDocument();

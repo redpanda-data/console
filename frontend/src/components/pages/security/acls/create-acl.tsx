@@ -34,7 +34,7 @@ import {
   getSubjectTooltipText,
   hasConfiguredOperation,
 } from './acl-rule-editing';
-import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { useAclRulesEditor } from '../hooks/use-acl-rules-editor';
 import { useAclSharedConfig } from '../hooks/use-acl-shared-config';
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
@@ -838,7 +838,7 @@ export default function CreateACL({
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />
                 <div className="mt-4 flex items-center gap-2">
-                  <ShadowBoxedButton
+                  <FenceGuardedButton
                     action={principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls'}
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !hasConfiguredOperation(rules)}
@@ -847,7 +847,7 @@ export default function CreateACL({
                     }
                   >
                     {edit ? 'Save' : 'Create'}
-                  </ShadowBoxedButton>
+                  </FenceGuardedButton>
                   <Button onClick={onCancel} variant="ghost">
                     Cancel
                   </Button>

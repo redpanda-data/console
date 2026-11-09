@@ -52,8 +52,8 @@ import {
   type SchemaRegistryVersionedSchema,
 } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
 import PageContent from '../../misc/page-content';
-import { useShadowBoxGuard } from '../../shadow-box/use-shadow-box-guard';
 import { TonedIcon } from '../shared/toned-icon';
 
 const DEFAULT_OPTION = {
@@ -215,7 +215,7 @@ function EditSchemaCompatibility(p: {
   onClose: () => void;
 }) {
   const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
-  const boxedReason = useShadowBoxGuard().reasonFor('editSchemas');
+  const fencedReason = useClusterFenceGuard().reasonFor('editSchemas');
   const saveCompatibility = useSaveCompatibility({ subjectName, contextName }, p.onClose);
 
   const schema = schemaDetails?.schemas.first(
@@ -287,7 +287,7 @@ function EditSchemaCompatibility(p: {
                 render={
                   <Button
                     data-testid="edit-compatibility-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(boxedReason)}
+                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
                     onClick={() => saveCompatibility(configMode)}
                     variant="primary"
                   >
@@ -298,8 +298,8 @@ function EditSchemaCompatibility(p: {
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
-              {api.userData?.canManageSchemaRegistry !== false && boxedReason ? (
-                <TooltipContent side="top">{boxedReason}</TooltipContent>
+              {api.userData?.canManageSchemaRegistry !== false && fencedReason ? (
+                <TooltipContent side="top">{fencedReason}</TooltipContent>
               ) : null}
             </Tooltip>
             <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="ghost">

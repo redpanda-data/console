@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import clsx from 'clsx';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -33,7 +34,6 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -437,7 +437,7 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
-  const fenceReason = useShadowBoxGuard().reasonFor('editTopicConfig', props.targetTopic);
+  const fenceReason = useClusterFenceGuard().reasonFor('editTopicConfig', props.targetTopic);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
   const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 

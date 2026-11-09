@@ -21,14 +21,18 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { TriangleAlertIcon } from 'lucide-react';
-import { isStaleRevisionError, useShadowBoxStatusQuery, useUnboxClusterMutation } from 'react-query/api/shadow-box';
+import {
+  isStaleRevisionError,
+  useClusterFenceStatusQuery,
+  useUnfenceClusterMutation,
+} from 'react-query/api/cluster-fence';
 import { toast } from 'sonner';
 
-import { BoxChangedNotice, BoxWriteErrorAlert, useOpenedBox } from './box-dialog-parts';
-import { BOX_PHASE_LABEL, isBlockingPhase } from './shadow-box-model';
+import { FENCE_PHASE_LABEL, isBlockingPhase } from './cluster-fence-model';
+import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';
 
-/** The body mounts with the dialog's content, so it pins the box as it was when the dialog opened. */
-export const UnboxClusterDialog = ({
+/** The body mounts with the dialog's content, so it pins the fence as it was when the dialog opened. */
+export const UnfenceClusterDialog = ({
   open,
   onOpenChange,
   clusterName,
@@ -39,25 +43,25 @@ export const UnboxClusterDialog = ({
   clusterName?: string;
 }) => (
   <Dialog onOpenChange={onOpenChange} open={open}>
-    <DialogContent testId="unbox-cluster-dialog">
-      <UnboxClusterBody label={clusterName ?? 'this cluster'} onClose={() => onOpenChange(false)} />
+    <DialogContent testId="unfence-cluster-dialog">
+      <UnfenceClusterBody label={clusterName ?? 'this cluster'} onClose={() => onOpenChange(false)} />
     </DialogContent>
   </Dialog>
 );
 
-const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => void }) => {
-  const { summary } = useShadowBoxStatusQuery();
-  const unbox = useUnboxClusterMutation();
-  const { opened, changed, refresh } = useOpenedBox(summary, unbox.isPending || unbox.isSuccess);
+const UnfenceClusterBody = ({ label, onClose }: { label: string; onClose: () => void }) => {
+  const { summary } = useClusterFenceStatusQuery();
+  const unfence = useUnfenceClusterMutation();
+  const { opened, changed, refresh } = useOpenedFence(summary, unfence.isPending || unfence.isSuccess);
   const alreadyReleased = !(changed || isBlockingPhase(opened.phase));
 
   const handleRefresh = () => {
     refresh();
-    unbox.reset();
+    unfence.reset();
   };
 
-  const handleUnbox = () => {
-    unbox.mutate(
+  const handleUnfence = () => {
+    unfence.mutate(
       { expectedRevision: opened.revision },
       {
         onSuccess: () => {
@@ -80,10 +84,10 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="md">
-        {changed ? <BoxChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
+        {changed ? <FenceChangedNotice onRefresh={handleRefresh} refreshLabel="Review the current fence" /> : null}
         {alreadyReleased ? (
-          <Alert testId="unbox-cluster-already-released" variant="informative">
-            <AlertTitle>This cluster is already {BOX_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
+          <Alert testId="unfence-cluster-already-released" variant="informative">
+            <AlertTitle>This cluster is already {FENCE_PHASE_LABEL[opened.phase].toLowerCase()}</AlertTitle>
             <AlertDescription>
               <p>There’s no fence to release. Close this dialog to see its status.</p>
             </AlertDescription>
@@ -100,8 +104,12 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
             </AlertDescription>
           </Alert>
         )}
-        {unbox.error && !(changed && isStaleRevisionError(unbox.error)) ? (
-          <BoxWriteErrorAlert error={unbox.error} testId="unbox-cluster-error" title="Couldn’t unfence the cluster" />
+        {unfence.error && !(changed && isStaleRevisionError(unfence.error)) ? (
+          <FenceWriteErrorAlert
+            error={unfence.error}
+            testId="unfence-cluster-error"
+            title="Couldn’t unfence the cluster"
+          />
         ) : null}
       </DialogBody>
       <DialogFooter>
@@ -110,9 +118,9 @@ const UnboxClusterBody = ({ label, onClose }: { label: string; onClose: () => vo
         </Button>
         <Button
           disabled={changed || alreadyReleased}
-          isLoading={unbox.isPending}
-          onClick={handleUnbox}
-          testId="confirm-unbox-cluster"
+          isLoading={unfence.isPending}
+          onClick={handleUnfence}
+          testId="confirm-unfence-cluster"
         >
           Unfence cluster
         </Button>

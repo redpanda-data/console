@@ -25,6 +25,7 @@ import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { useListUsersQuery } from '../../../../react-query/api/user';
 import { setPageHeader } from '../../../../state/ui-state';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -37,7 +38,6 @@ import {
 } from '../../../redpanda-ui/components/empty';
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { ShadowBoxedButton } from '../../../shadow-box/shadow-boxed-controls';
 import { parsePrincipal } from '../shared/acl-model';
 import { AclsCard } from '../shared/acls-card';
 
@@ -103,7 +103,7 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
           <span className="font-mono">{displayName}</span>
         </TableCell>
         <TableCell align="right">
-          <ShadowBoxedButton
+          <FenceGuardedButton
             action="editRoles"
             data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
             disabled={isRemoveDisabled(member.principal)}
@@ -112,7 +112,7 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
             variant="destructive-ghost"
           >
             <Trash2 className="h-4 w-4" />
-          </ShadowBoxedButton>
+          </FenceGuardedButton>
         </TableCell>
       </TableRow>
     );

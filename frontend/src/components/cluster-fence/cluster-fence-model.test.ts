@@ -20,75 +20,75 @@ import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb'
 
 import {
   type BrokerProgress,
-  canBoxFromPhase,
-  describeBoxPhase,
+  canFenceFromPhase,
+  describeFencePhase,
   describeHeldMove,
-  formatBoxDuration,
+  formatFenceDuration,
   getBrokerProgress,
   getClientEffects,
   getReadPolicyWarnings,
   isApplyingNewSettings,
   isBlockingPhase,
   linkCanRead,
-  linksThatStopBox,
-  summarizeBox,
-  toBoxPhase,
+  linksThatStopFence,
+  summarizeFence,
   toExemptName,
-} from './shadow-box-model';
+  toFencePhase,
+} from './cluster-fence-model';
 import { describe, expect, test } from 'bun:test';
 
 const NOW = Date.parse('2026-10-19T12:00:00Z');
 
-const box = (state: ClusterFenceState, revision: number) =>
+const fence = (state: ClusterFenceState, revision: number) =>
   create(ClusterFenceSchema, { state, revision: BigInt(revision) });
 
-describe('toBoxPhase', () => {
+describe('toFencePhase', () => {
   test('maps the four states, and leaves an unset or unknown one undefined rather than calling it unfenced', () => {
-    expect(toBoxPhase(ClusterFenceState.UNFENCED)).toBe('unboxed');
-    expect(toBoxPhase(ClusterFenceState.FENCING)).toBe('boxing');
-    expect(toBoxPhase(ClusterFenceState.FENCED)).toBe('boxed');
-    expect(toBoxPhase(ClusterFenceState.UNFENCING)).toBe('unboxing');
-    expect(toBoxPhase(ClusterFenceState.UNSPECIFIED)).toBeUndefined();
-    expect(toBoxPhase(undefined)).toBeUndefined();
+    expect(toFencePhase(ClusterFenceState.UNFENCED)).toBe('unfenced');
+    expect(toFencePhase(ClusterFenceState.FENCING)).toBe('fencing');
+    expect(toFencePhase(ClusterFenceState.FENCED)).toBe('fenced');
+    expect(toFencePhase(ClusterFenceState.UNFENCING)).toBe('unfencing');
+    expect(toFencePhase(ClusterFenceState.UNSPECIFIED)).toBeUndefined();
+    expect(toFencePhase(undefined)).toBeUndefined();
   });
 });
 
 test('blocking begins in fencing, not fenced, and stops in unfencing; Fence is accepted from the other two', () => {
-  const phases = ['unboxed', 'boxing', 'boxed', 'unboxing'] as const;
-  expect(phases.filter(isBlockingPhase)).toEqual(['boxing', 'boxed']);
-  expect(phases.filter(canBoxFromPhase)).toEqual(['unboxed', 'unboxing']);
+  const phases = ['unfenced', 'fencing', 'fenced', 'unfencing'] as const;
+  expect(phases.filter(isBlockingPhase)).toEqual(['fencing', 'fenced']);
+  expect(phases.filter(canFenceFromPhase)).toEqual(['unfenced', 'unfencing']);
 });
 
 describe('getBrokerProgress', () => {
   test('a broker has confirmed only when its copy matches the cluster’s fence in state and revision', () => {
     const response = create(GetClusterFenceStatusResponseSchema, {
-      fence: box(ClusterFenceState.FENCING, 18),
+      fence: fence(ClusterFenceState.FENCING, 18),
       brokers: [
-        { nodeId: 1, fence: box(ClusterFenceState.FENCING, 18) },
+        { nodeId: 1, fence: fence(ClusterFenceState.FENCING, 18) },
         { nodeId: 2, errorMessage: 'rpc::errc::disconnected_endpoint(node down)' },
-        { nodeId: 3, fence: box(ClusterFenceState.UNFENCED, -1) },
-        { nodeId: 4, fence: box(ClusterFenceState.FENCED, 18) },
+        { nodeId: 3, fence: fence(ClusterFenceState.UNFENCED, -1) },
+        { nodeId: 4, fence: fence(ClusterFenceState.FENCED, 18) },
       ],
     });
     expect(getBrokerProgress(response)).toEqual([
-      { nodeId: 1, status: 'confirmed', copy: { phase: 'boxing', revision: 18n }, blocks: true },
+      { nodeId: 1, status: 'confirmed', copy: { phase: 'fencing', revision: 18n }, blocks: true },
       {
         nodeId: 2,
         status: 'not-answering',
         blocks: undefined,
         errorMessage: 'rpc::errc::disconnected_endpoint(node down)',
       },
-      { nodeId: 3, status: 'behind', copy: { phase: 'unboxed', revision: -1n }, blocks: false },
-      { nodeId: 4, status: 'behind', copy: { phase: 'boxed', revision: 18n }, blocks: true },
+      { nodeId: 3, status: 'behind', copy: { phase: 'unfenced', revision: -1n }, blocks: false },
+      { nodeId: 4, status: 'behind', copy: { phase: 'fenced', revision: 18n }, blocks: true },
     ]);
   });
 });
 
-describe('summarizeBox', () => {
+describe('summarizeFence', () => {
   test('reads the phase, revision, time in state and saved settings', () => {
     const changedAt = new Date(NOW - 60_000);
     expect(
-      summarizeBox(
+      summarizeFence(
         create(ClusterFenceSchema, {
           state: ClusterFenceState.FENCED,
           revision: 29n,
@@ -99,7 +99,7 @@ describe('summarizeBox', () => {
         })
       )
     ).toEqual({
-      phase: 'boxed',
+      phase: 'fenced',
       revision: 29n,
       stateChangedAt: changedAt,
       exemptPrincipals: ['shadow-orders'],
@@ -108,37 +108,37 @@ describe('summarizeBox', () => {
   });
 
   test('a missing fence or an unknown state isn’t read as unfenced', () => {
-    expect(summarizeBox(undefined)).toBeUndefined();
-    expect(summarizeBox(create(ClusterFenceSchema, {}))).toBeUndefined();
+    expect(summarizeFence(undefined)).toBeUndefined();
+    expect(summarizeFence(create(ClusterFenceSchema, {}))).toBeUndefined();
   });
 });
 
 const progress = (...entries: [number, BrokerProgress['status'], boolean | undefined][]): BrokerProgress[] =>
   entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
 
-describe('describeBoxPhase', () => {
+describe('describeFencePhase', () => {
   test('says each broker blocks as soon as it picks up the fence, without naming the phase', () => {
-    expect(describeBoxPhase({ phase: 'boxing' }, progress([1, 'confirmed', true], [2, 'behind', false]))).toBe(
+    expect(describeFencePhase({ phase: 'fencing' }, progress([1, 'confirmed', true], [2, 'behind', false]))).toBe(
       'Each broker rejects writes as soon as it picks up the fence.'
     );
   });
 
   test('tells a settings change while fenced apart from a first Fence: writes stay blocked', () => {
     const brokers = progress([1, 'confirmed', true], [2, 'behind', true]);
-    expect(isApplyingNewSettings({ phase: 'boxing' }, brokers)).toBe(true);
-    expect(describeBoxPhase({ phase: 'boxing' }, brokers)).toContain('Writes stay blocked on every broker');
+    expect(isApplyingNewSettings({ phase: 'fencing' }, brokers)).toBe(true);
+    expect(describeFencePhase({ phase: 'fencing' }, brokers)).toContain('Writes stay blocked on every broker');
   });
 
   test('a Fence sent while unfencing isn’t a settings change: brokers that picked up Unfence still accept writes', () => {
     const brokers = progress([1, 'behind', false], [2, 'behind', true]);
-    expect(isApplyingNewSettings({ phase: 'boxing' }, brokers)).toBe(false);
+    expect(isApplyingNewSettings({ phase: 'fencing' }, brokers)).toBe(false);
   });
 });
 
 describe('describeHeldMove', () => {
   test('a broker that isn’t answering holds a move with no timeout', () => {
     const held = describeHeldMove(
-      { phase: 'boxing', stateChangedAt: new Date(NOW) },
+      { phase: 'fencing', stateChangedAt: new Date(NOW) },
       progress([1, 'confirmed', true], [2, 'not-answering', undefined]),
       NOW
     );
@@ -149,14 +149,14 @@ describe('describeHeldMove', () => {
 
   test('a broker that answers but is behind is only named once the move is old enough to mention', () => {
     const brokers = progress([1, 'confirmed', true], [3, 'behind', false]);
-    expect(describeHeldMove({ phase: 'boxing', stateChangedAt: new Date(NOW - 5000) }, brokers, NOW)).toBe('');
-    expect(describeHeldMove({ phase: 'boxing', stateChangedAt: new Date(NOW - 60_000) }, brokers, NOW)).toBe(
+    expect(describeHeldMove({ phase: 'fencing', stateChangedAt: new Date(NOW - 5000) }, brokers, NOW)).toBe('');
+    expect(describeHeldMove({ phase: 'fencing', stateChangedAt: new Date(NOW - 60_000) }, brokers, NOW)).toBe(
       'Broker 3 hasn’t picked up the change yet.'
     );
   });
 });
 
-describe('formatBoxDuration', () => {
+describe('formatFenceDuration', () => {
   test.each([
     [20 * 1000, 'less than a minute'],
     [12 * 60 * 1000, '12 min'],
@@ -165,7 +165,7 @@ describe('formatBoxDuration', () => {
     [24 * 60 * 60 * 1000, '1 day'],
     [9 * 24 * 60 * 60 * 1000, '9 days'],
   ])('%i ms reads as %s', (elapsed, label) => {
-    expect(formatBoxDuration(elapsed)).toBe(label);
+    expect(formatFenceDuration(elapsed)).toBe(label);
   });
 });
 
@@ -220,14 +220,14 @@ describe('getReadPolicyWarnings', () => {
   });
 });
 
-describe('linksThatStopBox', () => {
+describe('linksThatStopFence', () => {
   test('a link that has failed over no longer makes its cluster a shadow', () => {
     const links = [
       { name: 'active', state: ShadowLinkState.ACTIVE },
       { name: 'done', state: ShadowLinkState.FAILED_OVER },
       { name: 'moving', state: ShadowLinkState.FAILING_OVER },
     ];
-    expect(linksThatStopBox(links).map((link) => link.name)).toEqual(['active', 'moving']);
+    expect(linksThatStopFence(links).map((link) => link.name)).toEqual(['active', 'moving']);
   });
 });
 
@@ -237,7 +237,7 @@ describe('getClientEffects', () => {
     Object.fromEntries(effects.map((effect) => [effect.id, effect.verdict]));
 
   test('unfenced, everything is allowed and transactions stay open', () => {
-    expect(verdicts(getClientEffects({ summary: { ...settings, phase: 'unboxed' }, brokers: [] }))).toMatchObject({
+    expect(verdicts(getClientEffects({ summary: { ...settings, phase: 'unfenced' }, brokers: [] }))).toMatchObject({
       produce: 'allowed',
       consume: 'allowed',
       commit: 'allowed',
@@ -248,7 +248,7 @@ describe('getClientEffects', () => {
 
   test('fenced, writes are rejected with what the client sees, exempt links read, and transactions end', () => {
     const effects = getClientEffects({
-      summary: { ...settings, phase: 'boxed' },
+      summary: { ...settings, phase: 'fenced' },
       brokers: progress([1, 'confirmed', true]),
       links: [
         { linkName: 'orders-dr', authentication: 'sasl', principal: 'shadow-orders' },
@@ -271,7 +271,7 @@ describe('getClientEffects', () => {
 
   test('part way through a first Fence, only the brokers that picked it up reject', () => {
     const [produce] = getClientEffects({
-      summary: { ...settings, phase: 'boxing' },
+      summary: { ...settings, phase: 'fencing' },
       brokers: progress([1, 'confirmed', true], [2, 'confirmed', true], [3, 'behind', false]),
     });
     expect(produce).toMatchObject({ verdict: 'partly', detail: expect.stringContaining('Still allowed on broker 3') });
@@ -279,7 +279,7 @@ describe('getClientEffects', () => {
 
   test('part way through a first Fence, brokers that picked it up already end open transactions', () => {
     const effects = getClientEffects({
-      summary: { ...settings, phase: 'boxing' },
+      summary: { ...settings, phase: 'fencing' },
       brokers: progress([1, 'confirmed', true], [2, 'behind', false]),
     });
     expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({
@@ -290,7 +290,7 @@ describe('getClientEffects', () => {
 
   test('part way through Unfence, brokers that picked it up allow writes again', () => {
     const [produce] = getClientEffects({
-      summary: { ...settings, phase: 'unboxing' },
+      summary: { ...settings, phase: 'unfencing' },
       brokers: progress([1, 'confirmed', false], [2, 'behind', true]),
     });
     expect(produce?.detail).toBe(
