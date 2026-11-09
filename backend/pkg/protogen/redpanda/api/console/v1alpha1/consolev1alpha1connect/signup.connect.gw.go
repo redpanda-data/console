@@ -17,19 +17,25 @@ import (
 // SignupServiceGatewayServer implements the gRPC server API for the SignupService service.
 type SignupServiceGatewayServer struct {
 	v1alpha1.UnimplementedSignupServiceServer
-	licenseSignup connect_gateway.UnaryHandler[v1alpha1.LicenseSignupRequest, v1alpha1.LicenseSignupResponse]
+	licenseSignup            connect_gateway.UnaryHandler[v1alpha1.LicenseSignupRequest, v1alpha1.LicenseSignupResponse]
+	resendPasswordSetupEmail connect_gateway.UnaryHandler[v1alpha1.ResendPasswordSetupEmailRequest, v1alpha1.ResendPasswordSetupEmailResponse]
 }
 
 // NewSignupServiceGatewayServer constructs a Connect-Gateway gRPC server for the SignupService
 // service.
 func NewSignupServiceGatewayServer(svc SignupServiceHandler, opts ...connect_gateway.HandlerOption) *SignupServiceGatewayServer {
 	return &SignupServiceGatewayServer{
-		licenseSignup: connect_gateway.NewUnaryHandler(SignupServiceLicenseSignupProcedure, svc.LicenseSignup, opts...),
+		licenseSignup:            connect_gateway.NewUnaryHandler(SignupServiceLicenseSignupProcedure, svc.LicenseSignup, opts...),
+		resendPasswordSetupEmail: connect_gateway.NewUnaryHandler(SignupServiceResendPasswordSetupEmailProcedure, svc.ResendPasswordSetupEmail, opts...),
 	}
 }
 
 func (s *SignupServiceGatewayServer) LicenseSignup(ctx context.Context, req *v1alpha1.LicenseSignupRequest) (*v1alpha1.LicenseSignupResponse, error) {
 	return s.licenseSignup(ctx, req)
+}
+
+func (s *SignupServiceGatewayServer) ResendPasswordSetupEmail(ctx context.Context, req *v1alpha1.ResendPasswordSetupEmailRequest) (*v1alpha1.ResendPasswordSetupEmailResponse, error) {
+	return s.resendPasswordSetupEmail(ctx, req)
 }
 
 // RegisterSignupServiceHandlerGatewayServer registers the Connect handlers for the SignupService
