@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { useShadowBoxGuard } from 'components/shadow-box/use-shadow-box-guard';
+import type { ShadowLinkTopology } from 'federation/types';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
@@ -40,7 +41,7 @@ import {
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
-import { hasBoxActivity } from '../../../shadow-box/shadow-box-model';
+import { hasBoxActivity, linksThatStopBox } from '../../../shadow-box/shadow-box-model';
 import { ShadowBoxSourcePanel } from '../../../shadow-box/shadow-box-source-panel';
 import { getShadowLinkStateLabel } from '../model';
 import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
@@ -294,13 +295,23 @@ const ShadowLinksOnThisCluster = () => {
 type ShadowLinksTab = 'links' | 'source';
 
 /**
- * Whether the Cluster fence tab applies: the cluster can be fenced, and it matters as a source,
- * because Cloud knows links that read from it or its fence isn't unfenced. A cluster that's only a
- * shadow doesn't get it. Undefined until that's known.
+ * Only the list's first load. A failed list loads again from nothing each time the page mounts it,
+ * so waiting on every load would swap the page out, mount the list again and load it again.
  */
-const useFenceTabShown = (): boolean | undefined => {
-  const { available, known, summary, unreadable, blocking, isLoading, isError } = useShadowBoxStatusQuery();
-  const topology = useShadowBoxStore((state) => state.topology);
+const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLinksQuery>) => isLoading && !isFetched;
+
+/**
+ * Whether the Cluster fence tab applies: the cluster can be fenced, and it matters as a source,
+ * because links read from it or its fence isn't unfenced. Cloud lists the links that read from it.
+ * Without that list, as in a self-hosted Console, any cluster whose own shadow links don't stop the
+ * fence may be a source, and a source doesn't need shadow linking turned on. A cluster that's only
+ * a shadow doesn't get it. Undefined until that's known.
+ */
+const fenceTabShown = (
+  { available, known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useShadowBoxStatusQuery>,
+  topology: ShadowLinkTopology | null,
+  ownLinks: ReturnType<typeof useListShadowLinksQuery>
+): boolean | undefined => {
   if (!available) {
     return false;
   }
@@ -308,20 +319,30 @@ const useFenceTabShown = (): boolean | undefined => {
   if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
     return true;
   }
-  const settled = !isLoading && (known || isError) && !topology?.resolving;
-  return settled ? false : undefined;
+  const statusRead = !isLoading && (known || isError);
+  if (!statusRead || topology?.resolving || (!topology && isFirstLoad(ownLinks))) {
+    return;
+  }
+  return !topology && known && linksThatStopBox(ownLinks.data?.shadowLinks ?? []).length === 0;
 };
+
+const useFenceTabShown = (): boolean | undefined =>
+  fenceTabShown(
+    useShadowBoxStatusQuery(),
+    useShadowBoxStore((state) => state.topology),
+    useListShadowLinksQuery({})
+  );
 
 /**
  * Open on the fence when the tab shows, unless this cluster has shadow links of its own; otherwise
  * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
  */
 const useDefaultTab = (fenceTab: boolean | undefined): ShadowLinksTab | undefined => {
-  const { data: shadowLinksData, isLoading } = useListShadowLinksQuery({});
-  if ((shadowLinksData?.shadowLinks.length ?? 0) > 0) {
+  const ownLinks = useListShadowLinksQuery({});
+  if ((ownLinks.data?.shadowLinks.length ?? 0) > 0) {
     return 'links';
   }
-  if (fenceTab === undefined || (fenceTab && isLoading)) {
+  if (fenceTab === undefined || (fenceTab && isFirstLoad(ownLinks))) {
     return;
   }
   return fenceTab ? 'source' : 'links';

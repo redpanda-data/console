@@ -12,6 +12,8 @@
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { ShadowLinkListPage } from './shadowlink-list-page';
 
@@ -146,7 +148,7 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     expect(screen.queryByTestId('shadow-box-source-panel-stub')).not.toBeInTheDocument();
   });
 
-  test('an unfenced cluster no link reads from gets no fence tab', async () => {
+  test('an unfenced cluster Cloud knows no link reads from gets no fence tab', async () => {
     mockBox({ available: true, known: true, phase: 'unboxed' });
     noLinks();
     useShadowBoxStore.setState({
@@ -159,10 +161,33 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     expect(screen.queryByTestId('shadow-box-source-panel-stub')).not.toBeInTheDocument();
   });
 
+  test('without Cloud’s list of links that read from it, any cluster that can be fenced gets the fence tab', async () => {
+    mockBox({ available: true, known: true, phase: 'unboxed' });
+    noLinks();
+    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+
+    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
+    expect(screen.getByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
+  });
+
+  test('a shadow link of its own that failed over doesn’t stop the fence, so the cluster keeps the tab', async () => {
+    mockBox({ available: true, known: true, phase: 'unboxed' });
+    mockedUseListShadowLinksQuery.mockReturnValue(
+      mockQueryResult({
+        data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state: ShadowLinkState.FAILED_OVER }] },
+      } as never)
+    );
+    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+
+    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
+  });
+
   test('a cluster that’s only a shadow gets no fence tab, and its URL is left alone', async () => {
     mockBox({ available: true, known: true, phase: 'unboxed' });
     mockedUseListShadowLinksQuery.mockReturnValue(
-      mockQueryResult({ data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [] }] } as never })
+      mockQueryResult({
+        data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state: ShadowLinkState.ACTIVE }] },
+      } as never)
     );
     const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
       initialLocation: '/shadowlinks',
@@ -229,6 +254,31 @@ describe('the tab the ShadowLinkListPage opens on', () => {
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
 
     expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
+  });
+
+  test('a cluster with shadow linking off, which a source doesn’t need, opens on its fence', async () => {
+    const user = userEvent.setup();
+    mockBox({ available: true, known: true, phase: 'unboxed' });
+    mockedUseListShadowLinksQuery.mockReturnValue(
+      mockQueryResult({
+        error: new ConnectError('Cluster link feature is disabled', Code.FailedPrecondition),
+      } as never)
+    );
+    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+
+    expect(await screen.findByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
+    await user.click(screen.getByTestId('shadowlinks-tab-links'));
+    expect(await screen.findByTestId('shadowlink-feature-disabled-card')).toBeInTheDocument();
+  });
+
+  test('keeps its tabs while a list that failed loads again', async () => {
+    mockBox({ available: true, known: true, phase: 'unboxed' });
+    // A failed query that fetches again starts over with no data and no error.
+    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ isLoading: true, isFetched: true } as never));
+    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+
+    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
+    expect(screen.getByTestId('shadow-box-source-panel-stub')).toBeInTheDocument();
   });
 
   test('doesn’t pull the user back once the router has moved on to another page', async () => {
