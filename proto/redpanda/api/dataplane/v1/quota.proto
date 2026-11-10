@@ -13,7 +13,7 @@ message Quota {
     ENTITY_TYPE_UNSPECIFIED = 0;
     ENTITY_TYPE_CLIENT_ID = 1;
     ENTITY_TYPE_CLIENT_ID_PREFIX = 2;
-    ENTITY_TYPE_USER = 3; // Not supported in Redpanda
+    ENTITY_TYPE_USER = 3;
     ENTITY_TYPE_IP = 4; // Not supported in Redpanda
   }
 

@@ -95,8 +95,6 @@ export enum Quota_EntityType {
   CLIENT_ID_PREFIX = 2,
 
   /**
-   * Not supported in Redpanda
-   *
    * @generated from enum value: ENTITY_TYPE_USER = 3;
    */
   USER = 3,
