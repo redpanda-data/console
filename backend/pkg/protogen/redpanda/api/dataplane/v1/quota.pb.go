@@ -33,7 +33,7 @@ const (
 	Quota_ENTITY_TYPE_UNSPECIFIED      Quota_EntityType = 0
 	Quota_ENTITY_TYPE_CLIENT_ID        Quota_EntityType = 1
 	Quota_ENTITY_TYPE_CLIENT_ID_PREFIX Quota_EntityType = 2
-	Quota_ENTITY_TYPE_USER             Quota_EntityType = 3 // Not supported in Redpanda
+	Quota_ENTITY_TYPE_USER             Quota_EntityType = 3
 	Quota_ENTITY_TYPE_IP               Quota_EntityType = 4 // Not supported in Redpanda
 )
 
