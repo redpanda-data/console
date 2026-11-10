@@ -37,7 +37,7 @@ const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]): strin
   const exemptsNobody =
     isBlockingPhase(summary.phase) && !summary.allowAllReads && summary.exemptPrincipals.length === 0;
   return exemptsNobody
-    ? `${describeFencePhase(summary, brokers)} It exempts nobody, so no consumer or shadow link can read from it.`
+    ? `${describeFencePhase(summary, brokers)} No one is exempt, so no consumer or shadow link can read.`
     : describeFencePhase(summary, brokers);
 };
 

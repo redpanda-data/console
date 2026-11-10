@@ -96,7 +96,7 @@ export const TagChipInput = ({
       })}
       <input
         className={cn(
-          'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground',
+          'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-placeholder',
           mono && 'font-mono'
         )}
         data-testid={`${testId}-field`}

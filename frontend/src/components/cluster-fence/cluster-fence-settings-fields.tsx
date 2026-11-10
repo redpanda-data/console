@@ -22,7 +22,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { z } from 'zod';
 
-import { exemptNameFor, getReadPolicyWarnings, type ReadPolicy, SUPERUSERS_NOT_EXEMPT } from './cluster-fence-model';
+import {
+  exemptNameFor,
+  getReadPolicyWarnings,
+  type ReadPolicy,
+  SUPERUSERS_NOT_EXEMPT,
+  toExemptName,
+} from './cluster-fence-model';
 
 export const readPolicySchema = z.object({ exemptPrincipals: z.array(z.string()), allowAllReads: z.boolean() });
 
@@ -69,7 +75,11 @@ type PolicyFieldProps = {
 const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProps) => {
   const blankExempt = value.exemptPrincipals.includes('');
   const named = value.exemptPrincipals.filter(Boolean);
-  const setNamed = (names: string[]) => setPrincipals(blankExempt ? [...names, ''] : names);
+  /** Redpanda matches bare user names, so a typed `User:` prefix is dropped rather than warned about. */
+  const setNamed = (names: string[]) => {
+    const bare = Array.from(new Set(names.map(toExemptName).filter(Boolean)));
+    setPrincipals(blankExempt ? [...bare, ''] : bare);
+  };
   const missingSuggestions = suggestions.filter(
     ({ principal }) => principal !== '' && !value.exemptPrincipals.includes(principal)
   );
@@ -86,14 +96,13 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
         mono
         noteFor={(principal) => linkNotes.get(principal)}
         onChange={setNamed}
-        placeholder={named.length === 0 ? 'shadow-link-user' : 'Add a user'}
+        placeholder="Add a user"
         testId="cluster-fence-exempt-principals"
         value={named}
       />
       <FieldDescription>
-        While the cluster is fenced, only these users can fetch from user topics. Add each shadow link’s user, or the
-        link can’t finish copying. Enter bare user names, such as <span className="font-mono">shadow-orders</span>, not{' '}
-        <span className="font-mono">User:shadow-orders</span>. {SUPERUSERS_NOT_EXEMPT}
+        While the cluster is fenced, only these users can fetch from user topics, such as a shadow link’s user.{' '}
+        {SUPERUSERS_NOT_EXEMPT}
       </FieldDescription>
       {missingSuggestions.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2" data-testid="cluster-fence-principal-suggestions">

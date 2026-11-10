@@ -215,7 +215,7 @@ const ReadersCard = ({
   incomplete,
   summary,
 }: {
-  readers: ShadowLinkReader[] | undefined;
+  readers: ShadowLinkReader[];
   /** The host is still finding links, so an empty list doesn't mean none read from this cluster yet. */
   resolving: boolean;
   /** The host couldn't check every link, so the list may be missing some. */
@@ -223,20 +223,14 @@ const ReadersCard = ({
   summary: FenceSummary;
 }) => {
   const openCluster = useClusterFenceStore((state) => state.openCluster);
-  const settledEmpty = readers?.length === 0 && !resolving && !incomplete;
+  const settledEmpty = readers.length === 0 && !resolving && !incomplete;
 
   return (
     <Card size="full" testId="cluster-fence-readers" variant="standard">
       <CardContent>
         <div className="flex flex-col gap-7">
           <h3 className="text-heading-xs">Links reading from this cluster</h3>
-          {readers === undefined ? (
-            <p className="text-body-sm text-muted-foreground">
-              Redpanda doesn’t record which shadow links read from a cluster, so Console can’t list them. Check the
-              Shadow Links page on each shadow cluster, and make sure each link’s user is exempt before you fence.
-            </p>
-          ) : null}
-          {readers?.length === 0 && resolving ? (
+          {readers.length === 0 && resolving ? (
             <p
               className="flex items-center gap-2 text-body-sm text-muted-foreground"
               data-testid="cluster-fence-readers-loading"
@@ -245,7 +239,7 @@ const ReadersCard = ({
               Finding the shadow links that read from this cluster…
             </p>
           ) : null}
-          {readers && incomplete ? (
+          {incomplete ? (
             <Alert testId="cluster-fence-readers-incomplete" variant="warning">
               <AlertDescription>
                 <p>
@@ -266,7 +260,7 @@ const ReadersCard = ({
               </EmptyHeader>
             </Empty>
           ) : null}
-          {readers && readers.length > 0 ? (
+          {readers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -534,12 +528,15 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
 
       <SettingsCard onEdit={() => setDialog('settings')} summary={summary} />
 
-      <ReadersCard
-        incomplete={topology?.readersIncomplete ?? false}
-        readers={readers}
-        resolving={topology?.resolving ?? false}
-        summary={summary}
-      />
+      {/* Redpanda doesn't record a link's source, so only Cloud can say who reads from this cluster. */}
+      {topology ? (
+        <ReadersCard
+          incomplete={topology.readersIncomplete}
+          readers={topology.readers}
+          resolving={topology.resolving}
+          summary={summary}
+        />
+      ) : null}
 
       <FenceClusterDialog onOpenChange={fromUrl.onOpenChange('fence')} open={dialog === 'fence'} />
       <UnfenceClusterDialog

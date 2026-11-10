@@ -117,16 +117,22 @@ const progress = (...entries: [number, BrokerProgress['status'], boolean | undef
   entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
 
 describe('describeFencePhase', () => {
-  test('says each broker blocks as soon as it picks up the fence, without naming the phase', () => {
-    expect(describeFencePhase({ phase: 'fencing' }, progress([1, 'confirmed', true], [2, 'behind', false]))).toBe(
-      'Each broker rejects writes as soon as it picks up the fence.'
+  test('says each broker blocks writes and reads as soon as the fence reaches it, without naming the phase', () => {
+    const brokers = progress([1, 'confirmed', true], [2, 'behind', false]);
+    expect(describeFencePhase({ phase: 'fencing', allowAllReads: false }, brokers)).toBe(
+      'Each broker rejects writes as soon as the fence reaches it. Only exempt users can read from user topics.'
+    );
+    expect(describeFencePhase({ phase: 'fenced', allowAllReads: true }, brokers)).toBe(
+      'Every broker rejects writes. Consumers can still read.'
     );
   });
 
   test('tells a settings change while fenced apart from a first Fence: writes stay blocked', () => {
     const brokers = progress([1, 'confirmed', true], [2, 'behind', true]);
     expect(isApplyingNewSettings({ phase: 'fencing' }, brokers)).toBe(true);
-    expect(describeFencePhase({ phase: 'fencing' }, brokers)).toContain('Writes stay blocked on every broker');
+    expect(describeFencePhase({ phase: 'fencing', allowAllReads: false }, brokers)).toContain(
+      'Writes stay blocked on every broker'
+    );
   });
 
   test('a Fence sent while unfencing isn’t a settings change: brokers that picked up Unfence still accept writes', () => {
@@ -151,7 +157,7 @@ describe('describeHeldMove', () => {
     const brokers = progress([1, 'confirmed', true], [3, 'behind', false]);
     expect(describeHeldMove({ phase: 'fencing', stateChangedAt: new Date(NOW - 5000) }, brokers, NOW)).toBe('');
     expect(describeHeldMove({ phase: 'fencing', stateChangedAt: new Date(NOW - 60_000) }, brokers, NOW)).toBe(
-      'Broker 3 hasn’t picked up the change yet.'
+      'The change hasn’t reached broker 3 yet.'
     );
   });
 });
@@ -246,7 +252,7 @@ describe('getClientEffects', () => {
     });
   });
 
-  test('fenced, writes are rejected with what the client sees, exempt links read, and transactions end', () => {
+  test('fenced, writes are rejected, exempt links read, and transactions end', () => {
     const effects = getClientEffects({
       summary: { ...settings, phase: 'fenced' },
       brokers: progress([1, 'confirmed', true]),
@@ -265,8 +271,14 @@ describe('getClientEffects', () => {
       schema: 'rejected',
       transaction: 'ended',
     });
-    expect(effects.find((effect) => effect.id === 'produce')?.detail).toContain('REQUEST_TIMED_OUT (7)');
-    expect(effects.find((effect) => effect.id === 'schema')?.detail).toContain('HTTP 412');
+    /** The error codes clients get are cluster settings, so the details don't name them. */
+    expect(effects.find((effect) => effect.id === 'produce')?.detail).toBe('Rejected.');
+    expect(effects.find((effect) => effect.id === 'schema')?.detail).toBe('Rejected.');
+  });
+
+  test('without the links that read from the cluster, the reminder about a link’s user comes last', () => {
+    const effects = getClientEffects({ summary: { ...settings, phase: 'fenced' }, brokers: [] });
+    expect(effects.at(-1)).toMatchObject({ id: 'link', verdict: 'unknown' });
   });
 
   test('part way through a first Fence, only the brokers that picked it up reject', () => {
@@ -293,8 +305,6 @@ describe('getClientEffects', () => {
       summary: { ...settings, phase: 'unfencing' },
       brokers: progress([1, 'confirmed', false], [2, 'behind', true]),
     });
-    expect(produce?.detail).toBe(
-      'Allowed again on broker 1. Still rejected on broker 2 until it picks up Unfence: REQUEST_TIMED_OUT (7), which the client retries until its delivery timeout.'
-    );
+    expect(produce?.detail).toBe('Allowed again on broker 1. Still rejected on broker 2 until the change reaches it.');
   });
 });

@@ -111,35 +111,19 @@ const seedSettings = (summary: FenceSummary, suggestions: PrincipalSuggestion[])
 });
 
 const FenceEffects = ({ allowAllReads }: { allowAllReads: boolean }) => (
-  <section aria-label="What fencing changes" className="grid gap-4 sm:grid-cols-2">
-    <div>
-      <h3 className="text-label">Rejects</h3>
-      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
-        <li>Producing to user topics. Producers get REQUEST_TIMED_OUT and keep retrying.</li>
-        {allowAllReads ? null : <li>Fetching from user topics, except for the exempt users below</li>}
-        <li>Creating or deleting topics, adding partitions, or changing topic configuration</li>
-        <li>
-          Consumer group joins, heartbeats, offset commits and deletes. Clients get COORDINATOR_NOT_AVAILABLE and wait.
-        </li>
-        <li>Every Schema Registry write</li>
-        <li>Creating or deleting ACLs, and creating, changing or deleting roles</li>
-        <li>Creating shadow links, new data migrations and cluster recovery</li>
-      </ul>
-    </div>
-    <div>
-      <h3 className="text-label">Keeps working</h3>
-      <ul className="mt-1.5 list-disc space-y-1 pl-5 text-body-sm">
-        {allowAllReads ? <li>Fetching from topics</li> : null}
-        <li>DeleteRecords, retention and compaction</li>
-        <li>Reading consumer group offsets and descriptions</li>
-        <li>Users and their SCRAM passwords</li>
-        <li>Cluster config, decommission and partition moves</li>
-        <li>Internal topics, such as __consumer_offsets</li>
-      </ul>
-    </div>
-    <p className="text-body-sm sm:col-span-2">
-      Each broker also ends open transactions as it picks up the fence: aborted, or committed if the coordinator had
-      already decided to commit.
+  <section aria-label="What fencing changes" className="flex flex-col gap-1.5">
+    <h3 className="text-label">While fenced, the cluster rejects</h3>
+    <ul className="list-disc space-y-1 pl-5 text-body-sm">
+      <li>Producing to user topics</li>
+      {allowAllReads ? null : <li>Reading from user topics, except by exempt users</li>}
+      <li>Creating, deleting or reconfiguring topics</li>
+      <li>Consumer group joins, heartbeats and offset commits</li>
+      <li>Schema Registry, ACL and role changes</li>
+      <li>New shadow links, data migrations and cluster recovery</li>
+    </ul>
+    <p className="text-body-sm text-muted-foreground">
+      Open transactions are ended. Retention and compaction keep running, and you can still manage users and cluster
+      config.
     </p>
   </section>
 );
@@ -240,8 +224,8 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
         <DialogTitle>Fence {clusterName ?? 'this cluster'}?</DialogTitle>
         <DialogDescription>
           {settings.allowAllReads
-            ? 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Consumers keep reading.'
-            : 'Each broker rejects writes as soon as it picks up the fence, until you unfence it. Only the exempt users below can still fetch from user topics, so your shadow links can finish copying.'}
+            ? 'Writes are rejected until you unfence the cluster. Consumers keep reading.'
+            : 'Writes are rejected until you unfence the cluster, and only the exempt users below can read.'}
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="lg">
@@ -257,14 +241,6 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
 
         <FenceEffects allowAllReads={settings.allowAllReads} />
 
-        <section aria-label="Settings" className="flex flex-col gap-1">
-          <h3 className="text-label">1. Save settings</h3>
-          <p className="text-body-sm text-muted-foreground">
-            Fence uses the saved settings, so these are saved first if you changed them. The fence always covers every
-            resource it supports; there’s no scope to choose.
-          </p>
-        </section>
-
         <Controller
           control={form.control}
           name="settings"
@@ -273,22 +249,24 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
           )}
         />
 
-        <section aria-label="Before you fence" className="flex flex-col gap-2">
-          <h3 className="text-label">2. Fence</h3>
-          <ul className="flex flex-col gap-1.5" data-testid="fence-preflight-checks">
-            {checks.map((check) => (
-              <li
-                className="flex items-start gap-2 text-body-sm"
-                data-status={check.status}
-                data-testid={`fence-preflight-${check.id}`}
-                key={check.id}
-              >
-                <span className="mt-0.5">{PREFLIGHT_ICON[check.status]}</span>
-                {check.message}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {checks.length > 0 ? (
+          <section aria-label="Before you fence" className="flex flex-col gap-2">
+            <h3 className="text-label">Before you fence</h3>
+            <ul className="flex flex-col gap-1.5" data-testid="fence-preflight-checks">
+              {checks.map((check) => (
+                <li
+                  className="flex items-start gap-2 text-body-sm"
+                  data-status={check.status}
+                  data-testid={`fence-preflight-${check.id}`}
+                  key={check.id}
+                >
+                  <span className="mt-0.5">{PREFLIGHT_ICON[check.status]}</span>
+                  {check.message}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <Field>
           <FieldLabel htmlFor="fence-cluster-confirmation">
@@ -312,7 +290,7 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
             {/* After this dialog's own save went through, a failed Fence leaves the new settings in place. */}
             {fenceCluster.savedFence ? (
               <p>
-                The read policy above is saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
+                The settings above are saved. Fence again to retry, or cancel to leave the cluster unfenced with them.
               </p>
             ) : null}
           </FenceWriteErrorAlert>

@@ -69,7 +69,7 @@ const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
     status: 'not-ready',
     text:
       fence.fence.state === 'fencing'
-        ? 'The source cluster hasn’t reported Fenced yet. A broker that hasn’t picked up the fence still accepts writes, which would never reach this cluster.'
+        ? 'The source cluster hasn’t reported Fenced yet. A broker the fence hasn’t reached yet still accepts writes, which would never reach this cluster.'
         : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
   };
 };

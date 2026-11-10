@@ -99,7 +99,7 @@ describe('the ClusterFenceBanner', () => {
   test('warns when the fence exempts nobody', () => {
     mockStatus('fenced', { exemptPrincipals: [] });
     renderBanner();
-    expect(screen.getByTestId('cluster-fence-banner')).toHaveTextContent('It exempts nobody');
+    expect(screen.getByTestId('cluster-fence-banner')).toHaveTextContent('No one is exempt');
   });
 
   test('with no controller leader, reports each broker’s own copy and whether writes are rejected', () => {

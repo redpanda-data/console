@@ -138,6 +138,16 @@ describe('the FenceClusterDialog', () => {
       expect(screen.queryByTestId('cluster-fence-exempt-principals-chip-User:shadow-orders')).not.toBeInTheDocument();
     });
 
+    test('a typed User: prefix is dropped, since Redpanda only matches bare names', async () => {
+      const user = userEvent.setup();
+      setReaders([]);
+      renderDialog();
+
+      await user.type(await screen.findByTestId('cluster-fence-exempt-principals-field'), 'User:shadow-audit{Enter}');
+      expect(screen.getByTestId('cluster-fence-exempt-principals-chip-shadow-audit')).toBeVisible();
+      expect(screen.queryByText('matches nobody', { exact: false })).not.toBeInTheDocument();
+    });
+
     test('with no one exempt, warns in the field, and typing the name is still all it takes', async () => {
       setReaders([]);
       await renderConfirmed();
@@ -158,6 +168,16 @@ describe('the FenceClusterDialog', () => {
       expect(screen.getByTestId('fence-preflight-readers')).toHaveAttribute('data-status', 'pending');
       await user.type(screen.getByTestId('fence-cluster-confirmation'), 'prod-us-east-1');
       expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
+    });
+
+    test('self-hosted, with no host to name the readers, a healthy cluster has nothing to check', async () => {
+      const user = userEvent.setup();
+      useClusterFenceStore.setState({ topology: null });
+      renderDialog();
+
+      await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'fence');
+      expect(screen.queryByTestId('fence-preflight-checks')).not.toBeInTheDocument();
+      expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
     });
 
     test('a cluster with shadow links of its own can’t be fenced', async () => {

@@ -66,7 +66,7 @@ const UnfenceClusterBody = ({ label, onClose }: { label: string; onClose: () => 
       {
         onSuccess: () => {
           toast.success(`Unfencing ${label}`, {
-            description: 'Each broker accepts writes again as soon as it picks up Unfence. The settings stay saved.',
+            description: 'It takes a few moments for the change to reach the whole cluster.',
           });
           onClose();
         },
@@ -79,8 +79,8 @@ const UnfenceClusterBody = ({ label, onClose }: { label: string; onClose: () => 
       <DialogHeader align="left">
         <DialogTitle>Unfence {label}?</DialogTitle>
         <DialogDescription>
-          Each broker accepts writes again as soon as it picks up Unfence, and the cluster is unfenced once every broker
-          has. The settings stay saved for the next Fence.
+          Clients can write to this cluster again. It takes a few moments for the change to reach the whole cluster.
+          Your fence settings are kept for the next time you fence.
         </DialogDescription>
       </DialogHeader>
       <DialogBody spacing="md">
@@ -94,12 +94,11 @@ const UnfenceClusterBody = ({ label, onClose }: { label: string; onClose: () => 
           </Alert>
         ) : (
           <Alert icon={<TriangleAlertIcon />} variant="warning">
-            <AlertTitle>Unfence only if clients won’t write here by mistake</AlertTitle>
+            <AlertTitle>Make sure no client writes here by mistake</AlertTitle>
             <AlertDescription>
               <p>
-                If a shadow link has already failed over from this cluster, clients still pointed at it start writing
-                here again, and the shadow cluster never sees those writes. Repoint clients first, or unfence only to
-                cancel a failover.
+                Any client still pointed at this cluster can write to it again. If you’ve failed over, move clients to
+                the new cluster first.
               </p>
             </AlertDescription>
           </Alert>

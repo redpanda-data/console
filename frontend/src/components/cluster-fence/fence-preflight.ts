@@ -40,7 +40,8 @@ type PreflightInput = {
   readersIncomplete: boolean;
 };
 
-const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCheck => {
+/** Only says something when Fence might fail: a pass would only restate that this isn't a shadow cluster. */
+const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCheck | undefined => {
   if (links === 'loading') {
     return { id: 'own-links', status: 'pending', message: 'Checking whether this cluster is a shadow cluster…' };
   }
@@ -51,22 +52,15 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCh
       message: 'Couldn’t check this cluster’s own shadow links. Fence fails while one of them hasn’t failed over.',
     };
   }
-  if (links === 'disabled') {
-    return { id: 'own-links', status: 'pass', message: 'Shadow linking is off here, so this isn’t a shadow cluster.' };
-  }
-  if (links.length > 0) {
+  if (links !== 'disabled' && links.length > 0) {
     return { id: 'own-links', status: 'fail', message: `${SHADOW_CLUSTER_CANT_FENCE} Its links: ${links.join(', ')}.` };
   }
-  return { id: 'own-links', status: 'pass', message: 'This cluster has no shadow link that hasn’t failed over.' };
 };
 
 const brokersCheck = (brokers: BrokerProgress[]): PreflightCheck | undefined => {
-  if (brokers.length === 0) {
-    return;
-  }
   const down = brokers.filter((broker) => broker.status === 'not-answering').map((broker) => broker.nodeId);
   if (down.length === 0) {
-    return { id: 'brokers', status: 'pass', message: `All ${brokers.length} brokers are answering.` };
+    return;
   }
   return {
     id: 'brokers',
@@ -149,7 +143,8 @@ const readerChecks = (
 /**
  * Checks Console can run before Fence. Fence has no dry run, so these cover what the page already
  * knows; anything else, such as an unfinished data migration, comes back from Fence itself. Warnings
- * about the exempt names themselves show in the settings fields, not here.
+ * about the exempt names themselves show in the settings fields, not here. The links that read from
+ * this cluster are only checked when the host knows them; the other checks only appear for a problem.
  */
 export const getFencePreflightChecks = ({
   linksThatStopFence,
@@ -160,11 +155,9 @@ export const getFencePreflightChecks = ({
   readersResolving,
   readersIncomplete,
 }: PreflightInput): PreflightCheck[] => {
-  const checks: PreflightCheck[] = [ownLinksCheck(linksThatStopFence)];
-  const brokerCheck = brokersCheck(brokers);
-  if (brokerCheck) {
-    checks.push(brokerCheck);
-  }
+  const checks = [ownLinksCheck(linksThatStopFence), brokersCheck(brokers)].filter(
+    (check): check is PreflightCheck => check !== undefined
+  );
   if (!allowAllReads && readers !== undefined) {
     checks.push(
       ...readerChecks(

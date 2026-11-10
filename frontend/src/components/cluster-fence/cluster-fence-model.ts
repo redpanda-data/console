@@ -178,12 +178,15 @@ export const isApplyingNewSettings = (
   brokers.some((broker) => broker.status === 'behind' && broker.blocks === true) &&
   !brokers.some((broker) => broker.blocks === false);
 
+const describeFencedReads = ({ allowAllReads }: Pick<FenceSummary, 'allowAllReads'>) =>
+  allowAllReads ? 'Consumers can still read.' : 'Only exempt users can read from user topics.';
+
 /**
- * One sentence for what the phase means for writes. It doesn't name the phase, which the badge or
- * title next to it already shows.
+ * What the phase means for writes and reads. It doesn't name the phase, which the badge or title
+ * next to it already shows.
  */
 export const describeFencePhase = (
-  summary: Pick<FenceSummary, 'phase'>,
+  summary: Pick<FenceSummary, 'phase' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[]
 ): string => {
   switch (summary.phase) {
@@ -191,12 +194,12 @@ export const describeFencePhase = (
       return 'Clients write and read as usual.';
     case 'fencing':
       return isApplyingNewSettings(summary, brokers)
-        ? 'Writes stay blocked on every broker while they pick up the new settings.'
-        : 'Each broker rejects writes as soon as it picks up the fence.';
+        ? `Writes stay blocked on every broker while the new settings reach them. ${describeFencedReads(summary)}`
+        : `Each broker rejects writes as soon as the fence reaches it. ${describeFencedReads(summary)}`;
     case 'fenced':
-      return 'Every broker rejects writes.';
+      return `Every broker rejects writes. ${describeFencedReads(summary)}`;
     default:
-      return 'Each broker accepts writes again as soon as it picks up Unfence.';
+      return 'Brokers accept writes and reads again as the change reaches each of them.';
   }
 };
 
@@ -220,7 +223,7 @@ export const describeHeldMove = (
   const behind = idsWith(brokers, 'behind');
   const old = summary.stateChangedAt !== undefined && now - summary.stateChangedAt.getTime() >= BEHIND_NOTICE_MS;
   if (behind.length > 0 && old) {
-    return `${capitalize(brokersPhrase(behind))} ${behind.length === 1 ? 'hasn’t' : 'haven’t'} picked up the change yet.`;
+    return `The change hasn’t reached ${brokersPhrase(behind)} yet.`;
   }
   return '';
 };
@@ -355,17 +358,16 @@ export type ClientEffect = { id: string; label: string; verdict: ClientEffectVer
 
 type Verdict = Pick<ClientEffect, 'verdict' | 'detail'>;
 
-const picks = (nodeIds: readonly number[]) => (nodeIds.length === 1 ? 'it picks' : 'they pick');
+const reach = (nodeIds: readonly number[]) => (nodeIds.length === 1 ? 'it' : 'them');
 
 /**
- * During a move only the brokers that picked it up reject. `rejection` is what a client sees from
- * them; a transaction isn't rejected but ended, so it has its own words.
+ * During a move only the brokers that already have it reject. The details stay general: the
+ * error codes clients get are cluster settings, so Console can't name them.
  */
 const splitVerdict = (
   summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
-  rejection: string,
-  words = { allowed: 'Allowed', rejected: 'Rejected', unfencingReason: `: ${rejection}` }
+  words = { allowed: 'Allowed', rejected: 'Rejected' }
 ): Verdict => {
   const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
   const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
@@ -374,29 +376,24 @@ const splitVerdict = (
       verdict: 'partly',
       detail:
         summary.phase === 'unfencing'
-          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until ${picks(blocking)} up Unfence${words.unfencingReason}.`
-          : `${words.rejected} on ${brokersPhrase(blocking)}: ${rejection}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until ${picks(open)} up the fence.`,
+          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
+          : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`,
     };
   }
   const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
   return blocks
-    ? { verdict: 'rejected', detail: `Rejected: ${rejection}.` }
-    : { verdict: 'allowed', detail: 'Allowed.' };
+    ? { verdict: 'rejected', detail: `${words.rejected}.` }
+    : { verdict: 'allowed', detail: `${words.allowed}.` };
 };
 
-const PRODUCE_REJECTION = 'REQUEST_TIMED_OUT (7), which the client retries until its delivery timeout';
-const FETCH_REJECTION = 'POLICY_VIOLATION (44)';
-const TRANSACTION_ENDING = 'aborted, or committed if the coordinator had already decided to commit';
-
-/** Each broker ends the open transactions it coordinates as soon as it picks up the fence. */
+/** Each broker ends the open transactions it coordinates as soon as the fence reaches it. */
 const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
-  const verdict = splitVerdict(summary, brokers, TRANSACTION_ENDING, {
-    allowed: 'Open',
-    rejected: 'Ended',
-    unfencingReason: '',
-  });
+  const verdict = splitVerdict(summary, brokers, { allowed: 'Open', rejected: 'Ended' });
   if (verdict.verdict === 'rejected') {
-    return { verdict: 'ended', detail: `Ended by the fence as each broker picks it up: ${TRANSACTION_ENDING}.` };
+    return {
+      verdict: 'ended',
+      detail: 'Ended: aborted, or committed if the coordinator had already decided to commit.',
+    };
   }
   return verdict.verdict === 'allowed' ? { verdict: 'open', detail: 'Open.' } : verdict;
 };
@@ -419,17 +416,18 @@ export const getClientEffects = ({
     if (canRead === undefined && anyBlocking) {
       return { verdict: 'unknown', detail: MTLS_LINK_NOTE };
     }
-    return canRead === false
-      ? splitVerdict(summary, brokers, FETCH_REJECTION)
-      : { verdict: 'allowed', detail: 'Allowed.' };
+    return canRead === false ? splitVerdict(summary, brokers) : { verdict: 'allowed', detail: 'Allowed.' };
   };
-  const linkRows: ClientEffect[] =
-    links && links.length > 0
-      ? links.map((link) => ({
-          id: `link-${link.linkName}`,
-          label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
-          ...linkRead(linkCanRead(summary, link)),
-        }))
+  const knownLinks = links ?? [];
+  const linkRows: ClientEffect[] = knownLinks.map((link) => ({
+    id: `link-${link.linkName}`,
+    label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
+    ...linkRead(linkCanRead(summary, link)),
+  }));
+  /** Without the links themselves, a reminder that comes last: not every cluster is a link's source. */
+  const anyLinkRow: ClientEffect[] =
+    knownLinks.length > 0
+      ? []
       : [
           {
             id: 'link',
@@ -439,24 +437,21 @@ export const getClientEffects = ({
               : { verdict: 'unknown' as const, detail: 'Allowed only if its user is on the exempt list.' }),
           },
         ];
-  const rejected = (rejection: string) => splitVerdict(summary, brokers, rejection);
+  const rejected = splitVerdict(summary, brokers);
   return [
-    { id: 'produce', label: 'A producer writes', ...rejected(PRODUCE_REJECTION) },
+    { id: 'produce', label: 'A producer writes', ...rejected },
     {
       id: 'consume',
       label: 'An app’s consumer fetches',
       ...(summary.allowAllReads
         ? { verdict: 'allowed' as const, detail: 'Allowed: Allow all reads is on.' }
-        : rejected(FETCH_REJECTION)),
+        : rejected),
     },
     ...linkRows,
-    {
-      id: 'commit',
-      label: 'A consumer group joins, heartbeats or commits',
-      ...rejected('COORDINATOR_NOT_AVAILABLE (15), which clients retry until the fence lifts'),
-    },
-    { id: 'topic-config', label: 'A topic config change', ...rejected(FETCH_REJECTION) },
-    { id: 'schema', label: 'A Schema Registry write', ...rejected('HTTP 412') },
+    { id: 'commit', label: 'A consumer group joins, heartbeats or commits', ...rejected },
+    { id: 'topic-config', label: 'A topic config change', ...rejected },
+    { id: 'schema', label: 'A Schema Registry write', ...rejected },
     { id: 'transaction', label: 'An open transaction', ...transactionVerdict(summary, brokers) },
+    ...anyLinkRow,
   ];
 };

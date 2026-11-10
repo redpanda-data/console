@@ -107,6 +107,9 @@ const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = 
     },
   });
 
+/** Kafka error names the fence returns by default; clusters can configure others. */
+const ERROR_CODE_NAMES = /REQUEST_TIMED_OUT|POLICY_VIOLATION|COORDINATOR_NOT_AVAILABLE/;
+
 describe('the ClusterFenceSourcePanel', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -151,14 +154,18 @@ describe('the ClusterFenceSourcePanel', () => {
       expect(screen.getByTestId('cluster-fence-effect-produce')).toHaveAttribute('data-verdict', 'partly');
     });
 
-    test('fenced: what clients see, row by row, with the errors they get', () => {
+    test('fenced: what clients see, row by row, without naming error codes the cluster can change', () => {
       mockStatus('fenced', [confirmed(1), confirmed(2)]);
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('cluster-fence-effect-produce')).toHaveTextContent('REQUEST_TIMED_OUT (7)');
-      expect(screen.getByTestId('cluster-fence-effect-consume')).toHaveTextContent('POLICY_VIOLATION (44)');
-      expect(screen.getByTestId('cluster-fence-effect-schema')).toHaveTextContent('HTTP 412');
-      expect(screen.getByTestId('cluster-fence-effect-transaction')).toHaveTextContent('Ended by the fence');
+      expect(screen.getByTestId('cluster-fence-headline')).toHaveTextContent(
+        'Every broker rejects writes. Only exempt users can read from user topics.'
+      );
+      expect(screen.getByTestId('cluster-fence-effect-produce')).toHaveTextContent('A producer writesRejected.');
+      expect(screen.getByTestId('cluster-fence-effect-consume')).toHaveTextContent('Rejected.');
+      expect(screen.getByTestId('cluster-fence-effect-schema')).toHaveTextContent('Rejected.');
+      expect(screen.getByTestId('cluster-fence-client-effects')).not.toHaveTextContent(ERROR_CODE_NAMES);
+      expect(screen.getByTestId('cluster-fence-effect-transaction')).toHaveTextContent('Ended: aborted');
       expect(screen.getByTestId('cluster-fence-read-policy')).toHaveTextContent('shadow-orders');
     });
 
@@ -240,11 +247,12 @@ describe('the ClusterFenceSourcePanel', () => {
   });
 
   describe('the links that read from the cluster', () => {
-    test('without the host, says Console can’t list the links that read from the cluster', () => {
+    test('without the host, as in self-hosted Console, shows no list of links: Redpanda doesn’t record them', () => {
       mockStatus('unfenced');
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
-      expect(screen.getByTestId('cluster-fence-readers')).toHaveTextContent('Console can’t list them');
+      expect(screen.getByTestId('cluster-fence-source-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('cluster-fence-readers')).not.toBeInTheDocument();
     });
 
     test('embedded, lists Cloud’s readers and whether the settings let each read', () => {

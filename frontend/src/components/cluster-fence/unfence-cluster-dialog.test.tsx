@@ -54,7 +54,9 @@ describe('the UnfenceClusterDialog', () => {
     renderWithFileRoutes(<UnfenceClusterDialog clusterName="prod-us-east-1" onOpenChange={rs.fn()} open />);
 
     expect(await screen.findByText('Unfence prod-us-east-1?')).toBeVisible();
-    expect(screen.getByTestId('unfence-cluster-dialog')).toHaveTextContent('clients still pointed at it start writing');
+    expect(screen.getByTestId('unfence-cluster-dialog')).toHaveTextContent(
+      'Any client still pointed at this cluster can write to it again'
+    );
 
     await user.click(screen.getByTestId('confirm-unfence-cluster'));
     expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: 7n });

@@ -42,8 +42,12 @@ const messageOf = (checks: ReturnType<typeof getFencePreflightChecks>, id: strin
   checks.find((check) => check.id === id)?.message;
 
 describe('getFencePreflightChecks', () => {
-  test('passes a source cluster whose readers are exempt', () => {
-    expect(statuses(getFencePreflightChecks(base))).toEqual({ 'own-links': 'pass', brokers: 'pass', readers: 'pass' });
+  test('passes a source cluster whose readers are exempt, naming nothing else', () => {
+    expect(statuses(getFencePreflightChecks(base))).toEqual({ readers: 'pass' });
+  });
+
+  test('says nothing for a healthy cluster when the host doesn’t know its readers, as in self-hosted Console', () => {
+    expect(getFencePreflightChecks({ ...base, readers: undefined, linksThatStopFence: 'disabled' })).toEqual([]);
   });
 
   test('blocks a cluster with a shadow link that hasn’t failed over, naming it', () => {
@@ -54,11 +58,16 @@ describe('getFencePreflightChecks', () => {
   });
 
   test.each([
-    ['disabled', 'pass'],
     ['loading', 'pending'],
     ['error', 'warn'],
   ] as const)('own links %s: the check is %s', (linksThatStopFence, status) => {
     expect(statuses(getFencePreflightChecks({ ...base, linksThatStopFence }))['own-links']).toBe(status);
+  });
+
+  test('with shadow linking off, as on most sources, there’s no own-links check to show', () => {
+    expect(statuses(getFencePreflightChecks({ ...base, linksThatStopFence: 'disabled' }))).not.toHaveProperty(
+      'own-links'
+    );
   });
 
   test('a broker that isn’t answering would hold the fence in Fencing, with no timeout', () => {
@@ -90,7 +99,7 @@ describe('getFencePreflightChecks', () => {
     test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {
       expect(
         Object.keys(statuses(getFencePreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
-      ).toEqual(['own-links', 'brokers']);
+      ).toEqual([]);
       expect(statuses(getFencePreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
     });
 
