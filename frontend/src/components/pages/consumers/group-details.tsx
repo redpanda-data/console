@@ -11,10 +11,16 @@
 
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
-import { Search, X } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { Search, Users, X } from 'lucide-react';
+import { type ReactNode, useId, useMemo, useState } from 'react';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
+import {
+  formatAssignment,
+  isBehindGroupEpoch,
+  isConsumerGroupWithoutDetails,
+  membersSummary,
+} from './group-details-utils';
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -212,18 +218,6 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
   );
 };
 
-const isConsumerGroupWithoutDetails = (group: GroupDescription) =>
-  group.groupType === 'consumer' && group.groupEpoch === undefined;
-
-const isBehindGroupEpoch = (group: GroupDescription, member: GroupMemberDescription) =>
-  group.groupType === 'consumer' &&
-  group.groupEpoch !== undefined &&
-  member.memberEpoch !== undefined &&
-  member.memberEpoch < group.groupEpoch;
-
-const formatAssignment = (assignment: GroupMemberAssignment) =>
-  `${assignment.topicName}: ${[...(assignment.partitionIds ?? [])].sort((a, b) => a - b).join(', ')}`;
-
 const AssignmentCell = ({ assignments }: { assignments: GroupMemberAssignment[] | undefined }) => {
   if (!assignments?.length) {
     return <span className="text-muted-foreground">—</span>;
@@ -263,31 +257,49 @@ const useFilteredMembers = (group: GroupDescription, quickSearch: string) => {
   return group.members.filter((m) => quickSearchRegExp.test(m.id) || quickSearchRegExp.test(m.clientId));
 };
 
-const membersSummary = (group: GroupDescription, members: GroupMemberDescription[]) => {
-  let summary = `${members.length} ${members.length === 1 ? 'member' : 'members'}`;
-  if (group.groupType === 'consumer') {
-    const behindCount = members.filter((m) => isBehindGroupEpoch(group, m)).length;
-    summary += behindCount > 0 ? `, ${behindCount} behind the group epoch` : ', all at the group epoch';
-  }
-  return summary;
-};
+const MembersEmptyState = ({
+  icon,
+  title,
+  description,
+  testId,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  testId: string;
+}) => (
+  <div className="rounded-lg border border-solid border-border bg-card py-8" data-testid={testId}>
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">{icon}</EmptyMedia>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  </div>
+);
 
 const GroupMembersTable = ({ group, members }: { group: GroupDescription; members: GroupMemberDescription[] }) => {
   const isConsumerGroup = group.groupType === 'consumer';
 
   if (group.members.length === 0) {
     return (
-      <div className="rounded-lg border border-solid border-border bg-card py-8">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Search />
-            </EmptyMedia>
-            <EmptyTitle>No members</EmptyTitle>
-            <EmptyDescription>This consumer group has no connected members.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </div>
+      <MembersEmptyState
+        description="This consumer group has no connected members."
+        icon={<Users />}
+        testId="group-members-empty"
+        title="No members"
+      />
+    );
+  }
+  if (members.length === 0) {
+    return (
+      <MembersEmptyState
+        description="No member ID or client ID matches the filter."
+        icon={<Search />}
+        testId="group-members-no-match"
+        title="No members match"
+      />
     );
   }
 
@@ -471,7 +483,8 @@ const GroupDetailsContent = ({
           <AlertTitle>Member details are unavailable</AlertTitle>
           <AlertDescription>
             The broker did not answer the ConsumerGroupDescribe request for this KIP-848 group, so only its state and
-            committed offsets are shown. On Redpanda, make sure that group_consumer_protocol_enabled is true.
+            committed offsets are shown. On a self-managed Redpanda cluster, make sure that
+            group_consumer_protocol_enabled is true.
           </AlertDescription>
         </Alert>
       )}

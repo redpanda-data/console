@@ -267,6 +267,18 @@ describe('the GroupDetails - consumer (KIP-848) group', () => {
     expect(screen.getAllByText(`${TOPIC}: 0, 1`)).toHaveLength(2);
   });
 
+  test('the Members tab shows a no-match state when the filter hides every member', async () => {
+    useApiStore.setState({ consumerGroups: new Map([[GROUP_ID, mockConsumerGroup]]), consumerGroupAcls: new Map() });
+    const user = userEvent.setup();
+    renderGroupDetails({ tab: 'members' });
+    expect(await screen.findByTestId('group-member-member-a')).toBeInTheDocument();
+
+    await user.type(within(screen.getByRole('tabpanel')).getByPlaceholderText('Filter by member'), 'nobody');
+
+    expect(screen.getByTestId('group-members-no-match')).toBeInTheDocument();
+    expect(screen.getByTestId('group-members-summary')).toHaveTextContent('0 members');
+  });
+
   test('a classic group hides the epoch and target assignment columns of the Members tab', async () => {
     const classicGroup: GroupDescription = {
       ...mockGroup,
