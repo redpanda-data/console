@@ -26,9 +26,8 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import type { ShadowLinkTopology } from 'federation/types';
 import { CircleAlertIcon, CircleCheckIcon, CircleXIcon, LoaderCircleIcon } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
   isStaleRevisionError,
@@ -56,6 +55,7 @@ import {
 } from './cluster-fence-settings-fields';
 import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';
 import { getFencePreflightChecks, type PreflightStatus } from './fence-preflight';
+import type { ShadowLinkTopology } from './shadow-link-topology';
 
 const FALLBACK_CONFIRMATION = 'fence';
 
@@ -134,7 +134,7 @@ const useFenceSettingsForm = (opened: FenceSummary, suggestions: PrincipalSugges
     defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
   });
 
-  // Readers can arrive from the host after the dialog opens; pre-add their users until the user edits.
+  // Readers can resolve after the dialog opens; pre-add their users until the user edits.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a new set of suggestions reseeds
   useEffect(() => {
     if (!form.getFieldState('settings').isDirty) {
@@ -195,7 +195,8 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
     checks,
     blocked,
   } = useFenceClusterForm();
-  const clusterName = topology?.clusterName;
+  // Fixed once the dialog opens: the name can still be loading, and the word to type mustn't change mid-way.
+  const [clusterName] = useState(topology?.clusterName);
   const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;
   const alreadyFenced = !canFenceFromPhase(opened.phase);

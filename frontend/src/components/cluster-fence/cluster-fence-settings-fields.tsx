@@ -51,7 +51,7 @@ export const useReaderSuggestions = () => {
 type ClusterFenceSettingsFieldsProps = {
   value: ReadPolicy;
   onChange: (value: ReadPolicy) => void;
-  /** Users the links that read from this cluster authenticate as, when the host knows them. */
+  /** Users the links that read from this cluster authenticate as, when Console knows them. */
   suggestions: PrincipalSuggestion[];
 };
 

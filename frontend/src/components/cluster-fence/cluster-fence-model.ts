@@ -400,7 +400,7 @@ const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: reado
 
 /**
  * What a client sees on this cluster right now, row by row, as the reference player shows it.
- * `links` are the shadow links that read from this cluster, when the host knows them.
+ * `links` are the shadow links that read from this cluster, when Console knows them.
  */
 export const getClientEffects = ({
   summary,

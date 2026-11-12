@@ -13,6 +13,7 @@
 
 import { Code } from '@connectrpc/connect';
 import { useLocation, useNavigate } from '@tanstack/react-router';
+import type { ShadowLinkTopology } from 'components/cluster-fence/shadow-link-topology';
 import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
@@ -21,7 +22,6 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import type { ShadowLinkTopology } from 'federation/types';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
@@ -302,7 +302,8 @@ const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLi
 
 /**
  * Whether the Cluster fence tab applies: the cluster can be fenced, and it matters as a source,
- * because links read from it or its fence isn't unfenced. Cloud lists the links that read from it.
+ * because links read from it or its fence isn't unfenced. Embedded in Redpanda Cloud, Console knows
+ * the links that read from it.
  * Without that list, as in a self-hosted Console, any cluster whose own shadow links don't stop the
  * fence may be a source, and a source doesn't need shadow linking turned on. A cluster that's only
  * a shadow doesn't get it. Undefined until that's known.

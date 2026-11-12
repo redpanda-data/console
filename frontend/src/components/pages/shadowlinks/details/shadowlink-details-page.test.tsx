@@ -75,7 +75,7 @@ rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: 
 rs.mock('./failover-tab', () => ({ FailoverTab: MockFailoverTab }));
 rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
 
-import type { ShadowLinkSource } from 'federation/types';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { render } from 'test-utils';
@@ -86,7 +86,7 @@ const FENCED_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
-  fence: { status: 'known', state: 'fenced', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
+  fence: { status: 'known', state: 'fenced', revision: 3n, exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
 const unavailable = (reason: 'error' | 'unsupported' | 'no-leader'): ShadowLinkSource => ({
@@ -160,7 +160,7 @@ describe('the ShadowLinkDetailsPage', () => {
 
   test.each([
     [
-      'self-hosted, with no host to read the source',
+      'self-hosted, with no link list to find the source',
       () => {
         host.embedded = false;
         useClusterFenceStore.setState({ topology: null });
@@ -168,7 +168,7 @@ describe('the ShadowLinkDetailsPage', () => {
     ],
     ['the source is outside Cloud', () => hostWith({ kind: 'external', bootstrapServers: ['kafka:9092'] })],
     ['the source’s fence can’t be read', () => hostWith(unavailable('unsupported'))],
-    ['the host couldn’t resolve the source', () => hostWith(undefined)],
+    ['the source couldn’t be resolved', () => hostWith(undefined)],
     ['the source was already unreadable when the page opened', () => hostWith(unavailable('no-leader'))],
   ])('with cluster fencing on but %s, the page is as before', async (_label, arrange) => {
     arrange();
@@ -228,7 +228,7 @@ describe('the ShadowLinkDetailsPage', () => {
     });
   });
 
-  test('while the host is still resolving the source, only a link to the Failover tab shows it', () => {
+  test('while the source is still resolving, only a link to the Failover tab shows it', () => {
     hostWith(undefined, true);
     renderAtFailoverTab(true);
     expect(screen.getByTestId('failover-stub')).toBeInTheDocument();

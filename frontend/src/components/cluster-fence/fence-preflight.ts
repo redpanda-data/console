@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ShadowLinkReader } from 'federation/types';
-
 import {
   type BrokerProgress,
   linkCanRead,
@@ -18,6 +16,7 @@ import {
   SHADOW_CLUSTER_CANT_FENCE,
   unreachableBrokersSubject,
 } from './cluster-fence-model';
+import type { ShadowLinkReader } from './shadow-link-topology';
 
 export type PreflightStatus = 'pending' | 'pass' | 'warn' | 'fail';
 
@@ -32,11 +31,11 @@ type PreflightInput = {
   brokers: BrokerProgress[];
   exemptPrincipals: string[];
   allowAllReads: boolean;
-  /** Undefined when the host can't say who reads from this cluster (standalone Console). */
+  /** Undefined when Console can't say who reads from this cluster, as outside Redpanda Cloud. */
   readers: ShadowLinkReader[] | undefined;
-  /** The host is still resolving links, so `readers` may be missing some. */
+  /** Links are still being resolved, so `readers` may be missing some. */
   readersResolving: boolean;
-  /** The host couldn't resolve every link, so `readers` may be missing some for good. */
+  /** Some links couldn't be resolved, so `readers` may be missing some for good. */
   readersIncomplete: boolean;
 };
 
@@ -86,7 +85,7 @@ const blockedReaderMessage = (reader: ShadowLinkReader) => {
   return `${reader.linkName} reads as ${reader.principal}, which isn’t exempt, so it couldn’t finish copying.`;
 };
 
-/** Before the host has found any reader, says whether it's still looking, gave up early, or found none. */
+/** Before any reader is found, says whether Console is still looking, gave up early, or found none. */
 const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
   if (resolving) {
     return { id: 'readers', status: 'pending', message: 'Finding the shadow links that read from this cluster…' };
@@ -144,7 +143,7 @@ const readerChecks = (
  * Checks Console can run before Fence. Fence has no dry run, so these cover what the page already
  * knows; anything else, such as an unfinished data migration, comes back from Fence itself. Warnings
  * about the exempt names themselves show in the settings fields, not here. The links that read from
- * this cluster are only checked when the host knows them; the other checks only appear for a problem.
+ * this cluster are only checked when Console knows them; the other checks only appear for a problem.
  */
 export const getFencePreflightChecks = ({
   linksThatStopFence,

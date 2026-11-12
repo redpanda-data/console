@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
-import type { ShadowLinkPeerFenceState, ShadowLinkSource } from 'federation/types';
+import type { FencePhase, LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import {
@@ -25,14 +25,14 @@ import {
 import { describe, expect, test } from 'bun:test';
 import type { UnifiedShadowLink } from '../model';
 
-const cloudSource = (state: ShadowLinkPeerFenceState, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
+const cloudSource = (state: FencePhase, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
   fence: {
     status: 'known',
     state,
-    revision: '18',
+    revision: 18n,
     exemptPrincipals,
     allowAllReads: false,
     brokers: [],
@@ -133,7 +133,7 @@ describe('getSourceFenceStep', () => {
     ).toBeUndefined();
   });
 
-  test('waits while the host resolves links or reads the source’s fence', () => {
+  test('waits while links resolve or the source’s fence loads', () => {
     expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: true })).toEqual({
       kind: 'loading',
       source: undefined,

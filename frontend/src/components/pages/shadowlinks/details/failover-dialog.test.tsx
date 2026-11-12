@@ -22,7 +22,7 @@ const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSour
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
-  fence: { status: 'known', state, revision: '18', exemptPrincipals: [], allowAllReads, brokers: [] },
+  fence: { status: 'known', state, revision: 18n, exemptPrincipals: [], allowAllReads, brokers: [] },
 });
 
 const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean): SourceFenceStep => {
@@ -124,7 +124,7 @@ describe('the FailoverDialog', () => {
         { topics: [topicIn(ShadowTopicState.ACTIVE)], topicsFailed: true, fence: FENCED },
       ],
       [
-        'while the host is still finding the source',
+        'while Console is still finding the source',
         'source',
         { topics: [], fence: { kind: 'loading', source: undefined } },
       ],

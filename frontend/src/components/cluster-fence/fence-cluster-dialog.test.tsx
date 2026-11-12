@@ -13,10 +13,11 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ShadowLinkReader } from 'federation/types';
 import { useSyncExternalStore } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
+
+import type { ShadowLinkReader } from './shadow-link-topology';
 
 const mutate = rs.fn();
 const mutation = { mutate, reset: rs.fn(), isPending: false, error: null as unknown, savedFence: undefined as unknown };
@@ -114,7 +115,13 @@ describe('the FenceClusterDialog', () => {
     );
     mockOwnLinks([]);
     setReaders([
-      { linkName: 'orders-dr', shadowClusterId: 'dr', shadowClusterName: 'dr-us-west-2', principal: 'shadow-orders' },
+      {
+        linkName: 'orders-dr',
+        shadowClusterId: 'dr',
+        shadowClusterName: 'dr-us-west-2',
+        authentication: 'sasl',
+        principal: 'shadow-orders',
+      },
     ]);
   });
 
@@ -158,7 +165,7 @@ describe('the FenceClusterDialog', () => {
   });
 
   describe('its preflight checks', () => {
-    test('doesn’t pass the own-links check before the links load, or the readers check before the host finishes', async () => {
+    test('doesn’t pass the own-links check before the links load, or the readers check before the links resolve', async () => {
       const user = userEvent.setup();
       mockOwnLinks('loading');
       setReaders([], true);
@@ -170,13 +177,25 @@ describe('the FenceClusterDialog', () => {
       expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
     });
 
-    test('self-hosted, with no host to name the readers, a healthy cluster has nothing to check', async () => {
+    test('self-hosted, with no link list to name the readers, a healthy cluster has nothing to check', async () => {
       const user = userEvent.setup();
       useClusterFenceStore.setState({ topology: null });
       renderDialog();
 
       await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'fence');
       expect(screen.queryByTestId('fence-preflight-checks')).not.toBeInTheDocument();
+      expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
+    });
+
+    test('keeps the word to type it opened with, even when the cluster’s name loads later', async () => {
+      const user = userEvent.setup();
+      useClusterFenceStore.setState({
+        topology: { clusterName: undefined, readers: [], sources: {}, resolving: true, readersIncomplete: false },
+      });
+      renderDialog();
+      await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'fence');
+      act(() => setReaders([]));
+
       expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
     });
 

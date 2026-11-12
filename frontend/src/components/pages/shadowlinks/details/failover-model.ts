@@ -10,7 +10,7 @@
  */
 
 import { isBlockingPhase, type LinkIdentity, linkCanRead } from 'components/cluster-fence/cluster-fence-model';
-import type { ShadowLinkPeerFence, ShadowLinkSource } from 'federation/types';
+import type { ShadowLinkPeerFence, ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import type { UnifiedShadowLink } from '../model';
@@ -27,18 +27,22 @@ type NoFenceReason = 'unsupported' | 'inactive' | 'forbidden';
 const isNoFenceReason = (reason: PeerUnavailableReason): reason is NoFenceReason =>
   reason === 'unsupported' || reason === 'inactive' || reason === 'forbidden';
 
-/** Why a fence that was readable earlier in this visit can't be read now, when the host says. */
+/** Why a fence that was readable earlier in this visit can't be read now. */
 export type TransientReason = Exclude<PeerUnavailableReason, NoFenceReason>;
 
 /**
- * Where the source's fence stands, from this shadow cluster's point of view. Only Cloud can read a
- * source cluster's fence, so the Failover tab exists only once it has.
+ * Where the source's fence stands, from this shadow cluster's point of view. Only embedded in
+ * Redpanda Cloud can Console find a link's source cluster and read its fence, so the Failover tab
+ * exists only once it has.
  */
 export type SourceFenceStep =
-  /** Without a source, the host is still working out which cluster the link reads from. */
+  /** Without a source, Console is still working out which cluster the link reads from. */
   | { kind: 'loading'; source: CloudSource | undefined }
-  /** Read earlier in this visit, but not right now, such as while the source has no controller leader. */
-  | { kind: 'unreadable'; source: CloudSource; reason: TransientReason }
+  /**
+   * Read earlier in this visit, but not right now, such as while the source has no controller leader.
+   * No reason when the link's source can't be resolved any more.
+   */
+  | { kind: 'unreadable'; source: CloudSource; reason: TransientReason | undefined }
   | {
       kind: 'cloud';
       source: CloudSource;
@@ -123,7 +127,7 @@ const cloudSourceStep = (
 };
 
 /**
- * Undefined when there's no guided failover: no host, a source outside Cloud, one that can't be
+ * Undefined when there's no guided failover: outside Cloud, a source outside Cloud, one that can't be
  * fenced or whose fence this viewer can't read, or one whose fence hasn't been read in this visit
  * (a source already down when the page opened). A fence read earlier in the visit (`lastKnown`)
  * keeps it through a passing failure, which reads as `unreadable`.
@@ -136,7 +140,7 @@ export const getSourceFenceStep = ({
 }: {
   source: ShadowLinkSource | undefined;
   link: LinkIdentity;
-  /** The host is still resolving links, so a missing source may yet turn up. */
+  /** Links are still being resolved, so a missing source may yet turn up. */
   resolving: boolean;
   /** The source as it was last read with a known fence during this visit. */
   lastKnown?: CloudSource;

@@ -21,7 +21,6 @@ import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
-import type { ShadowLinkReader } from 'federation/types';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   type BrokerOwnCopy,
@@ -52,6 +51,7 @@ import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
 import { WARNING_VARIANT } from './cluster-fence-settings-fields';
 import { CanReadBadge, ClusterFenceStateBadge, useNow } from './cluster-fence-ui';
 import { FenceClusterDialog } from './fence-cluster-dialog';
+import type { ShadowLinkReader } from './shadow-link-topology';
 import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -216,9 +216,9 @@ const ReadersCard = ({
   summary,
 }: {
   readers: ShadowLinkReader[];
-  /** The host is still finding links, so an empty list doesn't mean none read from this cluster yet. */
+  /** Links are still being resolved, so an empty list doesn't mean none read from this cluster yet. */
   resolving: boolean;
-  /** The host couldn't check every link, so the list may be missing some. */
+  /** Some links couldn't be checked, so the list may be missing some. */
   incomplete: boolean;
   summary: FenceSummary;
 }) => {
@@ -528,7 +528,7 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
 
       <SettingsCard onEdit={() => setDialog('settings')} summary={summary} />
 
-      {/* Redpanda doesn't record a link's source, so only Cloud can say who reads from this cluster. */}
+      {/* Redpanda doesn't record which links read from a cluster; only Redpanda Cloud's link list says. */}
       {topology ? (
         <ReadersCard
           incomplete={topology.readersIncomplete}

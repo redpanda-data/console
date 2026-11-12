@@ -11,7 +11,7 @@
 
 import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import type { ShadowLinkSource } from 'federation/types';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 const noTopics = rs.hoisted(() => () => ({ data: undefined, isError: false, error: null, refetch: rs.fn() }));
@@ -32,7 +32,7 @@ const KNOWN_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
-  fence: { status: 'known', state: 'fenced', revision: '3', exemptPrincipals: [], allowAllReads: true, brokers: [] },
+  fence: { status: 'known', state: 'fenced', revision: 3n, exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
 const withSource = (source: ShadowLinkSource | undefined, resolving = false) =>
@@ -58,7 +58,7 @@ describe('useFailoverReadiness', () => {
     useClusterFenceStore.setState({ topology: null });
   });
 
-  test('reads the source’s fence through the host, and polls lag at the given pace', () => {
+  test('reads the source’s fence from the topology, and polls lag at the given pace', () => {
     withSource(KNOWN_SOURCE);
     const { result } = renderHook(() => useFailoverReadiness(link('orders-dr'), { pollMs: 3000, enabled: true }));
 

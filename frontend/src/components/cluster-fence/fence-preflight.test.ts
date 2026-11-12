@@ -9,10 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ShadowLinkReader } from 'federation/types';
-
 import type { BrokerProgress } from './cluster-fence-model';
 import { getFencePreflightChecks } from './fence-preflight';
+import type { ShadowLinkReader } from './shadow-link-topology';
 import { describe, expect, test } from 'bun:test';
 
 const healthyBrokers: BrokerProgress[] = [1, 2, 3].map((nodeId) => ({ nodeId, status: 'confirmed', blocks: false }));
@@ -46,7 +45,7 @@ describe('getFencePreflightChecks', () => {
     expect(statuses(getFencePreflightChecks(base))).toEqual({ readers: 'pass' });
   });
 
-  test('says nothing for a healthy cluster when the host doesn’t know its readers, as in self-hosted Console', () => {
+  test('says nothing for a healthy cluster when Console doesn’t know its readers, as in self-hosted Console', () => {
     expect(getFencePreflightChecks({ ...base, readers: undefined, linksThatStopFence: 'disabled' })).toEqual([]);
   });
 
@@ -103,7 +102,7 @@ describe('getFencePreflightChecks', () => {
       expect(statuses(getFencePreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
     });
 
-    test('waits for the host before saying no link reads from the cluster', () => {
+    test('waits for the links to resolve before saying no link reads from the cluster', () => {
       expect(statuses(getFencePreflightChecks({ ...base, readers: [], readersResolving: true })).readers).toBe(
         'pending'
       );

@@ -201,14 +201,12 @@ function ConsoleAppInner({
   onError,
   config: configOverrides,
   featureFlags,
-  shadowLinkTopology,
   onOpenCluster,
 }: ConsoleAppProps) {
-  // Kept out of setup(): the host re-sends the topology every time it polls, and re-running setup
-  // would tear Console down.
+  // Kept out of setup(), which would tear Console down whenever the host passed a new callback.
   useEffect(() => {
-    useClusterFenceStore.getState().setHostContext(shadowLinkTopology ?? null, onOpenCluster ?? null);
-  }, [shadowLinkTopology, onOpenCluster]);
+    useClusterFenceStore.getState().setOpenCluster(onOpenCluster ?? null);
+  }, [onOpenCluster]);
 
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);

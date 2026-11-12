@@ -18,6 +18,7 @@ import {
   unreachableBrokersSubject,
 } from 'components/cluster-fence/cluster-fence-model';
 import { CanReadBadge, ClusterFenceStateBadge, useNow } from 'components/cluster-fence/cluster-fence-ui';
+import type { ShadowLinkPeerFence } from 'components/cluster-fence/shadow-link-topology';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
@@ -25,7 +26,6 @@ import { Progress } from 'components/redpanda-ui/components/progress';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge, type StatusBadgeVariant } from 'components/redpanda-ui/components/status-badge';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import type { ShadowLinkPeerFence } from 'federation/types';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
@@ -213,8 +213,8 @@ const FenceStepBody = ({ step }: { step: CloudStep }) => {
   return (
     <p className="text-body-sm text-muted-foreground">
       {isBlockingPhase(fence.state)
-        ? `Fence was called on ${source.clusterName}. Each broker rejects writes as soon as it picks it up.`
-        : `Fence runs on ${source.clusterName}, with its saved settings. Each broker there rejects writes as soon as it picks it up, so do this just before you fail over.`}
+        ? `Fence was called on ${source.clusterName}. Each broker rejects writes as soon as the fence reaches it.`
+        : `Fence runs on ${source.clusterName}, with its saved settings. Each broker there rejects writes as soon as the fence reaches it, so do this just before you fail over.`}
     </p>
   );
 };
@@ -232,7 +232,7 @@ const brokerCount = (fence: KnownPeerFence) => {
 const FencedStepBody = ({ step }: { step: CloudStep }) => {
   const now = useNow();
   const { fence, source } = step;
-  const since = fence.stateChangedAt ? new Date(fence.stateChangedAt) : undefined;
+  const since = fence.stateChangedAt;
   const { total, confirmed, down, behind } = brokerCount(fence);
   return (
     <>
@@ -446,8 +446,8 @@ const UnreadableSource = ({ fence }: { fence: Extract<SourceFenceStep, { kind: '
       <AlertTitle>Can’t read {fence.source.clusterName}’s fence right now</AlertTitle>
       <AlertDescription>
         <p>
-          {fence.reason ? (UNREADABLE_SENTENCE[fence.reason] ?? '') : ''}Redpanda Cloud keeps trying, and the steps come
-          back once it can read the fence.
+          {fence.reason ? (UNREADABLE_SENTENCE[fence.reason] ?? '') : ''}This page keeps trying, and the steps come back
+          once it can read the fence.
         </p>
       </AlertDescription>
     </Alert>
@@ -508,7 +508,7 @@ type FailoverTabProps = {
 /**
  * The reference's failover, start to finish: three steps on the source cluster through its cluster
  * fence API, then three here through shadow linking. Every source step runs on the source's own
- * Console; this page only reads its fence, through the host.
+ * Console; this page only reads its fence, from that Console.
  */
 export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics }: FailoverTabProps) => {
   const clusterName = useClusterFenceStore((state) => state.topology?.clusterName) ?? 'this cluster';

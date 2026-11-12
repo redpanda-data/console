@@ -12,8 +12,8 @@
 import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
-import type { ShadowLinkPeerFenceBroker, ShadowLinkPeerFenceState, ShadowLinkSource } from 'federation/types';
+import type { FencePhase, LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
+import type { ShadowLinkPeerFenceBroker, ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
@@ -40,10 +40,10 @@ const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
 const cloudSource = (
-  state: ShadowLinkPeerFenceState,
+  state: FencePhase,
   exemptPrincipals = ['shadow-orders'],
   brokers: ShadowLinkPeerFenceBroker[] = [],
-  stateChangedAt?: string
+  stateChangedAt?: Date
 ): ShadowLinkSource => ({
   kind: 'cloud',
   clusterId: 'prod',
@@ -51,7 +51,7 @@ const cloudSource = (
   fence: {
     status: 'known',
     state,
-    revision: '18',
+    revision: 18n,
     stateChangedAt,
     exemptPrincipals,
     allowAllReads: false,
@@ -75,7 +75,7 @@ const readinessFor = (
   return getFailoverReadiness({ topics: failoverTopics, topicsFailed, fence });
 };
 
-const cloudReadiness = (state: ShadowLinkPeerFenceState, lags: number[], exemptPrincipals = ['shadow-orders']) =>
+const cloudReadiness = (state: FencePhase, lags: number[], exemptPrincipals = ['shadow-orders']) =>
   readinessFor(cloudSource(state, exemptPrincipals), topics(lags));
 
 const renderTab = (
@@ -193,7 +193,7 @@ describe('the FailoverTab', () => {
       onTestFinished(() => {
         rs.useRealTimers();
       });
-      const changedAt = new Date(NOW - 5 * MINUTE).toISOString();
+      const changedAt = new Date(NOW - 5 * MINUTE);
       renderTab(readinessFor(cloudSource('fencing', ['shadow-orders'], [], changedAt), topics([3])));
 
       expect(screen.getByTestId('failover-step-fence')).not.toHaveTextContent('5 min');
@@ -227,7 +227,7 @@ describe('the FailoverTab', () => {
       expect(openCluster).toHaveBeenCalledWith('prod', '/shadowlinks?tab=source');
     });
 
-    test('while the host is still resolving links, waits for the source', () => {
+    test('while links are still resolving, waits for the source', () => {
       renderTab(readinessFor(undefined, topics([0]), { resolving: true }));
 
       expect(screen.getByTestId('failover-fence-loading')).toHaveTextContent(

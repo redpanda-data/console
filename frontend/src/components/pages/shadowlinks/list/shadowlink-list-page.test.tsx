@@ -201,7 +201,7 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     expect(router.state.location.search).not.toHaveProperty('tab');
   });
 
-  test('waits for the fence and the host before choosing a tab', async () => {
+  test('waits for the fence and the topology before choosing a tab', async () => {
     mockFence({ available: true, known: false });
     noLinks();
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });

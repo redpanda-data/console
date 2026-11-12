@@ -147,8 +147,8 @@ const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
 };
 
 /**
- * The Failover tab shows once Cloud has read the source's fence in this visit. While the host is
- * still finding out, it shows only if the URL asks for it, so a link to it doesn't fall back to
+ * The Failover tab shows once Console has read the source's fence in this visit. While it's still
+ * finding out, the tab shows only if the URL asks for it, so a link to it doesn't fall back to
  * Overview early.
  */
 const guidedReadiness = (

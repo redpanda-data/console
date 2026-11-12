@@ -13,11 +13,12 @@ import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ShadowLinkTopology } from 'federation/types';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
+
+import type { ShadowLinkTopology } from './shadow-link-topology';
 
 rs.mock('react-query/api/cluster-fence', () => {
   const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
@@ -247,7 +248,7 @@ describe('the ClusterFenceSourcePanel', () => {
   });
 
   describe('the links that read from the cluster', () => {
-    test('without the host, as in self-hosted Console, shows no list of links: Redpanda doesn’t record them', () => {
+    test('without Cloud’s link list, as in self-hosted Console, shows no list of links: Redpanda doesn’t record them', () => {
       mockStatus('unfenced');
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
