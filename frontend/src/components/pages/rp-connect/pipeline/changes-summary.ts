@@ -80,13 +80,14 @@ export const UNSAVED_CHANGES_LANE_LABEL = 'Unsaved changes';
 
 export const UNSAVED_CHANGES_PILL_TOOLTIP = 'Unsaved changes — kept in this browser until you save or discard them';
 
-type SettingsFieldKey = 'name' | 'description' | 'computeUnits' | 'tags';
+type SettingsFieldKey = 'name' | 'description' | 'computeUnits' | 'tags' | 'egressGatewayIds';
 
 const SETTINGS_FIELDS: { key: SettingsFieldKey; label: string }[] = [
   { key: 'name', label: 'Name' },
   { key: 'description', label: 'Description' },
   { key: 'computeUnits', label: 'Compute units' },
   { key: 'tags', label: 'Tags' },
+  { key: 'egressGatewayIds', label: 'Egress gateways' },
 ];
 
 type SettingsValues = {
@@ -95,6 +96,7 @@ type SettingsValues = {
   computeUnits?: number;
   /** Sparse: the form's default values type a removed row as `undefined`. */
   tags?: ({ key?: string; value?: string } | undefined)[];
+  egressGatewayIds?: (string | undefined)[];
 };
 
 export type SettingsChange = {
@@ -106,8 +108,11 @@ export type SettingsChange = {
 
 const NOT_SET = 'not set';
 
+/** Egress gateway names by ID, for the gateways the editor could look up. */
+export type EgressGatewayNames = ReadonlyMap<string, string>;
+
 // Untrimmed: trailing whitespace in a name is a real change.
-function formatSettingValue(key: SettingsFieldKey, values: SettingsValues): string {
+function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames): string {
   if (key === 'computeUnits') {
     return values.computeUnits === undefined ? NOT_SET : String(values.computeUnits);
   }
@@ -117,15 +122,23 @@ function formatSettingValue(key: SettingsFieldKey, values: SettingsValues): stri
       ? tags.map((tag) => (tag?.value ? `${tag.key}: ${tag.value}` : tag?.key)).join(', ')
       : 'none';
   }
+  if (key === 'egressGatewayIds') {
+    const ids = (values.egressGatewayIds ?? []).filter(Boolean);
+    return ids.length > 0 ? ids.map((id) => (id && gatewayNames?.get(id)) || id).join(', ') : 'none';
+  }
   return values[key] || NOT_SET;
 }
 
 // `saved` is the form's default values, re-baselined on every save. Compared by value, not `dirtyFields`.
-export function summarizeSettingsChanges(saved: SettingsValues | undefined, current: SettingsValues): SettingsChange[] {
+export function summarizeSettingsChanges(
+  saved: SettingsValues | undefined,
+  current: SettingsValues,
+  gatewayNames?: EgressGatewayNames
+): SettingsChange[] {
   const changes: SettingsChange[] = [];
   for (const { key, label } of SETTINGS_FIELDS) {
-    const from = formatSettingValue(key, saved ?? {});
-    const to = formatSettingValue(key, current);
+    const from = formatSettingValue(key, saved ?? {}, gatewayNames);
+    const to = formatSettingValue(key, current, gatewayNames);
     if (from !== to) {
       changes.push({ key, label, from, to });
     }

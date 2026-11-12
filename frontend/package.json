@@ -62,7 +62,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
-    "@buf/redpandadata_cloud.connectrpc_query-es": "^2.3.1-20261016154925-e80ab0d2ad23.2",
+    "@buf/redpandadata_cloud.connectrpc_query-es": "^2.3.1-20261111184952-2f2746a84de9.2",
     "@buf/redpandadata_common.bufbuild_es": "^2.16.0-20260323171043-6e06f84ad823.1",
     "@bufbuild/cel": "^0.6.1",
     "@bufbuild/protobuf": "^2.16.0",
