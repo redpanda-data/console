@@ -629,8 +629,8 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
       setResult(toCreatedTopicResult(apiResult, requested));
       refreshClusterAfterCreate();
-    } catch (e) {
-      setResult({ error: e });
+    } catch (error) {
+      setResult({ error });
     } finally {
       setIsLoading(false);
     }

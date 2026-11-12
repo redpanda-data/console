@@ -98,9 +98,9 @@ function classifyPayload(payload: Payload): PayloadRenderData {
 function preparePayloadData(payload: Payload): PayloadRenderData {
   try {
     return classifyPayload(payload);
-  } catch (e) {
-    const err = e as Error;
-    return { type: 'error', content: err.message === undefined ? String(e) : err.message };
+  } catch (error) {
+    const err = error as Error;
+    return { type: 'error', content: err.message === undefined ? String(error) : err.message };
   }
 }
 
@@ -118,7 +118,7 @@ function LargePayloadNotice({ loadLargeMessage }: { loadLargeMessage: () => Prom
         onClick={() => {
           setLoadingLargeMessage(true);
           loadLargeMessage()
-            .catch((err) => toast.error(err instanceof Error ? err.message : String(err)))
+            .catch((error) => toast.error(error instanceof Error ? error.message : String(error)))
             .finally(() => setLoadingLargeMessage(false));
         }}
         size="sm"

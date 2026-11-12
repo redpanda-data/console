@@ -197,8 +197,8 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
 
   try {
     await streamHistory(client, opts);
-  } catch (e) {
-    return settleHistoryFailure(e, opts.setPhase);
+  } catch (error) {
+    return settleHistoryFailure(error, opts.setPhase);
   }
 
   opts.setPhase(null);
@@ -372,10 +372,10 @@ async function streamLive(opts: LiveStreamOpts) {
 async function runLiveStream(opts: LiveStreamOpts) {
   try {
     await streamLive(opts);
-  } catch (e) {
+  } catch (error) {
     // An aborted tail was closed on purpose; there is nothing to report.
     if (!opts.abortController.signal.aborted && opts.isMountedRef.current) {
-      reportLiveError(e instanceof Error ? e.message : 'Unknown error', opts.dispatch);
+      reportLiveError(error instanceof Error ? error.message : 'Unknown error', opts.dispatch);
     }
   } finally {
     if (opts.isMountedRef.current && !opts.abortController.signal.aborted) {

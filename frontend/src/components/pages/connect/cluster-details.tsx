@@ -139,7 +139,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         return true;
       }
       return classMatch;
-    } catch (_e) {
+    } catch {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());

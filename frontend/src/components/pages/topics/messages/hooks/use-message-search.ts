@@ -393,8 +393,8 @@ const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, ru
       applyControlMessage(res.controlMessage, run);
     }
     return promoteUnfinishedBackendError(run);
-  } catch (err) {
-    return signal.aborted ? null : failRun(run, err);
+  } catch (error) {
+    return signal.aborted ? null : failRun(run, error);
   } finally {
     finalizeRun(run);
   }

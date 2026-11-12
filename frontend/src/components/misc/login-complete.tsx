@@ -66,8 +66,8 @@ class LoginCompletePage extends Component<{ provider: string }> {
     try {
       await fetchLoginCallback(provider, location.search);
       window.location.assign(getBasePath() || '/');
-    } catch (err) {
-      uiState.loginError = String(err);
+    } catch (error) {
+      uiState.loginError = String(error);
       appGlobal.historyPush(`${getBasePath()}/login`);
     }
   }

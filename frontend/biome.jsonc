@@ -64,8 +64,7 @@
         "useMathMinMax": "error"
       },
       "correctness": {
-        // tsconfig maps "*" to src/*, so this rule reads every internal import
-        // (`components/…`, `utils/…`) as an undeclared npm package.
+        // Catch-all tsconfig paths still resolve as npm packages in Biome 2.6.7.
         "noUndeclaredDependencies": "off",
         "useImageSize": "off",
         "useJsonImportAttributes": "error" // this may slow down the linting process
@@ -77,36 +76,135 @@
       "nursery": {
         "noAccidentalBitwiseOperators": "error",
         "noArgumentsCallerOrCallee": "error",
+        "noArrayForEach": "error",
+        "noArrayMethodsOnArguments": "error",
+        "noArraySortForMinMax": "error",
+        "noAsyncPromiseFinally": "error",
+        "noAwaitInPromiseMethods": "error",
+        "noBooleanSortComparator": "error",
+        "noChainedComparison": "error",
+        "noConsoleSpaces": "error",
+        "noConstantComparisons": "error",
         "noDoubleComparison": "error",
+        "noDuplicateTypeConstituents": "error",
+        "noEagerArrayMethodsInLoops": "error",
+        "noErasingOperation": "error",
+        "noExcessiveNestedBlocks": "error",
         "noExcessiveStatementsPerFunction": "error",
-        "noFloatingPromises": { "level": "error", "fix": "none" },
+        "noFloatingPromises": {
+          "level": "error",
+          "fix": "none"
+        },
+        "noInvalidFetchOptions": "error",
+        "noInvalidRemoveEventListener": "error",
         "noInvalidThis": "error",
-        "noMisusedPromises": { "level": "error", "fix": "none" },
+        "noLateEventControl": "error",
+        "noMagicArrayFlatDepth": "error",
+        "noMismatchedMapKey": "error",
+        "noMissingThrow": "error",
+        "noMisusedPromises": {
+          "level": "error",
+          "fix": "none"
+        },
+        "noNegatedArrayPredicate": "error",
         "noNestedSwitch": "error",
         "noNestedTemplateLiterals": "error",
+        "noNewArray": "error",
+        "noNewRequire": "error",
+        "noNumberArgumentOutOfRange": "error",
         "noObjectConstructor": "error",
+        "noObjectLiteralComparison": "error",
+        "noObsoleteAttributes": "error",
         "noOctal": "error",
+        "noPathConcat": "error",
+        "noPlaywrightUnsafeReferences": "error",
         "noProcessExit": "error",
         "noPromiseExecutorReturn": "error",
+        "noReactDirectStateMutation": "error",
+        "noRedundantTypeConstituents": "error",
+        "noReturnArrayPush": "error",
+        "noSharedBranchCode": "error",
+        "noSinglePromiseInPromiseMethods": "error",
+        "noSubtractionComparison": "error",
+        "noSyncMethods": {
+          "level": "error",
+          "options": {
+            // These functions synchronize UI state rather than performing blocking I/O.
+            "ignore": [
+              "installDarkModeAvailabilitySync",
+              "selectWithoutCursorSync",
+              "useEditorNodeSync",
+              "useExistingTopicSync",
+              "useSearchRefSync",
+              "useSettingsFormSync"
+            ]
+          }
+        },
         "noTailwindLegacyUtilities": "error",
         "noTailwindRestyledComponents": "error",
+        "noTanstackQueryRestDestructuring": "error",
+        "noTanstackQueryVoidQueryFn": "error",
+        "noUninvokedArrayCallback": "error",
+        "noUnnecessaryStringTrim": "error",
+        "noUnreadableIife": "error",
+        "noUnresolvedDefaultImport": "error",
         "noUnsafeUnaryMinus": "error",
         "noUselessAssignment": "error",
+        "noUselessAwait": "error",
         "noUselessCall": "error",
         "noUselessDateGetTime": "error",
+        "noUselessFallbackInSpread": "error",
+        "noUselessLengthCheck": "error",
+        "noUselessParameterPropertyAssignment": "error",
+        "noUselessQualifier": "error",
+        "noUselessSplice": "error",
+        "noUselessSpread": "error",
+        "noUselessTypeAssertion": "error",
         "noZeroFractions": "error",
+        "useAccessorPairs": "error",
+        "useAtomicUpdates": "error",
         "useBigintLiterals": "error",
+        "useBlockStatementOverIife": "error",
         "useCapitalizedConstructors": "error",
+        "useCatchErrorName": {
+          "level": "error",
+          "options": {
+            // Keep errors distinct when an outer error is already in scope.
+            "ignore": ["confirmError", "decodeError", "deleteError", "loginError", "pauseStateError"]
+          }
+        },
         "useConsistentJsonFileRead": "error",
-        "useExhaustiveSwitchCases": "error", // this may slow down the linting process
+        "useConsistentTupleLabels": "error",
+        "useConsistentUnicodeBom": "error",
+        "useExhaustiveSwitchCases": "error",
+        "useExpectToContain": "error",
+        "useGlobalRegexInMatchAll": "error",
+        "useGlobalRegexInReplaceAll": "error",
         "useLowercaseTestTitle": "error",
         "useMatchingFunctionName": "error",
+        "useMathAbs": "error",
+        "useMathTrunc": "error",
         "useNamedFunction": "error",
+        "useObjectFromEntries": "error",
+        "usePackageJsonEngines": "error",
+        "usePackageJsonValidCpu": "error",
+        "usePackageJsonValidEngines": "error",
+        "useSetSize": "error",
         "useSimplifiedBooleanReturn": "error",
         "useTailwindStaticClassStrings": "error",
-        "useUnaryMinus": "error"
+        "useTailwindVariablesShorthand": "error",
+        "useTanstackQueryInfiniteQueryPropertyOrder": "error",
+        "useTanstackQueryStableQueryClient": "error",
+        "useUnaryMinus": "error",
+        "useValidCharacterComparison": "error",
+        "useWhileLoopCondition": "error"
       },
       "style": {
+        // Positional captures and UTF-16 matching are parser contracts, not mechanical style fixes.
+        "useNamedCaptureGroup": "off",
+        "useUnicodeRegex": "off",
+        // MobX, React, and embedded consumers call these methods through instance contracts.
+        "useThisInClassMethods": "off",
         "noDefaultExport": "off",
         "noRestrictedImports": {
           "level": "error",
@@ -274,8 +372,15 @@
       },
       "linter": {
         "rules": {
+          "nursery": {
+            "noSyncMethods": "off"
+          },
           "performance": {
             "noNamespaceImport": "off"
+          },
+          "style": {
+            // Runtime mocks must register before imports of the modules under test.
+            "useImportsFirst": "off"
           },
           "suspicious": {
             "noConsole": "off",
@@ -289,6 +394,9 @@
       "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs", "**/tests/**/*", "**/tests/*.sh"],
       "linter": {
         "rules": {
+          "nursery": {
+            "noSyncMethods": "off"
+          },
           "suspicious": {
             "noConsole": "off"
           }

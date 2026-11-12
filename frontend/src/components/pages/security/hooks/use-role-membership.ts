@@ -71,7 +71,7 @@ export function useNonMemberUserNames(members: { principal: string }[]) {
   const { data: usersData } = useListUsersQuery(create(ListUsersRequestSchema));
   return (
     usersData?.users
-      ?.filter((user) => !members.some((member) => member.principal === `User:${user.name}`))
+      ?.filter((user) => members.every((member) => member.principal !== `User:${user.name}`))
       .map((user) => user.name) || []
   );
 }

@@ -255,7 +255,9 @@ async function runMessageSearch(
   ctx.setSearchState((prev) => ({ ...prev, messageSearch: search }));
   const startTime = Date.now();
 
-  const result = await search.startSearch(request, abortSignal).catch((err: unknown) => reportSearchError(err, ctx));
+  const result = await search
+    .startSearch(request, abortSignal)
+    .catch((error: unknown) => reportSearchError(error, ctx));
 
   if (!ctx.isMountedRef.current) {
     return result;
@@ -408,9 +410,9 @@ function useSearchRunner(
             currentSearchRunRef.current = null;
             abortControllerRef.current = null;
           });
-      } catch (err) {
+      } catch (error) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('error in message search', { error: err });
+        console.error('error in message search', { error });
       }
     },
     [
@@ -524,10 +526,10 @@ function startLoadMore({
 
         return { type: 'success', trimResult, allMessagesLength: allMessages.length };
       },
-      (err: unknown) => {
+      (error: unknown) => {
         const shouldReport = isMountedRef.current && !abortController.signal.aborted;
         if (shouldReport) {
-          toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
+          toast.error('Failed to load more messages', { description: getSearchErrorMessage(error) });
         }
         return { type: 'error' as const, shouldReport };
       }

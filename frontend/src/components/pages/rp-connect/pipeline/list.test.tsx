@@ -203,7 +203,11 @@ describe('the PipelineListPage', () => {
     it('refetches the list from the header refresh button', async () => {
       const requests: ListRequest[] = [];
       renderWithFileRoutes(<PipelineListPage />, {
-        transport: buildTransport({ onRequest: (req) => requests.push(req) }),
+        transport: buildTransport({
+          onRequest: (req) => {
+            requests.push(req);
+          },
+        }),
       });
 
       expect(await screen.findByText('nightly-export')).toBeInTheDocument();
@@ -490,7 +494,11 @@ describe('the PipelineListPage', () => {
       it('asks for drafts whether or not the feature is enabled', async () => {
         const requests: unknown[] = [];
         renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
+          transport: buildTransport({
+            onRequest: (r) => {
+              requests.push(r);
+            },
+          }),
         });
 
         await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
@@ -499,7 +507,11 @@ describe('the PipelineListPage', () => {
         requests.length = 0;
         mockIsFeatureFlagEnabled.mockImplementation(() => false);
         renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
+          transport: buildTransport({
+            onRequest: (r) => {
+              requests.push(r);
+            },
+          }),
         });
 
         await waitFor(() => expect(requests.length).toBeGreaterThan(0));

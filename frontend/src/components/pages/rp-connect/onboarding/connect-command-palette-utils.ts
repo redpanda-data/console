@@ -119,7 +119,7 @@ export const COMPONENT_ALIASES: Record<string, string[]> = {
 // `rate_limit` whole, but not a fragment buried mid-token (`log` in `catalog`) — names are snake_case.
 function nameContainsToken(name: string, fragment: string): boolean {
   let from = 0;
-  for (;;) {
+  while (true) {
     const at = name.indexOf(fragment, from);
     if (at === -1) {
       return false;

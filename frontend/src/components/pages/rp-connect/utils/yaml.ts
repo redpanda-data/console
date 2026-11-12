@@ -853,7 +853,7 @@ function patchTopicName(
   }
   const existing = doc.getIn([...componentPath, 'topics']);
   if (isSeq(existing)) {
-    if (!existing.toJSON().some((t: unknown) => String(t) === topicName)) {
+    if (existing.toJSON().every((t: unknown) => String(t) !== topicName)) {
       doc.addIn([...componentPath, 'topics'], topicName);
     }
   } else {

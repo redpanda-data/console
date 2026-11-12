@@ -511,9 +511,9 @@ class ReassignPartitions extends PageComponent {
         // Reset settings, go back to first page
         this.resetSelectionAndPage(true, false);
       }
-    } catch (err) {
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: the toast promises console detail
-      console.error('start partition reassignment failed', err);
+      console.error('start partition reassignment failed', error);
       showToast({
         status: 'error',
         description: 'Error starting partition reassignment.\nSee console for more information.',
@@ -543,8 +543,8 @@ class ReassignPartitions extends PageComponent {
     try {
       const response = await api.startPartitionReassignment(request);
       return this.reportReassignmentResult(toastRef, response);
-    } catch (err) {
-      showRequestFailure(toastRef, 'startReassignment failed', 'Could not start the reassignment', err);
+    } catch (error) {
+      showRequestFailure(toastRef, 'startReassignment failed', 'Could not start the reassignment', error);
       return false;
     }
   }
@@ -572,10 +572,10 @@ class ReassignPartitions extends PageComponent {
     try {
       await applyReplicationThrottle(toastRef, request);
       return true;
-    } catch (err) {
+    } catch (error) {
       // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
       // brokers is unsupported"), so the message itself is what an operator needs.
-      showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
+      showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', error);
       return false;
     }
   }
@@ -635,7 +635,7 @@ class ReassignPartitions extends PageComponent {
       this.setState({
         topicsWithThrottle: throttledTopicNames(topicConfigs.topicDescriptions, this.topicPartitionsInProgress),
       });
-    } catch (_err) {
+    } catch {
       this.stopRefreshingTopicConfigs();
     } finally {
       this.refreshTopicConfigsRequestsInProgress -= 1;

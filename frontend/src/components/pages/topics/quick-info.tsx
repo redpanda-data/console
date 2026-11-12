@@ -138,7 +138,7 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntr
     newConfig.push(e);
   }
 
-  if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
+  if (config.some((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
     newConfig.removeAll((e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
   }

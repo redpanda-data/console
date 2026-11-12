@@ -127,6 +127,31 @@ test('enforces custom label associations from the Ultracite preset', () => {
 
 test.each([
   [
+    'GET request bodies',
+    'lint/nursery/noInvalidFetchOptions',
+    "export const response = fetch('/', { method: 'GET', body: 'payload' });",
+  ],
+  [
+    'non-global matchAll regexes',
+    'lint/nursery/useGlobalRegexInMatchAll',
+    "export const matches = 'value'.matchAll(/value/);",
+  ],
+  [
+    'non-global replaceAll regexes',
+    'lint/nursery/useGlobalRegexInReplaceAll',
+    "export const replaced = 'value'.replaceAll(/value/, 'next');",
+  ],
+  [
+    'duplicate union members',
+    'lint/nursery/noDuplicateTypeConstituents',
+    'export type Value = string | number | string;',
+  ],
+  [
+    'non-contextual caught error names',
+    'lint/nursery/useCatchErrorName',
+    'export const result = Promise.resolve(1).catch(failure => reportError(failure));',
+  ],
+  [
     'imported floating promises',
     'lint/nursery/noFloatingPromises',
     "import { persist } from './promise-source'; export function saveLater() { persist(); }",
@@ -172,6 +197,25 @@ test('accepts awaited, returned and rejection-handled promises', () => {
     export function saveInBackground() { persist().catch(error => reportError(error)); }
   `);
   expectNoRuleDiagnostics(result, ['noFloatingPromises', 'noMisusedPromises', 'useAwait', 'noAwaitInLoops']);
+});
+
+test('accepts POST bodies, global regexes and distinct union members', () => {
+  const result = lint(`
+    export const response = fetch('/', { method: 'POST', body: 'payload' });
+    export const matches = 'value'.matchAll(/value/g);
+    export const replaced = 'value'.replaceAll(/value/g, 'next');
+    export type Value = string | number;
+  `);
+  expect(result.exitCode).toBe(0);
+});
+
+test('accepts contextual error names and open license literals', () => {
+  const result = lint(`
+    export const result = Promise.resolve(1).catch(loginError => reportError(loginError));
+    export type LicenseSource = 'console' | 'cluster' | (string & {});
+    export type LicenseType = 'free_trial' | 'open_source' | 'enterprise' | (string & {});
+  `);
+  expect(result.exitCode).toBe(0);
 });
 
 function expectNoRuleDiagnostics(result: ReturnType<typeof lint>, rules: string[]) {

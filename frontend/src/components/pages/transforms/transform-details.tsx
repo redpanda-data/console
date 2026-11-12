@@ -108,11 +108,11 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
                     });
                     transformsApi.refreshTransforms(true);
                   })
-                  .catch((err) => {
+                  .catch((error) => {
                     showToast({
                       status: 'error',
                       title: 'Failed to delete transform',
-                      description: String(err),
+                      description: String(error),
                     });
                   });
               })
@@ -447,8 +447,8 @@ function executeMessageSearch(search: MessageSearch, topicName: string, transfor
   } as MessageSearchRequest;
 
   try {
-    return search.startSearch(request).catch((err) => {
-      const msg = (err as Error).message ?? String(err);
+    return search.startSearch(request).catch((error) => {
+      const msg = (error as Error).message ?? String(error);
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in transformLogsMessageSearch: ${msg}`);
       return [];

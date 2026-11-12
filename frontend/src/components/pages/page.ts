@@ -32,6 +32,7 @@ export class PageInitHelper {
   private pageTitle = '';
   private pageBreadcrumbs: BreadcrumbEntry[] = [];
 
+  // biome-ignore lint/nursery/useAccessorPairs: Page initialization intentionally exposes write-only header state.
   set title(title: string) {
     this.pageTitle = title;
   }

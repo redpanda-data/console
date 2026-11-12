@@ -130,7 +130,10 @@ describe('useTopicSettingsStore messages view settings', () => {
 
 function moveFirstColumn(current: ReturnType<ReturnType<typeof useTopicSettingsStore.getState>['getMessageColumns']>) {
   const next = [...current];
-  const [moved] = next.splice(0, 1);
+  const moved = next.shift();
+  if (moved === undefined) {
+    throw new Error('Cannot reorder an empty column list');
+  }
   next.splice(3, 0, moved);
   return next;
 }

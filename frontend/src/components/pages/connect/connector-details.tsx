@@ -757,9 +757,9 @@ function restartConnectorLogSearch(
   const search = createMessageSearch();
   searchRef.current = search;
   executeMessageSearch(search, LOGS_TOPIC_NAME, connectorName)
-    .catch((x) => {
+    .catch((error) => {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error loading connector logs', x);
+      console.error('error loading connector logs', error);
     })
     .finally(() => {
       setLogState({ messages: [...search.messages], isComplete: true });
@@ -982,8 +982,8 @@ function executeMessageSearch(search: MessageSearch, topicName: string, connecto
   } as MessageSearchRequest;
 
   try {
-    return search.startSearch(request).catch((err) => {
-      const msg = (err as Error).message ?? String(err);
+    return search.startSearch(request).catch((error) => {
+      const msg = (error as Error).message ?? String(error);
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in connectorLogsMessageSearch: ${msg}`);
       return [];

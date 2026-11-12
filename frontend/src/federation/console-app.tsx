@@ -348,9 +348,9 @@ function useFederatedInitialization({
       setIsInitialized(true);
     };
 
-    initialize().catch((cause: unknown) => {
+    initialize().catch((error: unknown) => {
       if (!cancelled) {
-        const initializationError = cause instanceof Error ? cause : new Error(String(cause));
+        const initializationError = error instanceof Error ? error : new Error(String(error));
         setFailure({ attempt, error: initializationError });
         notifyInitializationError(initializationError);
       }

@@ -152,14 +152,17 @@ function buildChildItems(
   lintByNode: Map<string, LintHint[]>
 ): InspectorChildItem[] {
   const items: InspectorChildItem[] = [];
-  for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
-    const isCaseWrapper = child.editTarget?.kind === 'switchCase';
-    const entry = isCaseWrapper ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
+  for (const child of flowNodes) {
+    if (child.parentId !== selectedId) {
+      continue;
+    }
+    const entry =
+      child.editTarget?.kind === 'switchCase' ? (flowNodes.find((n) => n.parentId === child.id) ?? child) : child;
     if (!entry?.editTarget) {
       continue;
     }
-    const wrapperLint = child.id === entry.id ? 0 : (lintByNode.get(child.id)?.length ?? 0);
-    const lintCount = (lintByNode.get(entry.id)?.length ?? 0) + wrapperLint;
+    const lintCount =
+      (lintByNode.get(entry.id)?.length ?? 0) + (child.id === entry.id ? 0 : (lintByNode.get(child.id)?.length ?? 0));
     items.push({
       id: entry.id,
       target: entry.editTarget,

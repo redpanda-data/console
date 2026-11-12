@@ -372,7 +372,9 @@ export class ShadowlinkPage {
     await this.page.goto(this.shadowBackendURL);
 
     // Wait for home page to load - look for common elements
-    await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/i })).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Verify shadowlink section appears with retry logic
     // The Shadow Cluster section may take time to appear after shadowlink creation

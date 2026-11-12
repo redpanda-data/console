@@ -1036,8 +1036,8 @@ function parseComponentDraft(draft: string): ComponentDraft {
   let parsed: unknown;
   try {
     parsed = parseYaml(draft);
-  } catch (e) {
-    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' };
+  } catch (error) {
+    return { config: null, error: error instanceof Error ? error.message : 'Invalid YAML' };
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return { config: null, error: 'Configuration must be a YAML mapping.' };

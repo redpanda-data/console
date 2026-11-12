@@ -72,7 +72,10 @@ function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] 
       }
     }
   };
-  for (const section of maps.childrenOf(undefined).filter((n) => n.kind === 'section')) {
+  for (const section of maps.childrenOf(undefined)) {
+    if (section.kind !== 'section') {
+      continue;
+    }
     for (const row of sectionRows(maps, section.id)) {
       visit(row);
     }

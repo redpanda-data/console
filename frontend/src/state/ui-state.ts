@@ -134,7 +134,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
       }
 
       throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
-    } catch (error) {
+    } catch {
       // In test environments, stores might not be properly initialized
       // Return a minimal default to avoid breaking tests
       return createTopicDetailsSettings('');
@@ -182,7 +182,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     // Side effect: create topic settings if needed
     if (topicName) {
       const uiSettings = useUISettingsStore.getState();
-      if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
+      if (uiSettings.perTopicSettings.every((s) => s.topicName !== topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
           perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),

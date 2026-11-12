@@ -302,9 +302,9 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
 // WeakMap gives each a consistent id for rowKeyGetter without an index key.
 function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   const map = new WeakMap<ResultRow, number>();
-  rows.forEach((r, i) => {
-    map.set(r, i);
-  });
+  for (const [index, row] of rows.entries()) {
+    map.set(row, index);
+  }
   return map;
 }
 

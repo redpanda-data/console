@@ -40,7 +40,7 @@ export function mergePrincipals(
     if (
       (g.principalType === 'User' || g.principalType === 'Group') &&
       !g.principalName.includes('*') &&
-      !principals.some((u) => u.name === g.principalName && u.principalType === g.principalType)
+      principals.every((u) => u.name !== g.principalName || u.principalType !== g.principalType)
     ) {
       principals.push({
         name: g.principalName,
@@ -53,7 +53,7 @@ export function mergePrincipals(
   // Add principals from role memberships
   for (const [_, roleMembers] of roleMembersMap) {
     for (const roleMember of roleMembers) {
-      if (!principals.some((u) => u.name === roleMember.name)) {
+      if (principals.every((u) => u.name !== roleMember.name)) {
         principals.push({
           name: roleMember.name,
           principalType: 'User',

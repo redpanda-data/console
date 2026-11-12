@@ -18,8 +18,8 @@ import { Code as CodeEl } from '../../../../utils/tsx-utils';
 const reportFailure = async (action: () => Promise<void>, onError: (err: unknown) => void) => {
   try {
     await action();
-  } catch (err: unknown) {
-    onError(err);
+  } catch (error: unknown) {
+    onError(error);
   }
 };
 

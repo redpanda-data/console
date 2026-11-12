@@ -27,7 +27,7 @@ export type DataType =
 
 const seen = new Set();
 // Serialize object to json, handling reference loops gracefully
-export function toJson(obj: unknown, space?: string | number | undefined): string {
+export function toJson(obj: unknown, space?: string | number): string {
   seen.clear();
   try {
     return JSON.stringify(
@@ -152,7 +152,8 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
 }
 
 function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
-  const copy: JsonValue[] = new Array(length).fill(null);
+  // biome-ignore lint/nursery/noNewArray: preserve RangeError for invalid array lengths, unlike Array.from.
+  const copy = new Array<JsonValue>(length).fill(null);
   for (let index = 0; index < array.length; index++) {
     copy[index] = index in array ? array[index] : null;
   }

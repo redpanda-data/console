@@ -30,9 +30,9 @@ export default function fetchWithTimeout(
         hasSettled = true;
         resolve(result);
       },
-      (err) => {
+      (error) => {
         hasSettled = true;
-        reject(err);
+        reject(error);
       }
     );
 

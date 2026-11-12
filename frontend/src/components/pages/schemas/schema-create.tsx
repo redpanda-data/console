@@ -377,8 +377,8 @@ async function createSchemaAndOpen(
 
     // success: navigate to details with "latest" so it picks up the new version
     appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
-  } catch (err) {
-    toast.error('Error creating schema', { description: String(err) });
+  } catch (error) {
+    toast.error('Error creating schema', { description: String(error) });
   }
 }
 
@@ -399,11 +399,11 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
       references: buildQualifiedReferences(state.references, state.context),
     })
     .catch(
-      (err) =>
+      (error) =>
         ({
           compatibility: { isCompatible: false },
           isValid: false,
-          parsingError: String(err),
+          parsingError: String(error),
         }) as SchemaRegistryValidateSchemaResponse
     );
 
@@ -882,11 +882,10 @@ const ReferencesEditor = (p: {
 
                 // For fetching details, we need the qualified name
                 const qualifiedRefSubject = buildQualifiedSubjectName(ref.context, e);
-                let details = api.schemaDetails.get(qualifiedRefSubject);
-                if (!details) {
+                if (!api.schemaDetails.get(qualifiedRefSubject)) {
                   await api.refreshSchemaDetails(qualifiedRefSubject, true);
-                  details = api.schemaDetails.get(qualifiedRefSubject);
                 }
+                const details = api.schemaDetails.get(qualifiedRefSubject);
 
                 if (!details) {
                   return; // failed to get details

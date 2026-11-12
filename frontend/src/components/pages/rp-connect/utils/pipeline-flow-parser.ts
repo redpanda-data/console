@@ -1254,8 +1254,8 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
     }
     const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
     return { nodes: buildFlowTree(config, doc) };
-  } catch (err) {
-    return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
+  } catch (error) {
+    return { nodes: [], error: error instanceof Error ? error.message : 'Invalid YAML' };
   }
 }
 
@@ -1283,7 +1283,7 @@ export function parseEditableNodes(
 
 /** True when the pipeline has no real components — only section labels / `none` placeholders. */
 export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
-  return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
+  return nodes.every((n) => n.kind !== 'group' && (n.kind !== 'leaf' || n.label === 'none'));
 }
 
 /** True when the config text is only whitespace, `#` comments, or an empty `{}` document — i.e. genuinely blank. */

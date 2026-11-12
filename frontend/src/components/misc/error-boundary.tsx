@@ -82,13 +82,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             return { infoItems: newInfoItems, decodingDone: true };
           });
         })
-        .catch((err) => {
+        .catch((decodeError) => {
           // Decode Error
           this.setState((prevState) => {
             const newInfoItems = [...prevState.infoItems];
             newInfoItems[decodedStackIndex] = {
               name: 'Stack (Decoded)',
-              value: `Unable to decode stacktrace\n${String(err)}`,
+              value: `Unable to decode stacktrace\n${String(decodeError)}`,
             };
             return { infoItems: newInfoItems, decodingDone: true };
           });

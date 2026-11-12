@@ -81,7 +81,7 @@ export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Cat
     tables: byNamespace.get(ns.name) ?? ns.tables,
   }));
   for (const [name, nsTables] of byNamespace) {
-    if (!namespaces.some((ns) => ns.name === name)) {
+    if (namespaces.every((ns) => ns.name !== name)) {
       namespaces.push({ id: `${catalog.name}.${name}`, name, tables: nsTables });
     }
   }

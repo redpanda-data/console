@@ -62,9 +62,7 @@ function computeReassignments(
 
   // Track information like used disk space per broker, so we extend each broker with some metadata
   const allExBrokers = createExBrokers(apiData, selectedTopicPartitions);
-  const targetExBrokers = allExBrokers.filter(
-    (exb) => targetBrokers.find((b) => exb.brokerId === b.brokerId) !== undefined
-  );
+  const targetExBrokers = allExBrokers.filter((exb) => targetBrokers.some((b) => exb.brokerId === b.brokerId));
 
   const resultAssignments = createEmptyAssignments(selectedTopicPartitions);
 

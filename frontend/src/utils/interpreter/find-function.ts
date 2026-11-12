@@ -21,7 +21,7 @@ declare let value: unknown; // set/injected by backend
 // declare function find(propName: string, ignoreCase?:boolean): any;
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
 // declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
-function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
+function find(this: unknown, arg1: unknown, arg2: unknown): unknown {
   // `this` is null when called in root, otherwise the object it was called on
   const self = this === null ? value : this;
 
@@ -35,7 +35,7 @@ function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown 
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
 // declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
 // declare function findAll(pattern: object, ignoreCase?:boolean): object[];
-function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
+function findAll(this: unknown, arg1: unknown, arg2: unknown): unknown[] {
   // `this` is null when called in root, otherwise the object it was called on
   const self = this === null ? value : this;
 

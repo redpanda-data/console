@@ -218,9 +218,9 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
 
   const ar: { key: K; items: T[] }[] = [];
 
-  map.forEach((items, key) => {
+  for (const [key, items] of map) {
     ar.push({ key, items });
-  });
+  }
 
   return ar;
 };

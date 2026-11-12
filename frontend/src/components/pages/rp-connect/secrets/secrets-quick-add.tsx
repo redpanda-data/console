@@ -57,11 +57,11 @@ const createSecret = (secretId: string, secretValue: string) =>
       await rpcnSecretManagerApi.refreshSecrets(true);
       return true;
     })
-    .catch((err) => {
+    .catch((error) => {
       showToast({
         status: 'error',
         title: 'Failed to create secret',
-        description: formatPipelineError(err),
+        description: formatPipelineError(error),
       });
       return false;
     });

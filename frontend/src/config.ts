@@ -202,7 +202,7 @@ export const config: Config = {
     // no op - set by parent application
   },
   isServerless: false,
-  featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
+  featureFlags: { ...FEATURE_FLAGS, ...window.__E2E_FEATURE_FLAGS__ },
 };
 
 const setConfig = ({
@@ -255,7 +255,7 @@ const setConfig = ({
     serviceAccountClient: createClient(ServiceAccountService, controlplaneTransport),
     roleBindingClient: createClient(RoleBindingService, controlplaneTransport),
     shadowLinkClient: createClient(ShadowLinkService, controlplaneTransport),
-    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...window.__E2E_FEATURE_FLAGS__ }, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
   });
   return config;

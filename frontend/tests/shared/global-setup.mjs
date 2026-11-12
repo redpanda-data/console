@@ -745,9 +745,9 @@ function logBackendStartHeader(imageTag, isEnterprise, backendConfigPath) {
 
 function logBindMounts(bindMounts) {
   console.log('Creating container with bind mounts:');
-  bindMounts.forEach((mount, i) => {
-    console.log(`  [${i}] ${mount.source} -> ${mount.target}`);
-  });
+  for (const [index, mount] of bindMounts.entries()) {
+    console.log(`  [${index}] ${mount.source} -> ${mount.target}`);
+  }
 }
 
 function logBackendContainerSummary(network, ports) {
@@ -1026,8 +1026,8 @@ async function startDestinationRedpandaContainer(network, state, ports) {
     const { stdout: portOutput } = await execAsync(`docker port ${state.destRedpandaId}`);
     console.log('Destination container port mappings:');
     console.log(portOutput);
-  } catch (e) {
-    console.log('Could not get port mappings:', e.message);
+  } catch (error) {
+    console.log('Could not get port mappings:', error.message);
   }
 }
 
@@ -1041,8 +1041,8 @@ async function printDestinationContainerStatus(state) {
       console.log('Destination container logs:');
       console.log(logs);
     }
-  } catch (e) {
-    console.log('Could not check container status:', e.message);
+  } catch (error) {
+    console.log('Could not check container status:', error.message);
   }
 }
 
@@ -1062,8 +1062,12 @@ async function verifyDestinationRedpandaServices(state, ports) {
 
 function bufferContainerOutput(lines) {
   return (stream) => {
-    stream.on('data', (line) => lines.push(String(line)));
-    stream.on('err', (line) => lines.push(String(line)));
+    stream.on('data', (line) => {
+      lines.push(String(line));
+    });
+    stream.on('err', (line) => {
+      lines.push(String(line));
+    });
   };
 }
 
@@ -1101,6 +1105,7 @@ async function launchConfiguredBackend({
     .withWaitStrategy(Wait.forListeningPorts())
     .start();
 
+  // biome-ignore lint/nursery/useAtomicUpdates: This attempt owns containerId; the pre-await read only shares its independent startupLogs buffer.
   attempt.containerId = backend.getId();
   rememberContainer(state, stateSlot, backend);
 

@@ -360,8 +360,8 @@ async function findValidationErrors(
     const validationResult = await api.validateConnectorConfig(activeCluster, pluginClass, propertiesObject ?? {});
     const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
     return errorCount > 0 ? validationResult : null;
-  } catch (e) {
-    throw new ConnectorValidationError(String(e));
+  } catch (error) {
+    throw new ConnectorValidationError(String(error));
   }
 }
 
@@ -432,9 +432,9 @@ async function createConnectorWithProgress(submission: ReviewSubmission, connect
     await createAndOpenConnector(submission, connectorName);
     submission.setCreatingModalOpen(false);
     return true;
-  } catch (e: unknown) {
+  } catch (error: unknown) {
     submission.setCreatingModalOpen(false);
-    reportCreationFailure(e, submission.wizard);
+    reportCreationFailure(error, submission.wizard);
     return false;
   }
 }

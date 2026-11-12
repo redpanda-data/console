@@ -49,7 +49,10 @@ const memberNodes = (yaml: string) =>
 describe('the Connect config fixtures', () => {
   test('ids are unique, and every fixture but the malformed one parses', () => {
     expect(new Set(CONNECT_CONFIG_FIXTURES.map((f) => f.id)).size).toBe(CONNECT_CONFIG_FIXTURES.length);
-    for (const fixture of CONNECT_CONFIG_FIXTURES.filter((f) => f.id !== 'invalid-malformed-yaml')) {
+    for (const fixture of CONNECT_CONFIG_FIXTURES) {
+      if (fixture.id === 'invalid-malformed-yaml') {
+        continue;
+      }
       expect(() => parseYaml(fixture.yaml, { merge: true })).not.toThrow();
     }
   });
