@@ -83,9 +83,7 @@ describe('the PIPELINE_TEMPLATES registry', () => {
             continue;
           }
           const token = ['$', '{slot.', s.id, '}'].join('');
-          expect(t.baseYaml.includes(token), `${t.id} baseYaml is missing required slot reference for "${s.id}"`).toBe(
-            true
-          );
+          expect(t.baseYaml, `${t.id} baseYaml is missing required slot reference for "${s.id}"`).toContain(token);
         }
       }
     });

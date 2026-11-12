@@ -619,8 +619,8 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
     try {
       await props.onOk(target);
       success(target);
-    } catch (err) {
-      setError(err as Error);
+    } catch (confirmError) {
+      setError(confirmError as Error);
     } finally {
       setIsPending(false);
     }

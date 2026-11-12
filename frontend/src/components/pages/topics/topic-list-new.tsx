@@ -120,8 +120,8 @@ function useDeleteTopic(onDeleted: () => void) {
         setTopicToDelete(null);
         onDeleted();
       })
-      .catch((err: Error) => {
-        toast.error('Failed to delete topic', { description: err.message });
+      .catch((error: Error) => {
+        toast.error('Failed to delete topic', { description: error.message });
       })
       .finally(() => setDeletionPending(false));
   };

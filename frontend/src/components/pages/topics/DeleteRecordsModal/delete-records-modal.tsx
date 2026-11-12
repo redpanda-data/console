@@ -455,15 +455,12 @@ function getMarks(partition: Partition) {
 }
 
 function formatMarks(marks: number[]) {
-  return marks.reduce(
-    (acc, it) => {
-      const key = it.toFixed(0);
-      const value = prettyNumber(it);
-      acc[key] = value;
-      return acc;
-    },
-    {} as { [index: string]: string }
-  );
+  return marks.reduce<{ [index: string]: string }>((acc, it) => {
+    const key = it.toFixed(0);
+    const value = prettyNumber(it);
+    acc[key] = value;
+    return acc;
+  }, {});
 }
 
 type DeleteRecordsModalProps = {

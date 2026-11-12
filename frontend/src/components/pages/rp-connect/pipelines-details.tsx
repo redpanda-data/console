@@ -141,11 +141,11 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                 // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
                 watchPipelineUpdates(pipeline.id).catch(console.error);
               })
-              .catch((err) => {
+              .catch((pauseStateError) => {
                 showToast({
                   status: 'error',
                   title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
-                  description: String(err),
+                  description: String(pauseStateError),
                 });
               })
               .finally(() => {
@@ -170,11 +170,11 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
                   pipelinesApi.refreshPipelines(true);
                   appGlobal.historyPush('/connect-clusters');
                 })
-                .catch((err) => {
+                .catch((deleteError) => {
                   showToast({
                     status: 'error',
                     title: 'Failed to delete pipeline',
-                    description: String(err),
+                    description: String(deleteError),
                   });
                 });
             });

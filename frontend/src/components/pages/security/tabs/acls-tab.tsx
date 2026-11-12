@@ -64,10 +64,10 @@ const succeedsOrReports = async (
   try {
     await action();
     return true;
-  } catch (err: unknown) {
+  } catch (error: unknown) {
     // biome-ignore lint/suspicious/noConsole: error logging
-    console.error(failureMessage, { error: err });
-    onFailure({ err });
+    console.error(failureMessage, { error });
+    onFailure({ err: error });
     return false;
   }
 };

@@ -49,8 +49,8 @@ const authenticationApiClient = {
     try {
       const { methods } = await client.listAuthenticationMethods({});
       return { methods, error: null };
-    } catch (e) {
-      return { methods: [], error: e as ConnectError };
+    } catch (error) {
+      return { methods: [], error: error as ConnectError };
     }
   },
 
@@ -119,8 +119,8 @@ const BasicAuthComponent = () => {
     setIsLoading(true);
     await authenticationApiClient
       .loginWithUsername({ username, password, mechanism })
-      .catch((ex) => {
-        setError(ex.message);
+      .catch((loginError) => {
+        setError(loginError.message);
       })
       .finally(() => {
         setIsLoading(false);
@@ -258,6 +258,7 @@ const LoginPage = () => {
                     kafka_authentication_failed:
                       'Authenticated through OIDC, but failed to authenticate with the Kafka API.',
                     console_internal: 'An unexpected error occurred. Check backend logs.',
+                    // biome-ignore lint/nursery/noMismatchedMapKey: error_code guards the message; oidc_subject is independent error context.
                     permission_denied: `This user is not authorized to use Console. An administrator should grant user ${searchParams.get('oidc_subject') ?? ''} permissions in the Console configuration to proceed.`,
                   }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
                 </AlertDescription>
@@ -270,7 +271,7 @@ const LoginPage = () => {
                 <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
-            {methods.reduce((acc, method, index) => {
+            {methods.reduce<React.ReactNode[]>((acc, method, index) => {
               let authComponent: React.ReactNode = null;
               if (method === AuthenticationMethod.NONE) {
                 authComponent = <NoneAuthComponent hasMethodsError={methodsError !== null} />;
@@ -290,7 +291,7 @@ const LoginPage = () => {
                 acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
-            }, [] as React.ReactNode[])}
+            }, [])}
           </div>
         </div>
       </div>

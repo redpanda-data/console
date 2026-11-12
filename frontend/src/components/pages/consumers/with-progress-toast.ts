@@ -25,8 +25,8 @@ export async function withProgressToast<T>(
     const result = await task();
     toast.success(`${label} - done`, { id: toastId });
     return result;
-  } catch (err) {
-    toast.error(failureMessage(err), { id: toastId });
-    throw err;
+  } catch (error) {
+    toast.error(failureMessage(error), { id: toastId });
+    throw error;
   }
 }

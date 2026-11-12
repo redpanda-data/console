@@ -395,8 +395,8 @@ async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: st
       await flow.stopPipeline(create(StopPipelineRequestSchema, { request: { id: pipelineId } }));
     }
     return true;
-  } catch (runErr) {
-    reportRunFailure(flow, run, ConnectError.from(runErr));
+  } catch (error) {
+    reportRunFailure(flow, run, ConnectError.from(error));
     return false;
   }
 }
@@ -467,8 +467,8 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean
       return await createAndFinish(flow, attempt);
     }
     return flow.pipelineId ? await updateAndFinish(flow, attempt, flow.pipelineId) : false;
-  } catch (err) {
-    return reportSaveFailure(flow, err, attempt.isDraftSave);
+  } catch (error) {
+    return reportSaveFailure(flow, error, attempt.isDraftSave);
   }
 }
 

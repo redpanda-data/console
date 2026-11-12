@@ -127,7 +127,7 @@ output:
 
       // Parent objects like tls should not have inline comments
       const lines = yaml.split('\n');
-      const tlsLineIndex = lines.findIndex((line) => line.trim().startsWith('tls:'));
+      const tlsLineIndex = lines.findIndex((line) => line.trimStart().startsWith('tls:'));
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];

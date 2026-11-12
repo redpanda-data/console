@@ -107,13 +107,13 @@ function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
 
 function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   const result: ResultRow = {};
-  row.values.forEach((value, index) => {
+  for (const [index, value] of row.values.entries()) {
     const column = columns[index];
     if (!column) {
-      return;
+      continue;
     }
     result[column.name] = cellValueForColumn(value, column);
-  });
+  }
   return result;
 }
 

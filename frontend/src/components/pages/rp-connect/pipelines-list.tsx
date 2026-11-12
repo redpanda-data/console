@@ -242,11 +242,11 @@ const columns: DataTableColumnDef<Pipeline>[] = [
                 });
                 await pipelinesApi.refreshPipelines(true);
               })
-              .catch((err) => {
+              .catch((error) => {
                 showToast({
                   status: 'error',
                   title: 'Failed to delete pipeline',
-                  description: String(err),
+                  description: String(error),
                 });
               });
           });
@@ -274,8 +274,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       return;
     }
 
-    pipelinesApi.refreshPipelines(force).catch((err) => {
-      if (String(err).includes('404')) {
+    pipelinesApi.refreshPipelines(force).catch((error) => {
+      if (String(error).includes('404')) {
         // Hacky special handling for OSS version, it is possible for the /endpoints request to not complete in time for this to render
         // so in this case there would be an error shown because we were too fast (with rendering, or the req was too slow)
         // We don't want to show an error in that case
@@ -286,7 +286,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         showToast({
           status: 'error',
           title: 'Failed to load pipelines',
-          description: String(err),
+          description: String(error),
         });
       }
     });

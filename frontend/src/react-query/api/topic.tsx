@@ -87,6 +87,7 @@ export const useLegacyListTopicsQuery = (
     ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
     : allRetrievedTopics;
 
+  // biome-ignore lint/nursery/noTanstackQueryRestDestructuring: Legacy callers require the full query result with a non-optional data object.
   return { ...legacyListTopicsResult, data: { topics } };
 };
 

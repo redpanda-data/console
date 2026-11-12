@@ -165,7 +165,8 @@ function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): D
 /** Every deprecated component the YAML uses, nested ones included, in document order. */
 export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]): DeprecatedUsage[] {
   // Most configs use none; skip the parse unless a deprecated name appears at all.
-  if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
+  const containsDeprecatedName = components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name));
+  if (!containsDeprecatedName) {
     return [];
   }
   const lineCounter = new LineCounter();

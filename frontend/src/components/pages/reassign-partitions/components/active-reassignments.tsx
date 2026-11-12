@@ -513,9 +513,9 @@ async function changeThrottleRate(toastId: string, brokerIds: number[], value: n
       description: 'Setting throttle rate... done',
       duration: 2000,
     });
-  } catch (err) {
+  } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`error in applyBandwidthThrottle: ${err}`);
+    console.error(`error in applyBandwidthThrottle: ${error}`);
     updateToast(toastId, {
       status: 'error',
       description: 'Setting throttle rate... error',
@@ -607,9 +607,9 @@ async function cancelReassignmentWithToast(state: ReassignmentState): Promise<bo
       duration: 1000,
     });
     return true;
-  } catch (err) {
+  } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`cancel reassignment: ${String(err)}`);
+    console.error(`cancel reassignment: ${String(error)}`);
     updateToast(toastRef, {
       status: 'error',
       description: `Cancelling reassignment of '${state.topicName}': Error`,
@@ -687,7 +687,7 @@ export class BrokersCol extends Component<{ state: ReassignmentState }> {
 
     const allBrokerIds = state.partitions
       .map((p) => [p.addingReplicas, p.removingReplicas, p.replicas])
-      .flat(2)
+      .flat(2 /* partitions contain three arrays of broker IDs */)
       .distinct();
 
     return <BrokerList brokerIds={allBrokerIds} />;

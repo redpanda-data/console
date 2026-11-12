@@ -765,9 +765,9 @@ export function installUISettingsSideEffects(): () => void {
       // Applying changes here will of course trigger the auto-save, but that's fine.
       // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
       useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
-    } catch (err) {
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error applying settings update from another tab', { storageEvent: e, error: err });
+      console.error('error applying settings update from another tab', { storageEvent: e, error });
     }
   };
   window.addEventListener('storage', onStorage);

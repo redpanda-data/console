@@ -589,10 +589,10 @@ export class ConnectorPropertiesStore {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.validate(config).catch(console.error);
       });
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error in initConfig', err);
-      this.error = err instanceof Error ? err.message : JSON.stringify(err, undefined, 4);
+      console.error('error in initConfig', error);
+      this.error = error instanceof Error ? error.message : JSON.stringify(error, undefined, 4);
     }
 
     this.initPending = false;
@@ -677,9 +677,9 @@ export class ConnectorPropertiesStore {
       // Validate the current config
       const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
       this.applyValidationResult(validationResult);
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error validating config', err);
+      console.error('error validating config', error);
     }
   }
 

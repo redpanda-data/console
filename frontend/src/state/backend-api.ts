@@ -300,9 +300,9 @@ class CacheEntry {
         this.timeSinceLastResult.reset();
         this.lastResult = result;
       })
-      .catch((err) => {
+      .catch((error) => {
         this.lastResult = undefined;
-        this.error = err;
+        this.error = error;
       })
       .finally(() => {
         this.lastRequestDurationMs = this.timeSinceRequestStarted.value;
@@ -316,8 +316,8 @@ class CacheEntry {
     _activeRequests.push(this);
   }
 
-  error: unknown | null = null;
-  lastResult: unknown | undefined; // set automatically
+  error: unknown = null;
+  lastResult: unknown; // set automatically
   isPending: boolean; // set automatically
 
   private readonly timeSinceRequestStarted = new TimeSince(); // set automatically
@@ -726,7 +726,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           trackHeapUser(userData);
         }
       })
-      .catch((err) => {
+      .catch((error) => {
         // Clear previous error
         set({ userDataError: null });
 
@@ -736,7 +736,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           return;
         }
 
-        const redirect = authFailureRedirect(err);
+        const redirect = authFailureRedirect(error);
         if (redirect) {
           set({ userData: null });
           appGlobal.historyPush(redirect);
@@ -746,7 +746,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         // Transient errors (5xx: Unavailable, DeadlineExceeded, Internal, Unknown)
         // Do NOT redirect to login - this causes infinite loops
         // Keep userData as undefined and store error for UI to display
-        set({ userDataError: err });
+        set({ userDataError: error });
       })
       .finally(() => {
         set({ isUserDataFetchInProgress: false });
@@ -1024,9 +1024,9 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
       set({ endpointCompatibility: r.endpointCompatibility });
       return r;
-    } catch (err) {
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('Failed to fetch supported endpoints:', err);
+      console.error('Failed to fetch supported endpoints:', error);
       return null;
     }
   },
@@ -1040,37 +1040,37 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
     // A tuple keeps each response's type; a failed request is logged and stored as null.
     const [kafkaAuthorizerInfo, consoleInfo, kafka, redpanda, kafkaConnect, schemaRegistry] = await Promise.all([
-      client.getKafkaAuthorizerInfo({}).catch((e) => {
-        set((s) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: e } }));
+      client.getKafkaAuthorizerInfo({}).catch((error) => {
+        set((s) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: error } }));
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(e);
+        console.error(error);
         return null;
       }),
-      client.getConsoleInfo({}).catch((e) => {
+      client.getConsoleInfo({}).catch((error) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(e);
+        console.error(error);
         return null;
       }),
-      client.getKafkaInfo({}).catch((e) => {
+      client.getKafkaInfo({}).catch((error) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(e);
+        console.error(error);
         return null;
       }),
-      client.getRedpandaInfo({}).catch((e) => {
+      client.getRedpandaInfo({}).catch((error) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(e);
+        console.error(error);
         return null;
       }),
-      client.getKafkaConnectInfo({}).catch((e) => {
+      client.getKafkaConnectInfo({}).catch((error) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error(e);
+        console.error(error);
         return null;
       }),
       // Schema registry info is only requested for users who can view schemas
       api.userData?.canViewSchemas
-        ? client.getSchemaRegistryInfo({}).catch((e) => {
+        ? client.getSchemaRegistryInfo({}).catch((error) => {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
-            console.error(e);
+            console.error(error);
             return null;
           })
         : null,
@@ -1125,8 +1125,8 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         prepareSynonyms(v.brokerConfigs);
         set((s) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, v.brokerConfigs) }));
       })
-      .catch((err) => {
-        set((s) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, String(err)) }));
+      .catch((error) => {
+        set((s) => ({ brokerConfigs: new Map(s.brokerConfigs).set(brokerId, String(error)) }));
       });
   },
 
@@ -1235,10 +1235,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           set({ schemaOverviewIsConfigured: true, schemaMode: r.mode });
         }
       })
-      .catch((err) => {
+      .catch((error) => {
         set({ schemaMode: 'Unknown' });
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.warn('failed to request schema mode', err);
+        console.warn('failed to request schema mode', error);
       });
   },
 
@@ -1283,10 +1283,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           set({ schemaTypes: types.schemaTypes });
         }
       })
-      .catch((err) => {
+      .catch((error) => {
         set({ schemaTypes: undefined });
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.warn('failed to request schema type', err);
+        console.warn('failed to request schema type', error);
       });
   },
 
@@ -1358,13 +1358,13 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           set((s) => ({ schemaUsagesById: new Map(s.schemaUsagesById).set(schemaId, r) }));
         }
       },
-      (err) => {
+      (error) => {
         // Currently we don't get helpful status codes (502) so we have to inspect the message
-        if (err instanceof Error && err.message.includes('404') && err.message.includes('not found')) {
+        if (error instanceof Error && error.message.includes('404') && error.message.includes('not found')) {
           // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
           return null;
         }
-        throw err;
+        throw error;
       }
     );
   },
@@ -1914,8 +1914,8 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
             licenseViolation: enterpriseFeaturesResponse.violation,
           });
         })
-        .catch((err) => {
-          const errorText = err instanceof Error ? err.message : String(err);
+        .catch((error) => {
+          const errorText = error instanceof Error ? error.message : String(error);
 
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`error listing enterprise features: ${errorText}`);
@@ -1925,13 +1925,13 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         .then((licensesResponse) => {
           set({ licenses: licensesResponse.licenses, licensesLoaded: 'loaded' });
         })
-        .catch((err) => {
+        .catch((error) => {
           set({ licensesLoaded: 'failed' });
-          const errorText = err instanceof Error ? err.message : String(err);
+          const errorText = error instanceof Error ? error.message : String(error);
 
           // biome-ignore lint/suspicious/noConsole: intentional console usage
           console.log(`error refreshing licenses: ${errorText}`);
-          return err;
+          return error;
         }),
     ]);
 
@@ -1977,9 +1977,9 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         set({ debugBundleStatuses: response.brokerStatuses, hasDebugProcess: response.hasDebugProcess });
         return response;
       })
-      .catch((e) => {
+      .catch((error) => {
         set({ debugBundleStatuses: [] });
-        return e;
+        return error;
       });
   },
 
@@ -2648,9 +2648,9 @@ function applySearchResponse(
 ) {
   try {
     applySearchControl(search, res.controlMessage, isLiveTail, notify);
-  } catch (e) {
+  } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error('error in listMessages loop', { error: e });
+    console.error('error in listMessages loop', { error });
   }
 }
 
@@ -2684,8 +2684,8 @@ async function streamSearchMessages(
       }
       applySearchResponse(search, res, isLiveTail, notify);
     }
-  } catch (e) {
-    failSearch(search, abortSignal, e);
+  } catch (error) {
+    failSearch(search, abortSignal, error);
   } finally {
     // Always cleanup the abort controller reference to prevent memory leaks
     // This ensures cleanup happens whether the stream completes, errors, or is cancelled
@@ -2981,29 +2981,29 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
         return s.clusterOverview?.redpanda !== null;
       case 'getTopicPartitionArray': {
         const result: string[] = [];
-        s.topicPartitions.forEach((partitions, topicName) => {
+        for (const [topicName, partitions] of s.topicPartitions) {
           if (partitions !== null) {
             for (const partition of partitions) {
               result.push(`${topicName}/${partition.id}`);
             }
           }
-        });
+        }
         return result;
       }
       case 'isDebugBundleReady':
         return (
           s.debugBundleStatuses.length > 0 &&
-          !s.debugBundleStatuses.some(
+          s.debugBundleStatuses.every(
             (status) =>
-              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+              status.value.case !== 'bundleStatus' || status.value.value.status !== DebugBundleStatus_Status.RUNNING
           )
         );
       case 'canDownloadDebugBundle':
         return (
           s.debugBundleStatuses.length > 0 &&
-          !s.debugBundleStatuses.some(
+          s.debugBundleStatuses.every(
             (status) =>
-              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+              status.value.case !== 'bundleStatus' || status.value.value.status !== DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.some(
             (status) =>
@@ -3013,9 +3013,9 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
       case 'isDebugBundleError':
         return (
           s.debugBundleStatuses.length > 0 &&
-          !s.debugBundleStatuses.some(
+          s.debugBundleStatuses.every(
             (status) =>
-              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+              status.value.case !== 'bundleStatus' || status.value.value.status !== DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.every(
             (status) =>
@@ -3025,9 +3025,9 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
       case 'isDebugBundleExpired':
         return (
           s.debugBundleStatuses.length > 0 &&
-          !s.debugBundleStatuses.some(
+          s.debugBundleStatuses.every(
             (status) =>
-              status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
+              status.value.case !== 'bundleStatus' || status.value.value.status !== DebugBundleStatus_Status.RUNNING
           ) &&
           s.debugBundleStatuses.some(
             (status) =>
@@ -3075,8 +3075,8 @@ async function updateLoginError(res: Response): Promise<void> {
 
     const err = obj as ApiError;
     uiState.loginError = String(err.message);
-  } catch (err) {
-    uiState.loginError = String(err);
+  } catch (error) {
+    uiState.loginError = String(error);
   }
 }
 

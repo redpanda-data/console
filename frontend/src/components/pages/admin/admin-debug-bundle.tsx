@@ -304,8 +304,8 @@ const AdminDebugBundleContent: FC = () => {
                 await api.refreshDebugBundleStatuses();
                 appGlobal.historyPush(`/debug-bundle/progress/${result.jobId}`);
               })
-              .catch((err: ErrorResponse) => {
-                setCreateBundleError(err);
+              .catch((error: ErrorResponse) => {
+                setCreateBundleError(error);
               })
               .finally(() => {
                 setSubmitInProgress(false);
@@ -335,10 +335,10 @@ const NewDebugBundleForm: FC<{
 
   const fieldViolationsMap = error?.details
     ?.find(({ debug }) => debug?.fieldViolations)
-    ?.debug?.fieldViolations?.reduce((acc, violation) => {
+    ?.debug?.fieldViolations?.reduce<FieldViolationsMap>((acc, violation) => {
       acc[violation.field] = violation.description;
       return acc;
-    }, {} as FieldViolationsMap);
+    }, {});
 
   const [formState, setFormState] = useState({
     scramUsername: undefined as string | undefined,

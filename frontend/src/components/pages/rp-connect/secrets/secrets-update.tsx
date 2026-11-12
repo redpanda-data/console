@@ -69,11 +69,11 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
         pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(returnToListTab);
       })
-      .catch((err) => {
+      .catch((error) => {
         showToast({
           status: 'error',
           title: 'Failed to update secret',
-          description: formatPipelineError(err),
+          description: formatPipelineError(error),
         });
       })
       .finally(() => {

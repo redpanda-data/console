@@ -450,14 +450,14 @@ export class EditOffsetsModal extends Component<{
       offsetsForTimestamp = await withProgressToast('Fetching offsets for timestamp', () =>
         api.getTopicOffsetsByTimestamp(requiredTopics, this.state.timestampUtcMs)
       );
-    } catch (err) {
+    } catch (error) {
       showErrorModal(
         'Failed to fetch offsets for timestamp',
         <span>
           Could not lookup offsets for given timestamp{' '}
           <span className="codeBox">{new Date(this.state.timestampUtcMs).toUTCString()}</span>.
         </span>,
-        toJson({ errors: err, request: requiredTopics }, 4)
+        toJson({ errors: error, request: requiredTopics }, 4)
       );
       return;
     }
@@ -585,15 +585,15 @@ export class EditOffsetsModal extends Component<{
     this.setState({ isApplyingEdit: true });
     try {
       await withProgressToast('Applying offsets', () => applyOffsetEdit(group.groupId, topics));
-    } catch (err) {
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('failed to apply offset edit', err);
+      console.error('failed to apply offset edit', error);
       showErrorModal(
         'Apply editted offsets',
         <span>
           Could not apply offsets for consumer group <span className="codeBox">{group.groupId}</span>.
         </span>,
-        toJson(err, 4)
+        toJson(error, 4)
       );
     } finally {
       this.setState({ isApplyingEdit: false });
@@ -865,7 +865,7 @@ async function deleteGroupOrOffsets(group: GroupDescription, mode: GroupDeleting
 
 /** Whether deleting `offsets` leaves the group without any committed offsets. */
 const deletesAllOffsets = (group: GroupDescription, offsets: GroupOffset[]) =>
-  group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length === 0;
+  group.topicOffsets.sum((t) => t.partitionOffsets.length) === offsets.length;
 
 const useDeleteOffsets = ({
   group,
@@ -895,9 +895,9 @@ const useDeleteOffsets = ({
         // Group is fully deleted, go back to list
         appGlobal.historyReplace('/groups');
       }
-    } catch (err) {
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(err);
+      console.error(error);
     } finally {
       setIsDeleting(false);
       // Returns nothing to await: its request failures land in the API error store.

@@ -116,7 +116,7 @@ function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
 
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, beforeMount, onMount, onChange, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const options = { ...defaultOptions, ...givenOptions };
   const monacoTheme = useMonacoTheme();
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
   // Callers pass `value` or only `defaultValue`, so track what's typed for the latter.

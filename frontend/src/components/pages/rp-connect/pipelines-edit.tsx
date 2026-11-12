@@ -118,11 +118,11 @@ const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(`/rp-connect/${pipelineId}`);
       })
-      .catch((err) => {
+      .catch((error) => {
         showToast({
           status: 'error',
           title: 'Failed to update pipeline',
-          description: formatPipelineError(err),
+          description: formatPipelineError(error),
         });
       })
       .finally(() => {

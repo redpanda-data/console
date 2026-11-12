@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { deepParseJson, tryParseJson } from './json-utils';
+import { deepParseJson, tryParseJson, updateValueAtPath } from './json-utils';
 import { describe, expect, test } from 'bun:test';
 
 describe('tryParseJson', () => {
@@ -234,4 +234,8 @@ describe('deepParseJson', () => {
       expect(result).toEqual([1, 2, 3]);
     });
   });
+});
+
+test('rejects non-integer array indices when updating JSON paths', () => {
+  expect(() => updateValueAtPath([null], ['1.5'], 'value')).toThrow(RangeError);
 });

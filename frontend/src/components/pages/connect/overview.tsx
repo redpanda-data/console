@@ -313,7 +313,7 @@ const TabConnectors = () => {
         return true;
       }
       return classMatch;
-    } catch (_e) {
+    } catch {
       return item.name.toLowerCase().includes(filter.toLowerCase());
     }
   }, []);

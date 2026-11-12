@@ -150,7 +150,9 @@ export const test = base.extend<{ errors: string[] }>({
   errors: [
     async ({ context, page }, use) => {
       const errors: string[] = [];
-      page.on('pageerror', (error) => errors.push(error.message));
+      page.on('pageerror', (error) => {
+        errors.push(error.message);
+      });
       page.on('console', (message) => {
         if (message.type() === 'error') {
           errors.push(message.text());
@@ -175,7 +177,9 @@ export function trackScripts(page: Page) {
 
 export function trackWorkers(page: Page) {
   const workers: string[] = [];
-  page.on('worker', (worker) => workers.push(worker.url()));
+  page.on('worker', (worker) => {
+    workers.push(worker.url());
+  });
   return workers;
 }
 

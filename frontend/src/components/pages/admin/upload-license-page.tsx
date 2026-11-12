@@ -35,8 +35,8 @@ const UploadLicenseForm: FC<{
         onSuccess();
         api.listLicenses(); // refetch licenses
       })
-      .catch((err) => {
-        setErrorMessage(err.message);
+      .catch((error) => {
+        setErrorMessage(error.message);
       });
   };
 
@@ -61,7 +61,7 @@ const UploadLicenseForm: FC<{
                     setLicenseFile(text);
                     setDroppedFiles(acceptedFiles);
                   })
-                  .catch((err: Error) => setErrorMessage(err.message));
+                  .catch((error: Error) => setErrorMessage(error.message));
               }}
               onError={(err) => {
                 // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.

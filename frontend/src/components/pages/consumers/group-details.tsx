@@ -66,7 +66,7 @@ function getQuickSearchRegex(pattern: string): RegExp {
   let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
   try {
     regExp = new RegExp(pattern, 'i');
-  } catch (_e) {
+  } catch {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Invalid expression');
   }

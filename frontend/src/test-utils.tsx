@@ -17,13 +17,6 @@ import React, {
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
-
-// This type interface extends the default options for render from RTL, as well
-// as allows the user to specify other things such as initialState, store.
-interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
-  transport?: Transport;
-}
-
 // Track every QueryClient and router created by the test harness so the
 // side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
 // tear them down after each test. A plain render + RTL cleanup only unmounts
@@ -39,6 +32,12 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 // bindings before test files' `rs.mock('config', ...)` hoists can take
 // effect.
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
+
+// This type interface extends the default options for render from RTL, as well
+// as allows the user to specify other things such as initialState, store.
+interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
+  transport?: Transport;
+}
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 

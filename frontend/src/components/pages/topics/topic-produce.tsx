@@ -18,11 +18,10 @@ import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { buildKafkaHeaders } from './topic-produce-headers';
 import {
   CompressionType,
   CompressionTypeSchema,
-  type KafkaRecordHeader,
-  KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -238,20 +237,6 @@ function useSchemaVersionOptions(control: Control<Inputs>, payload: 'key' | 'val
   );
 }
 
-function buildKafkaHeaders(headers: Inputs['headers']) {
-  const kafkaHeaders: KafkaRecordHeader[] = [];
-  for (const h of headers) {
-    if (!(h.value || h.value)) {
-      continue;
-    }
-    const kafkaHeader = create(KafkaRecordHeaderSchema);
-    kafkaHeader.key = h.key;
-    kafkaHeader.value = new TextEncoder().encode(h.value);
-    kafkaHeaders.push(kafkaHeader);
-  }
-  return kafkaHeaders;
-}
-
 function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array {
   if (encoding === PayloadEncoding.BINARY) {
     // This will throw an exception if data is not base64.
@@ -266,10 +251,10 @@ function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array 
 function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
   try {
     return encodeData(payload.data, payload.encoding);
-  } catch (err) {
+  } catch (error) {
     // TODO: Handle error
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(err);
+    console.error(error);
   }
 }
 
@@ -370,9 +355,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       return;
     }
 
-    const result = await api.publishMessage(req).catch((err) => {
+    const result = await api.publishMessage(req).catch((error) => {
       setError('root.serverError', {
-        message: err.rawMessage,
+        message: error.rawMessage,
       });
     });
 

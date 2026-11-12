@@ -204,7 +204,7 @@ export function clockControl(sourceCode: SourceCode, call: ESTree.CallExpression
 /** The `beforeEach`/`beforeAll` call that registers `fn`, if any; `after*` hooks run too late. */
 function setupHookRegistration(sourceCode: SourceCode, fn: FunctionNode | ESTree.Program) {
   const { parent } = fn;
-  if (parent?.type !== 'CallExpression' || !parent.arguments.some((argument) => argument === fn)) {
+  if (parent?.type !== 'CallExpression' || parent.arguments.every((argument) => argument !== fn)) {
     return;
   }
   const chain = testChain(sourceCode, parent.callee);

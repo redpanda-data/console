@@ -72,8 +72,8 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     setIsSubmitting(true);
     try {
       await createAndOpenRole(trimmed);
-    } catch (err) {
-      toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
+    } catch (error) {
+      toast.error(`Failed to create role: ${ConnectError.from(error).message}`);
     } finally {
       setIsSubmitting(false);
     }

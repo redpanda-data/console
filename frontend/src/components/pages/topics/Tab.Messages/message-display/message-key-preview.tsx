@@ -98,7 +98,9 @@ export const MessageKeyPreview = ({
 
   try {
     return renderKeyPreview(msg, previewFields, previewDisplayMode);
-  } catch (e) {
-    return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
+  } catch (error) {
+    return (
+      <span className="text-destructive">Error in RenderPreview: {(error as Error).message ?? String(error)}</span>
+    );
   }
 };

@@ -39,8 +39,9 @@ import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId }
 import { SingleSelect } from '../../../misc/select';
 
 function getFreeId(tags: PreviewTagV2[]): string {
+  const usedIds = new Set(tags.map((tag) => tag.id));
   let i = 1;
-  while (tags.any((t) => t.id === String(i))) {
+  while (usedIds.has(String(i))) {
     i += 1;
   }
   return String(i);
@@ -531,10 +532,8 @@ if (IsDev) {
         hasError = true; // wrong length
       }
 
-      for (let i = 0; i < result.length && !hasError; i++) {
-        if (result[i] !== expected[i]) {
-          hasError = true; // wrong array entry
-        }
+      if (!hasError && result.some((value, index) => value !== expected[index])) {
+        hasError = true; // wrong array entry
       }
     }
 

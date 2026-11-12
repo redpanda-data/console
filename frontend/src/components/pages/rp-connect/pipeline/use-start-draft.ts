@@ -55,8 +55,8 @@ export function useStartDraft() {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
-      } catch (err) {
-        reportStartDraftError(err, pipelineId, navigate);
+      } catch (error) {
+        reportStartDraftError(error, pipelineId, navigate);
       }
     },
     [mutateAsync, navigate]

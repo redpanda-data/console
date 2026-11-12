@@ -530,7 +530,7 @@ export function capitalizeFirst(str: string): string {
  * Scroll the main content region
  */
 export function scrollToTop(): void {
-  const mainLayout = document.getElementById('mainLayout');
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
   }
@@ -542,10 +542,11 @@ export function scrollToTop(): void {
  * Scroll the main content region to the target element (which is found by the given id)
  */
 export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
-  const mainLayout = document.getElementById('mainLayout');
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
   }
+  // biome-ignore lint/style/useDomQuerySelector: target IDs can contain CSS selector metacharacters.
   const target = document.getElementById(targetId);
   if (!target) {
     return;
@@ -593,7 +594,7 @@ export function isValidBase64(str: string): boolean {
   try {
     Base64.decode(str);
     return true;
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -621,7 +622,7 @@ function formatHexBytes(bytes: Uint8Array): string {
 export function base64ToHexString(base64: string): string {
   try {
     return formatHexBytes(binaryStringToBytes(Base64.atob(base64)));
-  } catch (_err) {
+  } catch {
     return '<<Unable to decode message>>';
   }
 }
@@ -629,7 +630,7 @@ export function base64ToHexString(base64: string): string {
 export function uint8ArrayToHexString(ar: Uint8Array): string {
   try {
     return formatHexBytes(ar);
-  } catch (_err) {
+  } catch {
     return '<<Unable to convert uint8Array to hex>>';
   }
 }
@@ -661,14 +662,14 @@ export function retrier<T>(
   return new Promise<T>((resolve, reject) => {
     operation()
       .then(resolve)
-      .catch((reason: unknown) => {
+      .catch((error: unknown) => {
         if (attempts > 0) {
           return delay(delayTime)
             .then(() => retrier(operation, { attempts: attempts - 1, delayTime }))
             .then(resolve)
             .catch(reject);
         }
-        reject(reason);
+        reject(error);
       });
   });
 }

@@ -54,6 +54,7 @@ export const useLegacyListConsumerGroupsFullQuery = (options?: { enabled?: boole
   });
 
   return {
+    // biome-ignore lint/nursery/noTanstackQueryRestDestructuring: Legacy callers require the full query result with a non-optional data object.
     ...result,
     data: {
       consumerGroups: result.data?.consumerGroups ?? [],

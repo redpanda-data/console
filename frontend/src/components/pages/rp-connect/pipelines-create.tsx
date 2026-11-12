@@ -109,9 +109,9 @@ const useCreatePipeline = () => {
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush('/connect-clusters');
       })
-      .catch((err) => {
+      .catch((error) => {
         toast.error('Failed to create pipeline', {
-          description: formatPipelineError(ConnectError.from(err)),
+          description: formatPipelineError(ConnectError.from(error)),
         });
       })
       .finally(() => {
@@ -539,7 +539,7 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   let json: object;
   try {
     json = JSON.parse(value);
-  } catch (_e) {
+  } catch {
     return false;
   }
 

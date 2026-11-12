@@ -208,7 +208,7 @@ function useSelectedSchemaContext({
       contextsLoaded &&
       subjectsLoaded &&
       derivedContexts.length > 0 &&
-      !derivedContexts.some((c) => c.id === selectedContext)
+      derivedContexts.every((c) => c.id !== selectedContext)
     ) {
       setSelectedContext(DEFAULT_CONTEXT_ID);
     }

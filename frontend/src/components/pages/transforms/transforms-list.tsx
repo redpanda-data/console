@@ -165,11 +165,11 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
                 });
                 transformsApi.refreshTransforms(true);
               })
-              .catch((err) => {
+              .catch((error) => {
                 showToast({
                   status: 'error',
                   title: 'Failed to delete transform',
-                  description: String(err),
+                  description: String(error),
                 });
               });
           });

@@ -281,8 +281,8 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     try {
       await createACL(toCreateAclRequest(values));
       closeAndReset();
-    } catch (err) {
-      setSubmitError(getSubmitErrorMessage(err, form.setError, renderableFieldNames));
+    } catch (error) {
+      setSubmitError(getSubmitErrorMessage(error, form.setError, renderableFieldNames));
     }
   };
 

@@ -528,7 +528,7 @@ function followResources(
 ): ResourceFailure | { chain: string[]; target: unknown } {
   const chain = new Set<string>();
   let current = label;
-  for (;;) {
+  while (true) {
     const hop = resourceHop(current, chain, resources);
     if ('failed' in hop) {
       return hop;
