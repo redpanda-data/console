@@ -17,10 +17,9 @@ const StatusIcons: Record<DebugBundleStatus_Status, React.ReactElement> = {
   [DebugBundleStatus_Status.ERROR]: <TonedIcon icon={ErrorIcon} size={16} tone="destructive" />,
   [DebugBundleStatus_Status.EXPIRED]: <TonedIcon icon={ErrorIcon} size={16} tone="destructive" />,
 };
-
-const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[] }> = ({
-  statuses,
-}) => {
+const DebugBundleOverview: FC<{
+  statuses: GetDebugBundleStatusResponse_DebugBundleBrokerStatus[];
+}> = ({ statuses }) => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (api.isDebugBundleInProgress) {
@@ -81,4 +80,4 @@ const DebugBundleOverview: FC<{ statuses: GetDebugBundleStatusResponse_DebugBund
   );
 };
 
-export default DebugBundleOverview;
+export { DebugBundleOverview };

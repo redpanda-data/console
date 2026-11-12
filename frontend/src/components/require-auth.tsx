@@ -10,21 +10,22 @@
  */
 
 import type { JSX, ReactNode } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ConnectionErrorUI } from './misc/connection-error-ui';
-import { config as appConfig } from '../config';
+import { config as appConfig } from '../runtime-config';
 import { api, useApiStoreHook } from '../state/backend-api';
 import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
+import { removeStringPrefix } from '../utils/string-utils';
 
 function loginHandling(): JSX.Element | null {
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;
   }
-
-  const path = window.location.pathname.removePrefix(getBasePath() ?? '');
-
+  const path = removeStringPrefix(window.location.pathname, getBasePath() ?? '');
   if (path.startsWith('/login')) {
     return null; // already in login process, don't interrupt!
   }
@@ -43,7 +44,7 @@ function loginHandling(): JSX.Element | null {
 }
 
 function renderAuthenticatedState(path: string): JSX.Element | null {
-  const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
+  const preLogin = <div className="h-screen bg-page" />;
   if (api.userData === null && !path.startsWith('/login')) {
     logLoginState(path, 'known not logged in, hard redirect');
     window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
@@ -90,7 +91,7 @@ const FeatureErrorCheck = () => {
   return null;
 };
 
-export default RequireAuth;
+export { RequireAuth };
 
 function logLoginState(path: string, message: string) {
   if (IsDev) {
@@ -120,7 +121,12 @@ function renderInitialLoginState(path: string, preLogin: JSX.Element): JSX.Eleme
   // Show error UI instead of loading or redirecting to prevent infinite loops
   if (api.userDataError) {
     logLoginState(path, `user data error: ${api.userDataError.message}`);
-    return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;
+    return (
+      <ConnectionErrorUI
+        error={api.userDataError}
+        onRetry={asyncEvent(() => api.refreshUserData(), reportActionError)}
+      />
+    );
   }
 
   requestInitialUserData();

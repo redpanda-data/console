@@ -9,7 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
+import type { FieldSpec } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { z } from 'zod';
+
+import { isPresent } from '../../../../utils/type-guards';
+import type { ConnectComponentSpec } from '../types/schema';
 
 /**
  * Adds per-field signals that only the raw config-schema JSON carries, not the proto: `required`
@@ -35,6 +39,21 @@ type JsonSchemaNode = {
   anyOf?: JsonSchemaNode[];
 };
 
+const jsonSchemaNode: z.ZodType<JsonSchemaNode> = z.lazy(() =>
+  z.looseObject({
+    is_optional: z.boolean().optional(),
+    is_secret: z.boolean().optional(),
+    type: z.string().optional(),
+    properties: z.record(z.string(), jsonSchemaNode).optional(),
+    items: jsonSchemaNode.optional(),
+    patternProperties: z.record(z.string(), jsonSchemaNode).optional(),
+    required: z.array(z.string()).optional(),
+    allOf: z.array(jsonSchemaNode).optional(),
+    anyOf: z.array(jsonSchemaNode).optional(),
+  })
+);
+const configSchemaDocument = z.looseObject({ definitions: z.record(z.string(), jsonSchemaNode).optional() });
+
 /** Unwraps array/map wrappers so the node's `properties` line up with the proto field's `children`. */
 function unwrapStructural(node: JsonSchemaNode): JsonSchemaNode {
   let current = node;
@@ -44,8 +63,8 @@ function unwrapStructural(node: JsonSchemaNode): JsonSchemaNode {
   return current.patternProperties?.['.'] ?? current;
 }
 
-function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode): RawFieldSpec[] | undefined {
-  if (!fields?.length) {
+function stampFields(fields: FieldSpec[], parent: JsonSchemaNode): FieldSpec[] {
+  if (fields.length === 0) {
     return fields;
   }
   const props = parent.properties ?? {};
@@ -67,9 +86,12 @@ function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode)
 function collectComponentNodes(definitions: Record<string, JsonSchemaNode>): Map<string, JsonSchemaNode> {
   const nodes = new Map<string, JsonSchemaNode>();
   for (const [componentType, definition] of Object.entries(definitions)) {
-    for (const branch of definition.allOf ?? []) {
-      for (const option of branch.anyOf ?? []) {
-        for (const [name, node] of Object.entries(option.properties ?? {})) {
+    const definitionBranches = definition.allOf ?? [];
+    for (const branch of definitionBranches) {
+      const componentOptions = branch.anyOf ?? [];
+      for (const option of componentOptions) {
+        const componentProperties = Object.entries(option.properties ?? {});
+        for (const [name, node] of componentProperties) {
           nodes.set(`${componentType}:${name}`, node);
         }
       }
@@ -97,7 +119,7 @@ const LINT_REQUIRED_FIELDS: Record<string, readonly string[]> = {
 function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectComponentSpec[] {
   return components.map((component) => {
     const fieldNames = LINT_REQUIRED_FIELDS[`${component.type}:${component.name}`];
-    if (!(fieldNames && component.config?.children)) {
+    if (!(isPresent(fieldNames) && component.config?.children)) {
       return component;
     }
     return {
@@ -107,7 +129,7 @@ function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectCom
         children: component.config.children.map((field) =>
           fieldNames.includes(field.name) ? { ...field, requiredBySchema: true } : field
         ),
-      } as ConnectComponentSpec['config'],
+      },
     };
   });
 }
@@ -124,12 +146,12 @@ function stampFromConfigSchema(
   components: ConnectComponentSpec[],
   configSchema: string | undefined
 ): ConnectComponentSpec[] {
-  if (!configSchema?.includes('"required"')) {
+  if (!(configSchema?.includes('"required"') === true)) {
     return components;
   }
   let definitions: Record<string, JsonSchemaNode> | undefined;
   try {
-    definitions = (JSON.parse(configSchema) as { definitions?: Record<string, JsonSchemaNode> }).definitions;
+    definitions = configSchemaDocument.parse(JSON.parse(configSchema)).definitions;
   } catch {
     return components;
   }
@@ -148,7 +170,7 @@ function stampFromConfigSchema(
       config: {
         ...component.config,
         children: stampFields(component.config.children, node),
-      } as ConnectComponentSpec['config'],
+      },
     };
   });
 }

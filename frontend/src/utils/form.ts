@@ -1,8 +1,4 @@
-/**
- * Type-safe helper to extract object keys as a tuple for Zod enums
- * Preserves the literal string types from keyof T
- */
-export function enumFromKeys<T extends Record<string, unknown>>(obj: T): [keyof T, ...(keyof T)[]] {
-  const keys = Object.keys(obj);
-  return keys as [keyof T, ...(keyof T)[]];
+/** Return enumerable own string keys; structural object types cannot prove an exact runtime key set or nonempty tuple. */
+export function enumFromKeys(obj: object): string[] {
+  return Object.keys(obj);
 }

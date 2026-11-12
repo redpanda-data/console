@@ -9,9 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import { config } from 'config';
 import { z } from 'zod';
 import { create } from 'zustand';
+
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+import { config } from '../runtime-config';
 
 // Crash recovery for the pipeline editor: one localStorage buffer per editor target, cleared on save.
 // Not the drafts feature, which is server-side `STATE_DRAFT`.
@@ -37,7 +48,7 @@ export const MAX_AUTOSAVE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const CREATE_AUTOSAVE_TARGET = 'create';
 
-export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
+export const autosaveTargetKey = (pipelineId?: string): string => (pipelineId ?? '') || CREATE_AUTOSAVE_TARGET;
 
 const attachedServiceAccountSchema = z.object({ serviceAccountId: z.string(), secretName: z.string() });
 
@@ -69,7 +80,7 @@ export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;
 
 export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;
 
-const currentClusterId = (): string => config.clusterId || 'default';
+const currentClusterId = (): string => (config.clusterId ?? '') || 'default';
 
 const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
 
@@ -78,7 +89,7 @@ const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now())
 
 // Stored entries that still match the schema; throws on unparsable JSON.
 function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
-  const parsed: unknown = raw ? JSON.parse(raw) : [];
+  const parsed: unknown = raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : [];
   if (!Array.isArray(parsed)) {
     return [];
   }
@@ -196,7 +207,7 @@ export function selectAutosaveEntry(
   entries: EditorAutosaveEntry[],
   targetKey: string | undefined
 ): EditorAutosaveEntry | null {
-  if (!targetKey) {
+  if (!(targetKey !== null && targetKey !== undefined && targetKey !== '')) {
     return null;
   }
   const clusterId = currentClusterId();

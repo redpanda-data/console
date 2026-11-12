@@ -1,3 +1,4 @@
+import { deleteTransformAndRefresh } from './delete-transform';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -20,7 +21,7 @@ import {
 import { Link as ExternalLink } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
-import { showToast } from 'utils/toast.utils';
+import { reportActionError } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import {
@@ -30,12 +31,13 @@ import {
 import { appGlobal } from '../../../state/app-global';
 import { transformsApi } from '../../../state/backend-api';
 import { useUISettingsStore } from '../../../state/ui';
+import { arrayFirst } from '../../../utils/array-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
-import Section from '../../misc/section';
+import { Section } from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -65,6 +67,7 @@ export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionS
           <TonedIcon className="size-3.5" icon={CloseIcon} tone="destructive" /> Errored
         </div>
       );
+    case PartitionTransformStatus_PartitionStatus.UNKNOWN:
     default:
       return 'Unknown';
   }
@@ -79,7 +82,7 @@ class TransformsList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
+    transformsApi.refreshTransforms(force).catch(reportActionError);
   }
 
   render() {
@@ -102,7 +105,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
       <div className="wrap-break-word whitespace-break-spaces">
         <Link
           params={{ transformName: encodeURIComponentPercents(r.name) }}
-          search={{} as never}
+          search={{}}
           to="/transforms/$transformName"
         >
           {r.name}
@@ -115,11 +118,12 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
     header: 'Status',
     enableSorting: false,
     cell: ({ row: { original: r } }) => {
-      if (r.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
+      if (r.statuses.every((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
         return <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
       }
       // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-      const partitionTransformStatus = r.statuses.first(
+      const partitionTransformStatus = arrayFirst(
+        r.statuses,
         (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
       )!;
 
@@ -153,25 +157,8 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
         onClick={(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
           e.stopPropagation();
           e.preventDefault();
-
           openDeleteModal(r.name, () => {
-            transformsApi
-              .deleteTransform(r.name)
-              .then(() => {
-                showToast({
-                  status: 'success',
-                  duration: 4000,
-                  title: 'Transform deleted',
-                });
-                transformsApi.refreshTransforms(true);
-              })
-              .catch((err) => {
-                showToast({
-                  status: 'error',
-                  title: 'Failed to delete transform',
-                  description: String(err),
-                });
-              });
+            deleteTransformAndRefresh(r.name).catch(reportActionError);
           });
         }}
         size="icon-xs"
@@ -256,4 +243,4 @@ const TransformsListContent: FC = () => {
   );
 };
 
-export default TransformsList;
+export { TransformsList };

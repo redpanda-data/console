@@ -2,13 +2,12 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { TrashIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { reportActionError } from 'utils/toast.utils';
 
-import { config } from '../../config';
-import type {
-  DebugBundleStatus,
-  GetDebugBundleStatusResponse_DebugBundleBrokerStatus,
-} from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import type { GetDebugBundleStatusResponse_DebugBundleBrokerStatus } from '../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { config } from '../../runtime-config';
 import { api } from '../../state/backend-api';
+import { isNonEmptyString } from '../../utils/string-utils';
 
 const DebugBundleLink = ({
   statuses,
@@ -19,34 +18,38 @@ const DebugBundleLink = ({
   showDeleteButton?: boolean;
   showDatetime?: boolean;
 }) => {
-  const statusWithFilename = statuses.find(
-    (status) => status.value.case === 'bundleStatus' && status.value.value.filename
-  )?.value.value as DebugBundleStatus | undefined;
+  const statusWithFilename = statuses.flatMap((status) =>
+    status.value.case === 'bundleStatus' && status.value.value.filename !== '' ? [status.value.value] : []
+  )[0];
   const downloadFilename = 'debug-bundle.zip';
 
   if (statuses.length === 0) {
     return null;
   }
 
-  if (!statusWithFilename?.filename) {
+  if (!isNonEmptyString(statusWithFilename?.filename)) {
     return null;
   }
 
   return (
     <div>
       <div className="flex items-center gap-1">
-        <button
+        <Button
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
           className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
             // Add JWT Bearer token if available (same as REST and gRPC calls)
             const headers: HeadersInit = {};
-            if (config.jwt) {
+            if (isNonEmptyString(config.jwt)) {
               headers.Authorization = `Bearer ${config.jwt}`;
             }
 
             config
               .fetch(`${config.restBasePath}/debug_bundle/files/${downloadFilename}`, { headers })
               .then(async (response) => {
+                if (!response.ok) {
+                  throw new Error(`Bundle download failed: ${response.status}`);
+                }
                 const url = window.URL.createObjectURL(await response.blob());
 
                 // Create a new anchor element
@@ -67,12 +70,14 @@ const DebugBundleLink = ({
 
                 // Revoke the temporary URL to free memory
                 window.URL.revokeObjectURL(url);
-              });
+              })
+              .catch(reportActionError);
           }}
           type="button"
+          variant="unstyled"
         >
           {downloadFilename}
-        </button>
+        </Button>
         {Boolean(showDeleteButton) && (
           <Tooltip>
             <TooltipTrigger
@@ -80,9 +85,7 @@ const DebugBundleLink = ({
                 <Button
                   aria-label="Delete file"
                   onClick={() => {
-                    api.deleteDebugBundleFile().catch(() => {
-                      // Error handling should be managed by the API layer
-                    });
+                    api.deleteDebugBundleFile().catch(reportActionError);
                   }}
                   size="icon-sm"
                   variant="destructive-ghost"
@@ -102,4 +105,4 @@ const DebugBundleLink = ({
   );
 };
 
-export default DebugBundleLink;
+export { DebugBundleLink };

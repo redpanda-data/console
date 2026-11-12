@@ -46,6 +46,7 @@ const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: Ba
       return { tone: 'default', variant: 'subtle' };
     case 'never':
       return { tone: 'destructive', variant: 'subtle' };
+    case 'optional':
     default:
       return { variant: 'outline' };
   }
@@ -113,7 +114,7 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
         </ItemTitle>
       </ItemContent>
       <ItemActions>
-        {tooltipMessage ? (
+        {tooltipMessage !== null && tooltipMessage !== undefined && tooltipMessage !== '' ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger
@@ -186,7 +187,7 @@ const ExcludeDefaultToggle = () => {
  */
 const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolean | undefined) => {
   const defaultProps = getDefaultProperties();
-  if (excludeDefault) {
+  if (excludeDefault === true) {
     const filteredProperties = topicProperties.filter((prop) => !defaultProps.includes(prop));
     return filteredProperties.length === topicProperties.length ? undefined : filteredProperties;
   }

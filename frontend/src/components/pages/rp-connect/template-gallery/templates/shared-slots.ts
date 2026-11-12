@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// biome-ignore lint/suspicious/noTemplateCurlyInString: ${secrets.X} is Cloud secret syntax shown in copy, not a JS template string.
-
 import type { SecretSlot, StringSlot, TopicSlot } from '../pipeline-template-types';
 
 // Postgres slot names allow only [a-z0-9_], max 63 chars; derive a deterministic one so a blank field stays valid and stable.

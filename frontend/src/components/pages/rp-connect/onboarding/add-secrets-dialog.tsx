@@ -48,7 +48,7 @@ export const AddSecretsDialog = ({
         <DialogBody>
           {errorMessages.length > 0 && (
             <Alert className="mb-4" variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="size-4" />
               <AlertDescription>
                 <div className="space-y-1">
                   {errorMessages.map((message) => (

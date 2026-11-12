@@ -1,4 +1,5 @@
 import { version } from 'bun';
+import { z } from 'zod';
 
 import { describe, expect, test } from 'bun:test';
 
@@ -7,13 +8,13 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-interface PackageJson {
-  devDependencies?: Record<string, string>;
-  scripts?: Record<string, string>;
-}
+const packageJsonSchema = z.object({
+  devDependencies: z.record(z.string(), z.string()).optional(),
+  scripts: z.record(z.string(), z.string()).optional(),
+});
 
 const frontendRoot = new URL('../', import.meta.url);
-const packageJson = JSON.parse(readFileSync(new URL('package.json', frontendRoot), 'utf8')) as PackageJson;
+const packageJson = packageJsonSchema.parse(JSON.parse(readFileSync(new URL('package.json', frontendRoot), 'utf8')));
 
 function findFiles(directory: URL, fileNamePattern: RegExp): URL[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -28,19 +29,14 @@ function findFiles(directory: URL, fileNamePattern: RegExp): URL[] {
 }
 
 function findVitestUsages(files: URL[]): string[] {
-  return files
-    .filter((file) => /from ['"]vitest['"]|@testing-library\/jest-dom\/vitest|\bvi\./.test(readFileSync(file, 'utf8')))
-    .map((file) => fileURLToPath(file));
+  return files.flatMap((file) =>
+    /from ['"]vitest['"]|@testing-library\/jest-dom\/vitest|\bvi\./.test(readFileSync(file, 'utf8'))
+      ? [fileURLToPath(file)]
+      : []
+  );
 }
 
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
-
-// Exact pins, no ranges, because pre-1.0 Rstest minors break; coverage-v8 must match core.
-function expectExactRstestPins(devDependencies: PackageJson['devDependencies']) {
-  expect(devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
-  expect(devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
-  expect(devDependencies?.['@rstest/coverage-v8']).toBe(devDependencies?.['@rstest/core']);
-}
 
 describe('test runner policy', () => {
   test('runs units with Bun and integration and federation tests with Rstest', () => {
@@ -54,9 +50,14 @@ describe('test runner policy', () => {
     expect(packageJson.scripts?.['test:federation']).toContain('rstest');
     expect(packageJson.scripts?.['test:ci']).toContain('test:federation');
     expect(packageJson.scripts?.['test:coverage']).toContain('test:unit --coverage');
-    expectExactRstestPins(packageJson.devDependencies);
     expect(frontendWorkflow).toContain('bun run test:federation');
     expect(version).toMatch(/^1\./);
+  });
+
+  test('pins compatible Rstest tooling to exact versions', () => {
+    expect(packageJson.devDependencies?.['@module-federation/rstest']).toMatch(EXACT_VERSION);
+    expect(packageJson.devDependencies?.['@rstest/core']).toMatch(EXACT_VERSION);
+    expect(packageJson.devDependencies?.['@rstest/coverage-v8']).toBe(packageJson.devDependencies?.['@rstest/core']);
   });
 
   test('keeps frontend tests independent from Vitest', () => {
@@ -98,9 +99,9 @@ describe('test runner policy', () => {
       new URL('AGENTS.md', frontendRoot),
       ...findFiles(new URL('.claude/', frontendRoot), /\.md$/),
     ];
-    const staleGuidance = guidanceFiles
-      .filter((file) => /vitest|bun run test:ui/i.test(readFileSync(file, 'utf8')))
-      .map((file) => fileURLToPath(file));
+    const staleGuidance = guidanceFiles.flatMap((file) =>
+      /vitest|bun run test:ui/i.test(readFileSync(file, 'utf8')) ? [fileURLToPath(file)] : []
+    );
 
     expect(staleGuidance).toEqual([]);
     expect(packageJson.scripts?.['test:ui']).toBeUndefined();

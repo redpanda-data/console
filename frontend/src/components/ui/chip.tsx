@@ -1,8 +1,9 @@
+import { ElementTooltip } from 'components/misc/element-tooltip';
+import { Button } from 'components/redpanda-ui/components/button';
+import { cn, type SharedProps } from 'components/redpanda-ui/lib/utils';
 import { XIcon } from 'lucide-react';
 import type React from 'react';
 import type { MouseEventHandler } from 'react';
-
-import { cn, type SharedProps } from 'components/redpanda-ui/lib/utils';
 
 export type ChipProps = React.ComponentProps<'span'> &
   SharedProps & {
@@ -37,7 +38,7 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
   return (
     <span
       className={cn(
-        'flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-md border border-border py-0.5 pr-0.5 pl-1.5 text-foreground',
+        'flex shrink-0 items-center gap-0.5 rounded-md border border-border py-0.5 pr-0.5 pl-1.5 whitespace-nowrap text-foreground',
         className
       )}
       data-slot="chip"
@@ -45,30 +46,36 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
       {...props}
     >
       {onEdit ? (
-        <button
-          aria-label={title}
-          className="cursor-pointer rounded-sm px-0.5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-          onClick={handleEdit}
-          title={title}
-          type="button"
-        >
-          {children}
-        </button>
+        <ElementTooltip content={title}>
+          <Button
+            aria-label={title}
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this chip control appearance.
+            className="cursor-pointer rounded-sm px-0.5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            onClick={handleEdit}
+            type="button"
+            variant="unstyled"
+          >
+            {children}
+          </Button>
+        </ElementTooltip>
       ) : (
-        <span className="px-0.5" title={title}>
-          {children}
-        </span>
+        <ElementTooltip content={title}>
+          <span className="px-0.5">{children}</span>
+        </ElementTooltip>
       )}
       {onRemove ? (
-        <button
-          aria-label={removeLabel}
-          className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive-wash hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
-          onClick={handleRemove}
-          title={removeLabel}
-          type="button"
-        >
-          <XIcon className="size-3" />
-        </button>
+        <ElementTooltip content={removeLabel}>
+          <Button
+            aria-label={removeLabel}
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this chip control appearance.
+            className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive-wash hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
+            onClick={handleRemove}
+            type="button"
+            variant="unstyled"
+          >
+            <XIcon className="size-3" />
+          </Button>
+        </ElementTooltip>
       ) : null}
     </span>
   );

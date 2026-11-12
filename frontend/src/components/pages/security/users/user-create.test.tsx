@@ -1,3 +1,5 @@
+import type { MethodImpl } from '@connectrpc/connect';
+import type { Mock } from '@rstest/core';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -30,11 +32,16 @@ import {
   SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+// ── Component import (after mocks) ──────────────────────────────────────────
+import { UserCreatePage } from './user-create';
+import { renderWithFileRoutes, screen, waitFor } from '../../../../test-utils';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
-rs.mock('config', () => ({
+rs.mock('config', () => ({ addBearerTokenInterceptor: rs.fn((next: unknown) => next) }));
+
+rs.mock('runtime-config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
@@ -42,15 +49,6 @@ rs.mock('config', () => ({
     isServerless: false,
   },
   isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next: unknown) => next),
-}));
-
-rs.mock('state/ui-state', () => ({
-  setPageHeader: rs.fn(),
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
 }));
 
 // Mock generatePassword for deterministic tests
@@ -74,41 +72,40 @@ rs.mock('../../../../state/supported-features', () => {
 
 // Polyfills
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe = () => undefined;
+  unobserve = () => undefined;
+  disconnect = () => undefined;
 };
 Element.prototype.scrollIntoView = rs.fn();
-
-// ── Component import (after mocks) ──────────────────────────────────────────
-import UserCreatePage from './user-create';
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildTransport(overrides?: {
-  listUsersMock?: ReturnType<typeof rs.fn>;
-  createUserMock?: ReturnType<typeof rs.fn>;
-  updateRoleMembershipMock?: ReturnType<typeof rs.fn>;
-  listRolesMock?: ReturnType<typeof rs.fn>;
-  listRoleMembersMock?: ReturnType<typeof rs.fn>;
+  listUsersMock?: Mock<MethodImpl<typeof listUsers>>;
+  createUserMock?: Mock<MethodImpl<typeof createUser>>;
+  updateRoleMembershipMock?: Mock<MethodImpl<typeof updateRoleMembership>>;
+  listRolesMock?: Mock<MethodImpl<typeof listRoles>>;
+  listRoleMembersMock?: Mock<MethodImpl<typeof listRoleMembers>>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
-    rs.fn().mockReturnValue(
+    rs.fn<MethodImpl<typeof listUsers>>().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [],
         nextPageToken: '',
       })
     );
 
-  const createUserMock = overrides?.createUserMock ?? rs.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
+  const createUserMock =
+    overrides?.createUserMock ??
+    rs.fn<MethodImpl<typeof createUser>>().mockReturnValue(create(CreateUserResponseSchema, {}));
 
   const updateRoleMembershipMock =
-    overrides?.updateRoleMembershipMock ?? rs.fn().mockReturnValue(create(UpdateRoleMembershipResponseSchema, {}));
+    overrides?.updateRoleMembershipMock ??
+    rs.fn<MethodImpl<typeof updateRoleMembership>>().mockReturnValue(create(UpdateRoleMembershipResponseSchema, {}));
 
   const listRolesMock =
     overrides?.listRolesMock ??
-    rs.fn().mockReturnValue(
+    rs.fn<MethodImpl<typeof listRoles>>().mockReturnValue(
       create(ListRolesResponseSchema, {
         roles: [],
         nextPageToken: '',
@@ -117,7 +114,7 @@ function buildTransport(overrides?: {
 
   const listRoleMembersMock =
     overrides?.listRoleMembersMock ??
-    rs.fn().mockReturnValue(
+    rs.fn<MethodImpl<typeof listRoleMembers>>().mockReturnValue(
       create(ListRoleMembersResponseSchema, {
         members: [],
         nextPageToken: '',
@@ -146,7 +143,7 @@ type Transport = ReturnType<typeof buildTransport>['transport'];
 
 const listRolesReturning = (...names: string[]) =>
   rs
-    .fn()
+    .fn<MethodImpl<typeof listRoles>>()
     .mockReturnValue(create(ListRolesResponseSchema, { roles: names.map((name) => ({ name })), nextPageToken: '' }));
 
 async function selectRole(user: ReturnType<typeof userEvent.setup>, roleName: string) {
@@ -161,11 +158,20 @@ async function selectRole(user: ReturnType<typeof userEvent.setup>, roleName: st
 }
 
 /** Renders the page, types the username, optionally picks a role, and submits. */
-async function fillFormAndSubmit(transport: Transport, { username, role }: { username: string; role?: string }) {
+async function fillFormAndSubmit(
+  transport: Transport,
+  {
+    username,
+    role,
+  }: {
+    username: string;
+    role?: string;
+  }
+) {
   const user = userEvent.setup();
   renderWithFileRoutes(<UserCreatePage />, { transport });
   await user.type(await screen.findByTestId('create-user-name'), username);
-  if (role) {
+  if (role !== null && role !== undefined && role !== '') {
     await selectRole(user, role);
   }
   await user.click(screen.getByTestId('create-user-submit'));
@@ -220,7 +226,7 @@ describe('the UserCreatePage', () => {
   });
 
   test('stays on form when createUser fails', async () => {
-    const createUserMock = rs.fn().mockImplementation(() => {
+    const createUserMock = rs.fn<MethodImpl<typeof createUser>>().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
     const { transport } = buildTransport({ createUserMock });
@@ -259,7 +265,7 @@ describe('the UserCreatePage', () => {
 
   test('shows confirmation even when role assignment fails', async () => {
     mockRolesApiEnabled = true;
-    const updateRoleMembershipMock = rs.fn().mockImplementation(() => {
+    const updateRoleMembershipMock = rs.fn<MethodImpl<typeof updateRoleMembership>>().mockImplementation(() => {
       throw new ConnectError('permission denied', Code.PermissionDenied);
     });
     const { transport, createUserMock } = buildTransport({
@@ -303,7 +309,7 @@ describe('the UserCreatePage', () => {
 
   test('shows error when username already exists', async () => {
     const user = userEvent.setup();
-    const listUsersMock = rs.fn().mockReturnValue(
+    const listUsersMock = rs.fn<MethodImpl<typeof listUsers>>().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [create(ListUsersResponse_UserSchema, { name: 'bob' })],
         nextPageToken: '',

@@ -1,0 +1,3 @@
+.console-group-member-row[data-behind='true'] {
+  background-color: var(--color-warning-wash);
+}

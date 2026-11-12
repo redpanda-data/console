@@ -21,8 +21,7 @@ export type BoxCardProps = {
   active?: boolean;
   children?: React.ReactNode;
 };
-
-export default function BoxCard({
+export function BoxCard({
   id,
   borderStyle = 'solid',
   borderWidth = 'thin',

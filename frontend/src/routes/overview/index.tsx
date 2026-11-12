@@ -13,8 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { HomeIcon } from 'components/icons';
 
 // Import existing component - will be colocated later
-import Overview from '../../components/pages/overview/overview';
-
+import { Overview } from '../../components/pages/overview/overview';
 export const Route = createFileRoute('/overview/')({
   staticData: {
     title: 'Overview',

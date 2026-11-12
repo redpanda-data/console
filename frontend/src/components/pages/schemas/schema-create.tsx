@@ -1,3 +1,7 @@
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
+
+import { exampleSchema } from './schema-examples';
+import { MetadataPropertiesEditor, ReferencesEditor } from './schema-references-editor';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -10,13 +14,11 @@
  */
 
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
-import { TrashIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
 import { Label } from 'components/redpanda-ui/components/label';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import {
@@ -33,13 +35,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';
 import {
   ALL_CONTEXT_ID,
   buildQualifiedReferences,
-  buildQualifiedSubjectName,
   contextIdToLabel,
   contextLabelToId,
   contextNameToId,
@@ -49,10 +52,8 @@ import {
 import {
   addVersionEditorState,
   deriveSchemaEditorState,
-  type NamingStrategy,
   type SchemaEditorStateData,
   type SchemaEditorStateHelper,
-  subjectOptionsByContext,
 } from './schema-create-state';
 import {
   useListSchemasQuery,
@@ -63,10 +64,11 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { SchemaRegistryValidateSchemaResponse, SchemaTypeType } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { arrayFirst } from '../../../utils/array-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
-import KowlEditor from '../../misc/kowl-editor';
-import PageContent from '../../misc/page-content';
+import { KowlEditor } from '../../misc/kowl-editor';
+import { PageContent } from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -85,13 +87,16 @@ function createInitialSchemaState(): SchemaEditorStateData {
     context: '',
   };
 }
-
-export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
+export class SchemaCreatePage extends PageComponent<{
+  contextName?: string;
+}> {
   initPage(p: PageInitHelper): void {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
-    const contextName = this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined;
-    if (contextName) {
+    const contextName = isNonEmptyString(this.props.contextName)
+      ? decodeURIComponent(this.props.contextName)
+      : undefined;
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       p.addBreadcrumb('Create schema', `/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);
     } else {
       p.addBreadcrumb('Create schema', '/schema-registry/create');
@@ -102,19 +107,20 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
 
   refreshData(force?: boolean) {
     api.refreshSchemaSubjects(force); // for references editor -> subject selector
-    api.refreshTopics(force); // for the topics selector
+    api.refreshTopics(force).catch(reportActionError); // for the topics selector
   }
 
   render() {
     return (
       <SchemaCreatePageContent
-        contextName={this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined}
+        contextName={isNonEmptyString(this.props.contextName) ? decodeURIComponent(this.props.contextName) : undefined}
       />
     );
   }
 }
-
-export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
+export class SchemaAddVersionPage extends PageComponent<{
+  subjectName: string;
+}> {
   initPage(p: PageInitHelper): void {
     const subjectName = decodeURIComponent(this.props.subjectName);
     const encodedSubjectName = encodeURIComponent(subjectName);
@@ -129,13 +135,13 @@ export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }>
   }
 
   refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
+    api.refreshSchemaCompatibilityConfig().catch(reportActionError);
+    api.refreshSchemaMode().catch(reportActionError);
     api.refreshSchemaSubjects(force);
     api.refreshSchemaTypes(force);
 
     const subjectName = decodeURIComponent(this.props.subjectName);
-    api.refreshSchemaDetails(subjectName, force);
+    api.refreshSchemaDetails(subjectName, force).catch(reportActionError);
   }
 
   render() {
@@ -147,7 +153,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const [stateData, setStateData] = useState<SchemaEditorStateData>(() => {
     const initial = createInitialSchemaState();
-    if (contextName) {
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       const contextId = contextNameToId(contextName);
       return {
         ...initial,
@@ -159,7 +165,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
   });
   const state = deriveSchemaEditorState(stateData);
 
-  if (contextName && !srContextsEnabled) {
+  if (contextName !== null && contextName !== undefined && contextName !== '' && !srContextsEnabled) {
     return <ContextsNotSupportedPage />;
   }
 
@@ -180,8 +186,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
     if (!subject || stateData !== null) {
       return;
     }
-
-    const schema = subject.schemas.first((x) => x.version === subject.latestActiveVersion);
+    const schema = arrayFirst(subject.schemas, (x) => x.version === subject.latestActiveVersion);
     if (!schema) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('Cannot find last active schema version of subject', {
@@ -201,7 +206,8 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
   }
 
   const state = deriveSchemaEditorState(stateData);
-  const setNonNullStateData = setStateData as SetSchemaState;
+  const setNonNullStateData: SetSchemaState = (update) =>
+    setStateData((prev) => (prev === null ? prev : typeof update === 'function' ? update(prev) : update));
 
   return (
     <PageContent key="b">
@@ -227,7 +233,10 @@ const SchemaPageButtons = (p: {
     isValid: boolean;
     errorDetails?: string;
     isCompatible?: boolean;
-    compatibilityError?: { errorType: string; description: string };
+    compatibilityError?: {
+      errorType: string;
+      description: string;
+    };
   } | null>(null);
   const [validationDialogResult, setValidationDialogResult] = useState<typeof persistentValidationError>(null);
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
@@ -245,13 +254,13 @@ const SchemaPageButtons = (p: {
           variant="destructive"
         >
           <AlertTitle>
-            {persistentValidationError.compatibilityError?.errorType
+            {isNonEmptyString(persistentValidationError.compatibilityError?.errorType)
               ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
               : 'Schema Validation Error'}
           </AlertTitle>
           <AlertDescription>
-            {persistentValidationError.compatibilityError?.description ||
-              persistentValidationError.errorDetails ||
+            {(persistentValidationError.compatibilityError?.description ?? '') ||
+              (persistentValidationError.errorDetails ?? '') ||
               'Schema validation failed'}
           </AlertDescription>
           <Button
@@ -270,7 +279,7 @@ const SchemaPageButtons = (p: {
         <FenceGuardedButton
           action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
-          onClick={async () => {
+          onClick={asyncEvent(async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
             setValidating(true);
             const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
@@ -288,7 +297,7 @@ const SchemaPageButtons = (p: {
             // try to create the schema
             setCreating(true);
             await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
-          }}
+          }, reportActionError)}
           testId="schema-create-save-btn"
           variant="primary"
         >
@@ -297,7 +306,7 @@ const SchemaPageButtons = (p: {
 
         <Button
           disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}
-          onClick={async () => {
+          onClick={asyncEvent(async () => {
             setValidating(true);
             const r = await validateSchema(editorState).finally(() => setValidating(false));
 
@@ -309,7 +318,7 @@ const SchemaPageButtons = (p: {
               // Persist error only after user closes the modal
               setValidationDialogResult(r);
             }
-          }}
+          }, reportActionError)}
           testId="schema-create-validate-btn"
           variant="outline"
         >
@@ -318,7 +327,7 @@ const SchemaPageButtons = (p: {
 
         <Button
           onClick={() => {
-            if (p.parentSubjectName) {
+            if (isNonEmptyString(p.parentSubjectName)) {
               appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(p.parentSubjectName)}`);
             } else {
               appGlobal.historyReplace('/schema-registry');
@@ -359,7 +368,7 @@ async function createSchemaAndOpen(
     const subjectName = editorState.qualifiedSubjectName;
     await api
       .createSchema(subjectName, {
-        schemaType: editorState.format as SchemaTypeType,
+        schemaType: editorState.format,
         schema: editorState.schemaText,
         references: buildQualifiedReferences(editorState.references, editorState.context),
         metadata: editorState.computedMetadata,
@@ -379,8 +388,8 @@ async function createSchemaAndOpen(
 
     // success: navigate to details with "latest" so it picks up the new version
     appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
-  } catch (err) {
-    toast.error('Error creating schema', { description: String(err) });
+  } catch (error) {
+    toast.error('Error creating schema', { description: String(error) });
   }
 }
 
@@ -388,26 +397,26 @@ async function validateSchema(state: SchemaEditorStateHelper): Promise<{
   isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
   errorDetails?: string; // details about why the schema is not valid
   isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
-  compatibilityError?: { errorType: string; description: string }; // detailed compatibility error from schema registry
+  compatibilityError?: {
+    errorType: string;
+    description: string;
+  }; // detailed compatibility error from schema registry
 }> {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
   }
 
-  const r = await api
+  const r: SchemaRegistryValidateSchemaResponse = await api
     .validateSchema(state.qualifiedSubjectName, 'latest', {
-      schemaType: state.format as SchemaTypeType,
+      schemaType: state.format,
       schema: state.schemaText,
       references: buildQualifiedReferences(state.references, state.context),
     })
-    .catch(
-      (err) =>
-        ({
-          compatibility: { isCompatible: false },
-          isValid: false,
-          parsingError: String(err),
-        }) as SchemaRegistryValidateSchemaResponse
-    );
+    .catch((error: unknown) => ({
+      compatibility: { isCompatible: false },
+      isValid: false,
+      parsingError: String(error),
+    }));
 
   return {
     isValid: r.isValid,
@@ -431,8 +440,8 @@ function useSchemaFormatOptions() {
     api.refreshSchemaTypes(true);
   }, []);
 
-  const supportsJson = schemaTypes?.includes('JSON') || api.schemaTypes?.includes('JSON');
-  return supportsJson ? [...BASE_FORMAT_OPTIONS, JSON_FORMAT_OPTION] : BASE_FORMAT_OPTIONS;
+  const supportsJson = (schemaTypes?.includes('JSON') ?? false) || api.schemaTypes?.includes('JSON');
+  return supportsJson === true ? [...BASE_FORMAT_OPTIONS, JSON_FORMAT_OPTION] : BASE_FORMAT_OPTIONS;
 }
 
 // Existing contexts (without the synthetic "All"), as options keyed by label
@@ -464,25 +473,28 @@ function useSchemaEditorContexts(srContextsEnabled: boolean) {
 // Switching format replaces the schema text, so a picked format waits for confirmation.
 function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
   const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
-  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<SchemaTypeType | null>(null);
 
   return {
     switchFormatOpen,
     setSwitchFormatOpen,
     requestFormat: (format: string | undefined) => {
-      if (!format || currentFormat === format) {
+      if (!(format !== null && format !== undefined && format !== '') || currentFormat === format) {
         return;
       }
       // Let user confirm
+      if (format !== 'AVRO' && format !== 'PROTOBUF' && format !== 'JSON') {
+        return;
+      }
       setPendingFormat(format);
       setSwitchFormatOpen(true);
     },
     confirmFormat: () => {
-      if (pendingFormat) {
+      if (pendingFormat !== null) {
         onStateChange((prev) => ({
           ...prev,
-          format: pendingFormat as 'AVRO' | 'PROTOBUF' | 'JSON',
-          schemaText: exampleSchema[pendingFormat as SchemaTypeType],
+          format: pendingFormat,
+          schemaText: exampleSchema[pendingFormat],
         }));
         setPendingFormat(null);
       }
@@ -500,7 +512,10 @@ function ContextField({
 }: {
   state: SchemaEditorStateHelper;
   onStateChange: SetSchemaState;
-  contextOptions: { value: string; label: string }[];
+  contextOptions: {
+    value: string;
+    label: string;
+  }[];
   showRequired: boolean;
   onTouched: () => void;
 }) {
@@ -543,6 +558,44 @@ function ContextField({
   );
 }
 
+const SchemaTopicName = ({
+  state,
+  touched,
+  isAddVersion,
+  onTouched,
+  onStateChange,
+}: {
+  state: SchemaEditorStateHelper;
+  touched: boolean;
+  isAddVersion: boolean;
+  onTouched: () => void;
+  onStateChange: SetSchemaState;
+}) => (
+  <Field data-invalid={(touched && !state.userInput) || undefined}>
+    <FieldLabel>Topic name</FieldLabel>
+    <Select
+      disabled={isAddVersion}
+      onValueChange={(value) => {
+        onTouched();
+        onStateChange((prev) => ({ ...prev, userInput: value }));
+      }}
+      value={state.userInput}
+    >
+      <SelectTrigger data-testid="schema-create-topic-select">
+        <SelectValue placeholder="Select a topic..." />
+      </SelectTrigger>
+      <SelectContent>
+        {(api.topics?.filter((topic) => !topic.topicName.startsWith('_')) ?? []).map((topic) => (
+          <SelectItem key={topic.topicName} value={topic.topicName}>
+            {topic.topicName}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {touched && !state.userInput && <FieldError>Topic name is required</FieldError>}
+  </Field>
+);
+
 const SchemaEditor = (p: {
   state: SchemaEditorStateHelper;
   mode: 'CREATE' | 'ADD_VERSION';
@@ -559,15 +612,17 @@ const SchemaEditor = (p: {
     p.onStateChange
   );
   // Only surface "required" errors after the user has interacted with a field, not on mount.
-  const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
-
+  const [touched, setTouched] = useState<{
+    context: boolean;
+    topic: boolean;
+  }>({ context: false, topic: false });
   const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
   const isCustom = state.strategy === 'CUSTOM';
 
   return (
     <>
       <h2 className="text-heading-lg">Subject Settings</h2>
-      {Boolean(isAddVersion) && (
+      {isAddVersion && (
         <Alert variant="informative">
           <AlertDescription>
             When adding a new schema version, the only thing that can be changed is the schema definition and its
@@ -593,88 +648,24 @@ const SchemaEditor = (p: {
           </Field>
         )}
 
-        <Field>
-          <FieldLabel>Strategy</FieldLabel>
-          <Select
-            disabled={isAddVersion}
-            items={{
-              TOPIC: 'Topic Name',
-              RECORD_NAME: 'Record Name',
-              TOPIC_RECORD_NAME: 'Topic-Record Name',
-              CUSTOM: 'Custom',
-            }}
-            onValueChange={(e) => {
-              setTouched((t) => ({ ...t, topic: false }));
-              p.onStateChange((prev) => ({ ...prev, userInput: '', strategy: e as NamingStrategy }));
-            }}
-            value={state.strategy}
-          >
-            <SelectTrigger data-testid="schema-create-strategy-select">
-              <SelectValue placeholder="Select a strategy..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TOPIC">Topic Name</SelectItem>
-              <SelectItem value="RECORD_NAME">Record Name</SelectItem>
-              <SelectItem value="TOPIC_RECORD_NAME">Topic-Record Name</SelectItem>
-              <SelectItem value="CUSTOM">Custom</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
+        <SchemaNamingStrategy
+          isAddVersion={isAddVersion}
+          onStateChange={p.onStateChange}
+          onStrategyTouched={() => setTouched((t) => ({ ...t, topic: false }))}
+          state={state}
+        />
 
         {showTopicNameInput && (
-          <Field data-invalid={(touched.topic && !state.userInput) || undefined}>
-            <FieldLabel>Topic name</FieldLabel>
-            <Select
-              disabled={isAddVersion}
-              onValueChange={(e) => {
-                setTouched((t) => ({ ...t, topic: true }));
-                p.onStateChange((prev) => ({ ...prev, userInput: e }));
-              }}
-              value={state.userInput}
-            >
-              <SelectTrigger data-testid="schema-create-topic-select">
-                <SelectValue placeholder="Select a topic..." />
-              </SelectTrigger>
-              <SelectContent>
-                {(api.topics?.filter((x) => !x.topicName.startsWith('_')) ?? []).map((x) => (
-                  <SelectItem key={x.topicName} value={x.topicName}>
-                    {x.topicName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {touched.topic && !state.userInput && <FieldError>Topic name is required</FieldError>}
-          </Field>
+          <SchemaTopicName
+            isAddVersion={isAddVersion}
+            onStateChange={p.onStateChange}
+            onTouched={() => setTouched((t) => ({ ...t, topic: true }))}
+            state={state}
+            touched={touched.topic}
+          />
         )}
 
-        {!isCustom && (
-          <Field data-invalid={state.isInvalidKeyOrValue || undefined}>
-            <FieldLabel>Schema applies to</FieldLabel>
-            <RadioGroup
-              className="mt-3 flex"
-              data-testid="schema-create-key-value-radio"
-              disabled={isAddVersion}
-              onValueChange={(e) => {
-                p.onStateChange((prev) => ({ ...prev, keyOrValue: e as 'KEY' | 'VALUE' }));
-              }}
-              orientation="horizontal"
-              value={state.keyOrValue}
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem disabled={isAddVersion} id="key-or-value-key" value="KEY" />
-                <Label htmlFor="key-or-value-key">Key</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem disabled={isAddVersion} id="key-or-value-value" value="VALUE" />
-                <Label htmlFor="key-or-value-value">Value</Label>
-              </div>
-            </RadioGroup>
-            <FieldDescription>
-              Determines whether this schema is registered for the topic's key or value messages.
-            </FieldDescription>
-            {state.isInvalidKeyOrValue && <FieldError>Required</FieldError>}
-          </Field>
-        )}
+        {!isCustom && <SchemaKeyOrValue isAddVersion={isAddVersion} onStateChange={p.onStateChange} state={state} />}
 
         {isCustom && (
           <Field data-invalid={!state.computedSubjectName || undefined}>
@@ -691,33 +682,7 @@ const SchemaEditor = (p: {
           </Field>
         )}
 
-        {!isCustom && state.computedSubjectName && (
-          <>
-            <Separator />
-            <div className="flex flex-col gap-0.5">
-              <div className="text-body-sm font-medium uppercase">Subject name</div>
-              <div className="font-mono text-body">{state.computedSubjectName}</div>
-            </div>
-          </>
-        )}
-
-        {srContextsEnabled &&
-          state.qualifiedSubjectName &&
-          state.qualifiedSubjectName !== state.computedSubjectName && (
-            <div className="flex flex-col gap-0.5">
-              <div className="text-body-sm font-medium uppercase">Qualified subject name</div>
-              <div className="font-mono text-body">
-                {isNamedContext(state.context) ? (
-                  <>
-                    <span className="font-mono text-body text-disabled">:{state.context}:</span>
-                    <span className="font-mono text-body">{state.computedSubjectName}</span>
-                  </>
-                ) : (
-                  state.qualifiedSubjectName
-                )}
-              </div>
-            </div>
-          )}
+        <SchemaSubjectName showComputed={!isCustom} srContextsEnabled={srContextsEnabled} state={state} />
       </div>
       <h2 className="mt-8 text-heading-lg">Schema definition</h2>
       <div className="flex max-w-[1000px] flex-col gap-4">
@@ -755,7 +720,7 @@ const SchemaEditor = (p: {
             <span className="font-semibold">Normalize schema</span>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger render={<TonedIcon className="h-4 w-4 cursor-help" icon={InfoIcon} tone="muted" />} />
+                <TooltipTrigger render={<TonedIcon className="size-4 cursor-help" icon={InfoIcon} tone="muted" />} />
                 <TooltipContent side="right">
                   When enabled, the schema will be normalized to a canonical form before registration, reducing
                   duplicate schema versions
@@ -797,274 +762,129 @@ const SchemaEditor = (p: {
   );
 };
 
-const ReferencesEditor = (p: {
+function SchemaNamingStrategy({
+  state,
+  isAddVersion,
+  onStateChange,
+  onStrategyTouched,
+}: {
   state: SchemaEditorStateHelper;
+  isAddVersion: boolean;
   onStateChange: SetSchemaState;
-  srContextsEnabled: boolean;
-  parentContext: string;
-  contextSelectOptions: { value: string; label: string }[];
-}) => {
-  const refs = p.state.references;
-  // Subscribed, so the subject options follow the list as it loads.
-  const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
-
-  const subjectsByContext = useMemo(() => {
-    const allSubjects = schemaSubjects?.filter((x) => !x.isSoftDeleted) ?? [];
-    if (!p.srContextsEnabled) {
-      return new Map([['__all__', allSubjects.map((x) => ({ value: x.name }))]]);
-    }
-    return subjectOptionsByContext(allSubjects);
-  }, [p.srContextsEnabled, schemaSubjects]);
-
-  const getSubjectsForContext = (contextId: string) => {
-    if (!p.srContextsEnabled) {
-      return subjectsByContext.get('__all__') ?? [];
-    }
-    return subjectsByContext.get(contextId) ?? [];
-  };
-
-  const renderRow = (ref: (typeof refs)[number], index: number) => {
-    const refQualified =
-      p.srContextsEnabled && ref.context !== p.parentContext
-        ? buildQualifiedSubjectName(ref.context, ref.subject)
-        : null;
-
-    return (
-      <div className="flex flex-col gap-2" key={ref.id}>
-        <div className="flex items-end gap-4">
-          <Field>
-            <FieldLabel>Schema reference name</FieldLabel>
-            <Input
-              data-testid={`schema-create-reference-name-input-${index}`}
-              onChange={(e) => {
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  references: prev.references.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)),
-                }));
-              }}
-              value={ref.name}
-            />
-          </Field>
-          {p.srContextsEnabled && (
-            <Field>
-              <FieldLabel>Context</FieldLabel>
-              <Select
-                items={p.contextSelectOptions}
-                onValueChange={(contextId) => {
-                  p.onStateChange((prev) => ({
-                    ...prev,
-                    references: prev.references.map((r, i) =>
-                      i === index ? { ...r, context: contextId, subject: '' } : r
-                    ),
-                  }));
-                }}
-                value={ref.context}
-              >
-                <SelectTrigger data-testid={`schema-create-reference-context-select-${index}`}>
-                  <SelectValue placeholder="Context..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {p.contextSelectOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-          <Field>
-            <FieldLabel>Subject</FieldLabel>
-            <Select
-              onValueChange={async (e) => {
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  references: prev.references.map((r, i) => (i === index ? { ...r, subject: e } : r)),
-                }));
-
-                // For fetching details, we need the qualified name
-                const qualifiedRefSubject = buildQualifiedSubjectName(ref.context, e);
-                let details = api.schemaDetails.get(qualifiedRefSubject);
-                if (!details) {
-                  await api.refreshSchemaDetails(qualifiedRefSubject, true);
-                  details = api.schemaDetails.get(qualifiedRefSubject);
-                }
-
-                if (!details) {
-                  return; // failed to get details
-                }
-
-                p.onStateChange((prev) => {
-                  const r = prev.references[index];
-                  // Need to make sure that, after refreshing, the subject is still the same
-                  if (r?.subject !== e) {
-                    return prev;
-                  }
-                  return {
-                    ...prev,
-                    references: prev.references.map((r, i) =>
-                      i === index ? { ...r, version: details.latestActiveVersion } : r
-                    ),
-                  };
-                });
-              }}
-              value={ref.subject}
-            >
-              <SelectTrigger data-testid={`schema-create-reference-subject-select-${index}`}>
-                <SelectValue placeholder="Select a subject..." />
-              </SelectTrigger>
-              <SelectContent>
-                {getSubjectsForContext(ref.context).map((x) => (
-                  <SelectItem key={x.value} value={x.value}>
-                    {x.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel>Version</FieldLabel>
-            <Select
-              onValueChange={(e) => {
-                p.onStateChange((prev) => ({
-                  ...prev,
-                  references: prev.references.map((r, i) => (i === index ? { ...r, version: Number(e) } : r)),
-                }));
-              }}
-              value={String(ref.version)}
-            >
-              <SelectTrigger data-testid={`schema-create-reference-version-select-${index}`}>
-                <SelectValue placeholder="Version" />
-              </SelectTrigger>
-              <SelectContent>
-                {(
-                  api.schemaDetails
-                    .get(buildQualifiedSubjectName(ref.context, ref.subject))
-                    ?.versions.filter((v) => !v.isSoftDeleted) ?? []
-                ).map((x) => (
-                  <SelectItem key={x.version} value={String(x.version)}>
-                    {x.version}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Button
-            aria-label="delete"
-            className="shrink-0"
-            onClick={() => {
-              p.onStateChange((prev) => ({
-                ...prev,
-                references: prev.references.filter((_, i) => i !== index),
-              }));
-            }}
-            size="icon-sm"
-            testId={`schema-create-reference-delete-btn-${index}`}
-            variant="ghost"
-          >
-            <TrashIcon />
-          </Button>
-        </div>
-        {refQualified && (
-          <div className="ml-1 font-mono text-body-sm text-muted-foreground">Reference subject: {refQualified}</div>
-        )}
-      </div>
-    );
-  };
-
+  onStrategyTouched: () => void;
+}) {
   return (
-    <div className="flex flex-col gap-4">
-      {refs.map((x, index) => renderRow(x, index))}
-
-      <Button
-        className="w-fit"
-        onClick={() => {
-          p.onStateChange((prev) => ({
-            ...prev,
-            references: [
-              ...prev.references,
-              { id: crypto.randomUUID(), name: '', subject: '', version: 1, context: p.parentContext },
-            ],
-          }));
+    <Field>
+      <FieldLabel>Strategy</FieldLabel>
+      <Select
+        disabled={isAddVersion}
+        items={{
+          TOPIC: 'Topic Name',
+          RECORD_NAME: 'Record Name',
+          TOPIC_RECORD_NAME: 'Topic-Record Name',
+          CUSTOM: 'Custom',
         }}
-        size="sm"
-        testId="schema-create-add-reference-btn"
-        variant="outline"
+        onValueChange={(e: unknown) => {
+          if (e !== 'TOPIC' && e !== 'RECORD_NAME' && e !== 'TOPIC_RECORD_NAME' && e !== 'CUSTOM') {
+            return;
+          }
+          onStrategyTouched();
+          onStateChange((prev) => ({ ...prev, userInput: '', strategy: e }));
+        }}
+        value={state.strategy}
       >
-        Add reference
-      </Button>
-    </div>
+        <SelectTrigger data-testid="schema-create-strategy-select">
+          <SelectValue placeholder="Select a strategy..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="TOPIC">Topic Name</SelectItem>
+          <SelectItem value="RECORD_NAME">Record Name</SelectItem>
+          <SelectItem value="TOPIC_RECORD_NAME">Topic-Record Name</SelectItem>
+          <SelectItem value="CUSTOM">Custom</SelectItem>
+        </SelectContent>
+      </Select>
+    </Field>
   );
-};
+}
 
-const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
-  const pairs = p.state.metadataProperties.map(({ key, value }) => ({ key, value }));
-
+function SchemaSubjectName({
+  state,
+  showComputed,
+  srContextsEnabled,
+}: {
+  state: SchemaEditorStateHelper;
+  showComputed: boolean;
+  srContextsEnabled: boolean;
+}) {
   return (
-    <div className="w-1/2">
-      <KeyValueField
-        addButtonLabel="Add property"
-        keyFieldProps={{ placeholder: 'e.g. owner' }}
-        onChange={(updated) => {
-          p.onStateChange((prev) => ({
-            ...prev,
-            metadataProperties: updated.map((pair, i) => ({
-              id: prev.metadataProperties[i]?.id ?? crypto.randomUUID(),
-              ...pair,
-            })),
-          }));
-        }}
-        testId="schema-create-metadata"
-        value={pairs}
-        valueFieldProps={{ placeholder: 'e.g. team-platform' }}
-      />
-    </div>
+    <>
+      {' '}
+      {showComputed && state.computedSubjectName && (
+        <>
+          <Separator />
+          <div className="flex flex-col gap-0.5">
+            <div className="text-body-sm font-medium uppercase">Subject name</div>
+            <div className="font-mono text-body">{state.computedSubjectName}</div>
+          </div>
+        </>
+      )}
+      {srContextsEnabled && state.qualifiedSubjectName && state.qualifiedSubjectName !== state.computedSubjectName && (
+        <div className="flex flex-col gap-0.5">
+          <div className="text-body-sm font-medium uppercase">Qualified subject name</div>
+          <div className="font-mono text-body">
+            {isNamedContext(state.context) ? (
+              <>
+                <span className="font-mono text-body text-disabled">:{state.context}:</span>
+                <span className="font-mono text-body">{state.computedSubjectName}</span>
+              </>
+            ) : (
+              state.qualifiedSubjectName
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
-};
-
-const exampleSchema: Record<SchemaTypeType, string> = {
-  AVRO: `
-{
-   "type": "record",
-   "name": "car",
-   "fields": [
-      {
-         "name": "model",
-         "type": "string"
-      },
-      {
-         "name": "make",
-         "type": "string"
-      },
-      {
-         "name": "year",
-         "type": "float"
-      }
-   ]
 }
-`.trim(),
 
-  PROTOBUF: `
-syntax = "proto3";
-
-message Car {
-   string make = 1;
-   string model = 2;
-   int32 year = 3;
+function SchemaKeyOrValue({
+  state,
+  isAddVersion,
+  onStateChange,
+}: {
+  state: SchemaEditorStateHelper;
+  isAddVersion: boolean;
+  onStateChange: SetSchemaState;
+}) {
+  return (
+    <Field data-invalid={state.isInvalidKeyOrValue || undefined}>
+      <FieldLabel>Schema applies to</FieldLabel>
+      <RadioGroup
+        className="mt-3 flex"
+        data-testid="schema-create-key-value-radio"
+        disabled={isAddVersion}
+        onValueChange={(e: unknown) => {
+          if (e !== 'KEY' && e !== 'VALUE') {
+            return;
+          }
+          onStateChange((prev) => ({ ...prev, keyOrValue: e }));
+        }}
+        orientation="horizontal"
+        value={state.keyOrValue}
+      >
+        <div className="flex items-center gap-2">
+          <RadioGroupItem disabled={isAddVersion} id="key-or-value-key" value="KEY" />
+          <Label htmlFor="key-or-value-key">Key</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <RadioGroupItem disabled={isAddVersion} id="key-or-value-value" value="VALUE" />
+          <Label htmlFor="key-or-value-value">Value</Label>
+        </div>
+      </RadioGroup>
+      <FieldDescription>
+        Determines whether this schema is registered for the topic's key or value messages.
+      </FieldDescription>
+      {state.isInvalidKeyOrValue && <FieldError>Required</FieldError>}
+    </Field>
+  );
 }
-`.trim(),
-
-  JSON: `
-    {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "name": {
-      "type": "string"
-    }
-  },
-  "required": ["name"],
-  "additionalProperties": false
-}
-    `.trim(),
-} as const;

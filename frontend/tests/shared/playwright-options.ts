@@ -2,6 +2,7 @@ import type { PlaywrightOptions } from '@rstest/playwright';
 import { type BrowserContextOptions, devices } from 'playwright';
 
 import { resolve } from 'node:path';
+import { isNonEmptyString } from '../../src/utils/string-utils';
 
 export function definePlaywrightOptions(
   overrides: BrowserContextOptions = {},
@@ -10,7 +11,7 @@ export function definePlaywrightOptions(
   const enterprise = variant === 'console-enterprise';
   const baseURL = appURL('/', variant);
   return {
-    launchOptions: { headless: !!process.env.CI },
+    launchOptions: { headless: isNonEmptyString(process.env.CI) },
     contextOptions: {
       ...devices['Desktop Chrome'],
       baseURL,
@@ -31,7 +32,7 @@ export function appURL(path: string, variant = process.env.E2E_VARIANT ?? 'conso
     'kafka-connect': 3200,
   };
   const port = ports[variant];
-  if (!port) {
+  if (!Boolean(port)) {
     throw new Error(`Unknown E2E variant: ${variant}`);
   }
   const baseURL = process.env.REACT_APP_ORIGIN ?? `http://localhost:${port}`;

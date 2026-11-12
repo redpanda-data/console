@@ -49,15 +49,13 @@ import type { FormValues } from '../model';
 // resolution, which falls back to the raw numeric enum until the popup is
 // first opened.
 const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
-  value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
+  value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value));
 const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
-  value === undefined || value === null || value === '' ? null : getPatternTypeLabel(Number(value) as ACLPattern);
+  value === undefined || value === null || value === '' ? null : getPatternTypeLabel(Number(value));
 const renderOperationLabel = (value: unknown): React.ReactNode =>
-  value === undefined || value === null || value === '' ? null : getOperationLabel(Number(value) as ACLOperation);
+  value === undefined || value === null || value === '' ? null : getOperationLabel(Number(value));
 const renderPermissionTypeLabel = (value: unknown): React.ReactNode =>
-  value === undefined || value === null || value === ''
-    ? null
-    : getPermissionTypeLabel(Number(value) as ACLPermissionType);
+  value === undefined || value === null || value === '' ? null : getPermissionTypeLabel(Number(value));
 
 const allAclsFilter = {
   resourceType: ACLResource.ACL_RESOURCE_ANY,
@@ -93,7 +91,7 @@ const ACLFilterAlert = ({ index }: { index: number }) => {
 
   return (
     <Alert variant="warning">
-      <Info className="h-4 w-4" />
+      <Info className="size-4" />
       <AlertDescription>This filter will match all ACLs.</AlertDescription>
     </Alert>
   );
@@ -110,7 +108,9 @@ export const AclsStep = () => {
   });
 
   const handleModeChange = (mode: string) => {
-    setValue('aclsMode', mode as 'all' | 'specify');
+    if (mode === 'all' || mode === 'specify') {
+      setValue('aclsMode', mode);
+    }
 
     // Auto-expand when switching to specify mode
     if (mode === 'specify') {
@@ -175,7 +175,7 @@ export const AclsStep = () => {
                           type="button"
                           variant="ghost"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="size-4" />
                         </Button>
                       </CardAction>
                     </CardHeader>

@@ -38,23 +38,24 @@ import { type UseFormReturn, useFormContext } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { EgressGatewayField } from './egress-gateway-field';
+import type { PipelineFormValues } from './use-pipeline-document-recovery';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
 function TagsField({ readonly }: { readonly?: boolean }) {
-  const { control, formState } = useFormContext();
+  const { control, formState } = useFormContext<PipelineFormValues>();
 
   const tagsError = formState.errors.tags;
-  const rootError = String(tagsError?.root?.message ?? (tagsError as { message?: string })?.message ?? '');
+  const rootError = String(tagsError?.root?.message ?? tagsError?.message ?? '');
 
   return (
     <FormField
       control={control}
       name="tags"
       render={({ field }) => {
-        const tags = (field.value ?? []) as Array<{ key: string; value: string }>;
+        const tags = field.value;
         const filtered = tags.filter((t) => t.key);
 
-        if (readonly) {
+        if (readonly === true) {
           return (
             <FormItem>
               <FormLabel>Tags</FormLabel>
@@ -87,7 +88,7 @@ function TagsField({ readonly }: { readonly?: boolean }) {
         }
 
         // Seed with one empty row so the add button is always visible
-        const editableValue = field.value && field.value.length > 0 ? field.value : [{ key: '', value: '' }];
+        const editableValue = field.value.length > 0 ? field.value : [{ key: '', value: '' }];
 
         // Derive per-item errors from the field values directly.
         // With a single FormField for the whole array, RHF may not populate
@@ -95,9 +96,6 @@ function TagsField({ readonly }: { readonly?: boolean }) {
         const fieldErrors = editableValue.map((pair: { key: string; value: string }) => {
           const hasKey = pair.key.length > 0;
           const hasValue = pair.value.length > 0;
-          if (!(hasKey || hasValue)) {
-            return;
-          }
           return {
             key: !hasKey && hasValue ? 'Key is required' : undefined,
             value: hasKey && !hasValue ? 'Value is required' : undefined,
@@ -125,7 +123,7 @@ function TagsField({ readonly }: { readonly?: boolean }) {
 }
 
 function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
-  const { control } = useFormContext();
+  const { control } = useFormContext<PipelineFormValues>();
   const readonly = mode === 'view';
 
   return (
@@ -208,8 +206,7 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
 type ConfigDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // biome-ignore lint/suspicious/noExplicitAny: form type is defined in parent
-  form: UseFormReturn<any>;
+  form: UseFormReturn<PipelineFormValues>;
   mode: 'create' | 'edit' | 'view';
 };
 

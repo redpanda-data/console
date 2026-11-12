@@ -2,16 +2,14 @@ import { afterEach, expect, rs, test } from '@rstest/core';
 import { userEvent } from '@testing-library/user-event';
 import { renderWithFileRoutes, screen } from 'test-utils';
 
-import RpConnectPipelinesCreate from './pipelines-create';
+import { RpConnectPipelinesCreate } from './pipelines-create';
 import { MAX_TASKS, MIN_TASKS } from './tasks';
-import { config } from '../../../config';
+import { config } from '../../../runtime-config';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 
 // The compute-units field clamps on blur: clamping per keystroke makes it unclearable.
 const COMPUTE_UNITS_LABEL = /Compute units/;
-
-rs.mock('../../misc/pipelines-yaml-editor', () => ({ default: () => null }));
-
+rs.mock('../../misc/pipelines-yaml-editor', () => ({ PipelinesYamlEditor: () => null }));
 afterEach(() => {
   pipelinesApi.pipelines = undefined;
   rpcnSecretManagerApi.secrets = undefined;
@@ -20,12 +18,8 @@ afterEach(() => {
 });
 
 const renderCreatePage = () => {
-  pipelinesApi.pipelines = [] as never;
-  rpcnSecretManagerApi.secrets = [] as never;
-  // initPage refreshes secrets, which throws without a client.
-  config.rpcnSecretsClient = {
-    listSecrets: () => Promise.resolve({ response: { secrets: [], nextPageToken: '' } }),
-  } as never;
+  pipelinesApi.pipelines = [];
+  rpcnSecretManagerApi.secrets = [];
   rs.spyOn(RpConnectPipelinesCreate.prototype, 'refreshData').mockImplementation(() => undefined);
   renderWithFileRoutes(<RpConnectPipelinesCreate matchedPath="/rp-connect/create" />);
 };

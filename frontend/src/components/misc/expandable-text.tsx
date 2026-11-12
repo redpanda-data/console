@@ -26,9 +26,9 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
     <span>
       {text}
 
-      {Boolean(isTruncated) && '...'}
+      {isTruncated && '...'}
 
-      {Boolean(showExpander) && (
+      {showExpander && (
         <Button
           aria-expanded={expanded}
           className="h-auto align-baseline"

@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -8,6 +9,8 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { cn } from 'components/redpanda-ui/lib/utils';
 
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import { Ellipsis, toSafeString } from '../../../../../utils/tsx-utils';
@@ -30,7 +33,7 @@ export const MessageHeaders = (props: { msg: TopicMessage }) => {
                   original: { key: headerKey },
                 },
               }) => (
-                <span className="cellDiv" style={{ width: 'auto' }}>
+                <span className={cn('cellDiv', 'w-auto')}>
                   {headerKey ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis> : renderEmptyIcon('Empty Key')}
                 </span>
               ),
@@ -79,11 +82,9 @@ export const MessageHeaders = (props: { msg: TopicMessage }) => {
           subComponent={({ row: { original: header } }) => (
             <div className="px-10 py-6">
               {typeof header.value?.payload === 'object' ? (
-                <KowlJsonView srcObj={header.value.payload as object} style={{ margin: '2em 0' }} />
+                <KowlJsonView className="console-message-headers" srcObj={header.value.payload} />
               ) : (
-                <div className="codeBox" style={{ margin: '0', width: '100%' }}>
-                  {toSafeString(header.value.payload)}
-                </div>
+                <div className={cn('codeBox', 'm-0 w-full')}>{toSafeString(header.value.payload)}</div>
               )}
             </div>
           )}

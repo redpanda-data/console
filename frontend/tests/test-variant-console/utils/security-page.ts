@@ -5,7 +5,11 @@ import { type Page, step } from '../../shared/e2e';
  * Handles user management and other security-related operations
  */
 export class SecurityPage {
-  constructor(protected page: Page) {}
+  protected page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   /**
    * Navigation methods

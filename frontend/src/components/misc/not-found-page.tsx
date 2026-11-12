@@ -3,7 +3,7 @@ import { Link, useLocation, useRouter } from '@tanstack/react-router';
 import { getLegacyAiDestination } from './legacy-ai-route';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import rocketPanda from '../../assets/redpanda/RocketPanda.svg';
-import { config } from '../../config';
+import { config } from '../../runtime-config';
 import { Button, buttonVariants } from '../redpanda-ui/components/button';
 import { cn } from '../redpanda-ui/lib/utils';
 
@@ -12,7 +12,7 @@ export const NotFoundPage = () => {
   const { pathname } = useLocation();
   const legacyAiDestination = getLegacyAiDestination(pathname, config.clusterId);
 
-  if (legacyAiDestination) {
+  if (legacyAiDestination !== null && legacyAiDestination !== undefined && legacyAiDestination !== '') {
     return (
       <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-page">
         <div className="flex flex-col items-center gap-4 text-center">

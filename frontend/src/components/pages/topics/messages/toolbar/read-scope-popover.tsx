@@ -81,14 +81,18 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
   const meta = READ_SCOPE_META[mode];
   const Icon = meta.icon;
   return (
-    <button
+    <Button
       className={cn(
+        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
         'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
-        selected && 'bg-selected-wash'
+        selected &&
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+          'bg-selected-wash'
       )}
       data-testid={`read-scope-mode-${mode}`}
       onClick={onSelect}
       type="button"
+      variant="unstyled"
     >
       <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone="muted" />
       <span className="min-w-0 flex-1">
@@ -96,7 +100,26 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
         <span className="mt-0.5 block text-body-sm leading-relaxed text-muted-foreground">{meta.description}</span>
       </span>
       {selected && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-    </button>
+    </Button>
+  );
+};
+
+const ReadScopeTrigger = ({ liveTail, mode, summary }: { liveTail: boolean; mode: ReadScopeMode; summary: string }) => {
+  const meta = READ_SCOPE_META[mode];
+  const Icon = liveTail ? RadioIcon : meta.icon;
+  return (
+    <ElementTooltip content="Read scope — where to start reading">
+      <PopoverTrigger
+        render={
+          <Button className="h-10" data-testid="read-scope-button" variant="outline">
+            <TonedIcon className="size-4" icon={Icon} tone={liveTail ? 'live' : 'muted'} />
+            <span className="text-label font-semibold">{liveTail ? 'Live tail' : meta.label}</span>
+            <span className="text-body-sm text-muted-foreground tabular-nums">{summary}</span>
+            <TonedIcon className="size-3.5" icon={ChevronDownIcon} tone="muted" />
+          </Button>
+        }
+      />
+    </ElementTooltip>
   );
 };
 
@@ -125,34 +148,14 @@ export const ReadScopePopover = ({
     setOpenState(next);
     onOpenChange?.(next);
   };
-  const meta = READ_SCOPE_META[mode];
-  const Icon = liveTail ? RadioIcon : meta.icon;
   const continuousAvailable = supportsContinuous(mode) && !liveTail;
-  const summary = (() => {
-    if (liveTail) {
-      return '· streaming';
-    }
-    return continuousMode && continuousAvailable ? `· ${maxResults}/page · continuous` : `· ${maxResults}`;
-  })();
+  const summary = readScopeSummary(liveTail, continuousMode && continuousAvailable, maxResults);
 
-  const limitValues = LIMIT_OPTIONS.includes(maxResults)
-    ? LIMIT_OPTIONS
-    : [...LIMIT_OPTIONS, maxResults].sort((a, b) => a - b);
+  const limitValues = readScopeLimitValues(maxResults);
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <ElementTooltip content="Read scope — where to start reading">
-        <PopoverTrigger
-          render={
-            <Button className="h-10" data-testid="read-scope-button" variant="outline">
-              <TonedIcon className="size-4" icon={Icon} tone={liveTail ? 'live' : 'muted'} />
-              <span className="text-label font-semibold">{liveTail ? 'Live tail' : meta.label}</span>
-              <span className="text-body-sm text-muted-foreground tabular-nums">{summary}</span>
-              <TonedIcon className="size-3.5" icon={ChevronDownIcon} tone="muted" />
-            </Button>
-          }
-        />
-      </ElementTooltip>
+      <ReadScopeTrigger liveTail={liveTail} mode={mode} summary={summary} />
       <PopoverContent align="start" className="w-[600px]">
         <div className="flex items-stretch">
           <div className="min-w-0 flex-1 p-2">
@@ -179,12 +182,7 @@ export const ReadScopePopover = ({
               <ModeRow
                 key={m}
                 mode={m}
-                onSelect={() => {
-                  if (liveTail) {
-                    onLiveTailChange(false);
-                  }
-                  onModeChange(m);
-                }}
+                onSelect={() => selectReadScope(m, liveTail, onLiveTailChange, onModeChange)}
                 selected={!liveTail && mode === m}
               />
             ))}
@@ -195,10 +193,13 @@ export const ReadScopePopover = ({
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <button
+            <Button
               className={cn(
+                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                 'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
-                liveTail && 'bg-success-wash hover:bg-success-wash'
+                liveTail &&
+                  // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                  'bg-success-wash hover:bg-success-wash'
               )}
               data-testid="read-scope-mode-live"
               onClick={() => {
@@ -206,6 +207,7 @@ export const ReadScopePopover = ({
                 setOpen(false);
               }}
               type="button"
+              variant="unstyled"
             >
               <TonedIcon className="mt-0.5 size-4 shrink-0" icon={RadioIcon} tone="live" />
               <span className="min-w-0 flex-1">
@@ -215,7 +217,7 @@ export const ReadScopePopover = ({
                 </span>
               </span>
               {liveTail && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-            </button>
+            </Button>
           </div>
 
           <div className="flex w-[290px] shrink-0 flex-col gap-3 border-l p-4">
@@ -302,14 +304,14 @@ export const ReadScopePopover = ({
                 <Select onValueChange={(value) => onPartitionIdChange(Number(value))} value={String(partitionId)}>
                   <SelectTrigger className="w-40" testId="read-scope-partition-select">
                     <SelectValue>
-                      {(value: unknown) => (Number(value) === -1 ? 'All partitions' : `Partition ${value}`)}
+                      {(value: unknown) => (Number(value) === -1 ? 'All partitions' : `Partition ${String(value)}`)}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="-1">All partitions</SelectItem>
-                    {Array.from({ length: partitionCount }, (_, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        Partition {i}
+                    {Array.from({ length: partitionCount }, (_, id) => id).map((id) => (
+                      <SelectItem key={id} value={String(id)}>
+                        Partition {id}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -322,3 +324,25 @@ export const ReadScopePopover = ({
     </Popover>
   );
 };
+
+function readScopeSummary(live: boolean, continuous: boolean, maxResults: number): string {
+  if (live) {
+    return '· streaming';
+  }
+  return continuous ? `· ${maxResults}/page · continuous` : `· ${maxResults}`;
+}
+
+function readScopeLimitValues(maxResults: number): number[] {
+  return LIMIT_OPTIONS.includes(maxResults) ? LIMIT_OPTIONS : [...LIMIT_OPTIONS, maxResults].sort((a, b) => a - b);
+}
+function selectReadScope(
+  mode: ReadScopePopoverProps['mode'],
+  live: boolean,
+  onLiveChange: ReadScopePopoverProps['onLiveTailChange'],
+  onModeChange: ReadScopePopoverProps['onModeChange']
+) {
+  if (live) {
+    onLiveChange(false);
+  }
+  onModeChange(mode);
+}

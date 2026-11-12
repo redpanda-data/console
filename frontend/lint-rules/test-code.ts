@@ -17,7 +17,7 @@ import {
 } from './ast.ts';
 
 // Test code is every Console test file plus the helpers tests delegate to, so moving a wait
-// into a helper does not hide it. Per-file exceptions belong in `.oxlintrc.json` overrides.
+// into a helper does not hide it. Per-file exceptions belong in `oxlint.policy.json` overrides.
 const TEST_FILE = /\.(?:cases|spec|test)\.[cm]?[jt]sx?$/u;
 const HELPER_FILES = [
   /(?:^|\/)tests\/shared\//u,
@@ -120,7 +120,7 @@ export function testChain(sourceCode: SourceCode, callee: Node): TestChain | und
     return isTestApiName(api) ? { api, members: rest, calls } : undefined;
   }
   const api = root && testApi(sourceCode, root);
-  return api ? { api, members, calls } : undefined;
+  return api !== null && api !== undefined && api !== '' ? { api, members, calls } : undefined;
 }
 
 export const isHook = (name: string) => HOOKS.has(name);
@@ -131,7 +131,9 @@ function namespacedExport(sourceCode: SourceCode, member: ESTree.MemberExpressio
   const namespace = object?.type === 'Identifier' ? importOf(sourceCode, object) : undefined;
   const name = memberName(member);
   const isNamespace = namespace?.imported === '*' && TEST_MODULES.has(namespace.source);
-  return isNamespace && name ? { source: namespace.source, name } : undefined;
+  return isNamespace && name !== null && name !== undefined && name !== ''
+    ? { source: namespace.source, name }
+    : undefined;
 }
 
 /**
@@ -179,7 +181,8 @@ function clockKinds(node: Node | undefined) {
 /** What `useFakeTimers(options)` fakes; Rstest's default fakes everything but ticks. */
 function fakedBy(options: Node | undefined): Set<ClockKind> {
   const kinds = new Set(clockKinds(propertyValue(options, 'toFake')) ?? FAKED_BY_DEFAULT);
-  for (const kind of clockKinds(propertyValue(options, 'toNotFake')) ?? []) {
+  const clocksToKeepReal = clockKinds(propertyValue(options, 'toNotFake')) ?? [];
+  for (const kind of clocksToKeepReal) {
     kinds.delete(kind);
   }
   return kinds;
@@ -204,12 +207,12 @@ export function clockControl(sourceCode: SourceCode, call: ESTree.CallExpression
 /** The `beforeEach`/`beforeAll` call that registers `fn`, if any; `after*` hooks run too late. */
 function setupHookRegistration(sourceCode: SourceCode, fn: FunctionNode | ESTree.Program) {
   const { parent } = fn;
-  if (parent?.type !== 'CallExpression' || !parent.arguments.some((argument) => argument === fn)) {
+  if (parent?.type !== 'CallExpression' || parent.arguments.every((argument) => argument !== fn)) {
     return;
   }
   const chain = testChain(sourceCode, parent.callee);
   const name = chain?.members.at(-1) ?? chain?.api;
-  return name && SETUP_HOOKS.has(name) ? parent : undefined;
+  return name !== null && name !== undefined && name !== '' && SETUP_HOOKS.has(name) ? parent : undefined;
 }
 
 export type ClockRegion = {

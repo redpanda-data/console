@@ -8,7 +8,7 @@ export default async function setup() {
     await Promise.race([
       once(child, 'message', { signal: AbortSignal.timeout(5000) }),
       exited.then(([code]) => {
-        throw new Error(`Bundle server exited before readiness: ${code}`);
+        throw new Error(`Bundle server exited before readiness: ${String(code)}`);
       }),
     ]);
   } catch (error) {

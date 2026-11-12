@@ -1,3 +1,5 @@
+import { isNonEmptyString } from './string-utils';
+
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -47,7 +49,7 @@ export const getTextPreview = (content: string, maxLines: number): string => {
 
 /** First and last word's initials, upper-cased: `'John B Doe'` -> `'JD'`. Empty for blank input. */
 export const getUserInitials = (displayName: string | undefined | null): string => {
-  if (!displayName?.trim()) {
+  if (!isNonEmptyString(displayName?.trim())) {
     return '';
   }
 

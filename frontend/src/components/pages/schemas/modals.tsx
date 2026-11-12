@@ -183,7 +183,7 @@ function CompatibilityErrorDetails({ compatibilityError }: { compatibilityError?
 }
 
 function ParsingErrorDetails({ errorDetails }: { errorDetails?: string }) {
-  if (!errorDetails) {
+  if (!(errorDetails !== null && errorDetails !== undefined && errorDetails !== '')) {
     return null;
   }
   return (

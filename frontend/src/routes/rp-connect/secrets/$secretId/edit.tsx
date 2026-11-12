@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import RpConnectSecretUpdate from '../../../../components/pages/rp-connect/secrets/secrets-update';
-
+import { RpConnectSecretUpdate } from '../../../../components/pages/rp-connect/secrets/secrets-update';
 export const Route = createFileRoute('/rp-connect/secrets/$secretId/edit')({
   staticData: {
     title: 'Edit Connector Secret',

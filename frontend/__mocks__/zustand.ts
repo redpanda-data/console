@@ -27,9 +27,18 @@ import { afterEach, rs } from '@rstest/core';
 import { act } from '@testing-library/react';
 import type * as ZustandExportedTypes from 'zustand';
 
+export type {
+  ExtractState,
+  Mutate,
+  StateCreator,
+  StoreApi,
+  StoreMutatorIdentifier,
+  StoreMutators,
+  UseBoundStore,
+} from 'zustand';
 // Re-export everything from zustand
 // biome-ignore lint/performance/noBarrelFile: Mock file needs to re-export all Zustand exports
-export * from 'zustand';
+export { useStore } from 'zustand';
 
 const { create: actualCreate, createStore: actualCreateStore } =
   rs.requireActual<typeof ZustandExportedTypes>('zustand');
@@ -37,35 +46,76 @@ const { create: actualCreate, createStore: actualCreateStore } =
 // A variable to hold reset functions for all stores declared in the app
 export const storeResetFns = new Set<() => void>();
 
-const createUncurried = <T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
-  const store = actualCreate(stateCreator);
-  const initialState = store.getInitialState();
-  storeResetFns.add(() => {
-    store.setState(initialState, true);
-  });
+function createUncurried<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+): ZustandExportedTypes.UseBoundStore<ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos>> {
+  let initializedApi: ZustandExportedTypes.StoreApi<T> | undefined;
+  const captureApi: ZustandExportedTypes.StateCreator<T, [], Mos> = (set, get, api) => {
+    initializedApi = api;
+    return stateCreator(set, get, api);
+  };
+  const store = actualCreate(captureApi);
+  if (initializedApi === undefined) {
+    throw new Error('Zustand initializer did not run');
+  }
+  const baselineApi = initializedApi;
+  // Read only after create returns: the initial snapshot is not available during the initializer itself.
+  const initialState = baselineApi.getInitialState();
+  storeResetFns.add(() => baselineApi.setState(initialState, true));
   return store;
-};
+}
 
-// When creating a store, we get its initial state, create a reset function and add it in the set
-export const create = (<T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
-  // To support curried version of create
-  return typeof stateCreator === 'function' ? createUncurried(stateCreator) : createUncurried;
-}) as typeof ZustandExportedTypes.create;
+export function create<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+): ZustandExportedTypes.UseBoundStore<ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos>>;
+export function create<T>(): <Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+) => ZustandExportedTypes.UseBoundStore<ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos>>;
+export function create<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator?: ZustandExportedTypes.StateCreator<T, [], Mos>
+) {
+  if (stateCreator !== undefined) {
+    return createUncurried(stateCreator);
+  }
+  return <Mutators extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+    initializer: ZustandExportedTypes.StateCreator<T, [], Mutators>
+  ) => createUncurried(initializer);
+}
 
-const createStoreUncurried = <T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
-  const store = actualCreateStore(stateCreator);
-  const initialState = store.getInitialState();
-  storeResetFns.add(() => {
-    store.setState(initialState, true);
-  });
+function createStoreUncurried<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+): ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos> {
+  let initializedApi: ZustandExportedTypes.StoreApi<T> | undefined;
+  const captureApi: ZustandExportedTypes.StateCreator<T, [], Mos> = (set, get, api) => {
+    initializedApi = api;
+    return stateCreator(set, get, api);
+  };
+  const store = actualCreateStore(captureApi);
+  if (initializedApi === undefined) {
+    throw new Error('Zustand initializer did not run');
+  }
+  const baselineApi = initializedApi;
+  const initialState = baselineApi.getInitialState();
+  storeResetFns.add(() => baselineApi.setState(initialState, true));
   return store;
-};
+}
 
-// When creating a store, we get its initial state, create a reset function and add it in the set
-export const createStore = (<T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
-  // To support curried version of createStore
-  return typeof stateCreator === 'function' ? createStoreUncurried(stateCreator) : createStoreUncurried;
-}) as typeof ZustandExportedTypes.createStore;
+export function createStore<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+): ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos>;
+export function createStore<T>(): <Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator: ZustandExportedTypes.StateCreator<T, [], Mos>
+) => ZustandExportedTypes.Mutate<ZustandExportedTypes.StoreApi<T>, Mos>;
+export function createStore<T, Mos extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+  stateCreator?: ZustandExportedTypes.StateCreator<T, [], Mos>
+) {
+  if (stateCreator !== undefined) {
+    return createStoreUncurried(stateCreator);
+  }
+  return <Mutators extends [ZustandExportedTypes.StoreMutatorIdentifier, unknown][] = []>(
+    initializer: ZustandExportedTypes.StateCreator<T, [], Mutators>
+  ) => createStoreUncurried(initializer);
+}
 
 // Reset all stores after each test run
 afterEach(() => {

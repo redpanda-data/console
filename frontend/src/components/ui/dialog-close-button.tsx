@@ -9,18 +9,18 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { X } from 'lucide-react';
 
 const dialogCloseButtonVariants = cva(
-  'absolute rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none',
+  'absolute rounded-sm p-1 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:pointer-events-none',
   {
     variants: {
       size: {
-        small: 'top-2 right-2 [&_svg]:h-4 [&_svg]:w-4',
-        medium: 'top-4 right-4 [&_svg]:h-6 [&_svg]:w-6',
+        small: 'top-2 right-2 [&_svg]:size-4',
+        medium: 'top-4 right-4 [&_svg]:size-6',
       },
     },
     defaultVariants: {
       size: 'medium',
     },
-  },
+  }
 );
 
 function DialogCloseButton({

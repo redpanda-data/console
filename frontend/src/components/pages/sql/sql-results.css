@@ -10,10 +10,15 @@
   --rdg-header-background-color: var(--color-muted);
   --rdg-row-hover-background-color: var(--color-accent);
   --rdg-selection-color: var(--color-action-primary);
-  border: none;
-  block-size: auto;
+
   flex: 1;
+  block-size: auto;
   min-block-size: 0;
+
+  /* Cross-platform native scrollbars use the grid theme. */
+  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
+  border: none;
 }
 
 .sql-results-grid .rdg-cell {
@@ -41,14 +46,10 @@
 /* Cross-platform scrollbars. Native Linux scrollbars render opaque/black
    over the grid; make them thin with a transparent track and a subtle thumb
    so they blend in instead. rdg scrolls on its own root element. */
-.rdg.sql-results-grid {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
 
 .rdg.sql-results-grid::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  inline-size: 10px;
+  block-size: 10px;
 }
 
 .rdg.sql-results-grid::-webkit-scrollbar-track,

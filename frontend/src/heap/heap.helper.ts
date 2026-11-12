@@ -1,3 +1,5 @@
+import { isNonEmptyString } from '../utils/string-utils';
+
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -39,7 +41,7 @@ declare global {
  * @param userData - User data to track in Heap
  */
 export const trackHeapUser = (userData: HeapUserData) => {
-  if (window.heap && userData.email) {
+  if (window.heap && isNonEmptyString(userData.email)) {
     window.heap.identify(userData.email);
 
     const { email: _email, ...userProperties } = userData;

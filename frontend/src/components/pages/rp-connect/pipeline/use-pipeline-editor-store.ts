@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import type { editor } from 'monaco-editor';
 import { createContext, createElement, type ReactNode, useContext, useRef } from 'react';
 import { useStore } from 'zustand';
 import { createStore, type StateCreator, type StoreApi } from 'zustand/vanilla';
 
+import type { PipelineEditor } from './pipeline-editor-port';
 import type { ConnectComponentType } from '../types/schema';
-import { type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml';
+import { type RedpandaSetupResultLike, tryPatchRedpandaYaml } from '../utils/yaml-redpanda';
 
 type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users' | null;
 type AddConnectorType = ConnectComponentType | 'resource' | null;
@@ -46,7 +46,7 @@ type DocumentSlice = {
 
 // Transient editor-page UI: Monaco handle, active lane, dialog/menu flags.
 type UiSlice = {
-  editorInstance: editor.IStandaloneCodeEditor | null;
+  editorInstance: PipelineEditor | null;
   activeViewLane: ViewLane;
   activeEditLane: EditLane;
   // Node selected in the Visual lane, mirrored here so the YAML lane can reveal it on tab switch.
@@ -72,7 +72,7 @@ type UiSlice = {
   // Save so an in-progress node edit is included.
   pendingEditCommit: (() => void) | null;
   setPendingEditCommit: (fn: (() => void) | null) => void;
-  setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
+  setEditorInstance: (editorInstance: PipelineEditor | null) => void;
   setActiveViewLane: (activeViewLane: ViewLane) => void;
   setActiveEditLane: (activeEditLane: EditLane) => void;
   setSelectedNodeId: (selectedNodeId: string | null) => void;

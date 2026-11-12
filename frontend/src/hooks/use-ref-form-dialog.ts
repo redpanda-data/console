@@ -28,7 +28,7 @@ type UseRefFormDialogReturn<TTarget> = {
   isOpen: boolean;
   isSubmitting: boolean;
   target: TTarget | null;
-  open: (target?: TTarget) => void;
+  open: (target: TTarget) => void;
   close: () => void;
   submit: () => Promise<void>;
 };
@@ -81,7 +81,7 @@ async function settleSubmission<TData>(
       return;
     }
 
-    if (result.success && result.data) {
+    if (result.success && result.data !== undefined) {
       handlers.onSubmitted(result.data);
     } else {
       handlers.onFailed();
@@ -106,8 +106,8 @@ function useRefFormDialog<TData, TTarget = boolean>(
     setIsSubmitting(false);
   }, []);
 
-  const open = useCallback((t?: TTarget) => {
-    setTarget((t ?? true) as TTarget);
+  const open = useCallback((t: TTarget) => {
+    setTarget(t);
   }, []);
 
   const submit = useCallback(async () => {

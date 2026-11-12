@@ -12,6 +12,7 @@
 import { isBlockingPhase, type LinkIdentity, linkCanRead } from 'components/cluster-fence/cluster-fence-model';
 import type { ShadowLinkPeerFence, ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import type { UnifiedShadowLink } from '../model';
 
@@ -95,13 +96,13 @@ const FAILING_OVER_STATES = new Set([ShadowTopicState.FAILING_OVER, ShadowTopicS
 export const getLinkIdentity = (link: UnifiedShadowLink | undefined): LinkIdentity => {
   const clientOptions = link?.configurations?.clientOptions;
   const username = clientOptions?.authenticationConfiguration?.authentication?.value.username;
-  if (username) {
+  if (isNonEmptyString(username)) {
     return { authentication: 'sasl', principal: username };
   }
   const tls = clientOptions?.tlsSettings;
   const certificate =
     tls?.tlsSettings?.case === 'tlsFileSettings' ? tls.tlsSettings.value.certPath : tls?.tlsSettings?.value.cert;
-  if (tls?.enabled && certificate) {
+  if (tls?.enabled === true && isNonEmptyString(certificate)) {
     return { authentication: 'mtls' };
   }
   return link ? { authentication: 'none' } : {};

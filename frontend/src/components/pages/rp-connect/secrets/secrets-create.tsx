@@ -3,14 +3,15 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 
 import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-api';
-import { showToast } from '../../../../utils/toast.utils';
+import { reportActionError, showToast } from '../../../../utils/toast.utils';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
-import PageContent from '../../../misc/page-content';
+import { PageContent } from '../../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
 
@@ -29,7 +30,7 @@ class RpConnectSecretCreate extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    rpcnSecretManagerApi.refreshSecrets(force);
+    rpcnSecretManagerApi.refreshSecrets(force).catch(reportActionError);
   }
 
   render() {
@@ -67,37 +68,34 @@ const RpConnectSecretCreateContent = () => {
     appGlobal.historyPush(returnToListTab);
   };
 
-  const createSecret = () => {
+  const createSecret = async () => {
     setIsCreating(true);
     const uppercasedId = id.toUpperCase();
     setId(uppercasedId);
-    rpcnSecretManagerApi
-      .create(
+    try {
+      await rpcnSecretManagerApi.create(
         create(CreateSecretRequestSchema, {
           id: uppercasedId,
           secretData: base64ToUInt8Array(encodeBase64(secret)),
           scopes: [Scope.REDPANDA_CONNECT],
         })
-      )
-      .then(() => {
-        showToast({
-          status: 'success',
-          duration: 4000,
-          title: 'Secret created',
-        });
-        pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush(returnToListTab);
-      })
-      .catch((err) => {
-        showToast({
-          status: 'error',
-          title: 'Failed to create secret',
-          description: formatPipelineError(err),
-        });
-      })
-      .finally(() => {
-        setIsCreating(false);
+      );
+      showToast({
+        status: 'success',
+        duration: 4000,
+        title: 'Secret created',
       });
+      pipelinesApi.refreshPipelines(true).catch(reportActionError);
+      appGlobal.historyPush(returnToListTab);
+    } catch (error) {
+      showToast({
+        status: 'error',
+        title: 'Failed to create secret',
+        description: formatPipelineError(error),
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const isIdEmpty = id.trim().length === 0;
@@ -156,7 +154,7 @@ const RpConnectSecretCreateContent = () => {
             aria-label="Create secret"
             disabled={isIdEmpty || isSecretEmpty || hasNameError}
             isLoading={isCreating}
-            onClick={createSecret}
+            onClick={asyncEvent(createSecret, reportActionError)}
             testId="submit-create-rpcn-secret"
           >
             Create secret
@@ -170,4 +168,4 @@ const RpConnectSecretCreateContent = () => {
   );
 };
 
-export default RpConnectSecretCreate;
+export { RpConnectSecretCreate };

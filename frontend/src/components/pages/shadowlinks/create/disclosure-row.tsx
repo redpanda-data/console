@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ChevronRightIcon } from 'components/icons';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type React from 'react';
@@ -46,15 +47,17 @@ export const DisclosureRow = ({
   <Collapsible onOpenChange={onOpenChange} open={open} testId={testId}>
     <CollapsibleTrigger
       render={
-        <button
-          className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
+        <Button
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+          className="-mx-2 flex w-full items-start gap-2 rounded-md p-2 text-left hover:bg-muted/50"
           data-testid={triggerTestId}
           type="button"
+          variant="unstyled"
         >
           <span
             className={cn('mt-1 flex shrink-0 transition-transform motion-reduce:transition-none', open && 'rotate-90')}
           >
-            <TonedIcon className="h-4 w-4" icon={ChevronRightIcon} tone="muted" />
+            <TonedIcon className="size-4" icon={ChevronRightIcon} tone="muted" />
           </span>
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -63,7 +66,7 @@ export const DisclosureRow = ({
             </div>
             <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
           </div>
-        </button>
+        </Button>
       }
     />
     <CollapsibleContent className="mt-2 ml-6">

@@ -10,10 +10,6 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-
-// Enable automatic store reset between tests - must be before imports
-rs.mock('zustand');
-
 import { act, renderHook } from '@testing-library/react';
 
 import {
@@ -23,6 +19,10 @@ import {
   useRpcnWizardStore,
 } from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
+import { isObject } from '../utils/type-guards';
+
+// Enable automatic store reset between tests - must be before imports
+rs.mock('zustand');
 
 function renderStoresWithReset() {
   const wizardResult = renderHook(() => useRpcnWizardStore()).result;
@@ -139,7 +139,7 @@ describe('the RPCN Wizard Store', () => {
 
         const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
         expect(stored).toBeTruthy();
-        if (stored) {
+        if (stored !== null && stored !== undefined && stored !== '') {
           expect(JSON.parse(stored)).toMatchObject(wizardData);
         }
       });
@@ -159,7 +159,10 @@ describe('the RPCN Wizard Store', () => {
 
         // Persist middleware should clear storage on reset
         const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-        const parsed = stored ? JSON.parse(stored) : {};
+        const parsed: unknown = stored !== null && stored !== undefined && stored !== '' ? JSON.parse(stored) : {};
+        if (!isObject(parsed)) {
+          throw new Error('Invalid persisted wizard state');
+        }
         expect(parsed.input).toBeUndefined();
         expect(parsed.output).toBeUndefined();
       });
@@ -175,8 +178,11 @@ describe('the RPCN Wizard Store', () => {
         const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
         expect(stored).toBeTruthy();
 
-        if (stored) {
-          const parsed = JSON.parse(stored);
+        if (stored !== null && stored !== undefined && stored !== '') {
+          const parsed: unknown = JSON.parse(stored);
+          if (!isObject(parsed)) {
+            throw new Error('Invalid persisted wizard state');
+          }
           expect(parsed.input).toBeDefined();
           expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
         }

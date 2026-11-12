@@ -15,9 +15,11 @@ import React, { type FC } from 'react';
 import StackTrace from 'stacktrace-js';
 
 import { NoClipboardPopover } from './no-clipboard-popover';
+import { arrayMax } from '../../utils/array-utils';
 import { envVarDebugAr } from '../../utils/env';
 import { isClipboardAvailable } from '../../utils/feature-detection';
 import { toJson } from '../../utils/json-utils';
+import { isNonEmptyString, removeStringPrefix } from '../../utils/string-utils';
 import { showToast } from '../../utils/toast.utils';
 import { navigatorClipboardErrorHandler, objToKv } from '../../utils/tsx-utils';
 
@@ -41,9 +43,10 @@ type ErrorBoundaryState = {
   decodingDone: boolean;
   infoItems: InfoItem[];
 };
-
-type ErrorBoundaryProps = { children?: React.ReactNode; fallback?: React.ReactNode };
-
+type ErrorBoundaryProps = {
+  children?: React.ReactNode;
+  fallback?: React.ReactNode;
+};
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(p: ErrorBoundaryProps) {
     super(p);
@@ -56,7 +59,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     };
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complexity 19 - extensive error parsing for multiple info types (stack, components, environment)
   componentDidCatch(error: Error | null, errorInfo: object) {
     const { infoItems, decodedStackIndex } = getInitialErrorInfo(error, errorInfo);
 
@@ -69,7 +71,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     });
 
     // Decode stack trace asynchronously
-    if (error?.stack) {
+    if (isNonEmptyString(error?.stack)) {
       StackTrace.fromError(error)
         .then((frames) => {
           // Decode Success
@@ -82,13 +84,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             return { infoItems: newInfoItems, decodingDone: true };
           });
         })
-        .catch((err) => {
+        .catch((decodeError: unknown) => {
           // Decode Error
           this.setState((prevState) => {
             const newInfoItems = [...prevState.infoItems];
             newInfoItems[decodedStackIndex] = {
               name: 'Stack (Decoded)',
-              value: `Unable to decode stacktrace\n${String(err)}`,
+              value: `Unable to decode stacktrace\n${String(decodeError)}`,
             };
             return { infoItems: newInfoItems, decodingDone: true };
           });
@@ -160,12 +162,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     );
   }
 }
-
-const CopyToClipboardButton: FC<{ message: string; disabled: boolean; isLoading: boolean }> = ({
-  message,
-  disabled,
-  isLoading,
-}) => (
+const CopyToClipboardButton: FC<{
+  message: string;
+  disabled: boolean;
+  isLoading: boolean;
+}> = ({ message, disabled, isLoading }) => (
   <Button
     disabled={disabled}
     isLoading={isLoading}
@@ -206,13 +207,13 @@ function InfoItemDisplay({ data }: { data: InfoItem }) {
 
 function getInitialErrorInfo(error: Error | null, errorInfo: object) {
   const infoItems: InfoItem[] = [];
-  if (error?.name && error.name.toLowerCase() !== 'error') {
+  if (isNonEmptyString(error?.name) && error.name.toLowerCase() !== 'error') {
     infoItems.push({ name: 'Type', value: error.name });
   }
-  infoItems.push({ name: 'Message', value: error?.message || '(no message)' });
+  infoItems.push({ name: 'Message', value: (error?.message ?? '') || '(no message)' });
   const decodedStackIndex = infoItems.length;
   infoItems.push({ name: 'Stack (Decoded)', value: 'Decoding stack trace, please wait...' });
-  if (error?.stack) {
+  if (isNonEmptyString(error?.stack)) {
     infoItems.push({ name: 'Stack (Raw)', value: getRawErrorStack(error) });
   }
   infoItems.push(getComponentStackInfo(errorInfo), getEnvironmentInfo(), getLocationInfo());
@@ -220,7 +221,7 @@ function getInitialErrorInfo(error: Error | null, errorInfo: object) {
 }
 
 function getRawErrorStack(error: Error): string {
-  const stack = (error.stack ?? '').removePrefix('error:').trim();
+  const stack = removeStringPrefix(error.stack ?? '', 'error:').trim();
   return error.message && stack.startsWith(error.message) ? stack.slice(error.message.length).trimStart() : stack;
 }
 
@@ -228,17 +229,17 @@ function getComponentStackInfo(errorInfo: object): InfoItem {
   return {
     name: 'Components',
     value:
-      errorInfo && typeof errorInfo === 'object' && 'componentStack' in errorInfo
+      errorInfo !== null && typeof errorInfo === 'object' && 'componentStack' in errorInfo
         ? String(errorInfo.componentStack)
-        : errorInfo
-          ? `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`
-          : '(errorInfo was not set)',
+        : errorInfo === null
+          ? '(errorInfo was not set)'
+          : `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`,
   };
 }
 
 function getEnvironmentInfo(): InfoItem {
   try {
-    const padLength = envVarDebugAr.max((entry) => entry.name.length);
+    const padLength = arrayMax(envVarDebugAr, (entry) => entry.name.length);
     return {
       name: 'Environment',
       value: envVarDebugAr.map((entry) => `${entry.name.padEnd(padLength)}: ${entry.value}`).join('\n'),
@@ -256,8 +257,11 @@ function getLocationInfo(): InfoItem {
       Search: window?.location?.search ?? '<null>',
       Hash: window?.location?.hash ?? '<null>',
     });
-    const padLength = items.max((item) => item.key.length);
-    return { name: 'Location', value: items.map((item) => `${item.key.padEnd(padLength)}: ${item.value}`).join('\n') };
+    const padLength = arrayMax(items, (item) => item.key.length);
+    return {
+      name: 'Location',
+      value: items.map((item) => `${item.key.padEnd(padLength)}: ${String(item.value)}`).join('\n'),
+    };
   } catch {
     return { name: 'Location', value: '(error printing location, please include the url in your bug report)' };
   }

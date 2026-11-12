@@ -8,8 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-
-export default (
+export const OktaLogo = (
   <svg focusable={false} viewBox="0 0 260 260">
     <title>Okta</title>
     <g fill="currentColor" stroke="none" transform="translate(0,260) scale(0.100000,-0.100000)">

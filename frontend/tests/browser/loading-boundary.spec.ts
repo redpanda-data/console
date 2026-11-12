@@ -37,11 +37,11 @@ function captureRevealAnimations(page: Page): Promise<RevealAnimation[]> {
 }
 
 function expectEditorOnlyReveal(animations: RevealAnimation[], reducedMotion: ReducedMotion) {
-  expect(animations.filter(({ pseudo }) => pseudo?.endsWith('(root)'))).toEqual([]);
+  expect(animations.filter(({ pseudo }) => pseudo?.endsWith('(root)') === true)).toEqual([]);
   if (reducedMotion === 'reduce') {
     expect(animations).toEqual([]);
   } else {
-    expect(animations.some(({ pseudo }) => pseudo?.endsWith('(editor)'))).toBe(true);
+    expect(animations.some(({ pseudo }) => pseudo?.endsWith('(editor)') === true)).toBe(true);
   }
 }
 

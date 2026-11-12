@@ -10,8 +10,6 @@
  */
 
 import { removeNamespace } from '../../components/pages/connect/helper';
-import { encodeBase64, retrier } from '../../utils/utils';
-import { api } from '../backend-api';
 import {
   type ClusterAdditionalInfo,
   type ClusterConnectors,
@@ -23,7 +21,29 @@ import {
   DataType,
   PropertyImportance,
   PropertyWidth,
-} from '../rest-interfaces';
+} from '../../types/kafka-connect';
+import {
+  applyCustomDefaults,
+  bindSecretValue,
+  initialPropertyValue,
+  isSubmittedProperty,
+  linkPropertiesToGroups,
+  type Property,
+  type PropertyGroup,
+  parseConfigJson,
+  parsePropertyValue,
+  sanitizeValue,
+  stepGroupOrder,
+  syncRecommendedValues,
+  updatePropertyErrors,
+} from '../../types/kafka-connect-properties';
+import { arrayFirst, arrayIsEqual, arrayOrderBy, arrayRemoveAll } from '../../utils/array-utils';
+import { isNonEmptyString } from '../../utils/string-utils';
+import { isObject } from '../../utils/type-guards';
+import { encodeBase64, retrier } from '../../utils/utils';
+import { api } from '../backend-api';
+
+export type { Property, PropertyGroup } from '../../types/kafka-connect-properties';
 
 // Regex for validating secret strings
 const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;
@@ -35,12 +55,18 @@ export type ConfigPageProps = {
 };
 
 export type ConnectorSecret = Map<string, string>;
-export type UpdatingConnectorData = { clusterName: string; connectorName: string };
-export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
-
+export type UpdatingConnectorData = {
+  clusterName: string;
+  connectorName: string;
+};
+export type RestartingTaskData = {
+  clusterName: string;
+  connectorName: string;
+  taskId: number;
+};
 class CustomError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = this.constructor.name;
   }
 }
@@ -50,47 +76,18 @@ export class ConnectorCreationError extends CustomError {}
 
 export class SecretCreationError extends CustomError {}
 
-const sanitizeBoolean = (val: unknown) => {
-  if (typeof val === 'boolean') {
-    return val;
+function describeConnectorFailure(error: unknown): string {
+  if (error instanceof Error) {
+    return error.toString();
   }
-  if (typeof val === 'string') {
-    const lVal = val.toLowerCase();
-    if (lVal === 'true') {
-      return true;
-    }
-    if (lVal === 'false') {
-      return false;
-    }
-    return val;
+  if (!isObject(error)) {
+    return String(error);
   }
-  return false;
-};
-
-const sanitizeNumber = (val: unknown) => {
-  const n = Number.parseFloat(String(val));
-  return Number.isFinite(n) ? n : null;
-};
-
-function sanitizeDefaultValue(value: unknown, type: string) {
-  switch (type) {
-    case DataType.Boolean:
-      return sanitizeBoolean(value);
-    case DataType.Int:
-    case DataType.Long:
-    case DataType.Short:
-      return sanitizeNumber(value);
-    default:
-      return value;
-  }
-}
-
-function sanitizeValue(value: unknown, type: string) {
-  switch (type) {
-    case DataType.Boolean:
-      return sanitizeBoolean(value);
-    default:
-      return value;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    // Retain the original rejection in Error.cause, even if its graph cannot be serialized for the message.
+    return 'Connector operation failed with an unserializable error.';
   }
 }
 
@@ -124,7 +121,8 @@ export class ConnectClusterStore {
 
       // biome-ignore lint/style/noNonNullAssertion: safe after refreshData
       this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
-      this.features.secretStore = !!this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
+      this.features.secretStore =
+        this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE') === true;
       this.isInitialized = true;
     }
   }
@@ -150,7 +148,7 @@ export class ConnectClusterStore {
       await api.createConnector(this.clusterName, String(finalProperties.name), pluginClass, finalProperties);
       this.removePluginState(pluginClass);
     } catch (error) {
-      throw new ConnectorCreationError(String(error));
+      throw new ConnectorCreationError(describeConnectorFailure(error), { cause: error });
     }
   }
 
@@ -167,7 +165,7 @@ export class ConnectClusterStore {
       }
 
       // Get connector name from the actual config object (works in both form and JSON mode)
-      const connectorName = requireConnectorName(connector.getConfigObject() as Record<string, unknown> | undefined);
+      const connectorName = requireConnectorName(connector.getConfigObject());
 
       // Stop at the first failure without creating later secrets or mutating their config fields.
       await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
@@ -178,7 +176,7 @@ export class ConnectClusterStore {
         }
       }, Promise.resolve());
     } catch (error) {
-      throw new SecretCreationError(String(error));
+      throw new SecretCreationError(describeConnectorFailure(error), { cause: error });
     }
   }
 
@@ -254,7 +252,7 @@ export class ConnectClusterStore {
     // Preserve partial-update order: later secrets stay untouched if an update fails.
     await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
       await previous;
-      if (secret.isDirty && secret.id) {
+      if (secret.isDirty && isNonEmptyString(secret.id)) {
         await api.updateSecret(this.clusterName, secret.id, secret.serialized);
         const property = connectorState.propsByName.get(key);
         if (property) {
@@ -273,10 +271,13 @@ export class ConnectClusterStore {
     connectorName: string | null,
     initialConfig: Record<string, unknown> | undefined
   ) {
-    const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
+    const identifier =
+      connectorName !== null && connectorName !== undefined && connectorName !== ''
+        ? `${pluginClassName}/${connectorName}`
+        : pluginClassName;
     let connectorStore = this.connectors.get(identifier);
     if (!connectorStore) {
-      const connectorType = this.additionalClusterInfo.plugins.first((x) => x.class === pluginClassName)?.type;
+      const connectorType = arrayFirst(this.additionalClusterInfo.plugins, (x) => x.class === pluginClassName)?.type;
       if (connectorType) {
         connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
           secretStore: this.features.secretStore,
@@ -294,14 +295,14 @@ export class ConnectClusterStore {
     const connectorProperties = this.getConnector(
       connector?.class ?? '',
       connectorName,
-      connector?.config as Record<string, unknown> | undefined
+      isObject(connector?.config) ? connector.config : undefined
     );
     return connectorProperties;
   }
 
   get cluster(): ClusterConnectors | null {
     if (this.isInitialized) {
-      const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === this.clusterName);
+      const cluster = api.connectConnectors?.clusters?.find((c) => c.clusterName === this.clusterName);
       if (!cluster) {
         throw new Error('cluster not found');
       }
@@ -320,8 +321,8 @@ export class ConnectClusterStore {
   validateConnectorState(connectorName: string, state: ConnectorPossibleStatesLiteral[]) {
     if (this.isInitialized) {
       const cluster = this.cluster;
-      const connector = cluster?.connectors.first((c) => c.name === connectorName);
-      return state.some((s) => s === connector?.state);
+      const connector = cluster?.connectors.find((c) => c.name === connectorName);
+      return connector !== undefined && state.includes(connector.state);
     }
   }
 
@@ -343,7 +344,7 @@ export class ConnectClusterStore {
   getRemoteConnector(connectorName: string) {
     if (this.isInitialized) {
       const cluster = this.cluster;
-      const connector = cluster?.connectors.first((c) => c.name === connectorName);
+      const connector = cluster?.connectors.find((c) => c.name === connectorName);
       return connector;
     }
   }
@@ -390,7 +391,7 @@ export class Secret {
   id: string | null = null;
   secretString: string | null = null;
   isDirty = false;
-  private listeners: Set<() => void> = new Set();
+  private readonly listeners: Set<() => void> = new Set();
 
   constructor(key: string) {
     this.key = key;
@@ -398,7 +399,7 @@ export class Secret {
 
   // Manual reactivity - call this when value or secretString changes
   private notifyListeners() {
-    if (this.secretString && this.value) {
+    if (isNonEmptyString(this.secretString) && this.value) {
       this.isDirty = this.value !== this.secretString;
     }
     for (const listener of this.listeners) {
@@ -433,7 +434,7 @@ export class Secret {
 
   getSecretString(key: string, id?: string): string | null {
     const _id = id ?? this.id;
-    if (_id) {
+    if (_id !== null && _id !== undefined && _id !== '') {
       return `\${secretsManager:${_id}:${key}}`;
     }
     return null;
@@ -443,7 +444,7 @@ export class Secret {
     if (!this.validateSecretString(secretString)) {
       return false;
     }
-    this.id = String(secretString).split(':')[1];
+    this.id = secretString.split(':')[1];
     return !!this.id;
   }
 
@@ -477,9 +478,8 @@ export class ConnectorPropertiesStore {
   private readonly appliedConfig: Record<string, unknown> | undefined;
 
   // Track changes for manual invalidation
-  private changeListeners: Set<() => void> = new Set();
+  private readonly changeListeners: Set<() => void> = new Set();
 
-  // biome-ignore lint/nursery/useMaxParams: Legacy class with multiple constructor parameters
   constructor(
     clusterName: string,
     pluginClassName: string,
@@ -492,10 +492,10 @@ export class ConnectorPropertiesStore {
     this.connectorType = connectorType;
     this.appliedConfig = appliedConfig;
 
-    if (features?.secretStore) {
+    if (features?.secretStore === true) {
       this.secrets = new SecretsStore();
     }
-    if (features?.editing) {
+    if (features?.editing === true) {
       this.crud = 'update';
     }
 
@@ -524,8 +524,7 @@ export class ConnectorPropertiesStore {
 
   createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]): PropertyGroup {
     const self = this;
-
-    return {
+    const propertyGroup: PropertyGroup = {
       step,
       group,
       properties,
@@ -534,23 +533,24 @@ export class ConnectorPropertiesStore {
       get filteredProperties(): Property[] {
         if (self.showAdvancedOptions) {
           // advanced mode shows all settings
-          return this.properties;
+          return propertyGroup.properties;
         }
         // in simple mode, we only show props that are high importance
-        return this.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
+        return propertyGroup.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
       },
     };
+    return propertyGroup;
   }
 
-  getConfigObject(): object {
+  getConfigObject(): Record<string, unknown> {
     if (this.viewMode === 'json') {
       return { 'connector.class': this.pluginClassName, ...parseConfigJson(this.jsonText) };
     }
 
-    const config = {
+    const config: Record<string, unknown> = {
       'connector.class': this.pluginClassName,
       ...this.appliedConfig,
-    } as Record<string, unknown>;
+    };
 
     for (const g of this.allGroups) {
       for (const p of g.properties) {
@@ -563,11 +563,15 @@ export class ConnectorPropertiesStore {
   }
 
   updateProperties(properties: Record<string, unknown>) {
+    const updates: [Property, Property['value']][] = [];
     for (const [key, value] of Object.entries(properties)) {
       const property = this.propsByName.get(key);
       if (property) {
-        property.value = value as null | string | number | boolean | string[];
+        updates.push([property, parsePropertyValue(value)]);
       }
+    }
+    for (const [property, value] of updates) {
+      property.value = value;
     }
     this.notifyChange();
   }
@@ -589,10 +593,10 @@ export class ConnectorPropertiesStore {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.validate(config).catch(console.error);
       });
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error in initConfig', err);
-      this.error = err instanceof Error ? err.message : JSON.stringify(err, undefined, 4);
+      console.error('error in initConfig', error);
+      this.error = error instanceof Error ? error.message : JSON.stringify(error, undefined, 4);
     }
 
     this.initPending = false;
@@ -677,9 +681,9 @@ export class ConnectorPropertiesStore {
       // Validate the current config
       const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
       this.applyValidationResult(validationResult);
-    } catch (err: unknown) {
+    } catch (error: unknown) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error validating config', err);
+      console.error('error validating config', error);
     }
   }
 
@@ -696,8 +700,7 @@ export class ConnectorPropertiesStore {
     }
 
     // Sort all groups again because order might have changed
-    this.allGroups = this.allGroups.orderBy((x) => stepGroupOrder(validationResult.steps, x.group.name));
-
+    this.allGroups = arrayOrderBy(this.allGroups, (x) => stepGroupOrder(validationResult.steps, x.group.name));
     // Set last error values, so we know when to show the validation error
     for (const g of this.allGroups) {
       for (const p of g.properties) {
@@ -714,7 +717,7 @@ export class ConnectorPropertiesStore {
     for (const key of removedProps) {
       // group names might not be accurate so we check all groups
       for (const g of this.allGroups) {
-        g.properties.removeAll((x) => x.name === key);
+        arrayRemoveAll(g.properties, (x) => x.name === key);
       }
 
       // remove from lookup
@@ -722,7 +725,7 @@ export class ConnectorPropertiesStore {
     }
 
     // Remove empty groups
-    this.allGroups.removeAll((x) => x.properties.length === 0);
+    arrayRemoveAll(this.allGroups, (x) => x.properties.length === 0);
   }
 
   private mergeValidatedProperty(source: Property) {
@@ -741,7 +744,7 @@ export class ConnectorPropertiesStore {
     target.entry.value.visible = source.entry.value.visible;
 
     // Update: errors
-    if (!target.errors.isEqual(source.errors)) {
+    if (!arrayIsEqual(target.errors, source.errors)) {
       updatePropertyErrors(target, source.errors);
     }
   }
@@ -782,15 +785,15 @@ export class ConnectorPropertiesStore {
       lastErrors: [],
       showErrors: p.value.errors.length > 0,
       currentErrorIndex: 0,
-      lastErrorValue: undefined as unknown,
-      propertyGroup: undefined as unknown as PropertyGroup,
+      lastErrorValue: undefined,
+      propertyGroup: undefined,
       crud: this.crud,
       isDisabled: undefined,
       notifyChange: () => this.notifyChange(),
     };
 
-    if (this.appliedConfig?.[name]) {
-      property.value = sanitizeValue(this.appliedConfig[name], definitionType) as Property['value'];
+    if (Boolean(this.appliedConfig?.[name])) {
+      property.value = sanitizeValue(parsePropertyValue(this.appliedConfig?.[name]), definitionType);
     }
 
     if (p.definition.type === DataType.Password && this.secrets && p.value.visible) {
@@ -860,174 +863,3 @@ function withSecretValues(
   }
   return properties;
 }
-
-function parseConfigJson(jsonText: string): Record<string, unknown> {
-  try {
-    return JSON.parse(jsonText);
-  } catch {
-    // no op - JSON may be invalid during editing
-    return {};
-  }
-}
-
-// Whether a property's value goes into the submitted config. Optional values still at their default
-// are left out, so the connector keeps following the default.
-function isSubmittedProperty(p: Property, config: Record<string, unknown>): boolean {
-  if (p.entry.definition.required) {
-    return true;
-  }
-  if (p.value === p.entry.definition.default_value) {
-    // Prevent sending configs set to default when the user has not modified them.
-
-    // let's ignore the default variable if the value is the same as initially rendered
-    // otherwise, user might want to set it back to default
-    if (p.value === p.entry.value.value) {
-      return false;
-    }
-    // let's ignore the variable if the original value is null and the config is not present in current set configs values.
-    if (p.entry.value.value === null && !config[p.name]) {
-      return false;
-    }
-  }
-  // skip boolean values that default to false
-  return !(p.value === false && !p.entry.definition.default_value);
-}
-
-function applyCustomDefaults(allProps: Property[]) {
-  // Set default values
-  for (const p of allProps) {
-    if (p.entry.definition.custom_default_value !== undefined) {
-      p.value = p.entry.definition.custom_default_value;
-    }
-  }
-
-  // Set last error values, so we know when to show the validation error
-  for (const p of allProps) {
-    if (p.errors.length > 0) {
-      p.lastErrorValue = p.value;
-    }
-  }
-}
-
-function linkPropertiesToGroups(groups: PropertyGroup[]) {
-  // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
-  for (const g of groups) {
-    for (const p of g.properties) {
-      p.propertyGroup = g;
-    }
-  }
-
-  // Notify groups about errors in their children
-  for (const g of groups) {
-    g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
-  }
-}
-
-// The group's position across all steps' groups; a group no step lists sorts last.
-function stepGroupOrder(steps: ConnectorStep[], groupName: string | undefined): number {
-  let order = 0;
-  for (const s of steps) {
-    for (const g of s.groups) {
-      if (groupName === g.name) {
-        return order;
-      }
-      order += 1;
-    }
-  }
-
-  return order;
-}
-
-function syncRecommendedValues(target: Property, source: Property) {
-  const suggestedSrc = source.entry.value.recommended_values;
-  const suggestedTar = target.entry.value.recommended_values;
-  if (!suggestedSrc.isEqual(suggestedTar)) {
-    suggestedTar.updateWith(suggestedSrc);
-  }
-}
-
-// Show the first error, skipping over simple / unhelpful messages when there are several.
-function firstHelpfulErrorIndex(errors: string[]): number {
-  if (errors.length <= 1) {
-    return 0;
-  }
-  const betterStartValue = errors.findIndex((x) => !x.includes('which has no default value'));
-  return betterStartValue > -1 ? betterStartValue : 0;
-}
-
-function updatePropertyErrors(target: Property, errors: string[]) {
-  if (errors.length > 0) {
-    target.lastErrors = [...errors]; // create copy
-  }
-
-  // Update
-  target.errors.updateWith(errors);
-
-  target.showErrors = target.errors.length > 0;
-  target.currentErrorIndex = firstHelpfulErrorIndex(target.errors);
-
-  // Add or remove from parent group
-  if (target.errors.length > 0) {
-    target.propertyGroup.propertiesWithErrors.pushDistinct(target);
-  } else {
-    target.propertyGroup.propertiesWithErrors.remove(target);
-  }
-}
-
-// Fix type of default values
-function initialPropertyValue(p: ConnectorProperty): Property['value'] {
-  const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, p.definition.type);
-  const initialValue: unknown = sanitizeValue(p.value.value, p.definition.type);
-  return (initialValue ?? defaultValue) as Property['value'];
-}
-
-// Writes to the property's value also land in its secret.
-function bindSecretValue(property: Property, secret: Secret) {
-  secret.extractSecretId(String(property.value));
-
-  // Instead of intercept, we'll use a custom setter pattern
-  // Store original value
-  let currentValue = property.value;
-  Object.defineProperty(property, 'value', {
-    get() {
-      return currentValue;
-    },
-    set(newValue) {
-      currentValue = newValue;
-      secret.value = String(newValue);
-    },
-    enumerable: true,
-    configurable: true,
-  });
-}
-
-export type PropertyGroup = {
-  step: ConnectorStep;
-  group: ConnectorGroup;
-
-  properties: Property[];
-
-  readonly filteredProperties: Property[];
-
-  propertiesWithErrors: Property[];
-
-  description?: string;
-  documentation_link?: string;
-};
-
-export type Property = {
-  name: string;
-  entry: ConnectorProperty;
-  value: null | string | number | boolean | string[];
-  isHidden: boolean; // currently only used for "connector.class"
-  errors: string[]; // current errors
-  showErrors: boolean; // true = property has errors currently
-  lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
-  currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
-  lastErrorValue: unknown; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
-
-  propertyGroup: PropertyGroup;
-  crud: 'create' | 'update';
-  isDisabled: boolean | undefined;
-  notifyChange: () => void;
-};

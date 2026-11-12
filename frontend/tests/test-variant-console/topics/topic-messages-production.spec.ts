@@ -1,4 +1,4 @@
-import { step } from '../../shared/e2e';
+import { appURL, step } from '../../shared/e2e';
 
 // spec: specs/topics.md
 // seed: tests/seed.spec.ts
@@ -181,9 +181,8 @@ test.describe('produce Messages', () => {
       // Try to produce
       await page.getByTestId('produce-button').click();
 
-      // Message might be produced (empty is valid) or button might be disabled
-      // Just verify no crash occurs — page may navigate after producing
-      await page.waitForLoadState('networkidle', { timeout: 10_000 });
+      // Empty payloads are valid; successful production returns to the topic's message list.
+      await expect(page).toHaveURL(appURL(`/topics/${topicName}`));
     });
 
     await topicPage.deleteTopic(topicName);

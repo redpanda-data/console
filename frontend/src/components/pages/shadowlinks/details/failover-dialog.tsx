@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
 import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon } from 'lucide-react';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import {
   type FailoverReadiness,
@@ -76,13 +77,13 @@ const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
 
 const behindVerdict = (behind: LagStep['behind'], topicName: string | undefined): Verdict => ({
   status: 'not-ready',
-  text: topicName
+  text: isNonEmptyString(topicName)
     ? `${topicName} is still behind, so its newest records won’t be on this cluster.`
     : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
 });
 
 const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdict => {
-  const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
+  const subject = isNonEmptyString(topicName) ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
   return {
     status: 'not-ready',
     text: `${subject} faulted, so ${faulted.length === 1 ? 'it' : 'they'} may be missing records.`,
@@ -91,11 +92,11 @@ const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdi
 
 /** A topic still behind or faulted, among the one being failed over or all of them. */
 const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict | undefined => {
-  const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
+  const behind = isNonEmptyString(topicName) ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
   if (behind.length > 0) {
     return behindVerdict(behind, topicName);
   }
-  const faulted = topicName ? lag.faulted.filter((name) => name === topicName) : lag.faulted;
+  const faulted = isNonEmptyString(topicName) ? lag.faulted.filter((name) => name === topicName) : lag.faulted;
   if (faulted.length > 0) {
     return faultedVerdict(faulted, topicName);
   }
@@ -110,7 +111,7 @@ const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict =
   }
   return {
     status: 'ready',
-    text: topicName ? `${topicName} has caught up.` : 'Every topic has caught up.',
+    text: isNonEmptyString(topicName) ? `${topicName} has caught up.` : 'Every topic has caught up.',
   };
 };
 
@@ -136,7 +137,7 @@ const pausedCheck = ({ lag }: FailoverReadiness): Check | undefined => {
 };
 
 const failoverLabel = (isLoading: boolean | undefined, unsafe: boolean) => {
-  if (isLoading) {
+  if (isLoading === true) {
     return 'Failing over…';
   }
   return unsafe ? 'Fail over anyway' : 'Fail over';
@@ -175,10 +176,10 @@ const GuidedFailoverDialog = ({
   readiness,
   checkingLag = false,
 }: FailoverDialogProps & { readiness: FailoverReadiness }) => {
-  if (!topicName && (readiness.failover.done || readiness.failover.inProgress > 0)) {
+  if (!isNonEmptyString(topicName) && (readiness.failover.done || readiness.failover.inProgress > 0)) {
     return <FailoverUnderWayDialog onOpenChange={onOpenChange} open={open} readiness={readiness} />;
   }
-  const paused = topicName ? undefined : pausedCheck(readiness);
+  const paused = isNonEmptyString(topicName) ? undefined : pausedCheck(readiness);
   const checks: Check[] = [
     { id: 'source', ...sourceVerdict(readiness) },
     { id: 'lag', ...lagVerdict(readiness, topicName, checkingLag) },
@@ -190,11 +191,13 @@ const GuidedFailoverDialog = ({
     <AlertDialog onOpenChange={onOpenChange} open={open}>
       <AlertDialogContent testId="failover-dialog">
         <AlertDialogHeader className="text-left">
-          <AlertDialogTitle>{topicName ? `Fail over ${topicName}?` : 'Fail over all topics?'}</AlertDialogTitle>
+          <AlertDialogTitle>
+            {isNonEmptyString(topicName) ? `Fail over ${topicName}?` : 'Fail over all topics?'}
+          </AlertDialogTitle>
           <AlertDialogDescription render={<div />}>
             <div className="flex flex-col gap-4">
               <p className="text-body">
-                {topicName
+                {isNonEmptyString(topicName)
                   ? `This makes ${topicName} writable on this cluster and stops syncing it from the source cluster. You can’t undo it.`
                   : 'This makes every shadow topic writable on this cluster and stops syncing them from the source cluster. You can’t undo it.'}
               </p>
@@ -232,7 +235,7 @@ const GuidedFailoverDialog = ({
         <AlertDialogFooter>
           <AlertDialogCancel variant="ghost">Cancel</AlertDialogCancel>
           <AlertDialogAction
-            disabled={isLoading || checkingLag}
+            disabled={isLoading === true || checkingLag}
             onClick={onConfirm}
             testId="confirm-failover"
             variant="destructive"
@@ -286,7 +289,7 @@ const LegacyFailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoad
           <AlertDialogTitle>Confirm Failover</AlertDialogTitle>
           <AlertDialogDescription>
             <div className="mb-4 text-body">
-              {topicName
+              {topicName !== null && topicName !== undefined && topicName !== ''
                 ? `This action will promote the shadow topic "${topicName}" to an active state, allowing writes to this cluster.`
                 : 'This action will promote all shadow topics to an active state, allowing writes to this cluster.'}
             </div>
@@ -308,7 +311,7 @@ const LegacyFailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoad
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
           <AlertDialogAction disabled={isLoading} onClick={onConfirm} testId="confirm-failover">
-            {isLoading ? 'Failing over...' : 'Confirm Failover'}
+            {isLoading === true ? 'Failing over...' : 'Confirm Failover'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

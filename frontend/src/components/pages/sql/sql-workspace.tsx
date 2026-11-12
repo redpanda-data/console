@@ -51,6 +51,8 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { CatalogTree } from './catalog-tree';
 import {
@@ -78,6 +80,8 @@ import {
   withFetchedTables,
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
+import { isNonEmptyString } from '../../../utils/string-utils';
+import { isPresent } from '../../../utils/type-guards';
 
 // Start with a blank editor — the results pane prompts the caller to run a
 // query (or create a table from a topic when the catalog is empty) instead of
@@ -98,7 +102,7 @@ function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
   let cell: CellValue = value.nullValue ? null : (value.value ?? null);
   // Arrays keep their raw string form — only scalar bools coerce. Case-insensitive
   // so 'TRUE'/'T'/'True' don't slip through as a falsey render.
-  if (cell !== null && column.kind === 'bool' && !column.isArray) {
+  if (cell !== null && column.kind === 'bool' && !(column.isArray === true)) {
     const v = cell.toLowerCase();
     cell = v === 'true' || v === 't';
   }
@@ -107,13 +111,13 @@ function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
 
 function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   const result: ResultRow = {};
-  row.values.forEach((value, index) => {
+  for (const [index, value] of row.values.entries()) {
     const column = columns[index];
-    if (!column) {
-      return;
+    if (!isPresent(column)) {
+      continue;
     }
     result[column.name] = cellValueForColumn(value, column);
-  });
+  }
   return result;
 }
 
@@ -157,7 +161,7 @@ function useSqlStudioPage() {
 // the "Add a topic" button. Falls back to viewer until the lookup resolves.
 function useSqlRole(sqlRoleProp: SqlRole | undefined): SqlRole {
   const { data: identity } = useGetSqlIdentityQuery();
-  return sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
+  return sqlRoleProp ?? (identity?.isAdmin === true ? 'admin' : 'viewer');
 }
 
 // The catalog tree's view model, plus the Redpanda-catalog tables fetched up
@@ -201,7 +205,7 @@ function useSqlCatalogs() {
     isLoading,
     isRefreshing: isFetchingCatalogs || isFetchingTables,
     redpandaTables: redpandaTablesData?.tables,
-    hasTables: (redpandaTablesData?.tables?.length ?? 0) > 0,
+    hasTables: isPresent(redpandaTablesData?.tables) && redpandaTablesData?.tables.length > 0,
   };
 }
 
@@ -223,7 +227,10 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): 
       queryName: 'iceberg_topic_translation_lag',
       params: {
         filters: { topic: bridgeTopic ?? '' },
-        time: bridgeRunAt ? timestampFromDate(new Date(bridgeRunAt)) : undefined,
+        time:
+          bridgeRunAt !== null && bridgeRunAt !== undefined && Boolean(bridgeRunAt)
+            ? timestampFromDate(new Date(bridgeRunAt))
+            : undefined,
       },
     },
     { enabled: Boolean(bridgeTopic) }
@@ -233,7 +240,10 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): 
       queryName: 'iceberg_topic_commit_lag',
       params: {
         filters: { topic: bridgeTopic ?? '' },
-        time: bridgeRunAt ? timestampFromDate(new Date(bridgeRunAt)) : undefined,
+        time:
+          bridgeRunAt !== null && bridgeRunAt !== undefined && Boolean(bridgeRunAt)
+            ? timestampFromDate(new Date(bridgeRunAt))
+            : undefined,
       },
     },
     { enabled: Boolean(bridgeTopic) }
@@ -242,7 +252,7 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): 
     // Bridge-ness is the topic being Iceberg-tiered — not whether lag has shown up.
     // Lag defaults to 0 when its series is absent (e.g. translation hasn't started),
     // which the timeline reads as "fully caught up" and hides; the badge still shows.
-    if (!(bridgeTopic && bridgeTopicTiered)) {
+    if (!(bridgeTopic !== null && bridgeTopic !== undefined && bridgeTopic !== '' && bridgeTopicTiered)) {
       return;
     }
     const tx = bridgeTxLag.data?.results?.[0]?.value?.value;
@@ -300,7 +310,7 @@ function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
       onSuccess: (res) => {
         // Refresh even when a newer run superseded this one: the DDL still ran.
         if (isCatalogChangingKeyword(sql)) {
-          deps.invalidateSqlCatalog();
+          deps.invalidateSqlCatalog().catch(reportActionError);
         }
         if (deps.latestRunToken.current === token) {
           deps.setRun(successRun(res, token, start));
@@ -343,7 +353,8 @@ function useSqlRun(
 
   const doRun = useCallback(
     (sql: string) => {
-      const token = (latestRunToken.current += 1);
+      const token = latestRunToken.current + 1;
+      latestRunToken.current = token;
       const kw = firstKeyword(sql);
       // Block writes/DDL/DCL on the first keyword; read-shaped statements
       // (SELECT/WITH/EXPLAIN/SHOW/…) pass and the server rejects what it can't run.
@@ -351,8 +362,7 @@ function useSqlRun(
       // Drive the bridge indicator off the executed query (single tiered topic),
       // not the catalog click — so it only shows for the topic actually queried.
       const nextBridgeTopic = blocked ? null : bridgeTopicForQuery(sql, completionCatalogs);
-      setBridgeTopic(nextBridgeTopic);
-      setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
+      updateBridgeRun(nextBridgeTopic, { setTopic: setBridgeTopic, setRunAt: setBridgeRunAt });
 
       if (blocked) {
         setRun({ state: 'error', token, ...blockedStatementError(kw) });
@@ -395,8 +405,9 @@ function useAddTopicWizard(
   // the wizard's topic picker so you can't create a duplicate.
   const takenTopics = useMemo(() => {
     const taken = new Set<string>();
-    for (const t of redpandaTables ?? []) {
-      if (t.topic) {
+    const catalogTables = redpandaTables ?? [];
+    for (const t of catalogTables) {
+      if (isNonEmptyString(t.topic)) {
         taken.add(t.topic);
       }
       taken.add(t.name);
@@ -431,11 +442,11 @@ function useAddTopicWizard(
       executeQuery.mutate(
         { request: create(ExecuteQueryRequestSchema, { statement }) },
         {
-          onSuccess: async () => {
+          onSuccess: asyncEvent(async () => {
             await invalidateSqlCatalog();
             toast.success(`Table ${tableName} created`);
             closeWizard();
-          },
+          }, reportActionError),
           onError: (error) => setWizardError(error.message),
         }
       );
@@ -488,7 +499,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
 
       <div
         className={cn(
-          'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
+          'flex min-h-0 flex-1 overflow-hidden bg-background transition-all duration-300 ease-in-out',
           // Boxed: rounded card below the studio header. Full: flush sides; top/bottom
           // borders stay so clipped scrollable content keeps a visible edge.
           expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border shadow-sm'
@@ -501,7 +512,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
             isRefreshing={isRefreshing}
             onAddTable={openWizard}
             onQueryTable={onQueryTable}
-            onRefresh={invalidateSqlCatalog}
+            onRefresh={asyncEvent(invalidateSqlCatalog, reportActionError)}
             sqlRole={sqlRole}
           />
         </div>
@@ -535,4 +546,12 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       </div>
     </div>
   );
+}
+
+function updateBridgeRun(
+  topic: string | null,
+  actions: { setTopic: (value: string | null) => void; setRunAt: (value: number | null) => void }
+) {
+  actions.setTopic(topic);
+  actions.setRunAt(topic !== null && topic !== '' ? Date.now() : null);
 }

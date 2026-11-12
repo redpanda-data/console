@@ -1,3 +1,5 @@
+import 'components/legacy-layout.css';
+import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -60,6 +62,7 @@ import type {
   ResultRow,
   SqlRole,
 } from './sql-types';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { TonedIcon } from '../shared/toned-icon';
 
 export type SqlResultsProps = {
@@ -85,7 +88,7 @@ const CSV_FORMULA_RE = /^[=+\-@]/;
 
 // Shared inline-stat layout used across the summary bar.
 const RES_STAT =
-  'inline-flex items-center gap-1.5 text-body-sm text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
+  'inline-flex items-center gap-1.5 text-body-sm text-foreground tabular-nums [&_svg]:text-muted-foreground';
 
 // Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
@@ -165,15 +168,17 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
       <ElementTooltip content="Show JSON">
         <PopoverTrigger
           render={
-            <button
+            <Button
               className={cn(
+                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                 'block cursor-pointer truncate text-left font-mono underline decoration-dotted underline-offset-2',
                 CELL_MAX_W
               )}
               type="button"
+              variant="unstyled"
             >
               {value}
-            </button>
+            </Button>
           }
         />
       </ElementTooltip>
@@ -218,15 +223,17 @@ function LongCellPopover({ value }: { value: string }) {
       <ElementTooltip content="Show full value">
         <PopoverTrigger
           render={
-            <button
+            <Button
               className={cn(
+                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                 'block cursor-pointer truncate text-left underline decoration-dotted underline-offset-2',
                 CELL_MAX_W
               )}
               type="button"
+              variant="unstyled"
             >
               {value}
-            </button>
+            </Button>
           }
         />
       </ElementTooltip>
@@ -302,9 +309,9 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
 // WeakMap gives each a consistent id for rowKeyGetter without an index key.
 function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   const map = new WeakMap<ResultRow, number>();
-  rows.forEach((r, i) => {
-    map.set(r, i);
-  });
+  for (const [index, row] of rows.entries()) {
+    map.set(row, index);
+  }
   return map;
 }
 
@@ -335,7 +342,7 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       // Headers stay left-aligned for every kind; only numeric cell values
       // right-align (so digits line up) — keep the column name readable.
       renderHeaderCell: () => (
-        <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
+        <span className="flex h-full flex-col items-start justify-center gap-0.75 font-sans leading-none">
           <span className="font-mono text-body-sm font-semibold text-strong">{c.name}</span>
           <span className="inline-flex items-center gap-1 text-2xs font-normal tracking-wide text-muted-foreground uppercase">
             {c.short}
@@ -369,7 +376,7 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
 
   return (
     <CellPopoverContainerContext.Provider value={clipEl}>
-      <div className="flex h-full min-h-0 w-full flex-col">
+      <div className="flex size-full min-h-0 flex-col">
         <div className="flex shrink-0 items-center gap-4 border-b border-border bg-card px-4 py-2">
           <div className="flex min-w-0 flex-wrap items-center gap-4">
             {bridge ? (
@@ -422,9 +429,9 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
+            className="console-variable-top pointer-events-none absolute inset-x-0 bottom-0 overflow-hidden"
             ref={setClipEl}
-            style={{ top: GRID_HEADER_H }}
+            style={{ '--console-top': `${GRID_HEADER_H}px` } as ComponentStyleVars}
           />
         </div>
       </div>
@@ -529,17 +536,17 @@ export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = tru
 
   if (run.state === 'error') {
     return (
-      <div className="flex h-full min-h-0 w-full flex-col gap-3.5 overflow-y-auto p-6">
+      <div className="flex size-full min-h-0 flex-col gap-3.5 overflow-y-auto p-6">
         <Alert icon={<CircleX />} variant="destructive">
           <AlertTitle>{run.title}</AlertTitle>
           <AlertDescription>{run.message}</AlertDescription>
         </Alert>
-        {run.hint ? (
+        {isNonEmptyString(run.hint) ? (
           <Alert icon={<Lightbulb />} variant="informative">
             <AlertTitle>Hint</AlertTitle>
             <AlertDescription>
               {run.hint}
-              {run.hintAction && sqlRole === 'admin' && onAddTable ? (
+              {run.hintAction === true && sqlRole === 'admin' && onAddTable ? (
                 <Button onClick={onAddTable} size="sm" variant="primary">
                   <Plus size={14} /> Add a topic to SQL
                 </Button>

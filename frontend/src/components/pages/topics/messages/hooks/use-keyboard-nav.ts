@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { useCopyToClipboard } from 'components/redpanda-ui/lib/use-copy-to-clipboard';
 import { isTypingTarget } from 'hooks/use-hot-key';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 export type KeyboardNavOptions = {
   /** Row keys in on-screen (sorted, paginated) order. */
@@ -40,7 +41,8 @@ const moveSelection = (e: KeyboardEvent, delta: number, { visibleKeys, selectedK
     return;
   }
   e.preventDefault();
-  const currentIndex = selectedKey ? visibleKeys.indexOf(selectedKey) : -1;
+  const currentIndex =
+    selectedKey !== null && selectedKey !== undefined && selectedKey !== '' ? visibleKeys.indexOf(selectedKey) : -1;
   const nextIndex = Math.min(Math.max(currentIndex + delta, 0), visibleKeys.length - 1);
   onSelect(visibleKeys[nextIndex]);
 };
@@ -51,7 +53,12 @@ const moveSelection = (e: KeyboardEvent, delta: number, { visibleKeys, selectedK
  * real clipboard selection with the row's JSON would otherwise be a very unpleasant surprise.
  */
 const copySelectedValue = (e: KeyboardEvent, { selectedKey, getCopyText, copy }: KeyContext) => {
-  if (!selectedKey || e.metaKey || e.ctrlKey || e.altKey) {
+  if (
+    !(selectedKey !== null && selectedKey !== undefined && selectedKey !== '') ||
+    e.metaKey ||
+    e.ctrlKey ||
+    e.altKey
+  ) {
     return;
   }
   const text = getCopyText(selectedKey);
@@ -69,18 +76,47 @@ const KEY_HANDLERS = new Map<string, (e: KeyboardEvent, context: KeyContext) => 
   ['c', copySelectedValue],
 ]);
 
+function writeClipboardText(value: string): Promise<void> {
+  const clipboard = typeof navigator === 'undefined' ? undefined : navigator.clipboard;
+  if (clipboard === undefined || clipboard === null || typeof clipboard.writeText !== 'function') {
+    throw new Error('Clipboard access is unavailable.');
+  }
+  return clipboard.writeText(value);
+}
+
+// Keyboard actions need per-attempt completion/error ownership, not copied-state timers.
+async function copyValue(value: string): Promise<void> {
+  if (value.length === 0) {
+    return;
+  }
+  try {
+    await writeClipboardText(value);
+  } catch (error) {
+    toast.error('Failed to copy value', {
+      description: error instanceof Error ? error.message : 'Could not copy to the clipboard.',
+    });
+    return;
+  }
+  toast.success('Value copied to clipboard');
+}
+
 /**
  * Table keyboard navigation from the design mock: j/k or ↑/↓ move the selected
  * row, `c` copies the value, `/` focuses the filter input. Escape is handled by
  * the detail panel itself.
  */
 export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText, enabled }: KeyboardNavOptions) {
-  const { copyToClipboard } = useCopyToClipboard({ onCopy: () => toast.success('Value copied to clipboard') });
   useEffect(() => {
     if (!enabled) {
       return;
     }
-    const context: KeyContext = { visibleKeys, selectedKey, onSelect, getCopyText, copy: copyToClipboard };
+    const context: KeyContext = {
+      visibleKeys,
+      selectedKey,
+      onSelect,
+      getCopyText,
+      copy: asyncEvent(copyValue, reportActionError),
+    };
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isTypingTarget(e.target)) {
         KEY_HANDLERS.get(e.key)?.(e, context);
@@ -88,5 +124,5 @@ export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enabled, visibleKeys, selectedKey, onSelect, getCopyText, copyToClipboard]);
+  }, [enabled, visibleKeys, selectedKey, onSelect, getCopyText]);
 }

@@ -15,9 +15,10 @@ import {
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/serverless_egress_gateway_pb';
 import { listServerlessEgressGateways } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/serverless_egress_gateway-ServerlessEgressGatewayService_connectquery';
 import { create } from '@bufbuild/protobuf';
-import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+
+import { config, isEmbedded } from '../../../runtime-config';
 
 /** The API's largest page. */
 const PAGE_SIZE = 100;

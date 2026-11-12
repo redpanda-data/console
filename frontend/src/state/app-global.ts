@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ParsedLocation, Router } from '@tanstack/react-router';
+import type { AnyRouter, ParsedLocation } from '@tanstack/react-router';
 
-import { api } from './backend-api';
 import { uiState } from './ui-state';
+import { isPresent } from '../utils/type-guards';
 
 type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
 
@@ -22,15 +22,21 @@ const TRAILING_SLASH_REGEX = /\/+$/;
 class AppGlobal {
   private _navigate: NavigateFn | null = null;
   private _location: ParsedLocation | null = null;
-  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
-  private _router: Router<any, any, any> | null = null;
+  private clearApiErrors = () => {
+    // There is no API error cache before its owner registers this callback.
+  };
+
+  setClearApiErrors(clear: () => void) {
+    this.clearApiErrors = clear;
+  }
+  private _router: AnyRouter | null = null;
 
   /**
    * Normalizes a path by removing trailing slashes for consistent comparison.
    * This prevents duplicate navigations when paths differ only by trailing slash.
    */
   private normalizePath(path: string | undefined): string {
-    if (!path) {
+    if (!(path !== null && path !== undefined && path !== '')) {
       return '/';
     }
     return path.replace(TRAILING_SLASH_REGEX, '') || '/';
@@ -43,7 +49,7 @@ class AppGlobal {
       return;
     }
     uiState.pathName = path;
-    api.errors = [];
+    this.clearApiErrors();
     this._navigate?.(path);
   }
 
@@ -53,7 +59,7 @@ class AppGlobal {
       return;
     }
     uiState.pathName = path;
-    api.errors = [];
+    this.clearApiErrors();
     this._navigate?.(path, { replace: true });
   }
 
@@ -62,22 +68,21 @@ class AppGlobal {
   }
 
   setNavigate(fn: NavigateFn) {
-    if (this._navigate === fn || !fn) {
+    if (this._navigate === fn || !isPresent(fn)) {
       return;
     }
     this._navigate = fn;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
-  setRouter(router: Router<any, any, any>) {
-    if (this._router === router || !router) {
+  setRouter(router: AnyRouter) {
+    if (this._router === router || !isPresent(router)) {
       return;
     }
     this._router = router;
   }
 
   setLocation(location: ParsedLocation) {
-    if (this._location === location || !location) {
+    if (this._location === location || !isPresent(location)) {
       return;
     }
     this._location = location;
@@ -90,15 +95,14 @@ class AppGlobal {
     return this._location;
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
-  get router(): Router<any, any, any> {
+  get router(): AnyRouter {
     if (!this._router) {
       throw new Error('Router is not initialized. Make sure RouterSync is mounted.');
     }
     return this._router;
   }
 
-  onRefresh: () => void = () => {
+  onRefresh: (() => void) | (() => Promise<unknown>) = () => {
     // intended for pages to set
   };
 

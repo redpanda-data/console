@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
-import './utils/array-extensions';
 // Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
@@ -41,20 +39,15 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
 import { protobufRegistry } from 'protobuf-registry';
-import queryClient from 'query-client';
+import { queryClient } from 'query-client';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
-import {
-  addBearerTokenInterceptor,
-  checkExpiredLicenseInterceptor,
-  getGrpcBasePath,
-  type SetConfigArguments,
-  setup,
-} from './config';
+import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, setup } from './config';
 import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
+import { getGrpcBasePath, type SetConfigArguments } from './runtime-config';
 import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
 
@@ -86,7 +79,10 @@ export interface EmbeddedProps extends SetConfigArguments {
 function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   useEffect(() => {
     const shellNavigationHandler = (event: Event) => {
-      const pathname = (event as CustomEvent<string>).detail;
+      if (!(event instanceof CustomEvent) || typeof event.detail !== 'string') {
+        return;
+      }
+      const pathname: string = event.detail;
       const currentPath = appGlobal.historyLocation()?.pathname;
 
       // Skip if already at this path to prevent navigation loops
@@ -146,7 +142,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     [basePath, dataplaneTransport]
   );
 
-  if (!p.isConsoleReadyToMount) {
+  if (!(p.isConsoleReadyToMount === true)) {
     return null;
   }
 
@@ -163,4 +159,5 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   );
 }
 
+// biome-ignore lint/style/noDefaultExport: legacy Module Federation exposes ./EmbeddedApp as a default component.
 export default EmbeddedApp;

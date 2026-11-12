@@ -1,7 +1,7 @@
 import { describe, expect, rs, test } from '@rstest/core';
-import { render, screen } from 'test-utils';
 
 import { ColumnSettings } from './column-settings';
+import { render, screen } from '../../../../../test-utils';
 
 describe('column settings', () => {
   test('names the group of column visibility checkboxes', () => {

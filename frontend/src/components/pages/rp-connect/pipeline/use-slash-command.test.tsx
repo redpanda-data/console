@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import type { editor } from 'monaco-editor';
 
 import { useSlashCommand } from './use-slash-command';
 
@@ -29,9 +28,9 @@ function createMockEditor(lineContent: string, cursorColumn: number) {
       contentChangeListeners.push(cb);
       return { dispose: rs.fn() };
     }),
-    executeEdits: rs.fn(),
+    executeEdits: rs.fn(() => true),
     focus: rs.fn(),
-  } as unknown as editor.IStandaloneCodeEditor;
+  };
 
   return {
     instance,
@@ -54,32 +53,32 @@ describe('useSlashCommand', () => {
   });
 
   describe('subscribing to the editor', () => {
-    it('starts with menu closed and no position', () => {
+    test('starts with menu closed and no position', () => {
       const { result } = renderHook(() => useSlashCommand(null));
       expect(result.current.isOpen).toBe(false);
       expect(result.current.slashPosition).toBeNull();
     });
 
-    it('does not subscribe when disabled', () => {
+    test('does not subscribe when disabled', () => {
       const { instance } = createMockEditor('/', 2);
       renderHook(() => useSlashCommand(instance, false));
-      expect((instance.onDidChangeModelContent as ReturnType<typeof rs.fn>).mock.calls.length).toBe(0);
+      expect(instance.onDidChangeModelContent).not.toHaveBeenCalled();
     });
 
-    it('does not subscribe when editor is null', () => {
+    test('does not subscribe when editor is null', () => {
       const { result } = renderHook(() => useSlashCommand(null, true));
       expect(result.current.isOpen).toBe(false);
     });
 
-    it('subscribes to content changes when enabled', () => {
+    test('subscribes to content changes when enabled', () => {
       const { instance } = createMockEditor('/', 2);
       renderHook(() => useSlashCommand(instance, true));
-      expect(instance.onDidChangeModelContent).toHaveBeenCalledOnce();
+      expect(instance.onDidChangeModelContent).toHaveBeenCalledExactlyOnceWith(expect.any(Function));
     });
   });
 
   describe('opening the menu', () => {
-    it('opens menu when / is typed at valid position', () => {
+    test('opens menu when / is typed at valid position', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -89,7 +88,7 @@ describe('useSlashCommand', () => {
       expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
     });
 
-    it('does not open menu when / is typed mid-word', () => {
+    test('does not open menu when / is typed mid-word', () => {
       const { instance, fireContentChange } = createMockEditor('input/', 6);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -99,7 +98,7 @@ describe('useSlashCommand', () => {
       expect(result.current.slashPosition).toBeNull();
     });
 
-    it('does not open menu on non-slash content changes', () => {
+    test('does not open menu on non-slash content changes', () => {
       const { instance, fireContentChange } = createMockEditor('hello', 6);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -108,7 +107,7 @@ describe('useSlashCommand', () => {
       expect(result.current.isOpen).toBe(false);
     });
 
-    it('ignores content changes while menu is already open', () => {
+    test('ignores content changes while menu is already open', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -123,7 +122,7 @@ describe('useSlashCommand', () => {
   });
 
   describe('close', () => {
-    it('closes the menu and clears position', () => {
+    test('closes the menu and clears position', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -139,7 +138,7 @@ describe('useSlashCommand', () => {
       expect(result.current.slashPosition).toBeNull();
     });
 
-    it('refocuses the editor after closing', () => {
+    test('refocuses the editor after closing', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -150,12 +149,12 @@ describe('useSlashCommand', () => {
         rs.runAllTimers();
       });
 
-      expect(instance.focus).toHaveBeenCalled();
+      expect(instance.focus).toHaveBeenCalledWith();
     });
   });
 
   describe('handleSlashSelect', () => {
-    it('replaces the / character with selected text during active session', () => {
+    test('replaces the / character with selected text during active session', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -178,7 +177,7 @@ describe('useSlashCommand', () => {
       ]);
     });
 
-    it('closes the menu after selection', () => {
+    test('closes the menu after selection', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -191,7 +190,7 @@ describe('useSlashCommand', () => {
       expect(result.current.isOpen).toBe(false);
     });
 
-    it('focuses editor after selection', () => {
+    test('focuses editor after selection', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -201,11 +200,10 @@ describe('useSlashCommand', () => {
         rs.runAllTimers();
       });
 
-      expect(instance.focus).toHaveBeenCalled();
+      expect(instance.focus).toHaveBeenCalledWith();
     });
 
-    it('uses deferred range when popover was closed before selection (sub-dialog)', () => {
-      // biome-ignore lint/style/noUnusedTemplateLiteral: intentional bloblang interpolation syntax
+    test('uses deferred range when popover was closed before selection (sub-dialog)', () => {
       const bloblangSnippet = `\${!metadata("kafka_key")}`;
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
@@ -237,7 +235,7 @@ describe('useSlashCommand', () => {
       ]);
     });
 
-    it('falls back to cursor position when no slash context exists', () => {
+    test('falls back to cursor position when no slash context exists', () => {
       const { instance } = createMockEditor('hello', 6);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
@@ -259,7 +257,7 @@ describe('useSlashCommand', () => {
       ]);
     });
 
-    it('does nothing when editor is null', () => {
+    test('does nothing when editor is null', () => {
       const { result } = renderHook(() => useSlashCommand(null, true));
 
       // Should not throw
@@ -270,18 +268,18 @@ describe('useSlashCommand', () => {
   });
 
   describe('onOpen callback', () => {
-    it('calls onOpen callback when slash triggers menu', () => {
+    test('calls onOpen callback when slash triggers menu', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const onOpen = rs.fn();
       const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
 
       act(() => fireContentChange('/'));
 
-      expect(onOpen).toHaveBeenCalledOnce();
+      expect(onOpen).toHaveBeenCalledExactlyOnceWith();
       expect(result.current.isOpen).toBe(true);
     });
 
-    it('does not call onOpen on invalid slash position', () => {
+    test('does not call onOpen on invalid slash position', () => {
       const { instance, fireContentChange } = createMockEditor('input/', 6);
       const onOpen = rs.fn();
       const { result } = renderHook(() => useSlashCommand(instance, true, onOpen));
@@ -292,15 +290,15 @@ describe('useSlashCommand', () => {
       expect(result.current.isOpen).toBe(false);
     });
 
-    it('re-subscribes when onOpen changes', () => {
+    test('re-subscribes when onOpen changes', () => {
       const disposeFn = rs.fn();
       const instance = {
-        getPosition: rs.fn(),
-        getModel: rs.fn(),
+        getPosition: rs.fn(() => null),
+        getModel: rs.fn(() => null),
         onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
-        executeEdits: rs.fn(),
+        executeEdits: rs.fn(() => true),
         focus: rs.fn(),
-      } as unknown as editor.IStandaloneCodeEditor;
+      };
 
       const onOpen1 = rs.fn();
       const onOpen2 = rs.fn();
@@ -313,44 +311,44 @@ describe('useSlashCommand', () => {
 
       rerender({ onOpen: onOpen2 });
 
-      expect(disposeFn).toHaveBeenCalledOnce();
+      expect(disposeFn).toHaveBeenCalledExactlyOnceWith();
       expect(instance.onDidChangeModelContent).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('cleanup', () => {
-    it('disposes Monaco subscription on unmount', () => {
+    test('disposes Monaco subscription on unmount', () => {
       const disposeFn = rs.fn();
       const instance = {
-        getPosition: rs.fn(),
-        getModel: rs.fn(),
+        getPosition: rs.fn(() => null),
+        getModel: rs.fn(() => null),
         onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
-        executeEdits: rs.fn(),
+        executeEdits: rs.fn(() => true),
         focus: rs.fn(),
-      } as unknown as editor.IStandaloneCodeEditor;
+      };
 
       const { unmount } = renderHook(() => useSlashCommand(instance, true));
       unmount();
 
-      expect(disposeFn).toHaveBeenCalledOnce();
+      expect(disposeFn).toHaveBeenCalledExactlyOnceWith();
     });
 
-    it('disposes subscription when enabled changes to false', () => {
+    test('disposes subscription when enabled changes to false', () => {
       const disposeFn = rs.fn();
       const instance = {
-        getPosition: rs.fn(),
-        getModel: rs.fn(),
+        getPosition: rs.fn(() => null),
+        getModel: rs.fn(() => null),
         onDidChangeModelContent: rs.fn(() => ({ dispose: disposeFn })),
-        executeEdits: rs.fn(),
+        executeEdits: rs.fn(() => true),
         focus: rs.fn(),
-      } as unknown as editor.IStandaloneCodeEditor;
+      };
 
       const { rerender } = renderHook(({ enabled }) => useSlashCommand(instance, enabled), {
         initialProps: { enabled: true },
       });
 
       rerender({ enabled: false });
-      expect(disposeFn).toHaveBeenCalledOnce();
+      expect(disposeFn).toHaveBeenCalledExactlyOnceWith();
     });
   });
 });

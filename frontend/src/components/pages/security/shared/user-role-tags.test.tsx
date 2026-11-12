@@ -13,6 +13,8 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import { UserRoleTags } from './user-role-tags';
+
 const { mockRoleMembers, mockListACLsFilter } = rs.hoisted(() => ({
   mockRoleMembers: new Map<string, { name: string; principalType: string }[]>(),
   mockListACLsFilter: { captured: null as { principal: string } | null },
@@ -47,8 +49,6 @@ rs.mock('../../../../state/backend-api', () => ({
 rs.mock('../../../../state/supported-features', () => ({
   useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) => selector({ rolesApi: true }),
 }));
-
-import { UserRoleTags } from './user-role-tags';
 
 describe('the UserRoleTags', () => {
   beforeEach(() => {

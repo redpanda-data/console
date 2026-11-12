@@ -1,0 +1,582 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+@use '../variables.scss';
+@use 'legacy-layout-mixins' as layout;
+
+@mixin styles {
+  .scroll-on-hover-y {
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
+  .scroll-on-hover-y:hover {
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      display: block;
+      inline-size: 6px;
+
+      background-color: hsl(0, 0%, 85%);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: hsl(0, 0%, 55%);
+      border-radius: 1px;
+    }
+
+    &::-webkit-scrollbar-button {
+      display: none;
+    }
+  }
+
+  .cell {
+    @include layout.tlrb;
+    box-sizing: border-box;
+    display: block;
+    inline-size: 100%;
+  }
+
+  .cell-overflow {
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cellDiv {
+    position: relative;
+    display: block;
+    inline-size: 0;
+    min-inline-size: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: text-bottom;
+    white-space: nowrap;
+
+    &.fade::after {
+      @include layout.beforeAfter;
+      inset-inline-start: unset;
+      inline-size: 30px;
+
+      background: linear-gradient(to right, transparent, var(--color-background));
+    }
+  }
+
+  .dataRefreshButton {
+    display: inline-flex;
+    place-content: center;
+    place-items: center;
+    block-size: 32px;
+    margin-inline-start: 10px;
+    color: variables.$color-reload-spinner;
+    white-space: nowrap;
+
+    background: variables.$color-reload-spinner-bg;
+
+    border-radius: 30px;
+  }
+
+  .showOnHover {
+    opacity: 0.2;
+  }
+
+  .showOnHover:hover {
+    opacity: 1;
+  }
+
+  .spinnerText {
+    margin-inline-start: 10px;
+    user-select: none;
+  }
+
+  .spinner {
+    display: inline-block;
+    inline-size: 20px;
+    block-size: 20px;
+
+    border: 2px solid transparent;
+    border-block-color: hsl(14deg, 100%, 50%);
+    border-radius: 100%;
+    animation:
+      rotateIn 1.2s cubic-bezier(0.25, 0.8, 0.9, 0.9) 0s 1,
+      rotate 0.7s linear 1.2s infinite,
+      spinnerFadeIn 0.5s ease 0s 1;
+
+    @keyframes rotateIn {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(1800deg);
+      }
+    }
+
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes spinnerFadeIn {
+      from {
+        opacity: 0;
+        scale: 120%;
+      }
+
+      to {
+        opacity: 1;
+        scale: 100%;
+      }
+    }
+  }
+
+  .pulsating {
+    animation: pulse 0.5s linear 0s infinite;
+  }
+
+  @keyframes pulse {
+    from {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+
+    to {
+      transform: 1;
+    }
+  }
+
+  .fadeIn {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .hoverLink:hover {
+    color: var(--color-action-primary);
+    cursor: pointer;
+  }
+
+  .pureDisplayRow {
+    color: inherit;
+  }
+
+  .fadeIn3d {
+    opacity: 1;
+    transform: translateY(0) perspective(10em) rotateX(0) scale(1, 1);
+    transition: all 0.15s ease-out;
+  }
+
+  .fadeOut3d {
+    opacity: 0;
+    transform: translateY(0.1em) perspective(6em) rotateX(30deg) scale(0.85, 0.85);
+    transition: all 0.1s ease-out;
+  }
+
+  .codeBox {
+    display: inline-block;
+    padding-block: 0.1em;
+    padding-block-end: 0.05em;
+    padding-inline: 0.4em;
+    margin: 0;
+    font-family: monospace;
+    font-size: 85%;
+    line-break: anywhere;
+    white-space: pre-wrap;
+
+    background: var(--color-surface-recess);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 3px;
+  }
+
+  .w100 {
+    inline-size: 100%;
+  }
+
+  .hoverBorder {
+    border-color: transparent;
+  }
+
+  .hoverBorder:hover {
+    border-color: unset;
+  }
+
+  .whiteSpaceDefault {
+    white-space: normal;
+  }
+
+  .nowrap {
+    white-space: nowrap;
+  }
+
+  .consumerGroupCompleteID {
+    word-break: break-all;
+    white-space: normal;
+  }
+
+  .consumerGroupName {
+    white-space: nowrap;
+  }
+
+  .consumerGroupSuffix {
+    font-size: 66%;
+    white-space: nowrap;
+    opacity: 0.4;
+  }
+
+  .groupLagDisplayLine {
+    margin-block-end: 0.2em;
+    font-size: 85%;
+  }
+
+  .groupLagDisplayLine:not(:last-child) {
+    padding-block-end: 0.2em;
+    border-block-end: 1px solid #eee;
+  }
+
+  .menu-permission-tooltip {
+    min-inline-size: 203px;
+    user-select: none;
+
+    border-radius: 6px;
+    box-shadow: 0 0 5px 1px #00000047;
+  }
+
+  .noSelect {
+    user-select: none;
+  }
+
+  .iconButton {
+    color: var(--color-muted-foreground);
+    transition-delay: 0ms;
+    transition-timing-function: ease-out;
+    transition-duration: 100ms;
+
+    &:hover {
+      z-index: 1;
+    }
+  }
+
+  // todo: fix table layout (ellipsis, min-content sizing, predefined expand ratios).
+  tr td.ellipsis {
+    position: relative;
+  }
+
+  .ellipsis:before {
+    visibility: hidden;
+    content: '&nbsp;';
+  }
+
+  .ellipsis span {
+    position: absolute;
+    inset-inline: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  tr > td.msgTableActionColumn {
+    text-align: right;
+  }
+
+  .msgTableActionColumn {
+    .iconButton {
+      color: hsl(0, 0%, 35%);
+    }
+  }
+
+  .fill {
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  .labelText {
+    position: relative;
+    inline-size: 100%;
+    margin-block-end: 3px;
+    margin-inline-start: 1px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--color-muted-foreground);
+    text-transform: uppercase;
+    user-select: none;
+
+    &.required label::before {
+      @include layout.beforeAfter();
+      inset-block-start: -2px;
+      inset-inline-start: -9px;
+      inline-size: 5px;
+      font-size: 16px;
+      color: var(--color-destructive);
+      content: '*';
+    }
+  }
+
+  .messagesSpecialIconButton {
+    padding-block: 0;
+    padding-inline: 15px;
+  }
+
+  .messagesSpecialIconButton:not(:first-child) {
+    border-inline-start: 1px solid hsla(205, 100%, 90%, 0.5);
+  }
+
+  // Must stay in @layer base: unlayered, this element selector outranks Tailwind
+  // utilities (here and in the embedding Cloud UI document), zeroing utility-sized SVGs.
+  @layer base {
+    svg {
+      display: inline-block;
+      block-size: 100%;
+    }
+
+    // Exception for react-flow SVGs to prevent edges from being hidden
+    .react-flow svg {
+      block-size: auto;
+    }
+  }
+
+  // react-flow keys its dark palette on `.react-flow.dark`, which we never set — we theme off
+  // `[data-theme='dark']`. These un-suffixed hooks win over both `-default` blocks, so one mapping
+  // covers light and dark. Buttons stay transparent: the `<Controls>` className paints the
+  // translucent panel, and an opaque button defeats its blur.
+  .react-flow {
+    --xy-controls-button-background-color: transparent;
+    --xy-controls-button-background-color-hover: var(--color-accent);
+    --xy-controls-button-color: var(--color-foreground);
+    --xy-controls-button-color-hover: var(--color-strong);
+    --xy-controls-button-border-color: var(--color-border);
+  }
+
+  .quickTable {
+    text-align: initial;
+  }
+
+  /* Helper classes */
+  .displayNone {
+    display: none;
+  }
+
+  .marginTop1em {
+    margin-block-start: 1em;
+  }
+
+  .marginTop05em {
+    margin-block-start: 0.5em;
+  }
+
+  .inlineFlex {
+    display: inline-flex;
+  }
+
+  .marginRight05em {
+    margin-inline-end: 0.5em;
+  }
+
+  .marginRight1em {
+    margin-inline-end: 1em;
+  }
+
+  .code-editor-textarea {
+    outline: none;
+  }
+
+  .verticalCenter {
+    vertical-align: middle;
+  }
+
+  .verticalCenter:before {
+    display: inline-block;
+    block-size: 100%;
+    vertical-align: middle;
+    content: '';
+  }
+
+  .svgCenter {
+    display: inline-block;
+    margin-block: -20px;
+    margin-inline: -3px;
+    vertical-align: middle;
+  }
+
+  .messageSearchFilterBar {
+    padding-block: 0;
+    padding-inline: 10px;
+    border-radius: 50px;
+  }
+
+  /* Permission "Actions" */
+  .expander {
+    background: none;
+  }
+
+  .subjectListExpander {
+    padding: 0;
+    font-size: 85%;
+  }
+
+  .tableRowHighlightSpecial {
+    background-color: rgba(255, 187, 0, 0.185);
+  }
+
+  .userPreferencesButton {
+    color: #888;
+    background-color: hsla(216, 20%, 92%, 1);
+    opacity: 0.8;
+    transition-timing-function: ease-out;
+    transition-duration: 150ms;
+  }
+
+  .preferencesDialog {
+    *[display='flex'] {
+      max-block-size: 100%;
+    }
+  }
+
+  .smallText {
+    padding-inline-start: 2px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10.5px;
+    color: hsla(0, 0%, 40%, 1);
+    cursor: default;
+  }
+
+  .filterTagDisabled {
+    color: rgba(46, 46, 46, 0.66);
+    background: rgba(46, 46, 46, 0.1);
+
+    .filterName {
+      text-decoration: line-through black;
+    }
+  }
+
+  .messageHeaders {
+    border-block-end: 1px solid var(--color-border-subtle);
+  }
+
+  .topicDocumentation {
+    padding-block: 0;
+    padding-inline: 16px;
+
+    p {
+      margin-inline-start: 2px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      margin-block-start: 0.8em;
+    }
+
+    pre {
+      padding: 12px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--color-foreground);
+      background-color: var(--color-surface-recess);
+      border-radius: 3px;
+    }
+
+    table {
+      margin-block-end: 16px;
+
+      td,
+      th {
+        padding-block: 6px;
+        padding-inline: 13px;
+        border: 1px solid var(--color-border);
+      }
+
+      th {
+        font-weight: 600;
+      }
+
+      th,
+      tr:nth-child(2n) {
+        background-color: var(--color-surface-recess);
+      }
+    }
+  }
+
+  .radioOptionGroup {
+    $borderRadius: 6px;
+    display: flex;
+    flex-direction: column;
+
+    inline-size: 100%;
+
+    user-select: none;
+
+    border: 1px solid hsl(0deg, 0%, 94%);
+    border-radius: $borderRadius;
+  }
+
+  .waitingForMessagesText {
+    animation: waitingForMessagesTextPulse 1.5s ease-in-out 0s infinite;
+  }
+
+  @keyframes waitingForMessagesTextPulse {
+    0% {
+      color: inherit;
+    }
+
+    100% {
+      color: inherit;
+    }
+  }
+
+  .waitingForMessagesBox::before {
+    @include layout.beforeAfter;
+
+    border-radius: 4px;
+    box-shadow: 0 0 8px 4px #7e8a93b0;
+
+    animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
+  }
+
+  @keyframes waitingForMessagesBoxPulseShadow {
+    0% {
+      box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
+
+    50% {
+      box-shadow: 0 0 8px 2px #7e8a93b0;
+    }
+
+    100% {
+      box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
+  }
+}

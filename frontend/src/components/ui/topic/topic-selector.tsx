@@ -64,7 +64,7 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = fal
   return (
     <MultiSelect
       disabled={isReadOnly}
-      onSearch={(keyword) => setSearchTerm(keyword || '')}
+      onSearch={(keyword) => setSearchTerm(keyword ?? '')}
       onValueChange={handleValueChange}
       value={selectedTopics}
     >
@@ -80,7 +80,7 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = fal
                 {topic}
               </MultiSelectItem>
             ))}
-          {filteredTopics.length === 0 && searchTerm && (
+          {filteredTopics.length === 0 && searchTerm !== '' && (
             <div className="flex min-h-32 items-center justify-center px-2 py-6">
               <div className="text-body text-muted-foreground">No topics found matching "{searchTerm}"</div>
             </div>

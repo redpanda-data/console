@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Input } from 'components/redpanda-ui/components/input';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { useState } from 'react';
+import { isNonEmptyString } from 'utils/string-utils';
 
 type TagChipInputProps = {
   value: string[];
@@ -77,10 +79,7 @@ export const TagChipInput = ({
   };
 
   return (
-    <div
-      className="flex min-h-9 w-full flex-wrap items-center gap-1 rounded-md border border-input bg-background px-2 py-1 shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50"
-      data-testid={testId}
-    >
+    <div className={cn('flex w-full flex-wrap items-center gap-1', mono && 'font-mono')} data-testid={testId}>
       {value.map((item) => {
         const note = noteFor?.(item);
         return (
@@ -90,15 +89,12 @@ export const TagChipInput = ({
             testId={`${testId}-chip-${item}`}
           >
             {mono ? <code>{item}</code> : <span>{item}</span>}
-            {note ? <span className="pl-1 text-muted-foreground">{note}</span> : null}
+            {isNonEmptyString(note) ? <span className="pl-1 text-muted-foreground">{note}</span> : null}
           </TagsValue>
         );
       })}
-      <input
-        className={cn(
-          'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-placeholder',
-          mono && 'font-mono'
-        )}
+      <Input
+        containerClassName="min-w-40 flex-1"
         data-testid={`${testId}-field`}
         id={id}
         onBlur={commitDraft}

@@ -12,8 +12,8 @@
 import type React from 'react';
 import { create } from 'zustand';
 
-import { api } from './backend-api';
-import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
+import { type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
+import { createTopicDetailsSettings } from '../types/topic-settings';
 import { boundedAppend } from '../utils/bounded-array';
 
 /**
@@ -86,6 +86,8 @@ type UIStateStore = {
   setServerBuildTimestamp: (timestamp: number | undefined) => void;
 };
 
+let readClusterNames: () => readonly string[] = () => [];
+
 export const useUIStateStore = create<UIStateStore>((set, get) => ({
   // Initial state
   _pageTitle: ' ',
@@ -106,8 +108,9 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   get selectedClusterName() {
     try {
       const uiSettings = useUISettingsStore.getState();
-      if (uiSettings.selectedClusterIndex in api.clusters) {
-        return api.clusters[uiSettings.selectedClusterIndex];
+      const clusters = readClusterNames();
+      if (uiSettings.selectedClusterIndex in clusters) {
+        return clusters[uiSettings.selectedClusterIndex];
       }
       return null;
     } catch {
@@ -123,7 +126,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   get topicSettings() {
     try {
       const n = get()._currentTopicName;
-      if (!n) {
+      if (!(n !== null && n !== undefined && n !== '')) {
         return createTopicDetailsSettings('');
       }
 
@@ -134,7 +137,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
       }
 
       throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
-    } catch (error) {
+    } catch {
       // In test environments, stores might not be properly initialized
       // Return a minimal default to avoid breaking tests
       return createTopicDetailsSettings('');
@@ -180,9 +183,9 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     set({ _currentTopicName: topicName });
 
     // Side effect: create topic settings if needed
-    if (topicName) {
+    if (topicName !== null && topicName !== undefined && topicName !== '') {
       const uiSettings = useUISettingsStore.getState();
-      if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
+      if (uiSettings.perTopicSettings.every((s) => s.topicName !== topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
           perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),
@@ -207,82 +210,98 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
 // Legacy export with Proxy for backward compatibility
 // This allows existing code to access and set properties directly like: uiState.loginError = null
 
-// Handle properties with special setters; writes to any other property are ignored.
-function applyUIStateWrite(store: UIStateStore, prop: string, value: unknown) {
-  switch (prop) {
-    case 'pageTitle':
-      store.setPageTitle(value as string | React.ReactElement);
-      break;
-    case 'pageBreadcrumbs':
-      store.setPageBreadcrumbs(value as BreadcrumbEntry[]);
-      break;
-    case 'shouldHidePageHeader':
-      store.setShouldHidePageHeader(value as boolean);
-      break;
-    case 'pathName':
-      store.setPathName(value as string);
-      break;
-    case 'currentTopicName':
-      store.setCurrentTopicName(value as string | undefined);
-      break;
-    case 'loginError':
-      store.setLoginError(value as string | null);
-      break;
-    case 'isUsingDebugUserLogin':
-      store.setIsUsingDebugUserLogin(value as boolean);
-      break;
-    case 'serverBuildTimestamp':
-      store.setServerBuildTimestamp(value as number | undefined);
-      break;
-    case 'backLink':
-      store.setBackLink(value as BackLink | null);
-      break;
-    default:
-      break;
+// Prototype accessors preserve the legacy non-enumerable view while keeping writes typed.
+class LegacyUIState {
+  setClusterNamesSource(read: () => readonly string[]) {
+    const previous = readClusterNames;
+    readClusterNames = read;
+    return () => {
+      readClusterNames = previous;
+    };
+  }
+
+  get pageTitle(): string | React.ReactElement {
+    return useUIStateStore.getState().pageTitle;
+  }
+  set pageTitle(value: string | React.ReactElement) {
+    useUIStateStore.getState().setPageTitle(value);
+  }
+  get pageBreadcrumbs(): BreadcrumbEntry[] {
+    return useUIStateStore.getState().pageBreadcrumbs;
+  }
+  set pageBreadcrumbs(value: BreadcrumbEntry[]) {
+    useUIStateStore.getState().setPageBreadcrumbs(value);
+  }
+  get backLink(): BackLink | null {
+    return useUIStateStore.getState().backLink;
+  }
+  set backLink(value: BackLink | null) {
+    useUIStateStore.getState().setBackLink(value);
+  }
+  get shouldHidePageHeader(): boolean {
+    return useUIStateStore.getState().shouldHidePageHeader;
+  }
+  set shouldHidePageHeader(value: boolean) {
+    useUIStateStore.getState().setShouldHidePageHeader(value);
+  }
+  get pathName(): string {
+    return useUIStateStore.getState().pathName;
+  }
+  set pathName(value: string) {
+    useUIStateStore.getState().setPathName(value);
+  }
+  get currentTopicName(): string | undefined {
+    return useUIStateStore.getState().currentTopicName;
+  }
+  set currentTopicName(value: string | undefined) {
+    useUIStateStore.getState().setCurrentTopicName(value);
+  }
+  get loginError(): string | null {
+    return useUIStateStore.getState().loginError;
+  }
+  set loginError(value: string | null) {
+    useUIStateStore.getState().setLoginError(value);
+  }
+  get isUsingDebugUserLogin(): boolean {
+    return useUIStateStore.getState().isUsingDebugUserLogin;
+  }
+  set isUsingDebugUserLogin(value: boolean) {
+    useUIStateStore.getState().setIsUsingDebugUserLogin(value);
+  }
+  get serverBuildTimestamp(): number | undefined {
+    return useUIStateStore.getState().serverBuildTimestamp;
+  }
+  set serverBuildTimestamp(value: number | undefined) {
+    useUIStateStore.getState().setServerBuildTimestamp(value);
+  }
+  get selectedClusterName(): string | null {
+    return useUIStateStore.getState().selectedClusterName;
+  }
+  get topicSettings(): TopicSettings {
+    return useUIStateStore.getState().topicSettings;
   }
 }
 
-export const uiState = new Proxy(
-  {} as {
-    pageTitle: string | React.ReactElement;
-    pageBreadcrumbs: BreadcrumbEntry[];
-    backLink: BackLink | null;
-    shouldHidePageHeader: boolean;
-    selectedClusterName: string | null;
-    pathName: string;
-    currentTopicName: string | undefined;
-    topicSettings: TopicSettings;
-    loginError: string | null;
-    isUsingDebugUserLogin: boolean;
-    serverBuildTimestamp: number | undefined;
+const legacyWritableFields = new Set<string>([
+  'pageTitle',
+  'pageBreadcrumbs',
+  'backLink',
+  'shouldHidePageHeader',
+  'pathName',
+  'currentTopicName',
+  'loginError',
+  'isUsingDebugUserLogin',
+  'serverBuildTimestamp',
+]);
+
+export const uiState = new Proxy(new LegacyUIState(), {
+  set(target, prop: string | symbol, value: unknown) {
+    if (typeof prop === 'string' && legacyWritableFields.has(prop)) {
+      return Reflect.set(target, prop, value);
+    }
+    return true;
   },
-  {
-    get(_target, prop: string) {
-      const store = useUIStateStore.getState();
-
-      // Handle computed properties
-      if (prop === 'pageTitle') {
-        return store.pageTitle;
-      }
-      if (prop === 'selectedClusterName') {
-        return store.selectedClusterName;
-      }
-      if (prop === 'currentTopicName') {
-        return store.currentTopicName;
-      }
-      if (prop === 'topicSettings') {
-        return store.topicSettings;
-      }
-
-      // Handle direct properties
-      return store[prop as keyof UIStateStore];
-    },
-    set(_target, prop: string, value: unknown) {
-      applyUIStateWrite(useUIStateStore.getState(), prop, value);
-      return true;
-    },
-  }
-);
+});
 
 export function setPageHeader(
   title: string | React.ReactElement,

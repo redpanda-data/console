@@ -34,7 +34,9 @@ export const createRule = (id: number, resourceType: ResourceType): Rule => ({
 export const getInitialRules = (rules?: Rule[]): Rule[] => rules ?? [createRule(1, ResourceTypeCluster)];
 
 export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, principalType?: string): SharedConfig => ({
-  principal: sharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
+  principal:
+    sharedConfig?.principal ??
+    (principalType !== null && principalType !== undefined && principalType !== '' ? `${principalType}` : 'User:'),
   host: sharedConfig?.host ?? '*',
 });
 
@@ -108,21 +110,31 @@ const getModeOperation = (mode: string, current: OperationType): OperationType =
   return mode === ModeDenyAll ? OperationTypeDeny : current;
 };
 
-export const getPermissionModeChange = (rule: Rule, mode: string): Partial<Rule> => ({
-  mode: mode as ModeType,
-  operations: Object.fromEntries(
-    Object.entries(rule.operations).map(([op, operationValue]) => [op, getModeOperation(mode, operationValue)])
-  ),
-});
+export const getPermissionModeChange = (rule: Rule, mode: string): Partial<Rule> => {
+  if (mode !== ModeCustom && mode !== ModeAllowAll && mode !== ModeDenyAll) {
+    return {};
+  }
+  return {
+    mode,
+    operations: Object.fromEntries(
+      Object.entries(rule.operations).map(([op, operationValue]) => [op, getModeOperation(mode, operationValue)])
+    ),
+  };
+};
 
 // Moving one operation off the mode's permission turns an "allow all" or "deny all" rule into a custom one.
 const keepsMode = (mode: ModeType, value: string) =>
   (mode !== ModeAllowAll || value === OperationTypeAllow) && (mode !== ModeDenyAll || value === OperationTypeDeny);
 
-export const getOperationChange = (rule: Rule, operation: string, value: string): Partial<Rule> => ({
-  operations: { ...rule.operations, [operation]: value as OperationType },
-  mode: keepsMode(rule.mode, value) ? rule.mode : ModeCustom,
-});
+export const getOperationChange = (rule: Rule, operation: string, value: string): Partial<Rule> => {
+  if (value !== OperationTypeNotSet && value !== OperationTypeAllow && value !== OperationTypeDeny) {
+    return {};
+  }
+  return {
+    operations: { ...rule.operations, [operation]: value },
+    mode: keepsMode(rule.mode, value) ? rule.mode : ModeCustom,
+  };
+};
 
 const PERMISSION_DESCRIPTIONS: Record<string, Record<string, string>> = {
   cluster: {

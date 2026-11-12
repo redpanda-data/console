@@ -48,7 +48,7 @@ export function expect(name: string, test: () => boolean): void;
 export function expect(testOrName: string | (() => boolean), test?: () => boolean) {
   const testFunc = typeof testOrName === 'function' ? testOrName : test;
   if (!testFunc) {
-    throw new Error(`Missing test function for "${testOrName}"`);
+    throw new Error(`Missing test function for "${String(testOrName)}"`);
   }
 
   const name = typeof testOrName === 'string' ? testOrName : null;
@@ -59,7 +59,7 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
   }
 
   // Failed!
-  const failureName = name ? `: ${name}` : '';
+  const failureName = name !== null && name !== undefined && name !== '' ? `: ${name}` : '';
   throw new Error(`
 Test failed ${failureName}
     ${testFunc.toString()}

@@ -150,4 +150,4 @@ const AclList = ({ acl }: { acl: Acls }) => {
   );
 };
 
-export default AclList;
+export { AclList };

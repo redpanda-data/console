@@ -10,11 +10,13 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import type { ReactElement } from 'react';
 
+import createConsoleCompatElement from './console-legacy-app';
 import type { ConsoleAppProps } from './types';
 
 const { mockCreateRoot, mockRender, mockUnmount } = rs.hoisted(() => {
-  const render = rs.fn();
+  const render = rs.fn<(element: ReactElement<ConsoleAppProps>) => void>();
   const unmount = rs.fn();
   return {
     mockCreateRoot: rs.fn(() => ({
@@ -35,14 +37,12 @@ rs.mock('./console-app', () => ({
   ConsoleApp: 'MockConsoleApp',
 }));
 
-import createConsoleCompatElement from './console-legacy-app';
-
-interface LegacyReactElement {
+type LegacyReactElement = {
   $$typeof: symbol;
   props: { style: { height: string; width: string } };
   ref: (node: HTMLDivElement | null) => void;
   type: string;
-}
+};
 
 const baseProps: ConsoleAppProps = {
   getAccessToken: () => Promise.resolve('token'),
@@ -75,12 +75,10 @@ describe('the Console legacy Module Federation app expose', () => {
     element.ref(dom);
 
     expect(mockCreateRoot).toHaveBeenCalledWith(dom);
-    expect(mockRender).toHaveBeenCalledWith(
-      expect.objectContaining({
-        props: expect.objectContaining({ initialPath: '/connect' }),
-        type: 'MockConsoleApp',
-      })
-    );
+    expect(mockRender.mock.calls.at(0)?.[0]).toMatchObject({
+      props: { initialPath: '/connect' },
+      type: 'MockConsoleApp',
+    });
   });
 
   test('does not unmount during React ref churn on host re-render', async () => {
@@ -95,12 +93,10 @@ describe('the Console legacy Module Federation app expose', () => {
 
     expect(mockCreateRoot).toHaveBeenCalledTimes(1);
     expect(mockUnmount).not.toHaveBeenCalled();
-    expect(mockRender).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        props: expect.objectContaining({ navigateTo: '/topics/create' }),
-        type: 'MockConsoleApp',
-      })
-    );
+    expect(mockRender.mock.calls.at(-1)?.[0]).toMatchObject({
+      props: { navigateTo: '/topics/create' },
+      type: 'MockConsoleApp',
+    });
   });
 
   test('unmounts when the legacy host removes the container', async () => {
@@ -111,6 +107,6 @@ describe('the Console legacy Module Federation app expose', () => {
     element.ref(null);
     await Promise.resolve();
 
-    expect(mockUnmount).toHaveBeenCalled();
+    expect(mockUnmount).toHaveBeenCalledWith();
   });
 });

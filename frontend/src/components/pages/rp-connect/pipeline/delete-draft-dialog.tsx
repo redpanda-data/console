@@ -52,7 +52,7 @@ export function DeleteDraftDialog({
               <span className="block">
                 <InlineCode>{name}</InlineCode> and its configuration are deleted for everyone.
               </span>
-              {hasUnsavedChanges ? (
+              {hasUnsavedChanges === true ? (
                 <span className="block">
                   Your unsaved changes go with it — this deletes the whole draft, not just your edits.
                 </span>
@@ -67,8 +67,8 @@ export function DeleteDraftDialog({
             disabled={isDeleting}
             onClick={onConfirm}
             render={
-              <Button icon={isDeleting ? <Spinner /> : undefined} variant="destructive">
-                {isDeleting ? 'Deleting...' : 'Delete draft'}
+              <Button icon={isDeleting === true ? <Spinner /> : undefined} variant="destructive">
+                {isDeleting === true ? 'Deleting...' : 'Delete draft'}
               </Button>
             }
             testId="confirm-delete-draft"

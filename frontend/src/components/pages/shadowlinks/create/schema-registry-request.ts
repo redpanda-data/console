@@ -40,6 +40,7 @@ import {
   type SrCertificate,
   srCertificatePem,
 } from './model';
+import { isPresent } from '../../../../utils/type-guards';
 
 // Sub-second units carry (units per second, nanos per unit) so seconds/nanos
 // are computed with exact integer math — a single total-nanos float would lose
@@ -66,7 +67,7 @@ export const durationFromString = (value: string): Duration | undefined => {
 
   const count = Number(match[1]);
   const subSecond = DURATION_SUBSECOND_UNITS[match[2]];
-  if (subSecond) {
+  if (isPresent(subSecond)) {
     return create(DurationSchema, {
       seconds: BigInt(Math.floor(count / subSecond.perSecond)),
       nanos: (count % subSecond.perSecond) * subSecond.nsPerUnit,

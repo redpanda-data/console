@@ -11,9 +11,10 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
+import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
 import { useEffect, useState } from 'react';
 
-import KowlEditor, { KowlDiffEditor } from './kowl-editor';
+import { KowlDiffEditor, KowlEditor } from './kowl-editor';
 
 const { appearance, monacoStub } = rs.hoisted(() => ({
   appearance: rs.fn((): 'light' | 'dark' => 'light'),
@@ -50,17 +51,14 @@ describe('the Kowl editors', () => {
 
     expect(await screen.findByTestId('monaco')).toHaveAttribute('data-theme-name', 'redpanda-editor');
     await waitFor(() => expect(callerBeforeMount).toHaveBeenCalledWith(monacoStub));
-    expect(monacoStub.editor.defineTheme).toHaveBeenCalledWith(
-      'redpanda-editor',
-      expect.objectContaining({ base: expect.any(String) })
-    );
+    expect(monacoStub.editor.defineTheme).toHaveBeenCalledWith('redpanda-editor', editorTheme());
     expect(monacoStub.editor.setTheme).toHaveBeenCalledWith('redpanda-editor');
   });
 
   test('re-resolves the theme when the appearance flips', async () => {
     const { rerender } = render(<KowlEditor />);
     await screen.findByTestId('monaco');
-    await waitFor(() => expect(monacoStub.editor.setTheme).toHaveBeenCalled());
+    await waitFor(() => expect(monacoStub.editor.setTheme).toHaveBeenCalledWith('redpanda-editor'));
     rs.clearAllMocks();
 
     appearance.mockReturnValue('dark');

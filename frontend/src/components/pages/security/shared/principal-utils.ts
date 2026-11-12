@@ -39,10 +39,15 @@ export function resolveAclSearchParams(search: { principalType?: string; princip
 } {
   const principalTypeParam = search.principalType?.toLowerCase();
   const principalName = search.principalName;
-  const principalType = principalTypeParam ? PRINCIPAL_TYPE_MAP[principalTypeParam] : undefined;
+  const principalType =
+    principalTypeParam !== null && principalTypeParam !== undefined && principalTypeParam !== ''
+      ? PRINCIPAL_TYPE_MAP[principalTypeParam]
+      : undefined;
 
   const sharedConfig =
-    principalName && principalType ? { principal: `${principalType}${principalName}`, host: '*' } : undefined;
+    principalName !== null && principalName !== undefined && principalName !== '' && principalType
+      ? { principal: `${principalType}${principalName}`, host: '*' }
+      : undefined;
 
   return { sharedConfig, principalType };
 }

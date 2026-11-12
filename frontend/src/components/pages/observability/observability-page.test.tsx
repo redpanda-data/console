@@ -1,3 +1,5 @@
+import type { Interceptor } from '@connectrpc/connect';
+import type { ExecuteRangeQueryRequest } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -24,7 +26,9 @@ import {
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
 import * as React from 'react';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+import { ObservabilityPage } from './observability-page';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
 
 // Recharts' ResponsiveContainer requires parent-container dimensions to
 // render. happy-dom reports 0×0 for every element, which makes recharts
@@ -43,8 +47,12 @@ rs.mock('recharts', () => {
   };
 });
 
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('config', () => ({
+  addBearerTokenInterceptor: rs.fn<Interceptor>((next) => next),
+}));
+
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: {
@@ -52,25 +60,8 @@ rs.mock('config', () => {
       controlplaneUrl: 'http://localhost:9090',
     },
     isFeatureFlagEnabled: rs.fn(() => false),
-    addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
   };
 });
-
-rs.mock('state/ui-state', () => ({
-  setPageHeader: rs.fn(),
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-rs.mock('state/app-global', () => ({
-  appGlobal: {
-    onRefresh: null,
-  },
-}));
-
-import ObservabilityPage from './observability-page';
 
 // Two data points an hour apart, so the chart has a line to draw.
 function createLastHourTimeSeries() {
@@ -117,8 +108,8 @@ describe('the ObservabilityPage', () => {
     const mockTimeSeries = createLastHourTimeSeries();
 
     const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
-    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
-      let metadata: typeof query1 | typeof query2 | undefined;
+    const executeRangeQueryMock = rs.fn().mockImplementation((request: ExecuteRangeQueryRequest) => {
+      let metadata: typeof query1 | undefined;
       if (request.queryName === 'cpu_usage') {
         metadata = query1;
       } else if (request.queryName === 'memory_usage') {

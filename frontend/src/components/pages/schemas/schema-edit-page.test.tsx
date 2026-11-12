@@ -1,8 +1,8 @@
 import { describe, expect, test } from '@rstest/core';
-import { render, screen } from 'test-utils';
 
 import { decodeSchemaEditTarget, schemaEditBreadcrumbs, schemaEditPageStatus } from './schema-edit-page';
 import { SchemaEditPageFallback } from './schema-edit-page-fallback';
+import { render, screen } from '../../../test-utils';
 
 const EDIT_MODE = { pageTitle: 'Edit Mode', crumbTitle: 'Edit Mode', segment: 'edit-mode' };
 const ROOT_CRUMB = { title: 'Schema Registry', linkTo: '/schema-registry' };

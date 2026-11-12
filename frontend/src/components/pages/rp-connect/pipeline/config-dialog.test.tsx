@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
@@ -24,7 +24,7 @@ const schema = z.object({
   name: z.string().min(3),
   description: z.string().optional(),
   computeUnits: z.number().min(MIN_TASKS).int(),
-  tags: z.array(z.object({ key: z.string().min(1), value: z.string() })).default([]),
+  tags: z.array(z.object({ key: z.string().min(1), value: z.string() })),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -41,11 +41,11 @@ function TestWrapper({ defaultValues }: { defaultValues?: Partial<FormValues> })
     },
   });
 
-  return <ConfigDialog form={form} mode="create" onOpenChange={() => {}} open />;
+  return <ConfigDialog form={form} mode="create" onOpenChange={() => undefined} open />;
 }
 
 describe('the ConfigDialog', () => {
-  it('renders pipeline name input, accepts text', () => {
+  test('renders pipeline name input, accepts text', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
     expect(input).toBeInTheDocument();
@@ -54,13 +54,13 @@ describe('the ConfigDialog', () => {
     expect(input).toHaveValue('my-pipeline');
   });
 
-  it('compute units slider and number input stay in sync', () => {
+  test('compute units slider and number input stay in sync', () => {
     render(<TestWrapper defaultValues={{ computeUnits: 3 }} />);
     const numberInput = screen.getByRole('spinbutton');
     expect(numberInput).toHaveValue(3);
   });
 
-  it('add tag button creates a new row', async () => {
+  test('add tag button creates a new row', async () => {
     const user = userEvent.setup();
     render(<TestWrapper defaultValues={{ tags: [{ key: '', value: '' }] }} />);
     const addButton = screen.getByRole('button', { name: /add tag/i });
@@ -71,7 +71,7 @@ describe('the ConfigDialog', () => {
     });
   });
 
-  it('delete button removes a tag row', async () => {
+  test('delete button removes a tag row', async () => {
     const user = userEvent.setup();
     render(
       <TestWrapper
@@ -95,7 +95,7 @@ describe('the ConfigDialog', () => {
     });
   });
 
-  it('tag key and value inputs are editable', async () => {
+  test('tag key and value inputs are editable', async () => {
     const user = userEvent.setup();
     render(
       <TestWrapper

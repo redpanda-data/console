@@ -12,8 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AIIcon } from 'components/icons';
 
-import TransformsList from '../../components/pages/transforms/transforms-list';
-
+import { TransformsList } from '../../components/pages/transforms/transforms-list';
 export const Route = createFileRoute('/transforms/')({
   staticData: {
     title: 'Transforms',

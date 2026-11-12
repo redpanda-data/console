@@ -13,14 +13,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { isEmbedded } from 'config';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
 import { SrTlsConfiguration } from './sr-tls-configuration';
+import { isEmbedded } from '../../../../../../runtime-config';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../../model';
 
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(() => false),
   isFeatureFlagEnabled: rs.fn(() => false),
 }));
@@ -46,7 +46,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -55,7 +55,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -87,7 +87,7 @@ describe('the SrTlsConfiguration', () => {
 
   test('shows the kept server-side key with its fingerprint and removes it', async () => {
     const user = userEvent.setup();
-    let formValues: FormValues | undefined;
+    let formValues: DeepPartial<FormValues> | undefined;
 
     render(
       <TestWrapper
@@ -112,7 +112,7 @@ describe('the SrTlsConfiguration', () => {
     await user.click(screen.getByTestId('remove-sr-existing-key-button'));
 
     await waitFor(() => {
-      expect(formValues?.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
+      expect(formValues?.schemaRegistry?.mtls?.existingKeyConfigured).toBe(false);
     });
     // The dropzone replaces the configured row so a new key can be uploaded.
     expect(screen.queryByTestId('sr-clientKey-existing-status')).not.toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('the SrTlsConfiguration', () => {
 
   test('an uploaded key takes precedence over the kept-key row', async () => {
     const user = userEvent.setup();
-    let formValues: FormValues | undefined;
+    let formValues: DeepPartial<FormValues> | undefined;
 
     render(
       <TestWrapper
@@ -154,7 +154,7 @@ describe('the SrTlsConfiguration', () => {
     await user.click(screen.getByTestId('remove-sr-clientKey-button'));
 
     await waitFor(() => {
-      expect(formValues?.schemaRegistry.mtls.clientKey).toBeUndefined();
+      expect(formValues?.schemaRegistry?.mtls?.clientKey).toBeUndefined();
     });
     expect(screen.getByTestId('sr-clientKey-existing-status')).toBeInTheDocument();
   });
@@ -172,7 +172,7 @@ describe('the SrTlsConfiguration', () => {
 
     test('replaces the key dropzone with a secret selector and stores a secret reference', async () => {
       const user = userEvent.setup();
-      let formValues: FormValues | undefined;
+      let formValues: DeepPartial<FormValues> | undefined;
 
       render(
         <TestWrapper
@@ -197,7 +197,8 @@ describe('the SrTlsConfiguration', () => {
       await user.click(await screen.findByRole('option', { name: 'SR_MTLS_CLIENT_KEY' }));
 
       await waitFor(() => {
-        expect(formValues?.schemaRegistry.mtls.clientKey).toEqual({
+        expect(formValues?.schemaRegistry?.mtls?.clientKey).toEqual({
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
           pemContent: '${secrets.SR_MTLS_CLIENT_KEY}',
           fileName: '',
         });

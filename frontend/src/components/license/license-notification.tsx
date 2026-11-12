@@ -18,7 +18,6 @@ import { type License, License_Source, License_Type } from '../../protogen/redpa
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const LicenseNotification = () => {
   const { licenses, licensesLoaded, licenseViolation, enterpriseFeaturesUsed } = useApiStoreHook(
     useShallow((state) => ({
@@ -139,14 +138,14 @@ function getLicenseExpirationInfo(licenses: License[], licenseViolation: boolean
   const soonToExpireLicenses = enterpriseLicenses.filter((license) => licenseSoonToExpire(license)) ?? [];
 
   const showSomeLicenseExpirationInfo =
-    (visibleExpiredEnterpriseLicenses.length > 0 && licenseViolation) || soonToExpireLicenses.length;
+    (visibleExpiredEnterpriseLicenses.length > 0 && licenseViolation === true) || soonToExpireLicenses.length > 0;
 
   const visibleSoonToExpireLicenses = preferCoreLicenseForSharedExpiry(soonToExpireLicenses);
   const visibleExpiredLicenses = preferCoreLicenseForSharedExpiry(visibleExpiredEnterpriseLicenses);
 
   const isWarning =
     visibleExpiredLicenses.length > 0 ||
-    licenseViolation ||
+    licenseViolation === true ||
     soonToExpireLicenses.some((license) => {
       const WARNING_THRESHOLD_DAYS = 15;
       const msToExpiration = getMillisecondsToExpiration(license);

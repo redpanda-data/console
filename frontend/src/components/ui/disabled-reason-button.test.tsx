@@ -9,19 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from '@rstest/core';
 
 import { DisabledReasonButton } from './disabled-reason-button';
 
-describe('DisabledReasonButton', () => {
+describe('disabled reason button', () => {
   test('renders an enabled button when no reason is given', async () => {
     const user = userEvent.setup();
     let clicked = false;
 
     render(
-      <DisabledReasonButton onClick={() => (clicked = true)} testId="edit">
+      <DisabledReasonButton
+        onClick={() => {
+          clicked = true;
+        }}
+        testId="edit"
+      >
         Edit
       </DisabledReasonButton>
     );
@@ -51,7 +56,13 @@ describe('DisabledReasonButton', () => {
     let clicked = false;
 
     render(
-      <DisabledReasonButton onClick={() => (clicked = true)} reason="No committed offset" testId="edit">
+      <DisabledReasonButton
+        onClick={() => {
+          clicked = true;
+        }}
+        reason="No committed offset"
+        testId="edit"
+      >
         Edit
       </DisabledReasonButton>
     );

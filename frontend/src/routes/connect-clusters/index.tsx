@@ -13,7 +13,7 @@ import { createFileRoute, useSearch } from '@tanstack/react-router';
 import { LinkIcon } from 'components/icons';
 import { z } from 'zod';
 
-import KafkaConnectOverview from '../../components/pages/connect/overview';
+import { WrapKafkaConnectOverview as KafkaConnectOverview } from '../../components/pages/connect/overview';
 import { pipelineListSearchSchema } from '../../components/pages/rp-connect/pipeline/list-search';
 
 const connectViewValues = ['kafka-connect', 'redpanda-connect', 'redpanda-connect-secret'] as const;

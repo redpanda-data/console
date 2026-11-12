@@ -10,9 +10,9 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen, within } from 'test-utils';
 
-import CreateACL from './create-acl';
+import { CreateACL } from './create-acl';
+import { renderWithFileRoutes, screen, within } from '../../../../test-utils';
 import { PrincipalTypeRedpandaRole, PrincipalTypeUser, parsePrincipal } from '../shared/acl-model';
 
 const noop = () => undefined;

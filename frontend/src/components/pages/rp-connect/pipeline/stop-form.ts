@@ -11,9 +11,10 @@
 
 import { z } from 'zod';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { idleTimeoutFires, parseMessageLimit, type StopConditionDraft } from '../utils/read-until';
-import { isStopConditionSet, type StopCondition } from '../utils/yaml';
+import { isStopConditionSet, type StopCondition } from '../utils/yaml-values';
 
 // The stop condition editor's form model.
 
@@ -80,7 +81,7 @@ export function stopFormState(condition?: StopCondition, canKeepRunning = true):
   if (limit) {
     return { ...state, mode: 'count', limit: String(limit.limit), alsoIdle: Boolean(condition.idleTimeout) };
   }
-  if (condition.check) {
+  if (isNonEmptyString(condition.check)) {
     return { ...state, mode: 'check', check: condition.check, alsoIdle: Boolean(condition.idleTimeout) };
   }
   return { ...state, mode: 'idle' };
@@ -114,7 +115,7 @@ export function draftFromStopForm(s: StopFormState, restartOffered = true): Stop
 // A count or check on an input that never ends, with no idle timeout behind it.
 function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior): string {
   const limit = s.limit.trim();
-  const unit = own.batches ? 'batches' : 'messages';
+  const unit = own.batches === true ? 'batches' : 'messages';
   const shortfall =
     s.mode === 'count' && POSITIVE_INT_RE.test(limit) ? `If fewer than ${limit} ${unit} arrive` : 'If none arrives';
   return `${shortfall}, it keeps running. Also stop when idle as a backstop.`;

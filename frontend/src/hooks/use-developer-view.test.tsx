@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import useDeveloperView from './use-developer-view';
+import { useDeveloperView } from './use-developer-view';
 
 describe('useDeveloperView', () => {
   const store: Record<string, string> = {};
@@ -36,19 +36,16 @@ describe('useDeveloperView', () => {
   afterEach(() => {
     rs.restoreAllMocks();
   });
-
-  it('returns false by default when localStorage has no stored value', () => {
+  test('returns false by default when localStorage has no stored value', () => {
     const { result } = renderHook(() => useDeveloperView());
     expect(result.current).toBe(false);
   });
-
-  it('reads stored developer view preference from localStorage', () => {
+  test('reads stored developer view preference from localStorage', () => {
     store.dv = JSON.stringify(true);
     const { result } = renderHook(() => useDeveloperView());
     expect(result.current).toBe(true);
   });
-
-  it('toggles on ? and persists the choice', async () => {
+  test('toggles on ? and persists the choice', async () => {
     const user = userEvent.setup();
     const { result } = renderHook(() => useDeveloperView());
 
@@ -66,8 +63,7 @@ describe('useDeveloperView', () => {
     expect(result.current).toBe(false);
     expect(store.dv).toBe(JSON.stringify(false));
   });
-
-  it('returns false when localStorage contains invalid JSON', () => {
+  test('returns false when localStorage contains invalid JSON', () => {
     store.dv = 'not-json';
     const { result } = renderHook(() => useDeveloperView());
     expect(result.current).toBe(false);

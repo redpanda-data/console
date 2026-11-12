@@ -2,11 +2,11 @@ import { describe, expect, rs, test } from '@rstest/core';
 import { act, fireEvent, renderHook } from '@testing-library/react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { CompressionType, type Payload, type TopicMessage } from 'state/rest-interfaces';
-import { PartitionOffsetOrigin } from 'state/ui';
 
 import type { MessageSearchPhase } from './use-message-search';
 import { type MessagesTableStateOptions, useMessagesTableState } from './use-messages-table-state';
 import type { MessagesUrlState } from './use-messages-url-state';
+import { PartitionOffsetOrigin } from '../../../../../types/topic-settings';
 
 const payload = (json: string): Payload => ({
   payload: JSON.parse(json),
@@ -35,35 +35,35 @@ const messages = [message(1, 'created'), message(2, 'shipped'), message(3, 'crea
 
 const urlStateWith = (overrides: Partial<MessagesUrlState> = {}): MessagesUrlState => ({
   partitionId: -1,
-  setPartitionId: rs.fn(),
+  setPartitionId: rs.fn(() => Promise.resolve(new URLSearchParams())),
   maxResults: 50,
-  setMaxResults: rs.fn(),
+  setMaxResults: rs.fn(() => Promise.resolve(new URLSearchParams())),
   startOffset: PartitionOffsetOrigin.EndMinusResults,
-  setStartOffset: rs.fn(),
+  setStartOffset: rs.fn(() => Promise.resolve(new URLSearchParams())),
   startTimestamp: -1,
-  setStartTimestamp: rs.fn(),
+  setStartTimestamp: rs.fn(() => Promise.resolve(new URLSearchParams())),
   quickSearch: '',
-  setQuickSearch: rs.fn(),
+  setQuickSearch: rs.fn(() => Promise.resolve(new URLSearchParams())),
   fieldTokens: [],
-  setFieldTokens: rs.fn(),
+  setFieldTokens: rs.fn(() => Promise.resolve(new URLSearchParams())),
   keyDeserializer: PayloadEncoding.UNSPECIFIED,
-  setKeyDeserializer: rs.fn(),
+  setKeyDeserializer: rs.fn(() => Promise.resolve(new URLSearchParams())),
   valueDeserializer: PayloadEncoding.UNSPECIFIED,
-  setValueDeserializer: rs.fn(),
+  setValueDeserializer: rs.fn(() => Promise.resolve(new URLSearchParams())),
   schemaContext: '',
-  setSchemaContext: rs.fn(),
+  setSchemaContext: rs.fn(() => Promise.resolve(new URLSearchParams())),
   pageIndex: 0,
-  setPageIndex: rs.fn(),
+  setPageIndex: rs.fn(() => Promise.resolve(new URLSearchParams())),
   pageSize: 50,
-  setPageSize: rs.fn(),
+  setPageSize: rs.fn(() => Promise.resolve(new URLSearchParams())),
   sorting: [],
-  setSortingState: rs.fn(),
+  setSortingState: rs.fn(() => Promise.resolve(new URLSearchParams())),
   continuousMode: false,
-  setContinuousMode: rs.fn(),
+  setContinuousMode: rs.fn(() => Promise.resolve(new URLSearchParams())),
   liveTail: false,
-  setLiveTail: rs.fn(),
+  setLiveTail: rs.fn(() => Promise.resolve(new URLSearchParams())),
   selectedKey: null,
-  setSelectedKey: rs.fn(),
+  setSelectedKey: rs.fn(() => Promise.resolve(new URLSearchParams())),
   readScopeMode: 'newest',
   setReadScopeMode: rs.fn(),
   ...overrides,

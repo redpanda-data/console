@@ -26,7 +26,7 @@ export const TaskStatusBadge = ({ state, taskId }: TaskStatusBadgeProps) => {
     [TaskState.NOT_RUNNING]: { text: 'Not Running', tone: 'default' as const },
     [TaskState.FAULTED]: { text: 'Faulted', tone: 'destructive' as const },
     [TaskState.FINISHED]: { text: 'Finished', tone: 'default' as const },
-  }[state] || { text: 'Unknown', tone: 'default' as const };
+  }[state] ?? { text: 'Unknown', tone: 'default' as const };
 
   return (
     <Badge data-testid={`task-status-badge-${taskId}`} tone={stateInfo.tone} variant="subtle">

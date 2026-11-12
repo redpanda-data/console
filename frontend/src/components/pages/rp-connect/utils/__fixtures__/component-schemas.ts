@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import {
   type ComponentList,
   ComponentListSchema,
@@ -20,6 +20,7 @@ import {
   FieldSpecSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+import { createComponentFixture } from './component-spec';
 import type { ConnectComponentSpec } from '../../types/schema';
 
 /**
@@ -27,14 +28,14 @@ import type { ConnectComponentSpec } from '../../types/schema';
  */
 function createField(field: Partial<FieldSpec>): FieldSpec {
   const baseSpec: Record<string, unknown> = {
-    name: field.name || '',
-    type: field.type || 'string',
-    kind: field.kind || 'scalar',
+    name: (field.name ?? '') || '',
+    type: (field.type ?? '') || 'string',
+    kind: (field.kind ?? '') || 'scalar',
     optional: field.optional === undefined ? false : field.optional,
     advanced: field.advanced === undefined ? false : field.advanced,
     deprecated: field.deprecated === undefined ? false : field.deprecated,
     children: field.children || [],
-    description: field.description || '',
+    description: (field.description ?? '') || '',
     examples: field.examples || [],
   };
 
@@ -680,14 +681,13 @@ export function createMockComponentList(): ComponentList {
 
 /**
  * Helper to create a field matching the actual backend JSON schema shape.
- * Unlike createField (which applies proto3 defaults), this only sets properties
- * that are explicitly provided — `optional` and `defaultValue` are undefined
- * when not set, matching what the real REST schema sends.
+ * Completes the snapshot fields with proto3 defaults, as the RPC does.
+ * Empty string defaults still leave required-field fallback behavior unchanged.
  *
  * Reference: src/assets/rp-connect-schema-full.json
  */
-function createSchemaField(field: Record<string, unknown>): FieldSpec {
-  return field as unknown as FieldSpec;
+function createSchemaField(field: MessageInitShape<typeof FieldSpecSchema>): FieldSpec {
+  return create(FieldSpecSchema, field);
 }
 
 /**
@@ -700,7 +700,7 @@ function createSchemaField(field: Record<string, unknown>): FieldSpec {
  * - batch_size: has int default 1 → returns 1
  * - auto_replay_nacks: has bool default true → returns true
  */
-export const mockGenerateInput: ConnectComponentSpec = {
+export const mockGenerateInput: ConnectComponentSpec = createComponentFixture({
   name: 'generate',
   type: 'input',
   status: ComponentStatus.STABLE,
@@ -718,7 +718,7 @@ export const mockGenerateInput: ConnectComponentSpec = {
       createSchemaField({ name: 'auto_replay_nacks', type: 'bool', kind: 'scalar', defaultValue: 'true' }),
     ],
   }),
-} as ConnectComponentSpec;
+});
 
 /**
  * HTTP Client Input Component — from real schema (rp-connect-schema-full.json)
@@ -730,7 +730,7 @@ export const mockGenerateInput: ConnectComponentSpec = {
  * - metadata: explicitly optional + advanced → hidden
  * - stream_scanner: explicitly optional, non-advanced, no default → shown with kind-based fallback
  */
-export const mockHttpClientInput: ConnectComponentSpec = {
+export const mockHttpClientInput: ConnectComponentSpec = createComponentFixture({
   name: 'http_client',
   type: 'input',
   status: ComponentStatus.STABLE,
@@ -758,7 +758,7 @@ export const mockHttpClientInput: ConnectComponentSpec = {
       createSchemaField({ name: 'stream_scanner', type: 'string', kind: 'scalar', optional: true }),
     ],
   }),
-} as ConnectComponentSpec;
+});
 
 /**
  * Convert ComponentSpec to ConnectComponentSpec for testing
@@ -771,7 +771,7 @@ export function mockComponentToConnectSpec(
     ...component,
     type,
     config: component.config,
-  } as ConnectComponentSpec;
+  };
 }
 
 /**

@@ -11,6 +11,7 @@
 
 import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd';
 import { ElementTooltip } from 'components/misc/element-tooltip';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronDownIcon, GripVerticalIcon, Settings2Icon } from 'lucide-react';
@@ -64,7 +65,7 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                     ref={dragProvided.innerRef}
                     {...dragProvided.draggableProps}
                   >
-                    <div className="flex items-center gap-2 px-1.5 py-1.5">
+                    <div className="flex items-center gap-2 p-1.5">
                       {/* dragHandleProps make this a focusable role="button"; the sr-only text names it. */}
                       <ElementTooltip content="Drag to reorder">
                         <span className="cursor-grab text-muted-foreground/60" {...dragProvided.dragHandleProps}>
@@ -82,26 +83,28 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                         {COLUMN_LABELS[column.id]}
                       </span>
                       {CONFIGURABLE.has(column.id) && (
-                        <button
+                        <Button
                           className={cn(
+                            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                             'flex items-center gap-1.5 rounded-md px-1.5 py-1 text-body-sm text-muted-foreground hover:bg-muted',
-                            expanded === column.id && 'bg-muted text-foreground'
+                            expanded === column.id &&
+                              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                              'bg-muted text-foreground'
                           )}
                           data-testid={`column-config-${column.id}`}
                           onClick={() => setExpanded((prev) => (prev === column.id ? null : column.id))}
                           type="button"
+                          variant="unstyled"
                         >
                           <Settings2Icon className="size-3.5" />
-                          <span className="max-w-36 overflow-hidden text-ellipsis whitespace-nowrap">
-                            {configSummary(column.id)}
-                          </span>
+                          <span className="max-w-36 truncate">{configSummary(column.id)}</span>
                           <span className={cn('block transition-transform', expanded === column.id && 'rotate-180')}>
                             <ChevronDownIcon className="size-3" />
                           </span>
-                        </button>
+                        </Button>
                       )}
                     </div>
-                    {expanded === column.id && <div className="border-t px-3 py-3">{renderConfig(column.id)}</div>}
+                    {expanded === column.id && <div className="border-t p-3">{renderConfig(column.id)}</div>}
                   </div>
                 )}
               </Draggable>

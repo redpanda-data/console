@@ -1,3 +1,6 @@
+import { isObject } from 'utils/type-guards';
+import 'components/legacy-layout.css';
+import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -16,6 +19,7 @@ import { useExecuteRangeQuery } from 'react-query/api/observability';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 import { CHART_COLORS, transformTimeSeriesData } from './utils/chart-data';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { formatWithUnit } from '../../../utils/unit';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import {
@@ -99,7 +103,9 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
   if (chartData.length === 0) {
     return (
       <div className="rounded-md border border-border p-4">
-        {data.metadata?.description ? <h4 className="mb-4 text-heading-sm">{data.metadata.description}</h4> : null}
+        {isNonEmptyString(data.metadata?.description) ? (
+          <h4 className="mb-4 text-heading-sm">{data.metadata.description}</h4>
+        ) : null}
         <Alert className="mt-2" variant="informative">
           <AlertDescription>No data available for this time range</AlertDescription>
         </Alert>
@@ -109,7 +115,9 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
 
   return (
     <div className="rounded-md border border-border p-4">
-      {data.metadata?.description ? <h3 className="mb-4 text-heading-md">{data.metadata.description}</h3> : null}
+      {isNonEmptyString(data.metadata?.description) ? (
+        <h3 className="mb-4 text-heading-md">{data.metadata.description}</h3>
+      ) : null}
 
       <ChartContainer className="mt-4 h-[250px] w-full" config={chartConfig}>
         <LineChart accessibilityLayer data={chartData}>
@@ -117,7 +125,10 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
           <XAxis
             axisLine={false}
             dataKey="timestamp"
-            tickFormatter={(value) => {
+            tickFormatter={(value: unknown) => {
+              if (typeof value !== 'number' && typeof value !== 'string') {
+                return '';
+              }
               const date = new Date(value);
               return date.toLocaleTimeString('en-US', {
                 hour: '2-digit',
@@ -130,7 +141,9 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
           />
           <YAxis
             axisLine={false}
-            tickFormatter={(value) => formatWithUnit(value, data.metadata?.unit)}
+            tickFormatter={(value: unknown) =>
+              typeof value === 'number' ? formatWithUnit(value, data.metadata?.unit) : String(value)
+            }
             tickLine={false}
             width={80}
           />
@@ -139,11 +152,16 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
               <ChartTooltipContent
                 className="min-w-[200px]"
                 formatter={(value, name, item) => {
-                  const indicatorColor = item.payload.fill || item.color;
+                  const point: unknown = item.payload;
+                  const indicatorColor =
+                    isObject(point) && typeof point.fill === 'string' && point.fill !== '' ? point.fill : item.color;
                   const formattedValue = typeof value === 'number' ? formatWithUnit(value, data.metadata?.unit) : value;
                   return (
                     <div className="flex w-full items-center gap-3">
-                      <div className="h-2.5 w-2.5 shrink-0 rounded-xs" style={{ backgroundColor: indicatorColor }} />
+                      <div
+                        className="console-variable-background size-2.5 shrink-0 rounded-xs"
+                        style={{ '--console-background': indicatorColor } as ComponentStyleVars}
+                      />
                       <span className="text-muted-foreground">{name}</span>
                       <span className="ml-auto font-mono font-medium tabular-nums">{formattedValue}</span>
                     </div>
@@ -151,12 +169,13 @@ export const MetricChart: FC<MetricChartProps> = (props) => {
                 }}
                 hideLabel={false}
                 labelFormatter={(_value, payload) => {
-                  const timestamp = payload?.[0]?.payload?.timestamp;
-                  if (!timestamp || typeof timestamp !== 'number') {
+                  const point: unknown = payload?.[0]?.payload;
+                  const timestamp = isObject(point) ? point.timestamp : undefined;
+                  if (typeof timestamp !== 'number' || timestamp === 0) {
                     return '';
                   }
                   const date = new Date(timestamp);
-                  if (!date.getTime()) {
+                  if (!Boolean(date.getTime())) {
                     return '';
                   }
                   return date.toLocaleString('en-US', {

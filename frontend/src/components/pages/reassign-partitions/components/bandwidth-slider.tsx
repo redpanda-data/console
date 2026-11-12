@@ -1,3 +1,5 @@
+import 'components/legacy-layout.css';
+import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -9,12 +11,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { Slider } from 'components/redpanda-ui/components/slider';
 import { useState } from 'react';
 
 import type { uiSettings } from '../../../../state/ui';
+import { clampNumber } from '../../../../utils/number-utils';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { prettyNumber } from '../../../../utils/utils';
-import '../../../../utils/number-extensions';
-import { Slider } from 'components/redpanda-ui/components/slider';
 
 //
 // BandwidthSlider can work with two kinds of inputs
@@ -74,7 +77,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
     if (f < 3) {
       return 'No change';
     }
-    const v = Math.round(10 ** f.clamp(3, 12));
+    const v = Math.round(10 ** clampNumber(f, 3, 12));
     return `${prettyNumber(v).toUpperCase()}B/s`;
   };
 
@@ -96,10 +99,10 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
         so the marks and the value bubble are positioned against the same value scale here. The
         bubble follows the thumb and is shown only while dragging.
       */}
-      {isDragging && tipText(sliderValue) ? (
+      {isDragging && isNonEmptyString(tipText(sliderValue)) ? (
         <div
-          className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-body-sm whitespace-nowrap text-primary-foreground shadow-md"
-          style={{ left: `${percentOf(sliderValue)}%` }}
+          className="console-variable-left pointer-events-none absolute -top-7 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-body-sm whitespace-nowrap text-primary-foreground shadow-md"
+          style={{ '--console-left': `${percentOf(sliderValue)}%` } as ComponentStyleVars}
         >
           {tipText(sliderValue)}
         </div>
@@ -112,7 +115,7 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
           if (n < 2.5) {
             setValue(null);
           } else {
-            setValue(Math.round(10 ** n.clamp(3, 12)));
+            setValue(Math.round(10 ** clampNumber(n, 3, 12)));
           }
         }}
         step={0.1}
@@ -122,9 +125,9 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
       <div className="relative mt-1 mb-2 h-5">
         {MARKS.map((mark) => (
           <span
-            className="absolute -translate-x-1/2 text-body-sm text-subtle"
+            className="console-variable-left absolute -translate-x-1/2 text-body-sm text-subtle"
             key={mark.value}
-            style={{ left: `${percentOf(mark.value)}%` }}
+            style={{ '--console-left': `${percentOf(mark.value)}%` } as ComponentStyleVars}
           >
             {mark.label}
           </span>

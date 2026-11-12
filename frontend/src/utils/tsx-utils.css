@@ -1,0 +1,45 @@
+.console-table-gap {
+  inline-size: var(--console-table-gap-width);
+  min-inline-size: 0;
+  padding: 0;
+}
+
+.console-table-row-gap {
+  padding: 0;
+  padding-block-end: var(--console-table-gap-height);
+}
+
+.console-info-overlay {
+  max-inline-size: var(--console-info-max-width, none);
+  text-align: var(--console-info-align, inherit);
+}
+
+.console-info-icon {
+  box-sizing: content-box;
+  display: inline-flex;
+  inline-size: var(--console-info-size);
+  block-size: var(--console-info-size);
+  margin-inline-start: var(--console-info-gap);
+  color: var(--console-info-color);
+  transform: var(--console-info-transform, none);
+}
+
+.console-status-progress {
+  inline-size: var(--console-progress-width, 100%);
+  transition: inline-size var(--default-transition-duration, 150ms) var(--default-transition-timing-function, ease);
+}
+
+.console-zero-size {
+  display: inline-flex;
+  align-items: var(--console-zero-align, center);
+  justify-content: var(--console-zero-justify, center);
+  inline-size: var(--console-zero-width, 0);
+  block-size: var(--console-zero-height, 0);
+  transform: var(--console-zero-transform, translateY(-0.5px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-status-progress {
+    transition: none;
+  }
+}

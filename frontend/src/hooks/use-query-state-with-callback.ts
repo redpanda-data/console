@@ -1,56 +1,51 @@
 import { useLocation } from '@tanstack/react-router';
-import { type UseQueryStateReturn, useQueryState } from 'nuqs';
+import { type UseQueryStateOptions, type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
-// Memoize searchParams to avoid creating a new URLSearchParams object on every render
 function useLocationSearchParams(): URLSearchParams {
   const location = useLocation();
-  const searchStr = location.searchStr ?? '';
-  return useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  return useMemo(() => new URLSearchParams(location.searchStr), [location.searchStr]);
 }
 
-/**
- * `useQueryState`, plus an `onUpdate` callback on every change and a `getDefaultValue` fallback for
- * when the parameter is absent from the URL — for keeping URL state and an external store in sync.
- */
-export function useQueryStateWithCallback<T, U = null>(
-  params: {
-    onUpdate: (val: T) => void;
-    getDefaultValue: () => T;
-  },
-  ...options: Parameters<typeof useQueryState<T>>
-): UseQueryStateReturn<T, U> {
-  const [key, ...otherOptions] = options;
-  const [value, setValue] = useQueryState<T>(key, ...otherOptions);
+type ValueUpdater<T> = (previous: T) => T | null;
+type CallbackQueryState<T> = [T, UseQueryStateReturn<T, T>[1]];
+
+/** Nuqs interprets every callable setter argument as an updater, not as a parsed value. */
+function isValueUpdater<T>(value: T | null | ValueUpdater<T>): value is ValueUpdater<T> {
+  return typeof value === 'function';
+}
+
+/** Keep local preferences in sync with resolved values, retaining Nuqs' URL-completion promise. */
+export function useQueryStateWithCallback<T extends NonNullable<unknown>>(
+  params: { onUpdate: (value: T) => void; getDefaultValue: () => T },
+  key: string,
+  queryOptions: UseQueryStateOptions<T> & { defaultValue: T }
+): CallbackQueryState<T> {
+  const [value, setValue] = useQueryState<T>(key, queryOptions);
   const searchParams = useLocationSearchParams();
-
-  // Use ref to store params to avoid dependency issues with unstable config objects
-  const paramsRef = useRef(params);
-  paramsRef.current = params;
-
+  const paramsRef = useRef({ ...params, defaultValue: queryOptions.defaultValue });
+  paramsRef.current = { ...params, defaultValue: queryOptions.defaultValue };
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-
-      if (searchParams.has(key)) {
-        setValue(value);
-      } else if (paramsRef.current.getDefaultValue) {
-        const defaultValue = paramsRef.current.getDefaultValue();
-        // The setValue function can accept T or a function that returns T
-        setValue(defaultValue as T & {});
-      }
+    if (!isFirstRender.current) {
+      return;
     }
+    isFirstRender.current = false;
+    const initialValue = searchParams.has(key) ? value : paramsRef.current.getDefaultValue();
+    setValue(initialValue).catch(reportActionError);
   }, [key, setValue, value, searchParams]);
 
-  const setValueFinal = useCallback(
-    (newValue: T & {}) => {
-      paramsRef.current.onUpdate(newValue);
-      setValue(newValue as T & {});
-    },
+  const setValueFinal = useCallback<UseQueryStateReturn<T, T>[1]>(
+    (newValue, updateOptions) =>
+      setValue((previous) => {
+        const next = isValueUpdater(newValue) ? newValue(previous) : newValue;
+        paramsRef.current.onUpdate(next ?? paramsRef.current.defaultValue);
+        return next;
+      }, updateOptions),
     [setValue]
   );
 
-  return [value, setValueFinal] as UseQueryStateReturn<T, U>;
+  return [value, setValueFinal];
 }

@@ -14,13 +14,16 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { createStore as createZustandStore } from 'zustand/vanilla';
 
-import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
+import { RolesTabNew as RolesTab } from './roles-tab-new';
+import { SecurityQueryProvider } from '../__fixtures__/query-provider';
 
 const NuqsWrapper = ({ children }: { children: ReactNode }) => (
   <NuqsTestingAdapter>
-    <TooltipProvider>{children}</TooltipProvider>
+    <SecurityQueryProvider>{children}</SecurityQueryProvider>
   </NuqsTestingAdapter>
 );
 
@@ -47,7 +50,7 @@ rs.mock('../shared/delete-role-confirm-modal', () => ({
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
-  default: () => null,
+  ErrorResult: () => null,
 }));
 
 rs.mock('../../../../state/app-global', () => ({
@@ -66,7 +69,10 @@ rs.mock('../../../../state/backend-api', () => {
       canManageUsers: true,
       canViewPermissionsList: true,
     },
-    enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
+    enterpriseFeaturesUsed: [] as {
+      name: string;
+      enabled: boolean;
+    }[],
     isAdminApiConfigured: false,
   };
 
@@ -117,7 +123,7 @@ rs.mock('../../../misc/null-fallback-boundary', () => ({
 }));
 
 rs.mock('../../../misc/section', () => ({
-  default: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
+  Section: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
 }));
 
 rs.mock('../shared/security-tabs-nav', () => ({
@@ -137,13 +143,6 @@ rs.mock('react-query/api/security', () => ({
     isError: false,
   }),
 }));
-
-rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
-}));
-
-import { RolesTab } from './roles-tab';
-
 describe('the RolesTab role navigation', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -197,7 +196,11 @@ function MockDeleteRoleConfirmModal({
   [key: string]: unknown;
 }) {
   return (
-    <button data-testid={`mock-confirm-delete-${roleName}`} onClick={() => onConfirm()}>
+    <button
+      data-testid={`mock-confirm-delete-${roleName}`}
+      onClick={asyncEvent(() => onConfirm(), reportActionError)}
+      type="button"
+    >
       Confirm delete
     </button>
   );

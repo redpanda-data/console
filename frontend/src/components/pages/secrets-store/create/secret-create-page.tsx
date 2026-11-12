@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -29,11 +30,12 @@ import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
-import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { initialValues, SecretCreateFormSchema, type SecretCreateFormValues } from './secret-create-form-schema';
@@ -44,8 +46,8 @@ export const SecretCreatePage = () => {
   const { mutateAsync: createSecret, isPending: isCreating } = useCreateSecretMutation();
   const { data: secretList } = useListSecretsQuery();
 
-  const form = useForm<SecretCreateFormValues>({
-    resolver: zodResolver(SecretCreateFormSchema) as Resolver<SecretCreateFormValues>,
+  const form = useForm<z.input<typeof SecretCreateFormSchema>, unknown, SecretCreateFormValues>({
+    resolver: zodResolver(SecretCreateFormSchema),
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -96,7 +98,7 @@ export const SecretCreatePage = () => {
         </div>
       </header>
 
-      <form className="max-w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="max-w-full space-y-6" onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportActionError)}>
         <Controller
           control={form.control}
           name="id"
@@ -117,7 +119,7 @@ export const SecretCreatePage = () => {
           )}
           rules={{
             validate: (value) =>
-              secretList?.secrets?.some((secret) => secret?.id === value) ? 'ID is already in use' : undefined,
+              secretList?.secrets?.some((secret) => secret?.id === value) === true ? 'ID is already in use' : undefined,
           }}
         />
 
@@ -170,6 +172,7 @@ export const SecretCreatePage = () => {
         <TagsFieldList
           appendTag={appendLabel}
           fieldName="labels"
+          fieldNames={(index) => ({ key: `labels.${index}.key`, value: `labels.${index}.value` })}
           form={form}
           removeTag={removeLabel}
           tagFields={labelFields}
@@ -183,7 +186,7 @@ export const SecretCreatePage = () => {
           >
             {isCreating ? (
               <>
-                <TonedIcon className="h-4 w-4" icon={Loader2} spin />
+                <TonedIcon className="size-4" icon={Loader2} spin />
                 Creating...
               </>
             ) : (
@@ -192,7 +195,7 @@ export const SecretCreatePage = () => {
           </Button>
           <Button
             data-testid="secret-create-cancel-button"
-            onClick={() => navigate({ to: '/secrets' })}
+            onClick={asyncEvent(() => navigate({ to: '/secrets' }), reportActionError)}
             type="button"
             variant="ghost"
           >

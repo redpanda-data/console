@@ -9,6 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
+function appendCharacter(parts: (string | number)[], char: string) {
+  const code = char.charCodeAt(0);
+  const last = parts.at(-1);
+  if (code < 32) {
+    parts.push(code);
+  } else if (typeof last === 'string') {
+    parts[parts.length - 1] = last + char;
+  } else {
+    parts.push(char);
+  }
+}
+
 /**
  * Splits text into runs of printable characters (strings) and ASCII control characters (their
  * char codes, below 32), in order. `maxLength` caps how many characters are read; at least one
@@ -17,16 +29,9 @@
 export function splitControlChars(str: string, maxLength?: number): (string | number)[] {
   const chars = Array.from(str);
   const parts: (string | number)[] = [];
-  for (const char of maxLength === undefined ? chars : chars.slice(0, Math.max(1, maxLength))) {
-    const code = char.charCodeAt(0);
-    const last = parts.at(-1);
-    if (code < 32) {
-      parts.push(code);
-    } else if (typeof last === 'string') {
-      parts[parts.length - 1] = last + char;
-    } else {
-      parts.push(char);
-    }
+  const visibleChars = maxLength === undefined ? chars : chars.slice(0, Math.max(1, maxLength));
+  for (const char of visibleChars) {
+    appendCharacter(parts, char);
   }
   return parts;
 }

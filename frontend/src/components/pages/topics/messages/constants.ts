@@ -47,10 +47,6 @@ export const PAYLOAD_ENCODING_PAIRS = [
   { value: PayloadEncoding.CBOR, label: 'CBOR' },
 ];
 
-export const PAYLOAD_ENCODING_LABELS = PAYLOAD_ENCODING_PAIRS.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
+export const PAYLOAD_ENCODING_LABELS = Object.fromEntries<string>(
+  PAYLOAD_ENCODING_PAIRS.map(({ value, label }) => [value, label])
 );

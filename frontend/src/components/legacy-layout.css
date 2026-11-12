@@ -1,0 +1,214 @@
+.console-error-detail {
+  font-family: monospace;
+  font-size: small;
+  line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.console-login-art {
+  padding-block-start: 10%;
+  background: linear-gradient(170deg, #ed7f66 58%, #e2401b 58.2%);
+}
+
+.console-connector-details {
+  grid-area: details;
+}
+
+.console-connector-tasks {
+  grid-area: tasks;
+}
+
+.console-connector-health {
+  grid-area: health;
+}
+
+.console-connector-errors {
+  grid-area: errors;
+}
+
+.console-connector-layout {
+  grid-template-areas: 'errors errors' 'health details' 'tasks details';
+  grid-template-rows: auto;
+}
+
+.console-connector-logo {
+  margin-inline-end: 5px;
+  vertical-align: inherit;
+}
+
+.console-offset-note {
+  font-size: smaller;
+  color: var(--color-subtle);
+  cursor: default;
+  user-select: none;
+}
+
+.console-reassignment-labels {
+  display: flex;
+  margin-block-start: 1px;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 75%;
+  font-weight: 600;
+}
+
+.console-reassignment-speed {
+  padding-inline-end: 1em;
+  opacity: 0.6;
+}
+
+.console-reassignment-topic {
+  padding-inline-end: 2em;
+}
+
+.console-selection-statistic-label {
+  padding-block-end: 0.5em;
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+.console-selection-statistics {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3em;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 1.1em;
+  color: var(--color-foreground);
+}
+
+.console-reassignment-throttled {
+  margin-block: 1em;
+  margin-inline: 0;
+}
+
+.console-reassignment-navigation {
+  display: flex;
+  align-items: flex-end;
+  block-size: 2.5em;
+  margin-block: 2.5em 1.5em;
+  margin-inline: 0;
+}
+
+.console-reassignment-steps {
+  margin-block: 0.75em 1em;
+  margin-inline: 1em;
+}
+
+.console-reassignment-page {
+  padding-block-end: 12em;
+}
+
+.console-reassignment-partitions {
+  margin-block: 1em 2em;
+  margin-inline: 1em;
+}
+
+.console-reassignment-intro {
+  margin-block: 2em;
+  margin-inline: 1em;
+}
+
+.console-reassignment-statistic-value {
+  font-size: calc(1em * 24 / 14);
+}
+
+.console-reassignment-summary-statistics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3em;
+  margin-block-start: 1em;
+  color: var(--color-foreground);
+}
+
+.console-reassignment-summary {
+  margin-block: 2em 5em;
+  margin-inline: 1em;
+}
+
+.console-reassignment-slider {
+  padding-block-end: 1em;
+  margin-block-start: 2em;
+}
+
+.console-reassignment-bandwidth {
+  margin-block: 4em 3em;
+  margin-inline: 1em;
+}
+
+.console-message-headers {
+  margin-block: 2em;
+  margin-inline: 0;
+}
+
+.console-message-preview {
+  font-size: 95%;
+}
+
+.console-message-code {
+  font-size: 0.85em;
+  line-height: 1em;
+  white-space: normal;
+}
+
+.console-preview-checkbox {
+  margin-block-end: 0.5em;
+}
+
+.console-preview-patterns {
+  padding-inline-start: 2em;
+  margin-block-start: 0.5em;
+}
+
+.console-preview-example-label {
+  font-size: smaller;
+  text-align: center;
+  opacity: 0.5;
+}
+
+.console-documentation-warning {
+  display: inline-block;
+  margin-inline-end: 5px;
+  font-size: 15px;
+  transform: translateY(1px);
+}
+
+.console-variable-width {
+  inline-size: var(--console-width);
+}
+
+.console-variable-height {
+  block-size: var(--console-height);
+}
+
+.console-variable-left {
+  inset-inline-start: var(--console-left);
+}
+
+.console-variable-top {
+  inset-block-start: var(--console-top);
+}
+
+.console-variable-margin {
+  margin: var(--console-margin);
+}
+
+.console-variable-background {
+  background-color: var(--console-background);
+}
+
+.console-sql-tree-item {
+  padding-inline-start: var(--console-tree-indent);
+}
+
+.console-connector-error-icon {
+  margin-inline-end: 0.5em;
+}
+
+.console-aged-record {
+  background-image: repeating-linear-gradient(45deg, var(--color-muted) 0 3px, transparent 3px 6px);
+}
+
+.console-shadow-table-header {
+  border-block-end-width: 0;
+  border-radius: 0;
+}

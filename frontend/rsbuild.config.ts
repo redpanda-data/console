@@ -14,6 +14,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 import { moduleFederationConfig } from './module-federation.config';
 import { HEAP_APP_ID } from './src/heap/heap.helper';
 import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import { isNonEmptyString } from './src/utils/string-utils';
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
 import { fileURLToPath } from 'node:url';
 
@@ -77,24 +78,24 @@ export default defineConfig({
     proxy: {
       // All other APIs - proxy to Console backend
       '/api': {
-        target: process.env.PROXY_TARGET || 'http://localhost:9090',
-        changeOrigin: !!process.env.PROXY_TARGET,
-        secure: process.env.PROXY_TARGET ? false : undefined,
+        target: (process.env.PROXY_TARGET ?? '') || 'http://localhost:9090',
+        changeOrigin: isNonEmptyString(process.env.PROXY_TARGET),
+        secure: isNonEmptyString(process.env.PROXY_TARGET) ? false : undefined,
       },
       '/redpanda.api': {
-        target: process.env.PROXY_TARGET || 'http://localhost:9090',
-        changeOrigin: !!process.env.PROXY_TARGET,
-        secure: process.env.PROXY_TARGET ? false : undefined,
+        target: (process.env.PROXY_TARGET ?? '') || 'http://localhost:9090',
+        changeOrigin: isNonEmptyString(process.env.PROXY_TARGET),
+        secure: isNonEmptyString(process.env.PROXY_TARGET) ? false : undefined,
       },
       '/auth': {
-        target: process.env.PROXY_TARGET || 'http://localhost:9090',
-        changeOrigin: !!process.env.PROXY_TARGET,
-        secure: process.env.PROXY_TARGET ? false : undefined,
+        target: (process.env.PROXY_TARGET ?? '') || 'http://localhost:9090',
+        changeOrigin: isNonEmptyString(process.env.PROXY_TARGET),
+        secure: isNonEmptyString(process.env.PROXY_TARGET) ? false : undefined,
       },
       '/logout': {
-        target: process.env.PROXY_TARGET || 'http://localhost:9090',
-        changeOrigin: !!process.env.PROXY_TARGET,
-        secure: process.env.PROXY_TARGET ? false : undefined,
+        target: (process.env.PROXY_TARGET ?? '') || 'http://localhost:9090',
+        changeOrigin: isNonEmptyString(process.env.PROXY_TARGET),
+        secure: isNonEmptyString(process.env.PROXY_TARGET) ? false : undefined,
       },
     },
   },
@@ -193,7 +194,7 @@ export function consoleTools({ federationOnly = false } = {}): NonNullable<Rsbui
 function createConsolePlugins(federationOnly: boolean) {
   const plugins = federationOnly ? [] : [tanstackRouter(tanstackRouterConfig)];
 
-  if (process.env.RSDOCTOR) {
+  if (isNonEmptyString(process.env.RSDOCTOR)) {
     plugins.push(
       new RsdoctorRspackPlugin({
         disableClientServer: true,

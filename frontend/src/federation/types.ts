@@ -11,7 +11,7 @@
 
 import type { ErrorInfo } from 'react';
 
-import type { Breadcrumb, SetConfigArguments, SidebarItem } from '../config';
+import type { Breadcrumb, SetConfigArguments, SidebarItem } from '../runtime-config';
 
 /**
  * Props interface for the federated Console App component.

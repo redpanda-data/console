@@ -1,3 +1,9 @@
+import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
+import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
+import { stringArrayValue } from 'utils/type-guards';
+
+import { type DeleteTarget, SubjectDeleteDialogs } from './schema-subject-delete-dialogs';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,9 +17,7 @@
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, FilterFn, PaginationState, Updater } from '@tanstack/react-table';
-import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
-import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
-import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
+import { ArchiveIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
@@ -36,20 +40,17 @@ import { InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
-import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
+import { reportActionError } from 'utils/toast.utils';
 
-import { DeleteDialog, PermanentDeleteDialog } from './modals';
-import { SchemaContextSelector } from './schema-context-selector';
 import {
   ALL_CONTEXT_ID,
   DEFAULT_CONTEXT_ID,
@@ -58,10 +59,10 @@ import {
   parseSubjectContext,
 } from './schema-context-utils';
 import { subjectsInContext, subjectsMatchingSearch } from './schema-list-filters';
+import { SchemaListStats } from './schema-list-stats';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import {
-  useDeleteSchemaSubjectMutation,
   useListSchemasQuery,
   useSchemaCompatibilityQuery,
   useSchemaDetailsByNameQuery,
@@ -80,11 +81,14 @@ import {
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
+import { isPresent } from '../../../utils/type-guards';
 import { encodeURIComponentPercents } from '../../../utils/utils';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { TonedIcon } from '../shared/toned-icon';
 
-const RequestErrors: FC<{ requestErrors?: string[] }> = ({ requestErrors }) => {
+const RequestErrors: FC<{
+  requestErrors?: string[];
+}> = ({ requestErrors }) => {
   if (!requestErrors || requestErrors.length === 0) {
     return null;
   }
@@ -125,15 +129,12 @@ type EnrichedSubject = SchemaRegistrySubject & {
 
 // Faceted filters set an array of selected values; match rows whose column value is one of them.
 const multiSelectFilterFn: FilterFn<DataTableFeatures, EnrichedSubject> = (row, columnId, filterValue) => {
-  const selected = filterValue as string[] | undefined;
-  if (!selected?.length) {
+  const selected = stringArrayValue(filterValue);
+  if (!(isPresent(selected) && selected.length > 0)) {
     return true;
   }
   return selected.includes(String(row.getValue(columnId)));
 };
-
-type DeleteTarget = { kind: 'soft' | 'permanent'; name: string };
-
 // The quick search and the soft-deleted toggle, both kept in the URL.
 function useSchemaListSearch() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
@@ -145,7 +146,7 @@ function useSchemaListSearch() {
       getDefaultValue: () => uiSettings.schemaList.showSoftDeleted,
     },
     'showSoftDeleted',
-    parseAsBoolean
+    parseAsBoolean.withDefault(uiSettings.schemaList.showSoftDeleted).withOptions({ clearOnDefault: false })
   );
   return { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted };
 }
@@ -161,10 +162,10 @@ function useSchemaRegistryOverview() {
   const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
 
   const refreshData = useCallback(() => {
-    refetchMode();
-    refetchCompatibility();
+    refetchMode().catch(reportActionError);
+    refetchCompatibility().catch(reportActionError);
     api.refreshSchemaTypes();
-    refetchSchemas();
+    refetchSchemas().catch(reportActionError);
   }, [refetchSchemas, refetchMode, refetchCompatibility]);
 
   useEffect(() => {
@@ -180,7 +181,6 @@ function useSchemaRegistryOverview() {
     isError,
     schemaMode,
     schemaCompatibility,
-    // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
     manageFencedReason: api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason,
     createFencedReason: api.userData?.canCreateSchemas === false ? undefined : editSchemasReason,
   };
@@ -214,9 +214,9 @@ function useSelectedSchemaContext({
       contextsLoaded &&
       subjectsLoaded &&
       derivedContexts.length > 0 &&
-      !derivedContexts.some((c) => c.id === selectedContext)
+      derivedContexts.every((c) => c.id !== selectedContext)
     ) {
-      setSelectedContext(DEFAULT_CONTEXT_ID);
+      setSelectedContext(DEFAULT_CONTEXT_ID).catch(reportActionError);
     }
   }, [derivedContexts, selectedContext, setSelectedContext, contextsLoaded, subjectsLoaded]);
 
@@ -225,8 +225,8 @@ function useSelectedSchemaContext({
     const ctx = derivedContexts.find((c) => c.id === selectedContext);
     const useContextLevel = ctx && isNamedContext(selectedContext) && schemaRegistryContextsSupported;
     return {
-      displayMode: useContextLevel ? ctx.mode : schemaMode,
-      displayCompat: useContextLevel ? ctx.compatibility : schemaCompatibility,
+      displayMode: useContextLevel === true ? ctx.mode : schemaMode,
+      displayCompat: useContextLevel === true ? ctx.compatibility : schemaCompatibility,
     };
   }, [derivedContexts, selectedContext, schemaRegistryContextsSupported, schemaMode, schemaCompatibility]);
 
@@ -249,8 +249,8 @@ function useSchemaListPagination() {
   const handlePaginationChange = useCallback(
     (updater: Updater<PaginationState>) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      setPageIndex(next.pageIndex);
-      setPageSize(next.pageSize);
+      setPageIndex(next.pageIndex).catch(reportActionError);
+      setPageSize(next.pageSize).catch(reportActionError);
     },
     [pagination, setPageIndex, setPageSize]
   );
@@ -281,9 +281,9 @@ function useSchemaListColumnFilters(setPageIndex: (pageIndex: number) => unknown
   const handleColumnFiltersChange = useCallback(
     (updater: Updater<ColumnFiltersState>) => {
       const next = typeof updater === 'function' ? updater(columnFilters) : updater;
-      const valuesFor = (id: string) => (next.find((filter) => filter.id === id)?.value as string[] | undefined) ?? [];
-      setTypeFilter(valuesFor('type'));
-      setCompatibilityFilter(valuesFor('compatibility'));
+      const valuesFor = (id: string) => stringArrayValue(next.find((filter) => filter.id === id)?.value) ?? [];
+      setTypeFilter(valuesFor('type')).catch(reportActionError);
+      setCompatibilityFilter(valuesFor('compatibility')).catch(reportActionError);
       setPageIndex(0);
     },
     [columnFilters, setTypeFilter, setCompatibilityFilter, setPageIndex]
@@ -328,7 +328,7 @@ function useVisibleSubjects({
   const schemaIdSearch = useMemo(() => {
     const trimmedValue = quickSearch.trim();
     const searchAsNum = Number(trimmedValue);
-    return trimmedValue.length && !Number.isNaN(searchAsNum) ? searchAsNum : null;
+    return trimmedValue.length > 0 && !Number.isNaN(searchAsNum) ? searchAsNum : null;
   }, [quickSearch]);
 
   const { data: schemaUsages, isLoading: isLoadingSchemaVersionMatches } = useSchemaUsagesByIdQuery(schemaIdSearch);
@@ -389,7 +389,7 @@ function useSchemaListColumns(
                   <Tooltip>
                     <TooltipTrigger
                       render={
-                        <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon">
+                        <span aria-label="Soft-deleted" data-testid="schema-list-soft-deleted-icon" role="img">
                           <TonedIcon aria-hidden="true" height={16} icon={ArchiveIcon} tone="muted" width={16} />
                         </span>
                       }
@@ -410,7 +410,13 @@ function useSchemaListColumns(
               header: 'Context',
               id: 'context',
               enableSorting: false,
-              cell: ({ row }: { row: { original: EnrichedSubject } }) => {
+              cell: ({
+                row,
+              }: {
+                row: {
+                  original: EnrichedSubject;
+                };
+              }) => {
                 const { context } = parseSubjectContext(row.original.name);
                 return (
                   <Badge size="sm" tone="default" variant="subtle">
@@ -500,7 +506,7 @@ function useSchemaListColumns(
                   size="icon-sm"
                   variant="ghost"
                 >
-                  <MoreHorizontalIcon className="h-4 w-4" />
+                  <MoreHorizontalIcon className="size-4" />
                 </Button>
               }
             />
@@ -548,7 +554,7 @@ function useSchemaListTable({
     enableHiding: false,
     enableRowSelection: false,
     state: { sorting: tableState.sorting, pagination: tableState.pagination, columnFilters: tableState.columnFilters },
-    onSortingChange: tableState.setSorting,
+    onSortingChange: asyncEvent(tableState.setSorting, reportActionError),
     onPaginationChange: tableState.handlePaginationChange,
     onColumnFiltersChange: tableState.handleColumnFiltersChange,
     autoResetPageIndex: false,
@@ -568,8 +574,8 @@ function SchemaListTableBody({
   if (isLoading) {
     return [0, 1, 2, 3, 4].map((rowIdx) => (
       <TableRow key={rowIdx}>
-        {Array.from({ length: columnCount }, (_col, colIdx) => (
-          <TableCell key={colIdx}>
+        {table.getAllLeafColumns().map((column) => (
+          <TableCell key={column.id}>
             <Skeleton variant="text" width="md" />
           </TableCell>
         ))}
@@ -577,7 +583,7 @@ function SchemaListTableBody({
     ));
   }
 
-  if (table.getRowModel().rows.length) {
+  if (table.getRowModel().rows.length > 0) {
     return table.getRowModel().rows.map((row) => (
       <TableRow key={row.id}>
         {row.getVisibleCells().map((cell) => {
@@ -599,58 +605,6 @@ function SchemaListTableBody({
         No schemas found.
       </TableCell>
     </TableRow>
-  );
-}
-
-// Confirmation dialogs for soft- and permanently deleting the subject picked in the table.
-function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteTarget | null; onClose: () => void }) {
-  const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
-
-  return (
-    <>
-      <DeleteDialog
-        onConfirm={() => {
-          if (!deleteTarget) {
-            return;
-          }
-          deleteSchemaMutation.mutate(
-            { subjectName: deleteTarget.name, permanent: false },
-            {
-              onSuccess: () => toast.success('Subject soft-deleted'),
-              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
-            }
-          );
-        }}
-        onOpenChange={(open) => {
-          if (!open) {
-            onClose();
-          }
-        }}
-        open={deleteTarget?.kind === 'soft'}
-        schemaVersionName={deleteTarget?.name ?? ''}
-      />
-      <PermanentDeleteDialog
-        onConfirm={() => {
-          if (!deleteTarget) {
-            return;
-          }
-          deleteSchemaMutation.mutate(
-            { subjectName: deleteTarget.name, permanent: true },
-            {
-              onSuccess: () => toast.success('Subject permanently deleted'),
-              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
-            }
-          );
-        }}
-        onOpenChange={(open) => {
-          if (!open) {
-            onClose();
-          }
-        }}
-        open={deleteTarget?.kind === 'permanent'}
-        schemaVersionName={deleteTarget?.name ?? ''}
-      />
-    </>
   );
 }
 
@@ -699,107 +653,20 @@ const SchemaList: FC = () => {
   return (
     <PageContent key="b">
       {/* Statistics Bar — the context selector lives here, not in the table filters,
-          because switching context changes the whole page (mode, compatibility,
-          create-schema default), not just the rows shown. */}
-      <StatGroup
-        className="w-fit"
-        columns={schemaRegistryContextsSupported ? 3 : 2}
-        gap="lg"
-        testId="schema-list-stats"
-      >
-        {schemaRegistryContextsSupported && (
-          <Stat
-            label="Context"
-            testId="schema-list-context-stat"
-            value={
-              <SchemaContextSelector
-                contexts={derivedContexts}
-                onContextChange={(ctx) => {
-                  setSelectedContext(ctx);
-                  tableState.setPageIndex(0);
-                }}
-                selectedContext={selectedContext}
-              />
-            }
-          />
-        )}
-        <Stat
-          label={isNamedContext(selectedContext) && schemaRegistryContextsSupported ? 'Context mode' : 'Mode'}
-          testId="schema-list-mode-stat"
-          value={
-            <div className="flex items-center gap-1.5">
-              {displayMode ?? <Skeleton variant="text" width="sm" />}
-              <Tooltip>
-                <TooltipTrigger
-                  render={hoverableWhenDisabled(
-                    manageFencedReason,
-                    <Button
-                      aria-label="Edit mode"
-                      data-testid="schema-list-edit-mode-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageFencedReason)}
-                      onClick={() =>
-                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                          ? appGlobal.historyPush(
-                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-mode`
-                            )
-                          : appGlobal.historyPush('/schema-registry/edit-mode')
-                      }
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <EditIcon />
-                    </Button>
-                  )}
-                />
-                {api.userData?.canManageSchemaRegistry === false && (
-                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-                )}
-                {manageFencedReason ? <TooltipContent side="top">{manageFencedReason}</TooltipContent> : null}
-              </Tooltip>
-            </div>
-          }
-        />
-        <Stat
-          label={
-            isNamedContext(selectedContext) && schemaRegistryContextsSupported
-              ? 'Context compatibility'
-              : 'Compatibility'
-          }
-          testId="schema-list-compatibility-stat"
-          value={
-            <div className="flex items-center gap-1.5">
-              {displayCompat ?? <Skeleton variant="text" width="sm" />}
-              <Tooltip>
-                <TooltipTrigger
-                  render={hoverableWhenDisabled(
-                    manageFencedReason,
-                    <Button
-                      aria-label="Edit compatibility"
-                      data-testid="schema-list-edit-compatibility-btn"
-                      disabled={api.userData?.canManageSchemaRegistry === false || Boolean(manageFencedReason)}
-                      onClick={() =>
-                        isNamedContext(selectedContext) && schemaRegistryContextsSupported
-                          ? appGlobal.historyPush(
-                              `/schema-registry/contexts/${encodeURIComponent(selectedContext)}/edit-compatibility`
-                            )
-                          : appGlobal.historyPush('/schema-registry/edit-compatibility')
-                      }
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <EditIcon />
-                    </Button>
-                  )}
-                />
-                {api.userData?.canManageSchemaRegistry === false && (
-                  <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
-                )}
-                {manageFencedReason ? <TooltipContent side="top">{manageFencedReason}</TooltipContent> : null}
-              </Tooltip>
-            </div>
-          }
-        />
-      </StatGroup>
+            because switching context changes the whole page (mode, compatibility,
+            create-schema default), not just the rows shown. */}
+      <SchemaListStats
+        derivedContexts={derivedContexts}
+        displayCompat={displayCompat}
+        displayMode={displayMode}
+        manageFencedReason={manageFencedReason}
+        onContextChange={(context) => {
+          setSelectedContext(context).catch(reportActionError);
+          tableState.setPageIndex(0).catch(reportActionError);
+        }}
+        schemaRegistryContextsSupported={schemaRegistryContextsSupported}
+        selectedContext={selectedContext}
+      />
       <RequestErrors />
       {isError ? (
         <Alert variant="destructive">
@@ -872,7 +739,7 @@ const SchemaList: FC = () => {
                 {api.userData?.canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
-                {createFencedReason ? <TooltipContent side="top">{createFencedReason}</TooltipContent> : null}
+                {Boolean(createFencedReason) && <TooltipContent side="top">{createFencedReason}</TooltipContent>}
               </Tooltip>
             }
           >
@@ -880,8 +747,8 @@ const SchemaList: FC = () => {
               <ListLayoutSearchInput
                 aria-label="Filter by subject name or schema ID"
                 onChange={(e) => {
-                  setQuickSearch(e.target.value);
-                  tableState.setPageIndex(0);
+                  setQuickSearch(e.target.value).catch(reportActionError);
+                  tableState.setPageIndex(0).catch(reportActionError);
                 }}
                 placeholder="Filter by subject name or schema ID..."
                 value={quickSearch ?? ''}
@@ -908,8 +775,8 @@ const SchemaList: FC = () => {
               <Checkbox
                 checked={showSoftDeleted}
                 onCheckedChange={(checked) => {
-                  setShowSoftDeleted(checked === true);
-                  tableState.setPageIndex(0);
+                  setShowSoftDeleted(checked === true).catch(reportActionError);
+                  tableState.setPageIndex(0).catch(reportActionError);
                 }}
                 testId="schema-list-show-soft-deleted-checkbox"
               />
@@ -943,4 +810,4 @@ const SchemaList: FC = () => {
   );
 };
 
-export default SchemaList;
+export { SchemaList };

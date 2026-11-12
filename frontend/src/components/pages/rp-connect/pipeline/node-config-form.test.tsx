@@ -14,16 +14,16 @@ import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor, within } from 'test-utils';
 
 import { NodeConfigForm } from './node-config-form';
+import { mockComponents } from '../utils/__fixtures__/component-schemas';
+import { createComponentFixture } from '../utils/__fixtures__/component-spec';
+import { configValue } from '../utils/__fixtures__/config-value';
 
 // Cluster topics offered by topic-field pickers.
 rs.mock('react-query/api/topic', () => ({
   useListTopicsQuery: () => ({ data: { topics: [{ name: 'orders' }, { name: 'events' }] }, isLoading: false }),
 }));
 
-import type { ConnectComponentSpec } from '../types/schema';
-import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
-
-const spec = mockKafkaOutput as unknown as ConnectComponentSpec;
+const spec = mockComponents.kafkaOutput;
 
 // The form has no Apply button: it REPORTS the assembled config via onConfigChange (null when
 // clean) and the inspector auto-commits on leave/save. Tests assert the latest reported config.
@@ -158,11 +158,11 @@ describe('the NodeConfigForm — full schema', () => {
       await user.clear(key);
       await user.type(key, 'new-key');
 
-      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-      expect(next.kafka.key).toBe('new-key');
-      expect(next.kafka.addresses).toEqual(['a:9092']);
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'kafka', 'key')).toBe('new-key');
+      expect(configValue(next, 'kafka', 'addresses')).toEqual(['a:9092']);
       // Untouched optional fields are not written out.
-      expect(next.kafka).not.toHaveProperty('partitioner');
+      expect(configValue(next, 'kafka')).not.toHaveProperty('partitioner');
     });
 
     test('preserves complex/untouched settings when reporting an unrelated edit', async () => {
@@ -180,10 +180,10 @@ describe('the NodeConfigForm — full schema', () => {
 
       await user.type(screen.getByDisplayValue('orig'), '-2');
 
-      const next = lastReported(onConfigChange) as { kafka: { metadata: unknown; batching: { count: unknown } } };
-      expect(next.kafka.metadata).toEqual({ include_patterns: ['.*'] });
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'kafka', 'metadata')).toEqual({ include_patterns: ['.*'] });
       // Malformed value is preserved exactly — not parseInt-ed to 1000.
-      expect(next.kafka.batching.count).toBe('1000$');
+      expect(configValue(next, 'kafka', 'batching', 'count')).toBe('1000$');
     });
 
     test('shows a malformed numeric value instead of blanking it (text input, not type=number)', async () => {
@@ -206,8 +206,8 @@ describe('the NodeConfigForm — full schema', () => {
       // The field is flagged, and the reported config keeps the saved value — NOT `10` (parseInt
       // truncation) and NOT dropped.
       expect(screen.getByText(NOT_SAVED_UNTIL_FIXED_RE)).toBeInTheDocument();
-      const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
-      expect(next.kafka.batching.count).toBe(5);
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'kafka', 'batching', 'count')).toBe(5);
     });
   });
 
@@ -227,7 +227,7 @@ describe('the NodeConfigForm — full schema', () => {
 
     test('masks fields flagged secret by the schema even when the name heuristic misses them', () => {
       // credentials_json doesn't match SECRET_NAME_RE — only the enrichment stamp catches it.
-      const secretSpec = {
+      const secretSpec = createComponentFixture({
         ...spec,
         config: {
           ...spec.config,
@@ -236,7 +236,7 @@ describe('the NodeConfigForm — full schema', () => {
             { name: 'project', type: 'string', kind: 'scalar' },
           ],
         },
-      } as unknown as ConnectComponentSpec;
+      });
       render(
         <NodeConfigForm
           componentName="gcp_pubsub"
@@ -253,7 +253,7 @@ describe('the NodeConfigForm — full schema', () => {
 
   describe('value preservation', () => {
     test('deprecated fields are not rendered as form fields; existing values fall to raw YAML', () => {
-      const deprecatedSpec = {
+      const deprecatedSpec = createComponentFixture({
         ...spec,
         config: {
           ...spec.config,
@@ -262,7 +262,7 @@ describe('the NodeConfigForm — full schema', () => {
             { name: 'round_robin_partitions', type: 'string', kind: 'scalar', deprecated: true },
           ],
         },
-      } as unknown as ConnectComponentSpec;
+      });
       render(
         <NodeConfigForm
           componentName="kafka"
@@ -293,8 +293,8 @@ describe('the NodeConfigForm — full schema', () => {
 
       await user.clear(screen.getByDisplayValue('shared'));
       expect(screen.getByText(RESOURCE_NEEDS_LABEL_RE)).toBeInTheDocument();
-      const next = lastReported(onConfigChange) as { label?: string };
-      expect(next.label).toBe('shared');
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'label')).toBe('shared');
     });
 
     test('does not flag secret/env interpolations in numeric fields', async () => {
@@ -315,23 +315,25 @@ describe('the NodeConfigForm — full schema', () => {
       // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
       await user.type(countInput, '${{env.COUNT}');
 
-      const next = lastReported(onConfigChange) as { kafka: { batching: { count: unknown } } };
+      const next = lastReported(onConfigChange);
       // The interpolation is preserved verbatim, not NaN-coerced to '' and deleted.
       // biome-ignore lint/suspicious/noTemplateCurlyInString: testing literal interpolation syntax
-      expect(next.kafka.batching.count).toBe('${env.COUNT}');
+      expect(configValue(next, 'kafka', 'batching', 'count')).toBe('${env.COUNT}');
     });
 
     test('does not render nested-component fields and preserves them on edit', async () => {
       const user = userEvent.setup();
       // A `branch`-like spec: a scalar (request_map) + a nested processor sub-pipeline.
-      const branchSpec = {
+      const branchSpec = createComponentFixture({
+        name: 'branch',
+        type: 'processor',
         config: {
           children: [
             { name: 'request_map', type: 'string', kind: 'scalar', optional: false },
             { name: 'processors', type: 'processor', kind: 'array', optional: false },
           ],
         },
-      } as unknown as ConnectComponentSpec;
+      });
       const onConfigChange = rs.fn();
       render(
         <NodeConfigForm
@@ -349,10 +351,10 @@ describe('the NodeConfigForm — full schema', () => {
 
       await user.type(screen.getByDisplayValue('root = this'), '!');
 
-      const next = lastReported(onConfigChange) as { branch: Record<string, unknown> };
+      const next = lastReported(onConfigChange);
       // The sub-pipeline survives untouched; the scalar edit is written.
-      expect(next.branch.processors).toEqual([{ http: { url: 'http://x' } }]);
-      expect(next.branch.request_map).toBe('root = this!');
+      expect(configValue(next, 'branch', 'processors')).toEqual([{ http: { url: 'http://x' } }]);
+      expect(configValue(next, 'branch', 'request_map')).toBe('root = this!');
     });
 
     test('round-trips a scalar array edited as one-per-line text', async () => {
@@ -363,8 +365,8 @@ describe('the NodeConfigForm — full schema', () => {
       await user.clear(addresses);
       await user.type(addresses, 'b:9092\nc:9092');
 
-      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-      expect(next.kafka.addresses).toEqual(['b:9092', 'c:9092']);
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'kafka', 'addresses')).toEqual(['b:9092', 'c:9092']);
     });
   });
 });
@@ -372,7 +374,7 @@ describe('the NodeConfigForm — full schema', () => {
 describe('the NodeConfigForm — list-valued components (switch/try/…)', () => {
   // A switch's value is an array of cases, not an object of fields. Its schema lists a
   // single case's fields, so the form must NOT render them or rebuild the value.
-  const switchSpec = {
+  const switchSpec = createComponentFixture({
     name: 'switch',
     type: 'processor',
     config: {
@@ -384,7 +386,7 @@ describe('the NodeConfigForm — list-valued components (switch/try/…)', () =>
         { name: 'processors', type: 'processor', kind: 'array' },
       ],
     },
-  } as unknown as ConnectComponentSpec;
+  });
 
   const switchValue = () => ({
     switch: [
@@ -414,7 +416,7 @@ describe('the NodeConfigForm — list-valued components (switch/try/…)', () =>
 
 describe('the NodeConfigForm — all-optional components', () => {
   // Mirrors an unstamped redpanda-style input where the schema marks every field optional.
-  const allOptionalSpec = {
+  const allOptionalSpec = createComponentFixture({
     name: 'redpanda',
     type: 'input',
     config: {
@@ -426,7 +428,7 @@ describe('the NodeConfigForm — all-optional components', () => {
         { name: 'consumer_group', type: 'string', kind: 'scalar', optional: true },
       ],
     },
-  } as unknown as ConnectComponentSpec;
+  });
 
   test('renders fields plainly instead of burying everything under an "Optional" group', () => {
     render(<NodeConfigForm componentName="redpanda" spec={allOptionalSpec} value={{ redpanda: {} }} />);
@@ -528,7 +530,7 @@ describe('the NodeConfigForm — field-level commit', () => {
 
     // Leaving the field (tab away) flushes the draft — no node deselect needed.
     await user.tab();
-    expect(onCommitField).toHaveBeenCalled();
+    expect(onCommitField).toHaveBeenCalledWith();
     // The commit landed, so the form is clean again (reports null) but keeps the typed value.
     expect(lastReported(onConfigChange)).toBeNull();
     expect(screen.getByDisplayValue('orig-2')).toBeInTheDocument();
@@ -543,7 +545,7 @@ describe('the NodeConfigForm — field-level commit', () => {
     await editMalformedCountAlongsideKey(user);
 
     await user.tab();
-    expect(onCommitField).toHaveBeenCalled();
+    expect(onCommitField).toHaveBeenCalledWith();
     // The malformed edit stays visible and pending — not silently reverted to the saved value.
     expect(screen.getByDisplayValue('10x')).toBeInTheDocument();
     expect(lastReported(onConfigChange)).not.toBeNull();
@@ -558,7 +560,7 @@ describe('the NodeConfigForm — field-level commit', () => {
 
     await user.type(screen.getByDisplayValue('orig'), '-2');
     await user.tab();
-    expect(onCommitField).toHaveBeenCalled();
+    expect(onCommitField).toHaveBeenCalledWith();
     // Write failed: the draft must survive so the node-leave flush can retry it.
     expect(lastReported(onConfigChange)).not.toBeNull();
   });
@@ -579,7 +581,7 @@ describe('the NodeConfigForm — field-level commit', () => {
     await user.type(screen.getByDisplayValue('orig'), '-2');
     const apply = screen.getByRole('button', { name: 'Apply' });
     await user.click(apply);
-    expect(onCommitField).toHaveBeenCalled();
+    expect(onCommitField).toHaveBeenCalledWith();
     // Clean again — the pending-edits footer goes away.
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
@@ -640,8 +642,8 @@ describe('the NodeConfigForm — topic fields', () => {
     await user.click(screen.getByPlaceholderText('Select or enter a topic…'));
     await user.click(await screen.findByText('orders'));
 
-    const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-    expect(next.kafka.topic).toBe('orders');
+    const next = lastReported(onConfigChange);
+    expect(configValue(next, 'kafka', 'topic')).toBe('orders');
   });
 
   test('the create-topic affordance opens the Add-topic flow', async () => {
@@ -657,7 +659,7 @@ describe('the NodeConfigForm — topic fields', () => {
     );
 
     await user.click(screen.getByRole('button', { name: CREATE_NEW_TOPIC_RE }));
-    expect(onCreateTopic).toHaveBeenCalled();
+    expect(onCreateTopic).toHaveBeenCalledWith(expect.objectContaining({ type: 'click', button: 0 }));
   });
 
   test('typing a custom topic reports it without needing Enter or a selection', async () => {
@@ -678,14 +680,14 @@ describe('the NodeConfigForm — topic fields', () => {
 
     // onConfigChange is reported from an effect, so the last keystroke can land after `type` resolves.
     await waitFor(() => {
-      const next = lastReported(onConfigChange) as { kafka: Record<string, unknown> };
-      expect(next.kafka.topic).toBe('custom:0');
+      const next = lastReported(onConfigChange);
+      expect(configValue(next, 'kafka', 'topic')).toBe('custom:0');
     });
   });
 
   test('topic fields on non-Redpanda connectors stay plain inputs', () => {
     const onCreateTopic = rs.fn();
-    const mqttSpec = {
+    const mqttSpec = createComponentFixture({
       name: 'mqtt',
       type: 'output',
       config: {
@@ -694,7 +696,7 @@ describe('the NodeConfigForm — topic fields', () => {
         kind: 'scalar',
         children: [{ name: 'topic', type: 'string', kind: 'scalar', optional: false }],
       },
-    } as unknown as ConnectComponentSpec;
+    });
     render(
       <NodeConfigForm
         componentName="mqtt"
@@ -713,7 +715,7 @@ describe('the NodeConfigForm — topic fields', () => {
   test('a topics list keeps free text but can append an existing cluster topic', async () => {
     const user = userEvent.setup();
     const onConfigChange = rs.fn();
-    const topicsSpec = {
+    const topicsSpec = createComponentFixture({
       name: 'redpanda',
       type: 'input',
       config: {
@@ -722,7 +724,7 @@ describe('the NodeConfigForm — topic fields', () => {
         kind: 'scalar',
         children: [{ name: 'topics', type: 'string', kind: 'array', optional: true }],
       },
-    } as unknown as ConnectComponentSpec;
+    });
     render(
       <NodeConfigForm
         componentName="redpanda"
@@ -736,13 +738,13 @@ describe('the NodeConfigForm — topic fields', () => {
     await user.click(await screen.findByText('events'));
 
     // The free-text line (explicit partition syntax) survives; the picked topic is appended.
-    const next = lastReported(onConfigChange) as { redpanda: { topics: string[] } };
-    expect(next.redpanda.topics).toEqual(['my-topic:0', 'events']);
+    const next = lastReported(onConfigChange);
+    expect(configValue(next, 'redpanda', 'topics')).toEqual(['my-topic:0', 'events']);
   });
 });
 
 describe('the NodeConfigForm — enum (select) fields', () => {
-  const enumSpec = {
+  const enumSpec = createComponentFixture({
     name: 'redpanda',
     type: 'input',
     config: {
@@ -760,7 +762,7 @@ describe('the NodeConfigForm — enum (select) fields', () => {
         },
       ],
     },
-  } as unknown as ConnectComponentSpec;
+  });
 
   test('a set enum value can be unset, removing the key from the config', async () => {
     const user = userEvent.setup();
@@ -777,7 +779,7 @@ describe('the NodeConfigForm — enum (select) fields', () => {
     await user.click(screen.getByRole('combobox', { name: 'transaction_isolation_level' }));
     await user.click(await screen.findByText('Default (read_uncommitted)'));
 
-    const next = lastReported(onConfigChange) as { redpanda: Record<string, unknown> };
-    expect(next.redpanda).not.toHaveProperty('transaction_isolation_level');
+    const next = lastReported(onConfigChange);
+    expect(configValue(next, 'redpanda')).not.toHaveProperty('transaction_isolation_level');
   });
 });

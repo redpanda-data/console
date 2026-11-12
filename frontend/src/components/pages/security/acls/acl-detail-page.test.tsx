@@ -12,7 +12,7 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
 
-import AclDetailPage from './acl-detail-page';
+import { AclDetailPage } from './acl-detail-page';
 import type { AclDetail } from '../shared/acl-model';
 
 // ---------------------------------------------------------------------------

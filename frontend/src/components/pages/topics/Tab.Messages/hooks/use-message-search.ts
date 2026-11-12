@@ -12,9 +12,10 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { reportActionError } from 'utils/toast.utils';
 
 import type { MessagePagingParams, MessageQueryParams } from './use-message-view-params';
-import { isServerless } from '../../../../../config';
+import { isServerless } from '../../../../../runtime-config';
 import { appGlobal } from '../../../../../state/app-global';
 import { api, createMessageSearch, type MessageSearchRequest } from '../../../../../state/backend-api';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
@@ -22,6 +23,7 @@ import type { FilterEntry } from '../../../../../state/ui';
 import { IsDev } from '../../../../../utils/env';
 import { sanitizeString } from '../../../../../utils/filter-helper';
 import { trimSlidingWindow } from '../../../../../utils/message-table-helpers';
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 import { encodeBase64 } from '../../../../../utils/utils';
 import {
   buildFilterCode,
@@ -207,7 +209,7 @@ function buildMessageSearchRequest(params: SearchRequestParams): MessageSearchRe
     keyDeserializer: params.keyDeserializer,
     valueDeserializer: params.valueDeserializer,
     schemaContext: params.schemaContext,
-  } as MessageSearchRequest;
+  };
 }
 
 type SearchRunContext = Pick<
@@ -255,7 +257,9 @@ async function runMessageSearch(
   ctx.setSearchState((prev) => ({ ...prev, messageSearch: search }));
   const startTime = Date.now();
 
-  const result = await search.startSearch(request, abortSignal).catch((err: unknown) => reportSearchError(err, ctx));
+  const result = await search
+    .startSearch(request, abortSignal)
+    .catch((error: unknown) => reportSearchError(error, ctx));
 
   if (!ctx.isMountedRef.current) {
     return result;
@@ -408,9 +412,9 @@ function useSearchRunner(
             currentSearchRunRef.current = null;
             abortControllerRef.current = null;
           });
-      } catch (err) {
+      } catch (error) {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
-        console.error('error in message search', { error: err });
+        console.error('error in message search', { error });
       }
     },
     [
@@ -524,10 +528,10 @@ function startLoadMore({
 
         return { type: 'success', trimResult, allMessagesLength: allMessages.length };
       },
-      (err: unknown) => {
+      (error: unknown) => {
         const shouldReport = isMountedRef.current && !abortController.signal.aborted;
         if (shouldReport) {
-          toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
+          toast.error('Failed to load more messages', { description: getSearchErrorMessage(error) });
         }
         return { type: 'error' as const, shouldReport };
       }
@@ -559,7 +563,8 @@ function startLoadMore({
       if (loadMoreAbortRef.current === abortController) {
         loadMoreAbortRef.current = null;
       }
-    });
+    })
+    .catch(reportActionError);
 }
 
 // Auto-load more messages when user reaches beyond loaded messages (continuous pagination mode only)
@@ -582,9 +587,9 @@ function useContinuousLoadMore(
       !continuousPaginationEnabled ||
       filters.length > 0 ||
       !messageSearch ||
-      !messageSearch.nextPageToken ||
+      !isNonEmptyString(messageSearch.nextPageToken) ||
       isLoadingMore ||
-      searchPhase ||
+      (searchPhase !== null && searchPhase !== undefined && searchPhase !== '') ||
       loadMoreFailures >= MAX_LOAD_MORE_RETRIES
     ) {
       return;

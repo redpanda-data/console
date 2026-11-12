@@ -10,7 +10,7 @@ const MODEL_NAME = 'console-announcement-bar';
  * Only used in standalone mode (SelfHostedLayout in __root.tsx).
  * Not imported in federated/embedded mode routes.
  */
-export default function AnnouncementBar() {
+export function AnnouncementBar() {
   const [content, setContent] = useState<BuilderContent | null>(null);
 
   useEffect(() => {
@@ -26,15 +26,15 @@ export default function AnnouncementBar() {
           setContent(fetchedContent);
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         // biome-ignore lint/suspicious/noConsole: error logging for debugging fetch failures
         console.error('Failed to fetch announcement bar content:', error);
       });
   }, []);
 
-  const shouldRenderBuilderContent = content || isPreviewing();
+  const shouldRenderBuilderContent = content ?? isPreviewing();
 
-  return shouldRenderBuilderContent
+  return Boolean(shouldRenderBuilderContent)
     ? content && (
         <div data-builder-content="">
           <Content

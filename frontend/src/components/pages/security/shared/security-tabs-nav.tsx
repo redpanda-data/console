@@ -11,11 +11,12 @@
 
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
-import { isServerless } from 'config';
 import { toast } from 'sonner';
 
+import { isServerless } from '../../../../runtime-config';
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { Tabs, TabsList, TabsTrigger } from '../../../redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 
@@ -107,34 +108,32 @@ export function SecurityTabsNav() {
   };
 
   return (
-    <>
-      <ListLayoutNavigation>
-        <Tabs value={activeTab}>
-          <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
-            {tabs.map((tab) => (
-              <Tooltip key={tab.key}>
-                <TooltipTrigger
-                  disabled={!tab.disabledReason}
-                  render={
-                    <span>
-                      <TabsTrigger
-                        className="aria-disabled:cursor-not-allowed"
-                        disabled={tab.disabled}
-                        onClick={() => handleTabClick(tab.key)}
-                        value={tab.key}
-                        variant="underline"
-                      >
-                        {tab.label}
-                      </TabsTrigger>
-                    </span>
-                  }
-                />
-                {tab.disabledReason && <TooltipContent>{tab.disabledReason}</TooltipContent>}
-              </Tooltip>
-            ))}
-          </TabsList>
-        </Tabs>
-      </ListLayoutNavigation>
-    </>
+    <ListLayoutNavigation>
+      <Tabs value={activeTab}>
+        <TabsList activeClassName="after:bg-foreground" className="w-fit" variant="underline">
+          {tabs.map((tab) => (
+            <Tooltip key={tab.key}>
+              <TooltipTrigger
+                disabled={!isNonEmptyString(tab.disabledReason)}
+                render={
+                  <span>
+                    <TabsTrigger
+                      className="aria-disabled:cursor-not-allowed"
+                      disabled={tab.disabled}
+                      onClick={() => handleTabClick(tab.key)}
+                      value={tab.key}
+                      variant="underline"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  </span>
+                }
+              />
+              {isNonEmptyString(tab.disabledReason) && <TooltipContent>{tab.disabledReason}</TooltipContent>}
+            </Tooltip>
+          ))}
+        </TabsList>
+      </Tabs>
+    </ListLayoutNavigation>
   );
 }

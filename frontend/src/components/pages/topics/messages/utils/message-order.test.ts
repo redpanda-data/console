@@ -1,3 +1,4 @@
+import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -15,7 +16,7 @@ import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
 const msg = (partitionID: number, offset: number, timestamp: number): TopicMessage =>
-  ({ partitionID, offset, timestamp }) as TopicMessage;
+  createTopicMessage({ partitionID, offset, timestamp });
 
 // Arrives oldest-first (server order), as a continuous-mode stream would.
 const messages = [msg(0, 1, 100), msg(0, 2, 300), msg(0, 3, 200)];

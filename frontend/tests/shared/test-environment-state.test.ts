@@ -13,14 +13,15 @@ import {
   cleanupSerializedResources,
   cleanupStartedResources,
   createEnvironmentState,
+  parseSerializedEnvironmentState,
   rememberContainer,
 } from './test-environment-state.mjs';
 import { describe, expect, mock, test } from 'bun:test';
 
 function trackBothBackends() {
   const state = createEnvironmentState();
-  const sourceBackend = { getId: () => 'source-id' };
-  const destinationBackend = { getId: () => 'destination-id' };
+  const sourceBackend = { getId: () => 'source-id', stop: () => Promise.resolve() };
+  const destinationBackend = { getId: () => 'destination-id', stop: () => Promise.resolve() };
 
   rememberContainer(state, 'sourceBackend', sourceBackend);
   rememberContainer(state, 'backend', destinationBackend);
@@ -118,4 +119,17 @@ describe('test environment state', () => {
     expect(removeNetwork).toHaveBeenCalledWith('network-id');
     expect(removePath).toHaveBeenCalledTimes(2);
   });
+});
+
+test('validates crash-recovery state before passing resource IDs or paths to cleanup', () => {
+  const parsed = parseSerializedEnvironmentState({
+    redpandaId: 'rp-id',
+    networkId: 'network-id',
+    tempPaths: ['/tmp/owned-test'],
+  });
+  expect(parsed.redpandaId).toBe('rp-id');
+  expect(parsed.backendId).toBe('');
+  expect(parsed.tempPaths).toEqual(['/tmp/owned-test']);
+  expect(() => parseSerializedEnvironmentState({ redpandaId: ['not-an-id'] })).toThrow();
+  expect(() => parseSerializedEnvironmentState({ tempPaths: [42] })).toThrow();
 });

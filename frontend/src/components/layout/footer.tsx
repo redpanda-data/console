@@ -12,9 +12,8 @@
 import { GitHubIcon, SlackIcon, TwitterIcon } from 'components/icons';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 
-import { isEmbedded } from '../../config';
-import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
-
+import { isEmbedded } from '../../runtime-config';
+import { env, getBuildDate, IsCI, IsDev } from '../../utils/env';
 export const VersionInfo = () => {
   const appName = 'Redpanda Console';
   const mode = getBuildMode();
@@ -31,12 +30,10 @@ export const VersionInfo = () => {
 
   return (
     <>
-      <div className="versionTitle" data-testid="versionTitle">
+      <div data-testid="versionTitle">
         {appName} {mode}
       </div>
-      <div className="versionDate">
-        (built {buildDate?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})
-      </div>
+      <div>(built {buildDate?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})</div>
       <div className="versionGitData">
         {ref} {sha}
       </div>
@@ -81,9 +78,6 @@ export const AppFooter = () => {
     </footer>
   );
 };
-
-export default AppFooter;
-
 function getBuildMode() {
   let mode = '';
   if (IsDev) {

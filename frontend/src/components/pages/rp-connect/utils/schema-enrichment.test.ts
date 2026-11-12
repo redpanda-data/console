@@ -9,16 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
+import { createComponentFixture } from './__fixtures__/component-spec';
 import { getGroundTruthComponent, groundTruthComponents, groundTruthConfigSchema } from './__fixtures__/ground-truth';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import { describe, expect, test } from 'bun:test';
-import type { RawFieldSpec } from '../types/schema';
+import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 const enriched = enrichComponentsWithConfigSchema(groundTruthComponents, groundTruthConfigSchema);
 
 function getField(componentType: string, componentName: string, path: string): RawFieldSpec {
   const component = enriched.find((c) => c.type === componentType && c.name === componentName);
-  let current: RawFieldSpec | undefined = component?.config as RawFieldSpec | undefined;
+  let current: RawFieldSpec | undefined = component?.config;
   for (const segment of path.split('.')) {
     current = current?.children?.find((c) => c.name === segment);
     if (!current) {
@@ -29,6 +30,14 @@ function getField(componentType: string, componentName: string, path: string): R
     throw new Error(`field not found: ${componentType}:${componentName} ${path}`);
   }
   return current;
+}
+
+function fieldOf(result: ConnectComponentSpec, name: string): RawFieldSpec {
+  const field = result.config?.children?.find((candidate) => candidate.name === name);
+  if (!field) {
+    throw new Error(`Missing fixture field ${name}`);
+  }
+  return field;
 }
 
 describe('enrichComponentsWithConfigSchema', () => {
@@ -82,10 +91,32 @@ describe('enrichComponentsWithConfigSchema', () => {
       const kafka = getGroundTruthComponent('input', 'kafka');
       for (const schema of [undefined, 'not json', '{"definitions": 3}', '{"properties": {}}']) {
         const [result] = enrichComponentsWithConfigSchema([kafka], schema);
-        const addresses = result.config?.children?.find((c) => c.name === 'addresses') as RawFieldSpec;
+        const addresses = fieldOf(result, 'addresses');
         expect(addresses.requiredBySchema).toBeUndefined();
         expect(addresses.secret).toBeUndefined();
       }
+    });
+
+    test('ignores malformed nested required metadata instead of crashing the editor', () => {
+      const kafka = getGroundTruthComponent('input', 'kafka');
+      const malformed = JSON.stringify({
+        definitions: {
+          input: {
+            allOf: [
+              {
+                anyOf: [
+                  {
+                    properties: {
+                      kafka: { required: 3, properties: { addresses: { type: 'string' } } },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      });
+      expect(enrichComponentsWithConfigSchema([kafka], malformed)[0]).toBe(kafka);
     });
 
     test('an ancient schema with no required arrays at all is treated as absent', () => {
@@ -95,18 +126,18 @@ describe('enrichComponentsWithConfigSchema', () => {
         definitions: { input: { allOf: [{ anyOf: [{ properties: { kafka: { properties: {} } } }] }] } },
       });
       const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], legacySchema);
-      const addresses = result.config?.children?.find((c) => c.name === 'addresses') as RawFieldSpec;
+      const addresses = fieldOf(result, 'addresses');
       expect(addresses.requiredBySchema).toBeUndefined();
     });
 
     test('a mid-generation schema (required arrays, no per-field flags) still stamps required-ness', () => {
       // Live dataplanes commonly serve this format: `required` arrays but no is_optional/is_secret.
       // Without stamping, string fields whose "" default was lost in the proto all show as required.
-      const withoutFlags = JSON.stringify(JSON.parse(groundTruthConfigSchema), (key, value) =>
+      const withoutFlags = JSON.stringify(JSON.parse(groundTruthConfigSchema), (key, value: unknown) =>
         key === 'is_optional' || key === 'is_secret' ? undefined : value
       );
       const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], withoutFlags);
-      const field = (name: string) => result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
+      const field = (name: string) => fieldOf(result, name);
       expect(field('addresses').requiredBySchema).toBe(true);
       expect(field('topics').requiredBySchema).toBe(true);
       // The proto shows an empty default for these; only the required arrays reveal they're optional.
@@ -117,7 +148,7 @@ describe('enrichComponentsWithConfigSchema', () => {
     test('components missing from the schema pass through unstamped', () => {
       const custom = { ...getGroundTruthComponent('input', 'kafka'), name: 'not_in_schema' };
       const [result] = enrichComponentsWithConfigSchema([custom], groundTruthConfigSchema);
-      const addresses = result.config?.children?.find((c) => c.name === 'addresses') as RawFieldSpec;
+      const addresses = fieldOf(result, 'addresses');
       expect(addresses.requiredBySchema).toBeUndefined();
     });
   });
@@ -125,7 +156,7 @@ describe('enrichComponentsWithConfigSchema', () => {
   test('does not mutate its input', () => {
     const kafka = getGroundTruthComponent('input', 'kafka');
     enrichComponentsWithConfigSchema([kafka], groundTruthConfigSchema);
-    const addresses = kafka.config?.children?.find((c) => c.name === 'addresses') as RawFieldSpec;
+    const addresses = fieldOf(kafka, 'addresses');
     expect(addresses.requiredBySchema).toBeUndefined();
   });
 });
@@ -134,7 +165,7 @@ describe('lint-required overrides', () => {
   // Mirrors the production redpanda input: its schema flags every field optional because runtime
   // lints ("either topics or regexp_topics_include must be specified", "a consumer group is
   // mandatory when not using explicit topic partitions") carry the real requirements.
-  const redpandaInput = {
+  const redpandaInput = createComponentFixture({
     name: 'redpanda',
     type: 'input',
     config: {
@@ -147,10 +178,7 @@ describe('lint-required overrides', () => {
         { name: 'seed_brokers', type: 'string', kind: 'array', optional: true },
       ],
     },
-  } as unknown as (typeof groundTruthComponents)[number];
-
-  const fieldOf = (result: (typeof groundTruthComponents)[number], name: string) =>
-    result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
+  });
 
   test('stamps the lint-enforced fields required even without a usable schema', () => {
     // The degraded path (no raw schema at all — e.g. older dataplanes) must still apply them.
@@ -168,7 +196,7 @@ describe('lint-required overrides', () => {
 
   test('leaves non-curated components alone', () => {
     const [result] = enrichComponentsWithConfigSchema([getGroundTruthComponent('input', 'kafka')], undefined);
-    const topics = result.config?.children?.find((c) => c.name === 'topics') as RawFieldSpec;
+    const topics = fieldOf(result, 'topics');
     expect(topics.requiredBySchema).toBeUndefined();
   });
 });

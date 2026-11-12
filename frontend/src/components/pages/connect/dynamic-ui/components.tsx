@@ -16,12 +16,12 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
 import { ConnectorStepComponent } from './connector-step';
-import { isEmbedded } from '../../../../config';
+import { isEmbedded } from '../../../../runtime-config';
 import { api } from '../../../../state/backend-api';
 import type { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
-import type { ConnectorStep } from '../../../../state/rest-interfaces';
-import { clone } from '../../../../utils/json-utils';
-import KowlEditor from '../../../misc/kowl-editor';
+import type { ConnectorStep } from '../../../../types/kafka-connect';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { KowlEditor } from '../../../misc/kowl-editor';
 
 export type ConfigPageProps = {
   connectorStore: ConnectorPropertiesStore;
@@ -35,9 +35,10 @@ function useConnectorStoreVersion(connectorStore: ConnectorPropertiesStore) {
 }
 
 // Find all steps, each with its property groups
-function connectorStepsWithGroups(
-  connectorStore: ConnectorPropertiesStore
-): { step: ConnectorStep; groups: PropertyGroup[] }[] {
+function connectorStepsWithGroups(connectorStore: ConnectorPropertiesStore): {
+  step: ConnectorStep;
+  groups: PropertyGroup[];
+}[] {
   return connectorStore.connectorStepDefinitions.map((step) => ({
     step,
     groups: connectorStore.allGroups.filter((g) => g.step.stepIndex === step.stepIndex),
@@ -48,7 +49,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
   useConnectorStoreVersion(connectorStore);
 
   const [viewMode, setViewMode] = useState<'form' | 'json'>(connectorStore.viewMode);
-  if (connectorStore.error) {
+  if (isNonEmptyString(connectorStore.error)) {
     return (
       <div>
         <h3>Error</h3>
@@ -74,9 +75,11 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
       <div className="mb-8">
         <RadioGroup
           name="settingsMode"
-          onValueChange={(next) => {
-            connectorStore.viewMode = next as 'form' | 'json';
-            setViewMode(next as 'form' | 'json');
+          onValueChange={(next: unknown) => {
+            if (next === 'form' || next === 'json') {
+              connectorStore.viewMode = next;
+              setViewMode(next);
+            }
           }}
           orientation="horizontal"
           value={viewMode}
@@ -95,7 +98,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({ connectorStore, context 
       {viewMode === 'form' ? (
         <ConnectorFormView connectorStore={connectorStore} context={context} />
       ) : (
-        <div style={{ margin: '0 auto 1.5rem' }}>
+        <div className="mx-auto mt-0 mb-6">
           <ConnectorJsonEditor connectorStore={connectorStore} context={context} />
         </div>
       )}
@@ -141,14 +144,14 @@ function ConnectorFormView({ connectorStore, context }: ConfigPageProps) {
 function findExistingConnector(connectorStore: ConnectorPropertiesStore, connectorName: string) {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log('trying to obtain initial config from existing connector...', { name: connectorName });
-  const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === connectorStore.clusterName);
-  const connector = cluster?.connectors.first((x) => x.name === connectorName);
+  const cluster = api.connectConnectors?.clusters?.find((c) => c.clusterName === connectorStore.clusterName);
+  const connector = cluster?.connectors.find((x) => x.name === connectorName);
   if (connector) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.log('success! found connector config', {
       clusterName: connectorStore.clusterName,
       connectorName,
-      config: clone(connector.config),
+      config: structuredClone(connector.config),
     });
     return connector;
   }
@@ -163,9 +166,15 @@ function findExistingConnector(connectorStore: ConnectorPropertiesStore, connect
 // Initialize connector with existing data
 function initialConnectorJson(connectorStore: ConnectorPropertiesStore): string {
   const configObj = connectorStore.getConfigObject();
-  const connectorName = (configObj as { name?: string })?.name;
-
-  const existingConnector = connectorName ? findExistingConnector(connectorStore, connectorName) : undefined;
+  const connectorName = (
+    configObj as {
+      name?: string;
+    }
+  )?.name;
+  const existingConnector =
+    connectorName !== null && connectorName !== undefined && connectorName !== ''
+      ? findExistingConnector(connectorStore, connectorName)
+      : undefined;
   if (existingConnector) {
     return JSON.stringify(existingConnector.config, undefined, 4);
   }
@@ -173,7 +182,7 @@ function initialConnectorJson(connectorStore: ConnectorPropertiesStore): string 
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log('creating "new" config for connector', {
     name: connectorName,
-    config: clone(configObj),
+    config: structuredClone(configObj),
   });
 
   return JSON.stringify(configObj, undefined, 4);
@@ -189,7 +198,7 @@ function ConnectorJsonEditor(p: { connectorStore: ConnectorPropertiesStore; cont
       height="600px"
       language="json"
       onChange={(x) => {
-        if (!x) {
+        if (!(x !== null && x !== undefined && x !== '')) {
           return;
         }
         setJsonText(x);

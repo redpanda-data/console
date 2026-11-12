@@ -1,3 +1,4 @@
+import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -16,20 +17,20 @@ import { matchesQuickSearch, useClientFilters } from './use-client-filters';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
 const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unknown }): TopicMessage =>
-  ({
+  createTopicMessage({
     partitionID: overrides.partitionID ?? 0,
     offset: overrides.offset ?? 1,
     timestamp: 0,
     compression: 'uncompressed',
     isTransactional: false,
     headers: [],
-    key: { payload: 'k', isPayloadNull: false, size: 1 },
-    value: { payload: overrides.value ?? {}, isPayloadNull: false, size: 1 },
+    key: { payload: 'k', isPayloadNull: false, size: 1, schemaId: 0 },
+    value: { payload: overrides.value ?? {}, isPayloadNull: false, size: 1, schemaId: 0 },
     keyJson: JSON.stringify('k'),
     valueJson: JSON.stringify(overrides.value ?? {}),
     keyBinHexPreview: '',
     valueBinHexPreview: '',
-  }) as TopicMessage;
+  });
 
 describe('matchesQuickSearch — partition range-check', () => {
   test('an out-of-range partition token stays live text (no filter applied) when partitionCount is known', () => {

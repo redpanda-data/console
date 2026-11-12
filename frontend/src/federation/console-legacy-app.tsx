@@ -18,12 +18,12 @@ import type { ConsoleAppProps } from './types';
 const LEGACY_REACT_ELEMENT_TYPE = Symbol.for('react.element');
 const LEGACY_CONTAINER_STYLE = { height: '100%', width: '100%' } as const;
 
-interface LegacyRootState {
+type LegacyRootState = {
   root: Root;
   version: number;
-}
+};
 
-interface LegacyReactElement {
+type LegacyReactElement = {
   _owner: null;
   _store: Record<string, never>;
   $$typeof: symbol;
@@ -31,7 +31,7 @@ interface LegacyReactElement {
   props: { style: typeof LEGACY_CONTAINER_STYLE };
   ref: (node: HTMLDivElement | null) => void;
   type: 'div';
-}
+};
 
 const roots = new WeakMap<HTMLDivElement, LegacyRootState>();
 

@@ -11,7 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { UsersTab } from '../../../components/pages/security/tabs/users-tab';
+import { UsersTabNew as UsersTab } from '../../../components/pages/security/tabs/users-tab-new';
 
 export const Route = createFileRoute('/security/users/')({
   staticData: {

@@ -19,42 +19,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
-import React, { type JSX, type PropsWithChildren, useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import React, { type JSX, useState } from 'react';
 
 import type { TopicLogDirSummary } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';
-import env, { IsDev } from '../../utils/env';
+import { env, IsDev } from '../../utils/env';
+import { isNonzeroNumber } from '../../utils/number-utils';
+import { isNonEmptyString } from '../../utils/string-utils';
 import { ZeroSizeWrapper } from '../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../utils/utils';
-
-export const Section = (p: PropsWithChildren<{ title: string }>) => (
-  <section style={{ padding: '1em 2em' }}>
-    <h2>{p.title}</h2>
-    <div>{p.children}</div>
-  </section>
-);
-
-export const WhiteCard = (p: PropsWithChildren<{ style?: React.CSSProperties; title?: string }>) => (
-  <div
-    style={{
-      margin: '1em 2em',
-      padding: '2em 2em',
-      borderRadius: 4,
-      background: 'white',
-      boxShadow: '0em 0em 1em #0002',
-      ...p.style,
-    }}
-  >
-    {Boolean(p.title) && <h2 style={{ borderBottom: '1px solid #0002' }}>{p.title}</h2>}
-    <div>{p.children}</div>
-  </div>
-);
 
 function constant(constantValue: JSX.Element): () => JSX.Element {
   return () => constantValue;
 }
 
-export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />);
+export const Spacer = constant(<span className="flex grow" />);
 
 /**
  * returns an array with the numbers from start, up to end (does not include end!)
@@ -122,7 +102,7 @@ export const UpdatePopup = () => {
 };
 
 export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
-  if (!summary.hint) {
+  if (!isNonEmptyString(summary.hint)) {
     return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>;
   }
 
@@ -134,37 +114,34 @@ export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
 }
 
 export function WarningToolip(p: { content: React.ReactNode; position: 'top' | 'left' }): JSX.Element {
-  const styleLeft = {
-    bottom: '-2px',
-    left: 'auto',
-    right: '105%',
-    transform: 'none',
-  };
-
   return (
     <ZeroSizeWrapper>
-      <div
-        className="tooltip"
-        style={{
-          color: 'hsl(33deg, 90%, 65%)',
-          borderRadius: '25px',
-          display: 'inline-flex',
-          placeItems: 'center',
-          verticalAlign: 'middle',
-          marginLeft: '30px',
-          width: '22px',
-          height: '22px',
-        }}
-      >
-        <AlertIcon />
-        <span className="tooltiptext" style={p.position === 'left' ? styleLeft : undefined}>
-          {p.content}
-        </span>
-      </div>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label="Warning"
+              className="ms-[30px] inline-flex size-[22px] items-center align-middle"
+              variant="unstyled"
+            />
+          }
+        >
+          <span className="rounded-full text-warning">
+            <AlertIcon />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side={p.position}>{p.content}</TooltipContent>
+      </Tooltip>
     </ZeroSizeWrapper>
   );
 }
 
 function isNewerBuild(current: number, server: number | undefined): boolean {
-  return Boolean(current && Number.isFinite(current) && server && Number.isFinite(server) && server > current);
+  return (
+    isNonzeroNumber(current) &&
+    Number.isFinite(current) &&
+    isNonzeroNumber(server) &&
+    Number.isFinite(server) &&
+    server > current
+  );
 }

@@ -26,6 +26,7 @@ import { useControlplaneListServerlessEgressGatewaysQuery } from 'react-query/ap
 
 import type { EgressGatewayNames } from './changes-summary';
 import { egressGatewayOptions, isEgressGatewayPickerEnabled } from './egress-gateways';
+import type { PipelineFormValues } from './use-pipeline-document-recovery';
 
 /** Names of the gateways this cluster's pipelines can use, by ID; empty unless the picker is enabled. */
 export function useEgressGatewayNames(): EgressGatewayNames {
@@ -42,7 +43,7 @@ function LoadError({ error }: { error: ConnectError | null }) {
 
 /** The settings form's egress gateways field. Renders nothing unless the picker is enabled. */
 export function EgressGatewayField({ readonly }: { readonly?: boolean }) {
-  const { control, watch } = useFormContext();
+  const { control, watch } = useFormContext<PipelineFormValues>();
   const isEnabled = isEgressGatewayPickerEnabled();
   const { gateways, isLoading, error } = useControlplaneListServerlessEgressGatewaysQuery({ enabled: isEnabled });
 
@@ -59,7 +60,7 @@ export function EgressGatewayField({ readonly }: { readonly?: boolean }) {
     return null;
   }
 
-  const selectedIds = (watch('egressGatewayIds') ?? []) as string[];
+  const selectedIds = watch('egressGatewayIds') ?? [];
   const options = egressGatewayOptions(gateways, selectedIds);
 
   return (
@@ -67,7 +68,7 @@ export function EgressGatewayField({ readonly }: { readonly?: boolean }) {
       control={control}
       name="egressGatewayIds"
       render={({ field }) => {
-        if (readonly) {
+        if (readonly === true) {
           const selected = options.filter((option) => selectedIds.includes(option.id));
           return (
             <FormItem>

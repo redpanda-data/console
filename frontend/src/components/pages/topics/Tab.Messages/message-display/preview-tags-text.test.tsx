@@ -40,7 +40,7 @@ describe('renderPreviewTags', () => {
   });
 
   test('lists the matched values in the stored display mode', () => {
-    render(<>{renderPreviewTags(payload, () => [valueTag])}</>);
+    render(renderPreviewTags(payload, () => [valueTag]));
 
     expect(screen.getByText('order.status')).toBeVisible();
     expect(screen.getByText('shipped')).toBeVisible();
@@ -48,7 +48,7 @@ describe('renderPreviewTags', () => {
   });
 
   test('prefers the display mode passed by the caller', () => {
-    render(<>{renderPreviewTags(payload, () => [valueTag], 'rows')}</>);
+    render(renderPreviewTags(payload, () => [valueTag], 'rows'));
 
     expect(screen.getByText('shipped').closest('.previewTags')).toHaveClass('previewTags-rows');
   });

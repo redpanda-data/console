@@ -50,13 +50,13 @@ export const ACLFilterResume = ({ index }: { index: number }) => {
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {resourceName || 'All'}
+            {(resourceName ?? '') || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {principal || 'All'}
+            {(principal ?? '') || 'All'}
           </Badge>
         </div>
         <div>
@@ -74,7 +74,7 @@ export const ACLFilterResume = ({ index }: { index: number }) => {
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {host || 'All'}
+            {(host ?? '') || 'All'}
           </Badge>
         </div>
       </div>

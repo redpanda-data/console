@@ -77,7 +77,7 @@ const createMockShadowLink = (): ShadowLink =>
         aclFilters: [],
       }),
     }),
-  }) as ShadowLink;
+  });
 
 describe('buildDataplaneUpdateRequest', () => {
   const mockShadowLink = createMockShadowLink();
@@ -227,14 +227,14 @@ describe('buildDataplaneUpdateRequest', () => {
     });
 
     expect(request.updateMask?.paths).toHaveLength(4);
-    expect(request.updateMask?.paths).toEqual(
-      expect.arrayContaining([
-        'configurations.client_options.metadata_max_age_ms',
-        'configurations.client_options.connection_timeout_ms',
-        'configurations.client_options.retry_backoff_ms',
-        'configurations.client_options.fetch_wait_max_ms',
-      ])
-    );
+    for (const expected of [
+      'configurations.client_options.metadata_max_age_ms',
+      'configurations.client_options.connection_timeout_ms',
+      'configurations.client_options.retry_backoff_ms',
+      'configurations.client_options.fetch_wait_max_ms',
+    ]) {
+      expect(request.updateMask?.paths).toContain(expected);
+    }
 
     expect(request.shadowLink?.configurations?.clientOptions).toMatchObject({
       metadataMaxAgeMs: 30_000,

@@ -12,9 +12,9 @@
 import { afterEach, describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from 'components/redpanda-ui/components/theme-provider';
-import { render, screen, waitFor } from 'test-utils';
 
 import { ThemeModeSwitch } from './theme-mode-switch';
+import { render, screen, waitFor } from '../../test-utils';
 
 const renderSwitch = () =>
   render(

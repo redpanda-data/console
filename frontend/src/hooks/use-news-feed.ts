@@ -1,21 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 
-type NewsItem = {
-  id: string;
-  fieldData: {
-    'expiry-date': string;
-    'publish-date': string;
-    order: number;
-    'link-text': string;
-    message: string;
-    name: string;
-    'link-url': string;
-    slug: string;
-    segment: string;
-    'cta-button-text': string;
-    'cta-button-variant': 'primary' | 'ghost';
-  };
-};
+const newsItemsSchema = z.array(
+  z.object({
+    id: z.string(),
+    fieldData: z.object({
+      'expiry-date': z.string(),
+      'publish-date': z.string(),
+      order: z.number(),
+      'link-text': z.string(),
+      message: z.string(),
+      name: z.string(),
+      'link-url': z.string(),
+      slug: z.string(),
+      segment: z.string(),
+      'cta-button-text': z.string(),
+      // This is a nullable CMS style identifier, not a closed Registry button variant.
+      'cta-button-variant': z.string().nullable(),
+    }),
+  })
+);
+type NewsItem = z.infer<typeof newsItemsSchema>[number];
 
 const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> => {
   const url = new URL('https://redpanda-news-feed.netlify.app/news');
@@ -27,7 +32,8 @@ const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> =>
   if (!response.ok) {
     throw new Error('Failed to fetch news');
   }
-  return response.json();
+  const body: unknown = await response.json();
+  return newsItemsSchema.parse(body);
 };
 
 export const useNewsFeed = (segment?: 'redpanda' | 'kafka') => {

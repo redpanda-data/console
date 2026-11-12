@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import '../../../../utils/array-extensions';
 import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ErrorIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useMessageSearch } from './hooks/use-message-search';
 import {
@@ -81,13 +82,16 @@ export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
         quickSearch={quickSearch}
         search={search}
         setFilters={setFilters}
-        setQuickSearch={setQuickSearch}
+        setQuickSearch={asyncEvent(setQuickSearch, reportActionError)}
         settings={settings}
         topic={topic}
       />
       {/* Message Table (or error display) */}
       {search.fetchError ? (
-        <MessageSearchErrorAlert error={search.fetchError} onRetry={() => search.executeMessageSearch()} />
+        <MessageSearchErrorAlert
+          error={search.fetchError}
+          onRetry={asyncEvent(() => search.executeMessageSearch(), reportActionError)}
+        />
       ) : (
         <MessagesResults
           dialogs={dialogs}

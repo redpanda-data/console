@@ -19,7 +19,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 export const RoutePendingFallback = () => (
   <div className="flex h-64 items-center justify-center" data-testid="route-pending-fallback">
     <div className="flex items-center gap-2">
-      <Spinner className="h-6 w-6" />
+      <Spinner className="size-6" />
       <div className="text-body">Loading...</div>
     </div>
   </div>

@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
-import type { ConnectError } from '@connectrpc/connect';
+import { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -217,7 +217,7 @@ function summarizeAclResults(results: PromiseSettledResult<unknown>[]) {
   const errs = new Map<number, ConnectError>();
   const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
   for (const result of rejected) {
-    const r = result.reason as ConnectError;
+    const r = ConnectError.from(result.reason);
     errs.set(r.code, r);
   }
   return { errors: errs.values().toArray(), created: rejected.length < results.length };
@@ -245,11 +245,11 @@ export const useUpdateAclMutation = () => {
   return { applyUpdates };
 };
 
-export const useGetAclsByPrincipal = <T = AclDetail[]>(
+export const useGetAclsByPrincipal = (
   principal: string,
   host?: string,
-  transformFn?: (aclList: ListACLsResponse) => T,
-  options?: QueryOptions<GenMessage<ListACLsResponse>, T>
+  transformFn?: (aclList: ListACLsResponse) => AclDetail[],
+  options?: QueryOptions<GenMessage<ListACLsResponse>, AclDetail[]>
 ) =>
   useQuery(
     listACLs,
@@ -260,7 +260,7 @@ export const useGetAclsByPrincipal = <T = AclDetail[]>(
       },
     },
     {
-      select: transformFn ?? (getAclFromAclListResponse as (aclList: ListACLsResponse) => T),
+      select: transformFn ?? getAclFromAclListResponse,
       ...options,
     }
   );
@@ -274,7 +274,7 @@ export const useCreateAcls = () => {
     const errs = new Map<number, ConnectError>();
     const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
     for (const result of rejected) {
-      const r = result.reason as ConnectError;
+      const r = ConnectError.from(result.reason);
       errs.set(r.code, r);
     }
     await invalid();

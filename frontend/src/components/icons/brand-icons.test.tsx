@@ -9,14 +9,14 @@ describe('brand icons', () => {
     ['OpenAI', OpenAIIcon],
     ['Salesforce', SalesforceIcon],
   ])('%s renders a titled, sized svg that forwards props', (title, Icon) => {
-    render(<Icon className="h-5 w-5" data-testid="icon" size={16} />);
+    render(<Icon className="size-5" data-testid="icon" size={16} />);
 
     const svg = screen.getByTestId('icon');
     expect(svg.tagName.toLowerCase()).toBe('svg');
     expect(svg).toHaveAttribute('width', '16');
     expect(svg).toHaveAttribute('height', '16');
     expect(svg).toHaveAttribute('fill', 'currentColor');
-    expect(svg).toHaveClass('h-5', 'w-5');
+    expect(svg).toHaveClass('size-5');
     // allow: to-be-in-document — SVG <title> is never rendered, so visibility does not apply
     expect(screen.getByTitle(title)).toBeInTheDocument();
   });

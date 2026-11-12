@@ -14,7 +14,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import GroupDetails from '../../components/pages/consumers/group-details';
+import { GroupDetails } from '../../components/pages/consumers/group-details';
 
 const searchSchema = z.object({
   q: z.string().optional().catch(undefined),

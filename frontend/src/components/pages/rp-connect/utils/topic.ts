@@ -1,6 +1,8 @@
 import type { UseFormReturn } from 'react-hook-form';
 import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactors } from 'utils/topic-utils';
 
+import { nonzeroNumber } from '../../../../utils/number-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import type { AddTopicFormData } from '../types/wizard';
 
 const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
@@ -38,23 +40,15 @@ export const resetToDefaults = (form: UseFormReturn<AddTopicFormData>) => {
 
 export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: RetentionTimeUnit } => {
   // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
-  const validUnits = Object.entries(timeFactors)
-    .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
-    .map(([unit, factor]) => ({
-      unit: unit as RetentionTimeUnit,
-      factor: factor as number,
-    }))
-    .map(({ unit, factor }) => ({
-      unit,
-      factor,
-      value: ms / factor,
-      textLength: String(ms / factor).length,
-    }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+  const validUnits = (['ms', 'seconds', 'minutes', 'hours', 'days', 'months', 'years'] as const)
+    .flatMap((unit) => {
+      const value = ms / timeFactors[unit];
+      return value >= 1 ? [{ unit, value, textLength: String(value).length }] : [];
+    })
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
-  if (!best) {
+  if (!isPresent(best)) {
     return { value: ms, unit: 'ms' };
   }
 
@@ -69,23 +63,15 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
 
 export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit: RetentionSizeUnit } => {
   // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
-  const validUnits = Object.entries(sizeFactors)
-    .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
-    .map(([unit, factor]) => ({
-      unit: unit as RetentionSizeUnit,
-      factor: factor as number,
-    }))
-    .map(({ unit, factor }) => ({
-      unit,
-      factor,
-      value: bytes / factor,
-      textLength: String(bytes / factor).length,
-    }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+  const validUnits = (['Bit', 'KiB', 'MiB', 'GiB', 'TiB'] as const)
+    .flatMap((unit) => {
+      const value = bytes / sizeFactors[unit];
+      return value >= 1 ? [{ unit, value, textLength: String(value).length }] : [];
+    })
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
-  if (!best) {
+  if (!isPresent(best)) {
     return { value: bytes, unit: 'Bit' };
   }
 
@@ -106,7 +92,7 @@ function parseRetention<Unit extends string>(
   defaults: { value: number; unit: Unit },
   findBestUnit: (amount: number) => { value: number; unit: Unit }
 ): { value: number; unit: Unit | 'infinite' } {
-  const amount = raw ? Number.parseInt(raw, 10) : 0;
+  const amount = raw !== null && raw !== undefined && raw !== '' ? Number.parseInt(raw, 10) : 0;
   if (amount === -1) {
     return { value: defaults.value, unit: 'infinite' };
   }
@@ -131,8 +117,8 @@ export const parseTopicConfigFromExisting = (
 
   return {
     topicName: topic.topicName,
-    partitions: topic.partitionCount || TOPIC_FORM_DEFAULTS.partitions,
-    replicationFactor: topic.replicationFactor || TOPIC_FORM_DEFAULTS.replicationFactor,
+    partitions: nonzeroNumber(topic.partitionCount) ?? TOPIC_FORM_DEFAULTS.partitions,
+    replicationFactor: nonzeroNumber(topic.replicationFactor) ?? TOPIC_FORM_DEFAULTS.replicationFactor,
     retentionTimeMs: retentionTime.value,
     retentionTimeUnit: retentionTime.unit,
     retentionSize: retentionSize.value,

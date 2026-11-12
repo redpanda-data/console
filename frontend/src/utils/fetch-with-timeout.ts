@@ -9,7 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { config } from '../config';
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+import { config } from '../runtime-config';
 
 export class RestTimeoutError extends Error {
   constructor(m: string) {
@@ -17,12 +27,7 @@ export class RestTimeoutError extends Error {
     Object.setPrototypeOf(this, RestTimeoutError.prototype);
   }
 }
-
-export default function fetchWithTimeout(
-  url: RequestInfo,
-  timeoutMs: number,
-  options?: RequestInit
-): Promise<Response> {
+export function fetchWithTimeout(url: RequestInfo, timeoutMs: number, options?: RequestInit): Promise<Response> {
   return new Promise<Response>((resolve, reject) => {
     let hasSettled = false;
     config.fetch(url, options).then(
@@ -30,9 +35,9 @@ export default function fetchWithTimeout(
         hasSettled = true;
         resolve(result);
       },
-      (err) => {
+      (error: unknown) => {
         hasSettled = true;
-        reject(err);
+        reject(error);
       }
     );
 
@@ -43,7 +48,7 @@ export default function fetchWithTimeout(
       }
 
       const timeStr = timeoutMs < 1000 ? `${timeoutMs} ms` : `${timeoutMs / 1000} sec`;
-      reject(new RestTimeoutError(`Request timed out after ${timeStr}: ${url}`));
+      reject(new RestTimeoutError(`Request timed out after ${timeStr}: ${typeof url === 'string' ? url : url.url}`));
     }, timeoutMs);
   });
 }

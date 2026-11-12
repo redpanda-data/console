@@ -10,9 +10,11 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { config } from 'config';
+import userEvent from '@testing-library/user-event';
 
-import DeleteRecordsModal from './delete-records-modal';
+import { DeleteRecordsModal } from './delete-records-modal';
+import { config } from '../../../../runtime-config';
+import { useApiStore } from '../../../../state/backend-api';
 import type { Topic } from '../../../../state/rest-interfaces';
 
 const testTopic: Topic = {
@@ -31,7 +33,9 @@ const testTopic: Topic = {
 };
 
 describe('the DeleteRecordsModal', () => {
-  afterEach(() => rs.restoreAllMocks());
+  afterEach(() => {
+    rs.restoreAllMocks();
+  });
 
   test('renders all expected elements in step 1', () => {
     const originalFetch = config.fetch;
@@ -50,4 +54,42 @@ describe('the DeleteRecordsModal', () => {
     expect(screen.getByText('Specific Partition')).toBeInTheDocument();
     expect(screen.getByText('Choose End Offset')).toBeInTheDocument();
   });
+
+  test('reports a rejected offset lookup and releases the loading button', async () => {
+    const user = userEvent.setup();
+    const restoreLookup = installRejectedOffsetLookup();
+    try {
+      const onFinish = rs.fn();
+      render(
+        <DeleteRecordsModal afterClose={rs.fn()} onCancel={rs.fn()} onFinish={onFinish} topic={testTopic} visible />
+      );
+      await requestTimestampDeletion(user);
+      expect(await screen.findByText('Offset lookup failed')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Ok' })).toBeEnabled();
+      expect(onFinish).not.toHaveBeenCalled();
+    } finally {
+      restoreLookup();
+    }
+  });
 });
+
+function installRejectedOffsetLookup() {
+  const originalLookup = useApiStore.getState().getTopicOffsetsByTimestamp;
+  const lookup = rs.fn<typeof originalLookup>().mockRejectedValue(new Error('Offset lookup failed'));
+  const originalFetch = config.fetch;
+  rs.spyOn(config, 'fetch').mockImplementation((input, init) => {
+    if (input === `${config.restBasePath}/topics/test_topic/partitions` && (init?.method ?? 'GET') === 'GET') {
+      return Promise.resolve(Response.json({ partitions: [] }));
+    }
+    return originalFetch(input, init);
+  });
+  useApiStore.setState({ getTopicOffsetsByTimestamp: lookup });
+  return () => useApiStore.setState({ getTopicOffsetsByTimestamp: originalLookup });
+}
+
+async function requestTimestampDeletion(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText('All Partitions'));
+  await user.click(screen.getByRole('button', { name: 'Choose End Offset' }));
+  await user.click(screen.getByText('Timestamp'));
+  await user.click(screen.getByRole('button', { name: 'Delete Records' }));
+}

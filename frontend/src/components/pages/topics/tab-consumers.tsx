@@ -48,7 +48,7 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
       accessorKey: 'groupId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group" />,
       cell: ({ row: { original } }) => (
-        <Link params={{ groupId: encodeURIComponent(original.groupId) }} search={{} as never} to="/groups/$groupId">
+        <Link params={{ groupId: encodeURIComponent(original.groupId) }} search={{}} to="/groups/$groupId">
           {original.groupId}
         </Link>
       ),

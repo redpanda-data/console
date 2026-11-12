@@ -22,7 +22,6 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
-import { isEmbedded } from 'config';
 import { InfoIcon } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useMemo } from 'react';
@@ -30,6 +29,7 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
 import { SrTlsConfiguration } from './sr-tls-configuration';
+import { isEmbedded } from '../../../../../../runtime-config';
 import { extractSecretId, toSecretReference } from '../../connection/secret-reference';
 import { type FormValues, SR_AUTH_METHOD } from '../../model';
 
@@ -46,7 +46,7 @@ const InfoTooltip = ({ content }: { content: string }) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger aria-label={content} className="inline-flex cursor-help items-center">
-        <TonedIcon className="h-3.5 w-3.5" icon={InfoIcon} tone="muted" />
+        <TonedIcon className="size-3.5" icon={InfoIcon} tone="muted" />
       </TooltipTrigger>
       <TooltipContent className="max-w-64">{content}</TooltipContent>
     </Tooltip>

@@ -9,312 +9,276 @@
  * by the Apache License, Version 2.0
  */
 
-"use client";
+'use client';
 
-import { create } from "@bufbuild/protobuf";
-import type { ConnectError } from "@connectrpc/connect";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "components/redpanda-ui/components/button";
+import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
-	Dialog,
-	DialogBody,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "components/redpanda-ui/components/dialog";
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'components/redpanda-ui/components/dialog';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
+import { Form } from 'components/redpanda-ui/components/form';
+import { Input } from 'components/redpanda-ui/components/input';
 import {
-	Field,
-	FieldDescription,
-	FieldError,
-	FieldLabel,
-} from "components/redpanda-ui/components/field";
-import { Form } from "components/redpanda-ui/components/form";
-import { Input } from "components/redpanda-ui/components/input";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/redpanda-ui/components/select';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { KeyRound, Plus } from 'lucide-react';
+import { CreateSecretRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "components/redpanda-ui/components/select";
-import { KeyRound, Loader2, Plus } from "lucide-react";
-import { CreateSecretRequestSchema } from "protogen/redpanda/api/console/v1alpha1/secret_pb";
-import {
-	CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
-	type Scope,
-} from "protogen/redpanda/api/dataplane/v1/secret_pb";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useCreateSecretMutation } from "react-query/api/secret";
-import { toast } from "sonner";
-import { formatToastErrorMessageGRPC } from "utils/toast.utils";
-import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
-import { z } from "zod";
-import { extractSecretName } from "./secret-utils";
+  CreateSecretRequestSchema as CreateSecretRequestSchemaDataPlane,
+  type Scope,
+} from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useCreateSecretMutation } from 'react-query/api/secret';
+import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
+import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+import { z } from 'zod';
+
+import { extractSecretName } from './secret-utils';
 
 // Generic validation that accepts any non-empty string
 export const GENERIC_SECRET_VALUE_PATTERN = {
-	regex: /.+/,
-	message: "Secret value is required",
+  regex: /.+/,
+  message: 'Secret value is required',
 };
 
 export type SecretSelectorCustomText = {
-	/** Dialog description shown when creating a new secret */
-	dialogDescription: string;
-	/** Placeholder for the secret name input */
-	secretNamePlaceholder: string;
-	/** Placeholder for the secret value input */
-	secretValuePlaceholder: string;
-	/** Description shown below the secret value input */
-	secretValueDescription: string;
-	/** Description shown in empty state when no secrets are available */
-	emptyStateDescription: string;
+  /** Dialog description shown when creating a new secret */
+  dialogDescription: string;
+  /** Placeholder for the secret name input */
+  secretNamePlaceholder: string;
+  /** Placeholder for the secret value input */
+  secretValuePlaceholder: string;
+  /** Description shown below the secret value input */
+  secretValueDescription: string;
+  /** Description shown in empty state when no secrets are available */
+  emptyStateDescription: string;
 };
 
 type SecretSelectorProps = {
-	value: string;
-	onChange: (value: string) => void;
-	availableSecrets: Array<{ id: string; name: string }>;
-	placeholder?: string;
-	onSecretCreated?: (secretId: string) => void;
-	scopes: Scope[];
-	/** Custom text for dialog and form fields */
-	customText: SecretSelectorCustomText;
-	/**
-	 * Minimum length for a newly created secret value. Defaults to 20 (API-key
-	 * style secrets); pass 1 for secrets with no inherent length, e.g. HTTP
-	 * Basic passwords.
-	 */
-	minValueLength?: number;
-} & Omit<
-	React.ComponentPropsWithoutRef<typeof SelectTrigger>,
-	"value" | "onChange" | "children" | "placeholder"
->;
+  value: string;
+  onChange: (value: string) => void;
+  availableSecrets: Array<{ id: string; name: string }>;
+  placeholder?: string;
+  onSecretCreated?: (secretId: string) => void;
+  scopes: Scope[];
+  /** Custom text for dialog and form fields */
+  customText: SecretSelectorCustomText;
+  /**
+   * Minimum length for a newly created secret value. Defaults to 20 (API-key
+   * style secrets); pass 1 for secrets with no inherent length, e.g. HTTP
+   * Basic passwords.
+   */
+  minValueLength?: number;
+} & Omit<React.ComponentPropsWithoutRef<typeof SelectTrigger>, 'value' | 'onChange' | 'children' | 'placeholder'>;
+
+const SECRET_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 const buildNewSecretFormSchema = (minValueLength: number) =>
-	z.object({
-		name: z
-			.string()
-			.min(1, "Secret name is required")
-			.max(255, "Secret name must be fewer than 255 characters")
-			.regex(
-				/^[A-Za-z][A-Za-z0-9_]*$/,
-				"Secret name must start with a letter and contain only letters, numbers, and underscores",
-			),
-		value: z
-			.string()
-			.min(1, "Secret value is required")
-			.min(
-				minValueLength,
-				`Secret value must be at least ${minValueLength} characters`,
-			),
-	});
+  z.object({
+    name: z
+      .string()
+      .min(1, 'Secret name is required')
+      .max(255, 'Secret name must be fewer than 255 characters')
+      .regex(
+        SECRET_NAME_PATTERN,
+        'Secret name must start with a letter and contain only letters, numbers, and underscores'
+      ),
+    value: z
+      .string()
+      .min(1, 'Secret value is required')
+      .min(minValueLength, `Secret value must be at least ${minValueLength} characters`),
+  });
 
 type NewSecretFormData = z.infer<ReturnType<typeof buildNewSecretFormSchema>>;
 
 export const SecretSelector: React.FC<SecretSelectorProps> = ({
-	value,
-	onChange,
-	availableSecrets,
-	placeholder = "Select from secrets store or create new",
-	onSecretCreated,
-	scopes,
-	customText,
-	minValueLength = 20,
-	// Anything else (id, aria-*) comes from form wiring such as FormControl and
-	// must reach the combobox trigger so labels announce it.
-	...triggerProps
+  value,
+  onChange,
+  availableSecrets,
+  placeholder = 'Select from secrets store or create new',
+  onSecretCreated,
+  scopes,
+  customText,
+  minValueLength = 20,
+  // Anything else (id, aria-*) comes from form wiring such as FormControl and
+  // must reach the combobox trigger so labels announce it.
+  ...triggerProps
 }) => {
-	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const { mutateAsync: createSecret, isPending: isCreateSecretPending } =
-		useCreateSecretMutation();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { mutateAsync: createSecret, isPending: isCreateSecretPending } = useCreateSecretMutation();
 
-	const newSecretFormSchema = useMemo(
-		() => buildNewSecretFormSchema(minValueLength),
-		[minValueLength],
-	);
-	const form = useForm<NewSecretFormData>({
-		resolver: zodResolver(newSecretFormSchema),
-		defaultValues: {
-			name: "",
-			value: "",
-		},
-		mode: "onChange", // Validate on change to show errors immediately
-	});
+  const newSecretFormSchema = useMemo(() => buildNewSecretFormSchema(minValueLength), [minValueLength]);
+  const form = useForm<NewSecretFormData>({
+    resolver: zodResolver(newSecretFormSchema),
+    defaultValues: {
+      name: '',
+      value: '',
+    },
+    mode: 'onChange', // Validate on change to show errors immediately
+  });
 
-	const handleCreateSecret = async (data: NewSecretFormData) => {
-		try {
-			const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
-				id: data.name,
-				secretData: base64ToUInt8Array(encodeBase64(data.value)),
-				scopes,
-				labels: {},
-			});
+  const handleCreateSecret = async (data: NewSecretFormData) => {
+    try {
+      const dataPlaneRequest = create(CreateSecretRequestSchemaDataPlane, {
+        id: data.name,
+        secretData: base64ToUInt8Array(encodeBase64(data.value)),
+        scopes,
+        labels: {},
+      });
 
-			await createSecret(
-				create(CreateSecretRequestSchema, {
-					request: dataPlaneRequest,
-				}),
-			);
+      await createSecret(
+        create(CreateSecretRequestSchema, {
+          request: dataPlaneRequest,
+        })
+      );
 
-			toast.success(`Secret "${data.name}" created`);
+      toast.success(`Secret "${data.name}" created`);
 
-			// Select the newly created secret
-			onChange(data.name);
+      // Select the newly created secret
+      onChange(data.name);
 
-			// Call callback if provided
-			onSecretCreated?.(data.name);
+      // Call callback if provided
+      onSecretCreated?.(data.name);
 
-			// Close dialog and reset form
-			setIsCreateDialogOpen(false);
-			form.reset();
-		} catch (error) {
-			const errorMessage = formatToastErrorMessageGRPC({
-				error: error as ConnectError,
-				action: "create",
-				entity: `secret ${data.name}`,
-			});
-			toast.error(errorMessage);
-		}
-	};
+      // Close dialog and reset form
+      setIsCreateDialogOpen(false);
+      form.reset();
+    } catch (error) {
+      const errorMessage = formatToastErrorMessageGRPC({
+        error: ConnectError.from(error),
+        action: 'create',
+        entity: `secret ${data.name}`,
+      });
+      toast.error(errorMessage);
+    }
+  };
 
-	return (
-		<>
-			{availableSecrets.length === 0 ? (
-				// No secrets available - show empty state
-				<div className="flex flex-col items-center justify-center rounded-lg border-2 border-muted border-dashed bg-muted/10 py-12">
-					<KeyRound className="mb-4 h-12 w-12 text-muted-foreground opacity-50" />
-					<div className="text-body mb-2 font-medium">No secrets available</div>
-					<div className="text-body text-subtle mb-4 text-center">
-						{customText.emptyStateDescription}
-					</div>
-					<Button
-						onClick={() => setIsCreateDialogOpen(true)}
-						type="button"
-						variant="outline"
-					>
-						<div className="flex items-center gap-2">
-							<Plus className="h-4 w-4" />
-							<span className="text-body">Create secret</span>
-						</div>
-					</Button>
-				</div>
-			) : (
-				// Secrets available - show combobox with create button
-				<div className="flex items-center gap-2">
-					<Select
-						items={availableSecrets.map((secret) => ({
-							value: secret.id,
-							label: secret.name,
-						}))}
-						key={`${extractSecretName(value)}-${availableSecrets.length}`}
-						onValueChange={onChange}
-						value={extractSecretName(value)}
-					>
-						<SelectTrigger className="flex-1" {...triggerProps}>
-							<SelectValue placeholder={placeholder} />
-						</SelectTrigger>
-						<SelectContent>
-							{availableSecrets.map((secret) => (
-								<SelectItem key={secret.id} value={secret.id}>
-									{secret.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Button
-						onClick={() => setIsCreateDialogOpen(true)}
-						type="button"
-						variant="outline"
-					>
-						<div className="flex items-center gap-2">
-							<Plus className="h-4 w-4" />
-							<span className="text-body">Create secret</span>
-						</div>
-					</Button>
-				</div>
-			)}
+  return (
+    <>
+      {availableSecrets.length === 0 ? (
+        // No secrets available - show empty state
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-muted/10 py-12">
+          <span className="opacity-50">
+            <TonedIcon className="mb-4 size-12" icon={KeyRound} tone="muted" />
+          </span>
+          <div className="mb-2 text-body font-medium">No secrets available</div>
+          <div className="mb-4 text-center text-body text-subtle">{customText.emptyStateDescription}</div>
+          <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
+            <div className="flex items-center gap-2">
+              <Plus className="size-4" />
+              <span className="text-body">Create secret</span>
+            </div>
+          </Button>
+        </div>
+      ) : (
+        // Secrets available - show combobox with create button
+        <div className="flex items-center gap-2">
+          <Select
+            items={availableSecrets.map((secret) => ({
+              value: secret.id,
+              label: secret.name,
+            }))}
+            key={`${extractSecretName(value)}-${availableSecrets.length}`}
+            onValueChange={onChange}
+            value={extractSecretName(value)}
+          >
+            <SelectTrigger className="flex-1" {...triggerProps}>
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSecrets.map((secret) => (
+                <SelectItem key={secret.id} value={secret.id}>
+                  {secret.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setIsCreateDialogOpen(true)} type="button" variant="outline">
+            <div className="flex items-center gap-2">
+              <Plus className="size-4" />
+              <span className="text-body">Create secret</span>
+            </div>
+          </Button>
+        </div>
+      )}
 
-			<Dialog onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Create new secret</DialogTitle>
-						<DialogDescription>
-							{customText.dialogDescription}
-						</DialogDescription>
-					</DialogHeader>
+      <Dialog onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create new secret</DialogTitle>
+            <DialogDescription>{customText.dialogDescription}</DialogDescription>
+          </DialogHeader>
 
-					<Form {...form}>
-						<form
-							onSubmit={(e) => {
-								e.stopPropagation();
-								form.handleSubmit(handleCreateSecret)(e);
-							}}
-						>
-							<DialogBody>
-								<Field data-invalid={!!form.formState.errors.name}>
-								<FieldLabel htmlFor="secret-name">Secret name</FieldLabel>
-								<Input
-									id="secret-name"
-									placeholder={customText.secretNamePlaceholder}
-									{...form.register("name")}
-									onChange={(e) =>
-										form.setValue("name", e.target.value.toUpperCase())
-									}
-								/>
-								<FieldDescription>
-									Secrets are stored in uppercase
-								</FieldDescription>
-								{form.formState.errors.name && (
-									<FieldError>{form.formState.errors.name.message}</FieldError>
-								)}
-							</Field>
+          <Form {...form}>
+            <form
+              onSubmit={asyncEvent((e) => {
+                e.stopPropagation();
+                return form.handleSubmit(handleCreateSecret)(e);
+              }, reportActionError)}
+            >
+              <DialogBody>
+                <Field data-invalid={!!form.formState.errors.name}>
+                  <FieldLabel htmlFor="secret-name">Secret name</FieldLabel>
+                  <Input
+                    id="secret-name"
+                    placeholder={customText.secretNamePlaceholder}
+                    {...form.register('name')}
+                    onChange={(e) => form.setValue('name', e.target.value.toUpperCase())}
+                  />
+                  <FieldDescription>Secrets are stored in uppercase</FieldDescription>
+                  {form.formState.errors.name && <FieldError>{form.formState.errors.name.message}</FieldError>}
+                </Field>
 
-							<Field data-invalid={!!form.formState.errors.value}>
-								<FieldLabel htmlFor="secret-value">Secret value</FieldLabel>
-								<Input
-									id="secret-value"
-									placeholder={customText.secretValuePlaceholder}
-									type="password"
-									{...form.register("value")}
-								/>
-								<FieldDescription>
-									{customText.secretValueDescription}
-								</FieldDescription>
-								{form.formState.errors.value && (
-									<FieldError>{form.formState.errors.value.message}</FieldError>
-								)}
-							</Field>
-							</DialogBody>
+                <Field data-invalid={!!form.formState.errors.value}>
+                  <FieldLabel htmlFor="secret-value">Secret value</FieldLabel>
+                  <Input
+                    id="secret-value"
+                    placeholder={customText.secretValuePlaceholder}
+                    type="password"
+                    {...form.register('value')}
+                  />
+                  <FieldDescription>{customText.secretValueDescription}</FieldDescription>
+                  {form.formState.errors.value && <FieldError>{form.formState.errors.value.message}</FieldError>}
+                </Field>
+              </DialogBody>
 
-							<DialogFooter>
-								<Button
-									onClick={() => setIsCreateDialogOpen(false)}
-									type="button"
-									variant="outline"
-								>
-									Cancel
-								</Button>
-								<Button
-									disabled={isCreateSecretPending || !form.formState.isValid}
-									type="submit"
-								>
-									{isCreateSecretPending ? (
-										<div className="flex items-center gap-2">
-											<Loader2 className="h-4 w-4 animate-spin" />
-											<span className="text-body">Creating...</span>
-										</div>
-									) : (
-										"Create Secret"
-									)}
-								</Button>
-							</DialogFooter>
-						</form>
-					</Form>
-				</DialogContent>
-			</Dialog>
-		</>
-	);
+              <DialogFooter>
+                <Button onClick={() => setIsCreateDialogOpen(false)} type="button" variant="outline">
+                  Cancel
+                </Button>
+                <Button disabled={isCreateSecretPending || !form.formState.isValid} type="submit">
+                  {isCreateSecretPending ? (
+                    <div className="flex items-center gap-2">
+                      <Spinner />
+                      <span className="text-body">Creating...</span>
+                    </div>
+                  ) : (
+                    'Create Secret'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 };

@@ -14,7 +14,7 @@ import { ScaleIcon } from 'components/icons';
 import { useLayoutEffect } from 'react';
 import { z } from 'zod';
 
-import QuotasList from '../components/pages/quotas/quotas-list';
+import { QuotasList } from '../components/pages/quotas/quotas-list';
 import { uiState } from '../state/ui-state';
 
 const quotasSearchSchema = z.object({

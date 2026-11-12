@@ -18,5 +18,5 @@ export const isConsumerGroupField = (fieldName: string): boolean => fieldName.to
 export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
   const isUrl = fieldName.toLowerCase() === 'url';
   const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';
-  return isUrl && !!parentIsSchemaRegistry;
+  return isUrl && parentIsSchemaRegistry;
 };

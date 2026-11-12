@@ -38,11 +38,15 @@ export const ScopeSection = () => {
   const { fields, append, remove } = useFieldArray({ control, name: 'schemaRegistry.contextMappings' });
 
   const handleScopeModeChange = (mode: string) => {
-    setValue('schemaRegistry.scopeMode', mode as 'all' | 'specify', { shouldValidate: true });
+    if (mode === 'all' || mode === 'specify') {
+      setValue('schemaRegistry.scopeMode', mode, { shouldValidate: true });
+    }
   };
 
   const handleDestinationModeChange = (mode: string) => {
-    setValue('schemaRegistry.destinationContextsMode', mode as 'preserve' | 'map', { shouldValidate: true });
+    if (mode === 'preserve' || mode === 'map') {
+      setValue('schemaRegistry.destinationContextsMode', mode, { shouldValidate: true });
+    }
 
     // Keep any rows the user entered when toggling to preserve; the request
     // builder ignores them unless mode is map.
@@ -212,7 +216,7 @@ export const ScopeSection = () => {
                   type="button"
                   variant="ghost"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="size-3" />
                 </Button>
               ) : (
                 <span className="w-8 shrink-0" />

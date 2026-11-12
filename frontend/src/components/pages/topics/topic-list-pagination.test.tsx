@@ -1,8 +1,8 @@
 import { expect, test } from '@rstest/core';
 import type { Topic } from 'state/rest-interfaces';
-import { render, screen } from 'test-utils';
 
 import { TopicListPagination } from './topic-list-pagination';
+import { render, screen } from '../../../test-utils';
 import { useDataTable } from '../../redpanda-ui/components/data-table/data-table-features';
 
 const TOPICS: Topic[] = Array.from({ length: 21 }, (_, index) => ({

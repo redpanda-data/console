@@ -28,6 +28,7 @@ import {
 } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { asyncEvent } from 'utils/async-event';
 
 import { ShadowLinkConfiguration } from './config/shadow-link-configuration';
 import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
@@ -37,7 +38,7 @@ import { FailoverTab } from './failover-tab';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
 import { useFailoverReadiness } from './use-failover-readiness';
-import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { formatToastErrorMessageGRPC, reportActionError } from '../../../../utils/toast.utils';
 import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 import type { UnifiedShadowLink } from '../model';
 
@@ -73,7 +74,17 @@ const ShadowLinkDetailsTabs = ({
   onFailoverTopic,
   onRetryTopics,
 }: ShadowLinkDetailsTabsProps) => (
-  <Tabs onValueChange={(value) => onTabChange(value as DetailsTab)} value={tab}>
+  <Tabs
+    onValueChange={(value) => {
+      if (
+        typeof value === 'string' &&
+        (value === 'overview' || value === 'tasks' || value === 'configuration' || value === 'failover')
+      ) {
+        onTabChange(value);
+      }
+    }}
+    value={tab}
+  >
     <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
       <TabsTrigger testId="overview-tab" value="overview" variant="underline">
         Overview
@@ -235,7 +246,7 @@ const useShadowLinkFailover = (
       failoverShadowLink({
         name,
         shadowTopicName: failoverTopicName,
-      } as Parameters<typeof failoverShadowLink>[0]);
+      });
     }
   };
 
@@ -243,7 +254,7 @@ const useShadowLinkFailover = (
   const [checkingLag, setCheckingLag] = useState(false);
   const stopCheckingLag = () => setCheckingLag(false);
   const openFailoverDialog = (topicName?: string) => {
-    setFailoverTopicName(topicName || '');
+    setFailoverTopicName((topicName ?? '') || '');
     setShowFailoverDialog(true);
     if (guided) {
       setCheckingLag(true);
@@ -295,7 +306,12 @@ const ShadowLinkDetailsFallback = ({ name, isLoading, error }: ShadowLinkDetails
     return <ShadowLinkLoadErrorState errorMessage={error.message} />;
   }
 
-  return <ShadowLinkNotFoundState name={name} onBackClick={() => navigate({ to: '/shadowlinks' })} />;
+  return (
+    <ShadowLinkNotFoundState
+      name={name}
+      onBackClick={asyncEvent(() => navigate({ to: '/shadowlinks' }), reportActionError)}
+    />
+  );
 };
 
 type ShadowLinkDetailsViewProps = {
@@ -327,8 +343,12 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
           {guided ? 'Fail over all topics' : 'Failover all topics'}
         </Button>
 
-        <Button onClick={() => navigate({ to: `/shadowlinks/${name}/edit` })} size="sm" variant="outline">
-          <Edit className="mr-2 h-4 w-4" />
+        <Button
+          onClick={asyncEvent(() => navigate({ to: `/shadowlinks/${name}/edit` }), reportActionError)}
+          size="sm"
+          variant="outline"
+        >
+          <Edit className="mr-2 size-4" />
           Edit
         </Button>
 
@@ -340,7 +360,7 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
             </>
           ) : (
             <>
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 size-4" />
               Delete
             </>
           )}
@@ -348,9 +368,9 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
       </div>
 
       {/* Partial Data Warning Banner */}
-      {Boolean(hasPartialData) && (
+      {hasPartialData && (
         <Alert testId="partial-data-warning" variant="warning">
-          <AlertTriangle className="h-4 w-4" />
+          <AlertTriangle className="size-4" />
           <AlertTitle>Limited data available</AlertTitle>
           <AlertDescription>
             Some shadow link details could not be loaded. Task status and topic properties may be unavailable.
@@ -364,8 +384,8 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         linkIdentity={linkIdentity}
         name={name}
         onFailoverTopic={failover.openFailoverDialog}
-        onRefresh={refetch}
-        onRetryTopics={() => refetchTopics()}
+        onRefresh={asyncEvent(refetch, reportActionError)}
+        onRetryTopics={asyncEvent(refetchTopics, reportActionError)}
         onTabChange={(next) => detailsTab.pick(next, guided !== undefined)}
         readiness={guided}
         shadowLink={shadowLink}

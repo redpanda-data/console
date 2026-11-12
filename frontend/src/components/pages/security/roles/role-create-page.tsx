@@ -17,11 +17,14 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useLayoutEffect } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
 import { setPageHeader } from '../../../../state/ui-state';
-import CreateACL from '../acls/create-acl';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { CreateACL } from '../acls/create-acl';
 import {
   convertRulesToCreateACLRequests,
   handleResponses,
@@ -79,7 +82,7 @@ const RoleCreatePage = () => {
       <h2 className="pt-4 pb-3 text-heading-lg font-semibold">Create role</h2>
       <CreateACL
         edit={false}
-        onCancel={() => navigate({ to: '/security/roles' })}
+        onCancel={asyncEvent(() => navigate({ to: '/security/roles' }), reportActionError)}
         onSubmit={createRoleAclMutation}
         principalType={PrincipalTypeRedpandaRole}
         renderPrincipal={({ value, onChange, error }) => (
@@ -92,7 +95,7 @@ const RoleCreatePage = () => {
               testId="shared-principal-input"
               value={parsePrincipal(value).name}
             />
-            {error && <FieldError>{error}</FieldError>}
+            {isNonEmptyString(error) && <FieldError>{error}</FieldError>}
           </CardField>
         )}
       />
@@ -100,4 +103,4 @@ const RoleCreatePage = () => {
   );
 };
 
-export default RoleCreatePage;
+export { RoleCreatePage };

@@ -13,6 +13,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { CreateUserButton, CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import {
@@ -75,7 +77,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
               isSubmitting={isSubmitting}
               isValidPassword={state.isValidPassword}
               isValidUsername={state.isValidUsername}
-              onClick={createUser}
+              onClick={asyncEvent(createUser, reportActionError)}
               userExists={users.includes(username)}
               usernameEmpty={!username}
             />

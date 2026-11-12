@@ -11,10 +11,10 @@
 
 import { afterAll, beforeAll, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
 
 import { SqlResults } from './sql-results';
 import type { QueryRunSuccess, SqlRole } from './sql-types';
+import { render, screen } from '../../../test-utils';
 
 // react-data-grid virtualizes rows and columns against the grid root's
 // measured size, which happy-dom reports as 0 — culling every column.
@@ -22,6 +22,8 @@ import type { QueryRunSuccess, SqlRole } from './sql-types';
 // other elements keep zero size so 'max-content' column measuring falls
 // back to minWidth instead of exploding past the viewport.
 const GRID_RECT = { width: 1920, height: 600 };
+
+let restoreGridMeasurements: (() => void) | undefined;
 
 beforeAll(() => {
   const proto = HTMLDivElement.prototype;
@@ -47,18 +49,15 @@ beforeAll(() => {
       },
     });
   }
-  Reflect.set(proto, '__rdgRectRestore', original);
+  restoreGridMeasurements = () => {
+    proto.getBoundingClientRect = original;
+    for (const prop of ['clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight']) {
+      Reflect.deleteProperty(proto, prop);
+    }
+  };
 });
 
-afterAll(() => {
-  const proto = HTMLDivElement.prototype;
-  const original = Reflect.get(proto, '__rdgRectRestore') as typeof proto.getBoundingClientRect;
-  proto.getBoundingClientRect = original;
-  for (const prop of ['clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight']) {
-    Reflect.deleteProperty(proto, prop);
-  }
-  Reflect.deleteProperty(proto, '__rdgRectRestore');
-});
+afterAll(() => restoreGridMeasurements?.());
 
 const LONG_VALUE = `{"payload":"${'x'.repeat(120)}"}`;
 const viewer: SqlRole = 'viewer';
@@ -114,7 +113,9 @@ describe('the SqlResults create-table hint', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Add a topic to SQL' }));
 
-    expect(onAddTable).toHaveBeenCalledOnce();
+    expect(onAddTable).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'click', target: screen.getByRole('button', { name: 'Add a topic to SQL' }) })
+    );
   });
 
   test('viewer create errors do not show the add-topic action', () => {
@@ -144,7 +145,9 @@ describe('the SqlResults run cancellation', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onCancel).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'click', target: screen.getByRole('button', { name: 'Cancel' }) })
+    );
   });
 
   test('the running state hides Cancel when no handler is provided', () => {

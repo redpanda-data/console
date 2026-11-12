@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
-import { isEmbedded } from 'config';
 import { Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCallback, useMemo, useState } from 'react';
@@ -21,6 +21,8 @@ import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
 
 import { extractSecretId, toSecretReference } from './secret-reference';
+import { isEmbedded } from '../../../../../runtime-config';
+import { isPresent } from '../../../../../utils/type-guards';
 import { CertificateUploadRow, ConfiguredBadge } from '../certificate-upload';
 import { DisclosureRow } from '../disclosure-row';
 import type { FormValues } from '../model';
@@ -55,7 +57,7 @@ const CERTIFICATE_TEST_ID_SUFFIXES: Record<CertificateType, string> = {
 
 type Cert = NonNullable<FormValues['mtls']>['ca'];
 
-const hasCertValue = (cert: Cert): boolean => Boolean(cert?.filePath || cert?.pemContent);
+const hasCertValue = (cert: Cert): boolean => Boolean((cert?.filePath ?? '') || cert?.pemContent);
 
 // ---------------------------------------------------------------------------
 // Inline cert dropzone (PEM upload — replaces the old modal-based flow).
@@ -72,12 +74,12 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
   const handleDrop = useCallback(
     (files: File[]) => {
       const file = files[0];
-      if (!file) {
+      if (!isPresent(file)) {
         return;
       }
       const reader = new FileReader();
       reader.onload = (event) => {
-        const content = (event.target?.result as string | undefined) ?? '';
+        const content = typeof event.target?.result === 'string' ? event.target.result : '';
         setValue(`mtls.${certType}`, { pemContent: content, fileName: file.name });
       };
       reader.readAsText(file);
@@ -97,23 +99,25 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
       </div>
       <div className="relative">
         <CertificateUploadRow
-          fileName={fileName || undefined}
+          fileName={(fileName ?? '') || undefined}
           onDrop={handleDrop}
           testId={hasCert ? `${certType}-status` : `add-${certType}-button`}
         />
         {hasCert && (
-          <button
+          <Button
             aria-label={`Remove ${label}`}
-            className="absolute top-1/2 right-2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+            className="absolute top-1/2 right-2 z-10 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
             data-testid={`remove-${certType}-button`}
             onClick={(e) => {
               e.stopPropagation();
               handleRemove();
             }}
             type="button"
+            variant="unstyled"
           >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+            <Trash2 className="size-3.5" />
+          </Button>
         )}
       </div>
     </div>
@@ -151,7 +155,7 @@ function CertificateInputField({ certType }: { certType: CertificateType }) {
               placeholder={placeholder}
               testId={`mtls-${testIdSuffix}-path-input`}
               type="text"
-              value={field.value?.filePath || ''}
+              value={(field.value?.filePath ?? '') || ''}
             />
           </FormControl>
           <FormMessage />
@@ -173,9 +177,7 @@ function ClientKeySecretField() {
     if (!secretsData?.secrets) {
       return [];
     }
-    return secretsData.secrets
-      .filter((secret): secret is NonNullable<typeof secret> & { id: string } => Boolean(secret?.id))
-      .map((secret) => ({ id: secret.id, name: secret.id }));
+    return secretsData.secrets.flatMap((secret) => (Boolean(secret?.id) ? [{ id: secret.id, name: secret.id }] : []));
   }, [secretsData]);
 
   return (
@@ -241,9 +243,10 @@ function MtlsCertFields() {
 function MtlsErrors() {
   const { control } = useFormContext<FormValues>();
   const { errors } = useFormState({ control });
-  const messages = (['ca', 'clientCert', 'clientKey'] as const)
-    .map((key) => errors.mtls?.[key]?.message)
-    .filter((msg): msg is string => Boolean(msg));
+  const messages = (['ca', 'clientCert', 'clientKey'] as const).flatMap((key) => {
+    const fieldMessage = errors.mtls?.[key]?.message;
+    return Boolean(fieldMessage) ? [fieldMessage] : [];
+  });
 
   if (messages.length === 0) {
     return null;

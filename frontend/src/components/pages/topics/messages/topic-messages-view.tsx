@@ -13,6 +13,8 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
 import { DownloadIcon, SettingsIcon } from 'lucide-react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { DISPLAY_WINDOW_CAP } from './constants';
 import { MessageDetailPanel } from './detail/message-detail-panel';
@@ -27,7 +29,7 @@ import { visibleJsFilters } from './utils/js-filters';
 import { ViewSettingsPanel } from './view-settings/view-settings-panel';
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { Topic } from '../../../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../../../state/ui';
+import { PartitionOffsetOrigin } from '../../../../types/topic-settings';
 import { SaveMessagesDialog } from '../Tab.Messages/dialogs/save-messages-dialog';
 
 export type TopicMessagesViewProps = {
@@ -39,87 +41,12 @@ export type TopicMessagesViewProps = {
  * Rendered behind the `enableNewTopicMessagesPage` feature flag.
  */
 export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
-  const { urlState, search, surfaces, detail, jsFilters, query, runner, table, viewSettings, isSearching } =
-    useTopicMessagesPage(topic);
+  const model = useTopicMessagesPage(topic);
+  const { urlState, search, surfaces, detail, query, runner, table, viewSettings, isSearching } = model;
 
   return (
     <div className="flex flex-col gap-4" data-testid="topic-messages-view">
-      <MessagesToolbar
-        filterSlot={
-          <FilterBar
-            canUseJsFilters={query.canUseJsFilters}
-            fieldTokens={urlState.fieldTokens}
-            jsFilters={visibleJsFilters(jsFilters.jsFilters, query.canUseJsFilters)}
-            messages={search.messages}
-            onEditJsFilter={(filter, seedCode, seedName) => jsFilters.setJsDialog({ filter, seedCode, seedName })}
-            onFieldTokensChange={(tokens) => {
-              urlState.setFieldTokens(tokens);
-              urlState.setPageIndex(0);
-            }}
-            onPartitionIdChange={(partitionId) => {
-              urlState.setPartitionId(partitionId);
-              urlState.setPageIndex(0);
-            }}
-            onQuickSearchChange={(value) => {
-              urlState.setQuickSearch(value);
-              urlState.setPageIndex(0);
-            }}
-            onRemoveJsFilter={(id) => jsFilters.setJsFilters((prev) => prev.filter((f) => f.id !== id))}
-            partitionCount={topic.partitionCount}
-            partitionId={urlState.partitionId}
-            quickSearch={urlState.quickSearch}
-          />
-        }
-        isLive={urlState.liveTail && runner.liveTailStatus !== 'exhausted'}
-        isRefreshing={isSearching}
-        onRefresh={runner.handleRefresh}
-        scopeProps={{
-          topicName: topic.topicName,
-          mode: urlState.readScopeMode,
-          onModeChange: urlState.setReadScopeMode,
-          customOffset: urlState.startOffset >= 0 ? urlState.startOffset : -1,
-          onCustomOffsetChange: (offset) => {
-            urlState.setStartOffset(offset);
-            urlState.setPageIndex(0);
-          },
-          startTimestamp: urlState.startTimestamp,
-          onStartTimestampChange: (timestamp) => {
-            urlState.setStartTimestamp(timestamp);
-            urlState.setStartOffset(PartitionOffsetOrigin.Timestamp);
-            urlState.setPageIndex(0);
-          },
-          maxResults: urlState.maxResults,
-          onMaxResultsChange: (maxResults) => {
-            urlState.setMaxResults(maxResults);
-            urlState.setPageIndex(0);
-          },
-          continuousMode: urlState.continuousMode,
-          onContinuousModeChange: (enabled) => {
-            urlState.setContinuousMode(enabled);
-            // Continuous mode's page holds every loaded row in one page (see
-            // messages-table.tsx) — staying on a later pageIndex than that yields a
-            // permanently blank table with no page controls to get back with.
-            urlState.setPageIndex(0);
-          },
-          partitionId: urlState.partitionId,
-          onPartitionIdChange: (partitionId) => {
-            urlState.setPartitionId(partitionId);
-            urlState.setPageIndex(0);
-          },
-          partitionCount: topic.partitionCount,
-          liveTail: urlState.liveTail,
-          onLiveTailChange: (enabled) => {
-            urlState.setSelectedKey(null);
-            if (enabled) {
-              urlState.setReadScopeMode('newest');
-              urlState.setPageIndex(0);
-            }
-            urlState.setLiveTail(enabled);
-          },
-          onOpenDocs: () => surfaces.setDocSheetOpen(true),
-          onOpenChange: surfaces.setReadScopeOpen,
-        }}
-      />
+      <TopicMessageToolbar model={model} topic={topic} />
 
       <ResizablePanelGroup className="items-stretch">
         <ResizablePanel minSize="40%">
@@ -223,12 +150,14 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         elapsedMs={search.elapsedMs}
         isLoadingMore={search.isLoadingMore}
         loadMoreCount={urlState.maxResults}
-        onLoadMore={() =>
-          search.loadMore(urlState.maxResults).catch(() => {
-            // errors are surfaced through search.error
-          })
-        }
-        onPageChange={urlState.setPageIndex}
+        onLoadMore={asyncEvent(
+          () =>
+            search.loadMore(urlState.maxResults).catch(() => {
+              // errors are surfaced through search.error
+            }),
+          reportActionError
+        )}
+        onPageChange={asyncEvent(urlState.setPageIndex, reportActionError)}
         pageIndex={urlState.pageIndex}
         pageSize={urlState.pageSize}
         showStats={!(urlState.liveTail || isSearching)}
@@ -239,6 +168,98 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         windowSize={table.windowedMessages.length}
       />
 
+      <TopicMessagesOverlays model={model} topic={topic} />
+    </div>
+  );
+};
+
+type TopicMessagesModel = ReturnType<typeof useTopicMessagesPage>;
+function TopicMessageToolbar({ topic, model }: { topic: Topic; model: TopicMessagesModel }) {
+  const { urlState, search, surfaces, jsFilters, query, runner, isSearching } = model;
+  return (
+    <MessagesToolbar
+      filterSlot={
+        <FilterBar
+          canUseJsFilters={query.canUseJsFilters}
+          fieldTokens={urlState.fieldTokens}
+          jsFilters={visibleJsFilters(jsFilters.jsFilters, query.canUseJsFilters)}
+          messages={search.messages}
+          onEditJsFilter={(filter, seedCode, seedName) => jsFilters.setJsDialog({ filter, seedCode, seedName })}
+          onFieldTokensChange={(tokens) => {
+            urlState.setFieldTokens(tokens).catch(reportActionError);
+            urlState.setPageIndex(0).catch(reportActionError);
+          }}
+          onPartitionIdChange={(partitionId) => {
+            urlState.setPartitionId(partitionId).catch(reportActionError);
+            urlState.setPageIndex(0).catch(reportActionError);
+          }}
+          onQuickSearchChange={(value) => {
+            urlState.setQuickSearch(value).catch(reportActionError);
+            urlState.setPageIndex(0).catch(reportActionError);
+          }}
+          onRemoveJsFilter={(id) => jsFilters.setJsFilters((prev) => prev.filter((f) => f.id !== id))}
+          partitionCount={topic.partitionCount}
+          partitionId={urlState.partitionId}
+          quickSearch={urlState.quickSearch}
+        />
+      }
+      isLive={urlState.liveTail && runner.liveTailStatus !== 'exhausted'}
+      isRefreshing={isSearching}
+      onRefresh={runner.handleRefresh}
+      scopeProps={{
+        topicName: topic.topicName,
+        mode: urlState.readScopeMode,
+        onModeChange: urlState.setReadScopeMode,
+        customOffset: urlState.startOffset >= 0 ? urlState.startOffset : -1,
+        onCustomOffsetChange: (offset) => {
+          urlState.setStartOffset(offset).catch(reportActionError);
+          urlState.setPageIndex(0).catch(reportActionError);
+        },
+        startTimestamp: urlState.startTimestamp,
+        onStartTimestampChange: (timestamp) => {
+          urlState.setStartTimestamp(timestamp).catch(reportActionError);
+          urlState.setStartOffset(PartitionOffsetOrigin.Timestamp).catch(reportActionError);
+          urlState.setPageIndex(0).catch(reportActionError);
+        },
+        maxResults: urlState.maxResults,
+        onMaxResultsChange: (maxResults) => {
+          urlState.setMaxResults(maxResults).catch(reportActionError);
+          urlState.setPageIndex(0).catch(reportActionError);
+        },
+        continuousMode: urlState.continuousMode,
+        onContinuousModeChange: (enabled) => {
+          urlState.setContinuousMode(enabled).catch(reportActionError);
+          // Continuous mode's page holds every loaded row in one page (see
+          // messages-table.tsx) — staying on a later pageIndex than that yields a
+          // permanently blank table with no page controls to get back with.
+          urlState.setPageIndex(0).catch(reportActionError);
+        },
+        partitionId: urlState.partitionId,
+        onPartitionIdChange: (partitionId) => {
+          urlState.setPartitionId(partitionId).catch(reportActionError);
+          urlState.setPageIndex(0).catch(reportActionError);
+        },
+        partitionCount: topic.partitionCount,
+        liveTail: urlState.liveTail,
+        onLiveTailChange: (enabled) => {
+          urlState.setSelectedKey(null).catch(reportActionError);
+          if (enabled) {
+            urlState.setReadScopeMode('newest');
+            urlState.setPageIndex(0).catch(reportActionError);
+          }
+          urlState.setLiveTail(enabled).catch(reportActionError);
+        },
+        onOpenDocs: () => surfaces.setDocSheetOpen(true),
+        onOpenChange: surfaces.setReadScopeOpen,
+      }}
+    />
+  );
+}
+function TopicMessagesOverlays({ topic, model }: { topic: Topic; model: TopicMessagesModel }) {
+  const { urlState, surfaces, jsFilters, table, viewSettings } = model;
+  return (
+    <>
+      {' '}
       {surfaces.viewSettingsOpen && (
         <aside
           className="fixed inset-y-0 right-0 z-40 flex w-[372px] max-w-[90vw] animate-in flex-col border-l bg-card shadow-xl duration-200 slide-in-from-right"
@@ -248,14 +269,14 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
             keyDeserializer={urlState.keyDeserializer}
             liveTail={urlState.liveTail}
             onClose={() => surfaces.setViewSettingsOpen(false)}
-            onKeyDeserializerChange={urlState.setKeyDeserializer}
+            onKeyDeserializerChange={asyncEvent(urlState.setKeyDeserializer, reportActionError)}
             onResetDeserializers={() => {
-              urlState.setKeyDeserializer(PayloadEncoding.UNSPECIFIED);
-              urlState.setValueDeserializer(PayloadEncoding.UNSPECIFIED);
-              urlState.setSchemaContext('');
+              urlState.setKeyDeserializer(PayloadEncoding.UNSPECIFIED).catch(reportActionError);
+              urlState.setValueDeserializer(PayloadEncoding.UNSPECIFIED).catch(reportActionError);
+              urlState.setSchemaContext('').catch(reportActionError);
             }}
-            onSchemaContextChange={urlState.setSchemaContext}
-            onValueDeserializerChange={urlState.setValueDeserializer}
+            onSchemaContextChange={asyncEvent(urlState.setSchemaContext, reportActionError)}
+            onValueDeserializerChange={asyncEvent(urlState.setValueDeserializer, reportActionError)}
             schemaContext={urlState.schemaContext}
             topicName={topic.topicName}
             valueDeserializer={urlState.valueDeserializer}
@@ -263,7 +284,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
           />
         </aside>
       )}
-
       <ReadScopeDocSheet
         liveTail={urlState.liveTail}
         mode={urlState.readScopeMode}
@@ -290,6 +310,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
           onRequireRawPayload={() => Promise.resolve(table.filteredMessages)}
         />
       )}
-    </div>
+    </>
   );
-};
+}

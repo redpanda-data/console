@@ -9,22 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider, useStoreApi } from '@xyflow/react';
 import { useEffect } from 'react';
 import { render, screen, waitFor } from 'test-utils';
 
-import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
+import { PipelineMiniMap } from './canvas-controls';
+import { PipelineFlowCanvas } from './pipeline-flow-canvas';
+import { compareStrings } from '../../../../utils/string-utils';
 
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_NAME_RE = /branches reconverge/i;
 
 // React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
 class ResizeObserverMock {
-  observe() {}
-  disconnect() {}
-  unobserve() {}
+  observe = () => undefined;
+  disconnect = () => undefined;
+  unobserve = () => undefined;
 }
 
 let originalClientWidth: PropertyDescriptor | undefined;
@@ -114,14 +116,14 @@ function regionFillPieces(container: HTMLElement): HTMLElement[] {
 }
 
 describe('the PipelineFlowCanvas — placeholder cards', () => {
-  it('renders a non-interactive "No output configured" note in read-only mode', async () => {
+  test('renders a non-interactive "No output configured" note in read-only mode', async () => {
     // No edit callbacks → viewer mode; a disabled "Add output" would read as broken permissions.
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} />);
     expect(await screen.findByText('No output configured')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: ADD_OUTPUT_RE })).not.toBeInTheDocument();
   });
 
-  it('renders an enabled "Add output" button in edit mode', async () => {
+  test('renders an enabled "Add output" button in edit mode', async () => {
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} onAddConnector={rs.fn()} />);
     expect(await screen.findByRole('button', { name: ADD_OUTPUT_RE })).toBeEnabled();
   });
@@ -131,17 +133,27 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
 // have to survive on their own.
 class MeasureOnceResizeObserver {
   private readonly seen = new WeakSet<Element>();
-  constructor(private readonly callback: ResizeObserverCallback) {}
+  private readonly callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
   observe(target: Element) {
     if (!this.seen.has(target)) {
       this.seen.add(target);
       const size = [{ inlineSize: 200, blockSize: 80 }];
-      const entry = { target, contentRect: target.getBoundingClientRect(), borderBoxSize: size, contentBoxSize: size };
-      queueMicrotask(() => this.callback([entry as unknown as ResizeObserverEntry], this as unknown as ResizeObserver));
+      const entry = {
+        target,
+        contentRect: target.getBoundingClientRect(),
+        borderBoxSize: size,
+        contentBoxSize: size,
+        devicePixelContentBoxSize: size,
+      };
+      queueMicrotask(() => this.callback([entry], this));
     }
   }
-  unobserve() {}
-  disconnect() {}
+  unobserve = () => undefined;
+  disconnect = () => undefined;
 }
 
 describe('the PipelineFlowCanvas — measured nodes', () => {
@@ -163,7 +175,7 @@ describe('the PipelineFlowCanvas — measured nodes', () => {
     rs.stubGlobal('ResizeObserver', ResizeObserverMock);
   });
 
-  it('keeps its edges when a re-render rebuilds the node objects', async () => {
+  test('keeps its edges when a re-render rebuilds the node objects', async () => {
     const { container, rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
     await waitFor(() => expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1));
 
@@ -175,7 +187,7 @@ describe('the PipelineFlowCanvas — measured nodes', () => {
 });
 
 describe('the PipelineFlowCanvas — deprecated components', () => {
-  it('badges a deprecated node, with the warning as its tooltip', async () => {
+  test('badges a deprecated node, with the warning as its tooltip', async () => {
     const user = userEvent.setup();
     render(
       <PipelineFlowCanvas
@@ -193,7 +205,7 @@ describe('the PipelineFlowCanvas — deprecated components', () => {
 });
 
 describe('the PipelineFlowCanvas — invalid YAML from the start', () => {
-  it('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
+  test('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
     // Unparseable from the first render: no last-good graph to fall back to, so the banner must
     // stay up (no close button).
     const { container } = render(<PipelineFlowCanvas configYaml={'input: [unclosed'} />);
@@ -203,7 +215,7 @@ describe('the PipelineFlowCanvas — invalid YAML from the start', () => {
 });
 
 describe('the PipelineFlowCanvas — resilient parse', () => {
-  it('holds the last valid layout (flagged stale) when an edit leaves valid YAML that no longer describes a pipeline', async () => {
+  test('holds the last valid layout (flagged stale) when an edit leaves valid YAML that no longer describes a pipeline', async () => {
     const { rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
     // Baseline: a real pipeline renders (input generate → drop output), not the empty placeholders.
     expect(await screen.findByText('generate')).toBeInTheDocument();
@@ -217,7 +229,7 @@ describe('the PipelineFlowCanvas — resilient parse', () => {
     expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
   });
 
-  it('does not flag a valid but still-incomplete pipeline as stale while authoring from blank', async () => {
+  test('does not flag a valid but still-incomplete pipeline as stale while authoring from blank', async () => {
     const { rerender } = render(<PipelineFlowCanvas configYaml={''} />);
     // `input:` is valid YAML, just not yet a pipeline — a blank start has no real layout to fall back
     // to, so this must render as the empty state, NOT a false "last valid layout" banner.
@@ -228,7 +240,7 @@ describe('the PipelineFlowCanvas — resilient parse', () => {
 });
 
 describe('the PipelineFlowCanvas — control-flow render', () => {
-  it('renders the Dagre split → merge DAG without crashing', async () => {
+  test('renders the Dagre split → merge DAG without crashing', async () => {
     render(<PipelineFlowCanvas configYaml={CONTROL_FLOW_YAML} />);
 
     // A processor inside the branch body renders as a node.
@@ -254,19 +266,15 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
   // A switch fanning out to many cases makes its scope region very tall; a single fill div that tall
   // exceeds the browser's max paintable size and silently stops painting. Fix: stacked, size-capped
   // pieces so the background always renders.
-  it('caps every scope-region fill piece so a tall area still renders its background', async () => {
+  test('subdivides tall scope regions into multiple paintable pieces', async () => {
     const { container } = render(<PipelineFlowCanvas configYaml={tallSwitchYaml(60)} />);
     // The switch marker also surfaces as a faint scope-region label, so there are several matches.
     await screen.findAllByText('switch');
 
     const pieces = regionFillPieces(container);
-    const heights = pieces.map((el) => Number.parseFloat(el.style.height));
 
     expect(pieces.length).toBeGreaterThan(0);
-    // No piece exceeds the cap — this is what keeps the fill paintable.
-    for (const h of heights) {
-      expect(h).toBeLessThanOrEqual(MAX_REGION_PIECE_PX);
-    }
+    // Native pixel dimensions are checked by the real-component Chromium proof; Happy DOM has no CSS layout.
     // Split into several stacked pieces — proof the capping engaged (a single giant div would be one).
     expect(pieces.length).toBeGreaterThan(3);
   });
@@ -309,7 +317,7 @@ function expectBoxWithin(box: AttrBox, width: number, height: number) {
 }
 
 describe('the PipelineMiniMap — viewport outside the pan extent', () => {
-  it('keeps the viewport rect fully inside the svg when the transform sticks out of the extent', () => {
+  test('keeps the viewport rect fully inside the svg when the transform sticks out of the extent', () => {
     // An insert re-runs Dagre and moves `translateExtent`, but RF doesn't re-clamp the current
     // transform — so the live viewport can sit partly outside the extent until the next pan.
     // tx=150 → viewLeft = -150, left of the extent's minX=0 (and viewTop = -80 above minY=0).
@@ -365,20 +373,20 @@ output:
     return { onSelectNode, onSetStopCondition };
   };
 
-  it('gives every input card a row saying how it stops, and sums them up on the broker', async () => {
+  test('gives every input card a row saying how it stops, and sums them up on the broker', async () => {
     render(<PipelineFlowCanvas configYaml={BROKER_YAML} />);
     const rows = await screen.findAllByTestId('stop-row');
-    expect(rows.map((r) => r.textContent).sort()).toEqual(
+    expect(rows.map((r) => r.textContent).sort(compareStrings)).toEqual(
       [
         'Stopsafter 30s idle',
         'Stopswhen its data runs out',
         'Continuousno stop condition',
         'Continuous1 of 3 inputs never stops',
-      ].sort()
+      ].sort(compareStrings)
     );
   });
 
-  it('opens the editor without selecting the card behind it', async () => {
+  test('opens the editor without selecting the card behind it', async () => {
     const user = userEvent.setup();
     const { onSelectNode, onSetStopCondition } = renderEditableCanvas();
     await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
@@ -391,7 +399,7 @@ output:
     expect(onSelectNode).not.toHaveBeenCalled();
   });
 
-  it('is read-only in view mode', async () => {
+  test('is read-only in view mode', async () => {
     const user = userEvent.setup();
     render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
     await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
@@ -404,7 +412,7 @@ output:
   // The zoom tool paints its cursor on React Flow's pane while Z is held.
   const paneCursor = () => document.querySelector<HTMLElement>('.react-flow__pane')?.style.cursor;
 
-  it('leaves Z to the stop editor', async () => {
+  test('leaves Z to the stop editor', async () => {
     const user = userEvent.setup();
     renderEditableCanvas();
     await user.click(await screen.findByRole('button', { name: STOP_BUTTON_RE }));
@@ -413,7 +421,7 @@ output:
     expect(paneCursor()).toBe('');
   });
 
-  it('still zooms on Z inside a dialog that hosts the canvas', async () => {
+  test('still zooms on Z inside a dialog that hosts the canvas', async () => {
     const user = userEvent.setup();
     render(
       <div role="dialog">

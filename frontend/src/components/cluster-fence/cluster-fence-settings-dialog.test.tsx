@@ -10,13 +10,20 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { QueryClient } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { useClusterFenceStatusQuery, type useUpdateClusterFenceSettingsMutation } from 'react-query/api/cluster-fence';
+import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
-const mutate = rs.fn();
+import { fenceStatusFixture } from './__fixtures__/queries';
+import type { FencePhase } from './cluster-fence-model';
+import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
+
+const mutate = rs.fn<ReturnType<typeof useUpdateClusterFenceSettingsMutation>['mutate']>();
 const mutation = { mutate, reset: rs.fn(), isPending: false, isSuccess: false, error: null as unknown };
 
 rs.mock('react-query/api/cluster-fence', () => {
@@ -29,21 +36,17 @@ rs.mock('react-query/api/cluster-fence', () => {
 });
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
-
-import type { FencePhase } from './cluster-fence-model';
-import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
-
 const mockStatus = (phase: FencePhase, revision = 4) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    summary: {
-      phase,
-      revision: BigInt(revision),
-      exemptPrincipals: ['shadow-orders'],
-      allowAllReads: false,
-    },
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+    fenceStatusFixture({
+      summary: {
+        phase,
+        revision: BigInt(revision),
+        exemptPrincipals: ['shadow-orders'],
+        allowAllReads: false,
+      },
+    })
+  );
 
 let reopen: () => void = () => undefined;
 
@@ -63,7 +66,13 @@ describe('the ClusterFenceSettingsDialog', () => {
   test('saves the edited settings at the revision it opened with', async () => {
     const user = userEvent.setup();
     mockStatus('unfenced');
-    mutate.mockImplementation((_variables, options) => options?.onSuccess?.());
+    mutate.mockImplementation((variables, options) => {
+      options?.onSuccess?.(undefined, variables, undefined, {
+        client: new QueryClient(),
+        meta: undefined,
+        mutationKey: undefined,
+      });
+    });
     renderWithFileRoutes(<Harness />);
 
     const save = await screen.findByTestId('save-cluster-fence-settings');

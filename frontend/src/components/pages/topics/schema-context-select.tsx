@@ -48,7 +48,7 @@ export const schemaContextOptions = (contexts: string[], value: string) => {
       .map((c) => ({ value: c, label: c })),
   ];
   // Keep a value that is not in the list (e.g. from a shared URL) selectable.
-  if (value !== AUTO_SCHEMA_CONTEXT && !options.some((o) => o.value === value)) {
+  if (value !== AUTO_SCHEMA_CONTEXT && options.every((o) => o.value !== value)) {
     options.push({ value, label: value });
   }
   return options;

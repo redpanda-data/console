@@ -33,7 +33,6 @@ import {
 } from 'components/pages/shadowlinks/mappers/controlplane';
 import { buildDefaultFormValues, fromDataplaneShadowLink } from 'components/pages/shadowlinks/mappers/dataplane';
 import { mapControlplaneStateToUnified, type UnifiedShadowLink } from 'components/pages/shadowlinks/model';
-import { isEmbedded } from 'config';
 import {
   type CreateShadowLinkResponseSchema,
   type ListShadowLinksRequest,
@@ -80,6 +79,7 @@ import {
   useControlplaneGetShadowLinkByNameQuery,
   useControlplaneUpdateShadowLinkMutation,
 } from './controlplane/shadowlink';
+import { isEmbedded } from '../../runtime-config';
 
 /**
  * Hook to list all shadow links
@@ -243,7 +243,7 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
 
   const deleteShadowLinkUnified = useCallback(
     (options?: { force?: boolean; onSuccess?: () => void; onError?: (error: ConnectError) => void }) => {
-      if (embedded && shadowLinkId) {
+      if (embedded && shadowLinkId !== null && shadowLinkId !== undefined && shadowLinkId !== '') {
         return controlplaneDelete.mutate(
           { id: shadowLinkId },
           { onSuccess: options?.onSuccess, onError: options?.onError }
@@ -267,7 +267,7 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
     /** Whether the shadowlink ID is being loaded (only relevant in embedded mode) */
     isLoadingId: embedded && controlplaneQuery.isLoading,
     /** Whether the delete can be performed (ID is available in embedded mode, or always true in non-embedded mode) */
-    canDelete: embedded ? !!shadowLinkId : true,
+    canDelete: embedded ? shadowLinkId !== null && shadowLinkId !== undefined && shadowLinkId !== '' : true,
   };
 };
 
@@ -275,7 +275,7 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
  * Hook to failover a shadow link
  */
 export const useFailoverShadowLinkMutation = (options?: {
-  onSuccess?: () => void;
+  onSuccess?: () => void | Promise<void>;
   onError?: (error: ConnectError) => void;
   /** Re-read the link's topics too, so the Failover tab says failing over now rather than at its next poll. */
   refreshTopics?: boolean;
@@ -286,7 +286,7 @@ export const useFailoverShadowLinkMutation = (options?: {
     onSuccess: async () => {
       const queryKeys = [
         createConnectQueryKey({ schema: listShadowLinks, cardinality: 'finite' }),
-        ...(options?.refreshTopics
+        ...(options?.refreshTopics === true
           ? [
               createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'finite' }),
               createConnectQueryKey({ schema: listShadowLinkTopics, cardinality: 'infinite' }),
@@ -294,7 +294,7 @@ export const useFailoverShadowLinkMutation = (options?: {
           : []),
       ];
       await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false })));
-      options?.onSuccess?.();
+      await options?.onSuccess?.();
     },
     onError: (error) => {
       options?.onError?.(error);
@@ -422,7 +422,13 @@ function useShadowLinkUpdate({
   // Unified update function
   const submitUpdate = useCallback(
     (values: FormValues) => {
-      if (embedded && shadowLinkId && controlplaneShadowLink) {
+      if (
+        embedded &&
+        shadowLinkId !== null &&
+        shadowLinkId !== undefined &&
+        shadowLinkId !== '' &&
+        controlplaneShadowLink
+      ) {
         // Use controlplane API with ID
         const request = buildControlplaneUpdateRequest(shadowLinkId, values, controlplaneShadowLink, {
           roleSyncSupported,

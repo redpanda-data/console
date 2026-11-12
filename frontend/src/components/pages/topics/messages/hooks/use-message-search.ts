@@ -13,7 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { config as appConfig } from '../../../../../config';
 import type { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type ListMessagesRequest,
@@ -25,10 +24,12 @@ import {
   type ListMessagesResponse_ProgressMessage,
   type ListMessagesResponse_StreamCompletedMessage,
 } from '../../../../../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { config as appConfig } from '../../../../../runtime-config';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../../../../state/ui';
+import { PartitionOffsetOrigin } from '../../../../../types/topic-settings';
 import { appendWithSlackCap } from '../../../../../utils/bounded-array';
 import { convertListMessageData } from '../../../../../utils/message-converters';
+import { nonzeroNumber } from '../../../../../utils/number-utils';
 import { messageKey } from '../utils/message-key';
 
 /** Memory bound for live-tail / filtered streams (mirrors the legacy engine's cap). */
@@ -288,7 +289,7 @@ const onProgressFrame = (value: ListMessagesResponse_ProgressMessage, { setters 
 const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: StreamRun) => {
   run.sawDone = true;
   const bytesConsumed = Number(done.bytesConsumed);
-  const elapsedMs = Number(done.elapsedMs) || Date.now() - run.startTime;
+  const elapsedMs = nonzeroNumber(Number(done.elapsedMs)) ?? Date.now() - run.startTime;
   const nextPageToken = done.nextPageToken || null;
   run.setters.setStats((prev) => ({ ...prev, bytesConsumed, elapsedMs, nextPageToken }));
 };
@@ -326,6 +327,7 @@ const applyControlMessage = (controlMessage: ControlMessage, run: StreamRun) => 
       return onErrorFrame(controlMessage.value, run);
     case 'data':
       return onDataFrame(controlMessage.value, run);
+    case undefined:
     default:
       break;
   }
@@ -383,18 +385,21 @@ const finalizeRun = ({ session, setters, abortController }: StreamRun) => {
  * completion or an abort — so callers that auto-restart (live tail) can tell them apart.
  */
 const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, run: StreamRun) => {
-  const { signal } = run.abortController;
-  const timeoutMs = run.isLongLived ? LIVE_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const streamOptions = {
+    signal: run.abortController.signal,
+    timeoutMs: run.isLongLived ? LIVE_TIMEOUT_MS : DEFAULT_TIMEOUT_MS,
+  };
   try {
-    for await (const res of client.listMessages(req, { signal, timeoutMs })) {
-      if (signal.aborted) {
+    const responses = client.listMessages(req, streamOptions);
+    for await (const res of responses) {
+      if (streamOptions.signal.aborted) {
         break;
       }
       applyControlMessage(res.controlMessage, run);
     }
     return promoteUnfinishedBackendError(run);
-  } catch (err) {
-    return signal.aborted ? null : failRun(run, err);
+  } catch (error) {
+    return streamOptions.signal.aborted ? null : failRun(run, error);
   } finally {
     finalizeRun(run);
   }
@@ -403,7 +408,8 @@ const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, ru
 /** Re-fetches one message with the size limit lifted; the last data frame wins. */
 const fetchLargeMessage = async (client: ConsoleClient, req: ListMessagesRequest): Promise<TopicMessage> => {
   let loaded: TopicMessage | null = null;
-  for await (const res of client.listMessages(req, { timeoutMs: DEFAULT_TIMEOUT_MS })) {
+  const responses = client.listMessages(req, { timeoutMs: DEFAULT_TIMEOUT_MS });
+  for await (const res of responses) {
     if (res.controlMessage.case === 'data') {
       loaded = convertListMessageData(res.controlMessage.value);
     }
@@ -497,7 +503,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     async (pageSize?: number) => {
       const params = session.lastParams;
       const pageToken = state.stats.nextPageToken;
-      if (!(params && pageToken)) {
+      if (!(params && pageToken !== null && pageToken !== undefined && pageToken !== '')) {
         return;
       }
       await runStream({ ...params, pageSize: pageSize ?? params.pageSize }, { append: true, pageToken });

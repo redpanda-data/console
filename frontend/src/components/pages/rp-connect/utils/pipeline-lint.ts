@@ -11,21 +11,15 @@
 
 import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
-import {
-  type Document,
-  isMap,
-  isPair,
-  isScalar,
-  LineCounter,
-  type Pair,
-  parseDocument,
-  visit,
-  type YAMLMap,
-} from 'yaml';
+import { type Document, isMap, isNode, isPair, isScalar, LineCounter, parseDocument, visit, type YAMLMap } from 'yaml';
 
-import { type PipelineFlowNode, parseEditableNodes } from './pipeline-flow-parser';
+import type { PipelineFlowNode } from './pipeline-flow-nodes';
+import { parseEditableNodes } from './pipeline-flow-parser';
 import { classifyIdleTimeout, type IdleTimeoutKind } from './read-until';
-import { editTargetPath, READ_UNTIL, readStopCondition, type StopCondition, slotComponentKey } from './yaml';
+import { editTargetPath } from './yaml-edit-target';
+import { asRecord, READ_UNTIL, readStopCondition, type StopCondition, slotComponentKey } from './yaml-values';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 
 type NodeRange = { id: string; start: number; end: number; span: number };
 
@@ -35,8 +29,8 @@ function yamlNodeLines(
   lineCounter: LineCounter,
   path: (string | number)[]
 ): { start: number; end: number } | undefined {
-  const yamlNode = doc.getIn(path, true) as { range?: [number, number, number] } | undefined;
-  const range = yamlNode?.range;
+  const yamlNode: unknown = doc.getIn(path, true);
+  const range = isNode(yamlNode) ? yamlNode.range : undefined;
   if (!range) {
     return;
   }
@@ -135,7 +129,7 @@ export function localYamlLintHints(configYaml: string): LintHint[] {
   const lineCounter = new LineCounter();
   const doc = parseDocument(configYaml, { lineCounter, prettyErrors: false });
   return doc.errors.map((err) => {
-    const pos = err.pos ? lineCounter.linePos(err.pos[0]) : undefined;
+    const pos = isPresent(err.pos) ? lineCounter.linePos(err.pos[0]) : undefined;
     return create(LintHintSchema, {
       line: pos?.line ?? 0,
       column: pos?.col ?? 0,
@@ -148,7 +142,7 @@ export function localYamlLintHints(configYaml: string): LintHint[] {
 const READ_UNTIL_ROOTS: ReadonlySet<unknown> = new Set(['input', 'input_resources']);
 
 const lintAt = (lineCounter: LineCounter, node: unknown, hint: string): LintHint => {
-  const offset = (node as { range?: [number, number, number] } | undefined)?.range?.[0] ?? 0;
+  const offset = (isNode(node) ? node.range?.[0] : undefined) ?? 0;
   const pos = lineCounter.linePos(offset);
   return create(LintHintSchema, { line: pos.line, column: pos.col, hint, lintType: 'config' });
 };
@@ -166,10 +160,10 @@ function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondit
   // An unparseable timeout fails on its own, so it isn't also reported as missing.
   const idle = classifyIdleTimeout(stop.idleTimeout);
   const idleGiven = idle !== 'unset' && idle !== 'negative';
-  if (!(stop.check || idleGiven)) {
+  if (!((stop.check ?? '') || idleGiven)) {
     missing.push('read_until needs a check or an idle_timeout to know when to stop.');
   }
-  if (!slotComponentKey(resolved.input)) {
+  if (!isNonEmptyString(slotComponentKey(resolved.input))) {
     missing.push('read_until needs an input to read from.');
   }
   return missing;
@@ -184,11 +178,11 @@ function readUntilProblems(
   value: YAMLMap | null
 ): LintHint[] {
   // Merge keys resolved, as Connect sees the wrapper.
-  const resolved = (value?.toJS(doc) ?? {}) as Record<string, unknown>;
+  const resolved = asRecord(value?.toJS(doc)) ?? {};
   const stop = readStopCondition(resolved);
   const hints = missingWrapperParts(resolved, stop).map((hint) => lintAt(lineCounter, keyNode, hint));
   const idleProblem = IDLE_TIMEOUT_PROBLEM[classifyIdleTimeout(stop.idleTimeout)];
-  if (idleProblem) {
+  if (idleProblem !== null && idleProblem !== undefined && idleProblem !== '') {
     const idlePair = value?.items.find((p) => isScalar(p.key) && p.key.value === 'idle_timeout');
     hints.push(lintAt(lineCounter, idlePair?.key ?? keyNode, idleProblem));
   }
@@ -226,7 +220,7 @@ function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
       if (!(isScalar(pair.key) && pair.key.value === READ_UNTIL && (isMap(pair.value) || empty))) {
         return;
       }
-      const root = path.find((n) => isPair(n)) as Pair | undefined;
+      const root = path.find((n) => isPair(n));
       if (root && isScalar(root.key) && READ_UNTIL_ROOTS.has(root.key.value)) {
         hints.push(...readUntilProblems(lineCounter, doc, pair.key, isMap(pair.value) ? pair.value : null));
       }
@@ -258,7 +252,7 @@ function groupHintsByNode(hints: LintHint[], ranges: NodeRange[]): Map<string, L
   const byNode = new Map<string, LintHint[]>();
   for (const hint of hints) {
     const id = enclosingNodeId(hint.line, ranges);
-    if (!id) {
+    if (!(id !== null && id !== undefined && id !== '')) {
       continue;
     }
     const existing = byNode.get(id);
@@ -276,5 +270,5 @@ export function mapLintHintsToNodes(yaml: string, hints: LintHint[]): Map<string
     return new Map();
   }
   const ranges = nodeLineRangesOrUndefined(yaml);
-  return ranges ? groupHintsByNode(hints, ranges) : new Map();
+  return ranges ? groupHintsByNode(hints, ranges) : new Map<string, LintHint[]>();
 }

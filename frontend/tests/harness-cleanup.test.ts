@@ -40,21 +40,6 @@ function trackResourcesWithDeferredCancellation() {
   return { cancelQueries, clear, destroyHistory, finishCancellation, teardown, unmount };
 }
 
-function expectRetainedResourcesReleased({
-  clear,
-  destroyHistory,
-  teardown,
-  unmount,
-}: ReturnType<typeof trackResourcesWithDeferredCancellation>) {
-  expect(clear).toHaveBeenCalledTimes(1);
-  expect(unmount).toHaveBeenCalledTimes(1);
-  expect(destroyHistory).toHaveBeenCalledTimes(1);
-  expect(teardown).toHaveBeenCalledTimes(1);
-  expect(trackedQueryClients).toHaveLength(0);
-  expect(trackedRouters).toHaveLength(0);
-  expect(trackedTeardowns).toHaveLength(0);
-}
-
 describe('cleanupTestHarness', () => {
   test('waits for query cancellation before clearing retained resources', async () => {
     const resources = trackResourcesWithDeferredCancellation();
@@ -68,7 +53,23 @@ describe('cleanupTestHarness', () => {
     resources.finishCancellation();
     await cleanup;
 
-    expectRetainedResourcesReleased(resources);
+    expect({
+      clear: resources.clear.mock.calls.length,
+      unmount: resources.unmount.mock.calls.length,
+      destroyHistory: resources.destroyHistory.mock.calls.length,
+      teardown: resources.teardown.mock.calls.length,
+      retainedQueries: trackedQueryClients.size,
+      retainedRouters: trackedRouters.size,
+      retainedTeardowns: trackedTeardowns.size,
+    }).toEqual({
+      clear: 1,
+      unmount: 1,
+      destroyHistory: 1,
+      teardown: 1,
+      retainedQueries: 0,
+      retainedRouters: 0,
+      retainedTeardowns: 0,
+    });
   });
 
   test('runs every teardown and reports failures', async () => {

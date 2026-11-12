@@ -10,19 +10,30 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
-import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
+import {
+  type Control,
+  Controller,
+  type FieldErrors,
+  type SubmitHandler,
+  type UseFormRegister,
+  type UseFormSetValue,
+  useForm,
+  useWatch,
+} from 'react-hook-form';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
+import { buildKafkaHeaders } from './topic-produce-headers';
 import {
   CompressionType,
   CompressionTypeSchema,
-  type KafkaRecordHeader,
-  KafkaRecordHeaderSchema,
   PayloadEncoding,
 } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
@@ -34,9 +45,11 @@ import {
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import { setPageHeader, uiState } from '../../../state/ui-state';
+import { isNonzeroNumber } from '../../../utils/number-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
 import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
-import KowlEditor from '../../misc/kowl-editor';
+import { KowlEditor } from '../../misc/kowl-editor';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
 import {
@@ -53,7 +66,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { subjectSchemaContext } from '../schemas/schema-context-utils';
 
 type EncodingOption = {
-  value: PayloadEncoding | 'base64';
+  value: PayloadEncoding;
   label: string;
   tooltip: string; // React.ReactNode | (() => React.ReactNode),
 };
@@ -125,7 +138,10 @@ function NumberSelect({
 }: {
   value: number | undefined;
   onChange: (value: number) => void;
-  options: { label: React.ReactNode; value: number }[];
+  options: {
+    label: React.ReactNode;
+    value: number;
+  }[];
   testId?: string;
   placeholder?: string;
 }) {
@@ -181,24 +197,30 @@ const persistCompressionType = (compressionType: CompressionType) => {
   uiState.topicSettings.produceRecordCompression = compressionType;
 };
 
-const compressionTypes = CompressionTypeSchema.values
-  .filter((value) => value.number !== CompressionType.UNSPECIFIED)
-  .map((value) => ({
-    label: value.localName,
-    value: value.number as CompressionType,
-  }));
+const compressionTypes = CompressionTypeSchema.values.flatMap((value) =>
+  value.number === CompressionType.UNSPECIFIED
+    ? []
+    : [
+        {
+          label: value.localName,
+          value: value.number,
+        },
+      ]
+);
 
-const filteredEncodingOptions = encodingOptions
-  .filter((x) => x.value !== PayloadEncoding.AVRO)
-  .map((x) => ({ label: x.label, value: x.value as number }));
+const filteredEncodingOptions = encodingOptions.flatMap((x) =>
+  x.value === PayloadEncoding.AVRO ? [] : [{ label: x.label, value: x.value }]
+);
 
 function isSchemaEncoding(encoding: PayloadEncoding) {
   return encoding === PayloadEncoding.AVRO || encoding === PayloadEncoding.PROTOBUF;
 }
 
 function buildPartitionOptions(count: number | undefined) {
-  const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
-
+  const partitions: {
+    label: string;
+    value: number;
+  }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
   if (count === undefined) {
     // topic not found
     return partitions;
@@ -218,7 +240,7 @@ function buildPartitionOptions(count: number | undefined) {
 
 function usePartitionOptions(topicName: string) {
   const topics = useApiStoreHook((s) => s.topics);
-  return buildPartitionOptions(topics?.first((t) => t.topicName === topicName)?.partitionCount);
+  return buildPartitionOptions(topics?.find((t) => t.topicName === topicName)?.partitionCount);
 }
 
 function useSchemaNameOptions() {
@@ -230,27 +252,15 @@ function useSchemaNameOptions() {
 // Versions of the subject selected for the key or the value, newest first.
 function useSchemaVersionOptions(control: Control<Inputs>, payload: 'key' | 'value') {
   const schemaName = useWatch({ control, name: `${payload}.schemaName` as const });
-  const schemaDetail = useApiStoreHook((s) => (schemaName ? s.schemaDetails.get(schemaName) : undefined));
+  const schemaDetail = useApiStoreHook((s) =>
+    schemaName !== null && schemaName !== undefined && schemaName !== '' ? s.schemaDetails.get(schemaName) : undefined
+  );
   return (
     schemaDetail?.versions
       .slice()
       .sort(({ version: version1 }, { version: version2 }) => version2 - version1)
       .map(({ version }) => ({ label: version, value: version })) ?? []
   );
-}
-
-function buildKafkaHeaders(headers: Inputs['headers']) {
-  const kafkaHeaders: KafkaRecordHeader[] = [];
-  for (const h of headers) {
-    if (!(h.value || h.value)) {
-      continue;
-    }
-    const kafkaHeader = create(KafkaRecordHeaderSchema);
-    kafkaHeader.key = h.key;
-    kafkaHeader.value = new TextEncoder().encode(h.value);
-    kafkaHeaders.push(kafkaHeader);
-  }
-  return kafkaHeaders;
 }
 
 function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array {
@@ -267,16 +277,22 @@ function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array 
 function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
   try {
     return encodeData(payload.data, payload.encoding);
-  } catch (err) {
+  } catch (error) {
     // TODO: Handle error
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(err);
+    console.error(error);
   }
 }
 
 // Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
 function applySchemaSelection(options: PublishMessagePayloadOptions, payload: PayloadInputs) {
-  if (!(isSchemaEncoding(payload.encoding) && payload.schemaName && payload.schemaVersion)) {
+  if (
+    !(
+      isSchemaEncoding(payload.encoding) &&
+      isNonEmptyString(payload.schemaName) &&
+      isNonzeroNumber(payload.schemaVersion)
+    )
+  ) {
     return;
   }
   const selectedSchema = api.schemaDetails
@@ -326,8 +342,9 @@ function buildPublishRequest(topicName: string, data: Inputs): PublishMessageReq
   }
   return req;
 }
-
-const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
+const PublishTopicForm: FC<{
+  topicName: string;
+}> = ({ topicName }) => {
   const {
     control,
     register,
@@ -353,15 +370,8 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     },
   });
 
-  const keyPayloadOptions = useWatch({ control, name: 'key' });
-  const valuePayloadOptions = useWatch({ control, name: 'value' });
-
-  const [isKeyExpanded, setKeyExpanded] = useState(false);
-
   const availablePartitions = usePartitionOptions(topicName);
   const schemaNameOptions = useSchemaNameOptions();
-  const sortedKeyVersions = useSchemaVersionOptions(control, 'key');
-  const sortedValueVersions = useSchemaVersionOptions(control, 'value');
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     persistCompressionType(data.compressionType);
@@ -371,9 +381,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       return;
     }
 
-    const result = await api.publishMessage(req).catch((err) => {
+    const result = await api.publishMessage(req).catch((error: unknown) => {
       setError('root.serverError', {
-        message: err.rawMessage,
+        message: ConnectError.from(error).rawMessage,
       });
     });
 
@@ -384,7 +394,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   };
 
   return (
-    <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+    <form
+      className="flex w-full max-w-[600px] flex-col gap-6"
+      onSubmit={asyncEvent(handleSubmit(onSubmit), reportActionError)}
+    >
       <div className="flex flex-row gap-4">
         <Controller
           control={control}
@@ -428,221 +441,23 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
       <FieldSeparator />
 
-      <FieldSet>
-        <FieldLegend>Key</FieldLegend>
-        <div className="grid grid-cols-5 gap-2">
-          <Controller
-            control={control}
-            name="key.encoding"
-            render={({ field }) => (
-              <Field className="col-span-2">
-                <FieldLabel htmlFor="key.encoding">Type</FieldLabel>
-                <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
-              </Field>
-            )}
-          />
-          {isSchemaEncoding(keyPayloadOptions.encoding) && (
-            <Controller
-              control={control}
-              name="key.schemaName"
-              render={({ field }) => (
-                <Field className="col-span-2">
-                  <FieldLabel htmlFor="key.schemaName">Schema</FieldLabel>
-                  <Select
-                    onValueChange={(newVal) => {
-                      field.onChange(newVal);
-
-                      if (newVal) {
-                        // Fetch schema details to get available versions
-                        api
-                          .refreshSchemaDetails(newVal)
-                          .then(() => {
-                            const detail = api.schemaDetails.get(newVal);
-                            if (detail?.latestActiveVersion) {
-                              setValue('key.schemaVersion', detail.latestActiveVersion);
-                            }
-                          })
-                          .catch(() => {
-                            // Error handling managed by API layer
-                          });
-                      }
-                    }}
-                    value={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {schemaNameOptions.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            />
-          )}
-          {isSchemaEncoding(keyPayloadOptions.encoding) && (
-            <Controller
-              control={control}
-              name="key.schemaVersion"
-              render={({ field }) => (
-                <Field className="col-span-1">
-                  <FieldLabel htmlFor="key.schemaVersion">Version</FieldLabel>
-                  <NumberSelect onChange={field.onChange} options={sortedKeyVersions} value={field.value} />
-                </Field>
-              )}
-            />
-          )}
-        </div>
-
-        {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
-          <Field>
-            <FieldLabel htmlFor="key.protobufIndex">Index</FieldLabel>
-            {protoBufInfoElement}
-            <Input id="key.protobufIndex" type="number" {...register('key.protobufIndex', { valueAsNumber: true })} />
-          </Field>
-        )}
-
-        {keyPayloadOptions.encoding !== PayloadEncoding.NULL && (
-          <Field data-invalid={!!errors.key?.data}>
-            <FieldLabel>Data</FieldLabel>
-            <div data-testid="produce-key-editor">
-              {isKeyExpanded ? (
-                <Controller
-                  control={control}
-                  name="key.data"
-                  render={({ field: { onChange, value } }) => (
-                    <KowlEditor
-                      height={300}
-                      language={encodingToLanguage(keyPayloadOptions?.encoding)}
-                      onChange={onChange}
-                      value={value}
-                    />
-                  )}
-                />
-              ) : (
-                <Controller
-                  control={control}
-                  name="key.data"
-                  render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
-                />
-              )}
-              <Button className="mt-1" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
-                {isKeyExpanded ? 'Collapse' : 'Expand'}
-              </Button>
-            </div>
-            {Boolean(errors.key?.data) && <FieldError>{errors.key?.data?.message}</FieldError>}
-          </Field>
-        )}
-      </FieldSet>
+      <KeyPayloadFields
+        control={control}
+        errors={errors}
+        register={register}
+        schemaNameOptions={schemaNameOptions}
+        setValue={setValue}
+      />
 
       <FieldSeparator />
 
-      <FieldSet>
-        <FieldLegend>Value</FieldLegend>
-        <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-5 gap-2">
-            <Controller
-              control={control}
-              name="value.encoding"
-              render={({ field }) => (
-                <Field className="col-span-2">
-                  <FieldLabel htmlFor="value.encoding">Type</FieldLabel>
-                  <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
-                </Field>
-              )}
-            />
-            {isSchemaEncoding(valuePayloadOptions.encoding) && (
-              <Controller
-                control={control}
-                name="value.schemaName"
-                render={({ field }) => (
-                  <Field className="col-span-2">
-                    <FieldLabel htmlFor="value.schemaName">Schema</FieldLabel>
-                    <Select
-                      onValueChange={(newVal) => {
-                        field.onChange(newVal);
-
-                        if (newVal) {
-                          // Fetch schema details to get available versions
-                          api.refreshSchemaDetails(newVal).then(() => {
-                            const detail = api.schemaDetails.get(newVal);
-                            if (detail?.latestActiveVersion) {
-                              setValue('value.schemaVersion', detail.latestActiveVersion);
-                            }
-                          });
-                        }
-                      }}
-                      value={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {schemaNameOptions.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>
-                            {o.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              />
-            )}
-            {isSchemaEncoding(valuePayloadOptions.encoding) && (
-              <Controller
-                control={control}
-                name="value.schemaVersion"
-                render={({ field }) => (
-                  <Field className="col-span-1">
-                    <FieldLabel htmlFor="value.schemaVersion">Version</FieldLabel>
-                    <NumberSelect onChange={field.onChange} options={sortedValueVersions} value={field.value} />
-                  </Field>
-                )}
-              />
-            )}
-          </div>
-
-          {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
-            <Field>
-              <FieldLabel htmlFor="value.protobufIndex">Index</FieldLabel>
-              {protoBufInfoElement}
-              <Input
-                id="value.protobufIndex"
-                type="number"
-                {...register('value.protobufIndex', { valueAsNumber: true })}
-              />
-            </Field>
-          )}
-
-          {valuePayloadOptions.encoding !== PayloadEncoding.NULL && (
-            <Field data-invalid={!!errors.value?.data}>
-              <FieldLabel>Data</FieldLabel>
-              <div data-testid="produce-value-editor">
-                <Controller
-                  control={control}
-                  name="value.data"
-                  render={({ field: { onChange, value } }) => (
-                    <KowlEditor
-                      data-testid="produce-message-value"
-                      height={300}
-                      language={encodingToLanguage(valuePayloadOptions?.encoding)}
-                      onChange={onChange}
-                      value={value}
-                    />
-                  )}
-                />
-              </div>
-              {Boolean(errors.value?.data) && <FieldError>{errors.value?.data?.message}</FieldError>}
-              <input {...register('value.data')} data-testid="valueData" />
-            </Field>
-          )}
-        </div>
-      </FieldSet>
+      <ValuePayloadFields
+        control={control}
+        errors={errors}
+        register={register}
+        schemaNameOptions={schemaNameOptions}
+        setValue={setValue}
+      />
 
       {!!errors?.root?.serverError && (
         <Alert variant="destructive">
@@ -662,9 +477,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
         </FenceGuardedButton>
         <Button
           nativeButton={false}
-          render={
-            <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName" />
-          }
+          render={<Link params={{ topicName: encodeURIComponent(topicName) }} search={{}} to="/topics/$topicName" />}
           variant="outline"
         >
           Go Back
@@ -673,8 +486,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     </form>
   );
 };
-
-export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
+export const TopicProducePage: FC<{
+  topicName: string;
+}> = ({ topicName }) => {
   useEffect(() => {
     setPageHeader('Produce Kafka record', [
       { title: 'Topics', linkTo: '/topics' },
@@ -685,13 +499,13 @@ export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
 
   useEffect(() => {
     api.refreshSchemaSubjects();
-    api.refreshTopics();
+    api.refreshTopics().catch(reportActionError);
   }, []);
 
   useEffect(() => {
     appGlobal.onRefresh = () => {
       api.refreshSchemaSubjects(true);
-      api.refreshTopics(true);
+      api.refreshTopics(true).catch(reportActionError);
     };
   }, []);
 
@@ -704,3 +518,237 @@ export const TopicProducePage: FC<{ topicName: string }> = ({ topicName }) => {
     </div>
   );
 };
+
+type PayloadFieldsProps = {
+  control: Control<Inputs>;
+  register: UseFormRegister<Inputs>;
+  setValue: UseFormSetValue<Inputs>;
+  errors: FieldErrors<Inputs>;
+  schemaNameOptions: ReturnType<typeof useSchemaNameOptions>;
+};
+function KeyPayloadFields({ control, register, setValue, errors, schemaNameOptions }: PayloadFieldsProps) {
+  const keyPayloadOptions = useWatch({ control, name: 'key' });
+  const [isKeyExpanded, setKeyExpanded] = useState(false);
+  const sortedKeyVersions = useSchemaVersionOptions(control, 'key');
+  return (
+    <FieldSet>
+      <FieldLegend>Key</FieldLegend>
+      <div className="grid grid-cols-5 gap-2">
+        <Controller
+          control={control}
+          name="key.encoding"
+          render={({ field }) => (
+            <Field className="col-span-2">
+              <FieldLabel htmlFor="key.encoding">Type</FieldLabel>
+              <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+            </Field>
+          )}
+        />
+        {isSchemaEncoding(keyPayloadOptions.encoding) && (
+          <Controller
+            control={control}
+            name="key.schemaName"
+            render={({ field }) => (
+              <Field className="col-span-2">
+                <FieldLabel htmlFor="key.schemaName">Schema</FieldLabel>
+                <Select
+                  onValueChange={(newVal) => {
+                    field.onChange(newVal);
+
+                    if (newVal) {
+                      // Fetch schema details to get available versions
+                      api
+                        .refreshSchemaDetails(newVal)
+                        .then(() => {
+                          const detail = api.schemaDetails.get(newVal);
+                          if (isNonzeroNumber(detail?.latestActiveVersion)) {
+                            setValue('key.schemaVersion', detail.latestActiveVersion);
+                          }
+                        })
+                        .catch(reportActionError);
+                    }
+                  }}
+                  value={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schemaNameOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+          />
+        )}
+        {isSchemaEncoding(keyPayloadOptions.encoding) && (
+          <Controller
+            control={control}
+            name="key.schemaVersion"
+            render={({ field }) => (
+              <Field className="col-span-1">
+                <FieldLabel htmlFor="key.schemaVersion">Version</FieldLabel>
+                <NumberSelect onChange={field.onChange} options={sortedKeyVersions} value={field.value} />
+              </Field>
+            )}
+          />
+        )}
+      </div>
+
+      {keyPayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
+        <Field>
+          <FieldLabel htmlFor="key.protobufIndex">Index</FieldLabel>
+          {protoBufInfoElement}
+          <Input id="key.protobufIndex" type="number" {...register('key.protobufIndex', { valueAsNumber: true })} />
+        </Field>
+      )}
+
+      {keyPayloadOptions.encoding !== PayloadEncoding.NULL && (
+        <Field data-invalid={!!errors.key?.data}>
+          <FieldLabel>Data</FieldLabel>
+          <div data-testid="produce-key-editor">
+            {isKeyExpanded ? (
+              <Controller
+                control={control}
+                name="key.data"
+                render={({ field: { onChange, value } }) => (
+                  <KowlEditor
+                    height={300}
+                    language={encodingToLanguage(keyPayloadOptions?.encoding)}
+                    onChange={onChange}
+                    value={value}
+                  />
+                )}
+              />
+            ) : (
+              <Controller
+                control={control}
+                name="key.data"
+                render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
+              />
+            )}
+            <Button className="mt-1" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
+              {isKeyExpanded ? 'Collapse' : 'Expand'}
+            </Button>
+          </div>
+          {Boolean(errors.key?.data) && <FieldError>{errors.key?.data?.message}</FieldError>}
+        </Field>
+      )}
+    </FieldSet>
+  );
+}
+function ValuePayloadFields({ control, register, setValue, errors, schemaNameOptions }: PayloadFieldsProps) {
+  const valuePayloadOptions = useWatch({ control, name: 'value' });
+  const sortedValueVersions = useSchemaVersionOptions(control, 'value');
+  return (
+    <FieldSet>
+      <FieldLegend>Value</FieldLegend>
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-5 gap-2">
+          <Controller
+            control={control}
+            name="value.encoding"
+            render={({ field }) => (
+              <Field className="col-span-2">
+                <FieldLabel htmlFor="value.encoding">Type</FieldLabel>
+                <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+              </Field>
+            )}
+          />
+          {isSchemaEncoding(valuePayloadOptions.encoding) && (
+            <Controller
+              control={control}
+              name="value.schemaName"
+              render={({ field }) => (
+                <Field className="col-span-2">
+                  <FieldLabel htmlFor="value.schemaName">Schema</FieldLabel>
+                  <Select
+                    onValueChange={(newVal) => {
+                      field.onChange(newVal);
+
+                      if (newVal) {
+                        // Fetch schema details to get available versions
+                        api
+                          .refreshSchemaDetails(newVal)
+                          .then(() => {
+                            const detail = api.schemaDetails.get(newVal);
+                            if (isNonzeroNumber(detail?.latestActiveVersion)) {
+                              setValue('value.schemaVersion', detail.latestActiveVersion);
+                            }
+                          })
+                          .catch(reportActionError);
+                      }
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {schemaNameOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          )}
+          {isSchemaEncoding(valuePayloadOptions.encoding) && (
+            <Controller
+              control={control}
+              name="value.schemaVersion"
+              render={({ field }) => (
+                <Field className="col-span-1">
+                  <FieldLabel htmlFor="value.schemaVersion">Version</FieldLabel>
+                  <NumberSelect onChange={field.onChange} options={sortedValueVersions} value={field.value} />
+                </Field>
+              )}
+            />
+          )}
+        </div>
+
+        {valuePayloadOptions.encoding === PayloadEncoding.PROTOBUF && (
+          <Field>
+            <FieldLabel htmlFor="value.protobufIndex">Index</FieldLabel>
+            {protoBufInfoElement}
+            <Input
+              id="value.protobufIndex"
+              type="number"
+              {...register('value.protobufIndex', { valueAsNumber: true })}
+            />
+          </Field>
+        )}
+
+        {valuePayloadOptions.encoding !== PayloadEncoding.NULL && (
+          <Field data-invalid={!!errors.value?.data}>
+            <FieldLabel>Data</FieldLabel>
+            <div data-testid="produce-value-editor">
+              <Controller
+                control={control}
+                name="value.data"
+                render={({ field: { onChange, value } }) => (
+                  <KowlEditor
+                    data-testid="produce-message-value"
+                    height={300}
+                    language={encodingToLanguage(valuePayloadOptions?.encoding)}
+                    onChange={onChange}
+                    value={value}
+                  />
+                )}
+              />
+            </div>
+            {Boolean(errors.value?.data) && <FieldError>{errors.value?.data?.message}</FieldError>}
+            <Input {...register('value.data')} data-testid="valueData" />
+          </Field>
+        )}
+      </div>
+    </FieldSet>
+  );
+}

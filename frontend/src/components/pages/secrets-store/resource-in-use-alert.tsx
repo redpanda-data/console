@@ -33,27 +33,28 @@ const getResourceTypeInfo = (type: ListResourcesResponse_Type): ResourceTypeInfo
     case ListResourcesResponse_Type.PIPELINE:
       return {
         label: 'Redpanda Connect Pipelines',
-        icon: <Workflow className="h-4 w-4" />,
+        icon: <Workflow className="size-4" />,
       };
     case ListResourcesResponse_Type.CLUSTER:
       return {
         label: 'Clusters',
-        icon: <Database className="h-4 w-4" />,
+        icon: <Database className="size-4" />,
       };
     case ListResourcesResponse_Type.MCP_SERVER:
       return {
         label: 'MCP Servers',
-        icon: <MCPIcon className="h-4 w-4" />,
+        icon: <MCPIcon className="size-4" />,
       };
     case ListResourcesResponse_Type.AI_AGENT:
       return {
         label: 'AI Agents',
-        icon: <Bot className="h-4 w-4" />,
+        icon: <Bot className="size-4" />,
       };
+    case ListResourcesResponse_Type.UNSPECIFIED:
     default:
       return {
         label: 'Other Resources',
-        icon: <AlertCircle className="h-4 w-4" />,
+        icon: <AlertCircle className="size-4" />,
       };
   }
 };
@@ -64,7 +65,7 @@ const groupResourcesByType = (
   const grouped = new Map<ListResourcesResponse_Type, ListResourcesResponse_Resource[]>();
 
   for (const resource of resources) {
-    const existing = grouped.get(resource.type) || [];
+    const existing = grouped.get(resource.type) ?? [];
     grouped.set(resource.type, [...existing, resource]);
   }
 

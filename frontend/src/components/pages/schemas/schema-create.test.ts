@@ -62,7 +62,7 @@ describe('the Schema Create - Normalize Parameter', () => {
 
     // Test that it serializes correctly to JSON
     const serialized = JSON.stringify(request);
-    const deserialized = JSON.parse(serialized);
+    const deserialized: unknown = JSON.parse(serialized);
 
     expect(deserialized).toEqual({
       schema: '{"type": "record", "name": "car", "fields": [{"name": "model", "type": "string"}]}',

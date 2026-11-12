@@ -30,8 +30,11 @@ import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { TonedIcon } from '../shared/toned-icon';
 
 export type WizardTopic = {
@@ -74,7 +77,7 @@ export function createTableSql(tableName: string, topic: string): string {
 
 function describeTopic(topic: WizardTopic): string {
   const partitions = typeof topic.partitions === 'number' ? `${topic.partitions} partitions` : 'topic';
-  return topic.format ? `${partitions} · ${topic.format}` : partitions;
+  return isNonEmptyString(topic.format) ? `${partitions} · ${topic.format}` : partitions;
 }
 
 export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlWizardProps) {
@@ -149,7 +152,12 @@ export function SqlWizard({ topics, onClose, onCreate, isCreating, error }: SqlW
                 Continue
               </Button>
             ) : (
-              <Button isLoading={isCreating} onClick={submit} size="md" variant="primary">
+              <Button
+                isLoading={isCreating}
+                onClick={asyncEvent(submit, reportActionError)}
+                size="md"
+                variant="primary"
+              >
                 <Plus size={15} /> Create table
               </Button>
             )}
@@ -184,7 +192,11 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
       ) : (
         <Choicebox
           aria-label="Topics"
-          onValueChange={(value) => onSelect(value as string)}
+          onValueChange={(value) => {
+            if (typeof value === 'string') {
+              onSelect(value);
+            }
+          }}
           value={selectedTopicName ?? ''}
         >
           <div className="grid gap-2">
@@ -202,7 +214,7 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
                   </ChoiceboxItemTitle>
                   <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
                 </ChoiceboxItemHeader>
-                {topic.iceberg ? <IcebergBadge /> : null}
+                {topic.iceberg === true ? <IcebergBadge /> : null}
               </ChoiceboxItem>
             ))}
           </div>
@@ -231,14 +243,14 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
 
       <SummaryRow label="Source topic">
         <GitBranch size={14} /> {topic.name}
-        {topic.iceberg ? (
+        {topic.iceberg === true ? (
           <span className="ml-auto">
             <IcebergBadge />
           </span>
         ) : null}
       </SummaryRow>
 
-      {topic.iceberg ? (
+      {topic.iceberg === true ? (
         <Alert icon={<GitMerge size={15} />}>
           <AlertDescription>
             This topic is Iceberg-tiered. Queries are <strong>bridged</strong> automatically — Redpanda meshes the live
@@ -267,7 +279,7 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
         <SyncCodeBlock className="my-0" code={createTableSql(tableName, topic.name)} keepBackground lang="sql" />
       </figure>
 
-      {error ? (
+      {error !== null && error !== undefined && error !== '' ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>

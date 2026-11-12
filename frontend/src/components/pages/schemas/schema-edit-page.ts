@@ -15,8 +15,14 @@ export type SchemaEditPageKind = { pageTitle: string; crumbTitle: string; segmen
 
 export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameEncoded?: string): SchemaEditTarget {
   return {
-    subjectName: subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined,
-    contextName: contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined,
+    subjectName:
+      subjectNameEncoded !== null && subjectNameEncoded !== undefined && subjectNameEncoded !== ''
+        ? decodeURIComponent(subjectNameEncoded)
+        : undefined,
+    contextName:
+      contextNameEncoded !== null && contextNameEncoded !== undefined && contextNameEncoded !== ''
+        ? decodeURIComponent(contextNameEncoded)
+        : undefined,
   };
 }
 
@@ -25,13 +31,13 @@ export function schemaEditBreadcrumbs(
   { crumbTitle, segment }: SchemaEditPageKind
 ): BreadcrumbEntry[] {
   const root = { title: 'Schema Registry', linkTo: '/schema-registry' };
-  if (contextName) {
+  if (contextName !== null && contextName !== undefined && contextName !== '') {
     return [
       root,
       { title: crumbTitle, linkTo: `/schema-registry/contexts/${encodeURIComponent(contextName)}/${segment}` },
     ];
   }
-  if (subjectName) {
+  if (subjectName !== null && subjectName !== undefined && subjectName !== '') {
     return [
       root,
       { title: subjectName, linkTo: `/schema-registry/subjects/${subjectName}` },
@@ -60,9 +66,9 @@ function reportCloseError(error: unknown) {
 export function useSchemaEditClose({ subjectName, contextName }: SchemaEditTarget) {
   const navigate = useNavigate();
   return useCallback(() => {
-    if (subjectName) {
+    if (subjectName !== null && subjectName !== undefined && subjectName !== '') {
       navigate({ to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}` }).catch(reportCloseError);
-    } else if (contextName) {
+    } else if (contextName !== null && contextName !== undefined && contextName !== '') {
       navigate({ to: '/schema-registry', search: { context: contextName } }).catch(reportCloseError);
     } else {
       navigate({ to: '/schema-registry' }).catch(reportCloseError);

@@ -9,19 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+
 import { convertListMessageData } from './message-converters';
 import { describe, expect, test } from 'bun:test';
 import {
   PayloadEncoding,
   CompressionType as ProtoCompressionType,
 } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import type { ListMessagesResponse_DataMessage } from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import {
+  KafkaRecordPayloadSchema,
+  type ListMessagesResponse_DataMessage,
+  ListMessagesResponse_DataMessageSchema,
+} from '../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { CompressionType, type TopicMessage } from '../state/rest-interfaces';
 
 const encoder = new TextEncoder();
 
-function makePayload(text: string, encoding: PayloadEncoding, overrides: Record<string, unknown> = {}) {
-  return {
+function makePayload(
+  text: string,
+  encoding: PayloadEncoding,
+  overrides: MessageInitShape<typeof KafkaRecordPayloadSchema> = {}
+) {
+  return create(KafkaRecordPayloadSchema, {
     originalPayload: encoder.encode(text),
     normalizedPayload: encoder.encode(text),
     encoding,
@@ -30,11 +40,13 @@ function makePayload(text: string, encoding: PayloadEncoding, overrides: Record<
     isPayloadTooLarge: false,
     troubleshootReport: [],
     ...overrides,
-  };
+  });
 }
 
-function makeMessage(overrides: Partial<Record<string, unknown>> = {}): ListMessagesResponse_DataMessage {
-  return {
+function makeMessage(
+  overrides: MessageInitShape<typeof ListMessagesResponse_DataMessageSchema> = {}
+): ListMessagesResponse_DataMessage {
+  return create(ListMessagesResponse_DataMessageSchema, {
     partitionId: 0,
     offset: 0n,
     timestamp: 0n,
@@ -44,7 +56,7 @@ function makeMessage(overrides: Partial<Record<string, unknown>> = {}): ListMess
     key: makePayload('', PayloadEncoding.TEXT),
     value: makePayload('', PayloadEncoding.TEXT),
     ...overrides,
-  } as unknown as ListMessagesResponse_DataMessage;
+  });
 }
 
 describe('convertListMessageData', () => {
@@ -75,7 +87,7 @@ describe('convertListMessageData', () => {
     ];
 
     for (const [proto, expected] of cases) {
-      test(`maps ${ProtoCompressionType[proto]} to '${expected}'`, () => {
+      test(`maps ${ProtoCompressionType[proto]} to '${expected ?? 'absent'}'`, () => {
         const result = convertListMessageData(makeMessage({ compression: proto }));
         expect(result.compression).toBe(expected);
       });
@@ -103,7 +115,7 @@ describe('convertListMessageData', () => {
     ];
 
     for (const [encoding, expected] of cases) {
-      test(`maps ${PayloadEncoding[encoding]} to '${expected}'`, () => {
+      test(`maps ${PayloadEncoding[encoding]} to '${expected ?? 'absent'}'`, () => {
         const msg = makeMessage({
           key: makePayload('test', encoding),
         });
@@ -123,7 +135,7 @@ describe('convertListMessageData', () => {
     ];
 
     for (const [encoding, expected] of cases) {
-      test(`maps ${PayloadEncoding[encoding]} to '${expected}'`, () => {
+      test(`maps ${PayloadEncoding[encoding]} to '${expected ?? 'absent'}'`, () => {
         const msg = makeMessage({
           value: makePayload('test', encoding),
         });

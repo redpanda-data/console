@@ -1,0 +1,56 @@
+import type { z } from 'zod';
+
+import {
+  parseRegistryCompatibility,
+  parseRegistryContexts,
+  parseRegistryMode,
+  parseRegistrySubjects,
+  parseRegistryUsages,
+  subjectDetailsSchema,
+} from './schema-registry-contract';
+import { expect, test } from 'bun:test';
+
+test('keeps unconfigured registry responses empty without treating malformed array entries as subjects', () => {
+  expect(parseRegistryMode({ isConfigured: false })).toBeNull();
+  expect(parseRegistryCompatibility({ isConfigured: false })).toBeNull();
+  expect(parseRegistryContexts({ isConfigured: false })).toEqual([]);
+  expect(parseRegistrySubjects({ isConfigured: false })).toEqual([]);
+  expect(parseRegistryUsages({ isConfigured: false })).toEqual([]);
+  expect(() => parseRegistrySubjects([{ name: 'orders', isSoftDeleted: 'false' }])).toThrow();
+});
+
+test('keeps inherited context settings and validates configured mode values', () => {
+  expect(parseRegistryContexts([{ name: '.orders' }])).toEqual([
+    { name: '.orders', mode: 'DEFAULT', compatibility: 'DEFAULT' },
+  ]);
+  expect(parseRegistryMode({ mode: 'READONLY' })).toBe('READONLY');
+  expect(parseRegistryCompatibility({ compatibility: 'FULL_TRANSITIVE' })).toBe('FULL_TRANSITIVE');
+  expect(() => parseRegistryMode({ mode: { value: 'READONLY' } })).toThrow();
+});
+
+test('preserves reference metadata and protobuf message information while rejecting unsafe schema shapes', () => {
+  const details = {
+    name: 'orders',
+    type: 'PROTOBUF',
+    mode: 'READWRITE',
+    compatibility: 'FULL',
+    latestActiveVersion: 1,
+    versions: [{ version: 1, isSoftDeleted: false }],
+    schemas: [
+      {
+        id: 1,
+        version: 1,
+        isSoftDeleted: false,
+        type: 'PROTOBUF',
+        schema: 'syntax = "proto3";',
+        references: [{ name: 'common.proto', subject: 'common', version: 2 }],
+        metadata: { tags: { env: ['prod'] }, properties: { owner: 'orders' }, sensitive: ['owner'] },
+        messageTypes: [{ name: 'Order' }],
+      },
+    ],
+  } satisfies z.input<typeof subjectDetailsSchema>;
+  expect(subjectDetailsSchema.parse(details)).toEqual(details);
+  expect(() =>
+    subjectDetailsSchema.parse({ ...details, schemas: [{ ...details.schemas[0], references: 'common' }] })
+  ).toThrow();
+});

@@ -9,68 +9,67 @@
  * by the Apache License, Version 2.0
  */
 
-.default {
-    color: var(--color-subtle);
+.type {
+  font-family: monospace;
+  color: var(--color-informative);
 }
 
-.overidden {
-    color: var(--color-foreground);
-
-    .type {
-        font-weight: 600;
-    }
+// Match the global table class without CSS Modules renaming it.
+[class~='console-config-table'] tr:has([data-config-modified='false']) {
+  color: var(--color-subtle);
 }
 
+[class~='console-config-table'] tr:has([data-config-modified='true']) {
+  color: var(--color-foreground);
+
+  .type {
+    font-weight: 600;
+  }
+}
 
 .name {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 
-    .nameText {
-        display: inline-block;
-        padding: 0px 4px;
+  .nameText {
+    display: inline-block;
 
-        border: solid thin var(--color-border);
-        border-radius: 3px;
-        background-color: var(--color-surface-subtle);
+    max-inline-size: 360px;
+    padding-block: 0;
+    padding-inline: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
-        font-family: monospace;
+    font-family: monospace;
+    background-color: var(--color-surface-subtle);
 
-        max-width: 360px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-    }
+    border: solid thin var(--color-border);
+    border-radius: 3px;
+  }
 
-    .configFlags {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-
-        margin-left: auto; // flags go to the right, next to the value
-    }
-}
-
-
-.value {
+  .configFlags {
     display: flex;
     gap: 6px;
+    align-items: center;
 
-    // Unlayered: this rule beats the Tailwind utility, so break-spaces lives here.
-    white-space: break-spaces;
+    margin-inline-start: auto; // flags go to the right, next to the value
+  }
 }
 
-.type {
-    color: var(--color-informative);
-    font-family: monospace;
+.value {
+  display: flex;
+  gap: 6px;
+
+  // Unlayered: this rule beats the Tailwind utility, so break-spaces lives here.
+  white-space: break-spaces;
 }
 
 .sourceHeader {
-    display: flex;
-    gap: 6px;
+  display: flex;
+  gap: 6px;
 }
 
 .source {
-    text-transform: capitalize;
+  text-transform: capitalize;
 }
-

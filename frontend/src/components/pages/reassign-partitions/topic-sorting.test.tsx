@@ -2,7 +2,7 @@ import { afterEach, expect, rs, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 
-import ReassignPartitions from './reassign-partitions';
+import { ReassignPartitions } from './reassign-partitions';
 import { StepSelectPartitions } from './step1-partitions';
 import { StepReview } from './step3-review';
 import { appGlobal } from '../../../state/app-global';

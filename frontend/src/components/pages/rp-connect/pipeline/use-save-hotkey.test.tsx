@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe('useSaveHotkey', () => {
-  it('saves and prevents the browser default on ⌘S', () => {
+  test('saves and prevents the browser default on ⌘S', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
@@ -36,7 +36,7 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('treats Ctrl+S as save on non-mac', () => {
+  test('treats Ctrl+S as save on non-mac', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
@@ -44,7 +44,7 @@ describe('useSaveHotkey', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores ⌘⇧S so save-as keeps its browser behaviour', () => {
+  test('ignores ⌘⇧S so save-as keeps its browser behaviour', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
@@ -53,7 +53,7 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
-  it('stands down while a modal dialog is open, without swallowing the key', () => {
+  test('stands down while a modal dialog is open, without swallowing the key', () => {
     const modal = document.createElement('div');
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -67,7 +67,7 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
-  it('ignores auto-repeated keydowns from a held ⌘S', () => {
+  test('ignores auto-repeated keydowns from a held ⌘S', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
@@ -79,7 +79,7 @@ describe('useSaveHotkey', () => {
     expect(repeatEvent.defaultPrevented).toBe(true);
   });
 
-  it('swallows the shortcut but does not start a second save while one is in flight', () => {
+  test('swallows the shortcut but does not start a second save while one is in flight', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: true, onSave }));
 
@@ -88,7 +88,7 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('does nothing when disabled', () => {
+  test('does nothing when disabled', () => {
     const onSave = rs.fn();
     renderHook(() => useSaveHotkey({ enabled: false, isSaving: false, onSave }));
 
@@ -97,7 +97,7 @@ describe('useSaveHotkey', () => {
     expect(event.defaultPrevented).toBe(false);
   });
 
-  it('cleans up the listener on unmount', () => {
+  test('cleans up the listener on unmount', () => {
     const onSave = rs.fn();
     const { unmount } = renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
@@ -107,7 +107,7 @@ describe('useSaveHotkey', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it('uses the latest onSave/isSaving without re-subscribing', () => {
+  test('uses the latest onSave/isSaving without re-subscribing', () => {
     const first = rs.fn();
     const second = rs.fn();
     const { rerender } = renderHook(

@@ -1,5 +1,9 @@
+// biome-ignore-all lint/performance/noBarrelFile: Stable semantic adapter; direct vendor imports and test helpers intentionally share one entry point.
+
 import type { Transport } from '@connectrpc/connect';
 import { TransportProvider } from '@connectrpc/connect-query';
+
+import type {} from './rstest-matchers';
 // Copyright 2026 Redpanda Data, Inc.
 
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -17,13 +21,6 @@ import React, {
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
-
-// This type interface extends the default options for render from RTL, as well
-// as allows the user to specify other things such as initialState, store.
-interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
-  transport?: Transport;
-}
-
 // Track every QueryClient and router created by the test harness so the
 // side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
 // tear them down after each test. A plain render + RTL cleanup only unmounts
@@ -39,6 +36,12 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 // bindings before test files' `rs.mock('config', ...)` hoists can take
 // effect.
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
+
+// This type interface extends the default options for render from RTL, as well
+// as allows the user to specify other things such as initialState, store.
+interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
+  transport?: Transport;
+}
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
@@ -153,7 +156,7 @@ interface RenderWithRouterOptions extends ExtendedRenderOptions {
 
 const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptions = {}) =>
   renderWithFileRoutes(ui, {
-    initialLocation: renderOptions.initialLocation || renderOptions.route || '/',
+    initialLocation: (renderOptions.initialLocation ?? '') || (renderOptions.route ?? '') || '/',
     ...renderOptions,
   });
 
@@ -191,9 +194,7 @@ const connectQueryWrapper = (
   };
 };
 
-// re-export everything
-// biome-ignore lint/performance/noBarrelFile: Test utilities intentionally re-export for convenience
-export * from '@testing-library/react';
+export { act, cleanup, fireEvent, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 
 // override render method
 export { connectQueryWrapper, customRender as render, renderWithRouter };

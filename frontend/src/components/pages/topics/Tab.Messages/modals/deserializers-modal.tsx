@@ -81,7 +81,12 @@ export const DeserializersModal: FC<{
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="key-deserializer">Key Deserializer</Label>
             <Select
-              onValueChange={(val) => setKeyDeserializer(Number(val) as PayloadEncoding)}
+              onValueChange={(val) => {
+                const encoding = payloadEncodingPairs.find((pair) => String(pair.value) === val);
+                if (encoding) {
+                  setKeyDeserializer(encoding.value);
+                }
+              }}
               value={
                 payloadEncodingPairs.some((p) => p.value === keyDeserializer)
                   ? String(keyDeserializer)
@@ -105,7 +110,12 @@ export const DeserializersModal: FC<{
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="value-deserializer">Value Deserializer</Label>
             <Select
-              onValueChange={(val) => setValueDeserializer(Number(val) as PayloadEncoding)}
+              onValueChange={(val) => {
+                const encoding = payloadEncodingPairs.find((pair) => String(pair.value) === val);
+                if (encoding) {
+                  setValueDeserializer(encoding.value);
+                }
+              }}
               value={
                 payloadEncodingPairs.some((p) => p.value === valueDeserializer)
                   ? String(valueDeserializer)

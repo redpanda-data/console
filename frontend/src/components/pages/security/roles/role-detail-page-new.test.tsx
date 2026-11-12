@@ -13,7 +13,8 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
+import { RoleDetailPageNew } from './role-detail-page-new';
+import { SecurityQueryProvider } from '../__fixtures__/query-provider';
 
 const { updateMembershipMock } = rs.hoisted(() => ({
   updateMembershipMock: rs.fn().mockResolvedValue(undefined),
@@ -21,10 +22,6 @@ const { updateMembershipMock } = rs.hoisted(() => ({
 
 rs.mock('@tanstack/react-router', () => ({
   useParams: () => ({ roleName: 'test-role' }),
-}));
-
-rs.mock('../../../../state/ui-state', () => ({
-  setPageHeader: rs.fn(),
 }));
 
 rs.mock('../shared/acls-card', () => ({
@@ -44,17 +41,11 @@ rs.mock('../../../../react-query/api/user', () => ({
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-user' }] } }),
 }));
 
-rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
-}));
-
-import { RoleDetailPageNew } from './role-detail-page-new';
-
 const renderPage = () =>
   render(
-    <TooltipProvider>
+    <SecurityQueryProvider>
       <RoleDetailPageNew />
-    </TooltipProvider>
+    </SecurityQueryProvider>
   );
 
 describe('the RoleDetailPageNew principal assignment', () => {

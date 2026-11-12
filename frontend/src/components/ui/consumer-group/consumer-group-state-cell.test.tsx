@@ -10,7 +10,9 @@
  */
 
 import { describe, expect, test } from '@rstest/core';
-import { render, screen } from 'test-utils';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { GroupType } from 'types/consumer-groups';
 
 import {
   ConsumerGroupStateCell,
@@ -19,18 +21,35 @@ import {
   consumerGroupStatesByType,
 } from './consumer-group-state-cell';
 
-describe('ConsumerGroupStateCell', () => {
+const lifecycleCases: Array<{ groupType: GroupType; state: string; names: string[] }> = [
+  {
+    groupType: 'classic',
+    state: 'Stable',
+    names: ['Empty', 'Preparing Rebalance', 'Completing Rebalance', 'Stable', 'Dead'],
+  },
+  { groupType: 'consumer', state: 'Reconciling', names: ['Empty', 'Assigning', 'Reconciling', 'Stable', 'Dead'] },
+];
+
+async function openStateTooltip(groupType: GroupType, state: string, label = state) {
+  const user = userEvent.setup();
+  render(<ConsumerGroupStateCell groupType={groupType} state={state} />);
+  await user.hover(screen.getByText(label));
+  return screen.findByTestId('consumer-group-state-tooltip');
+}
+
+describe('consumer group state cell', () => {
   test('renders the name of every known state', () => {
-    for (const name of Object.values(consumerGroupStateNames)) {
+    const stateNames = Object.values(consumerGroupStateNames);
+    for (const name of stateNames) {
       const { unmount } = render(<ConsumerGroupStateCell state={name.replace(/\s+/g, '')} />);
       expect(screen.getByText(name)).toBeInTheDocument();
       unmount();
     }
   });
 
-  test('renders the two KIP-848 states of a consumer group', () => {
-    render(<ConsumerGroupStateCell groupType="consumer" state="Reconciling" />);
-    expect(screen.getByText('Reconciling')).toBeInTheDocument();
+  test.each(['Assigning', 'Reconciling'])('renders the KIP-848 %s state of a consumer group', (state) => {
+    render(<ConsumerGroupStateCell groupType="consumer" state={state} />);
+    expect(screen.getByText(state)).toBeInTheDocument();
   });
 
   test('falls back to Unknown for a state it does not know', () => {
@@ -53,7 +72,35 @@ describe('ConsumerGroupStateCell', () => {
   });
 
   test('each group type lists its own states in lifecycle order', () => {
-    expect(consumerGroupStatesByType.classic).toEqual(['empty', 'preparingrebalance', 'completingrebalance', 'stable', 'dead']);
+    expect(consumerGroupStatesByType.classic).toEqual([
+      'empty',
+      'preparingrebalance',
+      'completingrebalance',
+      'stable',
+      'dead',
+    ]);
     expect(consumerGroupStatesByType.consumer).toEqual(['empty', 'assigning', 'reconciling', 'stable', 'dead']);
+  });
+  test.each(lifecycleCases)(
+    'shows the $groupType lifecycle and highlights its active state',
+    async ({ groupType, state, names }) => {
+      const tooltip = await openStateTooltip(groupType, state);
+      expect(within(tooltip).getByText(`States of a ${groupType} group`)).toBeVisible();
+      const rows = within(tooltip).getAllByRole('listitem');
+      expect(rows).toHaveLength(names.length);
+      const lifecycleNames = names.entries();
+      for (const [index, name] of lifecycleNames) {
+        expect(within(rows[index]).getByText(name, { exact: true })).toBeVisible();
+        expect(rows[index].getAttribute('aria-current')).toBe(name === state ? 'true' : null);
+      }
+    }
+  );
+
+  test('includes an unknown current state after the consumer lifecycle', async () => {
+    const tooltip = await openStateTooltip('consumer', 'FutureState', 'Unknown');
+    const rows = within(tooltip).getAllByRole('listitem');
+    expect(rows).toHaveLength(6);
+    expect(rows.at(-1)).toHaveTextContent('Unknown');
+    expect(rows.at(-1)).toHaveAttribute('aria-current', 'true');
   });
 });

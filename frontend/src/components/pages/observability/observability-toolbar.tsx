@@ -58,7 +58,12 @@ export const ObservabilityToolbar: FC<ObservabilityToolbarProps> = ({
           <div className="mb-1 text-body-sm text-subtle">TIME RANGE</div>
           <Select
             items={TIME_RANGES}
-            onValueChange={(value) => onTimeRangeChange(value as TimeRange)}
+            onValueChange={(value) => {
+              const option = TIME_RANGES.find((range) => range.value === value);
+              if (option) {
+                onTimeRangeChange(option.value);
+              }
+            }}
             value={selectedTimeRange}
           >
             <SelectTrigger className="h-8 w-[145px]">

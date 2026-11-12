@@ -37,13 +37,16 @@ import {
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { createGroupedSidebarItems, type SidebarGroupedItems } from 'utils/route-utils';
+import { reportActionError } from 'utils/toast.utils';
 
 import { AuthenticationMethod } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../state/supported-features';
 import { AppFeatures } from '../../utils/env';
 import { getUserInitials } from '../../utils/string';
+import { isPresent } from '../../utils/type-guards';
 
 function SidebarLogo() {
   const { state, isMobile } = useSidebar();
@@ -53,7 +56,7 @@ function SidebarLogo() {
   return (
     <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
       <RedpandaLogo
-        className={isExpanded ? 'h-6 w-auto' : 'h-6 w-6'}
+        className={isExpanded ? 'h-6 w-auto' : 'size-6'}
         color={isExpanded ? 'var(--color-sidebar-foreground)' : undefined}
         variant={isExpanded ? 'horizontal' : 'mark'}
       />
@@ -110,7 +113,7 @@ const UserProfile = () => {
             size={isCollapsed ? 'md' : 'lg'}
             tooltip={isCollapsed ? user.displayName : undefined}
           >
-            <Avatar className={isCollapsed ? 'h-7 w-7 shrink-0' : 'h-8 w-8 shrink-0'}>
+            <Avatar className={isCollapsed ? 'size-7 shrink-0' : 'size-8 shrink-0'}>
               <AvatarImage alt="" src={user.avatarUrl} />
               <AvatarFallback aria-hidden="true">{initials}</AvatarFallback>
             </Avatar>
@@ -135,13 +138,13 @@ const UserProfile = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={async () => {
+          onClick={asyncEvent(async () => {
             handleMenuItemClick();
             await api.logout();
             window.location.reload();
-          }}
+          }, reportActionError)}
         >
-          <LogOut aria-hidden="true" className="mr-2 h-4 w-4" />
+          <LogOut aria-hidden="true" className="mr-2 size-4" />
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -161,7 +164,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 
   const itemContent = (
     <>
-      {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null}
+      {isPresent(Icon) ? <Icon aria-hidden="true" className="size-4 shrink-0" /> : null}
       <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
     </>
   );
@@ -174,13 +177,13 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
         disabled={item.isDisabled}
         isActive={isActive}
         render={
-          item.isDisabled ? undefined : (
+          item.isDisabled === true ? undefined : (
             <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to} />
           )
         }
-        tooltip={item.isDisabled ? { children: item.disabledText } : titleString}
+        tooltip={item.isDisabled === true ? { children: item.disabledText } : titleString}
       >
-        {item.isDisabled ? <span className="flex items-center gap-2">{itemContent}</span> : itemContent}
+        {item.isDisabled === true ? <span className="flex items-center gap-2">{itemContent}</span> : itemContent}
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

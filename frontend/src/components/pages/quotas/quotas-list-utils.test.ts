@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -10,7 +11,12 @@
  */
 
 import type { SortingState } from '@tanstack/react-table';
-import { Quota_EntityType, type Quota_Value, Quota_ValueType } from 'protogen/redpanda/api/dataplane/v1/quota_pb';
+import {
+  Quota_EntityType,
+  type Quota_Value,
+  Quota_ValueSchema,
+  Quota_ValueType,
+} from 'protogen/redpanda/api/dataplane/v1/quota_pb';
 
 import {
   clampPageIndex,
@@ -22,7 +28,8 @@ import {
 } from './quotas-list-utils';
 import { describe, expect, test } from 'bun:test';
 
-const value = (valueType: Quota_ValueType, v: number): Quota_Value => ({ valueType, value: v }) as Quota_Value;
+const value = (valueType: Quota_ValueType, v: number): Quota_Value =>
+  create(Quota_ValueSchema, { valueType, value: v });
 
 describe('quotas-list-utils', () => {
   describe('mapEntityTypeToDisplay', () => {

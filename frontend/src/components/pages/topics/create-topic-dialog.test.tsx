@@ -1,3 +1,5 @@
+import { Code, ConnectError, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
+import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -11,23 +13,17 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
+
+// ── Component import (after mocks) ────────────────────────────────────────────
+
+import { CreateTopicDialog } from './create-topic-dialog';
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const mockMutateAsync = rs.fn();
+const mockMutateAsync = rs.fn<MethodImpl<typeof createTopic>>();
 const TOPIC_NAME_LABEL = /topic name/i;
-
-rs.mock('../../../react-query/api/topic', () => {
-  const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
-  return {
-    ...actual,
-    useCreateTopicMutation: rs.fn(() => ({
-      mutateAsync: mockMutateAsync,
-      isPending: false,
-    })),
-  };
-});
 
 rs.mock('../../../state/backend-api', () => {
   const actual = rs.requireActual<typeof import('../../../state/backend-api')>('../../../state/backend-api');
@@ -39,14 +35,15 @@ rs.mock('../../../state/backend-api', () => {
       clusterOverview: null,
       clusterInfo: undefined,
       refreshCluster: rs.fn(),
-      refreshClusterOverview: rs.fn(),
+      refreshTopics: rs.fn().mockResolvedValue(undefined),
+      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
       refreshClusterHealth: rs.fn().mockResolvedValue(undefined),
     },
   };
 });
 
-rs.mock('../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../config')>('../../../config');
+rs.mock('../../../runtime-config', () => {
+  const actual = rs.requireActual<typeof import('../../../runtime-config')>('../../../runtime-config');
   return {
     ...actual,
     isServerless: rs.fn(() => false),
@@ -64,10 +61,6 @@ rs.mock('sonner', () => ({
   },
 }));
 
-// ── Component import (after mocks) ────────────────────────────────────────────
-
-import { CreateTopicDialog } from './create-topic-dialog';
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 Element.prototype.scrollIntoView = rs.fn();
@@ -75,6 +68,7 @@ Element.prototype.scrollIntoView = rs.fn();
 function renderDialog(isOpen = true, onClose = rs.fn()) {
   return renderWithFileRoutes(<CreateTopicDialog isOpen={isOpen} onClose={onClose} />, {
     initialLocation: '/topics',
+    transport: createRouterTransport((router) => router.rpc(createTopic, mockMutateAsync)),
   });
 }
 
@@ -202,13 +196,7 @@ describe('the CreateTopicDialog', () => {
       await waitFor(() => expect(screen.getByRole('button', { name: 'Create' })).toBeEnabled());
       await user.click(screen.getByRole('button', { name: 'Create' }));
 
-      await waitFor(() =>
-        expect(mockMutateAsync).toHaveBeenCalledWith(
-          expect.objectContaining({
-            topic: expect.objectContaining({ name }),
-          })
-        )
-      );
+      await waitFor(() => expect(mockMutateAsync.mock.calls[0]?.[0].topic?.name).toBe(name));
     });
 
     test('create button is enabled when topic name is valid', async () => {
@@ -325,8 +313,7 @@ describe('the CreateTopicDialog', () => {
 
     test('the API error shows inline Alert and form stays open', async () => {
       const user = userEvent.setup();
-      const apiError = new Error('topic already exists');
-      apiError.name = 'ConnectError';
+      const apiError = new ConnectError('topic already exists', Code.AlreadyExists);
       mockMutateAsync.mockRejectedValue(apiError);
 
       renderDialog();
@@ -338,7 +325,7 @@ describe('the CreateTopicDialog', () => {
         // Alert title shows the error name
         expect(screen.getByText('ConnectError')).toBeInTheDocument();
         // Alert description shows the error message
-        expect(screen.getByText('topic already exists')).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent('topic already exists');
       });
 
       // Form is still visible — not replaced by the success state
@@ -373,17 +360,17 @@ describe('the CreateTopicDialog', () => {
       const { rerender } = renderDialog(false, onClose);
 
       await waitFor(() => {
-        expect(api.refreshClusterOverview).toHaveBeenCalled();
+        expect(api.refreshClusterOverview).toHaveBeenCalledWith();
       });
 
-      (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
+      rs.mocked(api.refreshClusterOverview).mockClear();
 
       // Reopening the dialog (e.g. after closing it without a page refresh) must
       // re-fetch the cluster overview rather than relying on a stale cached value.
       rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
 
       await waitFor(() => {
-        expect(api.refreshClusterOverview).toHaveBeenCalled();
+        expect(api.refreshClusterOverview).toHaveBeenCalledWith();
       });
     });
   });

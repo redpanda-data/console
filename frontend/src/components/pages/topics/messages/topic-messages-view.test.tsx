@@ -3,7 +3,6 @@ import { createClient, createRouterTransport } from '@connectrpc/connect';
 import { createAsyncIterable } from '@connectrpc/connect/protocol';
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { config } from 'config';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { CompressionType, PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
@@ -14,9 +13,10 @@ import {
   ListMessagesResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { Topic } from 'state/rest-interfaces';
-import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 import { TopicMessagesView } from './topic-messages-view';
+import { config } from '../../../../runtime-config';
+import { renderWithFileRoutes, screen, waitFor, within } from '../../../../test-utils';
 
 const topic: Topic = {
   topicName: 'orders',

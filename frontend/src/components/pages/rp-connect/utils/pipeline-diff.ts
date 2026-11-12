@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Document } from 'yaml';
+import { type Document, isNode } from 'yaml';
 
 import { parseEditableNodes } from './pipeline-flow-parser';
-import { editTargetPath } from './yaml';
+import { editTargetPath } from './yaml-edit-target';
 
 export type NodeSignatures = {
   // Signature of each editable node's config, keyed by node id, for node-by-node comparison.
@@ -23,8 +23,8 @@ export type NodeSignatures = {
 
 // The JSON of the config at a YAML path, so equal configs sign equally.
 function configSignature(doc: Document, path: ReturnType<typeof editTargetPath>): string {
-  const value = doc.getIn(path) as { toJSON?: () => unknown } | undefined;
-  return JSON.stringify(value?.toJSON?.() ?? value ?? null);
+  const value: unknown = doc.getIn(path);
+  return JSON.stringify((isNode(value) ? value.toJSON() : value) ?? null);
 }
 
 function collectNodeSignatures(yaml: string, out: NodeSignatures): void {

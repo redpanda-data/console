@@ -11,21 +11,23 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-
-rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
-
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 
+import { fenceStatusFixture } from './__fixtures__/queries';
 import { type FencePhase, isBlockingPhase } from './cluster-fence-model';
 import { useClusterFenceGuard } from './use-cluster-fence-guard';
+
+rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
 
 const POLICY_VIOLATION = 'POLICY_VIOLATION: fetch rejected by the configured cluster policy';
 
 const mockStatus = (phase: FencePhase, { allowAllReads = false } = {}) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    blocking: isBlockingPhase(phase),
-    summary: { phase, allowAllReads },
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+    fenceStatusFixture({
+      blocking: isBlockingPhase(phase),
+      summary: { phase, allowAllReads },
+    })
+  );
 
 describe('useClusterFenceGuard', () => {
   beforeEach(() => {

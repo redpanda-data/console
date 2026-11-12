@@ -84,7 +84,7 @@ export const hubspotSubmit = ({
         onSuccess(response);
       }
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       if (onError) {
         onError(error);
       }
@@ -99,7 +99,7 @@ export const trackHubspotUser = (userData: HubspotUserData) => {
   if (!isAnalyticsEnabled()) {
     return;
   }
-  window._hsq = window._hsq || [];
+  window._hsq = window._hsq ?? [];
   window._hsq.push(['identify', userData]);
 };
 
@@ -111,6 +111,6 @@ export const trackHubspotPage = (path: string) => {
   if (!isAnalyticsEnabled()) {
     return;
   }
-  window._hsq = window._hsq || [];
+  window._hsq = window._hsq ?? [];
   window._hsq.push(['setPath', { path }]);
 };

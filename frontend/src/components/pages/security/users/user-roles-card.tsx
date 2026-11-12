@@ -42,12 +42,9 @@ type RoleTableRowProps = {
 
 const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
   const navigate = useNavigate({ from: '/security/users/$userName/details' });
-  const { data: acls, isLoading } = useGetAclsByPrincipal<AclDetail[]>(
-    `RedpandaRole:${role.principalName}`,
-    undefined,
-    undefined,
-    { enabled: isExpanded }
-  );
+  const { data: acls, isLoading } = useGetAclsByPrincipal(`RedpandaRole:${role.principalName}`, undefined, undefined, {
+    enabled: isExpanded,
+  });
   const rowKey = role.principalName;
 
   return [
@@ -56,7 +53,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
       <TableCell align="right">
         <div className="flex items-center justify-end gap-2">
           <Button onClick={onToggle} size="sm" testId={`toggle-role-${rowKey}`} variant="outline">
-            {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {isExpanded ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </Button>
           <Button
             onClick={(e) => {
@@ -73,7 +70,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
             testId={`view-role-${rowKey}`}
             variant="outline"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="size-4" />
           </Button>
         </div>
       </TableCell>

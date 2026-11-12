@@ -23,7 +23,10 @@ import { useMemo } from 'react';
 
 import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
-import { type PipelineFlowNode, SECTION_LABEL } from '../utils/pipeline-flow-parser';
+import type { PipelineStyle } from './pipeline-style';
+import './pipeline-editor.css';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { type PipelineFlowNode, SECTION_LABEL } from '../utils/pipeline-flow-nodes';
 
 // A quick action in the palette (view in YAML, undo/redo, …); listed only when its handler prop was passed.
 type PaletteAction = {
@@ -114,27 +117,28 @@ export function CanvasCommandPalette({
         ) : null}
         {items.length > 0 ? (
           <CommandGroup heading="Go to node">
-            {items.map((node, index) => (
-              <CommandItem
-                key={node.id}
-                keywords={searchKeywords(node)}
-                onSelect={() => pick(() => onJumpToNode(node))}
-                value={searchValue(node, index)}
-              >
-                <span
-                  aria-hidden
-                  className="size-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: sectionAccent(node.section) ?? 'var(--color-muted-foreground)' }}
-                />
-                <span className="font-medium">{node.label}</span>
-                {node.labelText ? (
-                  <span className="truncate text-body-sm text-muted-foreground">{node.labelText}</span>
-                ) : null}
-                <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
-                  {node.section ? SECTION_LABEL[node.section] : ''}
-                </span>
-              </CommandItem>
-            ))}
+            {items.map((node, index) => {
+              const style: PipelineStyle = {
+                '--pipeline-palette-accent': sectionAccent(node.section) ?? 'var(--color-muted-foreground)',
+              };
+              return (
+                <CommandItem
+                  key={node.id}
+                  keywords={searchKeywords(node)}
+                  onSelect={() => pick(() => onJumpToNode(node))}
+                  value={searchValue(node, index)}
+                >
+                  <span aria-hidden className="pipeline-palette-accent size-2 shrink-0 rounded-full" style={style} />
+                  <span className="font-medium">{node.label}</span>
+                  {isNonEmptyString(node.labelText) ? (
+                    <span className="truncate text-body-sm text-muted-foreground">{node.labelText}</span>
+                  ) : null}
+                  <span className="ml-auto shrink-0 text-body-sm text-muted-foreground">
+                    {node.section ? SECTION_LABEL[node.section] : ''}
+                  </span>
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         ) : null}
       </CommandList>

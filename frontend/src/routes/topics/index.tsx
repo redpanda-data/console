@@ -12,8 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CollectionIcon } from 'components/icons';
 
-import TopicList from '../../components/pages/topics/topic-list-new';
-
+import { TopicList } from '../../components/pages/topics/topic-list-new';
 export const Route = createFileRoute('/topics/')({
   staticData: {
     title: 'Topics',

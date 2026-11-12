@@ -73,7 +73,7 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
-import type { SVGProps } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 
 import {
   AmazonWebServicesLogo,
@@ -360,3 +360,9 @@ export const componentLogoMap = {
 } as const;
 
 export type ComponentName = keyof typeof componentLogoMap;
+
+/** Resolve only registered logos; arbitrary/custom connector names use their caller's fallback. */
+export function getComponentLogo(name: string): ComponentType<SVGProps<SVGSVGElement>> | undefined {
+  const logos: Readonly<Record<string, ComponentType<SVGProps<SVGSVGElement>> | undefined>> = componentLogoMap;
+  return Object.hasOwn(logos, name) ? logos[name] : undefined;
+}

@@ -15,8 +15,9 @@ import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
 import { toast as sonnerToast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
-import { config as appConfig } from '../../config';
 import { PayloadEncoding } from '../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   ListMessagesRequestSchema,
@@ -24,8 +25,9 @@ import {
   type ListMessagesResponse_DataMessage,
   type ListMessagesResponse_ProgressMessage,
 } from '../../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { config as appConfig } from '../../runtime-config';
 import type { TopicMessage } from '../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../state/ui';
+import { PartitionOffsetOrigin } from '../../types/topic-settings';
 import { sanitizeString } from '../../utils/filter-helper';
 import { convertListMessageData } from '../../utils/message-converters';
 import { encodeBase64 } from '../../utils/utils';
@@ -160,6 +162,7 @@ function handleHistoryMessage(res: ListMessagesResponse, opts: HistoryStreamOpts
       break;
     case 'error':
       throw historyStreamError(res.controlMessage.value.message);
+    case undefined:
     default:
       break;
   }
@@ -169,10 +172,11 @@ type ConsoleClient = NonNullable<typeof appConfig.consoleClient>;
 
 async function streamHistory(client: ConsoleClient, opts: HistoryStreamOpts) {
   const req = buildRequest(opts.pipelineId, false, opts.serverless);
-  for await (const res of client.listMessages(req, {
+  const responses = client.listMessages(req, {
     signal: opts.signal,
     timeoutMs: HISTORY_TIMEOUT_MS,
-  })) {
+  });
+  for await (const res of responses) {
     if (opts.signal.aborted) {
       break;
     }
@@ -197,8 +201,8 @@ async function runHistoryStream(opts: HistoryStreamOpts) {
 
   try {
     await streamHistory(client, opts);
-  } catch (e) {
-    return settleHistoryFailure(e, opts.setPhase);
+  } catch (error) {
+    return settleHistoryFailure(error, opts.setPhase);
   }
 
   opts.setPhase(null);
@@ -216,7 +220,7 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
 
   // Flush ref to state on an interval while streaming.
   useEffect(() => {
-    if (!phase) {
+    if (!(phase !== null && phase !== undefined && phase !== '')) {
       return;
     }
     const interval = setInterval(() => {
@@ -333,7 +337,7 @@ function reportLiveError(errMsg: string, dispatch: React.Dispatch<LiveAction>) {
 }
 
 function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
-  if (!opts.isMountedRef.current) {
+  if (!(opts.isMountedRef.current === true)) {
     return;
   }
   switch (res.controlMessage.case) {
@@ -352,16 +356,18 @@ function handleLiveMessage(res: ListMessagesResponse, opts: LiveStreamOpts) {
     case 'error':
       reportLiveError(res.controlMessage.value.message, opts.dispatch);
       break;
+    case undefined:
     default:
       break;
   }
 }
 
 async function streamLive(opts: LiveStreamOpts) {
-  for await (const res of opts.client.listMessages(opts.req, {
+  const responses = opts.client.listMessages(opts.req, {
     signal: opts.abortController.signal,
     timeoutMs: LIVE_TIMEOUT_MS,
-  })) {
+  });
+  for await (const res of responses) {
     if (opts.abortController.signal.aborted) {
       break;
     }
@@ -372,13 +378,13 @@ async function streamLive(opts: LiveStreamOpts) {
 async function runLiveStream(opts: LiveStreamOpts) {
   try {
     await streamLive(opts);
-  } catch (e) {
+  } catch (error) {
     // An aborted tail was closed on purpose; there is nothing to report.
-    if (!opts.abortController.signal.aborted && opts.isMountedRef.current) {
-      reportLiveError(e instanceof Error ? e.message : 'Unknown error', opts.dispatch);
+    if (!opts.abortController.signal.aborted && opts.isMountedRef.current === true) {
+      reportLiveError(error instanceof Error ? error.message : 'Unknown error', opts.dispatch);
     }
   } finally {
-    if (opts.isMountedRef.current && !opts.abortController.signal.aborted) {
+    if (opts.isMountedRef.current === true && !opts.abortController.signal.aborted) {
       opts.dispatch({ type: 'done' });
     }
   }
@@ -414,7 +420,7 @@ function startLiveStream(
   }
 
   // runLiveStream owns rejection reporting and cancellation; the hook owns only its controller.
-  void runLiveStream({
+  runLiveStream({
     client,
     req: buildRequest(opts.pipelineId, true, opts.serverless),
     abortController,
@@ -423,6 +429,10 @@ function startLiveStream(
     isMountedRef: refs.isMountedRef,
     pendingRef: refs.pendingRef,
     dispatch,
+  }).catch((streamError: unknown) => {
+    if (refs.isMountedRef.current === true && !abortController.signal.aborted) {
+      dispatch({ type: 'setError', error: streamError instanceof Error ? streamError.message : String(streamError) });
+    }
   });
   return abortController;
 }
@@ -536,7 +546,7 @@ export function useLogSearch({
     const leftLive = wasLive.current && !live;
     wasLive.current = live;
     if (enabled && (live || leftLive)) {
-      refetchHistory();
+      refetchHistory().catch(reportActionError);
     }
   }, [enabled, live, refetchHistory]);
 
@@ -553,6 +563,6 @@ export function useLogSearch({
     progress: history.progress,
     // Refresh is off while live, so a failed history read leaves the tail showing on its own.
     error: live ? liveResult.error : history.error,
-    refresh: live ? noop : refetchHistory,
+    refresh: asyncEvent(live ? noop : refetchHistory, reportActionError),
   };
 }

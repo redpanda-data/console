@@ -11,6 +11,7 @@
 
 import { Stat } from 'components/redpanda-ui/components/stat';
 import type { FC } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
@@ -19,11 +20,13 @@ import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton, OptionGroup } from '../../../utils/tsx-utils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { ConfigList } from '../../misc/config-list';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
-class BrokerDetails extends PageComponent<{ brokerId: string }> {
+class BrokerDetails extends PageComponent<{
+  brokerId: string;
+}> {
   initPage(p: PageInitHelper): void {
     p.title = 'Broker Details';
     p.addBreadcrumb('Overview', '/overview');
@@ -36,7 +39,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
   }
 
   refreshData(force: boolean) {
-    api.refreshClusterOverview();
+    api.refreshClusterOverview().catch(reportActionError);
     api.refreshBrokers(force);
     api.refreshBrokerConfig(Number(this.props.brokerId));
   }
@@ -48,13 +51,14 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
 
 export { BrokerDetails };
 
-const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
+const BrokerDetailsContent: FC<{
+  brokerId: number;
+}> = ({ brokerId }) => {
   const brokerConfigs = api.brokerConfigs.get(brokerId);
   if (brokerConfigs === undefined || brokerConfigs.length === 0) {
     return DefaultSkeleton;
   }
-
-  const broker = api.brokers?.first((x) => x.brokerId === brokerId);
+  const broker = api.brokers?.find((x) => x.brokerId === brokerId);
   if (!broker) {
     return DefaultSkeleton;
   }
@@ -89,8 +93,9 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
     </PageContent>
   );
 };
-
-const BrokerConfigView: FC<{ entries: ConfigEntry[] }> = ({ entries }) => {
+const BrokerConfigView: FC<{
+  entries: ConfigEntry[];
+}> = ({ entries }) => {
   const { brokerList, updateSettings } = useUISettingsStore();
 
   const sorted = entries.slice().sort((a, b) => {
@@ -111,7 +116,7 @@ const BrokerConfigView: FC<{ entries: ConfigEntry[] }> = ({ entries }) => {
 
   return (
     <div className="brokerConfigView">
-      <div className="brokerConfigViewSettings" style={{ marginLeft: '1px', marginBottom: '1em' }}>
+      <div className="ms-[1px] mb-[1em]">
         <div className="flex gap-8">
           <OptionGroup
             label="Formatting"

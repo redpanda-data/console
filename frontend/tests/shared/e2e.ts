@@ -3,6 +3,7 @@ import { test as base, type PlaywrightOptions } from '@rstest/playwright';
 import { definePlaywrightOptions } from './playwright-options';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { isNonEmptyString } from '../../src/utils/string-utils';
 
 // biome-ignore lint/performance/noBarrelFile: Tests use one fixture entrypoint with Playwright-aware assertions.
 export { expect } from '@rstest/playwright';
@@ -16,7 +17,7 @@ export type TestArtifacts = {
   attach: (name: string, options: { path?: string; body?: string; contentType: string }) => Promise<void>;
 };
 
-const variantBase = process.env.E2E_VARIANT
+const variantBase = isNonEmptyString(process.env.E2E_VARIANT)
   ? base.extend<{ playwright: PlaywrightOptions }>({
       playwright: async ({ task }, use) => {
         const recordVideo =

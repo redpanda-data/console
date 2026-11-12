@@ -13,6 +13,7 @@ import type { SortingState } from '@tanstack/react-table';
 
 import { messageKey } from './message-key';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { nonzeroNumber } from '../../../../../utils/number-utils';
 
 /**
  * True for the only column id the messages table actually sorts on. `messages-table.tsx`'s
@@ -59,7 +60,7 @@ export function orderForContinuousNewest<T extends { timestamp: number; offset: 
   if (!(continuousActive && readScopeMode === 'newest')) {
     return messages;
   }
-  return [...messages].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset);
+  return [...messages].sort((a, b) => nonzeroNumber(b.timestamp - a.timestamp) ?? b.offset - a.offset);
 }
 
 export type VisiblePageKeysOptions = {

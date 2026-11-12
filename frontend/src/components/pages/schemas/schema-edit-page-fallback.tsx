@@ -3,8 +3,7 @@ import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skele
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import type { SchemaEditPageStatus } from './schema-edit-page';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
-import PageContent from '../../misc/page-content';
-
+import { PageContent } from '../../misc/page-content';
 /** What an edit page shows instead of its form until it is ready. */
 export function SchemaEditPageFallback({ status }: { status: Exclude<SchemaEditPageStatus, 'ready'> }) {
   if (status === 'contexts-unsupported') {

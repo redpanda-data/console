@@ -12,6 +12,7 @@
 import { isScalar, isSeq, parseDocument, Scalar, visit, stringify as yamlStringify } from 'yaml';
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { getSecretSyntax } from '../types/constants';
 
 export type SlotValues = Record<string, string>;
@@ -29,7 +30,7 @@ const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.([A-Za-z0-9_-]+)\}$/;
 // matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
 const referencedSlotIdsIn = (text: string): string[] => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
 
-const isBlank = (v: string | undefined): boolean => !v?.trim();
+const isBlank = (v: string | undefined): boolean => !isNonEmptyString(v?.trim());
 
 const splitListValue = (value: string): string[] =>
   value
@@ -74,8 +75,8 @@ const substituteScalar = (
 const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>): string | undefined => {
   const tokenId =
     isScalar(item) && typeof item.value === 'string' ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1] : undefined;
-  const slot = tokenId ? slotMap.get(tokenId) : undefined;
-  return slot?.kind === 'string' && slot.list ? tokenId : undefined;
+  const slot = tokenId !== null && tokenId !== undefined && tokenId !== '' ? slotMap.get(tokenId) : undefined;
+  return slot?.kind === 'string' && slot.list === true ? tokenId : undefined;
 };
 
 /** One item per comma-separated entry of a list slot's value; none when the slot resolves to a drop. */

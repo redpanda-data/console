@@ -61,6 +61,17 @@ const NameFilterDisplay = ({
   );
 };
 
+// Content identity remains stable when distinct filters move; identical entries still need distinct sibling keys.
+function nameFilterEntries(filters: UnifiedNameFilter[]) {
+  const occurrences = new Map<string, number>();
+  return filters.map((filter) => {
+    const identity = JSON.stringify([filter.name, filter.patternType, filter.filterType]);
+    const occurrence = occurrences.get(identity) ?? 0;
+    occurrences.set(identity, occurrence + 1);
+    return { filter, key: `${identity}:${occurrence}` };
+  });
+}
+
 // Reusable component for displaying name filter sections
 const NameFilterSection = ({
   title,
@@ -82,14 +93,8 @@ const NameFilterSection = ({
     <CardContent>
       {filters.length > 0 ? (
         <ItemGroup>
-          {filters.map((filter, index) => (
-            <NameFilterDisplay
-              filter={filter}
-              index={index}
-              key={`${testId}-${index}-${filter.name}-${filter.patternType}-${filter.filterType}`}
-              resourceType={resourceType}
-              testId={testId}
-            />
+          {nameFilterEntries(filters).map(({ filter, key }, index) => (
+            <NameFilterDisplay filter={filter} index={index} key={key} resourceType={resourceType} testId={testId} />
           ))}
         </ItemGroup>
       ) : (
@@ -125,13 +130,13 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
         <div>
           <span className="text-muted-foreground">Resource name:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {resourceFilter?.name || 'All'}
+            {(resourceFilter?.name ?? '') || 'All'}
           </Badge>
         </div>
         <div>
           <span className="text-muted-foreground">Principal:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {accessFilter?.principal || 'All'}
+            {(accessFilter?.principal ?? '') || 'All'}
           </Badge>
         </div>
         <div>
@@ -149,7 +154,7 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
         <div className="md:col-span-3">
           <span className="text-muted-foreground">Host:</span>{' '}
           <Badge size="sm" tone="informative" variant="subtle">
-            {accessFilter?.host || 'All'}
+            {(accessFilter?.host ?? '') || 'All'}
           </Badge>
         </div>
       </div>
@@ -177,7 +182,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
               <ACLFilterDisplay
                 filter={filter}
                 index={index}
-                key={`acl-${filter.resourceFilter?.resourceType}-${filter.resourceFilter?.name}-${filter.accessFilter?.principal}`}
+                key={`acl-${filter.resourceFilter?.resourceType ?? ''}-${filter.resourceFilter?.name ?? ''}-${filter.accessFilter?.principal ?? ''}`}
               />
             ))}
           </div>
@@ -195,9 +200,9 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
   // Get filters
-  const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
-  const consumerFilters = consumerSyncOptions?.groupFilters || [];
-  const aclFilters = securitySyncOptions?.aclFilters || [];
+  const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters ?? [];
+  const consumerFilters = consumerSyncOptions?.groupFilters ?? [];
+  const aclFilters = securitySyncOptions?.aclFilters ?? [];
 
   return (
     <div className="flex flex-col gap-6">

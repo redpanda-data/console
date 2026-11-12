@@ -5,6 +5,7 @@ import { definePlaywrightConfig } from '@rstest/playwright/config';
 import { forbidFocusedTests } from './forbid-focused-tests';
 import { definePlaywrightOptions } from './playwright-options';
 import { resolve } from 'node:path';
+import { isNonEmptyString } from '../../src/utils/string-utils';
 
 export function e2eConfig(
   variant: string,
@@ -18,8 +19,8 @@ export function e2eConfig(
     testEnvironment: 'node',
     include: ['**/*.spec.ts'],
     passWithNoTests: false,
-    pool: { type: 'threads', maxWorkers: process.env.CI || variant === 'console' ? workers : undefined },
-    retry: process.env.CI ? retries : 0,
+    pool: { type: 'threads', maxWorkers: (process.env.CI ?? '') || variant === 'console' ? workers : undefined },
+    retry: isNonEmptyString(process.env.CI) ? retries : 0,
     testTimeout: timeout,
     hookTimeout: 120_000,
     expect: { poll: { timeout: 60_000 } },
@@ -27,7 +28,7 @@ export function e2eConfig(
     reporters: [
       forbidFocusedTests(),
       ['md', { preset: 'compact' }],
-      ...(process.env.CI ? ['github-actions' as const] : []),
+      ...(isNonEmptyString(process.env.CI) ? ['github-actions' as const] : []),
     ],
     teardownTimeout: 5000,
   });

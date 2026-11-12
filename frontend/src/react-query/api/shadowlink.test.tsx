@@ -9,11 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
+import {
+  type DeleteShadowLinkOperation as ControlplaneDeleteOperation,
+  DeleteShadowLinkOperationSchema as ControlplaneDeleteOperationSchema,
+  type DeleteShadowLinkRequest as ControlplaneDeleteRequest,
+  type ShadowLink as ControlplaneShadowLink,
+  ShadowLinkSchema as ControlplaneShadowLinkSchema,
+  ShadowLink_State as ControlplaneShadowLinkState,
+  type UpdateShadowLinkOperation as ControlplaneUpdateOperation,
+  UpdateShadowLinkOperationSchema as ControlplaneUpdateOperationSchema,
+  type UpdateShadowLinkRequest as ControlplaneUpdateRequest,
+} from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import type { ConnectError } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { MutationObserver, QueryClient, useMutation } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
+import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
 import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
 import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
@@ -28,24 +42,41 @@ import {
   listShadowLinkTopics,
 } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import type { MessageInit } from 'react-query/react-query.utils';
 import { connectQueryWrapper } from 'test-utils';
 
+import {
+  useControlplaneDeleteShadowLinkMutation,
+  useControlplaneGetShadowLinkByNameQuery,
+} from './controlplane/shadowlink';
+import {
+  useDeleteShadowLinkUnified,
+  useEditShadowLink,
+  useFailoverShadowLinkMutation,
+  useGetShadowLinkUnified,
+  useListShadowTopicQuery,
+} from './shadowlink';
+// Import after mocks are set up
+import { isEmbedded } from '../../runtime-config';
+
 // Mock config module
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(),
 }));
 
 // Mock the controlplane query hook
 rs.mock('./controlplane/shadowlink', () => ({
   useControlplaneGetShadowLinkByNameQuery: rs.fn(),
-  useControlplaneUpdateShadowLinkMutation: rs.fn(() => ({
-    mutateAsync: rs.fn(),
-    isPending: false,
-  })),
-  useControlplaneDeleteShadowLinkMutation: rs.fn(() => ({
-    mutate: rs.fn(),
-    isPending: false,
-  })),
+  useControlplaneUpdateShadowLinkMutation: rs.fn(() =>
+    useMutation<ControlplaneUpdateOperation, ConnectError, MessageInit<ControlplaneUpdateRequest>>({
+      mutationFn: () => Promise.resolve(create(ControlplaneUpdateOperationSchema)),
+    })
+  ),
+  useControlplaneDeleteShadowLinkMutation: rs.fn(() =>
+    useMutation<ControlplaneDeleteOperation, ConnectError, MessageInit<ControlplaneDeleteRequest>>({
+      mutationFn: () => Promise.resolve(create(ControlplaneDeleteOperationSchema)),
+    })
+  ),
 }));
 
 // Mock the controlplane mapper for the fallback scenario. Form-value building
@@ -60,22 +91,6 @@ rs.mock('components/pages/shadowlinks/mappers/controlplane', () => {
     buildDefaultFormValuesFromControlplane: rs.fn(actual.buildDefaultFormValuesFromControlplane),
   };
 });
-
-import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
-// Import after mocks are set up
-import { isEmbedded } from 'config';
-
-import {
-  useControlplaneDeleteShadowLinkMutation,
-  useControlplaneGetShadowLinkByNameQuery,
-} from './controlplane/shadowlink';
-import {
-  useDeleteShadowLinkUnified,
-  useEditShadowLink,
-  useFailoverShadowLinkMutation,
-  useGetShadowLinkUnified,
-  useListShadowTopicQuery,
-} from './shadowlink';
 
 const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockUseControlplaneGetShadowLinkByNameQuery = rs.mocked(useControlplaneGetShadowLinkByNameQuery);
@@ -95,22 +110,24 @@ const createMockDataplaneShadowLink = () =>
     }),
   });
 
-const createMockControlplaneResponse = () => ({
-  id: 'cp-id-456',
-  name: 'test-shadow-link',
-  state: 5, // ACTIVE in controlplane
-  shadowRedpandaId: 'sr-456',
-  createdAt: timestampFromDate(new Date('2025-01-01T00:00:00Z')),
-  updatedAt: timestampFromDate(new Date('2025-01-02T00:00:00Z')),
-});
+const createMockControlplaneResponse = (overrides: MessageInitShape<typeof ControlplaneShadowLinkSchema> = {}) =>
+  create(ControlplaneShadowLinkSchema, {
+    id: 'cp-id-456',
+    name: 'test-shadow-link',
+    state: ControlplaneShadowLinkState.ACTIVE,
+    shadowRedpandaId: 'sr-456',
+    createdAt: timestampFromDate(new Date('2025-01-01T00:00:00Z')),
+    updatedAt: timestampFromDate(new Date('2025-01-02T00:00:00Z')),
+    ...overrides,
+  });
 
-const mockControlplaneQueryData = (data: unknown) => {
+const mockControlplaneQueryData = (data: ControlplaneShadowLink | undefined) => {
   mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
     data,
     isLoading: false,
     error: null,
-    refetch: rs.fn(),
-  } as any);
+    refetch: rs.fn(() => Promise.resolve()),
+  });
 };
 
 /** Renders the unified hook over a dataplane GetShadowLink handler and waits until loading settles. */
@@ -271,20 +288,16 @@ describe('useEditShadowLink', () => {
   // hydration from controlplane data.
   test('hydrates API mode from controlplane data in embedded mode', async () => {
     mockIsEmbedded.mockReturnValue(true);
-    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
-      data: {
-        ...createMockControlplaneResponse(),
+    mockControlplaneQueryData(
+      createMockControlplaneResponse({
         schemaRegistrySyncOptions: {
           schemaRegistryShadowingMode: {
             case: 'shadowSchemaRegistryApi',
             value: { sourceUrl: 'https://sr.example.com' },
           },
         },
-      },
-      isLoading: false,
-      error: null,
-      refetch: rs.fn(),
-    } as any);
+      })
+    );
 
     const { result } = renderEditHook();
 
@@ -296,17 +309,13 @@ describe('useEditShadowLink', () => {
 
   test('hydrates topic mode (not api) for a topic-mode controlplane link in embedded mode', async () => {
     mockIsEmbedded.mockReturnValue(true);
-    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
-      data: {
-        ...createMockControlplaneResponse(),
+    mockControlplaneQueryData(
+      createMockControlplaneResponse({
         schemaRegistrySyncOptions: {
           schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
         },
-      },
-      isLoading: false,
-      error: null,
-      refetch: rs.fn(),
-    } as any);
+      })
+    );
 
     const { result } = renderEditHook();
 
@@ -318,15 +327,22 @@ describe('useEditShadowLink', () => {
 });
 
 /** Embedded mode, the controlplane lookup, and a controlplane delete mutation to observe. */
-const setupDeleteMocks = (embedded: boolean, controlplaneData: unknown) => {
+const setupDeleteMocks = (embedded: boolean, controlplaneData: ControlplaneShadowLink | undefined) => {
   mockIsEmbedded.mockReturnValue(embedded);
   mockControlplaneQueryData(controlplaneData);
 
-  const mockControlplaneMutate = rs.fn();
+  const observer = new MutationObserver<
+    ControlplaneDeleteOperation,
+    ConnectError,
+    MessageInit<ControlplaneDeleteRequest>
+  >(new QueryClient(), { mutationFn: () => Promise.resolve(create(ControlplaneDeleteOperationSchema)) });
+  const current = observer.getCurrentResult();
+  const mockControlplaneMutate = rs.fn<ReturnType<typeof useControlplaneDeleteShadowLinkMutation>['mutate']>();
   mockUseControlplaneDeleteShadowLinkMutation.mockReturnValue({
+    ...current,
     mutate: mockControlplaneMutate,
-    isPending: false,
-  } as any);
+    mutateAsync: current.mutate,
+  });
 
   return { mockControlplaneMutate, mockDataplaneDelete: rs.fn() };
 };
@@ -353,10 +369,10 @@ describe('useDeleteShadowLinkUnified', () => {
 
   test('calls controlplane delete mutation when in embedded mode and does NOT call dataplane', () => {
     // Setup: embedded mode, with the controlplane query returning a shadowlink with ID
-    const { mockControlplaneMutate, mockDataplaneDelete } = setupDeleteMocks(true, {
-      id: 'cp-shadow-link-id-123',
-      name: 'test-shadow-link',
-    });
+    const { mockControlplaneMutate, mockDataplaneDelete } = setupDeleteMocks(
+      true,
+      createMockControlplaneResponse({ id: 'cp-shadow-link-id-123', name: 'test-shadow-link' })
+    );
 
     // The transport's dataplane delete mock verifies it's NOT called
     const { result } = renderDeleteHook(mockDataplaneDelete);
@@ -431,10 +447,7 @@ describe('useFailoverShadowLinkMutation', () => {
       }),
       { wrapper }
     );
-    const failOverLink = () =>
-      result.current.failover.mutate({ name: 'test-shadow-link' } as Parameters<
-        typeof result.current.failover.mutate
-      >[0]);
+    const failOverLink = () => result.current.failover.mutate({ name: 'test-shadow-link' });
     return { reads, result, onSuccess, failOverLink };
   };
 
@@ -454,7 +467,7 @@ describe('useFailoverShadowLinkMutation', () => {
 
     failOverLink();
 
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith());
     expect(reads.topics).toBe(1);
   });
 });

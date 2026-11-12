@@ -13,93 +13,23 @@ import type { SortingState } from '@tanstack/react-table';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import type {
-  ColumnList,
-  DataColumnKey,
-  FilterEntry,
-  PartitionOffsetOriginType,
-  PreviewTagV2,
-  TimestampDisplayFormat,
-  TopicDetailsSettings,
-} from '../state/ui';
+import { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import type { PreviewTagV2 } from '../state/ui';
 import { uiSettings } from '../state/ui';
+import {
+  createTopicDetailsSettings as createDefaultTopicSettings,
+  DEFAULT_MESSAGE_COLUMNS,
+  DEFAULT_ROW_DENSITY,
+  decodeTopicSettingsList,
+  type MessageColumnConfig,
+  type RowDensity,
+  type TopicDetailsSettings,
+  type TopicSearchParams,
+} from '../types/topic-settings';
+import { isObject, isUnknownArray } from '../utils/type-guards';
 
-/** Row density for the messages table: `detailed` adds a deserializer badge and byte size under key/value cells. */
-export type RowDensity = 'compact' | 'detailed';
-
-/** One entry per message-table column; array order is display order. */
-export type MessageColumnConfig = {
-  id: DataColumnKey;
-  visible: boolean;
-};
-
-export const DEFAULT_MESSAGE_COLUMNS: MessageColumnConfig[] = [
-  { id: 'timestamp', visible: true },
-  { id: 'partitionID', visible: false },
-  { id: 'offset', visible: false },
-  { id: 'key', visible: true },
-  { id: 'value', visible: true },
-  { id: 'keySize', visible: false },
-  { id: 'valueSize', visible: false },
-];
-
-export const DEFAULT_ROW_DENSITY: RowDensity = 'detailed';
-
-/**
- * Search parameters for topic messages
- * Matches the structure from uiSettings-v3 perTopicSettings[].searchParams
- */
-export type TopicSearchParams = {
-  offsetOrigin: PartitionOffsetOriginType;
-  startOffset: number;
-  startTimestamp: number;
-  startTimestampWasSetByUser: boolean;
-  partitionID: number;
-  maxResults: number;
-  continuousPaginationEnabled: boolean;
-  page: number;
-  pageSize: number;
-  sorting: SortingState;
-  quickSearch: string;
-  filtersEnabled: boolean;
-  filters: FilterEntry[];
-  keyDeserializer: PayloadEncoding;
-  valueDeserializer: PayloadEncoding;
-  schemaContext: string; // '' resolves the topic's context, '.' forces the default.
-};
-
-/**
- * Complete topic settings structure
- * Matches the structure from uiSettings-v3 perTopicSettings[]
- */
-export type TopicSettings = {
-  topicName: string;
-  searchParams: TopicSearchParams;
-  dynamicFilters: 'partition'[];
-  messagesPageSize: number;
-  favConfigEntries: string[];
-  previewTags: PreviewTagV2[];
-  previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
-  previewMultiResultMode: 'showOnlyFirst' | 'showAll';
-  previewDisplayMode: 'single' | 'wrap' | 'rows';
-  previewShowEmptyMessages: boolean;
-  showMessageMetadata: boolean;
-  showMessageHeaders: boolean;
-  searchParametersLocalTimeMode: boolean;
-  previewTimestamps: TimestampDisplayFormat;
-  previewColumnFields: ColumnList[];
-  consumerPageSize: number;
-  partitionPageSize: number;
-  aclPageSize: number;
-  produceRecordEncoding: PayloadEncoding | 'base64';
-  produceRecordCompression: CompressionType;
-  quickSearch: string;
-  // Added for the new messages UX; optional so entries persisted before these
-  // fields existed still typecheck — read through the fallback getters.
-  rowDensity?: RowDensity;
-  messageColumns?: MessageColumnConfig[];
-};
+export type { MessageColumnConfig, RowDensity, TopicSearchParams } from '../types/topic-settings';
+export type TopicSettings = TopicDetailsSettings;
 
 export type TopicSettingsStore = {
   // Map of topic name to settings
@@ -155,51 +85,6 @@ export const DEFAULT_SORTING: SortingState = [
   { id: 'offset', desc: true },
 ];
 
-const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
-  offsetOrigin: -1,
-  startOffset: -1,
-  startTimestamp: -1,
-  startTimestampWasSetByUser: false,
-  partitionID: -1,
-  maxResults: 50,
-  continuousPaginationEnabled: false,
-  page: 0,
-  pageSize: 10,
-  sorting: [],
-  quickSearch: '',
-  filtersEnabled: false,
-  filters: [],
-  keyDeserializer: PayloadEncoding.UNSPECIFIED,
-  valueDeserializer: PayloadEncoding.UNSPECIFIED,
-  schemaContext: '',
-};
-
-// Helper function to create default topic settings
-const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicSettings> = {}): TopicSettings => ({
-  topicName,
-  searchParams: { ...DEFAULT_SEARCH_PARAMS },
-  dynamicFilters: [],
-  messagesPageSize: 20,
-  favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
-  previewTags: [],
-  previewTagsCaseSensitive: 'ignoreCase',
-  previewMultiResultMode: 'showAll',
-  previewDisplayMode: 'wrap',
-  previewShowEmptyMessages: true,
-  showMessageMetadata: true,
-  showMessageHeaders: false,
-  searchParametersLocalTimeMode: true,
-  previewTimestamps: 'default',
-  previewColumnFields: [],
-  consumerPageSize: 20,
-  partitionPageSize: 20,
-  aclPageSize: 20,
-  produceRecordEncoding: PayloadEncoding.TEXT,
-  produceRecordCompression: CompressionType.SNAPPY,
-  quickSearch: '',
-  ...overrides,
-});
-
 /**
  * Cap on retained per-topic settings. This persisted store appends one entry per distinct topic
  * that gets any setting changed (sort, preview, …) and the persist middleware serializes the whole
@@ -214,9 +99,20 @@ export const MAX_PER_TOPIC_SETTINGS = 200;
  * This ensures that changes made via Zustand are persisted by MobX's autorun mechanism.
  */
 const syncPerTopicSettingsToMobX = (state: TopicSettingsStore) => {
-  // Type assertion is safe here because TopicSettings matches TopicDetailsSettings structure
-  uiSettings.perTopicSettings = state.perTopicSettings as unknown as TopicDetailsSettings[];
+  // Both stores share the same decoded topic-settings contract.
+  uiSettings.perTopicSettings = state.perTopicSettings;
 };
+
+/** Update the first retained topic entry in place in display order, or append fresh independent defaults. */
+function updateTopicEntry(
+  topics: TopicSettings[],
+  topicName: string,
+  update: (topic: TopicSettings) => TopicSettings
+): TopicSettings[] {
+  const index = topics.findIndex((topic) => topic.topicName === topicName);
+  const next = update(topics[index] ?? createDefaultTopicSettings(topicName));
+  return index < 0 ? [...topics, next] : topics.map((topic, current) => (current === index ? next : topic));
+}
 
 export const useTopicSettingsStore = create<TopicSettingsStore>()(
   devtools(
@@ -224,36 +120,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
       (set, get) => ({
         perTopicSettings: [],
 
-        setSorting: (topicName: string, sorting: SortingState) => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                searchParams: {
-                  ...updated[existingIndex].searchParams,
-                  sorting,
-                },
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, {
-                  searchParams: {
-                    ...DEFAULT_SEARCH_PARAMS,
-                    sorting,
-                  },
-                }),
-              ],
-            };
-          });
-        },
+        setSorting: (topicName, sorting) => get().setSearchParams(topicName, { sorting }),
 
         getSorting: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
@@ -261,38 +128,16 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           // Treat an empty/unset sort as "use the newest-first default" so the
           // default applies on every fresh load, including returning users whose
           // persisted settings still hold the old empty sort.
-          return sorting && sorting.length > 0 ? sorting : DEFAULT_SORTING;
+          return sorting && sorting.length > 0 ? sorting : structuredClone(DEFAULT_SORTING);
         },
 
-        setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                searchParams: {
-                  ...updated[existingIndex].searchParams,
-                  ...searchParams,
-                },
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, {
-                  searchParams: {
-                    ...DEFAULT_SEARCH_PARAMS,
-                    ...searchParams,
-                  },
-                }),
-              ],
-            };
-          });
+        setSearchParams: (topicName, searchParams) => {
+          set((state) => ({
+            perTopicSettings: updateTopicEntry(state.perTopicSettings, topicName, (topic) => ({
+              ...topic,
+              searchParams: { ...topic.searchParams, ...searchParams },
+            })),
+          }));
         },
 
         getSearchParams: (topicName: string) => {
@@ -300,112 +145,30 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           return topic?.searchParams;
         },
 
-        setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                previewTagsCaseSensitive: caseSensitive,
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, { previewTagsCaseSensitive: caseSensitive }),
-              ],
-            };
-          });
-        },
+        setPreviewTagsCaseSensitive: (topicName, caseSensitive) =>
+          get().setTopicSettings(topicName, { previewTagsCaseSensitive: caseSensitive }),
 
         getPreviewTagsCaseSensitive: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           return topic?.previewTagsCaseSensitive ?? 'ignoreCase';
         },
 
-        setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                previewTags: tags,
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, { previewTags: tags }),
-              ],
-            };
-          });
-        },
+        setPreviewTags: (topicName, tags) => get().setTopicSettings(topicName, { previewTags: tags }),
 
         getPreviewTags: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           return topic?.previewTags ?? [];
         },
 
-        setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                previewMultiResultMode: mode,
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, { previewMultiResultMode: mode }),
-              ],
-            };
-          });
-        },
+        setPreviewMultiResultMode: (topicName, mode) =>
+          get().setTopicSettings(topicName, { previewMultiResultMode: mode }),
 
         getPreviewMultiResultMode: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           return topic?.previewMultiResultMode ?? 'showAll';
         },
 
-        setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                previewDisplayMode: mode,
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return {
-              perTopicSettings: [
-                ...state.perTopicSettings,
-                createDefaultTopicSettings(topicName, { previewDisplayMode: mode }),
-              ],
-            };
-          });
-        },
+        setPreviewDisplayMode: (topicName, mode) => get().setTopicSettings(topicName, { previewDisplayMode: mode }),
 
         getPreviewDisplayMode: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
@@ -429,7 +192,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           const columns = topic?.messageColumns;
           if (!columns || columns.length === 0) {
-            return DEFAULT_MESSAGE_COLUMNS;
+            return structuredClone(DEFAULT_MESSAGE_COLUMNS);
           }
           // Heal entries corrupted by the legacy assignDeep array merge (which
           // duplicated some column ids and dropped others): keep the first
@@ -442,14 +205,14 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
             seen.add(c.id);
             return true;
           });
-          const missing = DEFAULT_MESSAGE_COLUMNS.filter((d) => !seen.has(d.id));
+          const missing = structuredClone(DEFAULT_MESSAGE_COLUMNS).filter((d) => !seen.has(d.id));
           return unique.length === columns.length && missing.length === 0 ? columns : [...unique, ...missing];
         },
 
         resetViewSettings: (topicName: string) => {
           get().setTopicSettings(topicName, {
             rowDensity: DEFAULT_ROW_DENSITY,
-            messageColumns: DEFAULT_MESSAGE_COLUMNS,
+            messageColumns: structuredClone(DEFAULT_MESSAGE_COLUMNS),
             previewTags: [],
             previewTagsCaseSensitive: 'ignoreCase',
             previewMultiResultMode: 'showAll',
@@ -471,23 +234,14 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 
         getTopicSettings: (topicName: string) => get().perTopicSettings.find((t) => t.topicName === topicName),
 
-        setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => {
-          set((state) => {
-            const existingIndex = state.perTopicSettings.findIndex((t) => t.topicName === topicName);
-
-            if (existingIndex >= 0) {
-              const updated = [...state.perTopicSettings];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                ...settings,
-                topicName, // Ensure topicName is not overwritten
-              };
-              return { perTopicSettings: updated };
-            }
-
-            // Create new topic settings if it doesn't exist
-            return { perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, settings)] };
-          });
+        setTopicSettings: (topicName, settings) => {
+          set((state) => ({
+            perTopicSettings: updateTopicEntry(state.perTopicSettings, topicName, (topic) => ({
+              ...topic,
+              ...settings,
+              topicName,
+            })),
+          }));
         },
 
         clearTopicSettings: (topicName: string) => {
@@ -507,17 +261,17 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
         storage: {
           getItem: (name) => {
             const str = localStorage.getItem(name);
-            if (!str) {
+            if (!(str !== null && str !== undefined && str !== '')) {
               return null;
             }
 
             try {
-              const fullSettings = JSON.parse(str);
+              const fullSettings: unknown = JSON.parse(str);
               // Return only the perTopicSettings part
-              if (fullSettings && Array.isArray(fullSettings.perTopicSettings)) {
+              if (isObject(fullSettings) && isUnknownArray(fullSettings.perTopicSettings)) {
                 return {
                   state: {
-                    perTopicSettings: fullSettings.perTopicSettings,
+                    perTopicSettings: decodeTopicSettingsList(fullSettings.perTopicSettings),
                   },
                   version: 1,
                 };
@@ -534,9 +288,10 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
             const existingStr = localStorage.getItem(name);
             let fullSettings: Record<string, unknown> = {};
 
-            if (existingStr) {
+            if (existingStr !== null && existingStr !== undefined && existingStr !== '') {
               try {
-                fullSettings = JSON.parse(existingStr);
+                const parsed: unknown = JSON.parse(existingStr);
+                fullSettings = isObject(parsed) && !isUnknownArray(parsed) ? parsed : {};
               } catch {
                 // If parsing fails, start with empty object
                 fullSettings = {};

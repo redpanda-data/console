@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { brotliCompressSync, gzipSync } from 'node:zlib';
-import { test as base, type Page, type Route, type TestArtifacts } from '../shared/e2e';
+import { test as base, type Page, type Request, type Route, type TestArtifacts } from '../shared/e2e';
 
 export const buildDirectory = resolve(process.env.BUNDLE_BUILD_DIR ?? 'build');
 
@@ -150,7 +150,9 @@ export const test = base.extend<{ errors: string[] }>({
   errors: [
     async ({ context, page }, use) => {
       const errors: string[] = [];
-      page.on('pageerror', (error) => errors.push(error.message));
+      page.on('pageerror', (error) => {
+        errors.push(error.message);
+      });
       page.on('console', (message) => {
         if (message.type() === 'error') {
           errors.push(message.text());
@@ -165,17 +167,32 @@ export const test = base.extend<{ errors: string[] }>({
 
 export function trackScripts(page: Page) {
   const paths = new Set<string>();
+  const pending = new Map<Request, ReturnType<typeof Promise.withResolvers<void>>>();
   page.on('request', (request) => {
     if (request.resourceType() === 'script') {
       paths.add(new URL(request.url()).pathname);
+      pending.set(request, Promise.withResolvers<void>());
     }
   });
-  return paths;
+  const finish = (request: Request) => {
+    pending.get(request)?.resolve();
+    pending.delete(request);
+  };
+  page.on('requestfinished', finish);
+  page.on('requestfailed', finish);
+  return Object.assign(paths, {
+    async waitForFinished() {
+      // Called after feature readiness, when its script requests have started; unrelated API polling does not block it.
+      await Promise.all([...pending.values()].map((request) => request.promise));
+    },
+  });
 }
 
 export function trackWorkers(page: Page) {
   const workers: string[] = [];
-  page.on('worker', (worker) => workers.push(worker.url()));
+  page.on('worker', (worker) => {
+    workers.push(worker.url());
+  });
   return workers;
 }
 
@@ -190,13 +207,12 @@ export async function attachScreenshot(page: Page, testInfo: TestArtifacts, name
 }
 
 export async function measure(paths: Iterable<string>) {
+  const readAsset = async (path: string) => {
+    const bytes = await readFile(resolve(buildDirectory, `.${path}`));
+    return { path, raw: bytes.length, gzip: gzipSync(bytes).length, brotli: brotliCompressSync(bytes).length };
+  };
   const assets = await Promise.all(
-    [...new Set(paths)]
-      .filter((path) => path.endsWith('.js'))
-      .map(async (path) => {
-        const bytes = await readFile(resolve(buildDirectory, `.${path}`));
-        return { path, raw: bytes.length, gzip: gzipSync(bytes).length, brotli: brotliCompressSync(bytes).length };
-      })
+    [...new Set(paths)].flatMap((path) => (path.endsWith('.js') ? [readAsset(path)] : []))
   );
   return {
     assets,

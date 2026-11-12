@@ -35,7 +35,7 @@ export function useCreateUserDisabledReason() {
 
   return [
     !featureCreateUser && "Your cluster doesn't support this feature.",
-    !canManageUsers && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
+    !(canManageUsers === true) && 'You need RedpandaCapability.MANAGE_REDPANDA_USERS permission.',
   ]
     .filter(Boolean)
     .join(' ');

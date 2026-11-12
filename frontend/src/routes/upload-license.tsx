@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import UploadLicensePage from '../components/pages/admin/upload-license-page';
-
+import { UploadLicensePage } from '../components/pages/admin/upload-license-page';
 export const Route = createFileRoute('/upload-license')({
   staticData: {
     title: 'Upload License',

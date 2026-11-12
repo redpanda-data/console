@@ -49,7 +49,9 @@ test.describe('security pages deep-link (cold cache)', () => {
   test('direct-load /security/users/e2euser/details renders without prior list navigation', async ({ page }) => {
     // Collect console/page errors to guard against cache-miss crashes.
     const consoleErrors: string[] = [];
-    page.on('pageerror', (err) => consoleErrors.push(err.message));
+    page.on('pageerror', (err) => {
+      consoleErrors.push(err.message);
+    });
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         consoleErrors.push(msg.text());

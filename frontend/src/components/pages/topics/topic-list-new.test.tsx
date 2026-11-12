@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter, type OnUrlUpdateFunction } from 'nuqs/adapters/testing';
 import type { GetTopicsResponse, Topic } from 'state/rest-interfaces';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-import TopicList from './topic-list-new';
+import { TopicList } from './topic-list-new';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
 
 let response: GetTopicsResponse = { topics: [] };
 let isLoading = false;
@@ -26,7 +26,7 @@ rs.mock('state/backend-api', () => {
     api: {
       ...actual.api,
       refreshCluster: rs.fn(),
-      refreshClusterOverview: rs.fn(),
+      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
       refreshClusterHealth: rs.fn().mockResolvedValue(undefined),
     },
   };

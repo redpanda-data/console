@@ -9,547 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import type { SortingState } from '@tanstack/react-table';
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 
-import { AclRequestDefault, type GetAclsRequest } from './rest-interfaces';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
-import type { TopicTabId } from '../components/pages/topics/topic-details';
-import { CompressionType, PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { clone } from '../utils/json-utils';
-import { assignDeep, randomId } from '../utils/utils';
+import { decodeUiSettings, defaultUiSettings, type UISettings } from '../types/ui-settings';
+import { assignDeep } from '../utils/utils';
+
+export type {
+  ColumnList,
+  DataColumnKey,
+  FilterEntry,
+  FilterType,
+  PartitionOffsetOriginType,
+  PreviewTag,
+  PreviewTagV2,
+  TimestampDisplayFormat,
+  TopicDetailsSettings,
+  TopicMessageSearchSettings,
+} from '../types/topic-settings';
+export type { ConnectTabKeys, ValueDisplay } from '../types/ui-settings';
 
 const settingsName = 'uiSettings-v3';
-
-export type ValueDisplay = 'friendly' | 'both' | 'raw';
-
-export type PreviewTag = {
-  id: string;
-
-  isActive: boolean;
-  text: string;
-  customName?: string;
-};
-
-export type PreviewTagV2 = {
-  id: string;
-
-  isActive: boolean;
-
-  pattern: string; // pattern, upgrade from old "text" prop
-  customName?: string;
-
-  searchInMessageHeaders: boolean;
-  searchInMessageKey: boolean;
-  searchInMessageValue: boolean;
-};
-
-export type DataColumnKey = 'offset' | 'partitionID' | 'timestamp' | 'key' | 'value' | 'keySize' | 'valueSize';
-
-export type ColumnList = {
-  title: string;
-  dataIndex: DataColumnKey;
-};
-
-export type FilterType = 'code';
-
-export type FilterEntry = {
-  isNew: boolean;
-  id: string; // used as react key
-  filterType: FilterType;
-  isActive: boolean;
-
-  // Code
-  name: string; // name of the filter, shown instead of the code when set
-  transpiledCode: string;
-  code: string; // js code the user entered
-};
-
-// Factory function to create FilterEntry instances
-export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
-  return {
-    isNew: false,
-    id: randomId() + randomId(),
-    filterType: 'code',
-    isActive: true,
-    name: '',
-    transpiledCode: 'return true;\n',
-    code: 'return true\n//allow all messages',
-    ...overrides,
-  };
-}
-
-export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';
-export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
-  switch (timestampType) {
-    case 'default':
-      return true; // 'localDateTime'
-    case 'onlyDate':
-      return true;
-    case 'onlyTime':
-      return true;
-    case 'relative':
-      return true;
-    case 'unixTimestamp':
-      return false;
-    case 'unixMillis':
-      return false;
-    default:
-      return true;
-  }
-}
-
-export const PartitionOffsetOrigin = {
-  EndMinusResults: -1,
-  Start: -2,
-  End: -3,
-  Timestamp: -4,
-  Custom: 0,
-} as const;
-
-export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typeof PartitionOffsetOrigin];
-
-export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
-
-export const DEFAULT_SEARCH_PARAMS = {
-  offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
-  startOffset: -1, // used when offsetOrigin is custom
-  startTimestamp: -1, // used when offsetOrigin is timestamp
-  startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
-  partitionID: -1,
-  maxResults: 50,
-  page: 0,
-  pageSize: 10,
-  sorting: [] as SortingState,
-  quickSearch: '',
-
-  filtersEnabled: false,
-  filters: [] as FilterEntry[],
-
-  keyDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
-  valueDeserializer: PayloadEncoding.UNSPECIFIED as PayloadEncoding,
-  schemaContext: '' as string,
-};
-
-export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
-
-// Settings for an individual topic
-export type TopicDetailsSettings = {
-  topicName: string;
-
-  searchParams: typeof DEFAULT_SEARCH_PARAMS;
-
-  dynamicFilters: 'partition'[];
-
-  messagesPageSize: number;
-  favConfigEntries: string[];
-
-  previewTags: PreviewTagV2[];
-  previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
-
-  previewMultiResultMode: 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-  previewDisplayMode: 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
-
-  // previewResultLimit: 3; // todo
-  previewShowEmptyMessages: boolean; // todo: filter out messages that don't match
-  showMessageMetadata: boolean;
-  showMessageHeaders: boolean;
-
-  searchParametersLocalTimeMode: boolean;
-  previewTimestamps: TimestampDisplayFormat;
-  previewColumnFields: ColumnList[];
-
-  consumerPageSize: number;
-  partitionPageSize: number;
-  aclPageSize: number;
-
-  produceRecordEncoding: PayloadEncoding | 'base64';
-  produceRecordCompression: CompressionType;
-
-  quickSearch: string;
-};
-
-// Factory function to create TopicDetailsSettings instances
-export function createTopicDetailsSettings(
-  topicName: string,
-  overrides?: Partial<TopicDetailsSettings>
-): TopicDetailsSettings {
-  return {
-    topicName,
-    searchParams: { ...DEFAULT_SEARCH_PARAMS },
-    dynamicFilters: [],
-    messagesPageSize: 20,
-    favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
-    previewTags: [],
-    previewTagsCaseSensitive: 'ignoreCase',
-    previewMultiResultMode: 'showAll',
-    previewDisplayMode: 'wrap',
-    previewShowEmptyMessages: true,
-    showMessageMetadata: true,
-    showMessageHeaders: false,
-    searchParametersLocalTimeMode: true,
-    previewTimestamps: 'default',
-    previewColumnFields: [],
-    consumerPageSize: 20,
-    partitionPageSize: 20,
-    aclPageSize: 20,
-    produceRecordEncoding: PayloadEncoding.TEXT,
-    produceRecordCompression: CompressionType.SNAPPY,
-    quickSearch: '',
-    ...overrides,
-  };
-}
-
-type UISettings = {
-  sideBarOpen: boolean;
-  selectedClusterIndex: number;
-  perTopicSettings: TopicDetailsSettings[]; // don't use directly, instead use uiState.topicDetails
-  topicDetailsActiveTabKey: TopicTabId | undefined;
-
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
-  brokerList: {
-    hideEmptyColumns: boolean;
-    pageSize: number;
-    quickSearch: string;
-
-    valueDisplay: 'friendly' | 'raw';
-    propsFilter: 'all' | 'onlyChanged';
-    propsOrder: 'changedFirst' | 'default' | 'alphabetical';
-
-    configTable: {
-      pageSize: number;
-      quickSearch: string;
-    };
-  };
-
-  reassignment: {
-    // partition reassignment
-    // Active
-    activeReassignments: {
-      quickSearch: string;
-      pageSize: number;
-    };
-
-    // Brokers
-    pageSizeBrokers: number;
-
-    // Review
-    pageSizeReview: number;
-    maxReplicationTraffic: number | null; // bytes per second, or "no change"
-  };
-
-  topicList: {
-    hideInternalTopics: boolean;
-    quickSearch: string;
-    pageSize: number;
-    sortId: string;
-    sortDesc: boolean;
-
-    // Topic Configuration
-    valueDisplay: ValueDisplay;
-    propsOrder: 'changedFirst' | 'default' | 'alphabetical';
-
-    configViewType: 'structured' | 'table';
-  };
-
-  topicConsumersList: {
-    pageSize: number;
-    sortId: string;
-    sortDesc: boolean;
-  };
-
-  topicPartitionsList: {
-    pageSize: number;
-    sortId: string;
-    sortDesc: boolean;
-  };
-
-  topicAclList: {
-    pageSize: number;
-    sortId: string;
-    sortDesc: boolean;
-  };
-
-  clusterOverview: {
-    connectorsList: {
-      quickSearch: string;
-    };
-  };
-
-  connectorsList: {
-    quickSearch: string;
-  };
-
-  connectorsDetails: {
-    logsQuickSearch: string;
-    sorting: SortingState;
-  };
-
-  pipelinesList: {
-    quickSearch: string;
-  };
-
-  pipelinesDetails: {
-    logsQuickSearch: string;
-    sorting: SortingState;
-  };
-
-  consumerGroupDetails: {
-    pageSize: number;
-  };
-
-  aclList: {
-    usersTab: {
-      quickSearch: string;
-      pageSize: number;
-    };
-    rolesTab: {
-      quickSearch: string;
-      pageSize: number;
-    };
-    permissionsTab: {
-      quickSearch: string;
-      pageSize: number;
-    };
-
-    configTable: {
-      quickSearch: string;
-      pageSize: number;
-    };
-  };
-
-  aclSearchParams: GetAclsRequest;
-
-  quotasList: {
-    pageSize: number;
-    quickSearch: string;
-  };
-
-  schemaList: {
-    pageSize: number;
-    quickSearch: string;
-    showSoftDeleted: boolean;
-  };
-
-  schemaDetails: {
-    viewMode: 'json' | 'fields';
-  };
-
-  kafkaConnect: {
-    selectedTab: ConnectTabKeys;
-
-    clusters: {
-      pageSize: number;
-      quickSearch: string;
-    };
-    connectors: {
-      pageSize: number;
-      quickSearch: string;
-    };
-    tasks: {
-      pageSize: number;
-      quickSearch: string;
-    };
-
-    clusterDetails: {
-      pageSize: number;
-      quickSearch: string;
-    };
-    clusterDetailsPlugins: {
-      pageSize: number;
-      quickSearch: string;
-    };
-
-    connectorDetails: {
-      pageSize: number;
-      quickSearch: string;
-    };
-  };
-
-  transformsList: {
-    quickSearch: string;
-  };
-
-  userDefaults: {
-    paginationPosition: 'bottomRight' | 'topRight';
-  };
-};
-
-const defaultUiSettings: UISettings = {
-  sideBarOpen: true,
-  selectedClusterIndex: 0,
-  perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
-  topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
-
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
-  brokerList: {
-    hideEmptyColumns: false,
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    quickSearch: '',
-
-    valueDisplay: 'friendly' as 'friendly' | 'raw',
-    propsFilter: 'onlyChanged' as 'all' | 'onlyChanged',
-    propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
-
-    configTable: {
-      pageSize: 100,
-      quickSearch: '',
-    },
-  },
-
-  reassignment: {
-    // partition reassignment
-    // Active
-    activeReassignments: {
-      quickSearch: '',
-      pageSize: 5,
-    },
-
-    // Brokers
-    pageSizeBrokers: 10,
-
-    // Review
-    pageSizeReview: 20,
-    maxReplicationTraffic: 0 as number | null, // bytes per second, or "no change"
-  },
-
-  topicList: {
-    hideInternalTopics: true,
-    quickSearch: '',
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    sortId: '',
-    sortDesc: false,
-
-    // Topic Configuration
-    valueDisplay: 'friendly' as ValueDisplay,
-    propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
-
-    configViewType: 'structured' as 'structured' | 'table',
-  },
-
-  topicConsumersList: {
-    pageSize: 20,
-    sortId: '',
-    sortDesc: false,
-  },
-
-  topicPartitionsList: {
-    pageSize: 20,
-    sortId: '',
-    sortDesc: false,
-  },
-
-  topicAclList: {
-    pageSize: 20,
-    sortId: '',
-    sortDesc: false,
-  },
-
-  clusterOverview: {
-    connectorsList: {
-      quickSearch: '',
-    },
-  },
-
-  connectorsList: {
-    quickSearch: '',
-  },
-
-  connectorsDetails: {
-    logsQuickSearch: '',
-    sorting: [] as SortingState,
-  },
-
-  pipelinesList: {
-    quickSearch: '',
-  },
-
-  pipelinesDetails: {
-    logsQuickSearch: '',
-    sorting: [] as SortingState,
-  },
-
-  consumerGroupDetails: {
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-  },
-
-  aclList: {
-    usersTab: {
-      quickSearch: '',
-      pageSize: 20,
-    },
-    rolesTab: {
-      quickSearch: '',
-      pageSize: 20,
-    },
-    permissionsTab: {
-      quickSearch: '',
-      pageSize: 20,
-    },
-
-    configTable: {
-      quickSearch: '',
-      pageSize: 20,
-    },
-  },
-
-  aclSearchParams: clone(AclRequestDefault) as GetAclsRequest,
-
-  quotasList: {
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    quickSearch: '',
-  },
-
-  schemaList: {
-    pageSize: DEFAULT_TABLE_PAGE_SIZE,
-    quickSearch: '',
-    showSoftDeleted: false,
-  },
-
-  schemaDetails: {
-    viewMode: 'fields' as 'json' | 'fields',
-  },
-
-  kafkaConnect: {
-    selectedTab: 'clusters' as ConnectTabKeys,
-
-    clusters: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-    connectors: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-    tasks: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-
-    clusterDetails: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-    clusterDetailsPlugins: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-
-    connectorDetails: {
-      pageSize: undefined as unknown as number,
-      quickSearch: '',
-    },
-  },
-
-  transformsList: {
-    quickSearch: '',
-  },
-
-  userDefaults: {
-    paginationPosition: 'bottomRight' as 'bottomRight' | 'topRight',
-  },
-};
 
 type UISettingsStore = UISettings & {
   // Actions
@@ -557,80 +37,16 @@ type UISettingsStore = UISettings & {
   clearSettings: () => void;
 };
 
-function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
-  return (tag as PreviewTag).text !== undefined;
-}
-
-type NewTopicSettingsField = 'previewColumnFields' | 'previewTimestamps' | 'dynamicFilters';
-
-// Topic settings as an older version saved them: without the fields added since.
-type StoredTopicDetailsSettings = Omit<TopicDetailsSettings, NewTopicSettingsField> &
-  Partial<Pick<TopicDetailsSettings, NewTopicSettingsField>>;
-
-// when loading a previous version, we'll have "undefined" for all the new properties,
-// which is ok for 'number', but not for any other type.
-function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
-  ts.previewColumnFields = ts.previewColumnFields ?? [];
-  ts.previewTimestamps = ts.previewTimestamps ?? 'default';
-
-  if (!ts.dynamicFilters) {
-    ts.dynamicFilters = [];
-  }
-}
-
-// upgrade by constructing a new tag from the old data
-function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
-  return {
-    id: tag.id,
-    isActive: tag.isActive,
-    pattern: `**.${tag.text}`,
-    customName: tag.customName,
-    searchInMessageHeaders: false,
-    searchInMessageKey: false,
-    searchInMessageValue: true,
-  };
-}
-
-// Upgrade: PreviewTag to PreviewTagV2
-function upgradePreviewTags(ts: TopicDetailsSettings) {
-  for (let i = 0; i < ts.previewTags.length; i++) {
-    const tag = ts.previewTags[i];
-    if (isPreviewTagV1(tag)) {
-      // replace old tag
-      ts.previewTags[i] = previewTagV2From(tag);
-    }
-  }
-}
-
-// Upgrade function for loading old data
-function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
-  // Upgrade: new props in 'TopicDetailsSettings'
-  if (loadedSettings.perTopicSettings) {
-    for (const ts of loadedSettings.perTopicSettings) {
-      fillNewTopicSettingsDefaults(ts);
-    }
-
-    for (const ts of loadedSettings.perTopicSettings) {
-      upgradePreviewTags(ts);
-    }
-  }
-
-  return loadedSettings;
-}
-
 // Parsed and upgraded settings, or null when the stored text holds nothing usable.
 function loadStoredSettings(str: string) {
   try {
-    const loadedSettings = JSON.parse(str);
+    const loadedSettings = decodeUiSettings(JSON.parse(str));
     if (!loadedSettings) {
       return null;
     }
 
-    // Apply upgrades
-    const upgradedSettings = upgradeSettings(loadedSettings);
-
     return {
-      state: upgradedSettings as UISettings,
+      state: loadedSettings,
       version: 3,
     };
   } catch (error) {
@@ -670,19 +86,19 @@ export const useUISettingsStore = create<UISettingsStore>()(
   subscribeWithSelector(
     persist(
       (set, get) => ({
-        ...clone(defaultUiSettings),
+        ...structuredClone(defaultUiSettings),
 
         updateSettings: (settings: Partial<UISettings>) => {
           set((state) => {
             const newState = { ...state };
-            assignDeep(newState as unknown as Record<string, unknown>, settings as Record<string, unknown>);
+            assignDeep(newState, settings);
             return newState;
           });
         },
 
         clearSettings: () => {
           set({
-            ...clone(defaultUiSettings),
+            ...structuredClone(defaultUiSettings),
             updateSettings: get().updateSettings,
             clearSettings: get().clearSettings,
           });
@@ -694,16 +110,14 @@ export const useUISettingsStore = create<UISettingsStore>()(
         storage: {
           getItem: (name) => {
             const str = localStorage.getItem(name);
-            if (!str) {
+            if (!(str !== null && str !== undefined && str !== '')) {
               return null;
             }
 
             return loadStoredSettings(str);
           },
           setItem: (name, value) => {
-            // Extract only the state, not the action functions
-            const { updateSettings: _, clearSettings: __, ...state } = value.state as UISettingsStore;
-            const json = JSON.stringify(state);
+            const json = JSON.stringify(value.state);
             localStorage.setItem(name, json);
           },
           removeItem: (name) => {
@@ -737,7 +151,7 @@ export function installUISettingsSideEffects(): () => void {
 
   const unsubStore = useUISettingsStore.subscribe((state) => {
     const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
-    scheduleSave(settingsToSave as UISettings);
+    scheduleSave(settingsToSave);
   });
 
   const onVisibilityChange = () => {
@@ -747,7 +161,7 @@ export function installUISettingsSideEffects(): () => void {
 
     const state = useUISettingsStore.getState();
     const { updateSettings: _, clearSettings: __, ...settingsToSave } = state;
-    saveImmediately(settingsToSave as UISettings);
+    saveImmediately(settingsToSave);
   };
   window.addEventListener('visibilitychange', onVisibilityChange);
 
@@ -758,16 +172,17 @@ export function installUISettingsSideEffects(): () => void {
       return;
     }
     try {
-      const newSettings = JSON.parse(e.newValue);
+      const { updateSettings: _, clearSettings: __, ...currentSettings } = useUISettingsStore.getState();
+      const newSettings = decodeUiSettings(JSON.parse(e.newValue), currentSettings);
       if (!newSettings) {
         return;
       }
       // Applying changes here will of course trigger the auto-save, but that's fine.
       // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
-      useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
-    } catch (err) {
+      useUISettingsStore.getState().updateSettings(newSettings);
+    } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error applying settings update from another tab', { storageEvent: e, error: err });
+      console.error('error applying settings update from another tab', { storageEvent: e, error });
     }
   };
   window.addEventListener('storage', onStorage);
@@ -784,12 +199,12 @@ export function installUISettingsSideEffects(): () => void {
 }
 
 // Legacy exports for backward compatibility
-export const uiSettings = new Proxy({} as UISettings, {
-  get(_target, prop: string) {
-    return useUISettingsStore.getState()[prop as keyof UISettings];
+export const uiSettings = new Proxy<UISettings>(defaultUiSettings, {
+  get(_target, prop: string | symbol): unknown {
+    return Reflect.get(useUISettingsStore.getState(), prop);
   },
   set(_target, prop: string, value: unknown) {
-    useUISettingsStore.getState().updateSettings({ [prop]: value } as Partial<UISettings>);
+    useUISettingsStore.getState().updateSettings({ [prop]: value });
     return true;
   },
 });

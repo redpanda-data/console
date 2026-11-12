@@ -16,12 +16,11 @@ import { Controller, type FieldValues, type Path, type UseFormReturn } from 'rea
 
 type TagsFieldListProps<TFieldValues extends FieldValues> = {
   form: UseFormReturn<TFieldValues>;
-  // biome-ignore lint/suspicious/noExplicitAny: Generic component needs flexibility for different tag field structures
-  tagFields: Array<{ id: string; [key: string]: any }>;
-  // biome-ignore lint/suspicious/noExplicitAny: Accepts different tag types from different forms (value can be optional or required)
-  appendTag: (value: any) => void;
+  tagFields: Array<{ id: string }>;
+  appendTag: (value: { key: string; value: string }) => void;
   removeTag: (index: number) => void;
-  fieldName: string;
+  fieldName: Path<TFieldValues>;
+  fieldNames: (index: number) => { key: Path<TFieldValues>; value: Path<TFieldValues> };
 };
 
 /** Key-value tag editor. Drive it from a `useFieldArray` on the tags field. */
@@ -31,6 +30,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
   appendTag,
   removeTag,
   fieldName,
+  fieldNames,
 }: TagsFieldListProps<TFieldValues>) => {
   return (
     <div className="flex flex-col gap-2">
@@ -40,41 +40,37 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
         <div className="flex items-center gap-2" key={f.id}>
           <Controller
             control={form.control}
-            name={`${fieldName}.${idx}.key` as Path<TFieldValues>}
+            name={fieldNames(idx).key}
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="flex-1">
+              <Field className="flex-1" data-invalid={fieldState.invalid}>
                 <Input placeholder="Key" {...field} />
-                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
           <Controller
             control={form.control}
-            name={`${fieldName}.${idx}.value` as Path<TFieldValues>}
+            name={fieldNames(idx).value}
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="flex-1">
+              <Field className="flex-1" data-invalid={fieldState.invalid}>
                 <Input placeholder="Value" {...field} />
-                {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
           />
           <Button onClick={() => removeTag(idx)} size="icon" type="button" variant="outline">
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
           </Button>
         </div>
       ))}
       <Button onClick={() => appendTag({ key: '', value: '' })} type="button" variant="dashed">
-        <Plus className="h-4 w-4" /> Add Tag
+        <Plus className="size-4" /> Add Tag
       </Button>
       {/* Array-level message for duplicate keys */}
       <Controller
         control={form.control}
-        name={fieldName as Path<TFieldValues>}
-        render={({ fieldState }) => (
-          <>
-            {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
-          </>
-        )}
+        name={fieldName}
+        render={({ fieldState }) => <>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</>}
       />
     </div>
   );

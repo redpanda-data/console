@@ -25,11 +25,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
-
-const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
-
 import React, { useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { parseSubjectContext } from './schema-context-utils';
@@ -48,11 +47,16 @@ import {
 } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
+import { arrayCount, arrayFirst, arrayLast } from '../../../utils/array-utils';
+import { isNonzeroNumber } from '../../../utils/number-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { decodeURIComponentPercents, encodeURIComponentPercents } from '../../../utils/utils';
 import { KowlDiffEditor } from '../../misc/kowl-editor';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
+
+const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
 // These navigations run detached from effects and mutation callbacks, so report a failure instead of dropping it.
 function reportNavigationError(error: unknown) {
@@ -61,7 +65,13 @@ function reportNavigationError(error: unknown) {
 
 // A `version` search param that names a specific version, else null ("latest" or missing).
 function requestedVersionNumber(versionParam: string | undefined): number | null {
-  return versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : null;
+  return versionParam !== null &&
+    versionParam !== undefined &&
+    versionParam !== '' &&
+    versionParam !== 'latest' &&
+    !Number.isNaN(Number(versionParam))
+    ? Number(versionParam)
+    : null;
 }
 
 // Schema Registry capabilities of the signed-in user, from their identity.
@@ -112,7 +122,7 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
 
   // Set version in query params if not present
   useEffect(() => {
-    if (!search.version) {
+    if (!isNonEmptyString(search.version)) {
       navigate({ search: { version: 'latest' }, replace: true }).catch(reportNavigationError);
     }
   }, [search.version, navigate]);
@@ -162,13 +172,13 @@ function useSubjectDeletion(subjectNameRaw: string) {
 
   return { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject };
 }
-
-const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: subjectNameProp }) => {
+const SchemaDetailsView: React.FC<{
+  subjectName: string;
+}> = ({ subjectName: subjectNameProp }) => {
   const { subjectNameRaw, subjectNameEncoded, navigate } = useSchemaDetailsRoute(subjectNameProp);
   const { subject, isLoadingSubject, isSoftDeleted } = useSubjectDetailsData(subjectNameRaw);
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
-  // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
   const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
   const addVersionFencedReason = canCreateSchemas === false ? undefined : editSchemasReason;
   const deleteSubjectFencedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
@@ -199,12 +209,14 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
               <FenceGuardedButton
                 action="editSchemas"
                 data-testid="schema-details-edit-mode-icon"
-                onClick={() =>
-                  navigate({
-                    to: '/schema-registry/subjects/$subjectName/edit-mode',
-                    params: { subjectName: subjectNameEncoded },
-                  })
-                }
+                onClick={asyncEvent(
+                  () =>
+                    navigate({
+                      to: '/schema-registry/subjects/$subjectName/edit-mode',
+                      params: { subjectName: subjectNameEncoded },
+                    }),
+                  reportActionError
+                )}
                 size="icon-xs"
                 variant="ghost"
               >
@@ -222,12 +234,14 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
               <FenceGuardedButton
                 action="editSchemas"
                 data-testid="schema-details-edit-compatibility-icon"
-                onClick={() =>
-                  navigate({
-                    to: '/schema-registry/subjects/$subjectName/edit-compatibility',
-                    params: { subjectName: subjectNameEncoded },
-                  })
-                }
+                onClick={asyncEvent(
+                  () =>
+                    navigate({
+                      to: '/schema-registry/subjects/$subjectName/edit-compatibility',
+                      params: { subjectName: subjectNameEncoded },
+                    }),
+                  reportActionError
+                )}
                 size="icon-xs"
                 variant="ghost"
               >
@@ -239,7 +253,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
         <Separator className="h-[2ch]" orientation="vertical" />
 
         <SmallStat title="Active Versions">
-          {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
+          {arrayCount(subject.schemas, (x: { isSoftDeleted?: boolean }) => !(x.isSoftDeleted === true))}
         </SmallStat>
       </div>
       {/* Buttons */}
@@ -251,12 +265,14 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
               <Button
                 data-testid="schema-details-add-version-btn"
                 disabled={canCreateSchemas === false || Boolean(addVersionFencedReason)}
-                onClick={() =>
-                  navigate({
-                    to: '/schema-registry/subjects/$subjectName/add-version',
-                    params: { subjectName: subjectNameEncoded },
-                  })
-                }
+                onClick={asyncEvent(
+                  () =>
+                    navigate({
+                      to: '/schema-registry/subjects/$subjectName/add-version',
+                      params: { subjectName: subjectNameEncoded },
+                    }),
+                  reportActionError
+                )}
                 variant="outline"
               >
                 Add new version
@@ -266,7 +282,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {canCreateSchemas === false && (
             <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
           )}
-          {addVersionFencedReason ? <TooltipContent side="top">{addVersionFencedReason}</TooltipContent> : null}
+          {Boolean(addVersionFencedReason) && <TooltipContent side="top">{addVersionFencedReason}</TooltipContent>}
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -275,7 +291,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
               <Button
                 data-testid="schema-details-delete-subject-btn"
                 disabled={canDeleteSchemas === false || Boolean(deleteSubjectFencedReason)}
-                onClick={() => setSubjectDeleteKind(isSoftDeleted ? 'permanent' : 'soft')}
+                onClick={() => setSubjectDeleteKind(isSoftDeleted === true ? 'permanent' : 'soft')}
                 variant="outline"
               >
                 Delete subject
@@ -285,7 +301,9 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {canDeleteSchemas === false && (
             <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
           )}
-          {deleteSubjectFencedReason ? <TooltipContent side="top">{deleteSubjectFencedReason}</TooltipContent> : null}
+          {Boolean(deleteSubjectFencedReason) && (
+            <TooltipContent side="top">{deleteSubjectFencedReason}</TooltipContent>
+          )}
         </Tooltip>
       </div>
       {/* Definition / Diff */}
@@ -351,14 +369,16 @@ function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryV
 
   // Determine fallback version when no specific version is requested
   const fallbackVersion =
-    subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
-
+    subjectData.latestActiveVersion === -1 ? arrayLast(subjectData.schemas)?.version : subjectData.latestActiveVersion;
   // Check if requested version exists in available schemas
-  const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
+  const requestedVersionExists =
+    versionNumber !== null && versionNumber !== undefined && Boolean(versionNumber)
+      ? subjectData.schemas.some((s) => s.version === versionNumber)
+      : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
   const defaultVersion =
-    versionNumber && requestedVersionExists
+    versionNumber !== null && versionNumber !== undefined && Boolean(versionNumber) && requestedVersionExists
       ? versionNumber
       : (fallbackVersion ?? subjectData.versions[0]?.version ?? 1);
   return { versionNumber, fallbackVersion, requestedVersionExists, defaultVersion };
@@ -377,7 +397,7 @@ function correctedSelectedVersion(p: {
     return p.defaultVersion;
   }
   // When URL is "latest", sync selectedVersion with the actual latest version from data
-  if (p.queryVersion === 'latest' && p.fallbackVersion && p.selectedVersion !== p.fallbackVersion) {
+  if (p.queryVersion === 'latest' && isNonzeroNumber(p.fallbackVersion) && p.selectedVersion !== p.fallbackVersion) {
     return p.fallbackVersion;
   }
   return null;
@@ -391,9 +411,15 @@ function useMissingVersionRedirect({
 }: ReturnType<typeof schemaVersionDefaults>) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   useEffect(() => {
-    if (versionNumber && !requestedVersionExists) {
+    if (
+      versionNumber !== null &&
+      versionNumber !== undefined &&
+      Boolean(versionNumber) &&
+      !requestedVersionExists &&
+      fallbackVersion !== undefined
+    ) {
       toast.warning(`Version ${versionNumber} not found`, {
-        description: `Showing version ${fallbackVersion} instead`,
+        description: `Showing version ${String(fallbackVersion)} instead`,
       });
       navigate({ search: { version: String(fallbackVersion) }, replace: true }).catch(reportNavigationError);
     }
@@ -407,8 +433,7 @@ function useSelectedSchemaVersion(subjectData: SchemaRegistrySubjectDetails) {
   const defaults = schemaVersionDefaults(subjectData, queryVersion);
   const [selectedVersion, setSelectedVersion] = useState(defaults.defaultVersion);
   useMissingVersionRedirect(defaults);
-
-  const schema = subjectData.schemas.first((x) => x.version === selectedVersion);
+  const schema = arrayFirst(subjectData.schemas, (x) => x.version === selectedVersion);
   const corrected = correctedSelectedVersion({ ...defaults, queryVersion, selectedVersion, hasSchema: !!schema });
   if (corrected !== null) {
     setSelectedVersion(corrected);
@@ -441,7 +466,7 @@ function useSchemaVersionActions(
     deleteVersionMutation.mutate(
       { subjectName: subjectData.name, version: schema.version, permanent: true },
       {
-        onSuccess: async () => {
+        onSuccess: asyncEvent(async () => {
           toast.success('Schema version permanently deleted');
 
           // Invalidate and refetch to get updated details
@@ -455,12 +480,12 @@ function useSchemaVersionActions(
             'details',
           ]);
 
-          if (newDetails?.latestActiveVersion) {
+          if (isNonzeroNumber(newDetails?.latestActiveVersion)) {
             setSelectedVersion(newDetails.latestActiveVersion);
           } else {
             navigate({ to: '/schema-registry' }).catch(reportNavigationError);
           }
-        },
+        }, reportActionError),
         onError: (err) => {
           toast.error('Failed to permanently delete schema version', { description: String(err) });
         },
@@ -604,9 +629,9 @@ const SubjectVersionDefinition = ({
                 {canDeleteSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
                 )}
-                {deleteVersionFencedReason ? (
+                {Boolean(deleteVersionFencedReason) && (
                   <TooltipContent side="top">{deleteVersionFencedReason}</TooltipContent>
-                ) : null}
+                )}
               </Tooltip>
 
               <Tooltip>
@@ -626,7 +651,7 @@ const SubjectVersionDefinition = ({
                 {canCreateSchemas === false && (
                   <TooltipContent side="top">You don't have the 'canCreateSchemas' permission</TooltipContent>
                 )}
-                {recoverFencedReason ? <TooltipContent side="top">{recoverFencedReason}</TooltipContent> : null}
+                {Boolean(recoverFencedReason) && <TooltipContent side="top">{recoverFencedReason}</TooltipContent>}
               </Tooltip>
             </>
           ) : (
@@ -649,15 +674,15 @@ const SubjectVersionDefinition = ({
               {canDeleteSchemas === false && (
                 <TooltipContent side="top">You don't have the 'canDeleteSchemas' permission</TooltipContent>
               )}
-              {deleteVersionFencedReason ? (
+              {Boolean(deleteVersionFencedReason) && (
                 <TooltipContent side="top">{deleteVersionFencedReason}</TooltipContent>
-              ) : null}
+              )}
             </Tooltip>
           )}
         </div>
 
         {/* Deleted Hint */}
-        {Boolean(schema.isSoftDeleted) && (
+        {schema.isSoftDeleted && (
           <Alert data-testid="schema-definition-soft-deleted-alert" variant="warning">
             <AlertTitle>Soft-deleted schema</AlertTitle>
             <AlertDescription>
@@ -705,7 +730,7 @@ const SubjectVersionDefinition = ({
 // first version when the selection has no schema.
 function useDiffSide(subject: SchemaRegistrySubjectDetails, initialVersion: number) {
   const [selectedVersion, setSelectedVersion] = useState(initialVersion);
-  const schema = subject.schemas.first((x) => x.version === selectedVersion);
+  const schema = arrayFirst(subject.schemas, (x) => x.version === selectedVersion);
   const selectId = useId();
   if (!schema) {
     setSelectedVersion(subject.versions[0]?.version ?? 1);
@@ -829,7 +854,7 @@ const SchemaMetadataSection = ({ schema }: { schema: SchemaRegistryVersionedSche
 
       <p className="mb-3 font-bold">Properties</p>
 
-      {hasProperties ? (
+      {hasProperties === true ? (
         <Table testId="schema-metadata-properties">
           <TableHeader>
             <TableRow>
@@ -930,4 +955,4 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
   );
 };
 
-export default SchemaDetailsView;
+export { SchemaDetailsView };

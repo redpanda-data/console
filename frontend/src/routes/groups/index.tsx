@@ -12,8 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { FilterIcon } from 'components/icons';
 
-import GroupList from '../../components/pages/consumers/group-list';
-
+import { GroupList } from '../../components/pages/consumers/group-list';
 export const Route = createFileRoute('/groups/')({
   staticData: {
     title: 'Consumer Groups',

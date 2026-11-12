@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -41,9 +42,10 @@ import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { type CSSProperties, type JSX, useState } from 'react';
+import { type JSX, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
-import { showToast } from 'utils/toast.utils';
+import { reportActionError, showToast } from 'utils/toast.utils';
 
 import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import ApacheLogo from '../../../assets/connectors/apache.svg';
@@ -68,19 +70,22 @@ import SalesforceLogo from '../../../assets/connectors/salesforce.png';
 import ServicenowLogo from '../../../assets/connectors/servicenow.png';
 import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import TwitterLogo from '../../../assets/connectors/twitter.svg';
-import { isEmbedded } from '../../../config';
+import { isEmbedded } from '../../../runtime-config';
 import { api } from '../../../state/backend-api';
+import { type ApiError, isApiError } from '../../../state/rest-interfaces';
 import {
-  type ApiError,
   type ClusterConnectorInfo,
   type ClusterConnectors,
   type ClusterConnectorTaskInfo,
   ConnectorState,
   type ConnectorStatus,
-} from '../../../state/rest-interfaces';
+} from '../../../types/kafka-connect';
+import { arraySum } from '../../../utils/array-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { ZeroSizeWrapper } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
+import { isPresent } from '../../../utils/type-guards';
+import { PageContent } from '../../misc/page-content';
+import { Section } from '../../misc/section';
 
 export type ConnectorMetadata = {
   readonly className?: string; // match by exact match
@@ -399,8 +404,8 @@ function trimConnectorMetadataCache() {
 // An exact match wins over a prefix match; anything else gets the fallback icon.
 function matchConnectorMetadata(className: string): ConnectorMetadata {
   return (
-    connectorMetadata.find((e) => e.className && e.className === className) ??
-    connectorMetadata.find((e) => e.classNamePrefix && className.startsWith(e.classNamePrefix)) ??
+    connectorMetadata.find((e) => isNonEmptyString(e.className) && e.className === className) ??
+    connectorMetadata.find((e) => isNonEmptyString(e.classNamePrefix) && className.startsWith(e.classNamePrefix)) ??
     fallbackConnector
   );
 }
@@ -409,7 +414,7 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
   trimConnectorMetadataCache();
 
   const cached = connectorMetadataMatchCache[className];
-  if (cached) {
+  if (isPresent(cached)) {
     return cached;
   }
 
@@ -417,20 +422,21 @@ export function findConnectorMetadata(className: string): ConnectorMetadata | nu
   connectorMetadataMatchCache[className] = meta;
   return meta;
 }
-
-export const ConnectorClass = (props: { observable: { class: string } }) => {
+export const ConnectorClass = (props: {
+  observable: {
+    class: string;
+  };
+}) => {
   const c = props.observable.class;
   const meta = findConnectorMetadata(c);
   const displayName = meta?.friendlyName ?? removeNamespace(c);
 
   return (
-    <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
+    <div className="flex h-[1px] items-center overflow-visible">
       {meta?.logo ? (
-        <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
+        <span className="console-connector-logo">
           <ZeroSizeWrapper transform="translateY(-1px)" width="22px">
-            <div className="logo-plate" style={{ width: '22px', height: '22px' }}>
-              {meta.logo}
-            </div>
+            <div className={cn('logo-plate', 'size-5.5')}>{meta.logo}</div>
           </ZeroSizeWrapper>
         </span>
       ) : null}
@@ -440,9 +446,9 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
         <PopoverTrigger
           openOnHover
           render={
-            <button className="cursor-help" type="button">
+            <Button className="cursor-help" type="button" variant="unstyled">
               {displayName}
-            </button>
+            </Button>
           }
         />
         {/* PopoverContent is a fixed `w-72`, so the width is set here to fit the content. */}
@@ -469,8 +475,7 @@ export function removeNamespace(className: string): string {
 
 export const OverviewStatisticsCard = () => {
   const totalClusters = api.connectConnectors?.clusters?.length ?? '...';
-  const totalConnectors = api.connectConnectors?.clusters?.sum((c) => c.totalConnectors) ?? '...';
-
+  const totalConnectors = arraySum(api.connectConnectors?.clusters, (c) => c.totalConnectors) ?? '...';
   return (
     <Section padding="compact">
       <div className="flex gap-8">
@@ -485,9 +490,7 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
   if (isEmbedded()) {
     return null;
   }
-
-  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
-
+  const cluster = api.connectConnectors?.clusters?.find((x) => x.clusterName === p.clusterName);
   const runningConnectors = cluster?.runningConnectors ?? '...';
   const totalConnectors = cluster?.totalConnectors ?? '...';
 
@@ -508,16 +511,15 @@ export const ClusterStatisticsCard = (p: { clusterName: string }) => {
 };
 
 export const ConnectorStatisticsCard = (p: { clusterName: string; connectorName: string }) => {
-  const cluster = api.connectConnectors?.clusters?.first((x) => x.clusterName === p.clusterName);
-  const connector = cluster?.connectors.first((x) => x.name === p.connectorName);
-
+  const cluster = api.connectConnectors?.clusters?.find((x) => x.clusterName === p.clusterName);
+  const connector = cluster?.connectors.find((x) => x.name === p.connectorName);
   return (
     <Section padding="compact">
       <div className="flex gap-8">
         <Stat label="Cluster" size="lg" value={cluster?.clusterName} />
         <Stat label="Connector" size="lg" value={connector?.name} />
 
-        <Stat label="Tasks" size="lg" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
+        <Stat label="Tasks" size="lg" value={`${String(connector?.runningTasks)} / ${String(connector?.totalTasks)}`} />
       </div>
     </Section>
   );
@@ -565,12 +567,16 @@ type ConfirmModalProps<T> = {
 
 function parseApiError(text: string): ApiError | undefined {
   try {
-    const apiErr = JSON.parse(text) as ApiError;
-    return apiErr?.message && apiErr.statusCode ? apiErr : undefined;
-  } catch {}
+    const apiErr: unknown = JSON.parse(text);
+    return isApiError(apiErr) && apiErr.message.length > 0 && apiErr.statusCode !== 0 ? apiErr : undefined;
+  } catch {
+    return undefined;
+  }
 }
-
-function describeConfirmError(error: string | Error): { title: string; content: string } {
+function describeConfirmError(error: string | Error): {
+  title: string;
+  content: string;
+} {
   const txt = typeof error === 'string' ? error : error.message;
 
   // try parsing as json
@@ -593,7 +599,7 @@ function describeConfirmError(error: string | Error): { title: string; content: 
 
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<string | Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const cancel = () => {
     setIsPending(false);
@@ -613,14 +619,25 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   };
 
   const onOk = async () => {
+    const target = props.target();
+    if (target === null) {
+      return;
+    }
     setIsPending(true);
-    // biome-ignore lint/style/noNonNullAssertion: guaranteed by isOpen check
-    const target = props.target()!;
     try {
       await props.onOk(target);
       success(target);
-    } catch (err) {
-      setError(err as Error);
+    } catch (confirmError) {
+      setError(
+        confirmError instanceof Error
+          ? confirmError
+          : new Error(
+              typeof confirmError === 'string' && confirmError.length > 0
+                ? confirmError
+                : 'An unexpected error occurred.',
+              { cause: confirmError }
+            )
+      );
     } finally {
       setIsPending(false);
     }
@@ -629,7 +646,7 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const target = props.target();
   const err = error ? describeConfirmError(error) : undefined;
 
-  const content = target && props.content(target);
+  const content = Boolean(target) && target !== null && target !== undefined ? props.content(target) : undefined;
 
   return (
     <AlertDialog
@@ -664,7 +681,11 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
           <Button onClick={cancel} variant="outline">
             No
           </Button>
-          <Button aria-label={error ? 'Retry' : 'Yes'} isLoading={isPending} onClick={onOk}>
+          <Button
+            aria-label={error ? 'Retry' : 'Yes'}
+            isLoading={isPending}
+            onClick={asyncEvent(onOk, reportActionError)}
+          >
             {error ? 'Retry' : 'Yes'}
           </Button>
         </AlertDialogFooter>
@@ -672,12 +693,13 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
     </AlertDialog>
   );
 };
-
-type RunningCount = { running: number; total: number };
-
+type RunningCount = {
+  running: number;
+  total: number;
+};
 const RunningOfTotal = ({ running, total }: RunningCount) => (
   <>
-    {running < total ? <span style={mr05}>{warnIcon}</span> : null}
+    {running < total ? <span className="console-connector-error-icon">{warnIcon}</span> : null}
     <span>
       {running} / {total}
     </span>
@@ -691,10 +713,13 @@ function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount
 
   if ('clusterName' in obs) {
     // ClusterConnectors
-    if (obs.error) {
+    if (isNonEmptyString(obs.error)) {
       return null;
     }
-    return { running: obs.connectors.sum((x) => x.runningTasks), total: obs.connectors.sum((x) => x.totalTasks) };
+    return {
+      running: arraySum(obs.connectors, (x) => x.runningTasks),
+      total: arraySum(obs.connectors, (x) => x.totalTasks),
+    };
   }
 
   if ('name' in obs) {
@@ -716,10 +741,16 @@ export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConn
 
   return <RunningOfTotal running={tasks.running} total={tasks.total} />;
 };
-
-type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
-
-function countConnectors(observable: ConnectorInfo | ConnectorInfo[]): (RunningCount & { error?: string }) | null {
+type ConnectorInfo = {
+  runningConnectors: number;
+  totalConnectors: number;
+  error?: string;
+};
+function countConnectors(observable: ConnectorInfo | ConnectorInfo[]):
+  | (RunningCount & {
+      error?: string;
+    })
+  | null {
   if ('runningConnectors' in observable) {
     return { running: observable.runningConnectors, total: observable.totalConnectors, error: observable.error };
   }
@@ -729,15 +760,15 @@ function countConnectors(observable: ConnectorInfo | ConnectorInfo[]): (RunningC
   }
 
   return {
-    running: observable.sum((x) => x.runningConnectors),
-    total: observable.sum((x) => x.totalConnectors),
+    running: arraySum(observable, (x) => x.runningConnectors),
+    total: arraySum(observable, (x) => x.totalConnectors),
     error: observable[0].error,
   };
 }
 
 export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
   const connectors = countConnectors(props.observable);
-  if (!connectors || connectors.error) {
+  if (!connectors || isNonEmptyString(connectors.error)) {
     return null;
   }
 
@@ -765,8 +796,8 @@ const TaskStateLabel = ({ state }: { state: TaskStateValue }) => {
   const icon = taskStateIcon(state);
 
   return (
-    <span className="capitalize" style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }}>
-      {icon ? <span style={{ fontSize: '18px' }}>{icon}</span> : null}
+    <span className={cn('capitalize', 'flex h-auto items-center gap-1')}>
+      {icon ? <span className="text-body-lg">{icon}</span> : null}
       {String(state).toLowerCase()}
     </span>
   );
@@ -778,17 +809,7 @@ const TaskErrorTrace = ({ label, trace, taskId }: { label: JSX.Element; trace: s
 
   return (
     <div>
-      <Button
-        onClick={() => showErr(trace)}
-        style={{
-          padding: '0px 12px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          height: '30px',
-          gap: '5px',
-        }}
-        variant="destructive-outline"
-      >
+      <Button onClick={() => showErr(trace)} size="sm" variant="destructive-outline">
         {label}
         <span>(Show Error)</span>
       </Button>
@@ -815,12 +836,17 @@ const TaskErrorTrace = ({ label, trace, taskId }: { label: JSX.Element; trace: s
     </div>
   );
 };
-
-export const TaskState = (p: { observable: { state: TaskStateValue; trace?: string; taskId?: number } }) => {
+export const TaskState = (p: {
+  observable: {
+    state: TaskStateValue;
+    trace?: string;
+    taskId?: number;
+  };
+}) => {
   const task = p.observable;
   const label = <TaskStateLabel state={task.state} />;
 
-  if (!task.trace) {
+  if (!isNonEmptyString(task.trace)) {
     return <div>{label}</div>;
   }
 
@@ -832,9 +858,6 @@ export const warnIcon = <TonedIcon icon={WarningIcon} tone="warning" />;
 export const errIcon = <TonedIcon icon={AlertIcon} tone="destructive" />;
 const waitIcon = <TonedIcon icon={HourglassIcon} tone="muted" />;
 const pauseIcon = <TonedIcon icon={PauseCircleIcon} tone="muted" />;
-
-export const mr05: CSSProperties = { marginRight: '.5em' };
-export const ml05: CSSProperties = { marginLeft: '.5em' };
 
 /** Health status to a background utility; the backend also reports STOPPED. */
 export const statusColors = {

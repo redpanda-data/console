@@ -26,6 +26,8 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import type { PipelineTemplate } from './pipeline-template-types';
 import {
@@ -35,8 +37,9 @@ import {
   type TemplateFormSubmitPayload,
 } from './template-form-panel';
 import { TemplateGalleryGrid } from './template-gallery-grid';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { AddTopicStep } from '../onboarding/add-topic-step';
-import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
+import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
@@ -80,7 +83,7 @@ const StepBackHeader = ({
         type="button"
         variant="ghost"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeft className="size-4" />
       </Button>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <DialogTitle>{title}</DialogTitle>
@@ -140,6 +143,24 @@ const useTemplateDialogSteps = (open: boolean) => {
     }
   }, [open]);
 
+  const handleCreateTopicSubmit = async () => {
+    if (view.kind !== 'createTopic' || !addTopicStepRef.current) {
+      return;
+    }
+    setIsCreatingTopic(true);
+    try {
+      const result = await addTopicStepRef.current.triggerSubmit();
+      if (result.success && isNonEmptyString(result.data?.topicName)) {
+        setApplySlotValue({ slotId: view.slotId, value: result.data.topicName, requestId: Date.now() });
+        setView({ kind: 'form' });
+      } else if (!result.success && isNonEmptyString(result.error)) {
+        toast.error(result.message ?? result.error);
+      }
+    } finally {
+      setIsCreatingTopic(false);
+    }
+  };
+
   return {
     view,
     setView,
@@ -152,6 +173,7 @@ const useTemplateDialogSteps = (open: boolean) => {
     formHandleRef,
     addTopicStepRef,
     resetToGallery,
+    handleCreateTopicSubmit,
   };
 };
 
@@ -159,6 +181,43 @@ const useExistingSecretIds = (open: boolean) => {
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: open });
   return useMemo(() => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean), [secretsResponse]);
 };
+
+function TemplateAddSecretStep({
+  view,
+  existingSecrets,
+  onSecretsCreated,
+}: {
+  view: Extract<DialogView, { kind: 'addSecret' }>;
+  existingSecrets: string[];
+  onSecretsCreated: (names: string[]) => void;
+}) {
+  return (
+    <DialogBody>
+      <div className="flex flex-col gap-4">
+        {isNonEmptyString(view.suggestedName) ? (
+          <Alert icon={<KeyRound />} variant="warning">
+            <AlertTitle>This template needs a secret</AlertTitle>
+            <AlertDescription>
+              <p className="text-pretty">
+                We've suggested <span className="font-mono font-semibold">{view.suggestedName}</span> — feel free to
+                adjust the name.
+              </p>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        <QuickAddSecrets
+          defaultNewSecretName={view.suggestedName}
+          enableNewSecrets
+          existingSecrets={existingSecrets}
+          inline
+          onSecretsCreated={onSecretsCreated}
+          requiredSecrets={[]}
+          scopes={[Scope.REDPANDA_CONNECT]}
+        />
+      </div>
+    </DialogBody>
+  );
+}
 
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
   const {
@@ -169,10 +228,10 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     applySlotValue,
     setApplySlotValue,
     isCreatingTopic,
-    setIsCreatingTopic,
     formHandleRef,
     addTopicStepRef,
     resetToGallery,
+    handleCreateTopicSubmit,
   } = useTemplateDialogSteps(open);
   const formId = useId();
   const { isFormViewActive, isAddSecretViewActive, isCreateTopicViewActive, isFormMounted, isStepView } = viewFlagsFor(
@@ -181,7 +240,8 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
   );
 
   const closeWithStash = () => {
-    const stashed = isFormMounted && formHandleRef.current?.isDirty() ? formHandleRef.current.getCurrentYaml() : null;
+    const stashed =
+      isFormMounted && formHandleRef.current?.isDirty() === true ? formHandleRef.current.getCurrentYaml() : null;
     onClose(stashed);
     resetToGallery();
   };
@@ -194,31 +254,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
       setApplySlotValue({ slotId: view.slotId, value: created, requestId: Date.now() });
     }
     setView({ kind: 'form' });
-  };
-
-  const applyCreatedTopic = (slotId: string, result: StepSubmissionResult<AddTopicFormData>) => {
-    if (result.success && result.data?.topicName) {
-      setApplySlotValue({ slotId, value: result.data.topicName, requestId: Date.now() });
-      setView({ kind: 'form' });
-      return;
-    }
-    if (!result.success && result.error) {
-      // AddTopicStep shows field-level validation in its own form; only toast
-      // the higher-level failure.
-      toast.error(result.message ?? result.error);
-    }
-  };
-
-  const handleCreateTopicSubmit = async () => {
-    if (view.kind !== 'createTopic' || !addTopicStepRef.current) {
-      return;
-    }
-    setIsCreatingTopic(true);
-    try {
-      applyCreatedTopic(view.slotId, await addTopicStepRef.current.triggerSubmit());
-    } finally {
-      setIsCreatingTopic(false);
-    }
   };
 
   return (
@@ -280,9 +315,9 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
         ) : null}
 
         {/* Stays mounted across addSecret/createTopic to preserve form state; */}
-        {/* hidden via inline style (className targets the inner element). */}
+        {/* Hidden without unmounting the form or losing its state. */}
         {isFormMounted && selectedTemplate ? (
-          <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
+          <DialogBody className={isFormViewActive ? undefined : 'hidden'}>
             <TemplateFormPanel
               applySlotValue={applySlotValue}
               formId={formId}
@@ -296,31 +331,12 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
           </DialogBody>
         ) : null}
 
-        {isAddSecretViewActive ? (
-          <DialogBody>
-            <div className="flex flex-col gap-4">
-              {view.kind === 'addSecret' && view.suggestedName ? (
-                <Alert icon={<KeyRound />} variant="warning">
-                  <AlertTitle>This template needs a secret</AlertTitle>
-                  <AlertDescription>
-                    <p className="text-pretty">
-                      We've suggested <span className="font-mono font-semibold">{view.suggestedName}</span> — feel free
-                      to adjust the name.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-              <QuickAddSecrets
-                defaultNewSecretName={view.kind === 'addSecret' ? view.suggestedName : undefined}
-                enableNewSecrets
-                existingSecrets={existingSecrets}
-                inline
-                onSecretsCreated={handleSecretsCreated}
-                requiredSecrets={[]}
-                scopes={[Scope.REDPANDA_CONNECT]}
-              />
-            </div>
-          </DialogBody>
+        {view.kind === 'addSecret' ? (
+          <TemplateAddSecretStep
+            existingSecrets={existingSecrets}
+            onSecretsCreated={handleSecretsCreated}
+            view={view}
+          />
         ) : null}
 
         {isCreateTopicViewActive ? (
@@ -347,7 +363,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
               data-testid="template-create-topic-submit"
               disabled={isCreatingTopic}
               isLoading={isCreatingTopic}
-              onClick={handleCreateTopicSubmit}
+              onClick={asyncEvent(handleCreateTopicSubmit, reportActionError)}
               type="button"
               variant="primary"
             >

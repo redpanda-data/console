@@ -135,7 +135,7 @@ export function importOf(sourceCode: SourceCode, identifier: NamedIdentifier) {
   const specifier = definition.node;
   let imported = '*';
   if (specifier.type === 'ImportSpecifier') {
-    imported = specifier.imported.type === 'Identifier' ? specifier.imported.name : String(specifier.imported.value);
+    imported = specifier.imported.type === 'Identifier' ? specifier.imported.name : specifier.imported.value;
   } else if (specifier.type === 'ImportDefaultSpecifier') {
     imported = 'default';
   }
@@ -165,7 +165,8 @@ export function globalPath(sourceCode: SourceCode, node: Node | null | undefined
 }
 
 function children(node: Node): unknown[] {
-  return Object.entries(node).flatMap(([key, value]) => (key === 'parent' ? [] : [value]));
+  const entries: [string, unknown][] = Object.entries(node);
+  return entries.flatMap(([key, value]) => (key === 'parent' ? [] : [value]));
 }
 
 /** Depth-first search that does not enter nested functions, which run on their own schedule. */

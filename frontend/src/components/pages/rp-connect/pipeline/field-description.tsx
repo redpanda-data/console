@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { BookOpenIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
@@ -35,12 +36,12 @@ const MARKDOWN_COMPONENTS: Components = {
   // Markdown can produce an anchor with no destination, which is text rather than a link. Every block an
   // anchor lands in already sets `text-body-sm`, so the link takes its size from the prose around it.
   a: ({ href, children }) =>
-    href ? (
+    href !== null && href !== undefined && href !== '' ? (
       <Link href={href} rel="noopener noreferrer" target="_blank">
         {children}
       </Link>
     ) : (
-      <>{children}</>
+      children
     ),
   code: ({ children }) => (
     // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
@@ -75,7 +76,11 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
  */
 const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
   <Link
-    aria-label={fieldName ? `${fieldName} documentation` : 'Field documentation'}
+    aria-label={
+      fieldName !== null && fieldName !== undefined && fieldName !== ''
+        ? `${fieldName} documentation`
+        : 'Field documentation'
+    }
     href={href}
     rel="noopener noreferrer"
     target="_blank"
@@ -128,15 +133,17 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         )}
       </div>
       <div className="flex items-baseline gap-3 text-body-sm text-muted-foreground">
-        <button
+        <Button
           aria-controls={bodyId}
           aria-expanded={expanded}
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
           className="text-body-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
           onClick={() => setExpanded((value) => !value)}
           type="button"
+          variant="unstyled"
         >
           {expanded ? 'Show less' : 'Show more'}
-        </button>
+        </Button>
         {docsLink}
       </div>
     </div>
@@ -148,7 +155,10 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
  * AsciiDoc `description` that most fields are still limited to.
  */
 export const FieldDescription = ({ spec, docsUrl }: { spec: RawFieldSpec; docsUrl?: string }) => {
-  const docsLink = docsUrl ? <FieldDocsLink fieldName={spec.name} href={docsUrl} /> : null;
+  const docsLink =
+    docsUrl !== null && docsUrl !== undefined && docsUrl !== '' ? (
+      <FieldDocsLink fieldName={spec.name} href={docsUrl} />
+    ) : null;
   const short = spec.shortDescription?.trim();
   if (short) {
     return <InlineHelp docsLink={docsLink}>{short}</InlineHelp>;

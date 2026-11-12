@@ -104,8 +104,8 @@ type RetentionInputGroupProps = {
   isExistingTopic: boolean;
   disabled?: boolean;
   label: string;
-  valueField: keyof AddTopicFormData;
-  unitField: keyof AddTopicFormData;
+  valueField: 'retentionTimeMs' | 'retentionSize';
+  unitField: 'retentionTimeUnit' | 'retentionSizeUnit';
   units: { value: string; label: string }[];
   onChange: (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
@@ -114,7 +114,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
   ({ form, isExistingTopic, disabled = false, label, valueField, unitField, units, onChange }) => {
     const unitValue = useWatch({
       control: form.control,
-      name: unitField as 'retentionTimeUnit' | 'retentionSizeUnit',
+      name: unitField,
     });
     // The numeric input is disabled when the unit is "infinite" (no value to
     // enter) or when editing an existing topic. The unit selector itself must
@@ -125,14 +125,12 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
     return (
       <div className="space-y-2">
         <FormLabel>{label}</FormLabel>
-        {Boolean(isExistingTopic) && (
-          <p className="mb-2 text-body-sm text-subtle">Existing topic values cannot be modified</p>
-        )}
+        {isExistingTopic && <p className="mb-2 text-body-sm text-subtle">Existing topic values cannot be modified</p>}
         <Group attached>
           <FormField
             control={form.control}
             disabled={isValueDisabled}
-            name={valueField as 'retentionTimeMs' | 'retentionSize'}
+            name={valueField}
             render={({ field }) => (
               <FormItem className="flex-1">
                 <FormControl>
@@ -150,7 +148,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
           <FormField
             control={form.control}
             disabled={lockedForEdit}
-            name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
+            name={unitField}
             render={({ field }) => (
               <FormItem>
                 <FormControl>

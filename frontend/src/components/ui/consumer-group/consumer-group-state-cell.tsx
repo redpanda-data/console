@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import type { GroupType } from 'state/rest-interfaces';
+import type { GroupType } from 'types/consumer-groups';
+import '../styles.css';
 
 import { groupTypeLabels } from './consumer-group-type';
 import { StatusDot } from '../../redpanda-ui/components/status-dot';
@@ -71,7 +72,8 @@ const stateDescriptions: Record<StateIconKey, string> = {
   completingrebalance: 'Kafka is assigning partitions to group members',
   preparingrebalance: 'A reassignment of partitions is required, members have been asked to stop consuming',
   assigning: 'The broker is computing a new partition assignment for the group',
-  reconciling: 'Some members have not reached their target assignment yet. Members that are not affected keep consuming',
+  reconciling:
+    'Some members have not reached their target assignment yet. Members that are not affected keep consuming',
   empty: 'Consumer group exists, but does not have any members',
   dead: 'Consumer group does not have any members and its metadata has been removed',
   unknown: 'Group state is not known',
@@ -84,8 +86,16 @@ export const consumerGroupStatesByType: Record<GroupType, StateIconKey[]> = {
 };
 
 const normalizeStateKey = (state: string): StateIconKey => {
-  const key = state.toLowerCase().replace(/\s+/g, '') as StateIconKey;
-  return key in stateDotVariants ? key : 'unknown';
+  const key = state.toLowerCase().replace(/\s+/g, '');
+  return key === 'stable' ||
+    key === 'completingrebalance' ||
+    key === 'preparingrebalance' ||
+    key === 'assigning' ||
+    key === 'reconciling' ||
+    key === 'empty' ||
+    key === 'dead'
+    ? key
+    : 'unknown';
 };
 
 /**
@@ -112,11 +122,11 @@ export const ConsumerGroupStateCell = ({ state, groupType = 'classic' }: { state
         <TooltipContent
           align="start"
           arrow={false}
-          className="max-w-xl border border-border bg-card p-2 text-foreground shadow-md"
+          className="console-consumer-group-state-tooltip"
           side="bottom"
           testId="consumer-group-state-tooltip"
         >
-          <div className="px-1.5 pt-0.5 pb-1.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide">
+          <div className="px-1.5 pt-0.5 pb-1.5 text-body-sm font-semibold tracking-wide text-muted-foreground uppercase">
             States of a {groupTypeLabels[groupType].toLowerCase()} group
           </div>
           <ul className="flex flex-col gap-0.5">
@@ -124,12 +134,14 @@ export const ConsumerGroupStateCell = ({ state, groupType = 'classic' }: { state
               <li
                 aria-current={s === key ? 'true' : undefined}
                 className={cn(
-                  'grid grid-cols-[16px_minmax(0,10rem)_1fr] items-start gap-2.5 rounded-sm px-1.5 py-1 text-xs',
+                  'grid grid-cols-[16px_minmax(0,10rem)_1fr] items-start gap-2.5 rounded-sm px-1.5 py-1 text-body-sm',
                   s === key && 'bg-muted'
                 )}
                 key={s}
               >
-                <StatusDot className="mt-px" size="sm" variant={stateDotVariants[s]} />
+                <span className="mt-px inline-flex">
+                  <StatusDot size="sm" variant={stateDotVariants[s]} />
+                </span>
                 <span className="font-semibold text-foreground">{consumerGroupStateNames[s]}</span>
                 <span className="text-muted-foreground">{stateDescriptions[s]}</span>
               </li>

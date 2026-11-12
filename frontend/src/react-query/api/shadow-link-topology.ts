@@ -46,6 +46,7 @@ import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { useCallback, useMemo } from 'react';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import { isGuidedFailoverEnabled } from './cluster-fence';
 import {
@@ -131,12 +132,12 @@ const useOrganizationClusters = (transport: Transport, enabled: boolean) => {
 
 const combineDetails = (ids: readonly string[]) => (results: UseQueryResult<GetShadowLinkResponse>[]) => {
   const byId = new Map<string, Loaded<ShadowLink>>();
-  results.forEach((result, index) => {
+  for (const [index, result] of results.entries()) {
     const id = ids[index];
     if (id) {
       byId.set(id, loadedOf(result.data?.shadowLink, result.isError));
     }
-  });
+  }
   return byId;
 };
 
@@ -209,21 +210,22 @@ const usePeerFences = (sources: readonly Cluster[]) => {
           fences.set(cluster.id, NOT_RUNNING);
         }
       }
-      readable.forEach((cluster, index) => {
+      for (const [index, cluster] of readable.entries()) {
         const result = results[index];
         if (result?.isError) {
           fences.set(cluster.id, unreadablePeerFence(result.error));
         } else if (result?.data) {
           fences.set(cluster.id, result.data);
         }
-      });
+      }
       return fences;
     },
     [sources, readable]
   );
   return useQueries({
     queries: readable.map((cluster) => {
-      const consoleUrl = cluster.redpandaConsole?.url || undefined;
+      const url = cluster.redpandaConsole?.url;
+      const consoleUrl = isNonEmptyString(url) ? url : undefined;
       return {
         queryKey: ['cluster-fence-peer-status', cluster.id, consoleUrl],
         queryFn: ({ signal }: { signal: AbortSignal }) => readPeerClusterFence(consoleUrl, signal),

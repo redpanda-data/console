@@ -9,60 +9,38 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
+import { afterEach, describe, expect, rs, test } from '@rstest/core';
+import { isRedirect } from '@tanstack/react-router';
+import { createTestRouterFromFiles } from 'test-utils';
 
 import { Route } from './$roleName/edit';
 
+afterEach(() => {
+  rs.restoreAllMocks();
+});
+
+async function loadLegacyRoleRouter(role: string, query: string) {
+  // The spy calls the real guard; Router supplies its complete typed context and follows both compatibility hops.
+  const guard = rs.spyOn(Route.options, 'beforeLoad');
+  const router = createTestRouterFromFiles(`/security/roles/${role}/edit${query}`);
+  await router.load();
+  const redirect: unknown = guard.mock.results.find((result) => result.type === 'throw')?.value;
+  if (!isRedirect(redirect)) {
+    throw new Error('Expected the legacy role redirect');
+  }
+  return { router, redirect };
+}
+
 describe('role edit compatibility route', () => {
-  test('redirects legacy edit URLs to the update route', () => {
-    expect.assertions(5);
-
-    try {
-      Route.options.beforeLoad?.({
-        params: { roleName: 'topic-reader' },
-        search: {},
-      } as never);
-    } catch (error) {
-      const redirect = error as Response & {
-        options: {
-          params: { roleName: string };
-          replace: boolean;
-          search: Record<string, string>;
-          to: string;
-        };
-      };
-
-      expect(redirect.status).toBe(307);
-      expect(redirect.options.to).toBe('/security/roles/$roleName/update');
-      expect(redirect.options.params).toEqual({ roleName: 'topic-reader' });
-      expect(redirect.options.replace).toBe(true);
-      expect(redirect.options.search).toEqual({});
-    }
-  });
-
-  test('preserves host search params when redirecting to update', () => {
-    expect.assertions(5);
-
-    try {
-      Route.options.beforeLoad?.({
-        params: { roleName: 'test-bretts' },
-        search: { host: 'host.example.com' },
-      } as never);
-    } catch (error) {
-      const redirect = error as Response & {
-        options: {
-          params: { roleName: string };
-          replace: boolean;
-          search: Record<string, string>;
-          to: string;
-        };
-      };
-
-      expect(redirect.status).toBe(307);
-      expect(redirect.options.to).toBe('/security/roles/$roleName/update');
-      expect(redirect.options.params).toEqual({ roleName: 'test-bretts' });
-      expect(redirect.options.replace).toBe(true);
-      expect(redirect.options.search).toEqual({ host: 'host.example.com' });
-    }
+  test.each([
+    { role: 'topic-reader', query: '', search: {} },
+    { role: 'test-bretts', query: '?host=host.example.com', search: { host: 'host.example.com' } },
+  ])('redirects a legacy edit URL while preserving its search: $role', async ({ role, query, search }) => {
+    const { router, redirect } = await loadLegacyRoleRouter(role, query);
+    expect(redirect.status).toBe(307);
+    expect(redirect.options).toMatchObject({ to: '/security/roles/$roleName/update', replace: true });
+    expect(redirect.options.params).toEqual({ roleName: role });
+    expect(redirect.options.search).toEqual(search);
+    expect(router.state.location.pathname).toBe(`/security/roles/${role}/details`);
   });
 });

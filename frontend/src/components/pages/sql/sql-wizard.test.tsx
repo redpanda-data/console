@@ -11,9 +11,9 @@
 
 import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
 
 import { SqlWizard, type SqlWizardProps, type WizardTopic } from './sql-wizard';
+import { render, screen } from '../../../test-utils';
 
 function MockSyncCodeBlock({ code }: { code: string }) {
   return <div data-testid="sql-preview">{code}</div>;
@@ -150,6 +150,8 @@ describe('the SqlWizard', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
 
-    expect(onClose).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'click', target: screen.getByRole('button', { name: 'Close' }) })
+    );
   });
 });

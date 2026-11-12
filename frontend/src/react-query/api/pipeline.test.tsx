@@ -22,6 +22,7 @@ import {
 import { connectQueryWrapper } from 'test-utils';
 
 import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
+import { isNonEmptyString } from '../../utils/string-utils';
 
 // Module scope: the hook memoizes its request on the input's identity.
 const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
@@ -35,7 +36,7 @@ describe('useListPipelinesQuery', () => {
       rpc(listPipelines, (req) =>
         create(ListPipelinesResponseSchema, {
           response: create(DataPlaneListPipelinesResponseSchema, {
-            pipelines: req.request?.filter?.nameContains
+            pipelines: isNonEmptyString(req.request?.filter?.nameContains)
               ? [create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' })]
               : [
                   create(PipelineSchema, { id: 'pipeline-1', displayName: 'Pipeline 1' }),

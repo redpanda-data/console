@@ -19,12 +19,7 @@ type BaseNodeProps = {
 
 export function BaseNode({ children, className }: BaseNodeProps) {
   return (
-    <div
-      className={cn(
-        'rounded-lg border border-border bg-card text-card-foreground shadow-sm',
-        className,
-      )}
-    >
+    <div className={cn('rounded-lg border border-border bg-card text-card-foreground shadow-sm', className)}>
       {children}
     </div>
   );
@@ -36,11 +31,7 @@ type BaseNodeHeaderProps = {
 };
 
 export function BaseNodeHeader({ children, className }: BaseNodeHeaderProps) {
-  return (
-    <div className={cn('flex items-center gap-2 border-b border-border px-3 py-2', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('flex items-center gap-2 border-b border-border px-3 py-2', className)}>{children}</div>;
 }
 
 type BaseNodeHeaderTitleProps = {
@@ -67,9 +58,5 @@ type BaseNodeFooterProps = {
 };
 
 export function BaseNodeFooter({ children, className }: BaseNodeFooterProps) {
-  return (
-    <div className={cn('flex items-center gap-2 border-t border-border px-3 py-2', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('flex items-center gap-2 border-t border-border px-3 py-2', className)}>{children}</div>;
 }

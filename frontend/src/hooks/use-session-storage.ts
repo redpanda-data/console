@@ -4,11 +4,11 @@ import { useCallback, useState } from 'react';
  * Custom hook for managing session storage state
  */
 
-export const useSessionStorage = <T>(key: string, initialValue?: T) => {
+export const useSessionStorage = <T>(key: string, initialValue: T, decode: (value: unknown) => T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       const item = sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item !== null && item !== undefined && item !== '' ? decode(JSON.parse(item)) : initialValue;
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn(`Error reading from sessionStorage key "${key}":`, error);

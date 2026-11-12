@@ -13,7 +13,7 @@ import type { Page } from '../../shared/e2e';
 import { appURL, expect, step, test } from '../../shared/e2e';
 
 function generateUsername(): string {
-  const rand = Math.random().toString(36).substring(2, 7);
+  const rand = Math.random().toString(36).slice(2, 7);
   return `e2e-perm-${rand}`;
 }
 

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
 
+import { NotFoundPage } from './not-found-page';
+
 const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
   mockConfig: {
-    clusterId: 'cluster-123' as string | undefined,
+    clusterId: 'cluster-123',
   },
   mockLocation: {
     pathname: '/agents/agent-123',
@@ -20,11 +22,9 @@ rs.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-rs.mock('../../config', () => ({
+rs.mock('../../runtime-config', () => ({
   config: mockConfig,
 }));
-
-import { NotFoundPage } from './not-found-page';
 
 describe('the NotFoundPage', () => {
   beforeEach(() => {

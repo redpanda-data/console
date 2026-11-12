@@ -9,9 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
+import { extractSecretReferences, getUniqueSecretNames, type SecretReference } from './secret-detection';
 import { describe, expect, test } from 'bun:test';
 
-import { extractSecretReferences, getUniqueSecretNames } from './secret-detection';
+function hasReference(
+  references: SecretReference[],
+  expected: Pick<SecretReference, 'secretName'> & Partial<Pick<SecretReference, 'nestedKey' | 'defaultValue'>>
+) {
+  return references.some(
+    (reference) =>
+      reference.secretName === expected.secretName &&
+      (expected.nestedKey === undefined || reference.nestedKey === expected.nestedKey) &&
+      (expected.defaultValue === undefined || reference.defaultValue === expected.defaultValue)
+  );
+}
 
 describe('extractSecretReferences', () => {
   test('should extract simple secret reference', () => {
@@ -88,13 +99,10 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(3);
-    expect(result).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ secretName: 'DB_USER' }),
-        expect.objectContaining({ secretName: 'DB_PASSWORD' }),
-        expect.objectContaining({ secretName: 'API_TOKEN' }),
-      ])
-    );
+    const expectedReferences = [{ secretName: 'DB_USER' }, { secretName: 'DB_PASSWORD' }, { secretName: 'API_TOKEN' }];
+    for (const expected of expectedReferences) {
+      expect(hasReference(result, expected)).toBe(true);
+    }
   });
 
   test('should deduplicate identical secret references', () => {
@@ -133,14 +141,17 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(2);
-    expect(result).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ secretName: 'API_CREDS', nestedKey: 'username' }),
-        expect.objectContaining({ secretName: 'API_CREDS', nestedKey: 'password' }),
-      ])
-    );
+    const expectedReferences = [
+      { secretName: 'API_CREDS', nestedKey: 'username' },
+      { secretName: 'API_CREDS', nestedKey: 'password' },
+    ];
+    for (const expected of expectedReferences) {
+      expect(hasReference(result, expected)).toBe(true);
+    }
   });
+});
 
+describe('empty and structured secret inputs', () => {
   test('should return empty array for content with no secret references', () => {
     const yaml = 'username: admin\npassword: secret123';
     const result = extractSecretReferences(yaml);
@@ -175,18 +186,21 @@ data:
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(6);
-    expect(result).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ secretName: 'DB', nestedKey: 'host', defaultValue: 'localhost' }),
-        expect.objectContaining({ secretName: 'DB', nestedKey: 'port', defaultValue: '5432' }),
-        expect.objectContaining({ secretName: 'DB', nestedKey: 'username' }),
-        expect.objectContaining({ secretName: 'DB', nestedKey: 'password' }),
-        expect.objectContaining({ secretName: 'API_KEY' }),
-        expect.objectContaining({ secretName: 'API_SECRET' }),
-      ])
-    );
+    const expectedReferences = [
+      { secretName: 'DB', nestedKey: 'host', defaultValue: 'localhost' },
+      { secretName: 'DB', nestedKey: 'port', defaultValue: '5432' },
+      { secretName: 'DB', nestedKey: 'username' },
+      { secretName: 'DB', nestedKey: 'password' },
+      { secretName: 'API_KEY' },
+      { secretName: 'API_SECRET' },
+    ];
+    for (const expected of expectedReferences) {
+      expect(hasReference(result, expected)).toBe(true);
+    }
   });
+});
 
+describe('secret reference edge cases', () => {
   test('should handle default values containing special characters', () => {
     const yaml = 'url: ${secrets.API_URL:https://api.example.com/v1}';
     const result = extractSecretReferences(yaml);
@@ -216,7 +230,7 @@ data:
   });
 
   test('should handle inline secret references', () => {
-    const yaml = 'connection_string: postgresql://user:\${secrets.DB_PASS}@localhost:5432/db';
+    const yaml = 'connection_string: postgresql://user:${secrets.DB_PASS}@localhost:5432/db';
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
@@ -228,12 +242,7 @@ data:
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(2);
-    expect(result).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ secretName: 'USER' }),
-        expect.objectContaining({ secretName: 'PASS' }),
-      ])
-    );
+    expect(result).toMatchObject([{ secretName: 'USER' }, { secretName: 'PASS' }]);
   });
 
   test('should handle default values with colons', () => {
@@ -284,9 +293,7 @@ describe('getUniqueSecretNames', () => {
   });
 
   test('should handle single reference', () => {
-    const references = [
-      { secretName: 'SINGLE_SECRET', fullReference: '${secrets.SINGLE_SECRET}' },
-    ];
+    const references = [{ secretName: 'SINGLE_SECRET', fullReference: '${secrets.SINGLE_SECRET}' }];
 
     const result = getUniqueSecretNames(references);
 

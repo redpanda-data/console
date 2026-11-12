@@ -12,6 +12,7 @@
 import { type ReactNode, useLayoutEffect, useState } from 'react';
 
 import { chainToBody, documentTop } from '../../utils/dom-position';
+import { nonzeroNumber } from '../../utils/number-utils';
 
 /** Read by `.page-fill-viewport` and `.page-fill-viewport-min` (globals.css). */
 const PAGE_TOP_VAR = '--console-page-top';
@@ -81,7 +82,7 @@ export const PageColumn = ({ children }: { children: ReactNode }) => {
 function createPageTopPublisher(columnEl: HTMLDivElement) {
   let lastValue = '';
   return () => {
-    const paddingTop = Number.parseFloat(getComputedStyle(columnEl).paddingTop) || 0;
+    const paddingTop = nonzeroNumber(Number.parseFloat(getComputedStyle(columnEl).paddingTop)) ?? 0;
     const value = `${documentTop(columnEl) + paddingTop}px`;
     if (value !== lastValue) {
       lastValue = value;

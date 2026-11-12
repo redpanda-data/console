@@ -1,4 +1,4 @@
-@use "sass:color";
+@use 'sass:color';
 
 /**
  * Copyright 2022 Redpanda Data, Inc.
@@ -12,17 +12,17 @@
  */
 
 .boxCard {
-  border: solid 1px #DDDDDD;
-  padding: 16px;
-  border-radius: 8px;
   box-sizing: border-box;
+  padding: 16px;
+  border: solid 1px #dddddd;
+  border-radius: 8px;
 }
 
 .dashed {
   border-style: dashed;
 }
 
-.hoverable:hover {  
+.hoverable:hover {
   $color: #418fd8;
   @debug color.adjust($color, $lightness: 25%);
   border-color: $color;
@@ -36,6 +36,6 @@
 .hoverable:hover,
 .active,
 .medium {
-  border-width: 2px;
   padding: 15px;
+  border-width: 2px;
 }

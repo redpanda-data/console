@@ -12,8 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CubeIcon } from 'components/icons';
 
-import SchemaList from '../../components/pages/schemas/schema-list';
-
+import { SchemaList } from '../../components/pages/schemas/schema-list';
 export const Route = createFileRoute('/schema-registry/')({
   staticData: {
     title: 'Schema Registry',

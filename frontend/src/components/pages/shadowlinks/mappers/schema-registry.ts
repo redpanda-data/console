@@ -248,10 +248,18 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValu
   return base;
 }
 
+const syncBehaviorForApi = (api: SchemaRegistryApiOptionsMessage): SchemaRegistryFormValues['syncBehavior'] => ({
+  tailInterval: formatDurationForInput(api.tailInterval),
+  fullSyncInterval: formatDurationForInput(api.fullSyncInterval),
+  maxSourceRequestRate: api.maxSourceRequestsPerSecond > 0 ? String(api.maxSourceRequestsPerSecond) : '',
+  unsupportedSchemaFeatures:
+    api.unsupportedSchemaFeaturePolicy === UnsupportedSchemaFeaturePolicy.REMOVE ? 'remove' : 'fail',
+});
+
 function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): SchemaRegistryFormValues {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
   const filter = api.sourceFilter;
-  const hasFilter = Boolean(filter && ((filter.contexts?.length ?? 0) > 0 || (filter.subjects?.length ?? 0) > 0));
+  const hasFilter = (filter?.contexts?.length ?? 0) > 0 || (filter?.subjects?.length ?? 0) > 0;
   const exactMappings =
     api.destination?.mapping?.case === 'exact' ? (api.destination.mapping.value.mappings ?? []) : [];
 
@@ -274,13 +282,7 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): Schem
     subjects: hasFilter ? [...(filter?.subjects ?? [])] : [],
     destinationContextsMode: exactMappings.length > 0 ? 'map' : 'preserve',
     contextMappings: exactMappings.map((mapping) => ({ source: mapping.source, destination: mapping.destination })),
-    syncBehavior: {
-      tailInterval: formatDurationForInput(api.tailInterval),
-      fullSyncInterval: formatDurationForInput(api.fullSyncInterval),
-      maxSourceRequestRate: api.maxSourceRequestsPerSecond > 0 ? String(api.maxSourceRequestsPerSecond) : '',
-      unsupportedSchemaFeatures:
-        api.unsupportedSchemaFeaturePolicy === UnsupportedSchemaFeaturePolicy.REMOVE ? 'remove' : 'fail',
-    },
+    syncBehavior: syncBehaviorForApi(api),
     paused: api.paused,
   };
 }

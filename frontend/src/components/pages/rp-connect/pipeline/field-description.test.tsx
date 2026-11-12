@@ -9,15 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
+import { FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { render, screen } from 'test-utils';
 
 import { FieldDescription } from './field-description';
 import type { RawFieldSpec } from '../types/schema';
 
-const field = (overrides: Partial<RawFieldSpec>): RawFieldSpec =>
-  ({ name: 'topics', type: 'string', kind: 'scalar', ...overrides }) as RawFieldSpec;
+const field = (overrides: Partial<RawFieldSpec>): RawFieldSpec => ({
+  ...create(FieldSpecSchema, { name: 'topics', type: 'string', kind: 'scalar' }),
+  ...overrides,
+});
 
 // The `input: redpanda` topics field: a one-line short description over a multi-paragraph AsciiDoc one.
 const LONG_TOPICS_DESCRIPTION =

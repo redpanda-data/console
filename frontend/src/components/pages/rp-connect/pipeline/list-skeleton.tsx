@@ -11,7 +11,6 @@
 
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ReactElement } from 'react';
 
 const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
@@ -36,7 +35,7 @@ const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   },
   { head: 'w-16', cell: <Skeleton className="h-6 w-20" /> },
   { head: 'w-16', cell: <Skeleton className="h-6 w-16" /> },
-  { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
+  { head: 'w-8', cell: <Skeleton className="size-8" /> },
 ];
 
 // After Output, as the table orders them.
@@ -66,7 +65,9 @@ export const PipelineListSkeleton = () => {
             {columns.map((column, columnIndex) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
               <TableHead key={columnIndex}>
-                <Skeleton className={cn('h-4', column.head)} />
+                <div className={column.head}>
+                  <Skeleton className="h-4 w-full" />
+                </div>
               </TableHead>
             ))}
           </TableRow>

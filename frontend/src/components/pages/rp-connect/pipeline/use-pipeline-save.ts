@@ -43,7 +43,7 @@ import { toast } from 'sonner';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
 
 import {
   DRAFT_UNSUPPORTED_MESSAGE,
@@ -71,12 +71,13 @@ import {
   saveSuccessMessage,
   wasDraftIgnored,
 } from './save-actions';
+import type { PipelineFormValues } from './use-pipeline-document-recovery';
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { extractLintHintsFromError } from '../errors';
 import { cpuToTasks, tasksToCPU } from '../tasks';
 import { navigateToConnectClusters } from '../utils/navigation';
-import { usesServiceAccountLogin } from '../utils/yaml';
-import type { PipelineFormValues } from '.';
+import { usesServiceAccountLogin } from '../utils/yaml-redpanda';
 
 // Sonner's default is 4s.
 const SAVE_SUCCESS_TOAST_MS = 6000;
@@ -149,7 +150,7 @@ function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, str
 function warnIfResized(form: PipelineForm, cpuShares: string | undefined) {
   const retUnits = cpuToTasks(cpuShares);
   const currentUnits = form.getValues('computeUnits');
-  if (retUnits && currentUnits !== retUnits) {
+  if (retUnits !== null && retUnits !== undefined && Boolean(retUnits) && currentUnits !== retUnits) {
     toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
   }
 }
@@ -178,8 +179,8 @@ function buildCreateRequest(write: PipelineWrite) {
       pipeline: create(PipelineCreateSchema, {
         displayName: write.name,
         configYaml: write.yamlContent,
-        description: write.description || '',
-        resources: { cpuShares: tasksToCPU(write.computeUnits) || '0', memoryShares: '0' },
+        description: (write.description ?? '') || '',
+        resources: { cpuShares: (tasksToCPU(write.computeUnits) ?? '') || '0', memoryShares: '0' },
         tags: { __redpanda_cloud_pipeline_type: 'pipeline', ...account.tags, ...write.userTags },
         serviceAccount: account.serviceAccount,
         draft: write.draft,
@@ -198,8 +199,8 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
       pipeline: create(PipelineUpdateSchema, {
         displayName: write.name,
         configYaml: write.yamlContent,
-        description: write.description || '',
-        resources: { cpuShares: tasksToCPU(write.computeUnits) || '0', memoryShares: '0' },
+        description: (write.description ?? '') || '',
+        resources: { cpuShares: (tasksToCPU(write.computeUnits) ?? '') || '0', memoryShares: '0' },
         tags: {
           ...Object.fromEntries(Object.entries(current?.tags ?? {}).filter(([k]) => isSystemTag(k))),
           ...account.tags,
@@ -316,7 +317,10 @@ async function stopCreatedPipeline(
   if (!(attempt.run === 'stopped' || draftWasIgnored)) {
     return { stopped: false, stopFailed: false };
   }
-  const stopped = newPipelineId ? await stopQuietly(flow.stopPipeline, newPipelineId) : false;
+  const stopped =
+    newPipelineId !== null && newPipelineId !== undefined && newPipelineId !== ''
+      ? await stopQuietly(flow.stopPipeline, newPipelineId)
+      : false;
   if (!(stopped || draftWasIgnored)) {
     toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
   }
@@ -332,7 +336,18 @@ function toastCreateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnore
   }
 }
 
-function leaveAfterCreate(
+/** A completed write stays successful even if the router cannot open the saved pipeline. */
+async function navigateAfterSave(action: () => Promise<void>): Promise<void> {
+  try {
+    await action();
+  } catch (navigationError) {
+    toast.error('Pipeline saved, but navigation failed', {
+      description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+    });
+  }
+}
+
+async function leaveAfterCreate(
   flow: SaveFlow,
   attempt: SaveAttempt,
   newPipelineId: string | undefined,
@@ -342,14 +357,17 @@ function leaveAfterCreate(
   if (attempt.skipNavigation) {
     return;
   }
-  if (!newPipelineId) {
-    flow.navigate({ to: '/connect-clusters' });
+  if (!(newPipelineId !== null && newPipelineId !== undefined && newPipelineId !== '')) {
+    await navigateAfterSave(() => flow.navigate({ to: '/connect-clusters' }));
     return;
   }
   // A draft stays in the editor on its own route so the next save updates it.
-  flow.navigate({
-    to: attempt.isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
-  });
+  await navigateAfterSave(() =>
+    flow.navigate({
+      to:
+        attempt.isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
+    })
+  );
 }
 
 async function requestCreate(flow: SaveFlow, write: PipelineWrite) {
@@ -371,7 +389,7 @@ async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt): Promise<bo
   );
   toastCreateOutcome(flow, attempt, draftWasIgnored, stopOutcome);
   warnIfResized(flow.form, createdPipeline?.resources?.cpuShares);
-  leaveAfterCreate(flow, attempt, createdPipeline?.id, draftWasIgnored);
+  await leaveAfterCreate(flow, attempt, createdPipeline?.id, draftWasIgnored);
   return true;
 }
 
@@ -403,8 +421,8 @@ async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: st
       await flow.stopPipeline(create(StopPipelineRequestSchema, { request: { id: pipelineId } }));
     }
     return true;
-  } catch (runErr) {
-    reportRunFailure(flow, run, ConnectError.from(runErr));
+  } catch (error) {
+    reportRunFailure(flow, run, ConnectError.from(error));
     return false;
   }
 }
@@ -419,12 +437,12 @@ function toastUpdateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnore
 }
 
 // A saved draft stays in the editor; everything else opens the pipeline's page.
-function leaveAfterUpdate(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string, draftWasIgnored: boolean) {
+async function leaveAfterUpdate(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string, draftWasIgnored: boolean) {
   if ((attempt.isDraftSave && !draftWasIgnored) || attempt.skipNavigation) {
     return;
   }
   flow.onBeforeGuardedNavigate?.();
-  flow.navigate({ to: `/rp-connect/${pipelineId}` });
+  await navigateAfterSave(() => flow.navigate({ to: `/rp-connect/${pipelineId}` }));
 }
 
 async function requestUpdate(flow: SaveFlow, write: PipelineWrite, pipelineId: string) {
@@ -448,7 +466,7 @@ async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId:
     return true;
   }
   toastUpdateOutcome(flow, attempt, draftWasIgnored);
-  leaveAfterUpdate(flow, attempt, pipelineId, draftWasIgnored);
+  await leaveAfterUpdate(flow, attempt, pipelineId, draftWasIgnored);
   return true;
 }
 
@@ -474,9 +492,9 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean
     if (flow.mode === 'create') {
       return await createAndFinish(flow, attempt);
     }
-    return flow.pipelineId ? await updateAndFinish(flow, attempt, flow.pipelineId) : false;
-  } catch (err) {
-    return reportSaveFailure(flow, err, attempt.isDraftSave);
+    return isNonEmptyString(flow.pipelineId) ? await updateAndFinish(flow, attempt, flow.pipelineId) : false;
+  } catch (error) {
+    return reportSaveFailure(flow, error, attempt.isDraftSave);
   }
 }
 
@@ -487,7 +505,7 @@ async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolea
   flow.editorStore.getState().pendingEditCommit?.();
   const { yamlContent } = flow.editorStore.getState();
   const blocker = await saveBlockerMessage(flow, run === 'draft', yamlContent);
-  if (blocker) {
+  if (blocker !== null && blocker !== undefined && blocker !== '') {
     toast.error(blocker);
     return false;
   }
@@ -558,7 +576,12 @@ function useMarkSaved({
       form.reset(submittedSettings);
       form.reset(onScreen, { keepDefaultValues: true });
       rpcnEditorAutosave.clear(autosaveTargetKey(mode === 'create' ? undefined : pipelineId));
-      if (savedPipelineId && savedPipelineId !== pipelineId) {
+      if (
+        savedPipelineId !== null &&
+        savedPipelineId !== undefined &&
+        savedPipelineId !== '' &&
+        savedPipelineId !== pipelineId
+      ) {
         rpcnEditorAutosave.clear(autosaveTargetKey(savedPipelineId));
       }
       keepEditsMadeInFlight({
@@ -639,7 +662,7 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
           toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
           onBeforeGuardedNavigate?.();
-          navigateToConnectClusters(navigate);
+          navigateToConnectClusters(navigate).catch(reportActionError);
         },
         onError: (err) => {
           toast.error(

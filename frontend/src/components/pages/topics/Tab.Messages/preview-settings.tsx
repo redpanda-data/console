@@ -1,3 +1,5 @@
+import { isObject } from 'utils/type-guards';
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -25,6 +27,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label as CheckboxLabel } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import React from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
 import { usePreviewDisplayMode } from '../../../../hooks/use-preview-display-mode';
@@ -33,14 +36,18 @@ import { usePreviewTagsCaseSensitive } from '../../../../hooks/use-preview-tags-
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { PreviewTagV2 } from '../../../../state/ui';
 import { useTopicSettingsStore } from '../../../../stores/topic-settings-store';
+import { arrayDistinct } from '../../../../utils/array-utils';
 import { IsDev } from '../../../../utils/env';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
 function getFreeId(tags: PreviewTagV2[]): string {
+  const usedIds = new Set(tags.map((tag) => tag.id));
   let i = 1;
-  while (tags.any((t) => t.id === String(i))) {
+  while (usedIds.has(String(i))) {
     i += 1;
   }
   return String(i);
@@ -59,11 +66,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
   const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
   const [displayMode, setDisplayMode] = usePreviewDisplayMode(topicName);
   const { setPreviewTags: setStoredPreviewTags, perTopicSettings } = useTopicSettingsStore();
-
-  const currentKeys = getAllMessageKeys(messages)
-    .map((p) => p.propertyName)
-    .distinct();
-
+  const currentKeys = arrayDistinct(getAllMessageKeys(messages).map((p) => p.propertyName));
   // Access perTopicSettings to trigger re-render when it changes
   const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
 
@@ -91,7 +94,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="droppable">
             {(droppableProvided, _droppableSnapshot) => (
-              <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="flex flex-col" ref={droppableProvided.innerRef}>
                 {tags.map((tag, index) => (
                   <Draggable draggableId={tag.id} index={index} key={tag.id}>
                     {(draggableProvided, _draggableSnapshot) => (
@@ -135,25 +138,31 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
         </DragDropContext>
       </div>
 
-      <div style={{ marginTop: '1em' }}>
-        <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
+      <div className="mt-[1em]">
+        <h3 className="console-preview-checkbox">Settings</h3>
         <div className="previewTagsSettings">
           <OptionGroup<'caseSensitive' | 'ignoreCase'>
             label="Matching"
-            onChange={(e) => setCaseSensitive(e)}
+            onChange={(e) => {
+              setCaseSensitive(e).catch(reportActionError);
+            }}
             options={{ 'Ignore Case': 'ignoreCase', 'Case Sensitive': 'caseSensitive' }}
             value={caseSensitive}
           />
           <OptionGroup<'showOnlyFirst' | 'showAll'>
             label="Multiple Results"
-            onChange={(e) => setMultiResultMode(e)}
+            onChange={(e) => {
+              setMultiResultMode(e).catch(reportActionError);
+            }}
             options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
             value={multiResultMode}
           />
 
           <OptionGroup<'single' | 'wrap' | 'rows'>
             label="Wrapping"
-            onChange={(e) => setDisplayMode(e)}
+            onChange={(e) => {
+              setDisplayMode(e).catch(reportActionError);
+            }}
             options={{ 'Single Line': 'single', Wrap: 'wrap', Rows: 'rows' }}
             value={displayMode}
           />
@@ -219,7 +228,7 @@ const PreviewTagSettings = ({
         {/* PopoverContent is a fixed w-72, so the width is set here to fit the content. */}
         <PopoverContent align="start" className="w-auto" side="bottom">
           <div className="flex flex-col gap-1">
-            <Label style={{ marginBottom: '.5em' }} text="Display Name">
+            <Label className="mb-[.5em]" text="Display Name">
               <Input
                 autoComplete={randomId()}
                 onChange={(e) => updateTag({ customName: e.target.value })}
@@ -259,6 +268,7 @@ const PreviewTagSettings = ({
         <SingleSelect<string>
           creatable
           onChange={(value) => updateTag({ pattern: value })}
+          onCreate={(value) => value}
           options={allCurrentKeys.map((t) => ({ label: t, value: t }))}
           placeholder="Pattern..."
           value={tag.pattern}
@@ -266,9 +276,9 @@ const PreviewTagSettings = ({
       </div>
 
       {/* Remove */}
-      <button className="inlineButton" onClick={onRemove} type="button">
+      <Button className="inlineButton" onClick={onRemove} type="button" variant="unstyled">
         <CloseIcon />
-      </button>
+      </Button>
     </div>
   );
 };
@@ -280,8 +290,11 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-type TagMatch = { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string };
-
+type TagMatch = {
+  prop: CollectedProperty;
+  tag: PreviewTagV2;
+  fullPath: string;
+};
 function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean): TagMatch[] {
   if (tag.pattern.length === 0) {
     return [];
@@ -330,20 +343,19 @@ function compareTagMatches(tags: PreviewTagV2[]) {
   };
 }
 
-export function getPreviewTags(
-  targetObject: Record<string, unknown>,
-  tags: PreviewTagV2[],
-  caseSensitive: boolean
-): React.ReactNode[] {
+export function getPreviewTags(targetObject: unknown, tags: PreviewTagV2[], caseSensitive: boolean): React.ReactNode[] {
+  if (!isObject(targetObject)) {
+    return [];
+  }
   const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
   results.sort(compareTagMatches(tags));
 
   // found some properties, create JSX for them
-  return results.map((r, index) => {
+  return results.map((r) => {
     const tag = r.tag;
-    const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
+    const displayName = isNonEmptyString(tag.customName) && tag.customName.length > 0 ? tag.customName : r.fullPath;
     return (
-      <span className="previewTag" key={`${tag.id}-${r.fullPath}-${index}`}>
+      <span className="previewTag" key={`${tag.id}-${r.fullPath}`}>
         <span className="path">{displayName}</span>
         <span>{toSafeString(r.prop.value)}</span>
       </span>
@@ -375,9 +387,14 @@ function parseJsonPath(str: string): string[] | string {
 
   return segments;
 }
-
-type PathStep = { next: number; segment?: string } | { error: string };
-
+type PathStep =
+  | {
+      next: number;
+      segment?: string;
+    }
+  | {
+      error: string;
+    };
 // Collect symbols until we find a dot, single-quote, or double-quote
 function splitPathSegments(str: string): string[] | string {
   const result: string[] = [];
@@ -388,7 +405,7 @@ function splitPathSegments(str: string): string[] | string {
     if ('error' in step) {
       return step.error;
     }
-    if (step.segment) {
+    if (isNonEmptyString(step.segment)) {
       result.push(step.segment);
     }
     pos = step.next;
@@ -508,11 +525,8 @@ if (IsDev) {
 
   for (const test of tests) {
     const expected = test.output;
-    let result = parseJsonPath(test.input);
-
-    if (typeof result === 'string') {
-      result = null as unknown as string[]; // string means error message
-    }
+    const parsed = parseJsonPath(test.input);
+    const result = typeof parsed === 'string' ? null : parsed;
 
     if (result === null && expected === null) {
       continue;
@@ -526,15 +540,13 @@ if (IsDev) {
       hasError = true; // matched something we don't want
     }
 
-    if (!hasError && result && expected) {
+    if (!hasError && isPresent(result) && expected) {
       if (result.length !== expected.length) {
         hasError = true; // wrong length
       }
 
-      for (let i = 0; i < result.length && !hasError; i++) {
-        if (result[i] !== expected[i]) {
-          hasError = true; // wrong array entry
-        }
+      if (!hasError && result.some((value, index) => value !== expected[index])) {
+        hasError = true; // wrong array entry
       }
     }
 

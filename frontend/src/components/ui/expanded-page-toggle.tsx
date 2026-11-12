@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 
@@ -17,8 +18,10 @@ export function ExpandedPageToggle({ expanded, onToggle }: { expanded: boolean; 
   const label = expanded ? 'Exit fullscreen' : 'Enter fullscreen';
 
   return (
-    <Button aria-label={label} onClick={onToggle} size="icon-sm" title={label} variant="ghost">
-      {expanded ? <Minimize2 /> : <Maximize2 />}
-    </Button>
+    <ElementTooltip content={label}>
+      <Button aria-label={label} onClick={onToggle} size="icon-sm" variant="ghost">
+        {expanded ? <Minimize2 /> : <Maximize2 />}
+      </Button>
+    </ElementTooltip>
   );
 }

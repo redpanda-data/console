@@ -15,6 +15,7 @@ import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import {
   DataPointSchema,
+  type ExecuteRangeQueryRequest,
   ExecuteRangeQueryResponseSchema,
   ListQueriesResponseSchema,
   QueryMetadataSchema,
@@ -24,10 +25,13 @@ import {
   executeRangeQuery,
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
+import React from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+import { PipelineThroughputCard } from './pipeline-throughput-card';
+
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: {
@@ -36,13 +40,6 @@ rs.mock('config', () => {
     isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
 
 // recharts ResponsiveContainer requires measured dimensions; stub to a simple div
 function ResponsiveContainerStub({ children }: { children: React.ReactNode }) {
@@ -56,10 +53,6 @@ rs.mock('recharts', () => {
     ResponsiveContainer: ResponsiveContainerStub,
   };
 });
-
-import React from 'react';
-
-import { PipelineThroughputCard } from './pipeline-throughput-card';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -115,14 +108,16 @@ function buildTransport({
 // ---------------------------------------------------------------------------
 
 describe('the PipelineThroughputCard', () => {
-  it('shows calm unavailable state with retry when range queries error', async () => {
+  test('shows calm unavailable state with retry when range queries error', async () => {
     const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockImplementation(() => {
-      throw new ConnectError('metrics backend unavailable', Code.Internal);
-    });
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockImplementation(() => {
+        throw new ConnectError('metrics backend unavailable', Code.Internal);
+      });
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -137,11 +132,12 @@ describe('the PipelineThroughputCard', () => {
     );
   });
 
-  it('shows the unavailable state, not the empty state, when the query catalog fails', async () => {
+  test('shows the unavailable state, not the empty state, when the query catalog fails', async () => {
     const listQueriesMock = rs.fn().mockImplementation(() => {
       throw new ConnectError('metrics service unreachable', Code.Internal);
     });
-    const executeRangeQueryMock = rs.fn();
+    const executeRangeQueryMock =
+      rs.fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>();
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -158,16 +154,18 @@ describe('the PipelineThroughputCard', () => {
     expect(executeRangeQueryMock).not.toHaveBeenCalled();
   });
 
-  it('shows empty state when queries return empty results', async () => {
+  test('shows empty state when queries return empty results', async () => {
     const listQueriesMock = rs
       .fn()
       .mockImplementation(() => createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockImplementation(() =>
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockImplementation(() =>
+        create(ExecuteRangeQueryResponseSchema, {
+          results: [],
+        })
+      );
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -181,18 +179,20 @@ describe('the PipelineThroughputCard', () => {
     );
   });
 
-  it('renders refresh button that is clickable without crashing', async () => {
+  test('renders refresh button that is clickable without crashing', async () => {
     const user = userEvent.setup();
 
     const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockReturnValue(
+        create(ExecuteRangeQueryResponseSchema, {
+          results: [],
+        })
+      );
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -209,12 +209,13 @@ describe('the PipelineThroughputCard', () => {
     expect(screen.getByText('Throughput')).toBeInTheDocument();
   });
 
-  it('shows empty state when listQueries returns no matching queries', async () => {
+  test('shows empty state when listQueries returns no matching queries', async () => {
     // When listQueries has no connect queries, range queries are disabled (enabled: false),
     // so they never load and never error -- resulting in empty chart data.
     const listQueriesMock = rs.fn().mockReturnValue(createListQueriesResponse([]));
 
-    const executeRangeQueryMock = rs.fn();
+    const executeRangeQueryMock =
+      rs.fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>();
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -228,7 +229,7 @@ describe('the PipelineThroughputCard', () => {
     expect(executeRangeQueryMock).not.toHaveBeenCalled();
   });
 
-  it('renders chart area when data is returned successfully', async () => {
+  test('renders chart area when data is returned successfully', async () => {
     const now = Date.UTC(2026, 0, 15, 12);
     const fiveMinAgo = now - 5 * 60 * 1000;
 
@@ -236,18 +237,20 @@ describe('the PipelineThroughputCard', () => {
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
-      if (request.queryName === 'connect_input_received') {
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockImplementation((request) => {
+        if (request.queryName === 'connect_input_received') {
+          return createRangeQueryResponse([
+            { timestamp: fiveMinAgo, value: 100 },
+            { timestamp: now, value: 200 },
+          ]);
+        }
         return createRangeQueryResponse([
-          { timestamp: fiveMinAgo, value: 100 },
-          { timestamp: now, value: 200 },
+          { timestamp: fiveMinAgo, value: 80 },
+          { timestamp: now, value: 150 },
         ]);
-      }
-      return createRangeQueryResponse([
-        { timestamp: fiveMinAgo, value: 80 },
-        { timestamp: now, value: 150 },
-      ]);
-    });
+      });
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
@@ -264,23 +267,28 @@ describe('the PipelineThroughputCard', () => {
     expect(screen.queryByText('No throughput data yet')).not.toBeInTheDocument();
   });
 
-  it('passes pipeline_id filter in range query params', async () => {
+  test('passes pipeline_id filter in range query params', async () => {
     const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockReturnValue(
+        create(ExecuteRangeQueryResponseSchema, {
+          results: [],
+        })
+      );
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
     await waitFor(() => {
-      expect(executeRangeQueryMock).toHaveBeenCalled();
+      expect(executeRangeQueryMock.mock.calls[0]?.[0]).toMatchObject({
+        queryName: 'connect_input_received',
+        params: { filters: { pipeline_id: PIPELINE_ID } },
+      });
     });
 
     // Every range query call must include the pipeline_id filter
@@ -289,16 +297,18 @@ describe('the PipelineThroughputCard', () => {
     }
   });
 
-  it('calls both ingress and egress range queries', async () => {
+  test('calls both ingress and egress range queries', async () => {
     const listQueriesMock = rs
       .fn()
       .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
 
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
+    const executeRangeQueryMock = rs
+      .fn<(request: ExecuteRangeQueryRequest) => ReturnType<typeof createRangeQueryResponse>>()
+      .mockReturnValue(
+        create(ExecuteRangeQueryResponseSchema, {
+          results: [],
+        })
+      );
 
     const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 

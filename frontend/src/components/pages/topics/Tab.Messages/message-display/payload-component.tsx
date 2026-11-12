@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -9,7 +10,6 @@
  * by the Apache License, Version 2.0
  */
 
-import type { CSSProperties } from 'react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -17,9 +17,6 @@ import { highlightControlChars } from './highlight-control-chars';
 import type { Payload } from '../../../../../state/rest-interfaces';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
 import { Button } from '../../../../redpanda-ui/components/button';
-
-// Regex for checking printable ASCII characters
-const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
 
 type PayloadRenderData =
   | { type: 'null' }
@@ -37,13 +34,13 @@ function isPrimitivePayload(val: unknown): boolean {
 function formatHexBytes(payload: Payload): PayloadRenderData {
   const rawBytes = payload.rawBytes;
   const normalizedPayload = payload.normalizedPayload;
-  const bytesSource = rawBytes !== null && rawBytes !== undefined ? rawBytes : normalizedPayload;
+  const bytesSource = rawBytes ?? normalizedPayload;
   if (
     bytesSource &&
     (typeof bytesSource === 'string' || Array.isArray(bytesSource) || bytesSource instanceof Uint8Array)
   ) {
     let result = '';
-    for (const rawByte of bytesSource as Uint8Array) {
+    for (const rawByte of bytesSource) {
       result += `${rawByte.toString(16).padStart(2, '0')} `;
     }
     return { type: 'code', content: result };
@@ -51,26 +48,8 @@ function formatHexBytes(payload: Payload): PayloadRenderData {
   return { type: 'rawBytesUnavailable' };
 }
 
-function formatAsciiBytes(val: unknown): PayloadRenderData {
-  const str = String(val);
-  let result = '';
-  for (let i = 0; i < str.length; i++) {
-    let ch = String.fromCharCode(str.charCodeAt(i));
-    ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
-    result += `${ch} `;
-  }
-  return { type: 'code', content: result };
-}
-
-function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData {
-  const mode = 'hex' as 'ascii' | 'raw' | 'hex';
-  if (mode === 'raw') {
-    return { type: 'code', content: val as React.ReactNode };
-  }
-  if (mode === 'hex') {
-    return formatHexBytes(payload);
-  }
-  return formatAsciiBytes(val);
+function prepareBinaryPayload(payload: Payload): PayloadRenderData {
+  return formatHexBytes(payload);
 }
 
 function classifyPayload(payload: Payload): PayloadRenderData {
@@ -81,11 +60,11 @@ function classifyPayload(payload: Payload): PayloadRenderData {
   const val = payload.payload;
 
   if (payload.encoding === 'binary') {
-    return prepareBinaryPayload(payload, val);
+    return prepareBinaryPayload(payload);
   }
 
   if (payload.encoding === 'utf8WithControlChars') {
-    return { type: 'controlChars', content: val as string };
+    return { type: 'controlChars', content: String(val) };
   }
 
   if (isPrimitivePayload(val)) {
@@ -98,9 +77,8 @@ function classifyPayload(payload: Payload): PayloadRenderData {
 function preparePayloadData(payload: Payload): PayloadRenderData {
   try {
     return classifyPayload(payload);
-  } catch (e) {
-    const err = e as Error;
-    return { type: 'error', content: err.message === undefined ? String(e) : err.message };
+  } catch (error) {
+    return { type: 'error', content: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -118,7 +96,7 @@ function LargePayloadNotice({ loadLargeMessage }: { loadLargeMessage: () => Prom
         onClick={() => {
           setLoadingLargeMessage(true);
           loadLargeMessage()
-            .catch((err) => toast.error(err instanceof Error ? err.message : String(err)))
+            .catch((error: unknown) => toast.error(error instanceof Error ? error.message : String(error)))
             .finally(() => setLoadingLargeMessage(false));
         }}
         size="sm"
@@ -130,12 +108,12 @@ function LargePayloadNotice({ loadLargeMessage }: { loadLargeMessage: () => Prom
   );
 }
 
-function renderPayloadData(renderData: PayloadRenderData, payload: Payload, viewerStyle: CSSProperties | undefined) {
+function renderPayloadData(renderData: PayloadRenderData, payload: Payload, viewerClassName: string | undefined) {
   switch (renderData.type) {
     case 'null':
       return <code>null</code>;
     case 'code':
-      return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{renderData.content}</code>;
+      return <code className="console-message-code">{renderData.content}</code>;
     case 'rawBytesUnavailable':
       return <div>Raw bytes not available</div>;
     case 'controlChars':
@@ -155,7 +133,11 @@ function renderPayloadData(renderData: PayloadRenderData, payload: Payload, view
       // Latin-1 code points in the viewer so copy-paste yields the original
       // bytes rather than their UTF-8 encoding.
       return (
-        <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} style={viewerStyle} />
+        <KowlJsonView
+          className={viewerClassName}
+          escapeLatin1={payload.encoding === 'avro'}
+          srcObj={renderData.content}
+        />
       );
     case 'error':
       return <span className="text-destructive">Error in RenderExpandedMessage: {renderData.content}</span>;
@@ -167,15 +149,15 @@ function renderPayloadData(renderData: PayloadRenderData, payload: Payload, view
 export const PayloadComponent = (p: {
   payload: Payload;
   loadLargeMessage: () => Promise<void>;
-  /** Style overrides for the JSON viewer (e.g. lift the default max-height in full-height layouts). */
-  viewerStyle?: CSSProperties;
+  /** Layout overrides for the JSON viewer in full-height message details. */
+  viewerClassName?: string;
 }) => {
   const { payload, loadLargeMessage } = p;
   const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
-  if (payload.isPayloadTooLarge) {
+  if (payload.isPayloadTooLarge === true) {
     return <LargePayloadNotice loadLargeMessage={loadLargeMessage} />;
   }
 
-  return renderPayloadData(renderData, payload, p.viewerStyle);
+  return renderPayloadData(renderData, payload, p.viewerClassName);
 };

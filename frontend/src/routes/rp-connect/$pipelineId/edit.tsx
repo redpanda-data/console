@@ -10,13 +10,16 @@
  */
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 
-import RpConnectPipelinesEdit from '../../../components/pages/rp-connect/pipelines-edit';
+import { RpConnectPipelinesEdit } from '../../../components/pages/rp-connect/pipelines-edit';
+import { isEmbedded, isFeatureFlagEnabled } from '../../../runtime-config';
 
-const PipelinePage = lazy(() => import('../../../components/pages/rp-connect/pipeline'));
-
+const PipelinePage = lazy(() =>
+  import('../../../components/pages/rp-connect/pipeline').then((loadedModule) => ({
+    default: loadedModule.PipelinePage,
+  }))
+);
 export const Route = createFileRoute('/rp-connect/$pipelineId/edit')({
   staticData: {
     title: 'Edit Pipeline',

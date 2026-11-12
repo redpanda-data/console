@@ -11,7 +11,8 @@
 
 import { docsLinks } from 'utils/docs-links';
 
-import type { PipelineFlowNode } from './pipeline-flow-parser';
+import type { PipelineFlowNode } from './pipeline-flow-nodes';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 
 const DOCS_BASE = docsLinks.cloud.connectComponents;
 // Sections whose docs path is the naive plural (`${section}s`); metrics/tracer don't follow that rule.
@@ -39,7 +40,7 @@ export function getFieldDocsUrl(
   fieldPath: readonly string[]
 ): string | undefined {
   const base = getConnectorDocsUrl(section, connectorName);
-  if (!base || fieldPath.length === 0) {
+  if (!(base !== null && base !== undefined && base !== '') || fieldPath.length === 0) {
     return base;
   }
   return `${base}#${fieldPath.join('-')}`;
@@ -50,13 +51,13 @@ type DocsNode = Pick<PipelineFlowNode, 'kind' | 'label' | 'section' | 'isCase' |
 /** Docs URL for a parsed pipeline node, or undefined when the node names no documented component. */
 export function getNodeDocsUrl(node: DocsNode): string | undefined {
   // Section headers, `switch` case wrappers and empty-section placeholders name no component.
-  if (node.kind === 'section' || node.isCase || node.label === 'none') {
+  if (node.kind === 'section' || node.isCase === true || node.label === 'none') {
     return;
   }
   if (node.section === 'resource') {
     // `resource` is not a component section, so resolve through the `*_resources` key. Singletons
     // (`buffer:`, `metrics:`) and unnamed entries are labelled by that key itself — not components.
-    if (!node.resourceKey || node.label === node.resourceKey) {
+    if (!isNonEmptyString(node.resourceKey) || node.label === node.resourceKey) {
       return;
     }
     return getConnectorDocsUrl(node.resourceKey.replace(RESOURCES_KEY_SUFFIX, ''), node.label);

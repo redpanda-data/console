@@ -1,14 +1,13 @@
 import { computeGraphLayout } from './pipeline-flow-layout';
 import { summarizeComponent } from './pipeline-flow-meta';
+import { SECTION_LABEL } from './pipeline-flow-nodes';
 import {
   isConfigTextEmpty,
   mainFlowSequence,
-  type PipelineFlowNode,
   parsePipelineFlowTree,
-  SECTION_LABEL,
   shouldOfferTemplate,
 } from './pipeline-flow-parser';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 /** Narrows a lookup the next assertion reads through, failing with `what` instead of a TypeError. */
 function present<T>(value: T | undefined, what: string): T {
@@ -20,7 +19,7 @@ function present<T>(value: T | undefined, what: string): T {
 
 describe('parsePipelineFlowTree', () => {
   describe('empty and resource-only configs', () => {
-    it('returns placeholder input/output sections with placeholder leaves for empty string', () => {
+    test('returns placeholder input/output sections with placeholder leaves for empty string', () => {
       const { nodes } = parsePipelineFlowTree('');
       expect(nodes).toHaveLength(4);
       expect(nodes[0]).toMatchObject({ id: 'section-input', kind: 'section', label: 'input', section: 'input' });
@@ -41,13 +40,13 @@ describe('parsePipelineFlowTree', () => {
       });
     });
 
-    it('returns empty nodes with error for invalid YAML', () => {
+    test('returns empty nodes with error for invalid YAML', () => {
       const result = parsePipelineFlowTree('{{{');
       expect(result.nodes).toEqual([]);
       expect(result.error).toBeDefined();
     });
 
-    it('returns placeholder sections with placeholder leaves for YAML with no input/output/processors', () => {
+    test('returns placeholder sections with placeholder leaves for YAML with no input/output/processors', () => {
       const { nodes } = parsePipelineFlowTree('some_unknown_key: true');
       expect(nodes).toHaveLength(4);
       expect(nodes[0]).toMatchObject({ id: 'section-input', kind: 'section', label: 'input' });
@@ -56,7 +55,7 @@ describe('parsePipelineFlowTree', () => {
       expect(nodes[3]).toMatchObject({ id: 'output-placeholder', kind: 'leaf', label: 'none' });
     });
 
-    it('parses resource-only YAML into resource section with input/output placeholders', () => {
+    test('parses resource-only YAML into resource section with input/output placeholders', () => {
       const { nodes } = parsePipelineFlowTree('metrics:\n  prometheus: {}');
       expect(nodes).toHaveLength(6);
       expect(nodes[0]).toMatchObject({ id: 'section-input', kind: 'section' });
@@ -67,7 +66,7 @@ describe('parsePipelineFlowTree', () => {
       expect(nodes[5]).toMatchObject({ id: 'output-placeholder', kind: 'leaf', label: 'none' });
     });
 
-    it('makes component-shaped singleton resources (buffer/metrics/tracer) editable via a path target', () => {
+    test('makes component-shaped singleton resources (buffer/metrics/tracer) editable via a path target', () => {
       const { nodes } = parsePipelineFlowTree('buffer:\n  memory:\n    limit: 1000');
       const buffer = nodes.find((n) => n.id === 'resource-buffer');
       expect(buffer).toMatchObject({
@@ -80,7 +79,7 @@ describe('parsePipelineFlowTree', () => {
       expect(buffer?.meta?.length).toBeGreaterThan(0);
     });
 
-    it('keeps non-component config blocks (logger) display-only', () => {
+    test('keeps non-component config blocks (logger) display-only', () => {
       const { nodes } = parsePipelineFlowTree('logger:\n  level: INFO');
       const logger = nodes.find((n) => n.id === 'resource-logger');
       expect(logger).toMatchObject({ kind: 'leaf', label: 'logger', section: 'resource' });
@@ -89,7 +88,7 @@ describe('parsePipelineFlowTree', () => {
   });
 
   describe('simple components and input containers', () => {
-    it('emits section and leaf nodes for simple input with output placeholder', () => {
+    test('emits section and leaf nodes for simple input with output placeholder', () => {
       const yaml = 'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]';
       const { nodes } = parsePipelineFlowTree(yaml);
       expect(nodes).toHaveLength(4);
@@ -105,7 +104,7 @@ describe('parsePipelineFlowTree', () => {
       expect(nodes[3]).toMatchObject({ id: 'output-placeholder', kind: 'leaf', label: 'none' });
     });
 
-    it('emits section and leaf nodes for simple output with input placeholder', () => {
+    test('emits section and leaf nodes for simple output with input placeholder', () => {
       const yaml = 'output:\n  http_client:\n    url: http://example.com';
       const { nodes } = parsePipelineFlowTree(yaml);
       expect(nodes).toHaveLength(4);
@@ -120,7 +119,7 @@ describe('parsePipelineFlowTree', () => {
       });
     });
 
-    it('parses processor chain with section node and input/output placeholders', () => {
+    test('parses processor chain with section node and input/output placeholders', () => {
       const yaml = `
 pipeline:
   processors:
@@ -152,7 +151,7 @@ pipeline:
       expect(nodes.find((n) => n.id === 'output-placeholder')).toBeDefined();
     });
 
-    it('parses broker input with collapsible group', () => {
+    test('parses broker input with collapsible group', () => {
       const yaml = `
 input:
   broker:
@@ -187,7 +186,7 @@ input:
       });
     });
 
-    it('skips a broker input entry that has only reserved keys (no component yet)', () => {
+    test('skips a broker input entry that has only reserved keys (no component yet)', () => {
       const yaml = `
 input:
   broker:
@@ -202,7 +201,7 @@ input:
       expect(children[0]).toMatchObject({ id: 'input-broker-1', kind: 'leaf', label: 'generate' });
     });
 
-    it('parses sequence input with children', () => {
+    test('parses sequence input with children', () => {
       const yaml = `
 input:
   sequence:
@@ -237,7 +236,7 @@ input:
   });
 
   describe('output containers', () => {
-    it('parses broker output with children', () => {
+    test('parses broker output with children', () => {
       const yaml = `
 output:
   broker:
@@ -271,7 +270,7 @@ output:
       });
     });
 
-    it('parses switch output with children', () => {
+    test('parses switch output with children', () => {
       const yaml = `
 output:
   switch:
@@ -301,7 +300,7 @@ output:
       });
     });
 
-    it('skips a null/scalar switch-output case without crashing and keeps real cases at their YAML index', () => {
+    test('skips a null/scalar switch-output case without crashing and keeps real cases at their YAML index', () => {
       const yaml = `
 output:
   switch:
@@ -322,7 +321,7 @@ output:
       expect(leaf?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
-    it('renders a check-only switch-output case as an empty, condition-editable case node', () => {
+    test('renders a check-only switch-output case as an empty, condition-editable case node', () => {
       const yaml = `
 output:
   switch:
@@ -347,7 +346,7 @@ output:
       expect(emptyCase?.editTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
-    it('labels a bodyless switch-output case with a null-skipping counter, not the raw YAML index', () => {
+    test('labels a bodyless switch-output case with a null-skipping counter, not the raw YAML index', () => {
       const yaml = `
 output:
   switch:
@@ -356,12 +355,12 @@ output:
       - check: 'this.region == "us"'
 `;
       const { nodes } = parsePipelineFlowTree(yaml);
-      const emptyCase = nodes.find((n) => n.isCase);
+      const emptyCase = nodes.find((n) => n.isCase === true);
       expect(emptyCase).toMatchObject({ kind: 'group', label: 'case 1' });
       expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
-    it('parses fallback output with children', () => {
+    test('parses fallback output with children', () => {
       const yaml = `
 output:
   fallback:
@@ -398,7 +397,7 @@ output:
       expect(outputNodes[3]).toMatchObject({ condition: 'on failure', isErrorPath: true });
     });
 
-    it('fans a nested fallback (a switch case output) into its own split with per-tier edges', () => {
+    test('fans a nested fallback (a switch case output) into its own split with per-tier edges', () => {
       const yaml = `
 output:
   switch:
@@ -421,7 +420,7 @@ output:
       expect(present(tier1?.data, 'data on the second tier fan-out edge').tone).toBe('error');
     });
 
-    it('expands a container nested as an output member into its own branching subtree', () => {
+    test('expands a container nested as an output member into its own branching subtree', () => {
       const yaml = `
 output:
   switch:
@@ -478,14 +477,14 @@ output:
   });
 
   describe('processor containers', () => {
-    it('only produces section, group, and leaf node kinds', () => {
+    test('only produces section, group, and leaf node kinds', () => {
       const yaml = 'input:\n  kafka: {}\noutput:\n  http: {}';
       const { nodes } = parsePipelineFlowTree(yaml);
       const validKinds = new Set(['section', 'group', 'leaf']);
       expect(nodes.every((n) => validKinds.has(n.kind))).toBe(true);
     });
 
-    it('parses switch processor with nested cases', () => {
+    test('parses switch processor with nested cases', () => {
       const yaml = `
 pipeline:
   processors:
@@ -506,7 +505,7 @@ pipeline:
       expect(procNodes.filter((n) => n.kind === 'leaf')).toHaveLength(2);
     });
 
-    it('parses group_by processor as case groups (not "check" leaves)', () => {
+    test('parses group_by processor as case groups (not "check" leaves)', () => {
       const yaml = `
 pipeline:
   processors:
@@ -532,7 +531,7 @@ pipeline:
       expect(firstCase?.caseEditTarget?.kind).toBe('switchCase');
     });
 
-    it('parses while processor with nested processors', () => {
+    test('parses while processor with nested processors', () => {
       const yaml = `
 pipeline:
   processors:
@@ -550,7 +549,7 @@ pipeline:
       expect(children[0].label).toBe('mapping');
     });
 
-    it('parses branch processor with nested processors', () => {
+    test('parses branch processor with nested processors', () => {
       const yaml = `
 pipeline:
   processors:
@@ -571,7 +570,7 @@ pipeline:
       expect(children[1].label).toBe('mapping');
     });
 
-    it('caps recursive branching at depth 3', () => {
+    test('caps recursive branching at depth 3', () => {
       const yaml = `
 pipeline:
   processors:
@@ -590,7 +589,7 @@ pipeline:
       expect(procLeaves[0].label).toBe('try');
     });
 
-    it('parses workflow processor as leaf (stages not in branching fields)', () => {
+    test('parses workflow processor as leaf (stages not in branching fields)', () => {
       const yaml = `
 pipeline:
   processors:
@@ -608,7 +607,7 @@ pipeline:
       expect(workflowNode?.label).toBe('workflow');
     });
 
-    it('parses cached processor as leaf when top-level', () => {
+    test('parses cached processor as leaf when top-level', () => {
       const yaml = `
 pipeline:
   processors:
@@ -624,7 +623,7 @@ pipeline:
       expect(procNode?.label).toBe('cached');
     });
 
-    it('parses retry processor as leaf when top-level', () => {
+    test('parses retry processor as leaf when top-level', () => {
       const yaml = `
 pipeline:
   processors:
@@ -640,7 +639,7 @@ pipeline:
       expect(procNode?.label).toBe('retry');
     });
 
-    it('parses array branching processors (try, catch, for_each, parallel) as groups', () => {
+    test('parses array branching processors (try, catch, for_each, parallel) as groups', () => {
       for (const procType of ['try', 'catch', 'for_each', 'parallel']) {
         const yaml = `
 pipeline:
@@ -662,7 +661,7 @@ pipeline:
   });
 
   describe('leaf details and whole pipelines', () => {
-    it('extracts topics in leaf nodes', () => {
+    test('extracts topics in leaf nodes', () => {
       const yaml = `
 input:
   kafka_franz:
@@ -678,7 +677,7 @@ input:
       expect(present(card, 'the laid-out input card').data.topics).toEqual(['orders', 'events']);
     });
 
-    it('summarizes nested leaves too (a processor inside a container shows its config)', () => {
+    test('summarizes nested leaves too (a processor inside a container shows its config)', () => {
       const yaml = `pipeline:
   processors:
     - try:
@@ -693,7 +692,7 @@ output:
       ]);
     });
 
-    it('extracts labels in leaf nodes', () => {
+    test('extracts labels in leaf nodes', () => {
       const yaml = `
 input:
   kafka_franz:
@@ -705,7 +704,7 @@ input:
       expect(leaf?.labelText).toBe('my-input');
     });
 
-    it('handles empty broker inputs gracefully', () => {
+    test('handles empty broker inputs gracefully', () => {
       const yaml = `
 input:
   broker:
@@ -718,7 +717,7 @@ input:
       expect(inputNodes[0].label).toBe('broker');
     });
 
-    it('handles empty broker outputs gracefully', () => {
+    test('handles empty broker outputs gracefully', () => {
       const yaml = `
 output:
   broker:
@@ -730,7 +729,7 @@ output:
       expect(outputNodes[0].label).toBe('broker');
     });
 
-    it('parses full pipeline with all sections', () => {
+    test('parses full pipeline with all sections', () => {
       const yaml = `
 input:
   broker:
@@ -765,14 +764,14 @@ output:
   });
 
   describe('redpanda missing config flags', () => {
-    it('sets missingTopic on redpanda_common input with empty topics', () => {
+    test('sets missingTopic on redpanda_common input with empty topics', () => {
       const yaml = 'input:\n  redpanda_common:\n    topics: []';
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
       expect(input).toMatchObject({ label: 'redpanda_common', missingTopic: true });
     });
 
-    it('sets missingSasl on kafka_franz input without sasl config', () => {
+    test('sets missingSasl on kafka_franz input without sasl config', () => {
       const yaml = 'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]\n    topics: ["test"]';
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
@@ -780,7 +779,7 @@ output:
       expect(input?.missingTopic).toBeUndefined();
     });
 
-    it('does not set missingSasl when component-level sasl is configured', () => {
+    test('does not set missingSasl when component-level sasl is configured', () => {
       const yaml =
         'input:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]\n    topics: ["test"]\n    sasl:\n      - mechanism: SCRAM-SHA-256';
       const { nodes } = parsePipelineFlowTree(yaml);
@@ -789,20 +788,20 @@ output:
     });
 
     // Connect only uses a `redpanda` component's own sasl when it also names seed_brokers.
-    it('sets missingSasl on a redpanda output whose sasl has no seed_brokers to use it', () => {
+    test('sets missingSasl on a redpanda output whose sasl has no seed_brokers to use it', () => {
       const yaml = 'output:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: SCRAM-SHA-256';
       const { nodes } = parsePipelineFlowTree(yaml);
       expect(nodes.find((n) => n.id === 'output-0')).toMatchObject({ label: 'redpanda', missingSasl: true });
     });
 
-    it('does not set missingSasl on a redpanda output that connects with its own sasl', () => {
+    test('does not set missingSasl on a redpanda output that connects with its own sasl', () => {
       const yaml =
         'output:\n  redpanda:\n    seed_brokers: ["broker-0:9092"]\n    topic: orders\n    sasl:\n      - mechanism: SCRAM-SHA-256';
       const { nodes } = parsePipelineFlowTree(yaml);
       expect(nodes.find((n) => n.id === 'output-0')?.missingSasl).toBeUndefined();
     });
 
-    it('does not set missingSasl when root-level redpanda.sasl is configured', () => {
+    test('does not set missingSasl when root-level redpanda.sasl is configured', () => {
       const yaml =
         'redpanda:\n  sasl:\n    - mechanism: SCRAM-SHA-256\ninput:\n  redpanda_common:\n    topics: ["test"]';
       const { nodes } = parsePipelineFlowTree(yaml);
@@ -810,7 +809,7 @@ output:
       expect(input?.missingSasl).toBeUndefined();
     });
 
-    it('does not set flags on non-redpanda components', () => {
+    test('does not set flags on non-redpanda components', () => {
       const yaml = 'input:\n  http_client:\n    url: http://example.com';
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
@@ -818,21 +817,21 @@ output:
       expect(input?.missingSasl).toBeUndefined();
     });
 
-    it('sets flags on redpanda output nodes', () => {
+    test('sets flags on redpanda output nodes', () => {
       const yaml = 'output:\n  kafka_franz:\n    seed_brokers: ["localhost:9092"]';
       const { nodes } = parsePipelineFlowTree(yaml);
       const output = nodes.find((n) => n.id === 'output-0');
       expect(output).toMatchObject({ missingTopic: true, missingSasl: true });
     });
 
-    it('sets both flags when topic and sasl are both missing', () => {
+    test('sets both flags when topic and sasl are both missing', () => {
       const yaml = 'input:\n  redpanda_common: {}';
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
       expect(input).toMatchObject({ missingTopic: true, missingSasl: true });
     });
 
-    it('clears missingTopic when topics are present', () => {
+    test('clears missingTopic when topics are present', () => {
       const yaml = 'input:\n  kafka_franz:\n    topics: ["my-topic"]';
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
@@ -863,7 +862,7 @@ describe('computeGraphLayout', () => {
   const byId = (id: string) => rfNodes.find((n) => n.id === id);
 
   describe('flow spine and fans', () => {
-    it('lays the input → processors → output spine left-to-right on the main row', () => {
+    test('lays the input → processors → output spine left-to-right on the main row', () => {
       const input = byId('input-0');
       const log = byId('proc-0');
       const branch = byId('proc-1');
@@ -877,7 +876,7 @@ describe('computeGraphLayout', () => {
       expect((branch?.position.x ?? 0) < (output?.position.x ?? 0)).toBe(true);
     });
 
-    it('renders a branch as a compact marker with its body flowing inline (no merge node)', () => {
+    test('renders a branch as a compact marker with its body flowing inline (no merge node)', () => {
       const branch = byId('proc-1');
       const child = byId('proc-1-processors-p0');
       // The branch is a compact split; its body flows inline to the right (absolute, not nested)
@@ -888,7 +887,7 @@ describe('computeGraphLayout', () => {
       expect(rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(false);
     });
 
-    it('source-aligns fanned cases: a short case hugs the split, not the merge', () => {
+    test('source-aligns fanned cases: a short case hugs the split, not the merge', () => {
       // The short (1-step) case must sit near the split, not packed against the merge with the long case.
       const yaml = `pipeline:
   processors:
@@ -916,7 +915,7 @@ output:
       expect(logX - minMapX).toBeLessThan((maxMapX - minMapX) / 2);
     });
 
-    it('renders group_by as a routing fan (split → cases → merge) with condition chips on the entries', () => {
+    test('renders group_by as a routing fan (split → cases → merge) with condition chips on the entries', () => {
       const yaml = `pipeline:
   processors:
     - group_by:
@@ -941,9 +940,9 @@ output:
       expect(entry?.caseEditTarget?.kind).toBe('switchCase');
     });
 
-    it('annotates each top-level flow edge with the processor index an insertion there would use', () => {
+    test('annotates each top-level flow edge with the processor index an insertion there would use', () => {
       const spineIndices = rfEdges
-        .map((e) => (e.data as { insertIndex?: number } | undefined)?.insertIndex)
+        .map((e) => e.data?.insertIndex)
         .filter((i): i is number => typeof i === 'number')
         .sort((a, b) => a - b);
       expect(spineIndices).toEqual([0, 1, 2]);
@@ -951,12 +950,12 @@ output:
   });
 
   describe('node data and resource lane', () => {
-    it('carries edit targets and metadata onto the flow nodes', () => {
+    test('carries edit targets and metadata onto the flow nodes', () => {
       expect(byId('proc-0')?.data.editTarget).toEqual({ kind: 'processor', index: 0 });
       expect(byId('proc-0')?.data.meta).toEqual([{ label: 'message', value: 'hi' }]);
     });
 
-    it('surfaces the `label:` on nested and container nodes, not just top-level leaves', () => {
+    test('surfaces the `label:` on nested and container nodes, not just top-level leaves', () => {
       const labelled = `pipeline:
   processors:
     - label: top_branch
@@ -972,7 +971,7 @@ output:
       expect(nodeData('proc-0-processors-p0')?.labelText).toBe('enrich_http'); // nested leaf
     });
 
-    it('places array resources in a lane below the flow', () => {
+    test('places array resources in a lane below the flow', () => {
       const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
       const layout = computeGraphLayout(parsePipelineFlowTree(withCache).nodes);
       const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
@@ -980,7 +979,7 @@ output:
       expect((resource?.position.y ?? 0) > 0).toBe(true);
     });
 
-    it('keeps the resource lane near the main row in horizontal layout (cross-axis, not main-axis, offset)', () => {
+    test('keeps the resource lane near the main row in horizontal layout (cross-axis, not main-axis, offset)', () => {
       const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
       const layout = computeGraphLayout(parsePipelineFlowTree(withCache).nodes);
       const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
@@ -991,32 +990,6 @@ output:
     });
   });
 });
-
-// Resource definitions render in the lane, inspectable via a path target typed by component.
-function expectResourceDefinitionsInspectable(nodes: PipelineFlowNode[]): void {
-  const inputRes = nodes.find((n) => n.id === 'resource-input_resources-0');
-  expect(inputRes).toMatchObject({ section: 'resource', label: 'generate', labelText: 'my_input' });
-  expect(inputRes?.editTarget).toEqual({ kind: 'path', path: ['input_resources', 0], componentType: 'input' });
-  expect(nodes.find((n) => n.id === 'resource-processor_resources-0')?.editTarget).toEqual({
-    kind: 'path',
-    path: ['processor_resources', 0],
-    componentType: 'processor',
-  });
-  expect(nodes.find((n) => n.id === 'resource-output_resources-0')?.editTarget).toEqual({
-    kind: 'path',
-    path: ['output_resources', 0],
-    componentType: 'output',
-  });
-}
-
-// The `resource:` references resolve (not dangling) and link to their definitions.
-function expectIndirectionRefsResolved(nodes: PipelineFlowNode[]): void {
-  const input = nodes.find((n) => n.id === 'input-0');
-  expect(input?.resourceRef).toBe('my_input');
-  expect(input?.danglingRef).toBeUndefined();
-  expect(nodes.find((n) => n.id === 'proc-0')?.resourceRef).toBe('my_proc');
-  expect(nodes.find((n) => n.id === 'output-0')?.resourceRef).toBe('my_output');
-}
 
 describe('enhanced flow semantics', () => {
   const ENRICHMENT = `pipeline:
@@ -1048,7 +1021,7 @@ cache_resources:
   const data = (id: string) => edge(id)?.data as { tone?: string; dashed?: boolean; label?: string } | undefined;
 
   describe('control-flow constructs', () => {
-    it('renders a branch inline as a marker → body, with no copy/merge edges or merge node', () => {
+    test('renders a branch inline as a marker → body, with no copy/merge edges or merge node', () => {
       const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
       expect(layout.rfNodes.find((n) => n.id === 'proc-1')?.type).toBe('flowSplit');
       // No dashed copy/merge edges and no separate merge node — the branch flows inline.
@@ -1056,26 +1029,24 @@ cache_resources:
       expect(layout.rfNodes.some((n) => n.id === 'proc-1-merge')).toBe(false);
       // Its body flows from the branch marker via a solid flow edge.
       const bodyEdge = layout.rfEdges.find((e) => e.source === 'proc-1' && e.target === 'proc-1-processors-p0');
-      expect((bodyEdge?.data as { dashed?: boolean } | undefined)?.dashed).toBeFalsy();
+      expect(bodyEdge?.data?.dashed).toBeFalsy();
     });
 
-    it('moves the switch routing condition onto the case node (chip), styling the fan-out edge by branch', () => {
+    test('moves the switch routing condition onto the case node (chip), styling the fan-out edge by branch', () => {
       // The condition lives on the case node; the fan-out edge is styled by branch (error=red), no label.
       expect(data('fanout-output-switch-0')).toMatchObject({ tone: 'error' });
-      expect((data('fanout-output-switch-0') as { label?: string }).label).toBeUndefined();
-      expect((data('fanout-output-switch-1') as { label?: string }).label).toBeUndefined();
+      expect(data('fanout-output-switch-0')?.label).toBeUndefined();
+      expect(data('fanout-output-switch-1')?.label).toBeUndefined();
 
       const nodes = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes).rfNodes;
-      const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data as Record<string, unknown> | undefined;
+      const nodeData = (id: string) => nodes.find((n) => n.id === id)?.data;
       expect(nodeData('output-switch-0')).toMatchObject({ condition: 'errored()', isErrorPath: true });
       expect(nodeData('output-switch-1')).toMatchObject({ isDefault: true });
       // The condition is editable from the node — its chip carries the switchCase edit target.
-      expect((nodeData('output-switch-0') as { caseEditTarget?: { kind?: string } }).caseEditTarget?.kind).toBe(
-        'switchCase'
-      );
+      expect(nodeData('output-switch-0')?.caseEditTarget?.kind).toBe('switchCase');
     });
 
-    it('makes case conditions editable from the case NODE (processor AND output switch carry the switchCase target)', () => {
+    test('makes case conditions editable from the case NODE (processor AND output switch carry the switchCase target)', () => {
       const yaml = `pipeline:
   processors:
     - switch:
@@ -1111,7 +1082,7 @@ output:
       });
     });
 
-    it('renders an input broker as a labeled hub the inputs fan into, with an "Add input"', () => {
+    test('renders an input broker as a labeled hub the inputs fan into, with an "Add input"', () => {
       const yaml = `input:
   broker:
     inputs:
@@ -1129,7 +1100,7 @@ output:
       expect(layout.rfNodes.some((n) => n.id === 'input-broker-add')).toBe(false);
     });
 
-    it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
+    test('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
       const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
       // proc-2 = try, proc-3 = catch; they fuse into a success/error structure at a merge.
       expect(layout.rfNodes.find((n) => n.id === 'proc-3')?.data.isErrorPath).toBe(true);
@@ -1139,12 +1110,12 @@ output:
       expect(layout.rfNodes.some((n) => n.id === 'proc-2-merge' && n.type === 'flowMerge')).toBe(true);
     });
 
-    it('draws no entry edges for sequential containers — containment shows the flow', () => {
+    test('draws no entry edges for sequential containers — containment shows the flow', () => {
       // The spine enters the box itself; an inner entry edge would be an unreadable stub.
       expect(edges().some((e) => e.id.startsWith('entry-'))).toBe(false);
     });
 
-    it('renders a branch inline and fans an output switch from a split (no terminal merge)', () => {
+    test('renders a branch inline and fans an output switch from a split (no terminal merge)', () => {
       const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
       const find = (id: string) => layout.rfNodes.find((n) => n.id === id);
       // The branch is a compact marker with no merge node (it flows inline).
@@ -1155,7 +1126,7 @@ output:
       expect(find('output-switch-merge')).toBeUndefined();
     });
 
-    it('marks switch cases as selectable wrappers that edit their routing condition', () => {
+    test('marks switch cases as selectable wrappers that edit their routing condition', () => {
       const withSwitch = `pipeline:
   processors:
     - switch:
@@ -1175,7 +1146,7 @@ output:
       expect(nodes.find((n) => n.id === 'proc-0')?.editTarget).toBeDefined();
     });
 
-    it('reconverges processor fans (fan-in per case) but not output fans (sinks terminate)', () => {
+    test('reconverges processor fans (fan-in per case) but not output fans (sinks terminate)', () => {
       const withProcessorSwitch = `pipeline:
   processors:
     - switch:
@@ -1197,7 +1168,7 @@ output:
       expect(layout.rfNodes.some((n) => n.id === 'output-switch-merge')).toBe(false);
     });
 
-    it('fans every switch case out to its own labelled edge and back to the merge', () => {
+    test('fans every switch case out to its own labelled edge and back to the merge', () => {
       const fourCases = `pipeline:
   processors:
     - switch:
@@ -1218,15 +1189,15 @@ output:
       }
       expect(layout.rfNodes.some((n) => n.id === 'proc-0-merge' && n.type === 'flowMerge')).toBe(true);
       // The routing condition rides each case's entry NODE (a chip), not a floating edge label.
-      const conditions = layout.rfNodes
-        .map((n) => (n.data as { condition?: string }).condition)
-        .filter((c): c is string => Boolean(c));
-      expect(conditions).toEqual(expect.arrayContaining(['a == 1', 'a == 2', 'a == 3']));
+      const conditions = layout.rfNodes.map((n) => n.data.condition).filter((c): c is string => Boolean(c));
+      for (const condition of ['a == 1', 'a == 2', 'a == 3']) {
+        expect(conditions).toContain(condition);
+      }
     });
   });
 
   describe('edit targets and insert slots', () => {
-    it('gives nested components a path-based editTarget addressing their exact YAML location', () => {
+    test('gives nested components a path-based editTarget addressing their exact YAML location', () => {
       const { nodes } = parsePipelineFlowTree(ENRICHMENT);
       const byId = (id: string) => nodes.find((n) => n.id === id);
       // http inside the first branch.
@@ -1245,7 +1216,7 @@ output:
       expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
     });
 
-    it('gives nested containers insert slots and switches an add-case slot', () => {
+    test('gives nested containers insert slots and switches an add-case slot', () => {
       const yaml = `pipeline:
   processors:
     - switch:
@@ -1283,7 +1254,7 @@ output:
       });
     });
 
-    it('derives an input broker insert slot that accepts inputs', () => {
+    test('derives an input broker insert slot that accepts inputs', () => {
       const yaml = `input:
   broker:
     inputs:
@@ -1296,7 +1267,7 @@ output:
       expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
     });
 
-    it('renders an empty broker output as a fillable group, not a dead-end leaf', () => {
+    test('renders an empty broker output as a fillable group, not a dead-end leaf', () => {
       const yaml = `output:
   broker:
     pattern: fan_out
@@ -1309,7 +1280,7 @@ output:
       expect(nodes.filter((n) => n.parentId === 'output-broker')).toHaveLength(0);
     });
 
-    it('gives an empty output switch an add-case slot accepting outputs', () => {
+    test('gives an empty output switch an add-case slot accepting outputs', () => {
       const yaml = `output:
   switch:
     cases: []`;
@@ -1319,7 +1290,7 @@ output:
       expect(sw?.addChildSlot).toEqual({ containerPath: ['output', 'switch', 'cases'], section: 'output' });
     });
 
-    it('gives an empty input broker (no inputs key yet) an insert slot', () => {
+    test('gives an empty input broker (no inputs key yet) an insert slot', () => {
       const yaml = `input:
   broker: {}
 output:
@@ -1330,7 +1301,7 @@ output:
       expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
     });
 
-    it('gives empty processor containers (try, branch) insert slots', () => {
+    test('gives empty processor containers (try, branch) insert slots', () => {
       const yaml = `pipeline:
   processors:
     - try: []
@@ -1351,7 +1322,7 @@ output:
       });
     });
 
-    it('renders a check-only switch case (no processors key) with its condition and an add slot', () => {
+    test('renders a check-only switch case (no processors key) with its condition and an add slot', () => {
       const yaml = `pipeline:
   processors:
     - switch:
@@ -1370,7 +1341,7 @@ output:
       expect(nodes.find((n) => n.id === 'proc-0-case-2')).toMatchObject({ isCase: true, isDefault: true });
     });
 
-    it('carries YAML indices (not rendered positions) on insert edges when unparseable entries sit in the list', () => {
+    test('carries YAML indices (not rendered positions) on insert edges when unparseable entries sit in the list', () => {
       const yaml = `input:
   generate: {}
 pipeline:
@@ -1382,14 +1353,13 @@ output:
   drop: {}`;
       const layout = computeGraphLayout(parsePipelineFlowTree(yaml).nodes);
       const insertIndex = (source: string, target: string) =>
-        (layout.rfEdges.find((e) => e.source === source && e.target === target)?.data as { insertIndex?: number })
-          ?.insertIndex;
+        layout.rfEdges.find((e) => e.source === source && e.target === target)?.data?.insertIndex;
       expect(insertIndex('input-0', 'proc-1')).toBe(1);
       expect(insertIndex('proc-1', 'proc-2')).toBe(2);
       expect(insertIndex('proc-2', 'output-0')).toBe(3);
     });
 
-    it('keeps original YAML indices in NESTED edit targets when unparseable entries sit in the list', () => {
+    test('keeps original YAML indices in NESTED edit targets when unparseable entries sit in the list', () => {
       const yaml = `pipeline:
   processors:
     - switch:
@@ -1410,13 +1380,13 @@ output:
   });
 
   describe('resource reference edges', () => {
-    it('draws dashed reference edges from a component to the resource it uses', () => {
+    test('draws dashed reference edges from a component to the resource it uses', () => {
       // Unlabeled — the legend documents the muted dashed line as "uses resource".
       expect(data('ref-proc-0-resource-cache_resources-0')).toMatchObject({ tone: 'muted', dashed: true });
       expect(data('ref-proc-0-resource-cache_resources-0')?.label).toBeUndefined();
     });
 
-    it('connects an input to a cache referenced via a non-`resource` field (checkpoint_cache)', () => {
+    test('connects an input to a cache referenced via a non-`resource` field (checkpoint_cache)', () => {
       // CDC inputs name their cache via `checkpoint_cache`, not `resource` — the edge must still be drawn.
       const yaml = `input:
   mongodb_cdc:
@@ -1432,7 +1402,7 @@ cache_resources:
       expect(refEdge?.target).toBe('resource-cache_resources-0');
     });
 
-    it('renders *_resources definitions and links resource: indirection to them', () => {
+    describe('a resource-indirected pipeline', () => {
       // Fully resource-indirected pipeline (valid in Cloud): components live in *_resources arrays.
       const yaml = `input:
   resource: my_input
@@ -1451,16 +1421,39 @@ processor_resources:
 output_resources:
   - label: my_output
     drop: {}`;
-      const { nodes } = parsePipelineFlowTree(yaml);
-      expectResourceDefinitionsInspectable(nodes);
-      expectIndirectionRefsResolved(nodes);
-
-      const layout = computeGraphLayout(nodes);
-      const refFromInput = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
-      expect(refFromInput?.target).toBe('resource-input_resources-0');
+      test('renders inspectable resource definitions', () => {
+        const { nodes } = parsePipelineFlowTree(yaml);
+        const inputRes = nodes.find((n) => n.id === 'resource-input_resources-0');
+        expect(inputRes).toMatchObject({ section: 'resource', label: 'generate', labelText: 'my_input' });
+        expect(inputRes?.editTarget).toEqual({ kind: 'path', path: ['input_resources', 0], componentType: 'input' });
+        expect(nodes.find((n) => n.id === 'resource-processor_resources-0')?.editTarget).toEqual({
+          kind: 'path',
+          path: ['processor_resources', 0],
+          componentType: 'processor',
+        });
+        expect(nodes.find((n) => n.id === 'resource-output_resources-0')?.editTarget).toEqual({
+          kind: 'path',
+          path: ['output_resources', 0],
+          componentType: 'output',
+        });
+      });
+      test('resolves each indirection to its definition', () => {
+        const { nodes } = parsePipelineFlowTree(yaml);
+        const input = nodes.find((n) => n.id === 'input-0');
+        expect(input?.resourceRef).toBe('my_input');
+        expect(input?.danglingRef).toBeUndefined();
+        expect(nodes.find((n) => n.id === 'proc-0')?.resourceRef).toBe('my_proc');
+        expect(nodes.find((n) => n.id === 'output-0')?.resourceRef).toBe('my_output');
+      });
+      test('links a reference to its resource layout node', () => {
+        const { nodes } = parsePipelineFlowTree(yaml);
+        const layout = computeGraphLayout(nodes);
+        const refFromInput = layout.rfEdges.find((e) => e.id.startsWith('ref-') && e.source === 'input-0');
+        expect(refFromInput?.target).toBe('resource-input_resources-0');
+      });
     });
 
-    it('flags a resource: indirection with no matching *_resources entry as dangling', () => {
+    test('flags a resource: indirection with no matching *_resources entry as dangling', () => {
       const { nodes } = parsePipelineFlowTree(`input:
   resource: ghost
 output:
@@ -1468,7 +1461,7 @@ output:
       expect(nodes.find((n) => n.id === 'input-0')).toMatchObject({ resourceRef: 'ghost', danglingRef: true });
     });
 
-    it('gives each reference edge its own bus lane so cables never overlap', () => {
+    test('gives each reference edge its own bus lane so cables never overlap', () => {
       const twoResources = `pipeline:
   processors:
     - rate_limit: { resource: lim }
@@ -1492,7 +1485,7 @@ cache_resources:
       }
     });
 
-    it('draws a reference edge from each resource user to its resource', () => {
+    test('draws a reference edge from each resource user to its resource', () => {
       // A branch holding two resource users: the cables attach to the actual inner nodes.
       const shared = `pipeline:
   processors:
@@ -1517,7 +1510,7 @@ rate_limit_resources:
       expect(new Set(refEdges.map((e) => e.target)).size).toBe(2);
     });
 
-    it('routes the reference cable as a dashed dependency from the user bottom into the resource top', () => {
+    test('routes the reference cable as a dashed dependency from the user bottom into the resource top', () => {
       const refEdge = edge('ref-proc-0-resource-cache_resources-0');
       // A dependency cable (not flow output): user BOTTOM → resource TOP, muted dashed.
       expect(refEdge?.sourceHandle).toBe('b');
@@ -1526,7 +1519,7 @@ rate_limit_resources:
       expect(refEdge?.data).toMatchObject({ tone: 'muted', dashed: true });
     });
 
-    it('places a referenced resource below its user, near its x', () => {
+    test('places a referenced resource below its user, near its x', () => {
       // Resources lay out below the flow, near their user's x.
       const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
       const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
@@ -1537,7 +1530,7 @@ rate_limit_resources:
       expect(Math.abs((resource?.position.x ?? 0) - (user?.position.x ?? 0))).toBeLessThan(40);
     });
 
-    it('connects a reference to the exact nested node that uses the resource', () => {
+    test('connects a reference to the exact nested node that uses the resource', () => {
       const nested = `pipeline:
   processors:
     - branch:
@@ -1555,7 +1548,7 @@ cache_resources:
   });
 
   describe('resource kind resolution', () => {
-    it('flags dangling resource references and counts resource usage', () => {
+    test('flags dangling resource references and counts resource usage', () => {
       const yaml = `pipeline:
   processors:
     - cache: { resource: dedupe, operator: get }
@@ -1577,7 +1570,7 @@ cache_resources:
       expect(resource?.usedByCount).toBe(2);
     });
 
-    it('never promotes an unrelated string field that happens to match a resource label', () => {
+    test('never promotes an unrelated string field that happens to match a resource label', () => {
       // `client_id` is not a reference field — a coincidental value match must not draw an edge.
       const yaml = `input:
   kafka_franz:
@@ -1593,7 +1586,7 @@ cache_resources:
       expect(nodes.find((n) => n.section === 'resource' && n.labelText === 'prod')?.usedByCount).toBe(0);
     });
 
-    it('never links a checkpoint_cache candidate to a same-labelled rate_limit resource', () => {
+    test('never links a checkpoint_cache candidate to a same-labelled rate_limit resource', () => {
       // Candidates carry the kind their field name implies, so resolution stays kind-aware.
       const yaml = `input:
   mongodb_cdc:
@@ -1609,7 +1602,7 @@ rate_limit_resources:
       expect(nodes.find((n) => n.id === 'resource-rate_limit_resources-0')?.usedByCount).toBe(0);
     });
 
-    it('never links a cache reference to a same-labelled rate_limit resource', () => {
+    test('never links a cache reference to a same-labelled rate_limit resource', () => {
       const yaml = `pipeline:
   processors:
     - cache: { resource: shared, operator: add, key: x }
@@ -1625,7 +1618,7 @@ rate_limit_resources:
       expect(layout.rfEdges.some((e) => e.id.startsWith('ref-'))).toBe(false);
     });
 
-    it('links same-labelled cache and rate_limit references each to their own kind', () => {
+    test('links same-labelled cache and rate_limit references each to their own kind', () => {
       const yaml = `pipeline:
   processors:
     - cache: { resource: shared, operator: add, key: x }
@@ -1648,7 +1641,7 @@ rate_limit_resources:
   });
 
   describe('yaml edge cases', () => {
-    it('resolves << merge keys so merged fields render on the component', () => {
+    test('resolves << merge keys so merged fields render on the component', () => {
       const yaml = `defaults: &d
   topics: [orders]
 input:
@@ -1663,7 +1656,7 @@ output:
       expect(input?.missingTopic).toBeUndefined();
     });
 
-    it('falls back to the placeholder node when input/output are unrenderable arrays', () => {
+    test('falls back to the placeholder node when input/output are unrenderable arrays', () => {
       const { nodes } = parsePipelineFlowTree('input: []\noutput: [1, 2]');
       expect(nodes.find((n) => n.id === 'input-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
       expect(nodes.find((n) => n.id === 'output-placeholder')).toMatchObject({ kind: 'leaf', label: 'none' });
@@ -1680,7 +1673,7 @@ output:
 });
 
 describe('data-flow model', () => {
-  it('orders the main path input → processors → output', () => {
+  test('orders the main path input → processors → output', () => {
     const yaml = `input:
   generate: {}
 pipeline:
@@ -1695,22 +1688,22 @@ output:
 });
 
 describe('isConfigTextEmpty', () => {
-  it('treats a blank or whitespace-only config as empty', () => {
+  test('treats a blank or whitespace-only config as empty', () => {
     expect(isConfigTextEmpty('')).toBe(true);
     expect(isConfigTextEmpty('   \n\t\n  ')).toBe(true);
   });
 
-  it('treats a comments-only config as empty', () => {
+  test('treats a comments-only config as empty', () => {
     expect(isConfigTextEmpty('# just a note\n  # indented note\n')).toBe(true);
   });
 
-  it('treats an empty {} document as empty', () => {
+  test('treats an empty {} document as empty', () => {
     // Deleting the last component can leave `{}` — no user content, so genuinely blank.
     expect(isConfigTextEmpty('{}')).toBe(true);
     expect(isConfigTextEmpty('# note\n{}\n')).toBe(true);
   });
 
-  it('treats any real content as non-empty', () => {
+  test('treats any real content as non-empty', () => {
     expect(isConfigTextEmpty('input:\n  generate: {}')).toBe(false);
     // A trailing comment on a content line does not make the config empty.
     expect(isConfigTextEmpty('foo: bar # note')).toBe(false);
@@ -1722,31 +1715,31 @@ describe('isConfigTextEmpty', () => {
 describe('shouldOfferTemplate', () => {
   const offer = (yaml: string) => shouldOfferTemplate(yaml, parsePipelineFlowTree(yaml).nodes);
 
-  it('offers only for a genuinely blank config', () => {
+  test('offers only for a genuinely blank config', () => {
     expect(offer('')).toBe(true);
     expect(offer('# just a comment')).toBe(true);
     expect(offer('{}')).toBe(true);
   });
 
-  it('does not offer when content parses to no pipeline, or for a real pipeline', () => {
+  test('does not offer when content parses to no pipeline, or for a real pipeline', () => {
     expect(offer('not-a-pipeline: true')).toBe(false);
     expect(offer('input:\n  generate: {}\noutput:\n  drop: {}')).toBe(false);
   });
 });
 
 describe('summarizeComponent', () => {
-  it('surfaces preferred fields for known components', () => {
+  test('surfaces preferred fields for known components', () => {
     expect(summarizeComponent('log', { level: 'INFO', message: 'hi' })).toEqual([
       { label: 'level', value: 'INFO' },
       { label: 'message', value: 'hi' },
     ]);
   });
 
-  it('handles bare-string configs like mappings', () => {
+  test('handles bare-string configs like mappings', () => {
     expect(summarizeComponent('mapping', 'root = this.foo')).toEqual([{ label: 'expr', value: 'root = this.foo' }]);
   });
 
-  it('falls back to the first scalar fields for unknown components', () => {
+  test('falls back to the first scalar fields for unknown components', () => {
     const meta = summarizeComponent('mystery', { label: 'x', alpha: 1, beta: 'two', nested: {} });
     expect(meta).toEqual([
       { label: 'alpha', value: '1' },
@@ -1754,14 +1747,14 @@ describe('summarizeComponent', () => {
     ]);
   });
 
-  it('omits topic(s) from meta — they render as chips instead', () => {
+  test('omits topic(s) from meta — they render as chips instead', () => {
     expect(summarizeComponent('redpanda', { topics: ['orders'], consumer_group: 'g1' })).toEqual([
       { label: 'group', value: 'g1' },
     ]);
     expect(summarizeComponent('redpanda', { topic: 'orders' })).toEqual([]);
   });
 
-  it('surfaces role-appropriate fields across input/processor/output/resource', () => {
+  test('surfaces role-appropriate fields across input/processor/output/resource', () => {
     expect(summarizeComponent('aws_s3', { bucket: 'b', prefix: 'p/', region: 'us' })).toEqual([
       { label: 'bucket', value: 'b' },
       { label: 'prefix', value: 'p/' },
@@ -1777,7 +1770,7 @@ describe('summarizeComponent', () => {
     ]);
   });
 
-  it('shortens verbose keys and prefers identifying fields in the fallback', () => {
+  test('shortens verbose keys and prefers identifying fields in the fallback', () => {
     expect(summarizeComponent('kafka_franz', { consumer_group: 'g' })).toEqual([{ label: 'group', value: 'g' }]);
     // Unknown component: salient-named fields win over a leading boolean.
     expect(summarizeComponent('mystery_conn', { enabled: true, host: 'h1', retries: 3 })).toEqual([
@@ -1785,7 +1778,7 @@ describe('summarizeComponent', () => {
     ]);
   });
 
-  it('surfaces the model for AI components and the key field for vector / cloud sinks', () => {
+  test('surfaces the model for AI components and the key field for vector / cloud sinks', () => {
     expect(summarizeComponent('openai_chat_completion', { model: 'gpt-4o', api_key: 'sk-xyz' })).toEqual([
       { label: 'model', value: 'gpt-4o' },
     ]);
@@ -1798,7 +1791,7 @@ describe('summarizeComponent', () => {
     ]);
   });
 
-  it('never surfaces credentials or generic infra knobs as fallback meta', () => {
+  test('never surfaces credentials or generic infra knobs as fallback meta', () => {
     // An unmapped component: `model` (salient) wins; api_key / region are skipped.
     expect(summarizeComponent('mystery_ai', { model: 'foo', api_key: 'secret', region: 'us' })).toEqual([
       { label: 'model', value: 'foo' },
@@ -1809,7 +1802,7 @@ describe('summarizeComponent', () => {
 });
 
 describe('the SECTION_LABEL', () => {
-  it('maps every section to a human label', () => {
+  test('maps every section to a human label', () => {
     expect(SECTION_LABEL).toEqual({
       input: 'Input',
       processor: 'Processor',
@@ -1820,7 +1813,7 @@ describe('the SECTION_LABEL', () => {
 });
 
 describe('stop conditions (read_until)', () => {
-  it('renders a wrapped input as the input it reads, addressed by its slot', () => {
+  test('renders a wrapped input as the input it reads, addressed by its slot', () => {
     const yaml = `
 input:
   label: orders_in
@@ -1844,14 +1837,15 @@ output:
     });
   });
 
-  it('gives an unwrapped input an empty slot and its own end', () => {
+  test('gives an unwrapped input an empty slot and its own end', () => {
     const input = parsePipelineFlowTree('input:\n  aws_s3: { bucket: b }').nodes.find((n) => n.id === 'input-0');
     expect(input?.editTarget).toEqual({ kind: 'input' });
-    expect(input?.stopSlot).toEqual({ path: ['input'], ownEnd: expect.objectContaining({ kind: 'natural' }) });
+    expect(input?.stopSlot).toMatchObject({ path: ['input'], ownEnd: { kind: 'natural' } });
+    expect(Object.keys(input?.stopSlot ?? {}).sort((a, b) => a.localeCompare(b))).toEqual(['ownEnd', 'path']);
     expect(input?.endBehavior?.kind).toBe('natural');
   });
 
-  it('gives each broker member its own slot, and keeps the broker growable when members are wrapped', () => {
+  test('gives each broker member its own slot, and keeps the broker growable when members are wrapped', () => {
     const yaml = `
 input:
   broker:
@@ -1883,7 +1877,7 @@ input:
     });
   });
 
-  it('a stop condition around a whole broker rides the broker; its members nest under the wrapper', () => {
+  test('a stop condition around a whole broker rides the broker; its members nest under the wrapper', () => {
     const yaml = `
 input:
   read_until:
@@ -1904,7 +1898,7 @@ input:
     });
   });
 
-  it('a read_until with no input yet stays a plain component', () => {
+  test('a read_until with no input yet stays a plain component', () => {
     const input = parsePipelineFlowTree('input:\n  read_until:\n    check: "true"').nodes.find(
       (n) => n.id === 'input-0'
     );
@@ -1912,11 +1906,11 @@ input:
       label: 'read_until',
       editTarget: { kind: 'input' },
       endBehavior: { kind: 'invalid' },
-      stopSlot: { locked: expect.stringContaining('no input to read from yet') },
     });
+    expect(input?.stopSlot?.locked).toContain('no input to read from yet');
   });
 
-  it('a read_until wrapping another one keeps its own condition editable', () => {
+  test('a read_until wrapping another one keeps its own condition editable', () => {
     const yaml = `
 input:
   read_until:
@@ -1934,14 +1928,14 @@ input:
     expect(input?.stopSlot?.locked).toBeUndefined();
   });
 
-  it('keeps a wrapper its input can’t take the place of editable, but not removable', () => {
+  test('keeps a wrapper its input can’t take the place of editable, but not removable', () => {
     const yaml = 'c: &c { kafka: {} }\ninput:\n  read_until:\n    idle_timeout: 5s\n    input: { <<: *c }\n';
     const slot = parsePipelineFlowTree(yaml).nodes.find((n) => n.id === 'input-0')?.stopSlot;
     expect(slot?.locked).toBeUndefined();
     expect(slot?.unwrapLock).toContain('merge key');
   });
 
-  it('locks the stop condition of an input the YAML reaches through an alias or merge key', () => {
+  test('locks the stop condition of an input the YAML reaches through an alias or merge key', () => {
     const yaml = `
 k: &k { kafka: {} }
 in: &in { generate: {} }
@@ -1963,7 +1957,7 @@ input:
     expect(lockOf(3)).toBeUndefined();
   });
 
-  it('reserves the broker marker row and passes the slot to the cards', () => {
+  test('reserves the broker marker row and passes the slot to the cards', () => {
     const yaml = `
 input:
   broker:
@@ -1982,7 +1976,7 @@ input:
     });
   });
 
-  it('reserves a stop row on every input card, inside its own width', () => {
+  test('reserves a stop row on every input card, inside its own width', () => {
     const yaml = `
 input:
   broker:

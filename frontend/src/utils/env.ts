@@ -10,58 +10,48 @@
  */
 
 import { toJson } from './json-utils';
-import './extensions';
+import { removeStringPrefix, removeStringSuffix } from './string-utils';
 
-const envNames = [
-  'NODE_ENV',
+const env = {
+  NODE_ENV: process.env.NODE_ENV ?? '',
+  REACT_APP_CONSOLE_GIT_SHA: process.env.REACT_APP_CONSOLE_GIT_SHA ?? '',
+  REACT_APP_CONSOLE_GIT_REF: process.env.REACT_APP_CONSOLE_GIT_REF ?? '',
+  REACT_APP_BUILD_TIMESTAMP: process.env.REACT_APP_BUILD_TIMESTAMP ?? '',
+  REACT_APP_CONSOLE_PLATFORM_VERSION: process.env.REACT_APP_CONSOLE_PLATFORM_VERSION ?? '',
+  REACT_APP_BUILT_FROM_PUSH: process.env.REACT_APP_BUILT_FROM_PUSH ?? '',
+  REACT_APP_DEV_HINT: process.env.REACT_APP_DEV_HINT ?? '',
+  REACT_APP_ENABLED_FEATURES: process.env.REACT_APP_ENABLED_FEATURES ?? '',
+};
 
-  'REACT_APP_CONSOLE_GIT_SHA',
-  'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
-  'REACT_APP_BUILD_TIMESTAMP',
-  'REACT_APP_CONSOLE_PLATFORM_VERSION',
-
-  'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
-
-  'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
-  'REACT_APP_ENABLED_FEATURES', // for debugging, used to set/override enabled feautures while developing
-] as const;
-
-type Environment = { [key in (typeof envNames)[number]]: string };
-
-const env = {} as Environment;
-for (const k of envNames) {
-  env[k] = process.env[k] || '';
-}
-
-export default env;
+export { env };
 
 //
 // Helpers
-const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.REACT_APP_DEV_HINT;
+const isDev = env.NODE_ENV.length === 0 || env.NODE_ENV === 'development' || env.REACT_APP_DEV_HINT.length > 0;
 export const IsProd = !isDev;
 export const IsDev = isDev;
-export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH !== 'false';
-
-const appFeatureNames = ['SINGLE_SIGN_ON', 'REASSIGN_PARTITIONS', 'SHADOW_LINKS', 'REDPANDA_SQL'] as const;
-export type AppFeature = (typeof appFeatureNames)[number];
-
-if (env.REACT_APP_ENABLED_FEATURES) {
-  (window as { ENABLED_FEATURES?: string }).ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
+export const IsCI = env.REACT_APP_BUILT_FROM_PUSH.length > 0 && env.REACT_APP_BUILT_FROM_PUSH !== 'false';
+export type AppFeature = 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS' | 'SHADOW_LINKS' | 'REDPANDA_SQL';
+declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: Window augmentation must merge with the DOM declaration.
+  interface Window {
+    BASE_URL?: string;
+    ENABLED_FEATURES?: string;
+  }
 }
-const featuresRaw = (window as { ENABLED_FEATURES?: string }).ENABLED_FEATURES ?? '';
-const enabledFeatures = featuresRaw.split(',') as AppFeature[];
-
-const features = {} as { [key in AppFeature]: boolean };
-for (const f of appFeatureNames) {
-  features[f] = enabledFeatures.includes(f);
+if (env.REACT_APP_ENABLED_FEATURES.length > 0) {
+  window.ENABLED_FEATURES = env.REACT_APP_ENABLED_FEATURES;
 }
-
-export const AppFeatures = features;
-
-const basePathRaw: string = (window as { BASE_URL?: string }).BASE_URL ?? '';
+const enabledFeatures = new Set((window.ENABLED_FEATURES ?? '').split(','));
+export const AppFeatures: Record<AppFeature, boolean> = {
+  SINGLE_SIGN_ON: enabledFeatures.has('SINGLE_SIGN_ON'),
+  REASSIGN_PARTITIONS: enabledFeatures.has('REASSIGN_PARTITIONS'),
+  SHADOW_LINKS: enabledFeatures.has('SHADOW_LINKS'),
+  REDPANDA_SQL: enabledFeatures.has('REDPANDA_SQL'),
+};
+const basePathRaw = window.BASE_URL ?? '';
 const basePath = typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH') ? basePathRaw : '';
-const basePathTrimmed = basePath ? basePath.removePrefix('/').removeSuffix('/') : '';
-
+const basePathTrimmed = basePath ? removeStringPrefix(removeStringSuffix(basePath, '/'), '/') : '';
 const basePathS = basePathTrimmed ? `/${basePathTrimmed}` : '';
 
 export function getBasePath() {
@@ -78,28 +68,28 @@ export function getBuildDate(): Date | undefined {
 
 //
 // Print all env vars to console
-const envVarDebugObj = {} as Record<string, string>;
-const envVarDebugAr: { name: string; value: string }[] = [];
-
+const envVarDebugObj: Record<string, string> = {};
+const envVarDebugAr: {
+  name: string;
+  value: string;
+}[] = [];
 const addProp = (key: string, value: unknown) => {
   if (value === undefined || value === null || value === '') {
     return;
   }
-  const cleanedKey = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
+  const cleanedKey = removeStringPrefix(removeStringPrefix(key, 'REACT_APP_CONSOLE_'), 'REACT_APP_');
   envVarDebugObj[cleanedKey] = String(value);
   envVarDebugAr.push({ name: cleanedKey, value: String(value) });
 };
 // - add env vars
-for (const k in env) {
-  if (Object.hasOwn(env, k)) {
-    addProp(k, (env as Record<string, string>)[k]);
-  }
+for (const [key, value] of Object.entries(env)) {
+  addProp(key, value);
 }
 
 // - print
 // Skip the banner during tests so test output stays clean. The value is
 // still exported below for any code that wants to introspect env at runtime.
-if (process.env.NODE_ENV !== 'test') {
+if (env.NODE_ENV !== 'test') {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log(toJson(envVarDebugObj));
 }

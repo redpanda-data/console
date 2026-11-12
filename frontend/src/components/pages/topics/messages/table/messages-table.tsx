@@ -117,9 +117,9 @@ const LoadingRows = ({ columnCount }: { columnCount: number }) => (
     {Array.from({ length: 5 }, (_, rowIdx) => (
       // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton rows
       <TableRow key={rowIdx}>
-        {Array.from({ length: columnCount }, (_, colIdx) => (
+        {Array.from({ length: columnCount }, (_cell, loadingCellSlot) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton cells
-          <TableCell key={colIdx}>
+          <TableCell key={loadingCellSlot}>
             <Skeleton className="h-4 w-full max-w-48" />
           </TableCell>
         ))}
@@ -246,7 +246,7 @@ export const MessagesTable = ({
   // A failed request has nothing to show either, but it must never look like the empty/waiting
   // states below — those read as "this topic genuinely has no matching messages," which is not
   // what a network/auth/timeout failure means.
-  const showEmpty = !(error || isLoading) && rows.length === 0;
+  const showEmpty = !((error !== null && error !== undefined && error !== '') || isLoading) && rows.length === 0;
   const fencedRead = useClusterFenceGuard().isFencedRead(error ?? '');
 
   return (
@@ -264,13 +264,12 @@ export const MessagesTable = ({
                 const label = (
                   <>
                     <table.FlexRender header={header} />
-                    {sortDir === 'asc' && <ArrowUpIcon className="size-3.5" />}
-                    {sortDir === 'desc' && <ArrowDownIcon className="size-3.5" />}
+                    <SortDirectionIcon direction={sortDir} />
                   </>
                 );
                 return (
                   <TableHead
-                    aria-sort={sortDir ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                    aria-sort={sortDir === false ? undefined : sortDir === 'asc' ? 'ascending' : 'descending'}
                     key={header.id}
                     title={
                       sortingDisabled && header.column.id === 'timestamp'
@@ -279,16 +278,18 @@ export const MessagesTable = ({
                     }
                   >
                     {canSort ? (
-                      <button
+                      <Button
                         className={cn(
+                          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                           'inline-flex cursor-pointer items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-primary',
                           clearOfCornerActions
                         )}
                         onClick={header.column.getToggleSortingHandler()}
                         type="button"
+                        variant="unstyled"
                       >
                         {label}
-                      </button>
+                      </Button>
                     ) : (
                       <span className={cn('inline-flex items-center gap-1.5', clearOfCornerActions)}>{label}</span>
                     )}
@@ -299,7 +300,9 @@ export const MessagesTable = ({
           ))}
         </TableHeader>
         <TableBody>
-          {!error && isLoading && rows.length === 0 && <LoadingRows columnCount={visibleColumnCount} />}
+          {!(error !== null && error !== undefined && error !== '') && isLoading && rows.length === 0 && (
+            <LoadingRows columnCount={visibleColumnCount} />
+          )}
           {rows.map((row) => {
             const key = messageKey(row.original);
             const isNew = newKeys.has(key);
@@ -327,7 +330,9 @@ export const MessagesTable = ({
           })}
         </TableBody>
       </Table>
-      {error ? <ErrorState fenced={fencedRead} message={error} onRetry={onRetry} /> : null}
+      {error !== null && error !== undefined && error !== '' ? (
+        <ErrorState fenced={fencedRead} message={error} onRetry={onRetry} />
+      ) : null}
       {showEmpty && isLiveWaiting && <LiveWaitingState />}
       {showEmpty && !isLiveWaiting && (
         <Empty data-testid="messages-empty">
@@ -344,3 +349,10 @@ export const MessagesTable = ({
     </div>
   );
 };
+
+function SortDirectionIcon({ direction }: { direction: false | 'asc' | 'desc' }) {
+  if (direction === false) {
+    return null;
+  }
+  return direction === 'asc' ? <ArrowUpIcon className="size-3.5" /> : <ArrowDownIcon className="size-3.5" />;
+}

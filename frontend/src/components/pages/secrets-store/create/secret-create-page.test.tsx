@@ -1,25 +1,24 @@
 import { create } from '@bufbuild/protobuf';
+import type { Interceptor } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+import { SecretCreatePage } from './secret-create-page';
+import { renderWithFileRoutes, screen, waitFor } from '../../../../test-utils';
 
 rs.mock('config', () => ({
+  addBearerTokenInterceptor: rs.fn<Interceptor>((next) => next),
+}));
+
+rs.mock('runtime-config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
   },
   isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-}));
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
 }));
 
 global.ResizeObserver = class ResizeObserver {
@@ -35,8 +34,6 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretCreatePage } from './secret-create-page';
 
 const CREATE_SECRET_BUTTON_REGEX = /create secret/i;
 

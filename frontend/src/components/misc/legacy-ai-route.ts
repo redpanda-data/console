@@ -18,7 +18,7 @@ export function getLegacyAiDestination(pathname: string, clusterId?: string): st
   }
 
   const destination = new URL(LEGACY_AI_DESTINATIONS[route], REDPANDA_AI_URL);
-  if (clusterId && clusterId !== 'default') {
+  if (clusterId !== null && clusterId !== undefined && clusterId !== '' && clusterId !== 'default') {
     destination.searchParams.set('adpEnvironmentId', clusterId);
   }
 

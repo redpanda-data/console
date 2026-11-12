@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -27,20 +28,21 @@ import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { CircleAlertIcon, InfoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { SingleSelect } from './select';
 import wavingPanda from '../../assets/redpanda/WavingPanda.svg';
-import { config as appConfig } from '../../config';
-import {
-  AuthenticationMethod,
-  type LoginSaslScramRequest,
-  SASLMechanism,
-} from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { AuthenticationMethod, SASLMechanism } from '../../protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import { config as appConfig } from '../../runtime-config';
 import { appGlobal } from '../../state/app-global';
 import { useUIStateStore } from '../../state/ui-state';
 
 const authenticationApiClient = {
-  async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
+  async refreshAuthenticationMethods(): Promise<{
+    methods: AuthenticationMethod[];
+    error: ConnectError | null;
+  }> {
     const client = appConfig.authenticationClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -49,8 +51,8 @@ const authenticationApiClient = {
     try {
       const { methods } = await client.listAuthenticationMethods({});
       return { methods, error: null };
-    } catch (e) {
-      return { methods: [], error: e as ConnectError };
+    } catch (error) {
+      return { methods: [], error: ConnectError.from(error) };
     }
   },
 
@@ -74,7 +76,7 @@ const authenticationApiClient = {
         username,
         password,
         mechanism,
-      } as LoginSaslScramRequest)
+      })
       .then(() => {
         appGlobal.historyPush('/overview');
       });
@@ -119,8 +121,8 @@ const BasicAuthComponent = () => {
     setIsLoading(true);
     await authenticationApiClient
       .loginWithUsername({ username, password, mechanism })
-      .catch((ex) => {
-        setError(ex.message);
+      .catch((loginError: unknown) => {
+        setError(ConnectError.from(loginError).message);
       })
       .finally(() => {
         setIsLoading(false);
@@ -176,7 +178,12 @@ const BasicAuthComponent = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <Button data-testid="auth-submit" isLoading={isLoading} onClick={handleSubmit} variant="brand">
+      <Button
+        data-testid="auth-submit"
+        isLoading={isLoading}
+        onClick={asyncEvent(handleSubmit, reportActionError)}
+        variant="brand"
+      >
         Log in
       </Button>
     </div>
@@ -253,13 +260,16 @@ const LoginPage = () => {
             <div className="py-4">
               <Alert icon={<CircleAlertIcon />} variant="destructive">
                 <AlertDescription>
-                  {{
+                  {({
                     token_exchange_failed: 'OIDC authentication failed. Check backend logs for details.',
                     kafka_authentication_failed:
                       'Authenticated through OIDC, but failed to authenticate with the Kafka API.',
                     console_internal: 'An unexpected error occurred. Check backend logs.',
+                    // biome-ignore lint/nursery/noMismatchedMapKey: error_code guards the message; oidc_subject is independent error context.
                     permission_denied: `This user is not authorized to use Console. An administrator should grant user ${searchParams.get('oidc_subject') ?? ''} permissions in the Console configuration to proceed.`,
-                  }[searchParams.get('error_code') as string] || 'An unexpected error occurred. Check backend logs.'}
+                  }[searchParams.get('error_code') ?? ''] ??
+                    '') ||
+                    'An unexpected error occurred. Check backend logs.'}
                 </AlertDescription>
               </Alert>
             </div>
@@ -270,7 +280,7 @@ const LoginPage = () => {
                 <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
-            {methods.reduce((acc, method, index) => {
+            {methods.reduce<React.ReactNode[]>((acc, method, index) => {
               let authComponent: React.ReactNode = null;
               if (method === AuthenticationMethod.NONE) {
                 authComponent = <NoneAuthComponent hasMethodsError={methodsError !== null} />;
@@ -290,21 +300,16 @@ const LoginPage = () => {
                 acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
-            }, [] as React.ReactNode[])}
+            }, [])}
           </div>
         </div>
       </div>
       {/* Brand panel. The gradient is fixed art, like the logo — it does not follow the theme. */}
-      <div
-        className="hidden flex-[5] items-center justify-center pt-[10%] md:flex"
-        style={{
-          background: 'linear-gradient(170deg, rgba(237,127,102,1) 58%, rgba(226,64,27,1) 58.2%)',
-        }}
-      >
+      <div className="console-login-art hidden flex-[5] items-center justify-center md:flex">
         <img alt="Waving Panda" className="h-[300px]" src={wavingPanda} />
       </div>
     </div>
   );
 };
 
-export default LoginPage;
+export { LoginPage };

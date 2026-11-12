@@ -33,4 +33,4 @@ function Section({ children, id, className, style, padding = 'normal' }: Section
   );
 }
 
-export default Section;
+export { Section };

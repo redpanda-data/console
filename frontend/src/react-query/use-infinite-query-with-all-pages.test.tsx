@@ -14,7 +14,6 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
-  type ListUsersRequest,
   ListUsersRequestSchema,
   ListUsersResponse_UserSchema,
   ListUsersResponseSchema,
@@ -60,7 +59,7 @@ describe('useInfiniteQueryWithAllPages', () => {
     const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
+    });
 
     const { result } = renderHook(
       () =>
@@ -110,7 +109,7 @@ describe('useInfiniteQueryWithAllPages', () => {
     const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
+    });
 
     const { result } = renderHook(
       () =>
@@ -164,7 +163,7 @@ describe('useInfiniteQueryWithAllPages', () => {
     const request = create(ListUsersRequestSchema, {
       pageToken: '',
       pageSize: 1,
-    }) as ListUsersRequest & Required<Pick<ListUsersRequest, 'pageToken'>>;
+    });
 
     renderHook(
       () =>

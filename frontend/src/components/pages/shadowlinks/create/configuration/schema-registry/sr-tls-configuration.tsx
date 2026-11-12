@@ -13,7 +13,6 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
-import { isEmbedded } from 'config';
 import { Trash2 } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCallback, useMemo, useState } from 'react';
@@ -22,6 +21,9 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
+import { isEmbedded } from '../../../../../../runtime-config';
+import { isNonEmptyString } from '../../../../../../utils/string-utils';
+import { isPresent } from '../../../../../../utils/type-guards';
 import { CertificateUploadRow, ConfiguredBadge, UploadedFileName } from '../../certificate-upload';
 import { extractSecretId, toSecretReference } from '../../connection/secret-reference';
 import { DisclosureRow } from '../../disclosure-row';
@@ -94,17 +96,17 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
   const label = CERTIFICATE_LABELS[certType];
   const hasCert = hasSrCertificate(cert);
   // PEMs hydrated from the API carry no file name; show a generic label.
-  const fileName = hasCert ? cert?.fileName || 'Configured certificate' : undefined;
+  const fileName = hasCert ? (cert?.fileName ?? '') || 'Configured certificate' : undefined;
 
   const handleDrop = useCallback(
     (files: File[]) => {
       const file = files[0];
-      if (!file) {
+      if (!isPresent(file)) {
         return;
       }
       const reader = new FileReader();
       reader.onload = (event) => {
-        const content = (event.target?.result as string | undefined) ?? '';
+        const content = typeof event.target?.result === 'string' ? event.target.result : '';
         if (!content.trim()) {
           setUploadError(`${file.name} is empty. Upload a PEM-encoded ${label.toLowerCase()}.`);
           return;
@@ -145,7 +147,7 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline gap-1.5">
         <span className="text-body font-medium">{label}</span>
-        {optional && <span className="text-body-sm text-muted-foreground">· optional</span>}
+        {optional === true && <span className="text-body-sm text-muted-foreground">· optional</span>}
       </div>
       <div className="relative">
         <CertificateUploadRow
@@ -162,7 +164,7 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
           />
         )}
       </div>
-      {uploadError && (
+      {isNonEmptyString(uploadError) && (
         <div className="text-body text-destructive" data-testid={`sr-${certType}-upload-error`}>
           {uploadError}
         </div>

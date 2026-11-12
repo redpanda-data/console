@@ -11,7 +11,7 @@ The E2E test environment runs the Go backend in a Docker container using testcon
 
 All containers run on a shared Docker network created by testcontainers:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────┐
 │                      Docker Network                             │
 │                                                                 │

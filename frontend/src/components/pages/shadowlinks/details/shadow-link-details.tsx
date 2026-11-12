@@ -14,6 +14,8 @@
 import { useMemo, useState } from 'react';
 import { useListShadowTopicInfiniteQuery } from 'react-query/api/shadowlink';
 import { MAX_PAGE_SIZE, SHORT_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ShadowLinkDiagram } from './shadow-link-diagram';
 import { ShadowLinkMetrics } from './shadow-link-metrics';
@@ -70,7 +72,7 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
         isFetching={isFetchingTopics || isFetchingNextPage}
         isFetchingNextPage={isFetchingNextPage}
         onFailoverTopic={onFailoverTopic}
-        onRefresh={refetchTopics}
+        onRefresh={asyncEvent(refetchTopics, reportActionError)}
         onTopicNameFilterChange={setTopicNameFilter}
         topicNameFilter={topicNameFilter}
         topics={topics}

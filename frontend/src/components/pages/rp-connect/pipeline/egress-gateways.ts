@@ -15,8 +15,9 @@ import {
   ServerlessEgressGatewayStatus_Phase,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/serverless_egress_gateway_pb';
 import { create } from '@bufbuild/protobuf';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
 import { type Egress, EgressSchema, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../../../../runtime-config';
 
 /** Gateways come from the controlplane API, which the Console reaches only embedded in Cloud UI. */
 export const isEgressGatewayPickerEnabled = () =>
@@ -49,16 +50,19 @@ export function egressGatewayOptions(
     .filter(isUsable)
     .map((gateway) => ({ id: gateway.id, label: gateway.displayName, available: true }))
     .sort((a, b) => a.label.localeCompare(b.label));
-  const unusable = selectedIds
-    .filter((id) => !usable.some((option) => option.id === id))
-    .map((id) => {
-      const gateway = byId.get(id);
-      return {
+  const unusable = selectedIds.flatMap((id) => {
+    if (usable.some((option) => option.id === id)) {
+      return [];
+    }
+    const gateway = byId.get(id);
+    return [
+      {
         id,
         label: gateway ? `${gateway.displayName} (not available)` : `${id} (not found)`,
         available: false,
-      };
-    });
+      },
+    ];
+  });
   return [...usable, ...unusable];
 }
 

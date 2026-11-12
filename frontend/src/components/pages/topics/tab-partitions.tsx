@@ -12,12 +12,11 @@
 import { AlertTriangle } from 'lucide-react';
 import type { FC } from 'react';
 
-import '../../../utils/array-extensions';
-
 import { useUrlTableState } from '../../../hooks/use-url-table-state';
 import { useApiStoreHook } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
 import { BrokerList } from '../../misc/broker-list';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
@@ -56,12 +55,12 @@ function buildPartitionColumns(
         <div className="flex items-center gap-2">
           <span>{partition.id}</span>
           {partition.hasErrors && <PartitionError partition={partition} />}
-          {leaderlessPartitions?.includes(partition.id) && (
+          {leaderlessPartitions?.includes(partition.id) === true && (
             <Badge tone="destructive" variant="subtle">
               Leaderless
             </Badge>
           )}
-          {underReplicatedPartitions?.includes(partition.id) && (
+          {underReplicatedPartitions?.includes(partition.id) === true && (
             <Badge tone="warning" variant="subtle">
               Under-replicated
             </Badge>
@@ -180,7 +179,7 @@ export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
 };
 
 const PartitionError: FC<{ partition: Partition }> = ({ partition }) => {
-  if (!(partition.partitionError || partition.waterMarksError)) {
+  if (!((partition.partitionError ?? '') || isNonEmptyString(partition.waterMarksError))) {
     return null;
   }
 

@@ -148,7 +148,7 @@ export type ConnectConfigKey =
   | 'scanner'
   | 'metrics'
   | 'tracer'
-  | 'scanner'
   | 'redpanda'; // Top-level block for redpanda_common components
 
-export type ConnectConfigObject = Record<ConnectConfigKey, unknown>;
+// Root sections are optional, and scanner snippets use their unbounded plugin name as the key.
+export type ConnectConfigObject = Partial<Record<ConnectConfigKey, unknown>> & Record<string, unknown>;

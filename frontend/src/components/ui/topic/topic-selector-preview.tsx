@@ -43,11 +43,9 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
               <div className="text-body font-medium">Exact topics ({exactTopics.length}):</div>
               <div className="max-h-[100px] overflow-y-auto">
                 <List className="my-0">
-                  {exactTopics.map((topic, idx) => (
-                    <ListItem key={idx}>
-                      <span className="text-body-sm font-mono text-foreground">
-                        {topic}
-                      </span>
+                  {exactTopics.map((topic) => (
+                    <ListItem key={topic}>
+                      <span className="font-mono text-body-sm text-foreground">{topic}</span>
                     </ListItem>
                   ))}
                 </List>
@@ -58,29 +56,24 @@ export const TopicSelectorPreview = ({ selectedTopics, getMatchingTopics }: Topi
       )}
 
       {/* Show regex patterns with their matches */}
-      {regexTopics.map((topic, index) => {
+      {regexTopics.map((topic) => {
         const matchingTopics = getMatchingTopics(topic);
 
         return (
-          <div key={index}>
+          <div key={topic}>
             <Card size="sm" variant="ghost">
               <CardContent space="sm">
-                <div className="text-body font-medium font-mono text-informative">
-                  {topic}{' '}
-                  <span className="text-body-sm text-subtle">
-                    (regex pattern)
-                  </span>
+                <div className="font-mono text-body font-medium text-informative">
+                  {topic} <span className="text-body-sm text-subtle">(regex pattern)</span>
                 </div>
                 {matchingTopics.length > 0 ? (
                   <>
                     <div className="text-body-sm text-subtle">Matches {matchingTopics.length} existing topics:</div>
                     <div className="max-h-[100px] overflow-y-auto">
                       <List className="my-0">
-                        {matchingTopics.map((matchedTopic, idx) => (
-                          <ListItem key={idx}>
-                            <span className="text-body-sm font-mono text-foreground">
-                              {matchedTopic}
-                            </span>
+                        {matchingTopics.map((matchedTopic) => (
+                          <ListItem key={matchedTopic}>
+                            <span className="font-mono text-body-sm text-foreground">{matchedTopic}</span>
                           </ListItem>
                         ))}
                       </List>

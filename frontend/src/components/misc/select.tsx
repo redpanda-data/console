@@ -16,64 +16,67 @@ export type SingleSelectProps<T> = {
   isDisabled?: boolean;
   placeholder?: string;
   /** Lets the user type a value that is not in `options`; only meaningful when T is string. */
-  creatable?: boolean;
   /** Lands on the Select trigger (not the creatable input), so a `<label htmlFor>` can point at it. */
   id?: string;
   className?: string;
   'data-testid'?: string;
-};
+} & ({ creatable?: false; onCreate?: never } | { creatable: true; onCreate: (value: string) => T });
 
 export function SingleSelect<T>(p: SingleSelectProps<T>) {
-  const { 'data-testid': testId, options, value, onChange, isDisabled, placeholder, creatable, id, className } = p;
+  const { 'data-testid': testId, options, value, onChange, isDisabled, placeholder, id, className } = p;
   // The Registry controls key on strings; values round-trip through `byKey`.
   const items = options.map((option) => ({
     value: String(option.value),
     label: option.label ?? String(option.value),
     disabled: option.disabled,
   }));
-  const byKey = new Map(options.map((option) => [String(option.value), option.value]));
+  const byKey = new Map(options.map((option) => [String(option.value), option]));
   const selectedKey = value === undefined || value === null ? null : String(value);
 
-  const selectElement = creatable ? (
-    <Combobox
-      className={className}
-      creatable
-      disabled={isDisabled}
-      // Clearing the field clears the value, so what is shown is what applies.
-      onChange={(key) => onChange((byKey.has(key) ? byKey.get(key) : key) as T)}
-      options={items}
-      placeholder={placeholder}
-      value={selectedKey ?? ''}
-    />
-  ) : (
-    <Select
-      disabled={isDisabled}
-      items={items}
-      onValueChange={(key) => {
-        if (byKey.has(key)) {
-          onChange(byKey.get(key) as T);
-        }
-      }}
-      // A value outside `options` still shows as text, as the old select did.
-      value={selectedKey}
-    >
-      <SelectTrigger className={className} id={id}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {items.map((item) => (
-          <SelectItem disabled={item.disabled} key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+  const selectElement =
+    p.creatable === true ? (
+      <Combobox
+        className="w-full"
+        creatable
+        disabled={isDisabled}
+        // Clearing the field clears the value, so what is shown is what applies.
+        onChange={(key) => {
+          const option = byKey.get(key);
+          onChange(option ? option.value : p.onCreate(key));
+        }}
+        options={items}
+        placeholder={placeholder}
+        value={selectedKey ?? ''}
+      />
+    ) : (
+      <Select
+        disabled={isDisabled}
+        items={items}
+        onValueChange={(key: unknown) => {
+          const option = typeof key === 'string' ? byKey.get(key) : undefined;
+          if (option) {
+            onChange(option.value);
+          }
+        }}
+        // A value outside `options` still shows as text, as the old select did.
+        value={selectedKey}
+      >
+        <SelectTrigger className="w-full" id={id}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem disabled={item.disabled} key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+
+  return (
+    <div className={className} data-testid={testId}>
+      {selectElement}
+    </div>
   );
-
-  // Wrap in div with data-testid if provided, for E2E testing
-  if (testId) {
-    return <div data-testid={testId}>{selectElement}</div>;
-  }
-
-  return selectElement;
 }

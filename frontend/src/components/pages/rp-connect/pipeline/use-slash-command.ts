@@ -9,8 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import type { editor, IRange } from 'monaco-editor';
+import type { IRange } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { SlashContentChange, SlashEditor, SlashTextEditor } from './pipeline-editor-port';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 
 export type SlashPosition = { lineNumber: number; column: number };
 
@@ -19,11 +22,11 @@ export const SLASH_TRIGGER_PATTERN = /\s/;
 /** A `/` triggers at the start of a line or after whitespace. */
 function isSlashTriggerColumn(lineContent: string, slashColumn: number): boolean {
   const charBefore = slashColumn > 1 ? lineContent[slashColumn - 2] : undefined;
-  return slashColumn === 1 || Boolean(charBefore && SLASH_TRIGGER_PATTERN.test(charBefore));
+  return slashColumn === 1 || (isNonEmptyString(charBefore) && SLASH_TRIGGER_PATTERN.test(charBefore));
 }
 
 /** Check if the `/` just typed is at a valid trigger position (start of line or after whitespace). */
-export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor): SlashPosition | null {
+export function detectSlashTrigger(editorInstance: SlashTextEditor): SlashPosition | null {
   const position = editorInstance.getPosition();
   if (!position) {
     return null;
@@ -40,7 +43,7 @@ export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor)
 
 type SavedSlashRange = { start: SlashPosition; endColumn: number };
 
-const hasTypedSlash = (e: editor.IModelContentChangedEvent) => e.changes.some((change) => change.text.includes('/'));
+const hasTypedSlash = (e: SlashContentChange) => e.changes.some((change) => change.text.includes('/'));
 
 function lineRange(lineNumber: number, startColumn: number, endColumn: number): IRange {
   return { startLineNumber: lineNumber, startColumn, endLineNumber: lineNumber, endColumn };
@@ -51,7 +54,7 @@ function lineRange(lineNumber: number, startColumn: number, endColumn: number): 
  * closed for a sub-dialog, or (with neither) an empty range at the cursor.
  */
 function slashReplaceRange(
-  editorInstance: editor.IStandaloneCodeEditor,
+  editorInstance: SlashEditor,
   slashPos: SlashPosition | null,
   savedRange: SavedSlashRange | null
 ): IRange | null {
@@ -72,11 +75,7 @@ function slashReplaceRange(
  * Focus moves to the CommandInput inside the popover when the menu opens.
  * cmdk handles all keyboard navigation natively (ArrowUp/Down, Enter, Escape).
  */
-export function useSlashCommand(
-  editorInstance: editor.IStandaloneCodeEditor | null,
-  enabled?: boolean,
-  onOpen?: () => void
-) {
+export function useSlashCommand(editorInstance: SlashEditor | null, enabled?: boolean, onOpen?: () => void) {
   const [isOpen, setIsOpen] = useState(false);
   const [slashPosition, setSlashPosition] = useState<SlashPosition | null>(null);
   const slashPositionRef = useRef<SlashPosition | null>(null);
@@ -106,7 +105,7 @@ export function useSlashCommand(
   // Subscribe to editor content changes to detect `/` typed
   // (Rule 4: mount effect for external system sync — Monaco event subscription)
   useEffect(() => {
-    if (!(enabled && editorInstance)) {
+    if (!(enabled === true && editorInstance)) {
       return;
     }
 

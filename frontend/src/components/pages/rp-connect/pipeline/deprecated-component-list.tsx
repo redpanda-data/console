@@ -13,6 +13,7 @@ import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { ExternalLink, TriangleAlert } from 'lucide-react';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { type DeprecatedUsage, deprecationMessage } from '../utils/deprecation';
 
 /** The YAML lane's list of deprecated components in use, under its lint issues. */
@@ -29,7 +30,7 @@ export const DeprecatedComponentList = ({ usages }: { usages: DeprecatedUsage[] 
                 <span className="text-muted-foreground">Line {range.startLineNumber}: </span>
                 {deprecationMessage(notice)}
               </span>
-              {notice.docsUrl ? (
+              {isNonEmptyString(notice.docsUrl) ? (
                 <Link
                   className="inline-flex items-center"
                   href={notice.docsUrl}

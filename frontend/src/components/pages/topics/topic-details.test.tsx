@@ -10,16 +10,12 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen } from 'test-utils';
+import { appGlobal } from 'state/app-global';
+import { useApiStore } from 'state/backend-api';
+import type { Topic, TopicAction } from 'state/rest-interfaces';
+import { createTestRouterFromFiles, renderWithFileRoutes, screen } from 'test-utils';
 
-rs.mock('state/app-global', () => ({
-  appGlobal: {
-    onRefresh: null,
-    historyPush: rs.fn(),
-    historyReplace: rs.fn(),
-    location: { pathname: '/topics/orders', hash: '', searchStr: '' },
-  },
-}));
+import { TopicDetails } from './topic-details';
 
 // Delegates to the real store-backed proxy so `api.topics` reads the test state; refreshes are no-ops.
 rs.mock('state/backend-api', () => {
@@ -28,7 +24,7 @@ rs.mock('state/backend-api', () => {
   return {
     ...actual,
     api: new Proxy(actual.api, {
-      get: (target, prop) =>
+      get: (target, prop): unknown =>
         typeof prop === 'string' && prop.startsWith('refresh') ? refresh : Reflect.get(target, prop),
     }),
   };
@@ -40,12 +36,6 @@ function MockTopicMessagesTab() {
 }
 
 rs.mock('./messages', () => ({ TopicMessagesTab: MockTopicMessagesTab }));
-
-import { useApiStore } from 'state/backend-api';
-import type { Topic, TopicAction } from 'state/rest-interfaces';
-import { renderWithFileRoutes } from 'test-utils';
-
-import TopicDetails from './topic-details';
 
 const TOPIC_NAME = 'orders';
 
@@ -60,8 +50,13 @@ const makeTopic = (allowedActions: TopicAction[] | undefined): Topic => ({
   allowedActions,
 });
 
-const renderTopicDetails = () =>
-  renderWithFileRoutes(<TopicDetails matchedPath={`/topics/${TOPIC_NAME}`} topicName={TOPIC_NAME} />);
+const renderTopicDetails = () => {
+  const initialLocation = `/topics/${TOPIC_NAME}#messages`;
+  appGlobal.setLocation(createTestRouterFromFiles(initialLocation).latestLocation);
+  return renderWithFileRoutes(<TopicDetails matchedPath={`/topics/${TOPIC_NAME}`} topicName={TOPIC_NAME} />, {
+    initialLocation,
+  });
+};
 
 describe('the TopicDetails messages tab', () => {
   beforeEach(() => {

@@ -50,12 +50,21 @@ const DeserializerSelect = ({
   onChange: (encoding: PayloadEncoding) => void;
   disabled?: boolean;
 }) => (
-  <Select disabled={disabled} onValueChange={(v) => onChange(Number(v) as PayloadEncoding)} value={String(value)}>
+  <Select
+    disabled={disabled}
+    onValueChange={(v) => {
+      const encoding = PAYLOAD_ENCODING_PAIRS.find((pair) => String(pair.value) === v);
+      if (encoding) {
+        onChange(encoding.value);
+      }
+    }}
+    value={String(value)}
+  >
     <SelectTrigger
       className="w-full"
       id={id}
       testId={id}
-      title={disabled ? 'Stop live tail to change this' : undefined}
+      title={disabled === true ? 'Stop live tail to change this' : undefined}
     >
       <SelectValue>
         {(v: unknown) => PAYLOAD_ENCODING_PAIRS.find((p) => String(p.value) === String(v))?.label}
@@ -128,6 +137,10 @@ export const ViewSettingsPanel = ({
         return PAYLOAD_ENCODING_LABELS[keyDeserializer];
       case 'value':
         return PAYLOAD_ENCODING_LABELS[valueDeserializer];
+      case 'keySize':
+      case 'offset':
+      case 'partitionID':
+      case 'valueSize':
       default:
         return '';
     }
@@ -140,7 +153,12 @@ export const ViewSettingsPanel = ({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="view-settings-ts-format">Display format</Label>
             <Select
-              onValueChange={(v) => setTopicSettings(topicName, { previewTimestamps: v as TimestampDisplayFormat })}
+              onValueChange={(v) => {
+                const format = TS_FORMATS.find((option) => option.value === v);
+                if (format) {
+                  setTopicSettings(topicName, { previewTimestamps: format.value });
+                }
+              }}
               value={tsFormat}
             >
               <SelectTrigger className="w-full" id="view-settings-ts-format" testId="view-settings-ts-format">
@@ -202,6 +220,10 @@ export const ViewSettingsPanel = ({
             <PreviewFieldsEditor topicName={topicName} valuePathHints={valuePathHints} />
           </div>
         );
+      case 'keySize':
+      case 'offset':
+      case 'partitionID':
+      case 'valueSize':
       default:
         return null;
     }
@@ -225,8 +247,9 @@ export const ViewSettingsPanel = ({
           <ToggleGroup
             className="w-full"
             onValueChange={(next: string[]) => {
-              if (next.length > 0) {
-                setRowDensity(topicName, next[0] as 'compact' | 'detailed');
+              const nextDensity = next[0];
+              if (nextDensity === 'compact' || nextDensity === 'detailed') {
+                setRowDensity(topicName, nextDensity);
               }
             }}
             size="sm"

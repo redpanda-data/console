@@ -16,6 +16,7 @@ import {
   ClusterFenceService,
   type GetClusterFenceStatusResponse,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import { peerConsoleTransport } from './peer-console-transport';
 
@@ -54,7 +55,7 @@ const withDeadline = (signal: AbortSignal | undefined, timeoutMs: number) => {
     controller.abort(new ConnectError(`no answer within ${timeoutMs} ms`, Code.DeadlineExceeded));
   }, timeoutMs);
   const forward = () => controller.abort(signal?.reason);
-  if (signal?.aborted) {
+  if (signal?.aborted === true) {
     forward();
   } else {
     signal?.addEventListener('abort', forward, { once: true });
@@ -80,6 +81,17 @@ const isConsoleAnswer = (error: ConnectError) => error.metadata.get('content-typ
 /** Not served at all, as from a Console without the API: its router answers 404 with no Connect body. */
 const isMissingRoute = (error: ConnectError) => error.code === Code.Unimplemented;
 
+const unavailableReason = (code: Code): 'unsupported' | 'forbidden' | 'inactive' | undefined => {
+  if (code === Code.Unimplemented || code === Code.NotFound) {
+    return 'unsupported';
+  }
+  if (code === Code.PermissionDenied) {
+    return 'forbidden';
+  }
+  // Some broker is running a Redpanda version without the feature.
+  return code === Code.FailedPrecondition ? 'inactive' : undefined;
+};
+
 /**
  * Answers that won't change by asking again soon read as a fence that can't be shown; the rest throw,
  * so the query retries and keeps the last fence it read. Only the code counts, never the message:
@@ -95,20 +107,14 @@ const settledReading = (error: unknown): ShadowLinkPeerFence => {
   if (!(isConsoleAnswer(error) || isMissingRoute(error))) {
     throw new PeerFenceReadError(error.message, { reason: 'error', cause: error });
   }
-  switch (error.code) {
-    case Code.Unimplemented:
-    case Code.NotFound:
-      return { status: 'unavailable', reason: 'unsupported' };
-    case Code.PermissionDenied:
-      return { status: 'unavailable', reason: 'forbidden' };
-    // A read only fails a precondition while some broker runs a Redpanda without the feature.
-    case Code.FailedPrecondition:
-      return { status: 'unavailable', reason: 'inactive' };
-    case Code.Unavailable:
-      throw new PeerFenceReadError(error.message, { reason: 'no-leader', cause: error });
-    default:
-      throw new PeerFenceReadError(error.message, { reason: 'error', cause: error });
+  const reason = unavailableReason(error.code);
+  if (reason !== undefined) {
+    return { status: 'unavailable', reason };
   }
+  throw new PeerFenceReadError(error.message, {
+    reason: error.code === Code.Unavailable ? 'no-leader' : 'error',
+    cause: error,
+  });
 };
 
 const toKnownFence = (response: GetClusterFenceStatusResponse): ShadowLinkPeerFence => {
@@ -125,13 +131,24 @@ const toKnownFence = (response: GetClusterFenceStatusResponse): ShadowLinkPeerFe
   };
 };
 
+const handleReadFailure = (error: unknown, timedOut: boolean, timeoutMs: number, signal?: AbortSignal) => {
+  if (timedOut) {
+    throw new PeerFenceReadError(`No answer within ${timeoutMs} ms`, { reason: 'timeout', cause: error });
+  }
+  // Closing this page cancels the query; it isn't a failed read.
+  if (signal?.aborted === true) {
+    throw error;
+  }
+  return settledReading(error);
+};
+
 /** Another cluster's fence, read from that cluster's Console at `consoleUrl`. */
 export const readPeerClusterFence = async (
   consoleUrl: string | undefined,
   signal?: AbortSignal,
   timeoutMs = PEER_FENCE_READ_TIMEOUT_MS
 ): Promise<ShadowLinkPeerFence> => {
-  if (!consoleUrl) {
+  if (!isNonEmptyString(consoleUrl)) {
     return { status: 'unavailable', reason: 'unsupported' };
   }
   const deadline = withDeadline(signal, timeoutMs);
@@ -139,11 +156,7 @@ export const readPeerClusterFence = async (
     const client = createClient(ClusterFenceService, peerConsoleTransport(consoleUrl));
     return toKnownFence(await client.getClusterFenceStatus({}, { signal: deadline.signal }));
   } catch (error) {
-    if (deadline.timedOut()) {
-      throw new PeerFenceReadError(`No answer within ${timeoutMs} ms`, { reason: 'timeout', cause: error });
-    }
-    // A query that was cancelled, as when its page closes, isn't a failed read.
-    return signal?.aborted ? Promise.reject(error) : settledReading(error);
+    return handleReadFailure(error, deadline.timedOut(), timeoutMs, signal);
   } finally {
     deadline.dispose();
   }

@@ -26,6 +26,8 @@ import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { isNonEmptyString } from '../../utils/string-utils';
+
 export const useListTransformsQuery = (
   input?: MessageInit<ListTransformsRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListTransformsRequest>, ListTransformsResponse>
@@ -36,15 +38,13 @@ export const useListTransformsQuery = (
     ...input,
   });
 
-  const listTransformsRequest = create(ListTransformsRequestSchema, {
-    request: listTransformsRequestDataPlane,
-  }) as MessageInit<ListTransformsRequest> & Required<Pick<MessageInit<ListTransformsRequest>, 'request'>>;
+  const listTransformsRequest = { ...create(ListTransformsRequestSchema), request: listTransformsRequestDataPlane };
 
   const listTransformsResult = useInfiniteQueryWithAllPages(listTransforms, listTransformsRequest, {
     pageParamKey: 'request',
     enabled: options?.enabled,
     getNextPageParam: (lastPage) =>
-      lastPage?.response?.nextPageToken
+      isNonEmptyString(lastPage?.response?.nextPageToken)
         ? {
             ...listTransformsRequestDataPlane,
             pageToken: lastPage.response?.nextPageToken,
@@ -70,9 +70,7 @@ export const useGetTransformQuery = (
     name: input?.name,
   });
 
-  const getTransformRequest = create(GetTransformRequestSchema, {
-    request: getTransformRequestDataPlane,
-  }) as MessageInit<GetTransformRequest> & Required<Pick<MessageInit<GetTransformRequest>, 'request'>>;
+  const getTransformRequest = { ...create(GetTransformRequestSchema), request: getTransformRequestDataPlane };
 
   return useQuery(getTransform, getTransformRequest, {
     enabled: options?.enabled !== false && input?.name !== '',

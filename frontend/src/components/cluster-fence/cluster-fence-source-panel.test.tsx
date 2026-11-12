@@ -15,9 +15,14 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
+import { fenceStatusFixture, shadowLinksFixture } from './__fixtures__/queries';
+import { type BrokerProgress, type FencePhase, isBlockingPhase } from './cluster-fence-model';
+import { ClusterFenceSourcePanel } from './cluster-fence-source-panel';
 import type { ShadowLinkTopology } from './shadow-link-topology';
 
 rs.mock('react-query/api/cluster-fence', () => {
@@ -32,43 +37,34 @@ rs.mock('react-query/api/cluster-fence', () => {
   };
 });
 rs.mock('react-query/api/shadowlink', () => ({
-  useListShadowLinksQuery: rs.fn(() => ({ data: { shadowLinks: [] } })),
+  useListShadowLinksQuery: rs.fn(() => shadowLinksFixture([])),
 }));
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-
-import { type BrokerProgress, type FencePhase, isBlockingPhase } from './cluster-fence-model';
-import { ClusterFenceSourcePanel } from './cluster-fence-source-panel';
 
 const mockStatus = (
   phase: FencePhase,
   brokers: BrokerProgress[] = [],
   exemptPrincipals = ['shadow-orders'],
-  error: unknown = null
+  error?: ConnectError
 ) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    isLoading: false,
-    error,
-    data: {},
-    dataUpdatedAt: Date.UTC(2026, 9, 19, 14, 5),
-    refetch: rs.fn(),
-    isRefetching: false,
-    known: true,
-    available: true,
-    access: 'ok',
-    unreadable: false,
-    ownCopies: [],
-    blocking: isBlockingPhase(phase),
-    summary: {
-      phase,
-      revision: 18n,
-      stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
-      exemptPrincipals,
-      allowAllReads: false,
-    },
-    brokers,
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+    fenceStatusFixture({
+      error,
+      data: {},
+      dataUpdatedAt: Date.UTC(2026, 9, 19, 14, 5),
+      known: true,
+      access: 'ok',
+      ownCopies: [],
+      blocking: isBlockingPhase(phase),
+      summary: {
+        phase,
+        revision: 18n,
+        stateChangedAt: new Date(Date.now() - 12 * 60 * 1000),
+        exemptPrincipals,
+        allowAllReads: false,
+      },
+      brokers,
+    })
+  );
 
 const confirmed = (nodeId: number, phase: FencePhase = 'fenced'): BrokerProgress => ({
   nodeId,
@@ -114,9 +110,7 @@ const ERROR_CODE_NAMES = /REQUEST_TIMED_OUT|POLICY_VIOLATION|COORDINATOR_NOT_AVA
 describe('the ClusterFenceSourcePanel', () => {
   beforeEach(() => {
     rs.clearAllMocks();
-    rs.mocked(useListShadowLinksQuery).mockReturnValue({ data: { shadowLinks: [] } } as unknown as ReturnType<
-      typeof useListShadowLinksQuery
-    >);
+    rs.mocked(useListShadowLinksQuery).mockReturnValue(shadowLinksFixture([]));
     useClusterFenceStore.setState({ topology: null, openCluster: null });
   });
 
@@ -179,9 +173,9 @@ describe('the ClusterFenceSourcePanel', () => {
     });
 
     test('a cluster with a shadow link that hasn’t failed over can’t be fenced; one that has failed over can', () => {
-      rs.mocked(useListShadowLinksQuery).mockReturnValue({
-        data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.ACTIVE }] },
-      } as unknown as ReturnType<typeof useListShadowLinksQuery>);
+      rs.mocked(useListShadowLinksQuery).mockReturnValue(
+        shadowLinksFixture([{ name: 'inbound-dr', state: ShadowLinkState.ACTIVE }])
+      );
       mockStatus('unfenced');
       const { unmount } = renderWithFileRoutes(<ClusterFenceSourcePanel />);
       expect(screen.getByTestId('open-fence-cluster')).toBeDisabled();
@@ -190,9 +184,9 @@ describe('the ClusterFenceSourcePanel', () => {
       ).toBeInTheDocument();
       unmount();
 
-      rs.mocked(useListShadowLinksQuery).mockReturnValue({
-        data: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }] },
-      } as unknown as ReturnType<typeof useListShadowLinksQuery>);
+      rs.mocked(useListShadowLinksQuery).mockReturnValue(
+        shadowLinksFixture([{ name: 'inbound-dr', state: ShadowLinkState.FAILED_OVER }])
+      );
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
       expect(screen.getByTestId('open-fence-cluster')).toBeEnabled();
     });
@@ -208,37 +202,37 @@ describe('the ClusterFenceSourcePanel', () => {
 
     test('when the status can’t load, shows each broker’s own copy and offers a retry', async () => {
       const user = userEvent.setup();
-      const refetch = rs.fn();
-      rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-        isLoading: false,
-        error: new ConnectError('no controller leader', Code.Unavailable),
-        refetch,
-        isRefetching: false,
-        known: false,
-        access: 'ok',
-        unreadable: false,
-        ownCopies: [{ nodeId: 1, phase: 'fenced', revision: 18n }],
-        summary: { phase: 'unfenced' },
-        brokers: [],
-      } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+      const refetch = rs.fn(fenceStatusFixture().refetch);
+      rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+        fenceStatusFixture({
+          error: new ConnectError('no controller leader', Code.Unavailable),
+          refetch,
+          known: false,
+          access: 'ok',
+          ownCopies: [{ nodeId: 1, phase: 'fenced', revision: 18n }],
+          summary: { phase: 'unfenced' },
+          brokers: [],
+        })
+      );
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
       expect(screen.getByTestId('cluster-fence-status-error')).toHaveTextContent('no controller leader right now');
       expect(screen.getByTestId('cluster-fence-own-copies')).toHaveTextContent('Broker 1: Fenced, revision 18');
       await user.click(screen.getByRole('button', { name: 'Try again' }));
-      expect(refetch).toHaveBeenCalled();
+      expect(refetch).toHaveBeenCalledWith();
     });
 
     test('a viewer without permission is told why the fence can’t be shown', () => {
-      rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-        isLoading: false,
-        error: new ConnectError('denied', Code.PermissionDenied),
-        known: false,
-        access: 'forbidden',
-        summary: { phase: 'unfenced' },
-        brokers: [],
-        ownCopies: [],
-      } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+      rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+        fenceStatusFixture({
+          error: new ConnectError('denied', Code.PermissionDenied),
+          known: false,
+          access: 'forbidden',
+          summary: { phase: 'unfenced' },
+          brokers: [],
+          ownCopies: [],
+        })
+      );
       renderWithFileRoutes(<ClusterFenceSourcePanel />);
 
       expect(screen.getByTestId('cluster-fence-forbidden')).toHaveTextContent(

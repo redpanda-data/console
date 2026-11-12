@@ -12,7 +12,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
 import { ShadowSchemaRegistrySection } from './shadow-schema-registry-section';
@@ -23,7 +23,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues?: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -32,7 +32,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -66,7 +66,7 @@ describe('the ShadowSchemaRegistrySection', () => {
 
   test('should reveal api sections and mirror enableSchemaRegistrySync when switching modes', async () => {
     const user = userEvent.setup();
-    let formValues: FormValues | undefined;
+    let formValues: DeepPartial<FormValues> | undefined;
 
     render(
       <TestWrapper

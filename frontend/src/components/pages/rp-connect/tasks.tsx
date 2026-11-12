@@ -4,10 +4,10 @@ export const MIN_TASKS = 1,
 const milliValueRegex = /^(\d+(\.\d+)?)(m?)$/;
 
 export function cpuToTasks(cpu: string | undefined): number | undefined {
-  if (!cpu) {
+  if (!(cpu !== null && cpu !== undefined && cpu !== '')) {
     return;
   }
-  const match = cpu.match(milliValueRegex);
+  const match = milliValueRegex.exec(cpu);
   if (!match) {
     return;
   }
@@ -19,7 +19,7 @@ export function cpuToTasks(cpu: string | undefined): number | undefined {
 }
 
 export function tasksToCPU(tasks: number | undefined): string | undefined {
-  if (!tasks) {
+  if (!(tasks !== null && tasks !== undefined && Boolean(tasks))) {
     return;
   }
   return `${tasks * 100}m`;

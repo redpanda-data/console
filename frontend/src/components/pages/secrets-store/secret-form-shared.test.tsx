@@ -8,7 +8,7 @@
  * use of this software will be governed by the Apache License, Version 2.0
  */
 
-import { beforeAll, describe, expect, it, test } from '@rstest/core';
+import { beforeAll, describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -26,7 +26,7 @@ import { labelsToMap, SCOPE_OPTIONS } from './secret-form-shared';
 
 // cmdk calls scrollIntoView which is not available in Happy DOM
 beforeAll(() => {
-  Element.prototype.scrollIntoView = () => {};
+  Element.prototype.scrollIntoView = () => undefined;
 });
 
 const EMPTY_SCOPES: string[] = [];
@@ -97,7 +97,7 @@ describe('labelsToMap', () => {
 });
 
 describe('the SCOPE_OPTIONS labels', () => {
-  it('all labels are plain strings, not JSX or raw enum numbers', () => {
+  test('all labels are plain strings, not JSX or raw enum numbers', () => {
     for (const option of SCOPE_OPTIONS) {
       expect(typeof option.label).toBe('string');
       // The label should not be a stringified number (raw enum value)
@@ -105,7 +105,7 @@ describe('the SCOPE_OPTIONS labels', () => {
     }
   });
 
-  it('each option has a string label and a renderable icon component', () => {
+  test('each option has a string label and a renderable icon component', () => {
     const expectedLabels = ['AI Gateway', 'MCP Server', 'AI Agent', 'Redpanda Connect', 'Redpanda Cluster'];
 
     expect(SCOPE_OPTIONS.map((o) => o.label)).toEqual(expectedLabels);
@@ -116,7 +116,7 @@ describe('the SCOPE_OPTIONS labels', () => {
     }
   });
 
-  it('each option value is a numeric string matching a Scope enum value', () => {
+  test('each option value is a numeric string matching a Scope enum value', () => {
     for (const option of SCOPE_OPTIONS) {
       expect(Number.isNaN(Number(option.value))).toBe(false);
       expect(Number(option.value)).toBeGreaterThan(0);
@@ -125,13 +125,13 @@ describe('the SCOPE_OPTIONS labels', () => {
 });
 
 describe('scope MultiSelect trigger', () => {
-  it('shows placeholder when no scopes are selected', () => {
+  test('shows placeholder when no scopes are selected', () => {
     render(<ScopeMultiSelect />);
 
     expect(screen.getByText('Select scopes')).toBeInTheDocument();
   });
 
-  it('displays plain text label after selecting a scope from the dropdown', async () => {
+  test('displays plain text label after selecting a scope from the dropdown', async () => {
     const user = userEvent.setup();
 
     render(<ScopeMultiSelect />);
@@ -148,7 +148,7 @@ describe('scope MultiSelect trigger', () => {
     expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
   });
 
-  it('displays plain text labels for multiple selected scopes', async () => {
+  test('displays plain text labels for multiple selected scopes', async () => {
     const user = userEvent.setup();
 
     render(<ScopeMultiSelect />);

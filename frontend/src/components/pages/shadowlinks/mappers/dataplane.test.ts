@@ -38,7 +38,7 @@ const mapApiOptions = (
   const mode =
     fromDataplaneShadowLink(shadowLink).configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
   if (mode?.case !== 'shadowSchemaRegistryApi') {
-    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case}`);
+    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case ?? 'unset'}`);
   }
   return mode.value;
 };

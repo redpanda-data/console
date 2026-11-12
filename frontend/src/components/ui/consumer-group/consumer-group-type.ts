@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { GroupType } from 'state/rest-interfaces';
+import type { GroupType } from 'types/consumer-groups';
 
 export const groupTypeLabels: Record<GroupType, string> = {
   classic: 'Classic',

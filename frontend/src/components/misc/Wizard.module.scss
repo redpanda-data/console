@@ -10,12 +10,11 @@
  */
 
 .content {
-    margin-bottom: 35px;
+  margin-block-end: 35px;
 }
 
 .footer {
-    margin: 0;
-    display: flex;
-    gap: 1rem;
+  display: flex;
+  gap: 1rem;
+  margin: 0;
 }
-

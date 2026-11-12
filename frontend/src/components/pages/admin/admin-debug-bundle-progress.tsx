@@ -10,19 +10,16 @@
  */
 
 import { Link } from '@tanstack/react-router';
-
-import { api, useApiStoreHook } from '../../../state/backend-api';
-import '../../../utils/array-extensions';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
 
-import DebugBundleOverview from './debug-bundle-overview';
+import { DebugBundleOverview } from './debug-bundle-overview';
 import { DebugBundleStatus_Status } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/app-global';
-import DebugBundleLink from '../../debugBundle/debug-bundle-link';
+import { api, useApiStoreHook } from '../../../state/backend-api';
+import { DebugBundleLink } from '../../debugBundle/debug-bundle-link';
 import { PageComponent, type PageInitHelper } from '../page';
-
-export default class AdminPageDebugBundleProgress extends PageComponent {
+export class AdminPageDebugBundleProgress extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Generate debug bundle';
     p.addBreadcrumb('Generate debug bundle', '/debug-bundle/progress');
@@ -82,14 +79,14 @@ const AdminPageDebugBundleProgressContent: FC = () => {
       </div>
 
       <div className="mt-4">
-        {Boolean(isInProgress) && <div data-testid="debug-bundle-generating-text">Generating bundle...</div>}
-        {Boolean(isExpired) && (
+        {isInProgress && <div data-testid="debug-bundle-generating-text">Generating bundle...</div>}
+        {isExpired && (
           <div className="font-bold" data-testid="debug-bundle-expired-text">
             Your previous bundle has expired and cannot be downloaded.
           </div>
         )}
-        {Boolean(isError) && <div data-testid="debug-bundle-error-text">Your debug bundle was not generated.</div>}
-        {Boolean(canDownload) && (
+        {isError && <div data-testid="debug-bundle-error-text">Your debug bundle was not generated.</div>}
+        {canDownload && (
           <div data-testid="debug-bundle-complete-box">
             <div className="flex gap-2">
               <div className="font-bold">Debug bundle complete:</div>

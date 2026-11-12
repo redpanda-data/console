@@ -11,6 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ShieldIcon } from 'components/icons';
 import {
   Empty,
@@ -20,15 +22,17 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
+import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { ExternalLinkIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
+import { reportActionError } from 'utils/toast.utils';
 
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { rolesApi } from '../../../../state/backend-api';
-import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
-import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -43,7 +47,6 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
-import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 
 type Role = {
   principalType: string;
@@ -60,14 +63,15 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
   const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
+
   const editRolesReason = useClusterFenceGuard().reasonFor('editRoles');
 
   const availableRoleOptions = (rolesData?.roles ?? [])
-    .filter((r) => !roles.some((assigned) => assigned.principalName === r.name))
+    .filter((r) => roles.every((assigned) => assigned.principalName !== r.name))
     .map((r) => ({ value: r.name, label: r.name }));
 
   const removeFromRole = async (roleName: string) => {
-    if (!userName) {
+    if (!(userName !== null && userName !== undefined && userName !== '')) {
       return;
     }
     await updateRoleMembership(
@@ -78,7 +82,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   };
 
   const assignRole = async (roleName: string) => {
-    if (!(userName && roleName)) {
+    if (!(userName !== null && userName !== undefined && userName !== '' && roleName)) {
       return;
     }
     await updateRoleMembership(create(UpdateRoleMembershipRequestSchema, { roleName, add: [{ principal: userName }] }));
@@ -88,7 +92,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   const count = roles.length;
 
   const renderBody = () => {
-    if (isLoading) {
+    if (isLoading === true) {
       return [0, 1, 2].map((i) => (
         <TableRow key={i}>
           <TableCell>
@@ -138,7 +142,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                 testId={`remove-role-${r.principalName}`}
                 variant="ghost"
               >
-                <Trash2Icon className="h-4 w-4" />
+                <Trash2Icon className="size-4" />
               </FenceGuardedButton>
             )}
             <Button
@@ -148,7 +152,7 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
                   search={{ host: undefined }}
                   to="/security/roles/$roleName/details"
                 >
-                  <ExternalLinkIcon className="h-4 w-4" />
+                  <ExternalLinkIcon className="size-4" />
                 </Link>
               }
               size="icon-sm"
@@ -166,13 +170,13 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
       <ListLayout className="my-4 min-h-0">
         <ListLayoutFilters
           actions={
-            userName ? (
+            userName !== null && userName !== undefined && userName !== '' ? (
               <DisabledReasonTooltip reason={editRolesReason}>
                 <Combobox
                   className="w-56"
                   clearable={false}
                   disabled={Boolean(editRolesReason)}
-                  onChange={assignRole}
+                  onChange={asyncEvent(assignRole, reportActionError)}
                   options={availableRoleOptions}
                   placeholder="Assign a role..."
                   testId="assign-role-combobox"
@@ -214,7 +218,10 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
             </Button>
             <Button
               disabled={isPending}
-              onClick={() => pendingRemoveRole && removeFromRole(pendingRemoveRole)}
+              onClick={asyncEvent(
+                () => isNonEmptyString(pendingRemoveRole) && removeFromRole(pendingRemoveRole),
+                reportActionError
+              )}
               testId="confirm-remove-role-button"
               variant="destructive"
             >

@@ -63,7 +63,7 @@ describe('the PIPELINE_TEMPLATES registry', () => {
     test('required slots have non-empty labels', () => {
       for (const t of PIPELINE_TEMPLATES) {
         for (const s of t.slots) {
-          if (s.required) {
+          if (s.required === true) {
             expect(s.label.length, `${t.id}.${s.id}`).toBeGreaterThan(0);
           }
         }
@@ -79,13 +79,11 @@ describe('the PIPELINE_TEMPLATES registry', () => {
     test('every required slot is referenced by a slot token in its baseYaml', () => {
       for (const t of PIPELINE_TEMPLATES) {
         for (const s of t.slots) {
-          if (!s.required) {
+          if (!(s.required === true)) {
             continue;
           }
           const token = ['$', '{slot.', s.id, '}'].join('');
-          expect(t.baseYaml.includes(token), `${t.id} baseYaml is missing required slot reference for "${s.id}"`).toBe(
-            true
-          );
+          expect(t.baseYaml, `${t.id} baseYaml is missing required slot reference for "${s.id}"`).toContain(token);
         }
       }
     });
