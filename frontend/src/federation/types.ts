@@ -45,9 +45,10 @@ export type ConsoleAppProps = {
 
   /**
    * Callback when Console route changes.
-   * Host can use this to update browser URL.
+   * Host can use this to update browser URL. `replace` is true when Console replaced its current
+   * history entry instead of adding one, so the host should replace its own too.
    */
-  onRouteChange?: (path: string) => void;
+  onRouteChange?: (path: string, options?: { replace: boolean }) => void;
 
   /**
    * Callback when Console sidebar items change.

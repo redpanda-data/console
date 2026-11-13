@@ -152,19 +152,23 @@ describe('the FailoverTab', () => {
       expect(screen.getByTestId('failover-step-lag')).not.toHaveTextContent('exempt');
     });
 
-    test('when the settings would block this link, its one button exempts the link’s user on the source', async () => {
-      const user = userEvent.setup();
-      const identity: LinkIdentity = { authentication: 'sasl', principal: 'shadow/orders' };
-      renderTab(readinessFor(cloudSource('unfenced', []), topics([0]), { identity }), { identity });
+    // A name that would read as JSON is quoted, as routers write it, so the host's router keeps it a string.
+    test.each([
+      ['shadow/orders', 'shadow%2Forders'],
+      ['1001', '%221001%22'],
+    ])(
+      'when the settings would block this link, its one button exempts %s on the source',
+      async (principal, written) => {
+        const user = userEvent.setup();
+        const identity: LinkIdentity = { authentication: 'sasl', principal };
+        renderTab(readinessFor(cloudSource('unfenced', []), topics([0]), { identity }), { identity });
 
-      const lane = screen.getByTestId('failover-lane-source');
-      expect(within(lane).getAllByRole('button')).toHaveLength(1);
-      await user.click(within(lane).getByRole('button', { name: 'Exempt shadow/orders on prod-us-east-1' }));
-      expect(openCluster).toHaveBeenCalledWith(
-        'prod',
-        '/shadowlinks?tab=source&action=exempt&principal=shadow%2Forders'
-      );
-    });
+        const lane = screen.getByTestId('failover-lane-source');
+        expect(within(lane).getAllByRole('button')).toHaveLength(1);
+        await user.click(within(lane).getByRole('button', { name: `Exempt ${principal} on prod-us-east-1` }));
+        expect(openCluster).toHaveBeenCalledWith('prod', `/shadowlinks?tab=source&action=exempt&principal=${written}`);
+      }
+    );
 
     test('once fenced with the link blocked, says its fetches are rejected and lag can’t drain', () => {
       renderTab(cloudReadiness('fenced', [0], []));

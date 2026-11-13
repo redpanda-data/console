@@ -310,6 +310,16 @@ describe('the ClusterFenceSourcePanel', () => {
     });
 
     test.each([
+      ['quoted, as a router writes a name that reads as JSON', '%221001%22'],
+      ['unquoted', '1001'],
+    ])('adds a user named like a number, %s', async (_how, written) => {
+      mockStatus('unfenced');
+      renderAt(`/shadowlinks?tab=source&action=exempt&principal=${written}`);
+
+      expect(await screen.findByTestId('cluster-fence-exempt-principals-chip-1001')).toBeVisible();
+    });
+
+    test.each([
       ['fence', 'unfenced', 'fence-cluster-dialog'],
       ['unfence', 'fenced', 'unfence-cluster-dialog'],
     ] as const)('%s on a cluster that’s %s opens its dialog', async (action, phase, testId) => {

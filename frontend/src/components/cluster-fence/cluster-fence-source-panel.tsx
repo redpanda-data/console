@@ -460,6 +460,23 @@ type SourceDialog = 'fence' | 'unfence' | 'settings';
 
 const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'fence', unfence: 'unfence' } as const;
 
+/**
+ * A search value as written, read from the raw query string: the parsed search turns a name like
+ * `1001` into a number. Routers quote a value that would read as JSON, so `"1001"` is unquoted.
+ */
+const searchText = (searchStr: string, key: string): string | undefined => {
+  const raw = new URLSearchParams(searchStr).get(key);
+  if (raw === null) {
+    return;
+  }
+  try {
+    const value: unknown = JSON.parse(raw);
+    return typeof value === 'string' ? value : raw;
+  } catch {
+    return raw;
+  }
+};
+
 const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_ACTION)[];
 
 /**
@@ -485,9 +502,7 @@ const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | 
     }
   }, [action, phase, setDialog]);
   return {
-    // The raw query string: the parsed search turns a name like `1001` into a number.
-    principal:
-      action === 'exempt' ? (new URLSearchParams(location.searchStr).get('principal') ?? undefined) : undefined,
+    principal: action === 'exempt' ? searchText(location.searchStr, 'principal') : undefined,
     onOpenChange: (dialog: SourceDialog) => (open: boolean) => {
       setDialog(open ? dialog : null);
       if (!open && action) {

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { defaultStringifySearch } from '@tanstack/react-router';
 import {
   brokersPhrase,
   formatFenceDuration,
@@ -149,7 +150,7 @@ const OpenSourceButton = ({ fence, link }: { fence: SourceFenceStep; link: LinkI
         openCluster(
           source.clusterId,
           exempt
-            ? `/shadowlinks?tab=source&action=exempt&principal=${encodeURIComponent(exempt)}`
+            ? `/shadowlinks${defaultStringifySearch({ tab: 'source', action: 'exempt', principal: exempt })}`
             : '/shadowlinks?tab=source'
         )
       }
