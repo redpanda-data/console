@@ -54,6 +54,8 @@ const editorAutosaveEntrySchema = z.object({
   description: z.string(),
   computeUnits: z.number(),
   tags: z.array(z.object({ key: z.string(), value: z.string() })),
+  /** Absent from entries written before egress gateways could be picked. */
+  egressGatewayIds: z.array(z.string()).optional(),
   configYaml: z.string(),
   /** Epoch ms, this browser's clock. */
   updatedAt: z.number(),

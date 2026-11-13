@@ -154,6 +154,16 @@ describe('summarizeSettingsChanges', () => {
 
     expect(change).toMatchObject({ from: 'env: dev', to: 'env: prod' });
   });
+
+  it('names egress gateways it can look up, and shows the ID of any it cannot', () => {
+    const [change] = summarizeSettingsChanges(
+      { egressGatewayIds: ['gw-a'] },
+      { egressGatewayIds: ['gw-a', 'gw-gone'] },
+      new Map([['gw-a', 'preprod-pl']])
+    );
+
+    expect(change).toMatchObject({ label: 'Egress gateways', from: 'preprod-pl', to: 'preprod-pl, gw-gone' });
+  });
 });
 
 describe('changesImpactMessage', () => {
