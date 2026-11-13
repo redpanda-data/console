@@ -20,7 +20,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
-import { isFeatureFlagEnabled } from 'config';
+import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
@@ -53,7 +53,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     p.addBreadcrumb('Create Pipeline', '');
 
     this.refreshData(true);
-    rpcnSecretManagerApi.refreshSecrets(true);
+    // The secret store only exists in Cloud. Feature.SecretService can't gate this:
+    // Cloud's backend doesn't report it in endpoint compatibility, so it reads as unsupported.
+    if (isEmbedded()) {
+      rpcnSecretManagerApi.refreshSecrets(true);
+    }
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
@@ -331,6 +335,9 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
   if (editorInstance === null) {
     return <div className="min-w-[300px]" />;
   }
+  if (!isEmbedded()) {
+    return null;
+  }
 
   const onAddSecret = (secretNotation: string) => {
     const selection = editorInstance.getSelection();
@@ -367,7 +374,9 @@ const registerSecretsAutocomplete = async (
   monaco: Monaco,
   setSecretAutocomplete: Dispatch<SetStateAction<IDisposable | undefined>>
 ) => {
-  await rpcnSecretManagerApi.refreshSecrets(true);
+  if (isEmbedded()) {
+    await rpcnSecretManagerApi.refreshSecrets(true);
+  }
   const secrets = rpcnSecretManagerApi.secrets || [];
   const autocomplete = monaco.languages.registerCompletionItemProvider('yaml', {
     triggerCharacters: ['$'],
