@@ -66,7 +66,7 @@ function FieldRenderer({
       {...inputProps}
       aria-invalid={invalid}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
+      onValueChange={(inputText) => onChange(inputText)}
       testId={testId}
       value={value}
     />

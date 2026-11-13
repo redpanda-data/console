@@ -1,4 +1,4 @@
-import { Separator as SeparatorPrimitive } from '@base-ui/react/separator';
+import { Separator as SeparatorPrimitive } from '@ui-sdk/react/separator';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -30,7 +30,7 @@ const VARIANT_PREFIX = /^.*:/;
 
 /**
  * `align-self: stretch` only stretches an *auto* height — given an explicit one it behaves like
- * `flex-start`, so a caller-sized vertical rule is centred instead. Base UI also allows a
+ * `flex-start`, so a caller-sized vertical rule is centred instead. UI SDK also allows a
  * `className` function of state, which cannot be read statically.
  */
 const setsOwnHeight = (className: SeparatorProps['className']) =>

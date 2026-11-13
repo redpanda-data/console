@@ -35,7 +35,10 @@ test.describe('quotas page - Connect error handling', () => {
     // "[<code>] <rawMessage>", so the mocked rawMessage is the deterministic substring to assert.
     // Timeout accommodates the query-client's exponential-backoff retry policy for Code.Internal
     // (4 attempts: 0, 1s, 2s, 4s — see src/query-client.ts).
-    await expect(page.getByRole('alert')).toContainText('mocked backend failure', { timeout: 30_000 });
+    await expect(page.getByRole('alert').filter({ hasText: 'mocked backend failure' })).toContainText(
+      'mocked backend failure',
+      { timeout: 30_000 }
+    );
   });
 
   test('listQuotas PERMISSION_DENIED surfaces a permission message (not a raw gRPC code)', async ({ page }) => {

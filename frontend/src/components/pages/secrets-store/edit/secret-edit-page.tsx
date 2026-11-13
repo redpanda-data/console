@@ -28,13 +28,13 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { type Secret, UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -119,7 +119,7 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>ID</FieldLabel>
-              <Input {...field} disabled />
+              <Input {...field} disabled onValueChange={field.onChange} />
               <FieldDescription>Secret identifier cannot be changed.</FieldDescription>
               {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
             </Field>
@@ -132,7 +132,12 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel>Value</FieldLabel>
-              <Input {...field} placeholder="Leave empty to keep existing value" type="password" />
+              <Input
+                {...field}
+                onValueChange={field.onChange}
+                placeholder="Leave empty to keep existing value"
+                type="password"
+              />
               <FieldDescription>
                 Enter a new value to update the secret, or leave empty to keep the existing value.
               </FieldDescription>

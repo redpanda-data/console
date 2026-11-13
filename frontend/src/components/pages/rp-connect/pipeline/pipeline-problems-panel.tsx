@@ -10,7 +10,7 @@
  */
 
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { AlertCircle, KeyRound, MousePointerClick, TriangleAlert } from 'lucide-react';
 import { pluralizeWithNumber } from 'utils/string';
 
@@ -82,13 +82,14 @@ const ProblemRow = ({
     </>
   );
   return onSelect ? (
-    <button
+    <ConsoleButton
       className="group flex w-full cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
       onClick={onSelect}
       type="button"
+      variant="unstyled"
     >
       {body}
-    </button>
+    </ConsoleButton>
   ) : (
     <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left">{body}</div>
   );

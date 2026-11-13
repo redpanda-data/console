@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
 import { isEmbedded } from 'config';
 import { Trash2 } from 'lucide-react';
@@ -19,7 +20,6 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import { CertificateUploadRow, ConfiguredBadge, UploadedFileName } from '../../certificate-upload';
@@ -377,9 +377,14 @@ export const SrTlsConfiguration = () => {
           <div className="text-body text-muted-foreground" data-testid="sr-tls-intro">
             The connection to the source Schema Registry is encrypted. By default, its certificate is verified using the
             system trust store. Upload a custom CA below if the source uses a private or self-signed CA.{' '}
-            <a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank">
+            <ConsoleButton
+              render={
+                <a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank" />
+              }
+              variant="unstyled"
+            >
               Learn about TLS for shadow links
-            </a>
+            </ConsoleButton>
           </div>
 
           {filePaths ? (

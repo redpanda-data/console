@@ -11,7 +11,7 @@
 
 import { MoreHorizontalIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import type { DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
@@ -19,8 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { MessageKeyPreview } from './message-display/message-key-preview';
 import { MessagePreview } from './message-display/message-preview';
@@ -148,15 +148,16 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(keyDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Key{' '}
-            <button
+            <ConsoleButton
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
               }}
               type="button"
+              variant="unstyled"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[keyDeserializer]}</Badge>
-            </button>
+            </ConsoleButton>
           </div>
         ) : (
           'Key'
@@ -177,15 +178,16 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(valueDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Value{' '}
-            <button
+            <ConsoleButton
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
               }}
               type="button"
+              variant="unstyled"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[valueDeserializer]}</Badge>
-            </button>
+            </ConsoleButton>
           </div>
         ) : (
           'Value'
@@ -251,7 +253,7 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
         />
         <DropdownMenuContent>
           <DropdownMenuItem
-            onClick={() => {
+            onSelect={() => {
               navigator.clipboard
                 .writeText(getMessageAsString(original))
                 .then(() => {
@@ -262,14 +264,14 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
           >
             Copy Message
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={original.key.isPayloadNull} onClick={() => onCopyKey(original)}>
+          <DropdownMenuItem disabled={original.key.isPayloadNull} onSelect={() => onCopyKey(original)}>
             Copy Key
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={original.value.isPayloadNull} onClick={() => onCopyValue(original)}>
+          <DropdownMenuItem disabled={original.value.isPayloadNull} onSelect={() => onCopyValue(original)}>
             Copy Value
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => {
+            onSelect={() => {
               navigator.clipboard
                 .writeText(original.timestamp.toString())
                 .then(() => {
@@ -281,7 +283,7 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
             Copy Epoch Timestamp
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => {
+            onSelect={() => {
               onSaveMessage(original);
             }}
           >

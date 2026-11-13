@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -9,7 +10,6 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
 
 const UNDERSCORE_REGEX = /_/g;
 const FIRST_CHAR_REGEX = /^\w/;

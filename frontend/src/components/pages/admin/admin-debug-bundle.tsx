@@ -10,6 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect, useRef, useState } from 'react';
 
 import '../../../utils/array-extensions';
@@ -149,7 +150,7 @@ const NumberWithUnitField = ({
       <Input
         containerClassName="min-w-0 flex-1"
         id={id}
-        onChange={(e) => onValueChange(e.target.valueAsNumber)}
+        onValueChange={(value) => onValueChange(value === '' ? Number.NaN : Number(value))}
         testId={id}
         type="number"
         value={value === undefined || Number.isNaN(value) ? '' : value}
@@ -250,13 +251,18 @@ const DebugBundleInProgress: FC<{ status?: DebugBundleStatus }> = ({ status }) =
       {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
           Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
       {jobId ? (
-        <Link
-          className={cn(buttonVariants({ variant: 'link' }), 'mt-4')}
-          params={{ jobId }}
-          to="/debug-bundle/progress/$jobId"
+        <ConsoleButton
+          render={
+            <Link
+              className={cn(buttonVariants({ variant: 'link' }), 'mt-4')}
+              params={{ jobId }}
+              to="/debug-bundle/progress/$jobId"
+            />
+          }
+          variant="unstyled"
         >
           Bundle generation in progress...
-        </Link>
+        </ConsoleButton>
       ) : (
         <div className="mt-4">Generating bundle...</div>
       )}
@@ -420,7 +426,7 @@ const NewDebugBundleForm: FC<{
             <FieldLabel htmlFor="scram-user-input">SCRAM user</FieldLabel>
             <Input
               id="scram-user-input"
-              onChange={(e) => setFormState((prev) => ({ ...prev, scramUsername: e.target.value }))}
+              onValueChange={(inputText) => setFormState((prev) => ({ ...prev, scramUsername: inputText }))}
               testId="scram-user-input"
               value={formState.scramUsername ?? ''}
             />
@@ -476,7 +482,7 @@ const NewDebugBundleForm: FC<{
             <FieldLabel htmlFor="scram-user-password">Password</FieldLabel>
             <Input
               id="scram-user-password"
-              onChange={(e) => setFormState((prev) => ({ ...prev, scramPassword: e.target.value }))}
+              onValueChange={(inputText) => setFormState((prev) => ({ ...prev, scramPassword: inputText }))}
               testId="scram-user-password"
               type="password"
               value={formState.scramPassword ?? ''}
@@ -566,7 +572,7 @@ const NewDebugBundleForm: FC<{
             <FieldLabel htmlFor="metrics-samples-input">Metrics samples</FieldLabel>
             <Input
               id="metrics-samples-input"
-              onChange={(e) => setFormState((prev) => ({ ...prev, metricsSamples: e.target.value }))}
+              onValueChange={(inputText) => setFormState((prev) => ({ ...prev, metricsSamples: inputText }))}
               testId="metrics-samples-input"
               value={formState.metricsSamples}
             />
@@ -579,7 +585,7 @@ const NewDebugBundleForm: FC<{
             <FieldLabel htmlFor="namespace-input">Namespace</FieldLabel>
             <Input
               id="namespace-input"
-              onChange={(e) => setFormState((prev) => ({ ...prev, namespace: e.target.value }))}
+              onValueChange={(inputText) => setFormState((prev) => ({ ...prev, namespace: inputText }))}
               testId="namespace-input"
               value={formState.namespace}
             />
@@ -610,11 +616,11 @@ const NewDebugBundleForm: FC<{
                   <div className="text-body-sm">Key</div>
                   <Input
                     aria-label={`Label selector ${idx + 1} key`}
-                    onChange={(e) => {
+                    onValueChange={(inputText) => {
                       setFormState((prev) => ({
                         ...prev,
                         labelSelectors: prev.labelSelectors.map((ls, i) =>
-                          i === idx ? { ...ls, key: e.target.value } : ls
+                          i === idx ? { ...ls, key: inputText } : ls
                         ),
                       }));
                     }}
@@ -625,11 +631,11 @@ const NewDebugBundleForm: FC<{
                   <div className="text-body-sm">Value</div>
                   <Input
                     aria-label={`Label selector ${idx + 1} value`}
-                    onChange={(e) => {
+                    onValueChange={(inputText) => {
                       setFormState((prev) => ({
                         ...prev,
                         labelSelectors: prev.labelSelectors.map((ls, i) =>
-                          i === idx ? { ...ls, value: e.target.value } : ls
+                          i === idx ? { ...ls, value: inputText } : ls
                         ),
                       }));
                     }}

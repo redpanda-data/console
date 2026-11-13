@@ -89,7 +89,38 @@
         "noProcessExit": "error",
         "noPromiseExecutorReturn": "error",
         "noTailwindLegacyUtilities": "error",
-        "noTailwindRestyledComponents": "error",
+        "noTailwindRestyledComponents": {
+          "level": "error",
+          "options": {
+            "allow": [
+              {
+                "components": "EditorSurface",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "EditorSurface supplies SDK behavior only; retain the existing rich editor's container styling."
+              },
+              {
+                "components": "ConsoleButton",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "This alias is the shared SDK Button with variant=unstyled, preserving native-control styling."
+              },
+              {
+                "components": "InlineInput",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "InlineInput has SDK behavior but no visual styles; use Input variants for standard forms."
+              },
+              {
+                "components": "SortableItem",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "SortableItem only supplies SDK reorder behavior; the consumer owns the row layout."
+              },
+              {
+                "components": "SortableHandle",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "SortableHandle is an unstyled SDK reorder control."
+              }
+            ]
+          }
+        },
         "noUnsafeUnaryMinus": "error",
         "noUselessAssignment": "error",
         "noUselessCall": "error",
@@ -117,6 +148,21 @@
               "yup": "Deprecated — use Zod instead"
             },
             "patterns": [
+              {
+                "group": [
+                  "@base-ui/react",
+                  "@base-ui/react/**",
+                  "@radix-ui/**",
+                  "cmdk",
+                  "sonner",
+                  "react-day-picker",
+                  "react-resizable-panels",
+                  "@hello-pangea/dnd",
+                  "@stepperize/react",
+                  "@stepperize/react/**"
+                ],
+                "message": "Use Console-owned UI SDK components from components/redpanda-ui/components."
+              },
               {
                 "group": [
                   "vitest",

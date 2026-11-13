@@ -10,7 +10,7 @@
  */
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
@@ -81,7 +81,7 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
   const meta = READ_SCOPE_META[mode];
   const Icon = meta.icon;
   return (
-    <button
+    <ConsoleButton
       className={cn(
         'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
         selected && 'bg-selected-wash'
@@ -89,6 +89,7 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
       data-testid={`read-scope-mode-${mode}`}
       onClick={onSelect}
       type="button"
+      variant="unstyled"
     >
       <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone="muted" />
       <span className="min-w-0 flex-1">
@@ -96,7 +97,7 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
         <span className="mt-0.5 block text-body-sm leading-relaxed text-muted-foreground">{meta.description}</span>
       </span>
       {selected && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-    </button>
+    </ConsoleButton>
   );
 };
 
@@ -195,7 +196,7 @@ export const ReadScopePopover = ({
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <button
+            <ConsoleButton
               className={cn(
                 'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
                 liveTail && 'bg-success-wash hover:bg-success-wash'
@@ -206,6 +207,7 @@ export const ReadScopePopover = ({
                 setOpen(false);
               }}
               type="button"
+              variant="unstyled"
             >
               <TonedIcon className="mt-0.5 size-4 shrink-0" icon={RadioIcon} tone="live" />
               <span className="min-w-0 flex-1">
@@ -215,7 +217,7 @@ export const ReadScopePopover = ({
                 </span>
               </span>
               {liveTail && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-            </button>
+            </ConsoleButton>
           </div>
 
           <div className="flex w-[290px] shrink-0 flex-col gap-3 border-l p-4">
@@ -225,8 +227,8 @@ export const ReadScopePopover = ({
                 <Input
                   id="read-scope-offset"
                   inputMode="numeric"
-                  onChange={(e) => {
-                    const parsed = Number.parseInt(e.target.value, 10);
+                  onValueChange={(inputText) => {
+                    const parsed = Number.parseInt(inputText, 10);
                     if (!Number.isNaN(parsed) && parsed >= 0) {
                       onCustomOffsetChange(parsed);
                     }

@@ -117,8 +117,8 @@ const RpConnectSecretCreateContent = () => {
             id="secretId"
             max={SECRET_NAME_MAX_LENGTH}
             min={1}
-            onChange={(x) => {
-              setId(x.target.value);
+            onValueChange={(inputText) => {
+              setId(inputText);
             }}
             pattern="^[A-Z][A-Z0-9_]*$"
             placeholder="Enter a secret name..."
@@ -138,8 +138,8 @@ const RpConnectSecretCreateContent = () => {
             className="w-[500px]"
             disabled={isCreating}
             id="secretValue"
-            onChange={(x) => {
-              setSecret(x.target.value);
+            onValueChange={(inputText) => {
+              setSecret(inputText);
             }}
             placeholder="Enter a secret value..."
             required

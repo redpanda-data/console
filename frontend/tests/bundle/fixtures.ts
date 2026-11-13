@@ -1,6 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { brotliCompressSync, gzipSync } from 'node:zlib';
+import {
+  KafkaAclOperation,
+  RedpandaCapability,
+} from '../../src/protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { test as base, type Page, type Route, type TestArtifacts } from '../shared/e2e';
 
 export const buildDirectory = resolve(process.env.BUNDLE_BUILD_DIR ?? 'build');
@@ -86,7 +90,17 @@ const responses: Record<string, unknown> = {
   GetKafkaConnectInfo: {},
   GetClusterHealth: {},
   GetDebugBundleStatus: {},
-  GetIdentity: {},
+  GetIdentity: {
+    permissions: {
+      kafkaClusterOperations: [KafkaAclOperation.DESCRIBE, KafkaAclOperation.DESCRIBE_CONFIGS],
+      redpanda: [RedpandaCapability.MANAGE_REDPANDA_USERS],
+    },
+  },
+  CreateUser: {},
+  ListUsers: { users: [{ name: 'sdk-user', mechanism: 'SASL_MECHANISM_SCRAM_SHA_256' }] },
+  ListRoles: {},
+  ListACLs: {},
+  GetUser: {},
   ListShadowLinks: {},
   ListPipelines: { response: { pipelines: [] } },
   ListComponents: { components: {} },

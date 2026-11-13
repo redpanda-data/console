@@ -56,7 +56,8 @@ import { applyOverrides as applyDebugFeatureFlagOverrides } from './components/d
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
-import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
+import { Toaster } from './components/redpanda-ui/components/toast';
+import { ConsoleWebMcp } from './components/redpanda-ui/components/webmcp';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -144,13 +145,15 @@ const App = () => {
           follows this load's dark-mode availability (theme-init.ts). */}
       <ThemeProvider {...themeInitFor(isDarkModeAvailable())}>
         {/* showToast viewport, above the router so the error boundary and login can toast */}
-        <BaseUiToaster testId="console-toasts" />
-        <TransportProvider transport={dataplaneTransport}>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
-          </QueryClientProvider>
-        </TransportProvider>
+        <Toaster testId="console-toasts" />
+        <ConsoleWebMcp>
+          <TransportProvider transport={dataplaneTransport}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+              <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+            </QueryClientProvider>
+          </TransportProvider>
+        </ConsoleWebMcp>
       </ThemeProvider>
     </CustomFeatureFlagProvider>
   );

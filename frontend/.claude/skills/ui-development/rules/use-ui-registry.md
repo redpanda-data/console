@@ -1,53 +1,25 @@
 ---
-title: Use UI Registry Components
+title: Use Console UI SDK Components
 impact: CRITICAL
-impactDescription: Using deprecated library causes inconsistent UI and maintenance burden
-tags: components, registry, ui, imports
+impactDescription: Keep behavior and agent interactions on one accessible component layer
+tags: components, ui-sdk, ui, imports
 ---
 
-# Use UI Registry Components (CRITICAL)
+# Use Console UI SDK Components
 
-## Explanation
-
-Always use components from `src/components/redpanda-ui/`. Registry components are maintained, tested, and follow design system standards.
-
-## Incorrect
+Import `Button`, `Input`, dialogs, selectors, and other wrappers from
+`components/redpanda-ui/components/`. Preserve Redpanda variants and tokens.
+The directory is Console-owned: extend its wrappers using SDK primitives when needed,
+not registry installs or another UI runtime.
 
 ```tsx
-// Hand-rolling a component the registry already ships
-export function MyComponent() {
-  return <button className="rounded-md bg-primary px-3 py-2">Click me</button>;
+import { Button } from 'components/redpanda-ui/components/button';
+
+export function Action() {
+  return <Button>Continue</Button>;
 }
 ```
 
-```tsx
-// Installing an external UI library for something the registry covers
-import { Button } from 'some-other-ui-kit';
-```
-
-## Correct
-
-```tsx
-// Using registry
-import { Button } from 'components/redpanda-ui/button';
-
-export function MyComponent() {
-  return <Button>Click me</Button>;
-}
-```
-
-## Installing New Components
-
-```bash
-# Check what's already installed
-ls src/components/redpanda-ui/
-
-# Install from registry
-yes | bunx @fumadocs/cli add --dir https://redpanda-ui-registry.netlify.app/r button
-```
-
-## Reference
-
-- https://redpanda-ui-registry.netlify.app
-- MCP tools: `mcp__redpanda-ui__search-docs`, `mcp__redpanda-ui__get_component`
-- See also: [no-legacy](../../code-standards/rules/no-legacy.md) — full list of prohibited legacy patterns
+Use SDK change callbacks (`onValueChange`, `onCheckedChange`) for controlled state and
+RHF fields. DOM-only listeners do not receive programmatic agent changes.
+Read the installed SDK component docs and test user and agent paths before shipping.

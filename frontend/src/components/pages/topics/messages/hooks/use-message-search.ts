@@ -10,8 +10,8 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 import { config as appConfig } from '../../../../../config';
 import type { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';

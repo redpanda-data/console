@@ -14,10 +14,10 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
@@ -54,7 +54,7 @@ rs.mock('state/ui-state', () => ({
 }));
 
 // Mock toast notifications
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: {
     success: rs.fn(),
     error: rs.fn(),
@@ -197,12 +197,17 @@ const uploadCertificatePem = async (
     { timeout: 200 }
   );
 
-  const input = scr.getByTestId(`add-${certType}-button`).querySelector('input[type="file"]');
+  const input = scr
+    .getByTestId(`add-${certType}-button`)
+    .closest('[data-slot="file-input"]')
+    ?.querySelector<HTMLInputElement>('input[type="file"]');
   const file = new File([pemContent], `${certType}.pem`, { type: 'application/x-pem-file' });
 
-  if (input) {
-    await user.upload(input as HTMLInputElement, file);
+  if (!input) {
+    throw new Error('Missing SDK file input');
   }
+  // The SDK picker input is intentionally non-interactive; deliver the file picker change.
+  fireEvent.change(input, { target: { files: [file] } });
 
   await waitFor(() => {
     expect(scr.getByTestId(`${certType}-status`)).toBeInTheDocument();

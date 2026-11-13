@@ -5,12 +5,11 @@
 import type { RowData } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
+import type { DataTableRenderInstance } from './data-table-features';
+import type { SharedProps } from '../../lib/utils';
 import { Button } from '../button';
 import { ButtonGroup } from '../button-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select';
-import type { SharedProps } from '../../lib/utils';
-
-import type { DataTableRenderInstance } from './data-table-features';
 
 interface DataTablePaginationProps<TData extends RowData> extends SharedProps {
   pageSizeOptions?: number[];
@@ -42,7 +41,7 @@ export function DataTablePagination<TData extends RowData>({
           {/* ml-auto holds the controls right when the selection count is not rendered. */}
           <div className="ml-auto flex items-center space-x-6 lg:space-x-8">
             <div className="flex items-center space-x-2">
-              <div className="font-medium text-body">Rows per page</div>
+              <div className="text-body font-medium">Rows per page</div>
               <Select
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
@@ -50,7 +49,7 @@ export function DataTablePagination<TData extends RowData>({
                 value={`${pagination.pageSize}`}
               >
                 <SelectTrigger aria-label="Rows per page" className="h-8 w-[70px]">
-                  <SelectValue placeholder={pagination.pageSize} />
+                  <SelectValue placeholder={String(pagination.pageSize)} />
                 </SelectTrigger>
                 <SelectContent side="top">
                   {pageSizeOptions.map((pageSize) => (

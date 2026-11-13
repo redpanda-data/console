@@ -14,6 +14,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { isSystemTag } from 'components/constants';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   CreatePipelineRequestSchema,
   DeletePipelineRequestSchema,
@@ -39,7 +40,6 @@ import {
   useStopPipelineMutation,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';

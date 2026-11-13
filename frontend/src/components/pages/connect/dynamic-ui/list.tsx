@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { DragDropContext, Draggable, Droppable, type DropResult, type ResponderProvided } from '@hello-pangea/dnd';
-import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
+import { SortableHandle, SortableItem, SortableList } from 'components/redpanda-ui/components/sortable';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { type JSX, useEffect, useRef, useState } from 'react';
 
@@ -52,7 +51,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
               onBlur={() => {
                 setHasFocus(false);
               }}
-              onChange={(e) => setValuePending(e.target.value)}
               onFocus={() => {
                 setValuePending(item.id);
                 setHasFocus(true);
@@ -78,6 +76,7 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
                   (e.target as HTMLElement).blur();
                 }
               }}
+              onValueChange={(inputText) => setValuePending(inputText)}
               size="sm"
               spellCheck={false}
               value={hasFocus ? valuePending : item.id}
@@ -88,9 +87,9 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
       </Tooltip>
 
       {/* Delete */}
-      <button className="deleteButton" onClick={onDelete} type="button">
+      <ConsoleButton className="deleteButton" onClick={onDelete} type="button" variant="unstyled">
         <CloseIcon />
-      </button>
+      </ConsoleButton>
     </>
   );
 };
@@ -123,14 +122,6 @@ export function CommaSeparatedStringList(props: {
     setData((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const reorderItems = (from: number, to: number) => {
-    setData((prev) => {
-      const next = [...prev];
-      arrayMoveMutable(next, from, to);
-      return next;
-    });
-  };
-
   return (
     <div className="stringList" style={{ maxWidth: '500px' }}>
       <div className="createEntryRow">
@@ -139,8 +130,8 @@ export function CommaSeparatedStringList(props: {
             className="h-full"
             containerClassName="h-full grow basis-[260px]"
             id={props.id}
-            onChange={(e) => {
-              const value = e.target.value;
+            onValueChange={(inputText) => {
+              const value = inputText;
               setNewEntry(value);
               setNewEntryError(null);
 
@@ -180,7 +171,7 @@ export function CommaSeparatedStringList(props: {
 
       <List
         items={data}
-        onReorder={reorderItems}
+        onReorder={setData}
         renderItem={(item, index) => (
           <Item
             allItems={data}
@@ -205,45 +196,36 @@ function ListItemRenderer<T extends { id: string }>({ item, index, renderItem }:
   return renderItem(item, index);
 }
 
-export function List<T extends { id: string }>(props: {
+export function List<T extends { id: string }>({
+  items,
+  renderItem,
+  onReorder,
+}: {
   items: T[];
   renderItem: (item: T, index: number) => JSX.Element;
-  onReorder: (from: number, to: number) => void;
+  onReorder: (items: T[]) => void;
 }) {
-  const { items: list, renderItem, onReorder } = props;
-
-  const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-    if (!result.destination) {
-      return;
-    }
-    onReorder(result.source.index, result.destination.index);
-  };
-
   return (
-    <div className="reorderableList">
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="droppable" ignoreContainerClipping={false}>
-          {(droppableProvided, _droppableSnapshot) => (
-            <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
-              {list.map((tag, index) => (
-                <Draggable draggableId={String(index)} index={index} key={tag.id}>
-                  {(draggableProvided, _draggableSnapshot) => (
-                    <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                      <div className="draggableItem">
-                        <div className="dragHandle" {...draggableProvided.dragHandleProps}>
-                          <MenuIcon />
-                        </div>
-                        <ListItemRenderer index={index} item={tag} renderItem={renderItem} />
-                      </div>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {droppableProvided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-    </div>
+    <SortableList
+      aria-label="Configuration entries"
+      className="reorderableList"
+      onValueChange={(order) => onReorder(order.flatMap((id) => items.filter((item) => item.id === id)))}
+      value={items.map((item) => item.id)}
+    >
+      {(order) =>
+        order
+          .flatMap((id) => items.filter((item) => item.id === id))
+          .map((item, index) => (
+            <SortableItem key={item.id} value={item.id}>
+              <div className="draggableItem">
+                <SortableHandle aria-label={`Reorder ${item.id}`} className="dragHandle" value={item.id}>
+                  <MenuIcon />
+                </SortableHandle>
+                <ListItemRenderer index={index} item={item} renderItem={renderItem} />
+              </div>
+            </SortableItem>
+          ))
+      }
+    </SortableList>
   );
 }

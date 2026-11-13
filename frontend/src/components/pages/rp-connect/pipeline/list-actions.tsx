@@ -122,7 +122,7 @@ export const ActionsCell = memo(
           />
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() =>
+              onSelect={() =>
                 navigate({
                   to: '/rp-connect/$pipelineId/edit',
                   params: { pipelineId: encodeURIComponent(pipeline.id) },
@@ -132,21 +132,23 @@ export const ActionsCell = memo(
               {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>
             {isDraftRow ? (
-              <DropdownMenuItem disabled={isStartingDraft} onClick={requestStart}>
+              <DropdownMenuItem disabled={isStartingDraft} onSelect={requestStart}>
                 Start
               </DropdownMenuItem>
             ) : null}
             {isStarting ? (
-              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Retry start</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => startPipeline(startMutation, pipeline.id)}>
+                Retry start
+              </DropdownMenuItem>
             ) : null}
             {isStopping ? (
-              <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Retry stop</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => stopPipeline(stopMutation, pipeline.id)}>Retry stop</DropdownMenuItem>
             ) : null}
             {canStart ? (
-              <DropdownMenuItem onClick={() => startPipeline(startMutation, pipeline.id)}>Start</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => startPipeline(startMutation, pipeline.id)}>Start</DropdownMenuItem>
             ) : null}
             {canStop ? (
-              <DropdownMenuItem onClick={() => stopPipeline(stopMutation, pipeline.id)}>Stop</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => stopPipeline(stopMutation, pipeline.id)}>Stop</DropdownMenuItem>
             ) : null}
             <DropdownMenuSeparator />
             <DeleteResourceMenuItem

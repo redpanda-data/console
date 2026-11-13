@@ -33,9 +33,9 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { EgressGatewayField } from './egress-gateway-field';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
@@ -137,7 +137,7 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
           <FormItem>
             <FormLabel required>Pipeline name</FormLabel>
             <FormControl>
-              <Input {...field} disabled={readonly} placeholder="Enter pipeline name" />
+              <Input {...field} disabled={readonly} onValueChange={field.onChange} placeholder="Enter pipeline name" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -151,7 +151,13 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
           <FormItem>
             <FormLabel>Description</FormLabel>
             <FormControl>
-              <Textarea {...field} disabled={readonly} placeholder="Optional description for this pipeline" rows={3} />
+              <Textarea
+                {...field}
+                disabled={readonly}
+                onValueChange={field.onChange}
+                placeholder="Optional description for this pipeline"
+                rows={3}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -181,8 +187,8 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
                   disabled={readonly}
                   max={MAX_TASKS}
                   min={MIN_TASKS}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
+                  onValueChange={(inputText) => {
+                    const value = Number(inputText);
                     if (!Number.isNaN(value) && value >= MIN_TASKS && value <= MAX_TASKS) {
                       field.onChange(value);
                     }

@@ -1,7 +1,6 @@
 'use client';
 
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 import {
@@ -179,22 +178,27 @@ function FormLabel({
 }
 
 // Composes the field's ARIA + id props onto a single control (via `render` prop or child element).
-function FormControl({ render, children, ...props }: useRender.ComponentProps<'div'>) {
+function FormControl({
+  render,
+  children,
+  ...props
+}: Omit<PartProps<'div'>, 'children'> & { children?: React.ReactNode }) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
   const element = render ?? (React.isValidElement(children) ? children : <div>{children}</div>);
 
-  return useRender({
-    render: element,
-    props: mergeProps<'div'>(
+  return renderElement(
+    'div',
+    mergeProps(
       {
         'aria-describedby': error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`,
         'aria-invalid': !!error,
         'data-slot': 'form-control',
         id: formItemId,
-      } as useRender.ElementProps<'div'>,
+      } as React.ComponentPropsWithRef<'div'>,
       props
     ),
-  });
+    element
+  );
 }
 
 // Rendered as <div> (not <p>) so block-level children don't trip validateDOMNesting.

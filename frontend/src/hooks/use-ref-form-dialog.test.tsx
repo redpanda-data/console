@@ -14,11 +14,11 @@ import { act, renderHook } from '@testing-library/react';
 
 import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog';
 
-rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
+rs.mock('components/redpanda-ui/components/toast', () => ({ toast: { error: rs.fn() } }));
 
 // Import after mock so we get the mocked version
 const getToastError = async () => {
-  const { toast } = await import('sonner');
+  const { toast } = await import('components/redpanda-ui/components/toast');
   return toast.error as ReturnType<typeof rs.fn>;
 };
 

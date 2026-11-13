@@ -1,6 +1,7 @@
 'use client';
 
-import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import * as TabsPrimitive from '@ui-sdk/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -31,14 +32,27 @@ const tabsVariants = cva('flex data-[orientation=horizontal]:flex-col', {
   },
 });
 
-type TabsProps = TabsPrimitive.Root.Props & VariantProps<typeof tabsVariants> & SharedProps;
+type TabsProps = Omit<React.ComponentProps<typeof TabsPrimitive.Tabs<string>>, 'onValueChange'> & {
+  onValueChange?: (
+    value: string,
+    details: Parameters<NonNullable<React.ComponentProps<typeof TabsPrimitive.Tabs<string>>['onValueChange']>>[1]
+  ) => void;
+} & VariantProps<typeof tabsVariants> &
+  SharedProps;
 
-function Tabs({ className, size, variant, testId, ...props }: TabsProps) {
+function Tabs({ className, size, variant, testId, onValueChange, ...props }: TabsProps) {
   return (
-    <TabsPrimitive.Root
+    <TabsPrimitive.Tabs
       className={cn(tabsVariants({ size, variant }), className)}
       data-slot="tabs"
       data-testid={testId}
+      onValueChange={(value, details) => {
+        if (value === null) {
+          details.cancel();
+        } else {
+          commitAgentChange(onValueChange, value, details);
+        }
+      }}
       {...props}
     />
   );
@@ -58,14 +72,14 @@ const tabsListVariants = cva(
         default: 'w-fit gap-1 rounded-lg bg-surface-subtle p-1',
         // No fill: this variant's chrome is the baseline, so its own ground only slabs over the
         // surface the strip sits on.
-        underline: '!border-border relative w-full justify-start rounded-t-xl border-b py-0 text-current',
+        underline: 'relative w-full justify-start rounded-t-xl border-b !border-border py-0 text-current',
       },
       layout: {
         auto: '',
         equal: 'grid',
         // The triggers grow to fill, rather than each claiming the full width and happening to
         // land on an even split.
-        full: 'w-full [&>[data-slot=tabs-trigger]]:flex-1',
+        full: 'w-full [&>[data-slot=tabs-tab]]:flex-1',
       },
       gap: {
         none: '',
@@ -95,8 +109,9 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
   },
 });
 
-type TabsListProps = TabsPrimitive.List.Props &
-  VariantProps<typeof tabsListVariants> &
+type TabsListProps = Omit<React.ComponentProps<typeof TabsPrimitive.TabsList>, 'children'> & {
+  children?: React.ReactNode;
+} & VariantProps<typeof tabsListVariants> &
   SharedProps & {
     activeClassName?: string;
     columns?: number;
@@ -110,7 +125,6 @@ function TabsList({
   layout,
   gap,
   columns,
-  activateOnFocus,
   testId,
   style,
   ...props
@@ -118,8 +132,7 @@ function TabsList({
   // To make an overflowing strip drag-scrollable, wrap <TabsList> in <DragScrollArea> and add
   // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
-    <TabsPrimitive.List
-      activateOnFocus={activateOnFocus}
+    <TabsPrimitive.TabsList
       className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
       data-slot="tabs-list"
       data-testid={testId}
@@ -128,8 +141,8 @@ function TabsList({
       }
       {...props}
     >
-      {/* Base UI exposes the active tab's position/size as `--active-tab-*` vars; the perpendicular axis isn't transitioned so the highlight snaps across rows/columns. */}
-      <TabsPrimitive.Indicator
+      {/* UI SDK exposes the active tab's position/size as `--active-tab-*` vars; the perpendicular axis isn't transitioned so the highlight snaps across rows/columns. */}
+      <TabsPrimitive.TabsIndicator
         aria-hidden
         className={cn(
           'pointer-events-none absolute z-0 h-(--active-tab-height) w-(--active-tab-width) duration-200 ease-out data-[orientation=horizontal]:transition-[left,width] data-[orientation=vertical]:transition-[top,height] motion-reduce:transition-none',
@@ -140,7 +153,7 @@ function TabsList({
         data-slot="tabs-list-highlight"
       />
       {children}
-    </TabsPrimitive.List>
+    </TabsPrimitive.TabsList>
   );
 }
 
@@ -175,18 +188,18 @@ function ScrollableTabsList({ className, scrollAreaClassName, fadeSize, variant,
 }
 
 const tabsTriggerVariants = cva(
-  // Base UI uses `aria-disabled`/`data-disabled` (not native `disabled`) and `data-active`.
+  // UI SDK uses `aria-disabled`/`data-disabled` (not native `disabled`) and `data-active`.
   // Height fills the strip, width comes from the label: a `w-full` here has every trigger claim the
   // whole list, overriding `layout` and leaving `underline`'s `justify-start` nothing to align.
-  'z-[1] inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-body outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-[active]:text-foreground motion-reduce:transition-none',
+  'z-[1] inline-flex h-full cursor-pointer items-center justify-center rounded-sm text-body font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-[selected]:text-foreground motion-reduce:transition-none',
   {
     variants: {
       variant: {
         // A trigger is transparent, so it tints in: an ink-only step between two greys is ~1.47 and
         // reads as nothing. Scoped off the active tab, which its indicator already marks.
-        default: 'px-3 py-1.5 hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground',
+        default: 'px-3 py-1.5 hover:not-data-[selected]:bg-accent hover:not-data-[selected]:text-accent-foreground',
         underline:
-          'px-4 py-2 text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground data-[active]:text-selected',
+          'px-4 py-2 text-subtle hover:not-data-[selected]:bg-accent hover:not-data-[selected]:text-accent-foreground data-[selected]:text-selected',
       },
     },
     defaultVariants: {
@@ -195,24 +208,18 @@ const tabsTriggerVariants = cva(
   }
 );
 
-type TabsTriggerProps = TabsPrimitive.Tab.Props &
+type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.TabsTab> &
   SharedProps & {
     variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
   };
 
 function TabsTrigger({ className, value, variant, testId, render, ...props }: TabsTriggerProps) {
-  // For a non-button render (e.g. `<a href>` link tabs), tell Base UI to polyfill button semantics instead of asserting a native button.
-  const isNonButtonElement = typeof render === 'object' && render !== null && 'type' in render;
-  const nativeButton =
-    isNonButtonElement && typeof render.type === 'string' && render.type !== 'button' ? false : undefined;
-
   return (
-    <TabsPrimitive.Tab
+    <TabsPrimitive.TabsTab
       className={cn(tabsTriggerVariants({ variant }), className)}
       data-slot="tabs-trigger"
       data-testid={testId}
       data-value={value}
-      nativeButton={nativeButton}
       render={render}
       value={value}
       {...props}
@@ -220,18 +227,18 @@ function TabsTrigger({ className, value, variant, testId, render, ...props }: Ta
   );
 }
 
-type TabsContentProps = TabsPrimitive.Panel.Props & SharedProps;
+type TabsContentProps = React.ComponentProps<typeof TabsPrimitive.TabsPanel> & SharedProps;
 
 function TabsContent({ className, children, testId, ...props }: TabsContentProps) {
   return (
-    <TabsPrimitive.Panel
+    <TabsPrimitive.TabsPanel
       className={cn('flex-1 space-y-6 outline-none data-ending-style:hidden', className)}
       data-slot="tabs-content"
       data-testid={testId}
       {...props}
     >
       {children}
-    </TabsPrimitive.Panel>
+    </TabsPrimitive.TabsPanel>
   );
 }
 

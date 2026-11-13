@@ -30,7 +30,7 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ALPHANUMERIC_WITH_HYPHENS } from 'utils/regex';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -267,6 +267,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
                 placeholder="Enter value"
                 type="password"
                 {...form.register(fieldName)}
+                onValueChange={(value) =>
+                  form.setValue(normalizedSecretName, {value}, { shouldDirty: true, shouldValidate: true })
+                }
                 aria-describedby={error ? `${valueId}-error` : undefined}
                 aria-invalid={!!error}
               />
@@ -317,12 +320,10 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             <Input
               id="new-secret-name"
               placeholder="API_KEY"
-              {...newSecretForm.register('name', {
-                onChange: (e) => {
-                  const normalized = normalizeSecretName(e.target.value);
-                  newSecretForm.setValue('name', normalized);
-                },
-              })}
+              {...newSecretForm.register('name')}
+              onValueChange={(value) =>
+                newSecretForm.setValue('name', normalizeSecretName(value), { shouldDirty: true, shouldValidate: true })
+              }
               aria-invalid={!!newSecretForm.formState.errors.name}
               aria-describedby={
                 newSecretForm.formState.errors.name || newSecretForm.formState.isDirty
@@ -347,6 +348,9 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
               placeholder="Enter secret value..."
               type="password"
               {...newSecretForm.register('value')}
+              onValueChange={(value) =>
+                newSecretForm.setValue('value', value, { shouldDirty: true, shouldValidate: true })
+              }
               aria-invalid={!!newSecretForm.formState.errors.value}
               aria-describedby={newSecretForm.formState.errors.value ? 'new-secret-value-error' : undefined}
             />

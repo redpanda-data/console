@@ -12,8 +12,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Component, type ReactNode, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { withProgressToast } from './with-progress-toast';
@@ -316,8 +316,8 @@ export class EditOffsetsModal extends Component<{
                   this.setState({ offsetShiftByValueAsString: '0', offsetShiftByValue: 0 });
                 }
               }}
-              onChange={(e) => {
-                const valueAsString = e.target.value;
+              onValueChange={(inputText) => {
+                const valueAsString = inputText;
                 const valueAsNumber = valueAsString === '' ? Number.NaN : Number(valueAsString);
                 this.setState({ offsetShiftByValueAsString: valueAsString, offsetShiftByValue: valueAsNumber });
               }}

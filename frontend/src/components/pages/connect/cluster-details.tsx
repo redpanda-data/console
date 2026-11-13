@@ -10,7 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
@@ -160,16 +160,21 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
         accessorKey: 'name',
         cell: ({ row: { original } }) => (
-          <Link
-            params={{
-              clusterName,
-              connector: original.name,
-            }}
-            search={{} as never}
-            to="/connect-clusters/$clusterName/$connector"
+          <ConsoleButton
+            render={
+              <Link
+                params={{
+                  clusterName,
+                  connector: original.name,
+                }}
+                search={{} as never}
+                to="/connect-clusters/$clusterName/$connector"
+              />
+            }
+            variant="unstyled"
           >
             <span className="wrap-break-word whitespace-break-spaces">{original.name}</span>
-          </Link>
+          </ConsoleButton>
         ),
       },
       {
@@ -205,9 +210,12 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       <div className="mb-2 flex">
         {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
             nesting produces — and the Registry Button takes no route `params`. */}
-        <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
+        <ConsoleButton
+          render={<Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector" />}
+          variant="unstyled"
+        >
           <Button variant="primary">Create connector</Button>
-        </Link>
+        </ConsoleButton>
       </div>
 
       <div className="my-5">

@@ -30,7 +30,7 @@ type DeleteUserConfirmModalProps = {
   userName: string;
   onConfirm: () => Promise<void> | void;
 } & (
-  | { buttonEl: React.ReactElement; open?: never; onOpenChange?: never }
+  | { buttonEl: React.ReactElement<Record<string, unknown>>; open?: never; onOpenChange?: never }
   | { buttonEl?: never; open: boolean; onOpenChange: (open: boolean) => void }
 );
 
@@ -85,7 +85,7 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
             below.
           </DialogDescription>
           <Input
-            onChange={(e) => setConfirmText(e.target.value)}
+            onValueChange={(inputText) => setConfirmText(inputText)}
             placeholder={`Type "${userName}" to confirm`}
             testId="txt-confirmation-delete"
             value={confirmText}

@@ -46,9 +46,10 @@ import { Code, ConnectError, type Interceptor, type Transport } from '@connectrp
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 
 import { FederatedProviders } from './federated-providers';
 import { federatedRootRoute } from './federated-routes';
@@ -150,13 +151,14 @@ class ConsoleErrorBoundary extends Component<
             {this.state.error ? (
               <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
-            <button
+            <ConsoleButton
               className="mt-4 rounded-md bg-surface-informative px-4 py-2 text-body font-medium text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
+              variant="unstyled"
             >
               Try Again
-            </button>
+            </ConsoleButton>
           </div>
         </div>
       );
@@ -200,6 +202,7 @@ function ConsoleAppInner({
   onError,
   config: configOverrides,
   featureFlags,
+  enableWebMcp,
 }: ConsoleAppProps) {
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
@@ -244,7 +247,12 @@ function ConsoleAppInner({
   return (
     <FederatedInitialization initialization={initialization}>
       <ConsoleErrorBoundary onError={onError}>
-        <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
+        <FederatedProviders
+          enableWebMcp={enableWebMcp}
+          featureFlags={featureFlags}
+          queryClient={queryClient}
+          transport={dataplaneTransport}
+        >
           <RouterProvider router={router} />
         </FederatedProviders>
       </ConsoleErrorBoundary>

@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
+import { format, parseISO } from 'date-fns';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Calendar } from 'components/redpanda-ui/components/calendar';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
@@ -33,6 +35,7 @@ export type DateTimeInputProps = {
   className?: string;
   placeholder?: string;
   'data-testid'?: string;
+  'aria-label'?: string;
 };
 
 const MS_PER_MINUTE = 60_000;
@@ -167,14 +170,15 @@ const DateTimePickerPanel = ({
       match without touching the shared Calendar. `p-0` strips Calendar's built-in padding, which
       otherwise stacks on this panel's own spacing. */}
       <div className="[--color-selected-foreground:var(--color-primary-foreground)] [--color-selected:var(--color-primary)]">
-        <Calendar className="p-0" mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
+        <Calendar className="p-0" mode="single" onValueChange={(value) => setFromCalendar(typeof value === 'string' ? parseISO(value) : undefined)} value={calendarSelected ? format(calendarSelected, 'yyyy-MM-dd') : null} />
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-2">
           <Input
+            aria-label="Time"
             className="flex-1"
             disabled={disabled}
-            onChange={(e) => setFromTime(e.target.value)}
+            onValueChange={(inputText) => setFromTime(inputText)}
             step={1}
             type="time"
             value={timeInputValue}
@@ -212,16 +216,15 @@ export const DateTimeInput = ({
   const numericText = isFiniteNumber(value) ? String(value) : '';
   const displayedNumber = draft === '' ? numericText : draft;
 
+  const writeNumeric = (text: string) => {
+    const parsed = Number(text);
+    if (!text || !Number.isFinite(parsed)) return false;
+    // Values < 10^11 are seconds; the public value is always UTC milliseconds.
+    onChange(parsed < 1e11 ? parsed * 1000 : parsed);
+    return true;
+  };
   const commitNumeric = () => {
-    if (draft === '') {
-      return;
-    }
-    const parsed = Number(draft);
-    if (Number.isFinite(parsed)) {
-      // Values < 10^11 are seconds (10^11 ms is 1973; 10^11 s is year 5138).
-      const utcMs = parsed < 1e11 ? parsed * 1000 : parsed;
-      onChange(utcMs);
-    }
+    if (draft !== '') writeNumeric(draft);
     setDraft('');
   };
 
@@ -241,7 +244,15 @@ export const DateTimeInput = ({
     'data-testid': rest['data-testid'],
     disabled,
     onBlur: commitNumeric,
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value),
+    onValueChange: (next, details) => {
+      if (details.source === 'agent') {
+        if (!writeNumeric(next)) details.cancel();
+        else setDraft('');
+        return;
+      }
+      setDraft(next);
+    },
+    'aria-label': rest['aria-label'] ?? 'Unix timestamp',
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -252,7 +263,7 @@ export const DateTimeInput = ({
     size: 'lg' as const,
     type: 'number' as const,
     value: displayedNumber,
-  };
+  } satisfies React.ComponentProps<typeof Input> & { 'data-testid'?: string };
 
   if (inline) {
     return (
@@ -276,14 +287,14 @@ export const DateTimeInput = ({
         render={<Input {...numberInputProps}>
           <InputEnd className="pointer-events-auto">
             <PopoverTrigger
-              render={<button
+              render={<ConsoleButton variant="unstyled"
                 aria-label="Open calendar"
                 className="text-muted-foreground hover:text-foreground"
                 disabled={disabled}
                 type="button"
               >
                 <CalendarIcon className="size-4" />
-              </button>} />
+              </ConsoleButton>} />
           </InputEnd>
         </Input>} />
       <PopoverContent align="start" className="w-auto p-3">

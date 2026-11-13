@@ -1,11 +1,11 @@
 import { create } from '@bufbuild/protobuf';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   ListRoleMembersRequestSchema,
   UpdateRoleMembershipRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { useListUsersQuery } from '../../../../react-query/api/user';

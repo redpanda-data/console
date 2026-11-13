@@ -13,10 +13,10 @@ import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { StartPipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { useCallback } from 'react';
 import { useStartPipelineMutation } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { startBlockedMessage } from './draft-copy';

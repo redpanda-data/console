@@ -1,534 +1,238 @@
-'use client';
-
 // Copyright 2026 Redpanda Data, Inc.
 
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
-import {
-  defineStepper as defineStepperPrimitive,
-  type Get,
-  type Step,
-  type StepperDefinition,
-  type Stepper as StepperType,
-  type UseStepperOptions,
-} from '@stepperize/react/headless';
-import { cva, type VariantProps } from 'class-variance-authority';
+'use client';
+
+import { type PartProps, renderElement } from '@ui-sdk/react/primitive';
+import * as Tabs from '@ui-sdk/react/tabs';
 import React from 'react';
 
-import { Button, type ButtonVariants } from './button';
+import { buttonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
+type Step = { id: string; title?: React.ReactNode; description?: React.ReactNode; icon?: React.ReactNode };
 export type StepperVariant = 'horizontal' | 'vertical' | 'circle';
 export type StepperLabelOrientation = 'horizontal' | 'vertical';
-
-export interface StepperConfigProps {
-  labelOrientation?: StepperLabelOrientation;
-  tracking?: boolean;
-  variant?: StepperVariant;
-}
-
-export interface CircleStepIndicatorProps {
-  currentStep: number;
-  size?: number;
-  strokeWidth?: number;
-  totalSteps: number;
-}
-
-export type StepperProviderOptions<Steps extends readonly Step[]> = Pick<
-  UseStepperOptions<Steps>,
-  'beforeStepChange' | 'defaultData' | 'defaultStep' | 'linear' | 'onStepChange' | 'step'
-> & {
-  /** @deprecated Use `defaultStep`. */
-  initialStep?: Get.Id<Steps>;
+type StepId<Steps extends readonly Step[]> = Steps[number]['id'];
+type Methods<Steps extends readonly Step[]> = {
+  id: StepId<Steps>;
+  current: Steps[number];
+  index: number;
+  isFirst: boolean;
+  isLast: boolean;
+  next: () => void;
+  prev: () => void;
+  goTo: (id: StepId<Steps>) => void;
+  reset: () => void;
+  get: (id: StepId<Steps>) => Steps[number] | undefined;
+  match: <Result>(cases: Partial<Record<StepId<Steps>, (step: Steps[number]) => Result>>) => Result | undefined;
 };
-
-export type DefineStepperProps<Steps extends readonly Step[]> = Omit<StepperDefinition<Steps>, 'Provider'> & {
-  Steps: StepperType<Steps>;
-  Stepper: {
-    Provider: (
-      props: StepperProviderOptions<Steps> &
-        Omit<React.ComponentProps<'div'>, 'children' | 'defaultValue'> &
-        StepperConfigProps & {
-          children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
-          testId?: string;
-        }
-    ) => React.ReactElement;
-    Navigation: (props: React.ComponentProps<'nav'> & SharedProps) => React.ReactElement;
-    Step: (
-      props: React.ComponentProps<'button'> & {
-        of: Get.Id<Steps>;
-        icon?: React.ReactNode;
-        testId?: string;
-        /** Render the trigger Button in a non-default variant. */
-        variant?: ButtonVariants['variant'];
-      }
-    ) => React.ReactElement;
-    Title: (props: useRender.ComponentProps<'h4'>) => React.ReactElement;
-    Description: (props: useRender.ComponentProps<'p'>) => React.ReactElement;
-    Panel: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
-    Controls: (props: useRender.ComponentProps<'div'>) => React.ReactElement;
+export type StepperProviderOptions<Steps extends readonly Step[]> = {
+  defaultStep?: StepId<Steps>;
+  initialStep?: StepId<Steps>;
+  step?: StepId<Steps>;
+  onStepChange?: (step: StepId<Steps>) => void;
+};
+type ProviderProps<Steps extends readonly Step[]> = StepperProviderOptions<Steps> &
+  Omit<React.ComponentProps<'div'>, 'children' | 'defaultValue'> &
+  SharedProps & {
+    variant?: StepperVariant;
+    labelOrientation?: StepperLabelOrientation;
+    tracking?: boolean;
+    children: React.ReactNode | ((props: { methods: Methods<Steps> }) => React.ReactNode);
   };
-};
+const ActiveStepContext = React.createContext<string>('');
+type WrapperProps<Tag extends 'div' | 'h4' | 'p'> = Omit<PartProps<Tag>, 'children'> & { children?: React.ReactNode };
+function Panel({ render, ...props }: WrapperProps<'div'>) {
+  const value = React.useContext(ActiveStepContext);
+  return <Tabs.TabsPanel className="outline-none" render={render} value={value} {...props} />;
+}
+function Controls({ className, render, ...props }: WrapperProps<'div'>) {
+  return renderElement('div', { ...props, className: cn('flex items-center gap-2', className) }, render);
+}
+function Title({ className, render, ...props }: WrapperProps<'h4'>) {
+  return renderElement('h4', { ...props, className: cn('text-heading-sm', className) }, render);
+}
+function Description({ className, render, ...props }: WrapperProps<'p'>) {
+  return renderElement('p', { ...props, className: cn('text-body text-subtle', className) }, render);
+}
 
-const StepperContext = React.createContext<StepperConfigProps | null>(null);
-/** Id of the active step, so parts defined outside `defineStepper` (like `Panel`) can react to navigation. */
-const ActiveStepContext = React.createContext<string | null>(null);
-
-const useStepperProvider = (): StepperConfigProps => {
-  const context = React.useContext(StepperContext);
-  if (!context) {
-    throw new Error('Stepper parts must be rendered inside Stepper.Provider.');
+export function defineStepper<const Steps extends readonly Step[]>(...steps: Steps) {
+  if (!steps.length || new Set(steps.map((step) => step.id)).size !== steps.length) {
+    throw new Error('Stepper requires unique steps');
   }
-  return context;
-};
-
-/** The step list type `defineStepper` expects after its compile-time duplicate-id check. */
-type CheckedSteps<Steps extends readonly Step[]> = Parameters<typeof defineStepperPrimitive<Steps>>[0];
-
-const getStepIcon = (step: Step | undefined): React.ReactNode =>
-  step && 'icon' in step ? (step.icon as React.ReactNode) : undefined;
-
-const defineStepper = <const Steps extends readonly Step[]>(...steps: Steps): DefineStepperProps<Steps> => {
-  const { Provider, ...definition } = defineStepperPrimitive<Steps>(steps as CheckedSteps<Steps>);
-  const { useStepperContext } = definition;
-  const allSteps: readonly Step[] = definition.steps;
-  /** The shared stepper of the nearest `Stepper.Provider` of this definition, or null outside one. */
-  const SharedStepperContext = React.createContext<StepperType<Steps> | null>(null);
-
-  /**
-   * v5 semantics: inside `Stepper.Provider` this returns the Provider's shared stepper; outside one
-   * it creates an independent stepper. v8's own `useStepper` always creates a local instance, so a
-   * child such as a URL-sync component calling `useStepper().goTo()` would silently stop driving
-   * the Provider. Both hooks always run, so hook order never depends on where it is rendered.
-   */
-  const useStepper: typeof definition.useStepper = (options) => {
-    const local = definition.useStepper(options);
-    const shared = React.useContext(SharedStepperContext);
-    return shared ?? local;
-  };
-
-  const StepperContainer = ({
+  const Context = React.createContext<{
+    methods: Methods<Steps>;
+    variant: StepperVariant;
+    labelOrientation: StepperLabelOrientation;
+  } | null>(null);
+  function useContext() {
+    const context = React.useContext(Context);
+    if (!context) {
+      throw new Error('Missing Stepper.Provider');
+    }
+    return context;
+  }
+  function useLocalStepper(options: StepperProviderOptions<Steps> = {}): Methods<Steps> {
+    const initial: StepId<Steps> = options.defaultStep ?? options.initialStep ?? steps[0].id;
+    const [local, setLocal] = React.useState(initial);
+    const id: StepId<Steps> = options.step ?? local;
+    const index = steps.findIndex((step) => step.id === id);
+    if (index < 0) {
+      throw new Error(`Unknown step: ${id}`);
+    }
+    const goTo = (next: StepId<Steps>) => {
+      if (!steps.some((step) => step.id === next) || next === id) {
+        return;
+      }
+      options.onStepChange?.(next);
+      if (options.step === undefined) {
+        setLocal(next);
+      }
+    };
+    return {
+      id,
+      index,
+      current: steps[index],
+      isFirst: index === 0,
+      isLast: index === steps.length - 1,
+      goTo,
+      next: () => {
+        if (index < steps.length - 1) {
+          goTo(steps[index + 1].id);
+        }
+      },
+      prev: () => {
+        if (index > 0) {
+          goTo(steps[index - 1].id);
+        }
+      },
+      reset: () => goTo(initial),
+      get: (requested) => steps.find((step) => step.id === requested),
+      match: (cases) => cases[id]?.(steps[index]),
+    };
+  }
+  function useStepper(options?: StepperProviderOptions<Steps>) {
+    const local = useLocalStepper(options);
+    return React.useContext(Context)?.methods ?? local;
+  }
+  function Provider({
+    children,
+    testId,
+    className,
+    variant = 'horizontal',
+    labelOrientation = 'horizontal',
+    tracking: _tracking,
+    defaultStep,
+    initialStep,
+    step,
+    onStepChange,
+    ...props
+  }: ProviderProps<Steps>) {
+    const methods = useLocalStepper({ defaultStep, initialStep, step, onStepChange });
+    return (
+      <Context.Provider value={{ methods, variant, labelOrientation }}>
+        <ActiveStepContext.Provider value={methods.id}>
+          <Tabs.Tabs
+            activation="manual"
+            aria-label="Workflow steps"
+            className={cn('w-full', className)}
+            data-component="stepper"
+            data-testid={testId}
+            orientation={variant === 'vertical' ? 'vertical' : 'horizontal'}
+            value={methods.id}
+            {...props}
+            onValueChange={(next, details) => {
+              // Advancing runs the form's validated Continue action, never an agent's direct tab selection.
+              if (next === null || steps.findIndex((step) => step.id === next) > methods.index) {
+                details.cancel();
+                return;
+              }
+              methods.goTo(next);
+            }}
+          >
+            {typeof children === 'function' ? children({ methods }) : children}
+          </Tabs.Tabs>
+        </ActiveStepContext.Provider>
+      </Context.Provider>
+    );
+  }
+  function Navigation({
     children,
     className,
     testId,
+    'aria-label': label = 'Workflow steps',
     ...props
-  }: Omit<React.ComponentProps<'div'>, 'children'> & {
-    children: React.ReactNode | ((props: { methods: StepperType<Steps> }) => React.ReactNode);
-    testId?: string;
-  }) => {
-    // v8: `useStepper()` always creates a new local instance; the Provider's shared state comes from the context.
-    const methods = useStepperContext();
-
-    const renderedChildren = typeof children === 'function' ? children({ methods }) : children;
-
+  }: React.ComponentProps<'nav'> & SharedProps) {
+    const { variant } = useContext();
     return (
-      <SharedStepperContext.Provider value={methods}>
-        <ActiveStepContext.Provider value={methods.id}>
-          <div className={cn('w-full', className)} data-component="stepper" data-testid={testId} {...props}>
-            {renderedChildren}
-          </div>
-        </ActiveStepContext.Provider>
-      </SharedStepperContext.Provider>
+      <nav aria-label={label} data-testid={testId} {...props}>
+        <Tabs.TabsList
+          className={cn(
+            'flex items-center justify-between gap-2',
+            variant === 'vertical' && 'flex-col items-stretch',
+            className
+          )}
+          render={<ol />}
+        >
+          {children}
+        </Tabs.TabsList>
+      </nav>
     );
-  };
-
-  return {
-    ...definition,
-    useStepper,
-    Steps: {} as StepperType<Steps>,
-    Stepper: {
-      Provider: ({
-        variant = 'horizontal',
-        labelOrientation = 'horizontal',
-        tracking = false,
-        beforeStepChange,
-        defaultData,
-        defaultStep,
-        initialStep,
-        linear,
-        onStepChange,
-        step,
-        children,
-        ...props
-      }) => (
-        <StepperContext.Provider value={{ variant, labelOrientation, tracking }}>
-          <Provider
-            beforeStepChange={beforeStepChange}
-            defaultData={defaultData}
-            defaultStep={defaultStep ?? initialStep}
-            linear={linear}
-            onStepChange={onStepChange}
-            step={step}
-          >
-            <StepperContainer {...props}>{children}</StepperContainer>
-          </Provider>
-        </StepperContext.Provider>
-      ),
-      Navigation: ({ children, 'aria-label': ariaLabel = 'Stepper Navigation', testId, ...props }) => {
-        const { variant } = useStepperProvider();
-        return (
-          <nav aria-label={ariaLabel} data-component="stepper-navigation" data-testid={testId} {...props}>
-            <ol className={classForNavigationList({ variant })} data-component="stepper-navigation-list">
-              {children}
-            </ol>
-          </nav>
-        );
-      },
-      Step: ({ children, className, icon, testId, ...props }) => {
-        const { variant, labelOrientation } = useStepperProvider();
-        const currentIndex = useStepperContext((stepper) => stepper.index);
-
-        const stepIndex = allSteps.findIndex((item) => item.id === props.of);
-        const stepIcon = getStepIcon(allSteps[stepIndex]) ?? icon;
-
-        const isLast = stepIndex === allSteps.length - 1;
-        const isActive = stepIndex === currentIndex;
-
-        const dataState = getStepState(currentIndex, stepIndex);
-        const childMap = useStepChildren(children);
-
-        const title = childMap.get('title');
-        const description = childMap.get('description');
-        const panel = childMap.get('panel');
-
-        if (variant === 'circle') {
-          return (
-            <li
-              className={cn(
-                'flex shrink-0 items-center gap-4 rounded-md transition-colors motion-reduce:transition-none',
-                className
-              )}
-              data-component="stepper-step"
-            >
-              <CircleStepIndicator currentStep={stepIndex + 1} totalSteps={steps.length} />
-              <div className="flex flex-col items-start gap-1" data-component="stepper-step-content">
-                {title}
-                {description}
-              </div>
-            </li>
-          );
-        }
-
-        return (
-          <>
-            <li
-              className={cn([
-                'group peer relative flex items-center gap-2',
-                'data-[variant=vertical]:flex-row',
-                'data-[label-orientation=vertical]:w-full',
-                'data-[label-orientation=vertical]:flex-col',
-                'data-[label-orientation=vertical]:justify-center',
-              ])}
-              data-component="stepper-step"
-              data-disabled={props.disabled}
-              data-label-orientation={labelOrientation}
-              data-state={dataState}
-              data-variant={variant}
-            >
-              <Button
-                aria-controls={`step-panel-${props.of}`}
-                aria-current={isActive ? 'step' : undefined}
-                aria-posinset={stepIndex + 1}
-                aria-selected={isActive}
-                aria-setsize={steps.length}
-                className={cn('rounded-full', isActive && 'ring-3 ring-secondary/20')}
-                data-component="stepper-step-indicator"
-                data-testid={testId}
-                id={`step-${props.of}`}
-                onKeyDown={(e) => onStepKeyDown(e, allSteps[stepIndex + 1], allSteps[stepIndex - 1])}
-                role="tab"
-                size="icon"
-                tabIndex={dataState === 'inactive' ? -1 : 0}
-                type="button"
-                variant={dataState === 'inactive' ? 'outline' : 'primary'}
-                {...props}
-              >
-                {stepIcon ?? stepIndex + 1}
-              </Button>
-              {variant === 'horizontal' && labelOrientation === 'vertical' && (
-                <StepperSeparator
-                  disabled={props.disabled}
-                  isLast={isLast}
-                  labelOrientation={labelOrientation}
-                  orientation="horizontal"
-                  state={dataState}
-                />
-              )}
-              <div className="flex flex-col items-start" data-component="stepper-step-content">
-                {title}
-                {description}
-              </div>
-            </li>
-
-            {variant === 'horizontal' && labelOrientation === 'horizontal' && (
-              <StepperSeparator disabled={props.disabled} isLast={isLast} orientation="horizontal" state={dataState} />
-            )}
-
-            {variant === 'vertical' && (
-              <div className="flex gap-4">
-                {!isLast && (
-                  <div className="flex justify-center ps-[calc(var(--spacing)_*_4.5_-_1px)]">
-                    <StepperSeparator
-                      disabled={props.disabled}
-                      isLast={isLast}
-                      orientation="vertical"
-                      state={dataState}
-                    />
-                  </div>
-                )}
-                <div className="my-3 flex-1 ps-4">{panel}</div>
-              </div>
-            )}
-          </>
-        );
-      },
-      Title,
-      Description,
-      Panel,
-      Controls,
-    },
-  };
-};
-
-const Panel = ({ children, render, ...props }: useRender.ComponentProps<'div'>) => {
-  const { tracking } = useStepperProvider();
-  const activeStepId = React.useContext(ActiveStepContext);
-  // Scroll when the active step changes, whether the panel remounts (keyed per step) or is reused
-  // (rendered through `methods.match`). Keying on the step, not every commit, stops typing in a
-  // field or switching an inner tab from re-centering the panel.
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(
-    function scrollActivePanelIntoView() {
-      if (tracking && activeStepId !== null && panelRef.current) {
-        scrollIntoStepperPanel(panelRef.current);
-      }
-    },
-    [tracking, activeStepId]
-  );
-
-  return useRender({
-    defaultTagName: 'div',
-    ref: panelRef,
-    render,
-    props: mergeProps<'div'>(
-      {
-        'data-component': 'stepper-step-panel',
-        children,
-      } as useRender.ElementProps<'div'>,
-      props
-    ),
-  });
-};
-
-const Controls = ({ children, className, render, ...props }: useRender.ComponentProps<'div'>) =>
-  useRender({
-    defaultTagName: 'div',
-    render,
-    props: mergeProps<'div'>(
-      {
-        className: cn('flex justify-end gap-4', className),
-        'data-component': 'stepper-controls',
-        children,
-      } as useRender.ElementProps<'div'>,
-      props
-    ),
-  });
-
-const Title = ({ children, className, render, ...props }: useRender.ComponentProps<'h4'>) =>
-  useRender({
-    defaultTagName: 'h4',
-    render: render ?? <h4 className="text-heading-sm">{children}</h4>,
-    props: mergeProps<'h4'>(
-      {
-        className: cn('selection:bg-selection selection:text-selection-foreground', className),
-        'data-component': 'stepper-step-title',
-        children,
-      } as useRender.ElementProps<'h4'>,
-      props
-    ),
-  });
-
-const Description = ({ children, className, render, ...props }: useRender.ComponentProps<'p'>) =>
-  useRender({
-    defaultTagName: 'p',
-    render: render ?? <div className="text-body">{children}</div>,
-    props: mergeProps<'p'>(
-      {
-        className: cn('text-body text-subtle selection:bg-selection selection:text-selection-foreground', className),
-        'data-component': 'stepper-step-description',
-        children,
-      } as useRender.ElementProps<'p'>,
-      props
-    ),
-  });
-
-const StepperSeparator = ({
-  orientation,
-  isLast,
-  labelOrientation,
-  state,
-  disabled,
-}: {
-  isLast: boolean;
-  state: string;
-  disabled?: boolean;
-} & VariantProps<typeof classForSeparator>) => {
-  if (isLast) {
-    return null;
   }
-  return (
-    <div
-      aria-hidden="true"
-      className={classForSeparator({ orientation, labelOrientation })}
-      data-component="stepper-separator"
-      data-disabled={disabled}
-      data-orientation={orientation}
-      data-state={state}
-    />
-  );
-};
-
-const CircleStepIndicator = ({ currentStep, totalSteps, size = 80, strokeWidth = 6 }: CircleStepIndicatorProps) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const fillPercentage = (currentStep / totalSteps) * 100;
-  const dashOffset = circumference - (circumference * fillPercentage) / 100;
-  return (
-    <div
-      aria-valuemax={totalSteps}
-      aria-valuemin={1}
-      aria-valuenow={currentStep}
-      className="relative inline-flex items-center justify-center"
-      data-component="stepper-step-indicator"
-      role="progressbar"
-      tabIndex={-1}
-    >
-      <svg height={size} width={size}>
-        <title>Step Indicator</title>
-        <circle
-          className="text-subtle"
-          cx={size / 2}
-          cy={size / 2}
-          fill="none"
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          className="text-primary transition-all duration-300 ease-in-out motion-reduce:transition-none"
-          cx={size / 2}
-          cy={size / 2}
-          fill="none"
-          r={radius}
-          stroke="currentColor"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          strokeWidth={strokeWidth}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span aria-live="polite" className="text-label selection:bg-selection selection:text-selection-foreground">
-          {currentStep} of {totalSteps}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-const classForNavigationList = cva('flex gap-2', {
-  variants: {
-    variant: {
-      horizontal: 'flex-row items-center justify-between',
-      vertical: 'flex-col',
-      circle: 'flex-row items-center justify-between',
-    },
-  },
-});
-
-const classForSeparator = cva(
-  [
-    'bg-surface-subtle',
-    'data-[state=completed]:bg-primary data-[disabled]:opacity-50',
-    'transition-all duration-300 ease-in-out motion-reduce:transition-none',
-  ],
-  {
-    variants: {
-      orientation: {
-        horizontal: 'h-0.5 flex-1',
-        vertical: 'h-full w-0.5',
-      },
-      labelOrientation: {
-        vertical: 'absolute top-5 right-[calc(-50%+20px)] left-[calc(50%+30px)] block shrink-0',
-      },
-    },
+  function Step({
+    of,
+    children,
+    icon,
+    className,
+    testId,
+    disabled,
+    ...props
+  }: Omit<React.ComponentProps<'button'>, 'value'> &
+    SharedProps & {
+      of: StepId<Steps>;
+      icon?: React.ReactNode;
+      variant?: React.ComponentProps<typeof import('./button').Button>['variant'];
+    }) {
+    const { methods, labelOrientation, variant } = useContext();
+    const index = steps.findIndex((step) => step.id === of);
+    const labelId = React.useId();
+    const active = methods.id === of;
+    return (
+      <li
+        className={cn(
+          'relative flex flex-1 items-center gap-3',
+          labelOrientation === 'vertical' && 'flex-col',
+          className
+        )}
+        data-state={active ? 'active' : index < methods.index ? 'completed' : 'inactive'}
+      >
+        <Tabs.TabsTab
+          aria-current={active ? 'step' : undefined}
+          aria-labelledby={labelId}
+          className={cn(
+            buttonVariants({ variant: index <= methods.index ? 'primary' : 'outline', size: 'icon' }),
+            'rounded-full',
+            active && 'ring-3 ring-secondary/20'
+          )}
+          data-testid={testId}
+          disabled={disabled || index > methods.index}
+          value={of}
+          {...props}
+        >
+          {icon ?? steps[index]?.icon ?? index + 1}
+        </Tabs.TabsTab>
+        <div className="flex flex-col items-start" id={labelId}>
+          {children}
+        </div>
+        {index < steps.length - 1 && variant !== 'vertical' ? (
+          <span
+            aria-hidden="true"
+            className={cn('h-0.5 min-w-4 flex-1 bg-surface-subtle', index < methods.index && 'bg-primary')}
+          />
+        ) : null}
+      </li>
+    );
   }
-);
-
-function scrollIntoStepperPanel(node: HTMLDivElement) {
-  node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return { steps, useStepper, Stepper: { Provider, Navigation, Step, Title, Description, Panel, Controls } };
 }
-
-const useStepChildren = (children: React.ReactNode) => React.useMemo(() => extractChildren(children), [children]);
-
-const extractChildren = (children: React.ReactNode) => {
-  const childrenArray = React.Children.toArray(children);
-  const map = new Map<string, React.ReactNode>();
-
-  for (const child of childrenArray) {
-    if (React.isValidElement(child)) {
-      if (child.type === Title) {
-        map.set('title', child);
-      } else if (child.type === Description) {
-        map.set('description', child);
-      } else {
-        map.set('panel', child);
-      }
-    }
-  }
-
-  return map;
-};
-
-const onStepKeyDown = (
-  e: React.KeyboardEvent<HTMLButtonElement>,
-  nextStep: Step | undefined,
-  prevStep: Step | undefined
-) => {
-  const { key } = e;
-  const directions = {
-    next: ['ArrowRight', 'ArrowDown'],
-    prev: ['ArrowLeft', 'ArrowUp'],
-  };
-
-  if (directions.next.includes(key) || directions.prev.includes(key)) {
-    const direction = directions.next.includes(key) ? 'next' : 'prev';
-    const step = direction === 'next' ? nextStep : prevStep;
-
-    if (!step) {
-      return;
-    }
-
-    const stepElement = document.querySelector<HTMLElement>(`#${CSS.escape(`step-${step.id}`)}`);
-    if (!stepElement) {
-      return;
-    }
-
-    const isActive = stepElement.parentElement?.getAttribute('data-state') !== 'inactive';
-    if (isActive || direction === 'prev') {
-      stepElement.focus();
-    }
-  }
-};
-
-const getStepState = (currentIndex: number, stepIndex: number) => {
-  if (currentIndex === stepIndex) {
-    return 'active';
-  }
-  if (currentIndex > stepIndex) {
-    return 'completed';
-  }
-  return 'inactive';
-};
-
-export { defineStepper };
+export type DefineStepperProps<Steps extends readonly Step[]> = ReturnType<typeof defineStepper<Steps>>;

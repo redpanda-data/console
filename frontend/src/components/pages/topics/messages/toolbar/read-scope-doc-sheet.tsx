@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   Sheet,
   SheetContent,
@@ -200,7 +201,7 @@ export const ReadScopeDocSheet = ({
           {MODE_DESCRIPTIONS.map(({ mode: m, title, description }) => {
             const Icon = m === 'live' ? RadioIcon : READ_SCOPE_META[m].icon;
             return (
-              <button
+              <ConsoleButton
                 className={cn(
                   '-mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted',
                   previewMode === m && 'bg-muted'
@@ -209,13 +210,14 @@ export const ReadScopeDocSheet = ({
                 key={m}
                 onClick={() => setPreviewMode(m)}
                 type="button"
+                variant="unstyled"
               >
                 <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone={m === 'live' ? 'live' : 'primary'} />
                 <span className="min-w-0">
                   <span className="block text-body-sm font-semibold">{title}</span>
                   <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
                 </span>
-              </button>
+              </ConsoleButton>
             );
           })}
         </div>

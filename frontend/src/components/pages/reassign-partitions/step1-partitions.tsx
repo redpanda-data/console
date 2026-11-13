@@ -10,7 +10,7 @@
  */
 
 import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   DataTable,
@@ -373,17 +373,15 @@ function renderPartitionError(partition: Partition) {
   const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
 
   return (
-    <Popover>
+    <Popover delay={200} openOnHover>
       {/* Hover-to-open. */}
       <PopoverTrigger
-        delay={200}
-        openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <ConsoleButton aria-label="Partition error" type="button" variant="unstyled">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={19} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </ConsoleButton>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}
@@ -397,17 +395,15 @@ function renderPartitionError(partition: Partition) {
 
 function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
-    <Popover>
+    <Popover delay={200} openOnHover>
       {/* Hover-to-open. */}
       <PopoverTrigger
-        delay={200}
-        openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <ConsoleButton aria-label="Partition error" type="button" variant="unstyled">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={20} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </ConsoleButton>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}

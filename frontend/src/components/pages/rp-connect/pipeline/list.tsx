@@ -359,7 +359,7 @@ const CreatePipelineButton = () => {
 
 const PipelineStateTabsBar = ({ tabs }: { tabs: PipelineStateTabsState }) => (
   <Tabs onValueChange={(value) => tabs.handleTabChange(value as PipelineStateTabId)} value={tabs.activeTab}>
-    <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+    <TabsList className="[&_[data-slot=tabs-tab]]:w-auto" variant="underline">
       {tabs.visibleTabs.map((tab) => (
         <TabsTrigger
           aria-controls={STATUS_PANEL_ID}
@@ -405,7 +405,7 @@ const PipelineListToolbar = ({
       <Input
         aria-label="Search pipelines by name or ID"
         className="w-64"
-        onChange={(e) => nameSearch.setSearch(e.target.value)}
+        onValueChange={(inputText) => nameSearch.setSearch(inputText)}
         placeholder="Search by name or ID..."
         value={nameSearch.search}
       >

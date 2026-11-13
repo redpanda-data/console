@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { mergeProps } from '@ui-sdk/react/primitive';
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { BookOpenIcon, Box, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
@@ -262,7 +263,7 @@ const NodeRow = ({
     <>
       {/* The row itself is the treeitem: it takes focus and handles select/expand keys; the
           chevron stays a presentational click target so mouse behaviour is unchanged. */}
-      <div
+      <ConsoleButton
         aria-describedby={stopDescriptionId}
         aria-expanded={hasChildren ? !collapsed : undefined}
         aria-label={node.label}
@@ -273,27 +274,36 @@ const NodeRow = ({
         className="flex items-stretch rounded-md"
         onClick={() => onSelect(node.id, editableAncestorId(node, maps))}
         onFocus={() => nav.onRowFocus(node.id)}
-        onKeyDown={(e) => nav.onRowKeyDown(e, node)}
-        ref={(el) => nav.registerRow(node.id, el)}
-        role="treeitem"
+        render={(buttonProps) => (
+          <div
+            {...mergeProps(buttonProps, {
+              onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => nav.onRowKeyDown(event, node),
+              ref: (element: HTMLDivElement | null) => nav.registerRow(node.id, element),
+            })}
+            role="treeitem"
+            tabIndex={nav.tabbableId === node.id ? 0 : -1}
+          />
+        )}
         style={{ paddingLeft: indentFor(depth) }}
         tabIndex={nav.tabbableId === node.id ? 0 : -1}
+        variant="unstyled"
       >
-        {/* Toggle is a separate hit target so it doesn't also select the node; the row owns the
-            keyboard/ARIA expansion semantics, so it's hidden from the accessibility tree. */}
+        {/* Expansion is separately agent-addressable; the row still owns roving keyboard focus. */}
         {hasChildren ? (
-          <button
-            aria-hidden
+          <ConsoleButton
+            aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${node.label}`}
             className="flex w-5 shrink-0 cursor-pointer items-center justify-center self-stretch rounded text-muted-foreground transition-colors hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
               toggle(node.id);
             }}
+            render={(buttonProps) => <button {...buttonProps} tabIndex={-1} />}
             tabIndex={-1}
             type="button"
+            variant="unstyled"
           >
             {collapsed ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-          </button>
+          </ConsoleButton>
         ) : (
           <span aria-hidden className="w-5 shrink-0" />
         )}
@@ -323,7 +333,7 @@ const NodeRow = ({
             {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
           </span>
         </ElementTooltip>
-      </div>
+      </ConsoleButton>
       {hasChildren && !collapsed
         ? children.map((child, index) => (
             <NodeRow
@@ -351,14 +361,15 @@ const NodeRow = ({
 const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section: string) => void }) => (
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
-    <button
+    <ConsoleButton
       className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border py-1 pr-2 pl-1.5 text-left text-body text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
       onClick={() => onAdd(section)}
       type="button"
+      variant="unstyled"
     >
       <Plus className="size-3.5 shrink-0" />
       <span className="truncate">Add {section}</span>
-    </button>
+    </ConsoleButton>
   </div>
 );
 

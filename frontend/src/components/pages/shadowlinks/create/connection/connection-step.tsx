@@ -35,7 +35,7 @@ export const ConnectionStep = () => {
               <FormItem>
                 <FormLabel required>Shadow link name</FormLabel>
                 <FormControl>
-                  <Input placeholder="my-shadow-link" {...field} />
+                  <Input placeholder="my-shadow-link" {...field} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

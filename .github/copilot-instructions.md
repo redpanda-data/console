@@ -91,10 +91,9 @@ In order:
 
 ## Do not flag
 
-- Anything under a generated or vendored path: `backend/pkg/protogen/`,
+- Anything under a generated path: `backend/pkg/protogen/`,
   `frontend/src/protogen/`, `frontend/src/routeTree.gen.ts`,
-  `frontend/src/components/redpanda-ui/`, `build/`. Changes there are either generated output
-  or upstream registry content.
+  `build/`. Changes there are generated output.
 - Formatting and style nits already enforced by tooling. `golangci-lint` 2.10 (37 linters,
   `revive` with all rules on, `sloglint`, `gci`) and Biome/Ultracite gate those in CI, and a
   duplicate review comment adds noise without adding information.

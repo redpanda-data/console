@@ -90,7 +90,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
                     aria-invalid={!isValidPassword}
                     data-testid="create-user-password"
                     name="test"
-                    onChange={(e) => setPassword(e.target.value)}
+                    onValueChange={(inputText) => setPassword(inputText)}
                     type="password"
                     value={password}
                   />

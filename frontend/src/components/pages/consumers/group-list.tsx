@@ -11,6 +11,7 @@
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutFilters, ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
 import { Search, UsersIcon, X } from 'lucide-react';
@@ -84,12 +85,17 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
     filterFn: groupIdFilterFn,
     meta: columnMeta({ headWidth: 'full' as const }),
     cell: ({ row: { original: group } }) => (
-      <Link
-        className="flex items-center"
-        data-testid={`consumer-group-link-${group.groupId}`}
-        params={{ groupId: encodeURIComponent(group.groupId) }}
-        search={{} as never}
-        to="/groups/$groupId"
+      <ConsoleButton
+        render={
+          <Link
+            className="flex items-center"
+            data-testid={`consumer-group-link-${group.groupId}`}
+            params={{ groupId: encodeURIComponent(group.groupId) }}
+            search={{} as never}
+            to="/groups/$groupId"
+          />
+        }
+        variant="unstyled"
       >
         {group.protocolType !== 'consumer' && (
           <Badge className="mr-2" tone="default" variant="subtle">
@@ -97,7 +103,7 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
           </Badge>
         )}
         <span className="wrap-break-word whitespace-break-spaces">{group.groupId}</span>
-      </Link>
+      </ConsoleButton>
     ),
   },
   {
@@ -325,7 +331,7 @@ const GroupList: FC = () => {
       <ListLayoutFilters>
         <Input
           containerClassName="w-full min-w-[140px] max-w-[300px] sm:w-[200px] lg:w-[250px]"
-          onChange={(e) => table.getColumn('groupId')?.setFilterValue(e.target.value || undefined)}
+          onValueChange={(inputText) => table.getColumn('groupId')?.setFilterValue(inputText || undefined)}
           placeholder="Filter by group ID (regexp)..."
           size="sm"
           testId="search-field-input"

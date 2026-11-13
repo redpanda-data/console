@@ -1,6 +1,7 @@
 'use client';
 
-import { Checkbox as CheckboxPrimitive } from '@base-ui/react/checkbox';
+import { withAgentChanges } from '../lib/commit-agent-change';
+import * as CheckboxPrimitive from '@ui-sdk/react/checkbox';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -30,7 +31,7 @@ const checkboxVariants = cva(
   }
 );
 
-/** The `data-state` the variants key off. Mixed wins: Base UI carries it beside `checked`. */
+/** The `data-state` the variants key off. Mixed wins: UI SDK carries it beside `checked`. */
 const dataStateFor = (checked: boolean, indeterminate: boolean): 'indeterminate' | 'checked' | 'unchecked' => {
   if (indeterminate) {
     return 'indeterminate';
@@ -38,120 +39,49 @@ const dataStateFor = (checked: boolean, indeterminate: boolean): 'indeterminate'
   return checked ? 'checked' : 'unchecked';
 };
 
-// Exposes the Radix `checked: boolean | 'indeterminate'` signature; translated to Base UI's separate props internally.
-type CheckboxProps = Omit<
-  React.ComponentProps<typeof CheckboxPrimitive.Root>,
-  'checked' | 'defaultChecked' | 'onCheckedChange' | 'ref'
-> &
+type CheckboxProps = Omit<React.ComponentProps<typeof CheckboxPrimitive.Checkbox>, 'children'> &
   VariantProps<typeof checkboxVariants> &
-  SharedProps & {
-    checked?: boolean | 'indeterminate';
-    defaultChecked?: boolean | 'indeterminate';
-    onCheckedChange?: (
-      checked: boolean | 'indeterminate',
-      eventDetails: CheckboxPrimitive.Root.ChangeEventDetails
-    ) => void;
-    ref?: React.Ref<HTMLButtonElement>;
-  };
-
-function Checkbox({
-  className,
-  onCheckedChange,
-  testId,
-  variant,
-  checked,
-  defaultChecked,
-  indeterminate,
-  ref,
-  ...props
-}: CheckboxProps) {
-  const isControlled = checked !== undefined;
-
-  // Base UI treats `indeterminate` as a plain prop, so the wrapper tracks the
-  // uncontrolled mixed state itself (cleared on first interaction).
-  const [uncontrolledIndeterminate, setUncontrolledIndeterminate] = React.useState(defaultChecked === 'indeterminate');
-
-  const handleCheckedChange = React.useCallback(
-    (nextChecked: boolean, eventDetails: CheckboxPrimitive.Root.ChangeEventDetails) => {
-      setUncontrolledIndeterminate(false);
-      onCheckedChange?.(nextChecked, eventDetails);
-    },
-    [onCheckedChange]
-  );
-
-  // Translate Radix `checked='indeterminate'` to Base UI `indeterminate` + `checked=false`.
-  const isIndeterminate = indeterminate ?? (isControlled ? checked === 'indeterminate' : uncontrolledIndeterminate);
-  const baseChecked = isControlled ? checked === true : undefined;
-  const baseDefaultChecked = defaultChecked === 'indeterminate' ? false : defaultChecked;
-
-  const renderRoot = React.useCallback(
-    (rootProps: React.ComponentProps<'button'>, state: CheckboxPrimitive.Root.State) => {
-      const dataState = dataStateFor(state.checked, state.indeterminate);
-      const showCheckmark = state.checked && !state.indeterminate;
-
-      return (
-        <button
-          {...rootProps}
-          className={cn(checkboxVariants({ variant, className }))}
-          data-slot="checkbox"
-          data-state={dataState}
-          data-testid={testId}
-        >
-          <CheckboxPrimitive.Indicator
-            keepMounted
-            render={({ ref: _indicatorRef, ...indicatorProps }) => (
-              <svg
-                {...indicatorProps}
-                className="size-3"
-                data-slot="checkbox-indicator"
-                data-state={dataState}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3.5"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <title>Checkbox</title>
-                <path
-                  className={pathDrawClassName}
-                  d="M4.5 12.75l6 6 9-13.5"
-                  data-visible={showCheckmark}
-                  pathLength={1}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  className={pathDrawClassName}
-                  d="M5 12h14"
-                  data-visible={state.indeterminate}
-                  pathLength={1}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          />
-        </button>
-      );
-    },
-    [className, testId, variant]
-  );
-
+  SharedProps;
+function Checkbox({ className, testId, variant, ...props }: CheckboxProps) {
   return (
-    <CheckboxPrimitive.Root
-      {...(props as React.ComponentProps<typeof CheckboxPrimitive.Root>)}
-      checked={baseChecked}
-      defaultChecked={baseDefaultChecked}
-      indeterminate={isIndeterminate}
-      nativeButton
-      onCheckedChange={handleCheckedChange}
-      ref={ref as React.Ref<HTMLElement>}
-      render={renderRoot}
+    <CheckboxPrimitive.Checkbox
+      {...withAgentChanges(props)}
+      className={cn(checkboxVariants({ variant, className }))}
+      data-testid={testId}
+      render={(rootProps, state) => (
+        <button {...rootProps} data-state={dataStateFor(state.checked, state.indeterminate)}>
+          <svg
+            aria-hidden="true"
+            className="size-3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            viewBox="0 0 24 24"
+          >
+            <path
+              className={pathDrawClassName}
+              d="M4.5 12.75l6 6 9-13.5"
+              data-visible={state.checked && !state.indeterminate}
+              pathLength={1}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              className={pathDrawClassName}
+              d="M5 12h14"
+              data-visible={state.indeterminate}
+              pathLength={1}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      )}
     />
   );
 }
 
-// Presentational, stateless sibling of `Checkbox` (no Base UI primitive). For row-selection surfaces where
+// Presentational, stateless sibling of `Checkbox` (no UI SDK primitive). For row-selection surfaces where
 // many controlled `Checkbox` instances under a re-rendering parent would hit React's max-update-depth limit.
 //
 // It keeps `role="checkbox"` without being operable, which the two rules below object to — right in

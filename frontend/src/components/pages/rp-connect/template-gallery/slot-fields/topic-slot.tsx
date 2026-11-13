@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { SimpleFormField } from 'components/redpanda-ui/components/form';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
 import { config, isEmbedded } from 'config';
@@ -61,16 +61,21 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
             <Plus className="h-4 w-4" /> Create topic
           </Button>
         ) : (
-          <a
-            className="inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
-            data-testid={`slot-${slot.id}-create`}
-            href={buildTopicsHref()}
-            rel="noopener noreferrer"
-            target="_blank"
+          <ConsoleButton
+            render={
+              <a
+                className="inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
+                data-testid={`slot-${slot.id}-create`}
+                href={buildTopicsHref()}
+                rel="noopener noreferrer"
+                target="_blank"
+              />
+            }
+            variant="unstyled"
           >
             Create a new topic
             <ExternalLink aria-hidden className="h-3 w-3" />
-          </a>
+          </ConsoleButton>
         )}
       </div>
     )}

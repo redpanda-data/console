@@ -10,7 +10,7 @@
  */
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
@@ -112,7 +112,7 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
                 value={tag.pattern}
               />
               <ElementTooltip content="Remove">
-                <button
+                <ConsoleButton
                   aria-label="Remove"
                   className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() =>
@@ -122,9 +122,10 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
                     )
                   }
                   type="button"
+                  variant="unstyled"
                 >
                   <XIcon className="size-3.5" />
-                </button>
+                </ConsoleButton>
               </ElementTooltip>
             </div>
           ))}

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type React from 'react';
@@ -81,7 +82,7 @@ export function FloatingChipPanel({
 
   return (
     <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
-      <button
+      <ConsoleButton
         aria-expanded={open}
         className={cn(
           'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors',
@@ -90,13 +91,14 @@ export function FloatingChipPanel({
         data-testid={chipTestId}
         onClick={() => setOpen((o) => !o)}
         type="button"
+        variant="unstyled"
       >
         {leading}
         {label}
         <span className={cn('inline-flex transition-transform', open && 'rotate-180')}>
           <ChevronDown className="size-3.5" />
         </span>
-      </button>
+      </ConsoleButton>
 
       {open ? (
         <div

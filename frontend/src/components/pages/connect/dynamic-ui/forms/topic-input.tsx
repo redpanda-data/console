@@ -108,8 +108,8 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
         {isRegex || p.connectorType === 'source' ? (
           <Input
             autoComplete="off"
-            onChange={(e) => {
-              setPropertyValue(property, e.target.value);
+            onValueChange={(inputText) => {
+              setPropertyValue(property, inputText);
             }}
             spellCheck={false}
             value={String(property.value)}

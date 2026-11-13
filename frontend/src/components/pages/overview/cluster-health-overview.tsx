@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ErrorIcon, WarningIcon } from 'components/icons';
-import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { buttonVariants, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
@@ -65,9 +65,9 @@ const ClusterHealthOverview = () => {
                   <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />{' '}
                   <div>{api.clusterHealth?.leaderlessPartitionsCount}</div>
                 </div>{' '}
-                <Link search={{} as never} to="/topics">
+                <ConsoleButton render={<Link search={{} as never} to="/topics" />} variant="unstyled">
                   View topics
-                </Link>
+                </ConsoleButton>
               </div>
             </div>
           </li>
@@ -83,9 +83,9 @@ const ClusterHealthOverview = () => {
                   <TonedIcon icon={WarningIcon} size={18} tone="warning" />{' '}
                   <div>{api.clusterHealth?.underReplicatedPartitionsCount}</div>
                 </div>{' '}
-                <Link search={{} as never} to="/topics">
+                <ConsoleButton render={<Link search={{} as never} to="/topics" />} variant="unstyled">
                   View topics
-                </Link>
+                </ConsoleButton>
               </div>
             </div>
           </li>
@@ -98,21 +98,29 @@ const ClusterHealthOverview = () => {
                 {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor;
                     `$jobId` needs a segment. */}
                 {api.isDebugBundleInProgress && api.debugBundleStatus?.jobId ? (
-                  <Link
-                    className={cn(buttonVariants({ variant: 'link' }), 'h-auto')}
-                    params={{ jobId: api.debugBundleStatus.jobId }}
-                    to="/debug-bundle/progress/$jobId"
+                  <ConsoleButton
+                    render={
+                      <Link
+                        className={cn(buttonVariants({ variant: 'link' }), 'h-auto')}
+                        params={{ jobId: api.debugBundleStatus.jobId }}
+                        to="/debug-bundle/progress/$jobId"
+                      />
+                    }
+                    variant="unstyled"
                   >
                     Bundle generation in progress...
-                  </Link>
+                  </ConsoleButton>
                 ) : null}
                 {Boolean(api.canDownloadDebugBundle) && (
                   <DebugBundleLink showDatetime={false} statuses={api.debugBundleStatuses} />
                 )}
                 {!api.isDebugBundleInProgress && (
-                  <Link className={cn(buttonVariants({ variant: 'link' }), 'h-auto')} to="/debug-bundle">
+                  <ConsoleButton
+                    render={<Link className={cn(buttonVariants({ variant: 'link' }), 'h-auto')} to="/debug-bundle" />}
+                    variant="unstyled"
+                  >
                     Generate new
-                  </Link>
+                  </ConsoleButton>
                 )}
               </div>
             </div>

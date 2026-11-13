@@ -10,7 +10,7 @@
  */
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -98,7 +98,7 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
             </Label>
             <Input
               id="js-filter-name"
-              onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+              onValueChange={(inputText) => setDraft((prev) => ({ ...prev, name: inputText }))}
               placeholder="e.g. Invoices missing zip"
               testId="js-filter-name"
               value={draft.name}
@@ -122,13 +122,14 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
             <div className="flex flex-wrap gap-1.5">
               {EXAMPLES.map((example) => (
                 <ElementTooltip content={example.note} key={example.code}>
-                  <button
+                  <ConsoleButton
                     className="rounded-md border bg-background px-2.5 py-1 font-mono text-xs whitespace-nowrap hover:bg-muted"
                     onClick={() => setDraft((prev) => ({ ...prev, code: example.code, transpiledCode: example.code }))}
                     type="button"
+                    variant="unstyled"
                   >
                     {example.code}
-                  </button>
+                  </ConsoleButton>
                 </ElementTooltip>
               ))}
             </div>

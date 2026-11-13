@@ -32,7 +32,7 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
           disabled={inputProps.disabled}
           id={id}
           onBlur={inputProps.onBlur}
-          onChange={(event) => inputProps.onValueChange(event.target.value)}
+          onValueChange={(value) => inputProps.onValueChange(value)}
           placeholder={getFieldUiConfig(field).placeholder || 'YYYY-MM-DD'}
           testId={`${controlTestId}-input`}
           value={value}
@@ -53,11 +53,8 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
       </InputGroup>
       <PopoverContent className="w-auto p-0">
         <Calendar
-          mode="single"
-          onSelect={(date) => {
-            inputProps.onValueChange(date ? format(date, 'yyyy-MM-dd') : '');
-          }}
-          selected={selectedDate}
+          onValueChange={(date) => inputProps.onValueChange(typeof date === 'string' ? date : '')}
+          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null}
         />
       </PopoverContent>
     </Popover>
@@ -95,7 +92,7 @@ function TimestampFieldComponent({ error, field, id, inputProps, label }: AutoFo
           aria-invalid={Boolean(error)}
           disabled={inputProps.disabled}
           onBlur={inputProps.onBlur}
-          onChange={(event) => inputProps.onValueChange(buildTimestampValue(dateValue, event.target.value))}
+          onValueChange={(value) => inputProps.onValueChange(buildTimestampValue(dateValue, value))}
           placeholder="HH:mm"
           testId={testIds.controlPart('time-input')}
           value={timeValue}

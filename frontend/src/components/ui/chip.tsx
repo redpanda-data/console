@@ -1,3 +1,4 @@
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { XIcon } from 'lucide-react';
 import type React from 'react';
 import type { MouseEventHandler } from 'react';
@@ -45,7 +46,7 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
       {...props}
     >
       {onEdit ? (
-        <button
+        <ConsoleButton variant="unstyled"
           aria-label={title}
           className="cursor-pointer rounded-sm px-0.5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
           onClick={handleEdit}
@@ -53,14 +54,14 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
           type="button"
         >
           {children}
-        </button>
+        </ConsoleButton>
       ) : (
         <span className="px-0.5" title={title}>
           {children}
         </span>
       )}
       {onRemove ? (
-        <button
+        <ConsoleButton variant="unstyled"
           aria-label={removeLabel}
           className="flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive-wash hover:text-destructive focus-visible:outline-2 focus-visible:outline-ring"
           onClick={handleRemove}
@@ -68,7 +69,7 @@ function Chip({ className, children, title, onEdit, onRemove, removeLabel = 'Rem
           type="button"
         >
           <XIcon className="size-3" />
-        </button>
+        </ConsoleButton>
       ) : null}
     </span>
   );

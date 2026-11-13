@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button, buttonVariants, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Dialog,
@@ -435,14 +435,13 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
         </span>
       ) : null}
 
-      <Popover>
+      <Popover delay={200} openOnHover>
         {/* Hover-to-open; Base UI defaults to click. */}
         <PopoverTrigger
-          openOnHover
           render={
-            <button className="cursor-help" type="button">
+            <ConsoleButton className="cursor-help" type="button" variant="unstyled">
               {displayName}
-            </button>
+            </ConsoleButton>
           }
         />
         {/* PopoverContent is a fixed `w-72`, so the width is set here to fit the content. */}
@@ -537,14 +536,19 @@ export function NotConfigured() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <a
-              className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
-              href={docsLinks.selfManaged.console}
-              rel="noopener noreferrer"
-              target="_blank"
+            <ConsoleButton
+              render={
+                <a
+                  className={cn(buttonVariants({ variant: 'primary' }), 'rounded-md')}
+                  href={docsLinks.selfManaged.console}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                />
+              }
+              variant="unstyled"
             >
               Redpanda Console Config Documentation
-            </a>
+            </ConsoleButton>
           </EmptyContent>
         </Empty>
       </Section>

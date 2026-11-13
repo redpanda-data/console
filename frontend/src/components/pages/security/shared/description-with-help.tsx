@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { InfoIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,15 +33,16 @@ export function DescriptionWithHelp({ short, title, children, testId, titleTestI
     <>
       <span className="inline-flex items-center gap-1.5">
         {short}
-        <button
+        <ConsoleButton
           aria-label="More information"
           className="inline-flex cursor-pointer items-center text-muted-foreground hover:text-foreground"
           data-testid={testId}
           onClick={() => setOpen(true)}
           type="button"
+          variant="unstyled"
         >
           <InfoIcon className="h-4 w-4" />
-        </button>
+        </ConsoleButton>
       </span>
       <Drawer direction="right" onOpenChange={setOpen} open={open}>
         <DrawerContent aria-labelledby="help-drawer-title" className="w-[520px] sm:max-w-[520px]" role="dialog">

@@ -2,7 +2,7 @@
 
 import clsx from 'clsx';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   Card,
   CardContent,
@@ -466,9 +466,9 @@ const AclRules = ({
                       <div className="col-span-3">
                         <Input
                           className="flex-1"
-                          onChange={(e) =>
+                          onValueChange={(inputText) =>
                             updateRule(rule.id, {
-                              selectorValue: e.target.value,
+                              selectorValue: inputText,
                             })
                           }
                           placeholder={`Enter ${rule.selectorType} match`}
@@ -494,7 +494,7 @@ const AclRules = ({
                 <div className="mb-3 flex items-center justify-between">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
                   <div className="inline-flex h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle">
-                    <button
+                    <ConsoleButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeCustom
@@ -504,10 +504,11 @@ const AclRules = ({
                       data-testid={`mode-custom-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeCustom)}
                       type="button"
+                      variant="unstyled"
                     >
                       Custom
-                    </button>
-                    <button
+                    </ConsoleButton>
+                    <ConsoleButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeAllowAll
@@ -517,10 +518,11 @@ const AclRules = ({
                       data-testid={`mode-allow-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeAllowAll)}
                       type="button"
+                      variant="unstyled"
                     >
                       Allow all
-                    </button>
-                    <button
+                    </ConsoleButton>
+                    <ConsoleButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeDenyAll
@@ -530,9 +532,10 @@ const AclRules = ({
                       data-testid={`mode-deny-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeDenyAll)}
                       type="button"
+                      variant="unstyled"
                     >
                       Deny all
-                    </button>
+                    </ConsoleButton>
                   </div>
                 </div>
 
@@ -699,10 +702,10 @@ const SharedConfiguration = ({
                   <Input
                     disabled={edit}
                     id="principal"
-                    onChange={(e) =>
+                    onValueChange={(inputText) =>
                       setSharedConfig({
                         ...sharedConfig,
-                        principal: `${principalType}:${e.target.value}`,
+                        principal: `${principalType}:${inputText}`,
                       })
                     }
                     placeholder="analytics-writer"
@@ -763,10 +766,10 @@ const SharedConfiguration = ({
                   className="flex-1"
                   disabled={edit}
                   id="host"
-                  onChange={(e) =>
+                  onValueChange={(inputText) =>
                     setSharedConfig({
                       ...sharedConfig,
-                      host: e.target.value,
+                      host: inputText,
                     })
                   }
                   placeholder="1.1.1.1"

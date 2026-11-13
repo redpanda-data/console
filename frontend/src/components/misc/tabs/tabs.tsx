@@ -41,12 +41,12 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
       defaultValue={selectedTabKey || defaultSelectedTabKey || tabs[0]?.key}
       onValueChange={(next, details) => {
         // Only user activation; Base UI also reports its own initial/fallback selection.
-        if (details.reason === 'none' && next !== null) {
+        if (details.reason !== 'item-removed' && next !== null) {
           onChange?.(String(next));
         }
       }}
     >
-      <TabsList activateOnFocus layout={isFitted ? 'full' : 'auto'} variant="underline">
+      <TabsList layout={isFitted ? 'full' : 'auto'} variant="underline">
         {tabs.map((t) => (
           <TabsTrigger disabled={t.disabled} key={t.key} value={t.key} variant="underline">
             {renderSlot(t.title)}

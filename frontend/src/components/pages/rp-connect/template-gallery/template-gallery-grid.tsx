@@ -10,7 +10,7 @@
  */
 
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Input, InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
@@ -112,7 +112,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
         <Input
           className="w-full sm:max-w-md"
           data-testid="template-gallery-search"
-          onChange={(event) => setQuery(event.target.value)}
+          onValueChange={(inputText) => setQuery(inputText)}
           placeholder="Search templates..."
           value={query}
         >
@@ -121,14 +121,15 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           </InputStart>
           {query.length > 0 ? (
             <InputEnd>
-              <button
+              <ConsoleButton
                 aria-label="Clear search"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => setQuery('')}
                 type="button"
+                variant="unstyled"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </ConsoleButton>
             </InputEnd>
           ) : null}
         </Input>

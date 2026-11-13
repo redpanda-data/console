@@ -13,15 +13,15 @@ import { ConnectError } from '@connectrpc/connect';
 import { Link } from '@tanstack/react-router';
 import { AlertIcon, ChevronDownIcon, ChevronRightIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -114,9 +114,9 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
       </div>
 
       <div className="mb-4 flex gap-4">
-        <Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit">
+        <ConsoleButton render={<Link params={{ pipelineId }} to="/rp-connect/$pipelineId/edit" />} variant="unstyled">
           <Button variant="primary">Edit</Button>
-        </Link>
+        </ConsoleButton>
 
         <Button
           // `isLoading` hides the label, so the button needs its own name.
@@ -480,7 +480,7 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
     return search.startSearch(request);
   } catch (error) {
     const connectError = ConnectError.from(error);
-    sonnerToast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' }));
+    toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' }));
     return Promise.resolve([]);
   }
 }

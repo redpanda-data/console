@@ -1,6 +1,6 @@
 import { Command, CommandGroup, CommandItem, CommandList } from 'components/redpanda-ui/components/command';
 import { Input } from 'components/redpanda-ui/components/input';
-import { type ChangeEvent, useState } from 'react';
+import { useState } from 'react';
 
 const EMPTY_SUGGESTIONS: string[] = [];
 
@@ -24,8 +24,7 @@ export function AutocompleteInput({
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const handleInputChange = (newValue: string) => {
     onChange(newValue);
 
     if (newValue.length > 0 && suggestions.length > 0) {
@@ -47,7 +46,6 @@ export function AutocompleteInput({
       <Input
         className={className}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-        onChange={handleInputChange}
         onFocus={() => {
           if (value.length > 0 && suggestions.length > 0) {
             const filtered = suggestions.filter((suggestion) => suggestion.toLowerCase().includes(value.toLowerCase()));
@@ -55,6 +53,7 @@ export function AutocompleteInput({
             setShowSuggestions(filtered.length > 0);
           }
         }}
+        onValueChange={handleInputChange}
         placeholder={placeholder}
         testId={dataTestId}
         type="text"

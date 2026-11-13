@@ -12,7 +12,7 @@
 import { Link } from '@tanstack/react-router';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, CloseIcon, HelpIcon, RotateCwIcon, StopCircleIcon, TrashIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
@@ -180,13 +180,18 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'id',
     enableSorting: false,
     cell: ({ row: { original } }) => (
-      <Link
-        params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-        search={{} as never}
-        to="/rp-connect/$pipelineId"
+      <ConsoleButton
+        render={
+          <Link
+            params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+            search={{} as never}
+            to="/rp-connect/$pipelineId"
+          />
+        }
+        variant="unstyled"
       >
         <Text>{original.id}</Text>
-      </Link>
+      </ConsoleButton>
     ),
   },
   {
@@ -196,13 +201,18 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
-        <Link
-          params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-          search={{} as never}
-          to="/rp-connect/$pipelineId"
+        <ConsoleButton
+          render={
+            <Link
+              params={{ pipelineId: encodeURIComponentPercents(original.id) }}
+              search={{} as never}
+              to="/rp-connect/$pipelineId"
+            />
+          }
+          variant="unstyled"
         >
           <Text className="wrap-break-word whitespace-break-spaces">{original.displayName}</Text>
-        </Link>
+        </ConsoleButton>
       </div>
     ),
   },

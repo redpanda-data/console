@@ -143,6 +143,7 @@ test.describe('user Management', () => {
       await page.getByTestId('create-user-submit').click();
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
       await page.getByTestId('done-button').click();
+      await expect(page.locator('[data-slot="dialog-content"]')).toBeHidden();
       await expect(page).toHaveURL(appURL('/security/users'));
     });
 
@@ -186,6 +187,7 @@ test.describe('user Management', () => {
       await page.getByTestId('create-user-submit').click();
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
       await page.getByTestId('done-button').click();
+      await expect(page.locator('[data-slot="dialog-content"]')).toBeHidden();
       await expect(page).toHaveURL(appURL('/security/users'));
     });
 
@@ -233,6 +235,7 @@ test.describe('user Management', () => {
       await page.getByTestId('create-user-submit').click();
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
       await page.getByTestId('done-button').click();
+      await expect(page.locator('[data-slot="dialog-content"]')).toBeHidden();
       await expect(page).toHaveURL(appURL('/security/users'));
     });
 
@@ -325,6 +328,7 @@ test.describe('user Management', () => {
       await page.getByTestId('create-user-submit').click();
       await expect(page.getByTestId('user-created-successfully')).toBeVisible();
       await page.getByTestId('done-button').click();
+      await expect(page.locator('[data-slot="dialog-content"]')).toBeHidden();
       await expect(page).toHaveURL(appURL('/security/users'));
     });
 

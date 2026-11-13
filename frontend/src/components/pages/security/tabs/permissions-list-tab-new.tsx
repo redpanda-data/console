@@ -11,6 +11,7 @@
 
 import { Link as TanStackLink } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Empty, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import {
@@ -69,9 +70,12 @@ const AclTableRow = ({ editHref, ...acl }: FlatAclEntry & { editHref?: string })
   <AclPermissionRow {...acl}>
     <TableCell align="right">
       {editHref && (
-        <a className="text-muted-foreground hover:text-foreground" href={editHref}>
+        <ConsoleButton
+          render={<a className="text-muted-foreground hover:text-foreground" href={editHref} />}
+          variant="unstyled"
+        >
           <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        </ConsoleButton>
       )}
     </TableCell>
   </AclPermissionRow>
@@ -220,9 +224,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       render={
                         <Button
                           render={
-                            <button type="button">
+                            <ConsoleButton type="button" variant="unstyled">
                               <MoreHorizontalIcon className="h-4 w-4" />
-                            </button>
+                            </ConsoleButton>
                           }
                           size="icon-sm"
                           variant="ghost"
@@ -234,7 +238,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                         <>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
-                            onClick={(e) => {
+                            onSelect={(e) => {
                               e.stopPropagation();
                               setPendingDelete('user-and-acls');
                             }}
@@ -245,7 +249,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
-                            onClick={(e) => {
+                            onSelect={(e) => {
                               e.stopPropagation();
                               setPendingDelete('user-only');
                             }}
@@ -257,7 +261,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                         </>
                       )}
                       <DropdownMenuItem
-                        onClick={(e) => {
+                        onSelect={(e) => {
                           e.stopPropagation();
                           setPendingDelete('acls-only');
                         }}
@@ -449,7 +453,7 @@ export const PermissionsListTabNew: FC = () => {
 
         <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
           <ListLayoutSearchInput
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onValueChange={(value) => setSearchQuery(value)}
             placeholder="Search principals, resources, roles..."
             value={searchQuery}
           />

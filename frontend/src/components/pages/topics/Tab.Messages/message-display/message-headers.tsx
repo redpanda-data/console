@@ -17,7 +17,7 @@ import { renderEmptyIcon } from '../common/empty-icon';
 
 export const MessageHeaders = (props: { msg: TopicMessage }) => {
   return (
-    <div className="messageHeaders">
+    <div className="messageHeaders" data-agent-hidden="true">
       <div>
         <DataTable<{ key: string; value: Payload }>
           columns={[

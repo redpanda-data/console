@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -7,7 +8,6 @@ import {
   type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
 
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';

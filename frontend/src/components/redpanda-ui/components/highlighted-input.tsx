@@ -1,3 +1,4 @@
+import { Input as InputPrimitive } from '@ui-sdk/react/input';
 import { forwardRef, useMemo } from 'react';
 import type React from 'react';
 
@@ -5,8 +6,9 @@ import { cn, type SharedProps } from '../lib/utils';
 
 export type HighlightRange = { start: number; end: number };
 
-export type HighlightedInputProps = Omit<React.ComponentProps<'input'>, 'className'> &
+export type HighlightedInputProps = Omit<React.ComponentProps<typeof InputPrimitive>, 'className'> &
   SharedProps & {
+    onSelect?: React.ReactEventHandler<HTMLInputElement>;
     /** Wrapper span className — controls the whole control's position/sizing (e.g. `flex-1`, `min-w-24`). */
     className?: string;
     /**
@@ -51,7 +53,17 @@ const buildSegments = (text: string, ranges: readonly HighlightRange[]) => {
  */
 const HighlightedInput = forwardRef<HTMLInputElement, HighlightedInputProps>(
   (
-    { className, textClassName, highlightRanges = [], highlightClassName, ghostText, overlayTestId, testId, value, ...props },
+    {
+      className,
+      textClassName,
+      highlightRanges = [],
+      highlightClassName,
+      ghostText,
+      overlayTestId,
+      testId,
+      value,
+      ...props
+    },
     ref
   ) => {
     const text = typeof value === 'string' ? value : '';
@@ -71,7 +83,7 @@ const HighlightedInput = forwardRef<HTMLInputElement, HighlightedInputProps>(
           ))}
           {ghostText ? <span className="text-placeholder">{ghostText}</span> : null}
         </div>
-        <input
+        <InputPrimitive
           className={cn('relative w-full bg-transparent outline-none', textClassName)}
           data-testid={testId}
           ref={ref}

@@ -38,6 +38,7 @@ const RoleFilterNameInput = ({ control, index }: { control: Control<FormValues>;
               placeholder={patternType === PatternType.PREFIX ? 'prefix-' : 'my-role'}
               testId={`role-filter-${index}-name`}
               {...nameField}
+              onValueChange={nameField.onChange}
             />
           </FormControl>
           <FormMessage />

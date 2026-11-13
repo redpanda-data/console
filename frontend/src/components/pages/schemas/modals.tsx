@@ -84,7 +84,7 @@ export function PermanentDeleteDialog(p: {
           </DialogDescription>
           <div className="mt-4">
             To confirm, enter "delete":
-            <Input onChange={(e) => setConfirmText(e.target.value)} value={confirmText} />
+            <Input onValueChange={(inputText) => setConfirmText(inputText)} value={confirmText} />
           </div>
         </DialogBody>
         <DialogFooter>

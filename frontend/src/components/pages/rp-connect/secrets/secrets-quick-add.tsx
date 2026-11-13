@@ -165,7 +165,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                 </FieldLabel>
                 <Input
                   id="secretValue"
-                  onChange={(x) => setSecret(x.target.value)}
+                  onValueChange={(inputText) => setSecret(inputText)}
                   placeholder="Enter a secret value..."
                   required
                   testId="secretValue"

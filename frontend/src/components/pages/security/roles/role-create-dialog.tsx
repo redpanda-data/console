@@ -12,9 +12,9 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -91,8 +91,8 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
             <Input
               autoFocus
               id="role-name"
-              onChange={(e) => setRoleName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onValueChange={(inputText) => setRoleName(inputText)}
               placeholder="analytics-writer"
               value={roleName}
             />

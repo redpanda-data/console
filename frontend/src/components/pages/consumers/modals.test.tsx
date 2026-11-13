@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { QueryClient } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useApiStore } from 'state/backend-api';
 import type { GroupDescription } from 'state/rest-interfaces';
 import { render, screen, waitFor, within } from 'test-utils';

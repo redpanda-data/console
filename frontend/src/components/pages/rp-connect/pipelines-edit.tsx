@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -177,8 +177,8 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         <Input
           className="w-[500px]"
           id="pipelineName"
-          onChange={(x) => {
-            setField('displayName', x.target.value);
+          onValueChange={(inputText) => {
+            setField('displayName', inputText);
           }}
           pattern="[a-zA-Z0-9_\-]+"
           placeholder="Enter a config name..."
@@ -194,8 +194,8 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
         <Input
           className="w-[500px]"
           id="pipelineDescription"
-          onChange={(x) => {
-            setField('description', x.target.value);
+          onValueChange={(inputText) => {
+            setField('description', inputText);
           }}
           testId="pipelineDescription"
           value={description}
@@ -212,10 +212,10 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
           onBlur={() => {
             setTasksDraft(String(clampTasks(tasksDraft)));
           }}
-          onChange={(e) => {
+          onValueChange={(inputText) => {
             // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
-            setTasksDraft(e.target.value);
-            setField('tasks', clampTasks(e.target.value));
+            setTasksDraft(inputText);
+            setField('tasks', clampTasks(inputText));
           }}
           showStepControls
           type="number"
@@ -249,9 +249,12 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             'Update'
           )}
         </Button>
-        <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
+        <ConsoleButton
+          render={<Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId" />}
+          variant="unstyled"
+        >
           <Button variant="link">Cancel</Button>
-        </Link>
+        </ConsoleButton>
       </div>
     </PageContent>
   );

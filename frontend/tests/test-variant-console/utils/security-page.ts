@@ -34,7 +34,7 @@ export class SecurityPage {
   }
 
   async submitUserCreation() {
-    await this.page.getByRole('button').getByText('Create').click();
+    await this.page.getByRole('button', { name: 'Create', exact: true }).click();
   }
 
   /**

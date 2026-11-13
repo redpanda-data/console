@@ -11,7 +11,7 @@
 
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
@@ -100,13 +100,18 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
     accessorKey: 'name',
     cell: ({ row: { original: r } }) => (
       <div className="wrap-break-word whitespace-break-spaces">
-        <Link
-          params={{ transformName: encodeURIComponentPercents(r.name) }}
-          search={{} as never}
-          to="/transforms/$transformName"
+        <ConsoleButton
+          render={
+            <Link
+              params={{ transformName: encodeURIComponentPercents(r.name) }}
+              search={{} as never}
+              to="/transforms/$transformName"
+            />
+          }
+          variant="unstyled"
         >
           {r.name}
-        </Link>
+        </ConsoleButton>
       </div>
     ),
   },
@@ -225,9 +230,9 @@ const TransformsListContent: FC = () => {
       </p>
 
       <div className="mb-6 flex flex-row gap-2">
-        <Link to="/transforms-setup">
+        <ConsoleButton render={<Link to="/transforms-setup" />} variant="unstyled">
           <Button variant="outline">Create transform</Button>
-        </Link>
+        </ConsoleButton>
 
         <Button disabled variant="outline">
           Export metrics

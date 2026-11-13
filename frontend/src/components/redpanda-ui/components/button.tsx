@@ -2,7 +2,7 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { Button as ButtonPrimitive } from '@ui-sdk/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 import type { ElementType } from 'react';
@@ -11,7 +11,7 @@ import { groupItemClasses, useGroup } from './group';
 import { Spinner } from './spinner';
 import { cn, type SharedProps } from '../lib/utils';
 
-// Base UI uses data-disabled for focusable disabled controls; keep :disabled for
+// UI SDK uses data-disabled for focusable disabled controls; keep :disabled for
 // native elements styled directly with the exported buttonVariants helper.
 const buttonVariants = cva(
   [
@@ -216,31 +216,6 @@ const buttonVariants = cva(
 
 export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
-/** Base UI can't introspect a component `render`, so force `false` only for a known non-button
- * intrinsic and otherwise defer to it. */
-function resolveNativeButton(
-  explicit: boolean | undefined,
-  render: ButtonPrimitive.Props['render'],
-  as: ElementType | undefined
-): boolean | undefined {
-  if (explicit !== undefined) {
-    return explicit;
-  }
-  if (render !== undefined) {
-    const isNonButtonIntrinsic =
-      typeof render === 'object' &&
-      render !== null &&
-      'type' in render &&
-      typeof render.type === 'string' &&
-      render.type !== 'button';
-    return isNonButtonIntrinsic ? false : undefined;
-  }
-  if (as !== undefined) {
-    return as === 'button' ? undefined : false;
-  }
-  return;
-}
-
 function renderButtonChildren(children: React.ReactNode, icon: React.ReactNode, isLoading: boolean): React.ReactNode {
   const content = icon ? (
     <>
@@ -265,8 +240,10 @@ function renderButtonChildren(children: React.ReactNode, icon: React.ReactNode, 
   );
 }
 
-export type ButtonProps = ButtonPrimitive.Props &
-  ButtonVariants & {
+export type ButtonProps = Omit<React.ComponentProps<typeof ButtonPrimitive>, 'children' | 'onClick'> & {
+  children?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+} & ButtonVariants & {
     /** Render the button as a different element (e.g. a router `Link` or `"a"`). */
     as?: ElementType;
     /** Router destination, forwarded to the element rendered via `as`. */
@@ -292,7 +269,6 @@ function Button({
   disabled,
   focusableWhenDisabled = false,
   render,
-  nativeButton,
   children,
   ...props
 }: ButtonProps) {
@@ -301,12 +277,11 @@ function Button({
   const isDisabled = disabled || isLoading;
   const renderedChildren = renderButtonChildren(children, icon, isLoading);
 
-  // `as`/`to`/`href` map onto Base UI's `render`: anchors take `href`, router links take `to`.
+  // `as`/`to`/`href` map onto UI SDK's `render`: anchors take `href`, router links take `to`.
   const AsElement = as;
   const asElementProps = AsElement === 'a' ? { href: href ?? to } : { to };
   const resolvedRender = render ?? (AsElement ? <AsElement {...asElementProps} /> : undefined);
 
-  const resolvedNativeButton = resolveNativeButton(nativeButton, render, as);
   const resolvedClassName =
     variant === 'unstyled'
       ? className
@@ -322,7 +297,6 @@ function Button({
       data-testid={testId}
       disabled={isDisabled}
       focusableWhenDisabled={focusableWhenDisabled}
-      nativeButton={resolvedNativeButton}
       render={resolvedRender}
       {...props}
     >

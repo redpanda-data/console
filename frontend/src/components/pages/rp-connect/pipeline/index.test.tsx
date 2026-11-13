@@ -17,6 +17,7 @@ import type { Monaco } from '@monaco-editor/react';
 import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'components/redpanda-ui/components/toast';
 import type { editor } from 'monaco-editor';
 // Console-layer response schemas
 import {
@@ -60,7 +61,6 @@ import {
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
 import * as React from 'react';
-import { toast } from 'sonner';
 import { rpcnEditorAutosave, useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
 
@@ -318,10 +318,12 @@ rs.mock('state/rpcn-wizard-store', () => ({
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
 }));
 
-// Only the emitters are spied, so the rest of sonner stays real. Copy is covered in save-actions.test.ts;
+// Only the emitters are spied, so the rest of the SDK toast module stays real. Copy is covered in save-actions.test.ts;
 // what matters here is which toasts a save fires, because two contradicting each other is the bug.
-rs.mock('sonner', () => {
-  const actual = rs.requireActual<typeof import('sonner')>('sonner');
+rs.mock('components/redpanda-ui/components/toast', () => {
+  const actual = rs.requireActual<typeof import('components/redpanda-ui/components/toast')>(
+    'components/redpanda-ui/components/toast'
+  );
   return {
     ...actual,
     toast: { ...actual.toast, success: rs.fn(), error: rs.fn(), warning: rs.fn(), info: rs.fn() },

@@ -24,9 +24,9 @@ import type { DataTableInstance as Table } from './data-table';
 import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Separator } from './separator';
-import type { DataTableFilterActions } from '../lib/use-data-table-filter';
 import type { FilterModel, FilterOperatorMap, FiltersState, FilterType } from '../lib/filter-utils';
 import { getOperatorsForType } from '../lib/filter-utils';
+import type { DataTableFilterActions } from '../lib/use-data-table-filter';
 import { cn } from '../lib/utils';
 
 /** A `badgeVariants` key, used to style the filter chip. */
@@ -171,7 +171,7 @@ function MatchingOptionItem({
       ) : (
         <Checkbox
           checked={isSelected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="mr-1 opacity-0 group-data-[selected=true]:opacity-100 data-[state=checked]:opacity-100"
         />
       )}
       <span className="inline-flex items-center gap-1 text-subtle">
@@ -185,7 +185,7 @@ function MatchingOptionItem({
         {match.count === undefined ? null : (
           <sup
             className={cn(
-              'ml-0.5 text-subtle tabular-nums tracking-tight',
+              'ml-0.5 tracking-tight text-subtle tabular-nums',
               match.count === 0 ? 'slashed-zero' : undefined
             )}
           >
@@ -226,7 +226,6 @@ const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
       }, 150);
       return () => clearTimeout(timer);
     }
-    return;
   }, [open]);
 
   const matchingOptions = useMemo(() => {
@@ -405,7 +404,7 @@ ActiveFilter.displayName = 'ActiveFilter';
 
 function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   return (
-    <span className="flex select-none items-center gap-1 whitespace-nowrap px-2 font-medium opacity-75">
+    <span className="flex items-center gap-1 px-2 font-medium whitespace-nowrap opacity-75 select-none">
       {filterColumn.icon ? <filterColumn.icon className="size-4" /> : null}
       <span>{filterColumn.displayName}</span>
     </span>
@@ -431,7 +430,7 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
       <PopoverTrigger
         render={
           <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
+            className="m-0 h-full w-fit rounded-none p-0 px-2 text-body-sm whitespace-nowrap text-current"
             variant="ghost"
           >
             <span className="opacity-80">{filter.operator}</span>
@@ -481,7 +480,7 @@ const FilterValue = memo(function FilterValueImpl<TData extends RowData>({
       <PopoverTrigger
         render={
           <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
+            className="m-0 h-full w-fit rounded-none p-0 px-2 text-body-sm whitespace-nowrap text-current"
             variant="ghost"
           >
             <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
@@ -619,12 +618,12 @@ function TextValueController({
       <Input
         autoFocus
         className="h-8"
-        onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
           }
         }}
+        onValueChange={(inputText) => setValue(inputText)}
         placeholder={placeholder ?? 'Search...'}
         value={value}
       />
@@ -655,7 +654,7 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
       ) : (
         <Checkbox
           checked={selected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="mr-1 opacity-0 group-data-[selected=true]:opacity-100 data-[state=checked]:opacity-100"
         />
       )}
       {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}
@@ -663,7 +662,7 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
         {label}
         {count === undefined ? null : (
           <sup
-            className={cn('ml-0.5 text-subtle tabular-nums tracking-tight', count === 0 ? 'slashed-zero' : undefined)}
+            className={cn('ml-0.5 tracking-tight text-subtle tabular-nums', count === 0 ? 'slashed-zero' : undefined)}
           >
             {count < 100 ? count : '100+'}
           </sup>

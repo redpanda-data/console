@@ -23,6 +23,7 @@ import {
   useStoreApi,
   ViewportPortal,
 } from '@xyflow/react';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import {
   memo,
@@ -34,7 +35,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { toast } from 'sonner';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';

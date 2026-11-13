@@ -1,11 +1,11 @@
 'use client';
 
+import { useFieldTestIds } from './shared';
 import { Textarea } from '../../textarea';
 import type { AutoFormFieldProps } from '../core-types';
 import { FIELD_MASK_PATH_SPLIT_PATTERN, getFieldUiConfig } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
 
 function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -20,8 +20,8 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
         disabled={inputProps.disabled}
         id={id}
         onBlur={inputProps.onBlur}
-        onChange={(event) => {
-          const paths = event.target.value
+        onValueChange={(inputText) => {
+          const paths = inputText
             .split(FIELD_MASK_PATH_SPLIT_PATTERN)
             .map((entry) => entry.trim())
             .filter(Boolean);

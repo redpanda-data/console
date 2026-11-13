@@ -70,7 +70,7 @@ export const DeleteShadowLinkDialog = ({
             </div>
             <Input
               className="mt-4"
-              onChange={(e) => setConfirmationText(e.target.value)}
+              onValueChange={(inputText) => setConfirmationText(inputText)}
               placeholder='Type "delete" to confirm'
               value={confirmationText}
             />

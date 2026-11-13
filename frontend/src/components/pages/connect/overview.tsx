@@ -11,17 +11,18 @@
 
 import ErrorResult from 'components/misc/error-result';
 import { Badge } from 'components/redpanda-ui/components/badge';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import {
@@ -245,20 +246,16 @@ class TabClusters extends Component {
               }
 
               return (
-                <span
+                <ConsoleButton
                   className="hoverLink"
                   onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`);
-                    }
-                  }}
-                  role="button"
+                  render={<span />}
                   style={{ display: 'inline-block', width: '100%' }}
                   tabIndex={0}
+                  variant="unstyled"
                 >
                   {r.clusterName}
-                </span>
+                </ConsoleButton>
               );
             },
           },
@@ -342,26 +339,20 @@ const TabConnectors = () => {
               <Tooltip delayDuration={150}>
                 <TooltipTrigger
                   render={
-                    <span
+                    <ConsoleButton
                       className="hoverLink"
                       onClick={() =>
                         appGlobal.historyPush(
                           `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
                         )
                       }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          appGlobal.historyPush(
-                            `/connect-clusters/${encodeURIComponent(original.cluster.clusterName)}/${encodeURIComponent(original.name)}`
-                          );
-                        }
-                      }}
-                      role="button"
+                      render={<span />}
                       style={{ display: 'inline-block', width: '100%' }}
                       tabIndex={0}
+                      variant="unstyled"
                     >
                       {original.name}
-                    </span>
+                    </ConsoleButton>
                   }
                 />
                 <TooltipContent side="top">{original.name}</TooltipContent>

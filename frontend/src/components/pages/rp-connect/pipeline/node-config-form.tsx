@@ -11,7 +11,7 @@
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
@@ -97,10 +97,11 @@ const ChildItemRow = ({
 }) => {
   const condText = childItemConditionText(item);
   return (
-    <button
+    <ConsoleButton
       className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left transition-colors outline-none hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       onClick={() => onSelect(item)}
       type="button"
+      variant="unstyled"
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {condText ? (
@@ -116,7 +117,7 @@ const ChildItemRow = ({
       </div>
       {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
       <TonedIcon className="size-4 shrink-0" icon={ChevronRight} tone="muted" />
-    </button>
+    </ConsoleButton>
   );
 };
 
@@ -589,7 +590,7 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
     aria-required={props.required || undefined}
     autoComplete="off"
     id={props.id}
-    onChange={props.onChange}
+    onValueChange={props.onChange}
     type={props.value.includes('${') ? 'text' : 'password'}
     value={props.value}
   />
@@ -801,7 +802,7 @@ const ScalarTextInput = ({
       aria-required={required || undefined}
       id={id}
       inputMode={spec.type === 'int' || spec.type === 'float' ? numericMode : undefined}
-      onChange={onChange}
+      onValueChange={onChange}
       placeholder={spec.defaultValue || spec.examples?.[0] || undefined}
       type="text"
       value={String(value ?? '')}
@@ -901,7 +902,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
               id={inputId}
-              onChange={field.onChange}
+              onValueChange={field.onChange}
               placeholder="One value per line"
               rows={3}
               value={String(field.value ?? '')}
@@ -1265,7 +1266,7 @@ const LabelField = ({ control, requireLabel }: { control: Control<FormValues>; r
             <Input
               aria-required={requireLabel || undefined}
               id={labelId}
-              onChange={field.onChange}
+              onValueChange={field.onChange}
               placeholder={
                 requireLabel
                   ? 'Name other nodes use to reference this resource'

@@ -14,11 +14,12 @@ import { ConnectError } from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
 import { Link } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon, Sparkles } from 'lucide-react';
@@ -26,7 +27,6 @@ import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
@@ -161,8 +161,8 @@ const RpConnectPipelinesCreateContent = () => {
           <Input
             className="w-[500px]"
             id="pipelineName"
-            onChange={(x) => {
-              setFileName(x.target.value);
+            onValueChange={(inputText) => {
+              setFileName(inputText);
             }}
             pattern="[a-zA-Z0-9_\-]+"
             placeholder="Enter a config name..."
@@ -177,8 +177,8 @@ const RpConnectPipelinesCreateContent = () => {
           <Input
             className="w-[500px]"
             id="pipelineDescription"
-            onChange={(x) => {
-              setDescription(x.target.value);
+            onValueChange={(inputText) => {
+              setDescription(inputText);
             }}
             testId="pipelineDescription"
             value={description}
@@ -217,9 +217,9 @@ const RpConnectPipelinesCreateContent = () => {
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Link search={{} as never} to="/connect-clusters">
+        <ConsoleButton render={<Link search={{} as never} to="/connect-clusters" />} variant="unstyled">
           <Button variant="link">Cancel</Button>
-        </Link>
+        </ConsoleButton>
       </div>
     </PageContent>
   );
@@ -240,10 +240,10 @@ const ComputeUnitsField = ({ onChange }: { onChange: (tasks: number) => void }) 
         onBlur={() => {
           setTasksDraft(String(clampTasks(tasksDraft)));
         }}
-        onChange={(e) => {
+        onValueChange={(inputText) => {
           // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
-          setTasksDraft(e.target.value);
-          onChange(clampTasks(e.target.value));
+          setTasksDraft(inputText);
+          onChange(clampTasks(inputText));
         }}
         showStepControls
         type="number"
@@ -468,10 +468,11 @@ export const PipelineEditor = (p: {
           title: 'Configuration',
           content: () => (
             <div>
-              <div className="flex min-h-[400px] gap-7">
+              <div className="flex min-h-[400px] flex-col gap-7 lg:flex-row">
                 <PipelinesYamlEditor
                   defaultPath="config.yaml"
                   defaultValue={p.yaml}
+                  height={400}
                   language="yaml"
                   onChange={(e) => {
                     // Propagate empty content too — clearing the editor must

@@ -1,6 +1,6 @@
 'use client';
 
-import { Accordion as AccordionPrimitive } from '@base-ui/react/accordion';
+import * as AccordionPrimitive from '@ui-sdk/react/accordion';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ChevronDown } from 'lucide-react';
 import React from 'react';
@@ -43,7 +43,7 @@ const accordionVariants = cva('flex w-full flex-col', {
 
 export type AccordionVariants = VariantProps<typeof accordionVariants>;
 
-type AccordionProps = React.ComponentProps<typeof AccordionPrimitive.Root> & SharedProps & AccordionVariants;
+type AccordionProps = React.ComponentProps<typeof AccordionPrimitive.Accordion> & SharedProps & AccordionVariants;
 
 function Accordion({ testId, variant = 'simple', className, ...props }: AccordionProps) {
   const resolvedVariant: AccordionVariant = variant ?? 'simple';
@@ -51,7 +51,7 @@ function Accordion({ testId, variant = 'simple', className, ...props }: Accordio
 
   return (
     <AccordionContext.Provider value={contextValue}>
-      <AccordionPrimitive.Root
+      <AccordionPrimitive.Accordion
         className={cn(accordionVariants({ variant: resolvedVariant }), className)}
         data-slot="accordion"
         data-testid={testId}
@@ -76,7 +76,10 @@ const accordionItemVariants = cva('', {
 
 export type AccordionItemVariants = VariantProps<typeof accordionItemVariants>;
 
-type AccordionItemProps = Omit<React.ComponentProps<typeof AccordionPrimitive.Item>, 'className'> &
+type AccordionItemProps = Omit<
+  React.ComponentProps<typeof AccordionPrimitive.AccordionItem>,
+  'className' | 'children'
+> &
   SharedProps & {
     className?: string;
     children: React.ReactNode;
@@ -97,7 +100,7 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
   const contextValue = React.useMemo(() => ({ isOpen, setIsOpen, variant }), [isOpen, variant]);
 
   const renderItem = React.useCallback(
-    (renderProps: React.ComponentProps<'div'>, state: AccordionPrimitive.Item.State) => (
+    (renderProps: React.ComponentProps<'div'>, state: AccordionPrimitive.AccordionItemState) => (
       <div {...renderProps}>
         <AccordionItemOpenSync onSync={setIsOpen} open={state.open} />
         {renderProps.children}
@@ -108,7 +111,7 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
 
   return (
     <AccordionItemContext.Provider value={contextValue}>
-      <AccordionPrimitive.Item
+      <AccordionPrimitive.AccordionItem
         className={cn(accordionItemVariants({ variant }), className)}
         data-slot="accordion-item"
         data-testid={testId}
@@ -117,7 +120,7 @@ function AccordionItem({ className, children, testId, ...props }: AccordionItemP
         {...props}
       >
         {children}
-      </AccordionPrimitive.Item>
+      </AccordionPrimitive.AccordionItem>
     </AccordionItemContext.Provider>
   );
 }
@@ -140,9 +143,13 @@ const accordionTriggerVariants = cva(
 
 export type AccordionTriggerVariants = VariantProps<typeof accordionTriggerVariants>;
 
-type AccordionTriggerProps = Omit<React.ComponentProps<typeof AccordionPrimitive.Trigger>, 'className'> &
+type AccordionTriggerProps = Omit<
+  React.ComponentProps<typeof AccordionPrimitive.AccordionTrigger>,
+  'className' | 'children'
+> &
   SharedProps & {
     className?: string;
+    children?: React.ReactNode;
     chevron?: boolean;
     start?: React.ReactNode;
     end?: React.ReactNode;
@@ -160,8 +167,8 @@ function AccordionTrigger({
   const { variant } = useAccordionItem();
 
   return (
-    <AccordionPrimitive.Header className="flex" data-slot="accordion-header">
-      <AccordionPrimitive.Trigger
+    <AccordionPrimitive.AccordionHeader className="flex" data-slot="accordion-header">
+      <AccordionPrimitive.AccordionTrigger
         className={cn(accordionTriggerVariants({ variant }), className)}
         data-slot="accordion-trigger"
         data-testid={testId}
@@ -186,12 +193,12 @@ function AccordionTrigger({
 
         {chevron ? (
           <ChevronDown
-            className="size-5 shrink-0 transition-transform duration-200 ease-out group-data-[panel-open]/accordion-trigger:rotate-180 motion-reduce:transition-none"
+            className="size-5 shrink-0 transition-transform duration-200 ease-out group-data-[open]/accordion-trigger:rotate-180 motion-reduce:transition-none"
             data-slot="accordion-trigger-chevron"
           />
         ) : null}
-      </AccordionPrimitive.Trigger>
-    </AccordionPrimitive.Header>
+      </AccordionPrimitive.AccordionTrigger>
+    </AccordionPrimitive.AccordionHeader>
   );
 }
 
@@ -212,13 +219,15 @@ const accordionContentVariants = cva(
 
 export type AccordionContentVariants = VariantProps<typeof accordionContentVariants>;
 
-type AccordionContentProps = React.ComponentProps<typeof AccordionPrimitive.Panel> & SharedProps;
+type AccordionContentProps = Omit<React.ComponentProps<typeof AccordionPrimitive.AccordionPanel>, 'children'> & {
+  children?: React.ReactNode;
+} & SharedProps;
 
 function AccordionContent({ className, children, testId, ...props }: AccordionContentProps) {
   const { variant } = useAccordionItem();
 
   return (
-    <AccordionPrimitive.Panel
+    <AccordionPrimitive.AccordionPanel
       className="h-(--accordion-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 motion-reduce:transition-none"
       data-slot="accordion-content"
       data-testid={testId}
@@ -226,7 +235,7 @@ function AccordionContent({ className, children, testId, ...props }: AccordionCo
       {...props}
     >
       <div className={cn(accordionContentVariants({ variant }), className)}>{children}</div>
-    </AccordionPrimitive.Panel>
+    </AccordionPrimitive.AccordionPanel>
   );
 }
 

@@ -11,15 +11,16 @@
 
 import { Link, useNavigate } from '@tanstack/react-router';
 import { TrashIcon } from 'components/icons';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
-import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { type SimpleAcl, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
@@ -119,13 +120,13 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <DropdownMenuItem disabled={!canDeleteUser} onSelect={handle(true, true)}>
           Delete (User and ACLs)
         </DropdownMenuItem>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
+        <DropdownMenuItem disabled={!canDeleteUser} onSelect={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+        <DropdownMenuItem onSelect={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -138,11 +139,16 @@ const columns: DataTableColumnDef<SimpleAcl>[] = [
     // Sort on what the cell renders, not the `User:`-prefixed `principal`.
     accessorFn: (row) => row.principalName,
     cell: ({ row: { original: record } }) => (
-      <Link
-        className="cursor-pointer"
-        params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
-        search={(prev) => ({ ...prev, host: record.host })}
-        to="/security/acls/$aclName/details"
+      <ConsoleButton
+        render={
+          <Link
+            className="cursor-pointer"
+            params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
+            search={(prev) => ({ ...prev, host: record.host })}
+            to="/security/acls/$aclName/details"
+          />
+        }
+        variant="unstyled"
       >
         <span className="flex items-center gap-1">
           <span
@@ -157,7 +163,7 @@ const columns: DataTableColumnDef<SimpleAcl>[] = [
             </Badge>
           )}
         </span>
-      </Link>
+      </ConsoleButton>
     ),
   },
   {

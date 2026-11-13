@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 
 /**
  * Runs `task` behind a loading toast labelled `<label>...`, which settles to `<label> - done` or, on failure,

@@ -10,7 +10,7 @@
  */
 
 import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import {
   Empty,
@@ -264,16 +264,17 @@ export const MessagesTable = ({
                     }
                   >
                     {canSort ? (
-                      <button
+                      <ConsoleButton
                         className={cn(
                           'inline-flex cursor-pointer items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-primary',
                           clearOfCornerActions
                         )}
                         onClick={header.column.getToggleSortingHandler()}
                         type="button"
+                        variant="unstyled"
                       >
                         {label}
-                      </button>
+                      </ConsoleButton>
                     ) : (
                       <span className={cn('inline-flex items-center gap-1.5', clearOfCornerActions)}>{label}</span>
                     )}

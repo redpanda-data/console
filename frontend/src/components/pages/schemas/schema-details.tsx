@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { EditIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Label } from 'components/redpanda-ui/components/label';
@@ -25,8 +25,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/
 
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import React, { useEffect, useId, useState } from 'react';
-import { toast } from 'sonner';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { parseSubjectContext } from './schema-context-utils';
@@ -852,15 +852,20 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
             const parsed = parseSubjectContext(ref.subject);
             return (
               <li key={ref.name + ref.subject + ref.version}>
-                <Link
-                  data-testid={`schema-reference-link-${ref.subject}`}
-                  params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
-                  search={{ version: String(ref.version) }}
-                  to="/schema-registry/subjects/$subjectName"
+                <ConsoleButton
+                  render={
+                    <Link
+                      data-testid={`schema-reference-link-${ref.subject}`}
+                      params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
+                      search={{ version: String(ref.version) }}
+                      to="/schema-registry/subjects/$subjectName"
+                    />
+                  }
+                  variant="unstyled"
                 >
                   {parsed.context !== 'default' && <span className="text-disabled">:.{parsed.context}:</span>}
                   {parsed.displayName}
-                </Link>
+                </ConsoleButton>
               </li>
             );
           })}
@@ -882,15 +887,20 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
               const parsed = parseSubjectContext(ref.subject);
               return (
                 <li key={ref.subject + ref.version}>
-                  <Link
-                    data-testid={`schema-referenced-by-link-${ref.subject}`}
-                    params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
-                    search={{ version: String(ref.version) }}
-                    to="/schema-registry/subjects/$subjectName"
+                  <ConsoleButton
+                    render={
+                      <Link
+                        data-testid={`schema-referenced-by-link-${ref.subject}`}
+                        params={{ subjectName: encodeURIComponentPercents(ref.subject) }}
+                        search={{ version: String(ref.version) }}
+                        to="/schema-registry/subjects/$subjectName"
+                      />
+                    }
+                    variant="unstyled"
                   >
                     {parsed.context !== 'default' && <span className="text-disabled">:.{parsed.context}:</span>}
                     {parsed.displayName}
-                  </Link>
+                  </ConsoleButton>
                 </li>
               );
             })}

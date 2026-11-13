@@ -12,6 +12,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { MoreHorizontalIcon, TrashIcon } from 'components/icons';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   Empty,
   EmptyContent,
@@ -22,12 +23,12 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { CreateTopicDialog } from './create-topic-dialog';
@@ -241,15 +242,20 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
       meta: columnMeta({ headWidth: 'full' as const }),
       cell: ({ row: { original: topic } }) => (
         <div className="flex items-start gap-2">
-          <Link
-            className="min-w-0 wrap-anywhere whitespace-normal"
-            data-testid={`topic-link-${topic.topicName}`}
-            params={{ topicName: encodeURIComponent(topic.topicName) }}
-            search={{} as never}
-            to="/topics/$topicName"
+          <ConsoleButton
+            render={
+              <Link
+                className="min-w-0 wrap-anywhere whitespace-normal"
+                data-testid={`topic-link-${topic.topicName}`}
+                params={{ topicName: encodeURIComponent(topic.topicName) }}
+                search={{} as never}
+                to="/topics/$topicName"
+              />
+            }
+            variant="unstyled"
           >
             <TopicName topic={topic} />
-          </Link>
+          </ConsoleButton>
           <TopicHealthIcons topic={topic} />
         </div>
       ),
@@ -302,7 +308,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             <DropdownMenuItem
               data-testid={`delete-topic-button-${topic.topicName}`}
               disabled={!hasDeletePrivilege() || undefined}
-              onClick={(e) => {
+              onSelect={(e) => {
                 e.stopPropagation();
                 onDeleteTopic(topic);
               }}
@@ -511,7 +517,7 @@ const TopicList: FC = () => {
             {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
             <ListLayoutSearchInput
               data-testid="search-field-input"
-              onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
+              onValueChange={(value) => table.getColumn('topicName')?.setFilterValue(value || undefined)}
               placeholder="Filter by name (regexp)..."
               value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
             >
@@ -524,14 +530,15 @@ const TopicList: FC = () => {
               </InputStart>
               <InputEnd className="pointer-events-auto">
                 {(table.getColumn('topicName')?.getFilterValue() as string) && (
-                  <button
+                  <ConsoleButton
                     className="text-muted-foreground hover:text-foreground"
                     data-testid="search-field-reset-icon"
                     onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
                     type="button"
+                    variant="unstyled"
                   >
                     <X className="h-4 w-4" />
-                  </button>
+                  </ConsoleButton>
                 )}
               </InputEnd>
             </ListLayoutSearchInput>

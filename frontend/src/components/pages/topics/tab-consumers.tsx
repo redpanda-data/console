@@ -10,6 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
 
 import { useUrlTableState } from '../../../hooks/use-url-table-state';
@@ -48,9 +49,18 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
       accessorKey: 'groupId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group" />,
       cell: ({ row: { original } }) => (
-        <Link params={{ groupId: encodeURIComponent(original.groupId) }} search={{} as never} to="/groups/$groupId">
+        <ConsoleButton
+          render={
+            <Link
+              params={{ groupId: encodeURIComponent(original.groupId) }}
+              search={{} as never}
+              to="/groups/$groupId"
+            />
+          }
+          variant="unstyled"
+        >
           {original.groupId}
-        </Link>
+        </ConsoleButton>
       ),
     },
     {

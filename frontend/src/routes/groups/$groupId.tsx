@@ -10,8 +10,8 @@
  */
 
 import { createFileRoute, useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useCallback } from 'react';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import GroupDetails from '../../components/pages/consumers/group-details';

@@ -193,7 +193,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
             data-1p-ignore
             data-lpignore="true"
             id="create-user-name"
-            onChange={(e) => state.setUsername(e.target.value)}
+            onValueChange={(inputText) => state.setUsername(inputText)}
             placeholder="Username"
             spellCheck={false}
             testId="create-user-name"
@@ -212,7 +212,7 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
               <Input
                 aria-invalid={!state.isValidPassword}
                 name="test"
-                onChange={(e) => state.setPassword(e.target.value)}
+                onValueChange={(inputText) => state.setPassword(inputText)}
                 testId="create-user-password"
                 type="password"
                 value={state.password}

@@ -35,7 +35,7 @@ export const SourceTab = () => {
               <FormItem>
                 <FormLabel required>Shadow link name</FormLabel>
                 <FormControl>
-                  <Input placeholder="my-shadow-link" {...field} disabled />
+                  <Input placeholder="my-shadow-link" {...field} disabled onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

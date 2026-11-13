@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useParams } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Trash2, Users2Icon } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
@@ -18,7 +19,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLayoutEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';

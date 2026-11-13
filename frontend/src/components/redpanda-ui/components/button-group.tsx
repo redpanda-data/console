@@ -1,5 +1,4 @@
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { Separator } from './separator';
@@ -40,11 +39,10 @@ function ButtonGroup({
   );
 }
 
-function ButtonGroupText({ className, render, testId, ...props }: useRender.ComponentProps<'div'> & SharedProps) {
-  return useRender({
-    defaultTagName: 'div',
-    render,
-    props: mergeProps<'div'>(
+function ButtonGroupText({ className, render, testId, ...props }: PartProps<'div'> & SharedProps) {
+  return renderElement(
+    'div',
+    mergeProps(
       {
         className: cn(
           "flex items-center gap-2 rounded-md border bg-surface-subtle px-4 font-medium text-body shadow-xs [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none",
@@ -55,7 +53,8 @@ function ButtonGroupText({ className, render, testId, ...props }: useRender.Comp
       } as React.ComponentPropsWithRef<'div'>,
       props
     ),
-  });
+    render
+  );
 }
 
 function ButtonGroupSeparator({

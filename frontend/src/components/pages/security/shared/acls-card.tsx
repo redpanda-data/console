@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -20,7 +21,6 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import {

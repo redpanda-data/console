@@ -58,7 +58,7 @@ rs.mock('config', () => {
 });
 
 // Mock toast notifications
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: {
     success: rs.fn(),
     error: rs.fn(),

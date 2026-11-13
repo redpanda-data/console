@@ -1,27 +1,19 @@
-'use client';
-
 // Copyright 2026 Redpanda Data, Inc.
 
-import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox';
-import { Check, ChevronsUpDown, Plus, Search, X } from 'lucide-react';
+'use client';
+
+import { commitAgentChange } from '../../lib/commit-agent-change';
+import * as ComboboxPrimitive from '@ui-sdk/react/combobox';
+import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-import { buttonVariants } from '../button';
-import { Input, InputEnd, InputStart } from '../input';
-import { Spinner } from '../spinner';
+import { groupOptions } from './combobox-utils';
 import { usePortalContainer } from '../../lib/use-portal-container';
 import { cn, type PortalContentProps, type PortalRootProps, type SharedProps } from '../../lib/utils';
-
-import {
-  buildListGroups,
-  type ComboboxCreateItem,
-  type ComboboxListGroup,
-  type ComboboxListItem,
-  CREATE_ITEM_VALUE,
-  canCreateOption,
-  isCreateItem,
-} from './combobox-utils';
+import { useFieldContext } from '../field';
+import { inputVariants } from '../input';
+import { Spinner } from '../spinner';
 
 export interface ComboboxOption {
   /** Arbitrary payload passed back to `renderOption` for rich item rendering. */
@@ -75,382 +67,166 @@ export interface ComboboxProps
   value?: string;
 }
 
-type InputChangeReason = ComboboxPrimitive.Root.ChangeEventReason;
-
-const DEFAULT_START = <Search className="opacity-50" size={15} />;
-
-/** Input changes the user made; every other reason is Base UI syncing the text to the selection. */
-const USER_INPUT_REASONS: ReadonlySet<InputChangeReason> = new Set(['input-change', 'clear-press', 'escape-key']);
-/** Base UI restoring the selected label, e.g. after the popup closes without a selection. */
-const SYNC_INPUT_REASONS: ReadonlySet<InputChangeReason> = new Set(['none', 'input-clear']);
-
-const getItemValue = (item: ComboboxListItem) => item.value;
-const getItemLabel = (item: ComboboxListItem) => item.label;
-
-const itemClassName =
-  "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-hidden data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0";
-
-function ComboboxOptionItem({
-  option,
-  renderOption,
-}: {
-  option: ComboboxOption;
-  renderOption: ComboboxProps['renderOption'];
-}) {
-  return (
-    <ComboboxPrimitive.Item
-      className={itemClassName}
-      data-slot="combobox-item"
-      data-testid={option.testId}
-      disabled={option.disabled}
-      value={option.value}
-    >
-      {renderOption ? renderOption(option) : option.label}
-      <Check className="ml-auto in-data-[selected]:opacity-100 opacity-0" />
-    </ComboboxPrimitive.Item>
-  );
-}
-
-function ComboboxCreateOptionItem({ item }: { item: ComboboxCreateItem }) {
-  return (
-    <ComboboxPrimitive.Item className={itemClassName} data-slot="combobox-create-item" value={item.value}>
-      <Plus className="size-4 shrink-0" />
-      <span className="truncate">Create "{item.label}"</span>
-    </ComboboxPrimitive.Item>
-  );
-}
-
-function ComboboxGroup({
-  group,
-  renderOption,
-}: {
-  group: ComboboxListGroup;
-  renderOption: ComboboxProps['renderOption'];
-}) {
-  return (
-    <ComboboxPrimitive.Group
-      className="overflow-hidden p-1 text-foreground"
-      data-slot="combobox-group"
-      data-testid={group.testId}
-      items={group.items}
-      // Options without a `group` share an unnamed section that adds no grouping semantics.
-      role={group.heading ? 'group' : 'presentation'}
-    >
-      {group.heading ? (
-        <ComboboxPrimitive.GroupLabel
-          className="px-2 py-1.5 font-medium text-body-sm text-subtle"
-          data-slot="combobox-group-label"
-        >
-          {group.heading}
-        </ComboboxPrimitive.GroupLabel>
-      ) : null}
-      <ComboboxPrimitive.Collection>
-        {(item: ComboboxListItem) =>
-          isCreateItem(item) ? (
-            <ComboboxCreateOptionItem item={item} key={item.value} />
-          ) : (
-            <ComboboxOptionItem key={item.value} option={item} renderOption={renderOption} />
-          )
-        }
-      </ComboboxPrimitive.Collection>
-    </ComboboxPrimitive.Group>
-  );
-}
-
-/** `value` when controlled; without the prop the combobox keeps the pick itself, as it did before Base UI. */
-function useComboboxValue(valueProp: string | undefined) {
-  const [uncontrolledValue, setUncontrolledValue] = useState('');
-  const isControlled = valueProp !== undefined;
-  const [wasControlled, setWasControlled] = useState(isControlled);
-  if (wasControlled !== isControlled) {
-    setWasControlled(isControlled);
-    // Dropping `value` means "no selection", not whatever was last picked while it was controlled.
-    if (!isControlled) {
-      setUncontrolledValue('');
-    }
-  }
-  return [valueProp ?? uncontrolledValue, setUncontrolledValue] as const;
-}
-
-/** Focus moving into the popup, as a press on one of its rows can do, is not leaving the combobox. */
-function isFocusLeaving(event: React.FocusEvent, popup: HTMLElement | null) {
-  return !(event.relatedTarget instanceof Node && popup?.contains(event.relatedTarget));
-}
-
-/** Names the listbox like the input: by `aria-label`, by `aria-labelledby`, or a generic fallback. */
-function listboxLabel(ariaLabel: string | undefined, ariaLabelledBy: string | undefined) {
-  return ariaLabel ?? (ariaLabelledBy ? undefined : 'Suggestions');
-}
-
-export const Combobox = ({
-  options,
-  value: valueProp,
-  onChange,
-  placeholder,
-  disabled,
-  creatable,
-  onCreateOption,
-  createLabel = 'option',
-  start = DEFAULT_START,
-  clearable = true,
-  className,
-  onOpen,
-  onClose,
-  container,
-  testId,
-  defaultOpen = false,
-  preventAutoFocusOnOpen = false,
-  inputTestId,
-  onInputValueChange,
-  isLoading = false,
-  emptyState,
-  renderOption,
-  id,
+export function Combobox({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
-}: ComboboxProps) => {
+  className,
+  clearable = true,
+  creatable = false,
+  createLabel: _createLabel = 'option',
+  disabled,
+  emptyState = 'No options found.',
+  id,
+  inputTestId,
+  isLoading,
+  onChange,
+  onClose,
+  onCreateOption,
+  onInputValueChange,
+  onOpen,
+  options,
+  placeholder = 'Select an option...',
+  preventAutoFocusOnOpen,
+  renderOption,
+  start,
+  value: valueProp,
+  defaultOpen,
+  container,
+  testId,
+}: ComboboxProps) {
+  const [uncontrolledValue, setUncontrolledValue] = useState('');
+  const value = valueProp ?? uncontrolledValue;
   const portalContainer = usePortalContainer();
+  const field = useFieldContext();
+  const groups = groupOptions(options);
   const inputRef = useRef<HTMLInputElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<ComboboxPrimitive.Root.Actions>(null);
-  const highlightedValueRef = useRef<string | undefined>(undefined);
-  const { contains } = ComboboxPrimitive.useFilter();
-  const [open, setOpen] = useState(defaultOpen);
-  const [value, setUncontrolledValue] = useComboboxValue(valueProp);
-  // Remembers the picked option so its label survives async results that no longer include it.
-  const [lastSelected, setLastSelected] = useState<ComboboxOption>();
-
-  const selectedOption = options.find((option) => option.value === value) ?? lastSelected;
-  const selectedLabel = selectedOption?.value === value ? selectedOption.label : value;
-
-  // The input text is owned here so a creatable combobox can keep typed text Base UI would revert.
-  const [inputValue, setInputValue] = useState(selectedLabel);
-  const [synced, setSynced] = useState({ value, label: selectedLabel });
-  if (synced.value !== value || synced.label !== selectedLabel) {
-    setSynced({ value, label: selectedLabel });
-    // A new value always shows its label; a relabel only replaces text the user has not edited.
-    if (synced.value !== value || inputValue === synced.label) {
-      setInputValue(selectedLabel);
+  useEffect(() => {
+    if (defaultOpen && !preventAutoFocusOnOpen) {
+      inputRef.current?.focus({ preventScroll: true });
     }
-  }
-
-  const canCreate = !!creatable && canCreateOption(options, inputValue, value);
-  const items = ComboboxPrimitive.createItems(buildListGroups(options, canCreate ? inputValue.trim() : undefined), {
-    getValue: getItemValue,
-    getLabel: getItemLabel,
-  });
-
-  useEffect(
-    function focusInputOnDefaultOpen() {
-      if (defaultOpen && !preventAutoFocusOnOpen) {
-        inputRef.current?.focus();
-      }
-    },
-    [defaultOpen, preventAutoFocusOnOpen]
-  );
-
-  const matchesQuery = (item: ComboboxListItem, query: string) =>
-    isCreateItem(item) || contains(item.label, query) || contains(item.value, query);
-
-  const commitValue = (nextValue: string) => {
-    if (nextValue === value) {
-      return;
-    }
-    const option = options.find((candidate) => candidate.value === nextValue);
-    if (option) {
-      setLastSelected(option);
-    }
-    setUncontrolledValue(nextValue);
-    onChange(nextValue);
-  };
-
-  const commitCreate = () => {
-    const text = inputValue.trim();
-    setInputValue(text);
-    setUncontrolledValue(text);
-    onChange(text);
-    onCreateOption?.(text);
-  };
-
-  const handleValueChange = (nextValue: string | null, details: ComboboxPrimitive.Root.ChangeEventDetails) => {
-    // Only the create row means "create": an option may carry the same string as its own value.
-    if (canCreate && nextValue === CREATE_ITEM_VALUE) {
-      commitCreate();
-      return;
-    }
-    // Clicking the selected option again clears it. Enter keeps it: opening highlights the selection.
-    const togglesOff =
-      details.reason === 'item-press' && nextValue === value && !(details.event instanceof KeyboardEvent);
-    commitValue(togglesOff ? '' : (nextValue ?? ''));
-  };
-
-  const handleInputValueChange = (nextInputValue: string, details: ComboboxPrimitive.Root.ChangeEventDetails) => {
-    // Creatable: text the user typed for a new option stays put when the popup closes without a pick.
-    if (canCreate && SYNC_INPUT_REASONS.has(details.reason)) {
-      return;
-    }
-    setInputValue(nextInputValue);
-    if (USER_INPUT_REASONS.has(details.reason)) {
-      onInputValueChange?.(nextInputValue);
-    }
-  };
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-    if (nextOpen) {
-      onOpen?.();
-    } else {
-      onClose?.();
-    }
-  };
-
-  const handleEnterKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    // Base UI commits a highlighted row itself and keeps the Enter from submitting a form.
-    if (open && highlightedValueRef.current !== undefined) {
-      return;
-    }
-    // Closed with nothing to commit: let Enter submit the form as usual.
-    if (!(open || canCreate)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    if (canCreate) {
-      commitCreate();
-    }
-  };
-
-  // ArrowRight with the caret at the end accepts the highlighted option, like inline autocomplete.
-  const handleArrowRightKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = event.currentTarget;
-    const highlighted = highlightedValueRef.current;
-    if (!open || highlighted === undefined || input.selectionStart !== input.value.length) {
-      return;
-    }
-    const option = options.find((candidate) => candidate.value === highlighted);
-    if (!option || option.disabled) {
-      return;
-    }
-    event.preventDefault();
-    setInputValue(option.label);
-    commitValue(option.value);
-    actionsRef.current?.close();
-  };
-
-  // Creatable keeps typed text while the input has focus, so Enter can still create it; leaving the
-  // field shows the saved selection again instead of text that was never committed.
-  const restoreSelectedLabelOnLeave = (event: React.FocusEvent<HTMLInputElement>) => {
-    if (canCreate && isFocusLeaving(event, popupRef.current)) {
-      setInputValue(selectedLabel);
-    }
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      handleEnterKey(event);
-    } else if (event.key === 'ArrowRight') {
-      handleArrowRightKey(event);
-    }
-  };
-
+  }, [defaultOpen, preventAutoFocusOnOpen]);
   return (
-    <ComboboxPrimitive.Root
-      actionsRef={actionsRef}
-      autoHighlight
+    <ComboboxPrimitive.Combobox<string, false>
+      defaultOpen={defaultOpen}
       disabled={disabled}
-      filter={matchesQuery}
-      id={id}
-      inputValue={inputValue}
-      items={items}
-      // Labels the selected value when the current options no longer contain it.
-      itemToStringLabel={(itemValue) => (itemValue === value ? selectedLabel : itemValue)}
-      onInputValueChange={handleInputValueChange}
-      onItemHighlighted={(itemValue) => {
-        highlightedValueRef.current = itemValue;
+      filter={onInputValueChange ? false : 'contains'}
+      items={options.map((option) => ({ value: option.value, label: option.label, disabled: option.disabled }))}
+      onOpenChange={(open) => {
+        if (open) {
+          onOpen?.();
+        } else {
+          onClose?.();
+        }
       }}
-      onOpenChange={handleOpenChange}
-      onValueChange={handleValueChange}
-      open={open}
+      onQueryChange={(query, details) => {
+        if (details.reason === 'input-change' || details.source === 'agent' || details.reason === 'clear-press') {
+          onInputValueChange?.(query);
+        }
+      }}
+      onValueChange={(next, details) => {
+        if (!clearable && next === null) {
+          details.cancel();
+          return;
+        }
+        const selected = next ?? '';
+        commitAgentChange(
+          () => {
+            if (valueProp === undefined) setUncontrolledValue(selected);
+            onChange(selected);
+          },
+          selected,
+          details
+        );
+      }}
+      status={isLoading ? 'loading' : 'idle'}
       value={value || null}
     >
-      <ComboboxPrimitive.Input
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        onBlur={restoreSelectedLabelOnLeave}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        ref={inputRef}
-        render={
-          <Input
-            className="relative w-full shadow-none"
-            containerClassName={className}
-            testId={inputTestId}
-            type="text"
-          >
-            {start == null ? null : <InputStart>{start}</InputStart>}
-            <InputEnd>
-              {clearable && !disabled ? (
-                <ComboboxPrimitive.Clear
-                  aria-label="Clear selection"
-                  // Base UI's Clear is already a button; borrow the ghost Button look rather than nest one.
-                  className={cn(
-                    buttonVariants({ size: 'icon-xs', variant: 'ghost' }),
-                    'pointer-events-auto opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none'
-                  )}
-                  data-slot="combobox-clear"
-                >
-                  <X size={15} />
-                </ComboboxPrimitive.Clear>
-              ) : null}
-              <ChevronsUpDown className="opacity-50" size={15} />
-            </InputEnd>
-          </Input>
-        }
-      />
-      <ComboboxPrimitive.Portal container={container ?? portalContainer}>
-        <ComboboxPrimitive.Positioner className="z-50" positionMethod="fixed" sideOffset={4}>
-          <ComboboxPrimitive.Popup
-            aria-busy={isLoading || undefined}
-            className="!border-input w-max min-w-(--anchor-width) max-w-[min(40rem,calc(100vw-2rem))] origin-(--transform-origin) overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md outline-none transition-[opacity,transform] data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none"
-            data-slot="combobox-content"
-            data-testid={testId}
-            ref={popupRef}
-          >
-            <ComboboxPrimitive.Status data-slot="combobox-status">
-              {isLoading ? (
-                <div className="flex items-center gap-2 px-3 py-4 text-body text-subtle">
-                  <Spinner className="size-4" />
-                  <span>Loading…</span>
-                </div>
-              ) : null}
-            </ComboboxPrimitive.Status>
-            <ComboboxPrimitive.Empty data-slot="combobox-empty">
-              {/* Creatable lists are never empty to the user: the create hint below fills the space. */}
-              {isLoading || creatable ? null : (
-                <div className="py-6 text-center text-body">{emptyState ?? 'No options found.'}</div>
-              )}
-            </ComboboxPrimitive.Empty>
-            <ComboboxPrimitive.List
-              aria-label={listboxLabel(ariaLabel, ariaLabelledBy)}
-              aria-labelledby={ariaLabelledBy}
-              className="max-h-[min(300px,var(--available-height))] scroll-py-1 overflow-y-auto overflow-x-hidden overscroll-contain outline-none"
-              data-slot="combobox-list"
+      <div className={cn('relative flex w-full items-center', className)} data-testid={testId}>
+        {start === null ? null : (
+          <span aria-hidden="true" className="pointer-events-none absolute left-3 flex items-center text-subtle">
+            {start ?? <Search className="size-4" />}
+          </span>
+        )}
+        <ComboboxPrimitive.ComboboxInput
+          aria-invalid={field.invalid || undefined}
+          aria-describedby={field.errorId}
+          render={(inputProps) => <input {...inputProps} id={id ?? inputProps.id} />}
+          aria-label={ariaLabel ?? (ariaLabelledBy || id ? undefined : placeholder)}
+          aria-labelledby={ariaLabelledBy}
+          className={cn(inputVariants(), 'rounded-md pr-16', start !== null && 'pl-9')}
+          data-testid={inputTestId ?? testId}
+          id={id}
+          placeholder={placeholder}
+          ref={inputRef}
+        />
+        <div className="absolute right-2 flex items-center gap-1">
+          {isLoading ? <Spinner className="size-4" /> : null}
+          {clearable ? (
+            <ComboboxPrimitive.ComboboxClear
+              aria-label="Clear selection"
+              className="cursor-pointer rounded-sm p-1 text-subtle hover:bg-accent"
             >
-              {(group: ComboboxListGroup) => (
-                <ComboboxGroup group={group} key={group.key} renderOption={renderOption} />
-              )}
-            </ComboboxPrimitive.List>
-            {creatable && !canCreate ? (
-              <div className="p-1" data-slot="combobox-create-hint">
-                <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-body opacity-50">
-                  <Plus className="size-4 shrink-0 opacity-50" />
-                  <span className="truncate text-subtle">Type to create a new {createLabel}...</span>
-                </div>
-              </div>
-            ) : null}
-          </ComboboxPrimitive.Popup>
-        </ComboboxPrimitive.Positioner>
-      </ComboboxPrimitive.Portal>
-    </ComboboxPrimitive.Root>
+              <X className="size-3" />
+            </ComboboxPrimitive.ComboboxClear>
+          ) : null}
+          <ComboboxPrimitive.ComboboxTrigger
+            aria-label="Show options"
+            className="cursor-pointer rounded-sm p-1 text-subtle hover:bg-accent"
+          >
+            <ChevronsUpDown className="size-4" />
+          </ComboboxPrimitive.ComboboxTrigger>
+        </div>
+      </div>
+      <ComboboxPrimitive.ComboboxContent
+        align="start"
+        className="z-50 max-h-(--available-height) min-w-(--anchor-width) overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        container={container ?? portalContainer}
+        sideOffset={4}
+      >
+        <ComboboxPrimitive.ComboboxList>
+          {groups.map((group) => (
+            <ComboboxPrimitive.ComboboxGroup data-testid={group.testId} key={group.key}>
+              {group.heading ? (
+                <ComboboxPrimitive.ComboboxGroupLabel className="px-2 py-1.5 text-body-sm font-medium text-subtle">
+                  {group.heading}
+                </ComboboxPrimitive.ComboboxGroupLabel>
+              ) : null}
+              {group.items.map((option) => (
+                <ComboboxPrimitive.ComboboxItem<string>
+                  className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                  data-testid={'testId' in option ? option.testId : undefined}
+                  disabled={'disabled' in option && option.disabled}
+                  key={option.value}
+                  label={option.label}
+                  value={option.value}
+                >
+                  {renderOption && !('create' in option) ? renderOption(option) : option.label}
+                  <ComboboxPrimitive.ComboboxItemIndicator className="ml-auto">
+                    <Check className="size-4" />
+                  </ComboboxPrimitive.ComboboxItemIndicator>
+                </ComboboxPrimitive.ComboboxItem>
+              ))}
+            </ComboboxPrimitive.ComboboxGroup>
+          ))}
+          {creatable ? (
+            <ComboboxPrimitive.ComboboxCreate
+              className="cursor-pointer rounded-sm px-2 py-1.5 text-body data-highlighted:bg-accent"
+              onCreate={(query) => {
+                onCreateOption?.(query);
+                if (valueProp === undefined) setUncontrolledValue(query);
+                onChange(query);
+              }}
+            >
+              {(state) => `Create "${state.query}"`}
+            </ComboboxPrimitive.ComboboxCreate>
+          ) : null}
+        </ComboboxPrimitive.ComboboxList>
+        {isLoading ? null : (
+          <ComboboxPrimitive.ComboboxEmpty className="p-4 text-center text-body text-subtle">
+            {emptyState}
+          </ComboboxPrimitive.ComboboxEmpty>
+        )}
+      </ComboboxPrimitive.ComboboxContent>
+    </ComboboxPrimitive.Combobox>
   );
-};
+}

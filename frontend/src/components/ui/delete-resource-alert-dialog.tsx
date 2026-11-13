@@ -82,7 +82,7 @@ const DialogBody: React.FC<{
         </div>
         <Input
           className="mt-4"
-          onChange={(e) => setConfirmationText(e.target.value)}
+          onValueChange={(inputText) => setConfirmationText(inputText)}
           placeholder='Type "delete" to confirm'
           value={confirmationText}
         />
@@ -182,7 +182,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
 
   return (
     <AlertDialog onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger nativeButton={triggerVariant === 'button'} render={renderTrigger()} />
+      <AlertDialogTrigger render={renderTrigger()} />
       <DialogBody
         children={children}
         confirmButtonTestId={confirmButtonTestId}
@@ -215,7 +215,7 @@ export const DeleteResourceMenuItem: React.FC<{
     // Base UI's Menu.Item exposes `onClick`, not Radix's `onSelect`. The
     // dialog is a controlled sibling that outlives this menu, so letting the
     // menu close on click is fine.
-    onClick={() => onSelect()}
+    onSelect={() => onSelect()}
   >
     {isDeleting ? (
       <div className="flex items-center gap-4">

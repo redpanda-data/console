@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import { ChevronRightIcon } from 'components/icons';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type React from 'react';
@@ -46,10 +47,11 @@ export const DisclosureRow = ({
   <Collapsible onOpenChange={onOpenChange} open={open} testId={testId}>
     <CollapsibleTrigger
       render={
-        <button
+        <ConsoleButton
           className="-mx-2 flex w-full items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-muted/50"
           data-testid={triggerTestId}
           type="button"
+          variant="unstyled"
         >
           <span
             className={cn('mt-1 flex shrink-0 transition-transform motion-reduce:transition-none', open && 'rotate-90')}
@@ -63,7 +65,7 @@ export const DisclosureRow = ({
             </div>
             <div className="mt-0.5 text-body-sm text-muted-foreground">{description}</div>
           </div>
-        </button>
+        </ConsoleButton>
       }
     />
     <CollapsibleContent className="mt-2 ml-6">

@@ -14,9 +14,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useLayoutEffect } from 'react';
-import { toast } from 'sonner';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
@@ -87,7 +87,7 @@ const RoleCreatePage = () => {
             <FieldLabel htmlFor="principal">Role name</FieldLabel>
             <Input
               id="principal"
-              onChange={(e) => onChange(`RedpandaRole:${e.target.value}`)}
+              onValueChange={(inputText) => onChange(`RedpandaRole:${inputText}`)}
               placeholder="analytics-writer"
               testId="shared-principal-input"
               value={parsePrincipal(value).name}
