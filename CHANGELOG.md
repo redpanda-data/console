@@ -1,6 +1,7 @@
 # Changelog
 
 ## Master / Unreleased
+- [IMPROVEMENT] Support KIP-848 consumer groups: list groups by type, describe them with the ConsumerGroupDescribe API, show the Assigning and Reconciling states, add a Type column and filter, a Members tab with member epochs and target assignments, and the assignor and group epochs on the detail page.
 
 ## v3.14.0 / 2026-11-04
 - [IMPROVEMENT] Edit Redpanda Connect input stop conditions in the visual editor: every input card can stop after N messages, when idle, or on a Bloblang check (`read_until` wrappers are now unwrapped and editable), and the canvas, page header, and YAML outline show whether a pipeline stops on its own.
