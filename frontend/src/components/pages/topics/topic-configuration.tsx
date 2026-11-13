@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import clsx from 'clsx';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -436,6 +437,7 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
 const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
   const { configFilter, scope, setFilter, setScope } = useConfigSearchParams();
   const [editedEntry, setEditedEntry] = useState<ConfigEntryExtended | null>(null);
+  const fenceReason = useClusterFenceGuard().reasonFor('editTopicConfig', props.targetTopic);
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(props.targetTopic));
   const hasEditPermissions = props.targetTopic ? (topicPermissions?.canEditTopicConfig ?? true) : true;
 
@@ -555,6 +557,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                   {s.rows.map((entry) => (
                     <ConfigRow
                       entry={entry}
+                      fenceReason={fenceReason}
                       hasEditPermissions={hasEditPermissions}
                       key={entry.name}
                       onEditEntry={setEditedEntry}
@@ -573,9 +576,10 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
 const ConfigRow: FC<{
   entry: ConfigEntryExtended;
   hasEditPermissions: boolean;
+  fenceReason?: string;
   onEditEntry: (entry: ConfigEntryExtended) => void;
-}> = ({ entry, hasEditPermissions, onEditEntry }) => {
-  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions);
+}> = ({ entry, hasEditPermissions, fenceReason, onEditEntry }) => {
+  const { canEdit, reason: nonEdittableReason } = isTopicConfigEdittable(entry, hasEditPermissions, fenceReason);
   const modified = isConfigModified(entry);
   const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
   const defaultSynonym = getDefaultConfigSynonym(entry);
@@ -657,10 +661,14 @@ export default ConfigurationEditor;
 
 function isTopicConfigEdittable(
   entry: ConfigEntryExtended,
-  hasEditPermissions: boolean
+  hasEditPermissions: boolean,
+  fenceReason?: string
 ): { canEdit: boolean; reason?: string } {
   if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
+  }
+  if (fenceReason) {
+    return { canEdit: false, reason: fenceReason };
   }
 
   if (isServerless()) {

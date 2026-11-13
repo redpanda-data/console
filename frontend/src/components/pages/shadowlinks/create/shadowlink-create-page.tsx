@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
@@ -282,9 +283,13 @@ export const ShadowLinkCreatePage = () => {
             <div className="w-1/2">
               <Stepper.Controls className="flex justify-start">
                 {methods.isLast ? (
-                  <Button disabled={isCreating} onClick={form.handleSubmit(onSubmit)}>
+                  <FenceGuardedButton
+                    action="createShadowLink"
+                    disabled={isCreating}
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
                     Create shadow link
-                  </Button>
+                  </FenceGuardedButton>
                 ) : (
                   <Button onClick={() => next(methods)} type="button">
                     Next

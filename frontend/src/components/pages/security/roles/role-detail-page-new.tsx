@@ -25,6 +25,7 @@ import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { useListUsersQuery } from '../../../../react-query/api/user';
 import { setPageHeader } from '../../../../state/ui-state';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -102,7 +103,8 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
           <span className="font-mono">{displayName}</span>
         </TableCell>
         <TableCell align="right">
-          <Button
+          <FenceGuardedButton
+            action="editRoles"
             data-testid={`remove-${parsed.type.toLowerCase()}-${displayName}-button`}
             disabled={isRemoveDisabled(member.principal)}
             onClick={() => onRemove(member.principal)}
@@ -110,7 +112,7 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
             variant="destructive-ghost"
           >
             <Trash2 className="h-4 w-4" />
-          </Button>
+          </FenceGuardedButton>
         </TableCell>
       </TableRow>
     );

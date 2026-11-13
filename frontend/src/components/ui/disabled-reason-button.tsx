@@ -20,6 +20,8 @@ type DisabledReasonButtonProps = Pick<ButtonProps, 'variant' | 'size' | 'classNa
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   children: ReactNode;
   iconOnly?: boolean;
+  /** For an `iconOnly` button: lets the keyboard reach the disabled span and announces the reason. */
+  focusableWhenDisabled?: boolean;
 };
 
 /**
@@ -35,6 +37,7 @@ export const DisabledReasonButton = ({
   variant = 'ghost',
   size = 'icon-sm',
   iconOnly = false,
+  focusableWhenDisabled = false,
   className,
 }: DisabledReasonButtonProps) => {
   if (!reason) {
@@ -56,8 +59,11 @@ export const DisabledReasonButton = ({
         className
       )}
       data-testid={testId}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: the only way for a keyboard to reach why the control is disabled
+      tabIndex={focusableWhenDisabled ? 0 : undefined}
     >
       {children}
+      {focusableWhenDisabled ? <span className="sr-only">{reason}</span> : null}
     </span>
   ) : (
     <Button

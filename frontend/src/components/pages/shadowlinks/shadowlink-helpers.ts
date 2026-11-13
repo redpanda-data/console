@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Code, type ConnectError } from '@connectrpc/connect';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
@@ -123,3 +124,7 @@ export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undef
       return 'Any';
   }
 };
+
+/** Shadow linking is switched off on the cluster, which then can't have shadow links of its own. */
+export const isShadowLinkingDisabledError = (error: ConnectError | null | undefined): boolean =>
+  error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled');

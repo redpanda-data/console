@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +20,127 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
+import { CircleAlertIcon, CircleCheckIcon, CircleDashedIcon } from 'lucide-react';
+
+import {
+  type FailoverReadiness,
+  getFenceProgress,
+  isSourceFenceReady,
+  type LagStep,
+  pausedTopicsReason,
+  topicsSubject,
+} from './failover-model';
+
+const CHECK_ICON = {
+  ready: { label: 'Ready', icon: CircleCheckIcon, tone: 'success' },
+  'not-ready': { label: 'Not ready', icon: CircleAlertIcon, tone: 'warning' },
+  unknown: { label: 'Check yourself', icon: CircleDashedIcon, tone: 'muted' },
+} as const;
+
+type Verdict = { status: keyof typeof CHECK_ICON; text: string };
+type Check = Verdict & { id: string };
+
+const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
+  if (fence.kind === 'loading') {
+    return {
+      status: 'unknown',
+      text: 'Stop writes to the source cluster first, by fencing it or stopping its producers, so nothing is left behind.',
+    };
+  }
+  if (fence.kind === 'unreadable') {
+    return {
+      status: 'unknown',
+      text: 'Console can’t read the source cluster’s fence right now. Make sure it’s fenced, or that its producers are stopped.',
+    };
+  }
+  if (getFenceProgress(fence) === 'blocked') {
+    return {
+      status: 'not-ready',
+      text: 'The source cluster is fenced, but its settings block this link’s fetches, so the link can’t finish copying.',
+    };
+  }
+  if (isSourceFenceReady(fence)) {
+    return {
+      status: 'ready',
+      text: 'The source cluster is fenced, so it rejects new writes. Writes accepted just before the fence can still arrive.',
+    };
+  }
+  return {
+    status: 'not-ready',
+    text:
+      fence.fence.state === 'fencing'
+        ? 'The source cluster hasn’t reported Fenced yet. A broker the fence hasn’t reached yet still accepts writes, which would never reach this cluster.'
+        : 'The source cluster isn’t fenced. Writes it accepts after failover never reach this cluster.',
+  };
+};
+
+const behindVerdict = (behind: LagStep['behind'], topicName: string | undefined): Verdict => ({
+  status: 'not-ready',
+  text: topicName
+    ? `${topicName} is still behind, so its newest records won’t be on this cluster.`
+    : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
+});
+
+const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdict => {
+  const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
+  return {
+    status: 'not-ready',
+    text: `${subject} faulted, so ${faulted.length === 1 ? 'it' : 'they'} may be missing records.`,
+  };
+};
+
+/** A topic still behind or faulted, among the one being failed over or all of them. */
+const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict | undefined => {
+  const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
+  if (behind.length > 0) {
+    return behindVerdict(behind, topicName);
+  }
+  const faulted = topicName ? lag.faulted.filter((name) => name === topicName) : lag.faulted;
+  if (faulted.length > 0) {
+    return faultedVerdict(faulted, topicName);
+  }
+};
+
+const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict => {
+  if (lag.stale) {
+    return {
+      status: 'unknown',
+      text: 'Console couldn’t refresh the topics’ lag, so the last reading may be out of date. Check that every topic has caught up.',
+    };
+  }
+  return {
+    status: 'ready',
+    text: topicName ? `${topicName} has caught up.` : 'Every topic has caught up.',
+  };
+};
+
+const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Verdict => {
+  if (lag.status === 'loading' || checking) {
+    return { status: 'unknown', text: 'Checking each topic’s lag…' };
+  }
+  if (lag.status === 'unavailable') {
+    return {
+      status: 'unknown',
+      text: 'Console couldn’t read the topics’ lag. Check that every topic has caught up.',
+    };
+  }
+  return lagProblemVerdict(lag, topicName) ?? caughtUpVerdict(lag, topicName);
+};
+
+/** Fail over all topics is refused while any topic is paused, so say so before the request fails. */
+const pausedCheck = ({ lag }: FailoverReadiness): Check | undefined => {
+  if (lag.paused.length === 0) {
+    return;
+  }
+  return { id: 'paused', status: 'not-ready', text: pausedTopicsReason(lag.paused) };
+};
+
+const failoverLabel = (isLoading: boolean | undefined, unsafe: boolean) => {
+  if (isLoading) {
+    return 'Failing over…';
+  }
+  return unsafe ? 'Fail over anyway' : 'Fail over';
+};
 
 type FailoverDialogProps = {
   open: boolean;
@@ -26,9 +148,133 @@ type FailoverDialogProps = {
   topicName?: string;
   onConfirm: () => void;
   isLoading?: boolean;
+  /** What Console knows about the source's fence and each topic's lag; only with the Failover tab. */
+  readiness?: FailoverReadiness;
+  /** A fresh read of the topics' lag is on its way. */
+  checkingLag?: boolean;
 };
 
-export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoading }: FailoverDialogProps) => {
+export const FailoverDialog = (props: FailoverDialogProps) =>
+  props.readiness ? (
+    <GuidedFailoverDialog {...props} readiness={props.readiness} />
+  ) : (
+    <LegacyFailoverDialog {...props} />
+  );
+
+/**
+ * Failover stays available even when the checks fail: in a real outage the source can't be fenced,
+ * and failing over anyway is the point. The checks follow the safe order: stop writes, let lag
+ * drain, fail over, then repoint clients.
+ */
+const GuidedFailoverDialog = ({
+  open,
+  onOpenChange,
+  topicName,
+  onConfirm,
+  isLoading,
+  readiness,
+  checkingLag = false,
+}: FailoverDialogProps & { readiness: FailoverReadiness }) => {
+  if (!topicName && (readiness.failover.done || readiness.failover.inProgress > 0)) {
+    return <FailoverUnderWayDialog onOpenChange={onOpenChange} open={open} readiness={readiness} />;
+  }
+  const paused = topicName ? undefined : pausedCheck(readiness);
+  const checks: Check[] = [
+    { id: 'source', ...sourceVerdict(readiness) },
+    { id: 'lag', ...lagVerdict(readiness, topicName, checkingLag) },
+    ...(paused ? [paused] : []),
+  ];
+  const unsafe = checks.some((check) => check.status === 'not-ready');
+
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent testId="failover-dialog">
+        <AlertDialogHeader className="text-left">
+          <AlertDialogTitle>{topicName ? `Fail over ${topicName}?` : 'Fail over all topics?'}</AlertDialogTitle>
+          <AlertDialogDescription render={<div />}>
+            <div className="flex flex-col gap-4">
+              <p className="text-body">
+                {topicName
+                  ? `This makes ${topicName} writable on this cluster and stops syncing it from the source cluster. You can’t undo it.`
+                  : 'This makes every shadow topic writable on this cluster and stops syncing them from the source cluster. You can’t undo it.'}
+              </p>
+              <div>
+                <p className="text-body font-semibold">Before you fail over</p>
+                <ul className="mt-2 flex flex-col gap-1.5" data-testid="failover-readiness">
+                  {checks.map((check) => (
+                    <li
+                      className="flex items-start gap-2 text-body"
+                      data-status={check.status}
+                      data-testid={`failover-check-${check.id}`}
+                      key={check.id}
+                    >
+                      <TonedIcon
+                        aria-label={CHECK_ICON[check.status].label}
+                        className="mt-0.5 size-4 shrink-0"
+                        icon={CHECK_ICON[check.status].icon}
+                        tone={CHECK_ICON[check.status].tone}
+                      />
+                      {check.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-body font-semibold">After you fail over</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li className="text-body">Repoint producers and consumers to this cluster.</li>
+                  <li className="text-body">Re-create any Redpanda Connect pipelines on this cluster.</li>
+                </ul>
+              </div>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="ghost">Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isLoading || checkingLag}
+            onClick={onConfirm}
+            testId="confirm-failover"
+            variant="destructive"
+          >
+            {failoverLabel(isLoading, unsafe)}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+/** Nothing left to fail over, or a failover still running: say so instead of offering another. */
+const FailoverUnderWayDialog = ({
+  open,
+  onOpenChange,
+  readiness,
+}: Pick<FailoverDialogProps, 'open' | 'onOpenChange'> & { readiness: FailoverReadiness }) => {
+  const { inProgress, done } = readiness.failover;
+  return (
+    <AlertDialog onOpenChange={onOpenChange} open={open}>
+      <AlertDialogContent testId="failover-dialog">
+        <AlertDialogHeader className="text-left">
+          <AlertDialogTitle>{done ? 'Every topic has failed over' : 'Failover in progress'}</AlertDialogTitle>
+          <AlertDialogDescription render={<div />}>
+            <p className="text-body" data-testid="failover-under-way">
+              {done
+                ? 'There’s nothing left to fail over. Repoint producers and consumers to this cluster if you haven’t.'
+                : `${inProgress} ${inProgress === 1 ? 'topic is' : 'topics are'} still failing over. Wait for ${inProgress === 1 ? 'it' : 'them'} to finish before you repoint clients.`}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel testId="failover-under-way-close">Close</AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+/** The dialog as it was before cluster fencing, shown without the Failover tab. */
+const LegacyFailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoading }: FailoverDialogProps) => {
   const handleCancel = () => {
     onOpenChange(false);
   };
@@ -61,7 +307,7 @@ export const FailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoa
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction disabled={isLoading} onClick={onConfirm}>
+          <AlertDialogAction disabled={isLoading} onClick={onConfirm} testId="confirm-failover">
             {isLoading ? 'Failing over...' : 'Confirm Failover'}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -21,6 +21,7 @@ import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { GroupDescription, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
+import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
@@ -285,6 +286,7 @@ const GroupDetailsContent = ({
 }: Omit<GroupDetailsProps, 'groupId'> & { group: GroupDescription }) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
+  const { reasonFor } = useClusterFenceGuard();
   const { editingOffsets, editedTopic, editedPartition, setEditingOffsets, setEditedTopic, setEditedPartition } =
     useEditOffsetsState();
   const { deletingMode, deletingOffsets, setDeletingMode, setDeletingOffsets } = useDeleteOffsetsState();
@@ -305,7 +307,7 @@ const GroupDetailsContent = ({
       <div className="flex gap-2">
         <DisabledReasonButton
           onClick={() => editGroup()}
-          reason={cannotEditGroupReason(group, featurePatchGroup)}
+          reason={cannotEditGroupReason(group, featurePatchGroup, reasonFor('editConsumerOffsets'))}
           size="sm"
           variant="outline"
         >
@@ -313,7 +315,7 @@ const GroupDetailsContent = ({
         </DisabledReasonButton>
         <DisabledReasonButton
           onClick={() => deleteGroup()}
-          reason={cannotDeleteGroupReason(group, featureDeleteGroup)}
+          reason={cannotDeleteGroupReason(group, featureDeleteGroup, reasonFor('deleteConsumerGroup'))}
           size="sm"
           variant="outline"
         >
@@ -416,6 +418,7 @@ const PartitionTable = ({
 }: PartitionTableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE });
+  const offsetsFencedReason = useClusterFenceGuard().reasonFor('editConsumerOffsets');
 
   const columns: DataTableColumnDef<PartitionRow>[] = [
     {
@@ -476,19 +479,27 @@ const PartitionTable = ({
       cell: ({ row: { original } }) => (
         <div className="flex justify-end gap-1">
           <DisabledReasonButton
+            focusableWhenDisabled={Boolean(offsetsFencedReason)}
             iconOnly
             onClick={() => onEditOffsets([original])}
-            reason={cannotEditGroupReason(group, featurePatchGroup, original.isUnconsumed ? [] : undefined)}
+            reason={cannotEditGroupReason(
+              group,
+              featurePatchGroup,
+              offsetsFencedReason,
+              original.isUnconsumed ? [] : undefined
+            )}
             testId={`partition-edit-${original.partitionId}`}
           >
             <EditIcon size={16} />
           </DisabledReasonButton>
           <DisabledReasonButton
+            focusableWhenDisabled={Boolean(offsetsFencedReason)}
             iconOnly
             onClick={() => onDeleteOffsets([original], 'partition')}
             reason={cannotDeleteGroupOffsetsReason(
               group,
               featureDeleteGroupOffsets,
+              offsetsFencedReason,
               original.isUnconsumed ? [] : undefined
             )}
             testId={`partition-delete-${original.partitionId}`}
@@ -616,6 +627,7 @@ const GroupByTopics = (groupProps: {
 }) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroupOffsets = useSupportedFeaturesStore((s) => s.deleteGroupOffsets);
+  const offsetsFencedReason = useClusterFenceGuard().reasonFor('editConsumerOffsets');
   const quickSearchRegExp = useMemo(() => getQuickSearchRegex(groupProps.quickSearch), [groupProps.quickSearch]);
 
   const lagGroupsByTopic = groupPartitionRowsByTopic(toPartitionRows(groupProps.group), quickSearchRegExp);
@@ -661,18 +673,26 @@ const GroupByTopics = (groupProps: {
             {/* Topic-level actions live in the content (not nested inside the trigger button). */}
             <div className="mb-3 flex items-center justify-end gap-1">
               <DisabledReasonButton
+                focusableWhenDisabled={Boolean(offsetsFencedReason)}
                 iconOnly
                 onClick={() => groupProps.onEditOffsets(entry.consumedPartitions)}
-                reason={cannotEditGroupReason(groupProps.group, featurePatchGroup, entry.consumedPartitions)}
+                reason={cannotEditGroupReason(
+                  groupProps.group,
+                  featurePatchGroup,
+                  offsetsFencedReason,
+                  entry.consumedPartitions
+                )}
               >
                 <EditIcon size={16} />
               </DisabledReasonButton>
               <DisabledReasonButton
+                focusableWhenDisabled={Boolean(offsetsFencedReason)}
                 iconOnly
                 onClick={() => groupProps.onDeleteOffsets(entry.consumedPartitions, 'topic')}
                 reason={cannotDeleteGroupOffsetsReason(
                   groupProps.group,
                   featureDeleteGroupOffsets,
+                  offsetsFencedReason,
                   entry.consumedPartitions
                 )}
               >
@@ -724,6 +744,7 @@ const renderMergedID = (id?: string, clientId?: string) => {
 function cannotEditGroupReason(
   group: GroupDescription,
   featurePatchGroup: boolean,
+  fencedReason: string | undefined,
   consumedPartitions?: readonly unknown[]
 ): string | undefined {
   if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
@@ -738,9 +759,14 @@ function cannotEditGroupReason(
   if (!featurePatchGroup) {
     return 'This cluster does not support editing group offsets';
   }
+  return fencedReason;
 }
 
-function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: boolean): string | undefined {
+function cannotDeleteGroupReason(
+  group: GroupDescription,
+  featureDeleteGroup: boolean,
+  fencedReason: string | undefined
+): string | undefined {
   if (group.noDeletePerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
@@ -750,11 +776,13 @@ function cannotDeleteGroupReason(group: GroupDescription, featureDeleteGroup: bo
   if (!featureDeleteGroup) {
     return 'This cluster does not support deleting groups';
   }
+  return fencedReason;
 }
 
 function cannotDeleteGroupOffsetsReason(
   group: GroupDescription,
   featureDeleteGroupOffsets: boolean,
+  fencedReason: string | undefined,
   consumedPartitions?: readonly unknown[]
 ): string | undefined {
   if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
@@ -769,6 +797,7 @@ function cannotDeleteGroupOffsetsReason(
   if (!featureDeleteGroupOffsets) {
     return 'This cluster does not support deleting group offsets';
   }
+  return fencedReason;
 }
 
 export default GroupDetails;

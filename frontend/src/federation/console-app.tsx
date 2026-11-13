@@ -60,6 +60,7 @@ import { Button } from '../components/redpanda-ui/components/button';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
+import { useClusterFenceStore } from '../stores/cluster-fence-store';
 
 /**
  * Re-root the generated route tree onto Console's federated root.
@@ -200,7 +201,13 @@ function ConsoleAppInner({
   onError,
   config: configOverrides,
   featureFlags,
+  onOpenCluster,
 }: ConsoleAppProps) {
+  // Kept out of setup(), which would tear Console down whenever the host passed a new callback.
+  useEffect(() => {
+    useClusterFenceStore.getState().setOpenCluster(onOpenCluster ?? null);
+  }, [onOpenCluster]);
+
   // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
 
@@ -413,6 +420,14 @@ function useHostNavigation(
       return;
     }
 
+    // onResolved doesn't say whether the navigation replaced its history entry, so watch the
+    // history: a replace (like a page writing its default tab) must replace on the host too, or
+    // Back returns to the URL the page then rewrites, and the user can't leave it.
+    let replaced = false;
+    const unsubscribeHistory = router.history.subscribe(({ action }) => {
+      replaced = action.type === 'REPLACE';
+    });
+
     const unsubscribe = router.subscribe('onResolved', ({ toLocation }) => {
       // Include search params so tab state and filters sync to Cloud UI's URL
       const newPath = toLocation.pathname + (toLocation.searchStr || '');
@@ -423,10 +438,11 @@ function useHostNavigation(
       }
 
       lastNotifiedPathRef.current = newPath;
-      onRouteChange(newPath);
+      onRouteChange(newPath, { replace: replaced });
     });
 
     return () => {
+      unsubscribeHistory();
       unsubscribe();
     };
   }, [router, onRouteChange]);
@@ -439,17 +455,11 @@ function useHostNavigation(
     if (navigateTo !== currentPath) {
       // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      const qIdx = navigateTo.indexOf('?');
-      const toPath = qIdx >= 0 ? navigateTo.slice(0, qIdx) : navigateTo;
-      const toSearch = qIdx >= 0 ? navigateTo.slice(qIdx + 1) : undefined;
-      router
-        .navigate({
-          to: toPath,
-          search: toSearch ? Object.fromEntries(new URLSearchParams(toSearch)) : undefined,
-        })
-        .catch((error: unknown) => {
-          toast.error('Failed to navigate', { description: String(error) });
-        });
+      // As an href, so the router parses the search the way it writes it: the host's router quotes
+      // values that would read as JSON, such as a user named `1001`.
+      router.navigate({ href: navigateTo }).catch((error: unknown) => {
+        toast.error('Failed to navigate', { description: String(error) });
+      });
     }
   }, [navigateTo, isInitialized, router]);
 }

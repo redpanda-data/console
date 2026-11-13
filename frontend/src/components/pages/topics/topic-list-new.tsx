@@ -11,6 +11,7 @@
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import {
   Empty,
@@ -49,12 +50,7 @@ import {
   type DataTableRow,
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../redpanda-ui/components/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../../redpanda-ui/components/dropdown-menu';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
@@ -299,18 +295,20 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             }
           />
           <DropdownMenuContent>
-            <DropdownMenuItem
+            <FenceGuardedMenuItem
+              action="deleteTopic"
               data-testid={`delete-topic-button-${topic.topicName}`}
               disabled={!hasDeletePrivilege() || undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteTopic(topic);
               }}
+              topic={topic.topicName}
               variant="destructive"
             >
               <TrashIcon />
               Delete
-            </DropdownMenuItem>
+            </FenceGuardedMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -426,7 +424,9 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
           </EmptyHeader>
           {!isFiltered && (
             <EmptyContent>
-              <Button onClick={onCreateTopic}>Create topic</Button>
+              <FenceGuardedButton action="createTopic" onClick={onCreateTopic}>
+                Create topic
+              </FenceGuardedButton>
             </EmptyContent>
           )}
         </Empty>
@@ -502,9 +502,13 @@ const TopicList: FC = () => {
 
         <ListLayoutFilters
           actions={
-            <Button data-testid="create-topic-button" onClick={() => setIsCreateTopicModalOpen(true)}>
+            <FenceGuardedButton
+              action="createTopic"
+              data-testid="create-topic-button"
+              onClick={() => setIsCreateTopicModalOpen(true)}
+            >
               Create topic
-            </Button>
+            </FenceGuardedButton>
           }
         >
           <div className="relative">

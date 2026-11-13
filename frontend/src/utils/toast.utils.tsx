@@ -1,4 +1,5 @@
 import type { ConnectError } from '@connectrpc/connect';
+import { hasFenceActivity } from 'components/cluster-fence/cluster-fence-model';
 import { toast } from 'components/redpanda-ui/components/toast';
 import {
   BadRequestSchema,
@@ -9,6 +10,7 @@ import {
   ResourceInfoSchema,
 } from 'protogen/google/rpc/error_details_pb';
 import type { ReactNode } from 'react';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 export type ErrorHttpPayload = {
   internalCode: number;
@@ -161,7 +163,48 @@ function collectErrorDetails(error: ConnectError): string[] {
   ];
 }
 
+/**
+ * The Kafka error name Redpanda answers with when a fence rejects a request. Produce is rejected with a
+ * timeout instead, but produce errors don't come through these toasts, and a timeout is too common
+ * a failure to blame on the fence.
+ */
+const FENCE_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
+/**
+ * Redpanda's own text when the fence refuses a request outside Kafka: a role change (FAILED_PRECONDITION
+ * from Admin API v2, 409 from v1) or a new shadow link. The fence's own errors, such as a stale revision,
+ * say "Cluster fence" and must not match.
+ */
+const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/i;
+const TRAILING_PERIOD = /\.$/;
+
+/**
+ * A fence rejection reads as a policy violation, which looks like an outage. Only when
+ * the cluster is known to be fenced, and the error is one a fence produces, is the fence named as the
+ * likely cause, after the broker's own message.
+ */
+const clusterFenceHint = (error: ConnectError): string | undefined => {
+  const { phase } = useClusterFenceStore.getState();
+  if (!(phase && hasFenceActivity(phase))) {
+    return;
+  }
+  const rejected =
+    error.findDetails(ErrorInfoSchema).some((info) => FENCE_REJECTION_REASONS.has(info.reason)) ||
+    FENCE_REFUSAL.test(error.rawMessage);
+  if (!rejected) {
+    return;
+  }
+  return phase === 'unfencing'
+    ? 'This cluster is being unfenced, and brokers that haven’t picked up Unfence yet still reject writes.'
+    : 'This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.';
+};
+
 export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {
+  const message = formatGRPCErrorMessage({ error, action, entity });
+  const hint = clusterFenceHint(error);
+  return hint ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
+}
+
+function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps): string {
   const localizedText = error.findDetails(LocalizedMessageSchema).find((m) => m.message)?.message;
 
   const baseMessage = localizedText || error.rawMessage;

@@ -45,9 +45,10 @@ export type ConsoleAppProps = {
 
   /**
    * Callback when Console route changes.
-   * Host can use this to update browser URL.
+   * Host can use this to update browser URL. `replace` is true when Console replaced its current
+   * history entry instead of adding one, so the host should replace its own too.
    */
-  onRouteChange?: (path: string) => void;
+  onRouteChange?: (path: string, options?: { replace: boolean }) => void;
 
   /**
    * Callback when Console sidebar items change.
@@ -78,6 +79,12 @@ export type ConsoleAppProps = {
    * Passed from Cloud UI LaunchDarkly integration.
    */
   featureFlags?: Record<string, boolean>;
+
+  /**
+   * Opens a page of another cluster in the organization, such as a shadow link's source cluster.
+   * `path` is a Console path on that cluster, for example `/shadowlinks?tab=source`.
+   */
+  onOpenCluster?: (clusterId: string, path: string) => void;
 };
 
 /**

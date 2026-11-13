@@ -81,7 +81,9 @@ export type UnifiedScramConfig = {
  * Plain TypeScript authentication configuration interface
  */
 export type UnifiedAuthenticationConfiguration = {
-  authentication?: { case: 'scramConfiguration'; value: UnifiedScramConfig };
+  authentication?:
+    | { case: 'scramConfiguration'; value: UnifiedScramConfig }
+    | { case: 'plainConfiguration'; value: { username: string; password: string } };
 };
 
 /**
@@ -217,6 +219,8 @@ export const UnifiedShadowLinkState = {
   CREATION_FAILED: 4,
   DELETING: 5,
   DELETION_FAILED: 6,
+  FAILING_OVER: 7,
+  FAILED_OVER: 8,
 } as const;
 
 export type UnifiedShadowLinkState = (typeof UnifiedShadowLinkState)[keyof typeof UnifiedShadowLinkState];
@@ -232,6 +236,8 @@ export const UnifiedShadowLinkStateLabel: Record<UnifiedShadowLinkState, string>
   [UnifiedShadowLinkState.CREATION_FAILED]: 'Creation Failed',
   [UnifiedShadowLinkState.DELETING]: 'Deleting',
   [UnifiedShadowLinkState.DELETION_FAILED]: 'Deletion Failed',
+  [UnifiedShadowLinkState.FAILING_OVER]: 'Failing over',
+  [UnifiedShadowLinkState.FAILED_OVER]: 'Failed over',
 };
 
 /**
@@ -258,12 +264,16 @@ export type UnifiedShadowLink = {
  * Map console API state (3 states) to unified state
  */
 export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedShadowLinkState {
-  // CoreShadowLinkState: UNSPECIFIED=0, ACTIVE=1, PAUSED=2
+  // CoreShadowLinkState: UNSPECIFIED=0, ACTIVE=1, PAUSED=2, FAILING_OVER=3, FAILED_OVER=4
   switch (state) {
     case 1: // ACTIVE
       return UnifiedShadowLinkState.ACTIVE;
     case 2: // PAUSED
       return UnifiedShadowLinkState.PAUSED;
+    case 3: // FAILING_OVER
+      return UnifiedShadowLinkState.FAILING_OVER;
+    case 4: // FAILED_OVER
+      return UnifiedShadowLinkState.FAILED_OVER;
     default:
       return UnifiedShadowLinkState.UNSPECIFIED;
   }
@@ -303,6 +313,10 @@ export function getShadowLinkStateLabel(state: ShadowLinkState): string {
       return 'Running';
     case ShadowLinkState.PAUSED:
       return 'Paused';
+    case ShadowLinkState.FAILING_OVER:
+      return 'Failing over';
+    case ShadowLinkState.FAILED_OVER:
+      return 'Failed over';
     default:
       return 'Unknown';
   }

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -47,9 +48,9 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+        <FenceGuardedButton action="createShadowLink" onClick={onCreateClick} testId="create-shadowlink-button">
           Create shadow link
-        </Button>
+        </FenceGuardedButton>
       </div>
     </CardContent>
   </Card>
@@ -64,9 +65,9 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
       <ShadowingDescription />
       <div className="text-body">Create a shadow link to connect your source cluster to your shadow cluster.</div>
       <div>
-        <Button onClick={onCreateClick} testId="create-shadowlink-button">
+        <FenceGuardedButton action="createShadowLink" onClick={onCreateClick} testId="create-shadowlink-button">
           Create shadow link in Redpanda Cloud
-        </Button>
+        </FenceGuardedButton>
       </div>
     </CardContent>
   </Card>

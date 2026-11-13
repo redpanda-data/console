@@ -64,6 +64,7 @@ import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { SchemaRegistryValidateSchemaResponse, SchemaTypeType } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import KowlEditor from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
@@ -266,7 +267,8 @@ const SchemaPageButtons = (p: {
         </Alert>
       ) : null}
       <div className="mt-4 flex gap-4">
-        <Button
+        <FenceGuardedButton
+          action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
             // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
@@ -291,7 +293,7 @@ const SchemaPageButtons = (p: {
           variant="primary"
         >
           {isCreating ? 'Creating...' : 'Save'}
-        </Button>
+        </FenceGuardedButton>
 
         <Button
           disabled={isValidating || isMissingName || isMissingContext || editorState.isInvalidKeyOrValue}

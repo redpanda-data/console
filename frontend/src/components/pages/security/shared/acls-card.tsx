@@ -36,6 +36,7 @@ import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import {
@@ -341,18 +342,28 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
           actions={
             <div className="flex items-center gap-2">
               {selection.someSelected && (
-                <Button disabled={isDeleting} onClick={deleteSelected} variant="destructive">
+                <FenceGuardedButton
+                  action="editAcls"
+                  disabled={isDeleting}
+                  onClick={deleteSelected}
+                  variant="destructive"
+                >
                   Delete selected ({selection.selected.size})
-                </Button>
+                </FenceGuardedButton>
               )}
               {principal && (
-                <Button onClick={() => setGrantAllOpen(true)} variant="outline">
+                <FenceGuardedButton action="editAcls" onClick={() => setGrantAllOpen(true)} variant="outline">
                   Allow all operations
-                </Button>
+                </FenceGuardedButton>
               )}
-              <Button onClick={() => setDialogOpen(true)} testId="add-acl-button" variant="outline">
+              <FenceGuardedButton
+                action="editAcls"
+                onClick={() => setDialogOpen(true)}
+                testId="add-acl-button"
+                variant="outline"
+              >
                 + Add ACL
-              </Button>
+              </FenceGuardedButton>
             </div>
           }
         >

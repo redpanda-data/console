@@ -25,6 +25,7 @@ export const TaskStatusBadge = ({ state, taskId }: TaskStatusBadgeProps) => {
     [TaskState.LINK_UNAVAILABLE]: { text: 'Link Unavailable', tone: 'warning' as const },
     [TaskState.NOT_RUNNING]: { text: 'Not Running', tone: 'default' as const },
     [TaskState.FAULTED]: { text: 'Faulted', tone: 'destructive' as const },
+    [TaskState.FINISHED]: { text: 'Finished', tone: 'default' as const },
   }[state] || { text: 'Unknown', tone: 'default' as const };
 
   return (

@@ -11,13 +11,13 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Link } from '@tanstack/react-router';
+import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import {
@@ -26,6 +26,7 @@ import {
   ListLayoutFilters,
   ListLayoutSearchInput,
 } from 'components/redpanda-ui/components/list-layout';
+import { DisabledReasonTooltip, hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { ShieldCheckIcon, Trash2Icon } from 'lucide-react';
 import { DeleteRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import type { FC } from 'react';
@@ -134,17 +135,19 @@ export const RolesTabNew: FC = () => {
           actions={
             <Tooltip>
               <TooltipTrigger
-                render={
+                render={hoverableWhenDisabled(
+                  createRole.fencedReason,
                   <Button
                     data-testid="create-role-button"
-                    disabled={createRole.disabled}
+                    disabled={createRole.disabled || Boolean(createRole.fencedReason)}
                     onClick={() => setCreateDialogOpen(true)}
                   >
                     Create role
                   </Button>
-                }
+                )}
               />
               {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
+              {createRole.fencedReason ? <TooltipContent>{createRole.fencedReason}</TooltipContent> : null}
             </Tooltip>
           }
         >
@@ -161,9 +164,14 @@ export const RolesTabNew: FC = () => {
               <SecurityEmptyState
                 action={
                   isFiltered ? undefined : (
-                    <Button disabled={createRole.disabled} onClick={() => setCreateDialogOpen(true)}>
-                      Create role
-                    </Button>
+                    <DisabledReasonTooltip reason={createRole.fencedReason}>
+                      <Button
+                        disabled={createRole.disabled || Boolean(createRole.fencedReason)}
+                        onClick={() => setCreateDialogOpen(true)}
+                      >
+                        Create role
+                      </Button>
+                    </DisabledReasonTooltip>
                   )
                 }
                 description={
@@ -221,7 +229,8 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           }
         />
         <DropdownMenuContent>
-          <DropdownMenuItem
+          <FenceGuardedMenuItem
+            action="editRoles"
             data-testid={`delete-role-button-${roleName}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -231,7 +240,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
           >
             <Trash2Icon />
             Delete
-          </DropdownMenuItem>
+          </FenceGuardedMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

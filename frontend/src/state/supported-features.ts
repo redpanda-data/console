@@ -72,6 +72,15 @@ export class Feature {
     endpoint: 'redpanda.api.console.v1alpha1.ShadowLinkService',
     method: 'POST',
   };
+  static readonly ClusterFenceService: FeatureEntry = {
+    endpoint: 'redpanda.api.dataplane.v1.ClusterFenceService',
+    method: 'POST',
+  };
+  /** The cluster can be fenced: its Admin API is on and every broker runs Redpanda v26.3.1 or later. */
+  static readonly ClusterFence: FeatureEntry = {
+    endpoint: '/api/cluster-fence',
+    method: 'GET',
+  };
   static readonly ShadowLinkSchemaRegistrySync: FeatureEntry = {
     endpoint: '/api/shadow-links/schema-registry-sync',
     method: 'GET',
@@ -99,6 +108,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
       case Feature.ShadowLinkService.endpoint:
+      case Feature.ClusterFenceService.endpoint:
+      case Feature.ClusterFence.endpoint:
       case Feature.ShadowLinkSchemaRegistrySync.endpoint:
       case Feature.ShadowLinkRoleSync.endpoint:
       case Feature.GetQuotas.endpoint:
@@ -120,6 +131,8 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
     f.endpoint.includes('.SecurityService') ||
     f.endpoint.includes('.SecretService') ||
     f.endpoint.includes('.SQLService') ||
+    f.endpoint === Feature.ClusterFenceService.endpoint ||
+    f.endpoint === Feature.ClusterFence.endpoint ||
     f.endpoint === Feature.ShadowLinkSchemaRegistrySync.endpoint ||
     f.endpoint === Feature.ShadowLinkRoleSync.endpoint
   ) {
@@ -183,6 +196,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
     rpcnSecretsApi: compute(Feature.SecretService),
     schemaRegistryACLApi: compute(Feature.SchemaRegistryACLApi),
     shadowLinkService: compute(Feature.ShadowLinkService),
+    clusterFence: compute(Feature.ClusterFenceService) && compute(Feature.ClusterFence),
     shadowLinkSchemaRegistrySync: compute(Feature.ShadowLinkSchemaRegistrySync),
     shadowLinkRoleSync: compute(Feature.ShadowLinkRoleSync),
     schemaRegistryContexts: compute(Feature.SchemaRegistryContexts),
@@ -214,6 +228,8 @@ type SupportedFeaturesStore = {
   rpcnSecretsApi: boolean;
   schemaRegistryACLApi: boolean;
   shadowLinkService: boolean;
+  /** This backend serves ClusterFenceService and the cluster supports fencing. */
+  clusterFence: boolean;
   shadowLinkSchemaRegistrySync: boolean;
   shadowLinkRoleSync: boolean;
   schemaRegistryContexts: boolean;
