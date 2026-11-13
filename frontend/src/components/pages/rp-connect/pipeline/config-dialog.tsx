@@ -37,6 +37,7 @@ import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { EgressGatewayField } from './egress-gateway-field';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
 
 function TagsField({ readonly }: { readonly?: boolean }) {
@@ -198,6 +199,8 @@ function ConfigFields({ mode }: { mode: 'create' | 'edit' | 'view' }) {
           </FormItem>
         )}
       />
+
+      <EgressGatewayField readonly={readonly} />
     </div>
   );
 }

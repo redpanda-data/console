@@ -18,6 +18,7 @@ export const FEATURE_FLAGS = {
   enableNewTopicMessagesPage: false,
   // Embedded only: self-hosted Console shows cluster fencing wherever the cluster supports it.
   enableClusterFencing: false,
+  enableServerlessEgressGateway: false,
   // Standalone only: from the next page load, shows the header's theme switch and defaults the theme to
   // the OS preference (theme-init.ts). Embedded Console follows the Cloud UI host.
   enableDarkMode: false,

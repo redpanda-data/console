@@ -78,6 +78,8 @@ import {
   timestampToMillis,
 } from './draft-copy';
 import { EditorTipsBar, type TipContext } from './editor-tips-bar';
+import { useEgressGatewayNames } from './egress-gateway-field';
+import { storedEgressGatewayIds } from './egress-gateways';
 import { PipelineCommandMenu } from './pipeline-command-menu';
 import { PipelineEditHeader, PipelineViewHeader } from './pipeline-header';
 import { PipelineStructureTree } from './pipeline-structure-tree';
@@ -175,6 +177,7 @@ const pipelineFormSchema = z.object({
       const keys = tags.map((t) => t.key).filter(Boolean);
       return new Set(keys).size === keys.length;
     }, 'Duplicate tag keys are not allowed'),
+  egressGatewayIds: z.array(z.string()).default([]),
 });
 
 export type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
@@ -880,7 +883,7 @@ function usePipelineSettingsForm() {
   return useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema) as Resolver<PipelineFormValues>,
     mode: 'onSubmit',
-    defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [] },
+    defaultValues: { name: '', description: '', computeUnits: MIN_TASKS, tags: [], egressGatewayIds: [] },
   });
 }
 
@@ -1052,9 +1055,10 @@ function usePipelineChangeSummaries({
   );
   // Against the form's default values, which every successful save re-baselines.
   const settingsValues = useWatch({ control: form.control });
+  const gatewayNames = useEgressGatewayNames();
   const settingsChanges = useMemo(
-    () => (mode === 'edit' ? summarizeSettingsChanges(form.formState.defaultValues, settingsValues) : []),
-    [mode, form.formState.defaultValues, settingsValues]
+    () => (mode === 'edit' ? summarizeSettingsChanges(form.formState.defaultValues, settingsValues, gatewayNames) : []),
+    [mode, form.formState.defaultValues, settingsValues, gatewayNames]
   );
   return { errorNodeIds, unsavedNodeIds, componentChanges, settingsValues, settingsChanges };
 }
@@ -1072,6 +1076,7 @@ function useSettingsFormSync(pipeline: Pipeline | undefined, mode: PipelineMode,
       description: pipeline.description || '',
       computeUnits: cpuToTasks(pipeline.resources?.cpuShares) || MIN_TASKS,
       tags: getUserTagEntries(pipeline.tags),
+      egressGatewayIds: storedEgressGatewayIds(pipeline),
     };
     const snapshot = `${pipeline.id}\n${JSON.stringify(values)}`;
     if (snapshot === formResetSnapshotRef.current || form.formState.isDirty) {
@@ -1248,6 +1253,7 @@ function useAutosaveRecovery({
         description: recoverableEntry.description,
         computeUnits: recoverableEntry.computeUnits,
         tags: recoverableEntry.tags,
+        egressGatewayIds: recoverableEntry.egressGatewayIds ?? form.getValues('egressGatewayIds'),
       },
       { keepDefaultValues: true }
     );
@@ -1260,9 +1266,11 @@ function useAutosaveRecovery({
     setIsAutosaveDismissed(true);
   }, [autosaveTarget, setIsAutosaveDismissed]);
 
+  const gatewayNames = useEgressGatewayNames();
   const recoveredSettingsChanges = useMemo(
-    () => (recoverableEntry ? summarizeSettingsChanges(form.formState.defaultValues, recoverableEntry) : []),
-    [recoverableEntry, form.formState.defaultValues]
+    () =>
+      recoverableEntry ? summarizeSettingsChanges(form.formState.defaultValues, recoverableEntry, gatewayNames) : [],
+    [recoverableEntry, form.formState.defaultValues, gatewayNames]
   );
   return {
     autosaveTarget,
