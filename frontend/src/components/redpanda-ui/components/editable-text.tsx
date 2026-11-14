@@ -4,7 +4,6 @@ import { type KeyboardEvent, useCallback, useRef, useState } from 'react';
 
 import { Button } from './button';
 import { Input } from './input';
-
 import { cn } from '../lib/utils';
 
 const headingClasses: Record<number, string> = {
@@ -111,13 +110,13 @@ function EditableText({
             typographyClasses,
             'border-transparent bg-transparent px-0 shadow-none outline-none focus-visible:border-ring focus-visible:ring-0',
             'border-b',
-            'line-clamp-1 min-w-[100px] max-w-full overflow-hidden text-ellipsis',
+            'line-clamp-1 max-w-full min-w-[100px] overflow-hidden text-ellipsis',
             errorClasses,
             className
           )}
           onBlur={handleBlur}
-          onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
+          onValueChange={(inputText) => setDraft(inputText)}
           placeholder={placeholder}
           ref={handleInputRef}
           style={{ width: textWidth }}
@@ -135,11 +134,11 @@ function EditableText({
       <Button
         className={cn(
           typographyClasses,
-          'cursor-text border-transparent border-b text-left transition-colors motion-reduce:transition-none',
+          'cursor-text border-b border-transparent text-left transition-colors motion-reduce:transition-none',
           // The underline is the edit affordance; it appears on hover rather than
           // sitting there permanently underlining every value on the page.
           'hover:not-disabled:border-input-hover',
-          'line-clamp-1 min-w-[100px] max-w-full overflow-hidden text-ellipsis',
+          'line-clamp-1 max-w-full min-w-[100px] overflow-hidden text-ellipsis',
           !value && 'text-subtle',
           errorClasses,
           className

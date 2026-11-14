@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import {
   ServiceAccountSelector,
@@ -55,7 +56,6 @@ import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
@@ -681,7 +681,7 @@ function UsernameField({
                   placeholder="Select a user"
                 />
               ) : (
-                <Input {...field} disabled={isPending} placeholder="Enter a username" />
+                <Input {...field} disabled={isPending} onValueChange={field.onChange} placeholder="Enter a username" />
               )}
             </FormControl>
             <FormMessage />
@@ -767,7 +767,7 @@ function PasswordField({ form, isPending, isReadOnly }: { form: UserForm; isPend
           </FormDescription>
           <FormControl>
             <Group>
-              <Input type="password" {...field} />
+              <Input type="password" {...field} onValueChange={field.onChange} />
               <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
               <Button
                 className="[&_svg]:size-4"
@@ -969,6 +969,7 @@ function ConsumerGroupField({
                         toast.error('Failed to refresh permissions', { description: String(error) });
                       });
                   }}
+                  onValueChange={field.onChange}
                   placeholder="Enter a consumer group name"
                 />
               </FormControl>
@@ -1057,7 +1058,7 @@ function ServiceAccountFields({
         <Input
           disabled={isPending || isServiceAccountPending}
           id="serviceAccountName"
-          onChange={(e) => setServiceAccountName(e.target.value)}
+          onValueChange={(inputText) => setServiceAccountName(inputText)}
           placeholder="cluster-abc-pipeline-my-pipeline-sa"
           value={serviceAccountName}
         />

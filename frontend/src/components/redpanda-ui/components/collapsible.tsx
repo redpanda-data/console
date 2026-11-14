@@ -1,20 +1,21 @@
-'use client';
+import type React from 'react';
+('use client');
 
-import { Collapsible as CollapsiblePrimitive } from '@base-ui/react/collapsible';
+import * as CollapsiblePrimitive from '@ui-sdk/react/collapsible';
 
 import { cn, type SharedProps } from '../lib/utils';
 
-type CollapsibleProps = CollapsiblePrimitive.Root.Props & SharedProps;
+type CollapsibleProps = React.ComponentProps<typeof CollapsiblePrimitive.Collapsible> & SharedProps;
 
 function Collapsible({ testId, ...props }: CollapsibleProps) {
-  return <CollapsiblePrimitive.Root data-slot="collapsible" data-testid={testId} {...props} />;
+  return <CollapsiblePrimitive.Collapsible data-slot="collapsible" data-testid={testId} {...props} />;
 }
 
-type CollapsibleTriggerProps = CollapsiblePrimitive.Trigger.Props;
+type CollapsibleTriggerProps = React.ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>;
 
 function CollapsibleTrigger({ className, ...props }: CollapsibleTriggerProps) {
   return (
-    <CollapsiblePrimitive.Trigger
+    <CollapsiblePrimitive.CollapsibleTrigger
       className={cn('cursor-pointer', className)}
       data-slot="collapsible-trigger"
       {...props}
@@ -22,10 +23,10 @@ function CollapsibleTrigger({ className, ...props }: CollapsibleTriggerProps) {
   );
 }
 
-type CollapsibleContentProps = CollapsiblePrimitive.Panel.Props & SharedProps;
+type CollapsibleContentProps = React.ComponentProps<typeof CollapsiblePrimitive.CollapsiblePanel> & SharedProps;
 
 function CollapsibleContent({ testId, ...props }: CollapsibleContentProps) {
-  return <CollapsiblePrimitive.Panel data-slot="collapsible-content" data-testid={testId} {...props} />;
+  return <CollapsiblePrimitive.CollapsiblePanel data-slot="collapsible-content" data-testid={testId} {...props} />;
 }
 
 export {

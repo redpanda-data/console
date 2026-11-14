@@ -303,7 +303,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               <div className="relative max-w-xs flex-1">
                 <Input
                   data-testid="filter-topics-input"
-                  onChange={(e) => changeTopicNameFilter(e.target.value)}
+                  onValueChange={(inputText) => changeTopicNameFilter(inputText)}
                   placeholder="Filter topics by name..."
                   type="text"
                   value={topicNameFilter || ''}

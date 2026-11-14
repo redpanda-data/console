@@ -12,6 +12,7 @@
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -95,7 +96,7 @@ export function PipelineEndChip({
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         render={
-          <button
+          <ConsoleButton
             aria-label={`How this pipeline ends: ${copy.label}`}
             className={cn(
               'flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors hover:bg-muted',
@@ -104,6 +105,7 @@ export function PipelineEndChip({
             data-status={status}
             data-testid="pipeline-end-chip"
             type="button"
+            variant="unstyled"
           />
         }
       >
@@ -134,7 +136,7 @@ export function PipelineEndChip({
             return (
               <li key={row.id}>
                 <ElementTooltip content={long}>
-                  <button
+                  <ConsoleButton
                     className={cn(
                       'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
                       row.nested && 'pl-6'
@@ -144,6 +146,7 @@ export function PipelineEndChip({
                       onSelectInput(row.id);
                     }}
                     type="button"
+                    variant="unstyled"
                   >
                     <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
                     <span className="flex min-w-0 flex-1 flex-col">
@@ -174,7 +177,7 @@ export function PipelineEndChip({
                       ) : null}
                     </span>
                     <TonedIcon className="size-3.5 shrink-0" icon={ChevronRight} tone="muted" />
-                  </button>
+                  </ConsoleButton>
                 </ElementTooltip>
               </li>
             );
@@ -197,7 +200,12 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
       {/* A button, so the reason is in reach of the keyboard too. */}
       <TooltipTrigger
         render={
-          <button className="flex cursor-default items-center gap-1.5" data-testid="pipeline-end-meta" type="button" />
+          <ConsoleButton
+            className="flex cursor-default items-center gap-1.5"
+            data-testid="pipeline-end-meta"
+            type="button"
+            variant="unstyled"
+          />
         }
       >
         <span
@@ -267,10 +275,11 @@ export function PipelineRunsCell({ status }: { status: PipelineEndStatus }) {
     <Tooltip>
       <TooltipTrigger
         render={
-          <button
+          <ConsoleButton
             className={cn('inline-flex cursor-default items-center gap-1.5 text-body-sm whitespace-nowrap', tone)}
             data-status={status}
             type="button"
+            variant="unstyled"
           />
         }
       >

@@ -26,7 +26,7 @@ describe('useDetailPresentation', () => {
   test('persists the docked width without re-rendering', () => {
     const { result } = renderHook(() => useDetailPresentation(rs.fn()));
 
-    act(() => result.current.handleDetailPanelResize({ asPercentage: 41, inPixels: 400 }));
+    act(() => result.current.handleDetailPanelResize(41));
 
     expect(result.current.detailPanelSizeRef.current).toBe(41);
     expect(readDetailViewState().panelSizePct).toBe(41);

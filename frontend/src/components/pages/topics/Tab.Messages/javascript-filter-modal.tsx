@@ -55,8 +55,8 @@ const JavascriptFilterModal: FC<{
             <Input
               data-testid="add-javascript-filter-name"
               id="add-javascript-filter-name"
-              onChange={(e) => {
-                setFilter((prev) => ({ ...prev, name: e.target.value }));
+              onValueChange={(inputText) => {
+                setFilter((prev) => ({ ...prev, name: inputText }));
               }}
               placeholder="This name will appear in the filter bar"
               value={filter.name}

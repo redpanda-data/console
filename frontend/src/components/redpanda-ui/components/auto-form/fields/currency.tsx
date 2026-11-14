@@ -23,7 +23,7 @@ function CurrencyFieldComponent({ error, field, id, inputProps }: AutoFormFieldP
         id={id}
         inputMode="decimal"
         onBlur={inputProps.onBlur}
-        onChange={(event) => inputProps.onValueChange(event.target.value)}
+        onValueChange={(value) => inputProps.onValueChange(value)}
         placeholder={getFieldUiConfig(field).placeholder}
         testId={testIds.controlPart('input')}
         value={(inputProps.value as string | number | undefined)?.toString() ?? ''}

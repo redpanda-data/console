@@ -17,11 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useListResourcesForSecretQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 
 import { ResourceInUseAlert } from './resource-in-use-alert';
 import type { SecretTableRow } from './secrets-store-list-page';
@@ -68,14 +68,14 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
         />
         <DropdownMenuContent align="end" className="w-[200px]">
           {/* Stays open after copying, as the copy button it replaced did. */}
-          <DropdownMenuItem closeOnClick={false} data-testid="secret-copy-id-button" onClick={handleCopyId}>
+          <DropdownMenuItem closeOnSelect={false} data-testid="secret-copy-id-button" onSelect={handleCopyId}>
             <div className="flex items-center gap-4">
               <CopyIcon className="h-4 w-4" />
               Copy ID
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem data-testid="secret-edit-menu-item" onClick={() => onEdit(secret.id)}>
+          <DropdownMenuItem data-testid="secret-edit-menu-item" onSelect={() => onEdit(secret.id)}>
             <div className="flex items-center gap-4">
               <Pencil className="h-4 w-4" />
               Edit

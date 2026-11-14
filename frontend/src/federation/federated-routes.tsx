@@ -25,9 +25,7 @@ import { ErrorDisplay } from '../components/misc/error-display';
 import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { RouterSync } from '../components/misc/router-sync';
-import { Toaster } from '../components/redpanda-ui/components/sonner';
 import RequireAuth from '../components/require-auth';
-import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -122,7 +120,6 @@ const useHostShellFit = () => {
  * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
  */
 function FederatedAppContent() {
-  const toasterTheme = useThemeAppearance();
   const layoutRef = useHostShellFit();
 
   return (
@@ -148,10 +145,6 @@ function FederatedAppContent() {
       <AppFooter />
 
       <ErrorModalsRenderer />
-
-      {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
-          surface Console's toasts; mirror __root.tsx's AppContent. */}
-      <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
 }

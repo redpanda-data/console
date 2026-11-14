@@ -69,10 +69,10 @@ export const SecretInput = ({ id, value, onChange, required, updating = false }:
       <Input
         id={id}
         key={canEdit ? 'editing' : 'masked'}
-        onChange={(e) => {
-          setLocalValue(e.target.value);
+        onValueChange={(inputText) => {
+          setLocalValue(inputText);
           if (onChange) {
-            onChange(e.target.value);
+            onChange(inputText);
           }
         }}
         readOnly={!canEdit}

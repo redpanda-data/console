@@ -1,11 +1,12 @@
 'use client';
 
+import { Label as LabelPrimitive } from '@ui-sdk/react/label';
 import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
 
 const Label = ({ className, testId, ...props }: React.ComponentProps<'label'> & SharedProps) => (
-  <label
+  <LabelPrimitive
     className={cn(
       'flex select-none items-center gap-2 text-label peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50',
       className

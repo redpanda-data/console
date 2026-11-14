@@ -10,6 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 
 import { api, useApiStoreHook } from '../../../../../state/backend-api';
 import { pickSubjectForContext, topicSchemaContext } from '../../../schemas/schema-context-utils';
@@ -25,12 +26,17 @@ export const MessageSchema = (p: { schemaId: number; topicName?: string }) => {
   // The same schema ID can name different schemas in different contexts.
   const s = pickSubjectForContext(subjects, topicSchemaContext(topicConfig?.configEntries)) ?? subjects[0];
   return (
-    <Link
-      params={{ subjectName: encodeURIComponent(s.subject) }}
-      search={{ version: String(s.version) }}
-      to="/schema-registry/subjects/$subjectName"
+    <ConsoleButton
+      render={
+        <Link
+          params={{ subjectName: encodeURIComponent(s.subject) }}
+          search={{ version: String(s.version) }}
+          to="/schema-registry/subjects/$subjectName"
+        />
+      }
+      variant="unstyled"
     >
       {s.subject} (version {s.version})
-    </Link>
+    </ConsoleButton>
   );
 };

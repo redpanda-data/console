@@ -109,7 +109,7 @@ describe('the ConsoleApp', () => {
 
       await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
       expect(mockGetAccessToken).toHaveBeenCalledTimes(2);
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Failed to initialize Console:/)).not.toBeInTheDocument();
     });
     test('keeps the mounted app while updated configuration waits for a token', async () => {
       const { rerender } = render(<ConsoleApp {...defaultProps} />);
@@ -209,7 +209,7 @@ describe('the ConsoleApp', () => {
       mockGetAccessToken.mockRejectedValueOnce(error);
       render(<ConsoleApp {...defaultProps} />);
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Token service unavailable');
+      expect((await screen.findByText(/Failed to initialize Console:/)).closest('[role=alert]')).toBeInTheDocument();
       expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object));
       expect(setup).not.toHaveBeenCalled();
     });

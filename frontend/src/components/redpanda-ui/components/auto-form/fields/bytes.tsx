@@ -1,10 +1,10 @@
 'use client';
 
+import { useFieldTestIds } from './shared';
 import { Textarea } from '../../textarea';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
 
 function BytesFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -16,7 +16,7 @@ function BytesFieldComponent({ error, field, id, inputProps }: AutoFormFieldProp
       disabled={inputProps.disabled}
       id={id}
       onBlur={inputProps.onBlur}
-      onChange={(event) => inputProps.onValueChange(event.target.value)}
+      onValueChange={(inputText) => inputProps.onValueChange(inputText)}
       placeholder={getFieldUiConfig(field).placeholder || 'Base64 payload'}
       resize="vertical"
       testId={testIds.control}

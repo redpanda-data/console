@@ -133,6 +133,7 @@ export const ConsumerOffsetStep = () => {
                               placeholder="my-consumer-group or prefix-*"
                               testId={`consumer-filter-${index}-name`}
                               {...nameField}
+                              onValueChange={nameField.onChange}
                             />
                           </FormControl>
                           <FormMessage />

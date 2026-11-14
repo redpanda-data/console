@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
+import * as DialogPrimitive from '@ui-sdk/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React from 'react';
@@ -12,27 +12,27 @@ import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type SharedProps } from '../lib/utils';
 
-type DialogRootProps = DialogPrimitive.Root.Props & SharedProps;
+type DialogRootProps = React.ComponentProps<typeof DialogPrimitive.Dialog> & SharedProps;
 
 function Dialog({ testId, ...props }: DialogRootProps) {
-  return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
+  return <DialogPrimitive.Dialog data-slot="dialog" data-testid={testId} {...props} />;
 }
 
-function DialogTrigger({ className, ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger className={cn('cursor-pointer', className)} data-slot="dialog-trigger" {...props} />;
-}
-
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
-}
-
-function DialogClose({ className, ...props }: DialogPrimitive.Close.Props) {
-  return <DialogPrimitive.Close className={cn('cursor-pointer', className)} data-slot="dialog-close" {...props} />;
-}
-
-function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
+function DialogTrigger({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.DialogTrigger>) {
   return (
-    <DialogPrimitive.Backdrop
+    <DialogPrimitive.DialogTrigger className={cn('cursor-pointer', className)} data-slot="dialog-trigger" {...props} />
+  );
+}
+
+function DialogClose({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.DialogClose>) {
+  return (
+    <DialogPrimitive.DialogClose className={cn('cursor-pointer', className)} data-slot="dialog-close" {...props} />
+  );
+}
+
+function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.DialogBackdrop>) {
+  return (
+    <DialogPrimitive.DialogBackdrop
       className={cn(
         'fixed inset-0 z-50 bg-modal-overlay backdrop-blur-xs transition-opacity duration-200 ease-out motion-reduce:transition-none',
         'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
@@ -80,11 +80,12 @@ const dialogContentVariants = cva(
 );
 
 interface DialogContentProps
-  extends DialogPrimitive.Popup.Props,
+  extends Omit<React.ComponentProps<typeof DialogPrimitive.DialogContent>, 'children'>,
     VariantProps<typeof dialogContentVariants>,
     SharedProps {
   /** Container element for inline rendering (no portal to body). */
   container?: HTMLElement;
+  children?: React.ReactNode;
   showCloseButton?: boolean;
   /** When false, hides the overlay/backdrop. Defaults to `true`. */
   showOverlay?: boolean;
@@ -108,9 +109,10 @@ function DialogContent({
   const isAutoHeight = !height || height === 'auto';
   const setPopupRef = useAnimatedAutoHeight<HTMLDivElement>(isAutoHeight && !prefersReducedMotion);
   return (
-    <DialogPortal container={container ?? portalContainer}>
+    <>
       {showOverlay ? <DialogOverlay /> : null}
-      <DialogPrimitive.Popup
+      <DialogPrimitive.DialogContent
+        container={container ?? portalContainer}
         aria-modal="true"
         className={cn(dialogContentVariants({ size, variant, height }), className)}
         data-slot="dialog-content"
@@ -120,7 +122,7 @@ function DialogContent({
       >
         {children}
         {showCloseButton ? (
-          <DialogPrimitive.Close
+          <DialogPrimitive.DialogClose
             render={
               <Button
                 aria-label="Close"
@@ -133,8 +135,8 @@ function DialogContent({
             }
           />
         ) : null}
-      </DialogPrimitive.Popup>
-    </DialogPortal>
+      </DialogPrimitive.DialogContent>
+    </>
   );
 }
 
@@ -212,14 +214,14 @@ function DialogFooter({
       {...props}
     >
       {children}
-      {showCloseButton ? <DialogPrimitive.Close render={<Button variant="outline">Close</Button>} /> : null}
+      {showCloseButton ? <DialogPrimitive.DialogClose render={<Button variant="outline">Close</Button>} /> : null}
     </div>
   );
 }
 
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.DialogTitle>) {
   return (
-    <DialogPrimitive.Title
+    <DialogPrimitive.DialogTitle
       className={cn('text-heading-md leading-none', className)}
       data-slot="dialog-title"
       {...props}
@@ -227,12 +229,12 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   );
 }
 
-function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
+function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.DialogDescription>) {
   return (
-    <DialogPrimitive.Description
+    <DialogPrimitive.DialogDescription
       className={cn('text-body text-subtle', className)}
       data-slot="dialog-description"
-      // Render as <div> (not Base UI's default <p>) so block-level children don't trigger validateDOMNesting.
+      // Render as <div> (not UI SDK's default <p>) so block-level children don't trigger validateDOMNesting.
       render={<div />}
       {...props}
     />
@@ -327,7 +329,6 @@ export {
   DialogFooter,
   DialogHeader,
   DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 };

@@ -14,7 +14,6 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
-import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
@@ -32,7 +31,6 @@ import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary'
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
 import RequireAuth from '../components/require-auth';
-import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -93,8 +91,6 @@ function EmbeddedLayout() {
 }
 
 function AppContent() {
-  const toasterTheme = useThemeAppearance();
-
   return (
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
     <div className="flex flex-1 flex-col" id="mainLayout">
@@ -117,9 +113,6 @@ function AppContent() {
         {/* Currently disabled, read todo comment on UpdatePopup */}
         {/* <UpdatePopup /> */}
         <ErrorModalsRenderer />
-
-        {/* Toaster for notifications */}
-        <Toaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>
   );

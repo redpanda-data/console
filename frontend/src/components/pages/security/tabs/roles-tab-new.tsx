@@ -14,6 +14,7 @@ import { Link } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
 import { DeleteRoleConfirmModal } from 'components/pages/security/shared/delete-role-confirm-modal';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,14 +72,19 @@ const roleColumns: DataTableColumnDef<RoleEntry>[] = [
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
     cell: ({ row: { original: entry } }) => (
-      <Link
-        data-testid={`role-list-item-${entry.name}`}
-        params={{ roleName: encodeURIComponent(entry.name) }}
-        search={{ host: undefined }}
-        to="/security/roles/$roleName/details"
+      <ConsoleButton
+        render={
+          <Link
+            data-testid={`role-list-item-${entry.name}`}
+            params={{ roleName: encodeURIComponent(entry.name) }}
+            search={{ host: undefined }}
+            to="/security/roles/$roleName/details"
+          />
+        }
+        variant="unstyled"
       >
         {entry.name}
-      </Link>
+      </ConsoleButton>
     ),
     filterFn: nameFilterFn,
   },
@@ -149,7 +155,7 @@ export const RolesTabNew: FC = () => {
           }
         >
           <ListLayoutSearchInput
-            onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
+            onValueChange={(value) => table.getColumn('name')?.setFilterValue(value || undefined)}
             placeholder="Filter by name (regexp)..."
             value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           />
@@ -211,9 +217,9 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
             <Button
               data-testid={`role-actions-button-${roleName}`}
               render={
-                <button type="button">
+                <ConsoleButton type="button" variant="unstyled">
                   <MoreHorizontalIcon className="h-4 w-4" />
-                </button>
+                </ConsoleButton>
               }
               size="icon-sm"
               variant="ghost"
@@ -223,7 +229,7 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
         <DropdownMenuContent>
           <DropdownMenuItem
             data-testid={`delete-role-button-${roleName}`}
-            onClick={(e) => {
+            onSelect={(e) => {
               e.stopPropagation();
               setIsDeleteOpen(true);
             }}

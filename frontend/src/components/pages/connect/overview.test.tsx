@@ -12,11 +12,11 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { config, isEmbedded } from 'config';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 rs.mock('config', () => ({

@@ -11,6 +11,7 @@
 
 import { GitHubIcon, SlackIcon, TwitterIcon } from 'components/icons';
 import { ElementTooltip } from 'components/misc/element-tooltip';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 
 import { isEmbedded } from '../../config';
 import env, { getBuildDate, IsCI, IsDev } from '../../utils/env';
@@ -49,9 +50,12 @@ export const AppFooter = () => {
   // Icon `<title>`s are emptied: the link carries the name, and a native tooltip would stack on the Registry one.
   const gitHub = (link: string, title: string) => (
     <ElementTooltip content={title}>
-      <a aria-label={title} href={link} rel="noopener noreferrer" target="_blank">
+      <ConsoleButton
+        render={<a aria-label={title} href={link} rel="noopener noreferrer" target="_blank" />}
+        variant="unstyled"
+      >
         <GitHubIcon aria-hidden size={16} title="" />
-      </a>
+      </ConsoleButton>
     </ElementTooltip>
   );
 
@@ -63,14 +67,29 @@ export const AppFooter = () => {
           ? gitHub('https://github.com/redpanda-data/redpanda', "Visit Redpanda's GitHub repository")
           : gitHub('https://github.com/redpanda-data/console', "Visit Redpanda Console's GitHub repository")}
         <ElementTooltip content="Slack">
-          <a aria-label="Slack" href="https://redpanda.com/slack" rel="noopener noreferrer" target="_blank">
+          <ConsoleButton
+            render={
+              <a aria-label="Slack" href="https://redpanda.com/slack" rel="noopener noreferrer" target="_blank" />
+            }
+            variant="unstyled"
+          >
             <SlackIcon aria-hidden size={16} title="" />
-          </a>
+          </ConsoleButton>
         </ElementTooltip>
         <ElementTooltip content="Twitter">
-          <a aria-label="Twitter" href="https://twitter.com/redpandadata" rel="noopener noreferrer" target="_blank">
+          <ConsoleButton
+            render={
+              <a
+                aria-label="Twitter"
+                href="https://twitter.com/redpandadata"
+                rel="noopener noreferrer"
+                target="_blank"
+              />
+            }
+            variant="unstyled"
+          >
             <TwitterIcon aria-hidden size={16} title="" />
-          </a>
+          </ConsoleButton>
         </ElementTooltip>
       </div>
 

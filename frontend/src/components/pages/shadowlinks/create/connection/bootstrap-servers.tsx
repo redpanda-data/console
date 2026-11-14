@@ -47,7 +47,12 @@ export const BootstrapServers = () => {
               render={({ field: bootServer }) => (
                 <FormItem className="flex-1">
                   <FormControl>
-                    <Input placeholder="broker1:9092" testId={`bootstrap-server-input-${index}`} {...bootServer} />
+                    <Input
+                      placeholder="broker1:9092"
+                      testId={`bootstrap-server-input-${index}`}
+                      {...bootServer}
+                      onValueChange={bootServer.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

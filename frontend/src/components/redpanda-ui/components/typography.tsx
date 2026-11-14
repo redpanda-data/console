@@ -4,6 +4,8 @@ import { Link as TanStackLink } from '@tanstack/react-router';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
+import { Button as ConsoleButton } from './button';
+
 import { cn, type SharedProps } from '../lib/utils';
 
 // @deprecated internal to the deprecated `Heading` component; maps level → `text-heading-*`.
@@ -321,16 +323,29 @@ export const Link = ({ ref, ...componentProps }: LinkProps & { ref?: React.Ref<H
   if ('as' in props && props.as === TanStackLink) {
     const { as: _, ...routerProps } = props;
     return (
-      <TanStackLink className={cn(linkVariants({ tone }), className)} data-testid={testId} ref={ref} {...routerProps}>
+      <ConsoleButton
+        variant="unstyled"
+        render={
+          <TanStackLink
+            className={cn(linkVariants({ tone }), className)}
+            data-testid={testId}
+            ref={ref}
+            {...routerProps}
+          />
+        }
+      >
         {children}
-      </TanStackLink>
+      </ConsoleButton>
     );
   }
 
   return (
-    <a className={cn(linkVariants({ tone }), className)} data-testid={testId} ref={ref} {...props}>
+    <ConsoleButton
+      variant="unstyled"
+      render={<a className={cn(linkVariants({ tone }), className)} data-testid={testId} ref={ref} {...props} />}
+    >
       {children}
-    </a>
+    </ConsoleButton>
   );
 };
 

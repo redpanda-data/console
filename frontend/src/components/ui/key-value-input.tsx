@@ -34,7 +34,7 @@ export function KeyValueInput({
       <Input
         className="max-w-[100px] border-r-input border-r bg-primary-wash font-medium text-primary"
         disabled={disabled}
-        onChange={(e) => onChange({ ...value, key: e.target.value })}
+        onValueChange={(inputText) => onChange({ ...value, key: inputText })}
         placeholder={keyPlaceholder}
         value={value.key}
       />
@@ -42,7 +42,7 @@ export function KeyValueInput({
         className="w-full"
         containerClassName="w-full"
         disabled={disabled}
-        onChange={(e) => onChange({ ...value, value: e.target.value })}
+        onValueChange={(inputText) => onChange({ ...value, value: inputText })}
         placeholder={valuePlaceholder}
         value={value.value}
       />

@@ -12,7 +12,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button, buttonVariants, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -134,7 +134,7 @@ const BasicAuthComponent = () => {
         <Input
           disabled={isLoading}
           id="auth-username"
-          onChange={(e) => setUsername(e.target.value)}
+          onValueChange={(inputText) => setUsername(inputText)}
           testId="auth-username-input"
           value={username}
         />
@@ -144,7 +144,7 @@ const BasicAuthComponent = () => {
         <Input
           disabled={isLoading}
           id="auth-password"
-          onChange={(e) => setPassword(e.target.value)}
+          onValueChange={(inputText) => setPassword(inputText)}
           testId="auth-password-input"
           type="password"
           value={password}
@@ -187,12 +187,17 @@ const OidcAuthComponent = () => (
   <div>
     {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. `rounded-md`
         because the radius lives on the Button component, not in `buttonVariants`. */}
-    <a
-      className={cn(buttonVariants({ variant: 'brand' }), 'w-full rounded-md')}
-      href={`${appConfig.grpcBasePath}/auth/login/oidc`}
+    <ConsoleButton
+      render={
+        <a
+          className={cn(buttonVariants({ variant: 'brand' }), 'w-full rounded-md')}
+          href={`${appConfig.grpcBasePath}/auth/login/oidc`}
+        />
+      }
+      variant="unstyled"
     >
       Log in with OIDC
-    </a>
+    </ConsoleButton>
   </div>
 );
 

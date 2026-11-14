@@ -49,7 +49,7 @@ export const AdvancedClientOptions = () => {
                   testId="metadata-max-age-field"
                   type="number"
                   {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  onValueChange={(inputText) => field.onChange(Number(inputText))}
                 />
               </FormControl>
               <FormDescription>
@@ -68,7 +68,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="connection-timeout-field">
               <FormLabel>Connection timeout in ms</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Maximum time in milliseconds to wait when establishing a connection to a broker.
@@ -85,7 +85,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="retry-backoff-field">
               <FormLabel>Retry backoff in ms</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Time in milliseconds to wait before retrying a failed request. Helps prevent overwhelming the broker
@@ -103,7 +103,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="fetch-wait-max-field">
               <FormLabel>Fetch wait max in ms</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Maximum time in milliseconds the broker will wait before responding to a fetch request if there isn't
@@ -121,7 +121,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="fetch-min-bytes-field">
               <FormLabel>Fetch min in bytes</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Minimum amount of data in bytes the broker should return for a fetch request. Lower values improve
@@ -139,7 +139,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="fetch-max-bytes-field">
               <FormLabel>Fetch max in bytes</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Maximum amount of data in bytes the broker will return for a fetch request. Controls memory usage and
@@ -157,7 +157,7 @@ export const AdvancedClientOptions = () => {
             <FormItem data-testid="fetch-partition-max-bytes-field">
               <FormLabel>Fetch partition max in bytes</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                <Input type="number" {...field} onValueChange={(inputText) => field.onChange(Number(inputText))} />
               </FormControl>
               <FormDescription>
                 Maximum amount of data in bytes the broker will return for a single partition in a fetch request.

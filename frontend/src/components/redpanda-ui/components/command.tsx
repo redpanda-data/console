@@ -1,7 +1,7 @@
 'use client';
 
+import * as CommandPrimitive from '@ui-sdk/react/command';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { Command as CommandPrimitive } from 'cmdk';
 import { ChevronRight, SearchIcon } from 'lucide-react';
 import React from 'react';
 
@@ -14,14 +14,14 @@ const commandVariants = cva(
   {
     variants: {
       variant: {
-        elevated: '!border-input border shadow-md',
+        elevated: 'border !border-input shadow-md',
         minimal: '',
         dialog: '',
       },
       size: {
-        sm: 'min-w-[300px] max-w-sm',
-        md: 'min-w-[400px] max-w-lg md:min-w-[450px]',
-        lg: 'min-w-[500px] max-w-2xl',
+        sm: 'max-w-sm min-w-[300px]',
+        md: 'max-w-lg min-w-[400px] md:min-w-[450px]',
+        lg: 'max-w-2xl min-w-[500px]',
         full: 'w-full',
       },
     },
@@ -34,24 +34,55 @@ const commandVariants = cva(
 );
 
 interface CommandProps
-  extends React.ComponentProps<typeof CommandPrimitive>,
+  extends Omit<React.ComponentProps<typeof CommandPrimitive.Command>, 'filter' | 'children'>,
     VariantProps<typeof commandVariants>,
-    SharedProps {}
+    SharedProps {
+  children?: React.ReactNode;
+  filter?: (value: string, search: string, keywords?: string[]) => number;
+  shouldFilter?: boolean;
+}
 
-function Command({ className, variant, size, testId, ...props }: CommandProps) {
+const CommandQueryContext = React.createContext<{
+  setQuery: (query: string) => void;
+  inputChange: React.RefObject<((query: string) => void) | undefined>;
+} | null>(null);
+function Command({
+  className,
+  variant,
+  size,
+  testId,
+  filter,
+  shouldFilter = true,
+  query,
+  defaultQuery = '',
+  onQueryChange,
+  ...props
+}: CommandProps) {
+  const [inputQuery, setQuery] = React.useState(defaultQuery);
+  const inputChange = React.useRef<((query: string) => void) | undefined>(undefined);
   return (
-    <CommandPrimitive
-      className={cn(commandVariants({ variant, size }), className)}
-      data-slot="command"
-      data-testid={testId}
-      {...props}
-    />
+    <CommandQueryContext.Provider value={React.useMemo(() => ({ setQuery, inputChange }), [])}>
+      <CommandPrimitive.Command
+        {...props}
+        className={cn(commandVariants({ variant, size }), className)}
+        data-testid={testId}
+        filter={shouldFilter ? (filter ? (item, search) => filter(item.value, search, item.keywords) : 'fuzzy') : false}
+        onQueryChange={(next, details) => {
+          onQueryChange?.(next, details);
+          if (!details.canceled) {
+            setQuery(next);
+            inputChange.current?.(next);
+          }
+        }}
+        query={query ?? inputQuery}
+      />
+    </CommandQueryContext.Provider>
   );
 }
 
-/** The dialog's own sizing of cmdk's parts: taller input and rows than an inline `Command`. */
+/** The dialog's own sizing of Command's parts: taller input and rows than an inline `Command`. */
 const COMMAND_DIALOG_CHROME =
-  '**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-subtle [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5';
+  '**:data-[slot=command-input-wrapper]:h-12 [&_[data-slot=command-group-label]]:px-2 [&_[data-slot=command-group-label]]:font-medium [&_[data-slot=command-group-label]]:text-subtle [&_[data-slot=command-group]:not([hidden])_~[data-slot=command-group]]:pt-0 [&_[data-slot=command-group]]:px-2 [&_[data-slot=command-input-wrapper]_svg]:h-5 [&_[data-slot=command-input-wrapper]_svg]:w-5 [&_[data-slot=command-input]]:h-12 [&_[data-slot=command-item]]:px-2 [&_[data-slot=command-item]]:py-3 [&_[data-slot=command-item]_svg]:h-5 [&_[data-slot=command-item]_svg]:w-5';
 
 function CommandDialog({
   title = 'Command Palette',
@@ -99,20 +130,36 @@ function CommandDialog({
   );
 }
 
-function CommandInput({
-  className,
-  testId,
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input> & SharedProps) {
+type CommandInputProps = React.ComponentProps<typeof CommandPrimitive.CommandInput> &
+  SharedProps & { onValueChange?: (value: string) => void };
+function CommandInput({ className, testId, value, onValueChange, ...props }: CommandInputProps) {
+  const context = React.useContext(CommandQueryContext);
+  const setQuery = context?.setQuery;
+  const inputChange = context?.inputChange;
+  React.useLayoutEffect(() => {
+    if (value !== undefined) {
+      setQuery?.(String(value));
+    }
+  }, [setQuery, value]);
+  React.useLayoutEffect(() => {
+    if (inputChange) {
+      inputChange.current = onValueChange;
+    }
+    return () => {
+      if (inputChange) {
+        inputChange.current = undefined;
+      }
+    };
+  }, [inputChange, onValueChange]);
   return (
-    <div className="!border-input flex h-9 items-center gap-2 border-b px-3" data-slot="command-input-wrapper">
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
-      <CommandPrimitive.Input
+    <div className="flex h-9 items-center gap-2 border-b border-input px-3" data-slot="command-input-wrapper">
+      <SearchIcon aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+      <CommandPrimitive.CommandInput
+        aria-label={props['aria-label'] ?? props.placeholder ?? 'Search commands'}
         className={cn(
-          'flex h-10 w-full rounded-md bg-transparent py-3 text-body outline-hidden selection:bg-selection selection:text-selection-foreground placeholder:text-placeholder disabled:cursor-not-allowed disabled:opacity-50',
+          'h-full w-full bg-transparent text-body outline-none placeholder:text-placeholder disabled:opacity-50',
           className
         )}
-        data-slot="command-input"
         data-testid={testId}
         {...props}
       />
@@ -120,10 +167,10 @@ function CommandInput({
   );
 }
 
-function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.List>) {
+function CommandList({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.CommandList>) {
   return (
-    <CommandPrimitive.List
-      className={cn('max-h-[300px] scroll-py-1 overflow-y-auto overflow-x-hidden', className)}
+    <CommandPrimitive.CommandList
+      className={cn('max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto', className)}
       data-slot="command-list"
       {...props}
     />
@@ -134,9 +181,9 @@ function CommandEmpty({
   className,
   testId,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty> & SharedProps) {
+}: React.ComponentProps<typeof CommandPrimitive.CommandEmpty> & SharedProps) {
   return (
-    <CommandPrimitive.Empty
+    <CommandPrimitive.CommandEmpty
       className={cn('py-6 text-center text-body', className)}
       data-slot="command-empty"
       data-testid={testId}
@@ -147,25 +194,31 @@ function CommandEmpty({
 
 function CommandGroup({
   className,
+  heading,
+  children,
   testId,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Group> & SharedProps) {
+}: Omit<React.ComponentProps<typeof CommandPrimitive.CommandGroup>, 'children'> &
+  SharedProps & { heading?: React.ReactNode; children?: React.ReactNode }) {
   return (
-    <CommandPrimitive.Group
-      className={cn(
-        'overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-body-sm [&_[cmdk-group-heading]]:text-subtle',
-        className
-      )}
-      data-slot="command-group"
+    <CommandPrimitive.CommandGroup
+      className={cn('overflow-hidden p-1 text-foreground', className)}
       data-testid={testId}
       {...props}
-    />
+    >
+      {heading ? (
+        <CommandPrimitive.CommandGroupLabel className="px-2 py-1.5 text-body-sm font-medium text-subtle">
+          {heading}
+        </CommandPrimitive.CommandGroupLabel>
+      ) : null}
+      {children}
+    </CommandPrimitive.CommandGroup>
   );
 }
 
-function CommandSeparator({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
+function CommandSeparator({ className, ...props }: React.ComponentProps<typeof CommandPrimitive.CommandSeparator>) {
   return (
-    <CommandPrimitive.Separator
+    <CommandPrimitive.CommandSeparator
       className={cn('-mx-1 h-px bg-border', className)}
       data-slot="command-separator"
       {...props}
@@ -173,28 +226,31 @@ function CommandSeparator({ className, ...props }: React.ComponentProps<typeof C
   );
 }
 
-function CommandItem({
-  className,
-  testId,
-  ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item> & SharedProps) {
+type CommandItemProps = Omit<React.ComponentProps<typeof CommandPrimitive.CommandItem>, 'onSelect' | 'children'> &
+  SharedProps & { children?: React.ReactNode; onSelect?: (value: string) => unknown };
+function CommandItem({ className, testId, children, value, onSelect, ...props }: CommandItemProps) {
+  const generatedId = React.useId();
+  const itemValue = value ?? (typeof children === 'string' ? children : generatedId);
   return (
-    <CommandPrimitive.Item
+    <CommandPrimitive.CommandItem
       className={cn(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        'relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
         className
       )}
-      data-slot="command-item"
       data-testid={testId}
+      onSelect={() => onSelect?.(itemValue)}
+      value={itemValue}
       {...props}
-    />
+    >
+      {children}
+    </CommandPrimitive.CommandItem>
   );
 }
 
 function CommandShortcut({ className, children, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
-      className={cn('ml-auto text-body-sm text-subtle tracking-widest', className)}
+      className={cn('ml-auto text-body-sm tracking-widest text-subtle', className)}
       data-slot="command-shortcut"
       {...props}
     >
@@ -226,7 +282,7 @@ function CommandSub({ open, onOpenChange, children }: CommandSubProps) {
   );
 }
 
-interface CommandSubTriggerProps extends React.ComponentProps<typeof CommandPrimitive.Item> {
+interface CommandSubTriggerProps extends CommandItemProps {
   inset?: boolean;
 }
 
@@ -236,9 +292,9 @@ function CommandSubTrigger({ className, children, inset, ...props }: CommandSubT
   return (
     <PopoverAnchor
       render={
-        <CommandPrimitive.Item
+        <CommandItem
           className={cn(
-            "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+            "relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-accent data-highlighted:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
             inset && 'pl-8',
             className
           )}
@@ -248,7 +304,7 @@ function CommandSubTrigger({ className, children, inset, ...props }: CommandSubT
         >
           {children}
           <ChevronRight className="ml-auto size-4" />
-        </CommandPrimitive.Item>
+        </CommandItem>
       }
     />
   );

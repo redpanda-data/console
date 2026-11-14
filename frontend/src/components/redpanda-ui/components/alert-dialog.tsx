@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
+import * as AlertDialogPrimitive from '@ui-sdk/react/alert-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -9,17 +9,17 @@ import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
-type AlertDialogRootProps = AlertDialogPrimitive.Root.Props & SharedProps;
+type AlertDialogRootProps = React.ComponentProps<typeof AlertDialogPrimitive.AlertDialog> & SharedProps;
 
 function AlertDialog({ testId, ...props }: AlertDialogRootProps) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" data-testid={testId} {...props} />;
+  return <AlertDialogPrimitive.AlertDialog data-slot="alert-dialog" data-testid={testId} {...props} />;
 }
 
-type AlertDialogTriggerProps = AlertDialogPrimitive.Trigger.Props & SharedProps;
+type AlertDialogTriggerProps = React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogTrigger> & SharedProps;
 
 function AlertDialogTrigger({ className, testId, ...props }: AlertDialogTriggerProps) {
   return (
-    <AlertDialogPrimitive.Trigger
+    <AlertDialogPrimitive.AlertDialogTrigger
       className={cn('cursor-pointer', className)}
       data-slot="alert-dialog-trigger"
       data-testid={testId}
@@ -28,15 +28,14 @@ function AlertDialogTrigger({ className, testId, ...props }: AlertDialogTriggerP
   );
 }
 
-function AlertDialogPortal({ ...props }: AlertDialogPrimitive.Portal.Props) {
-  return <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
-}
-
-function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdrop.Props) {
+function AlertDialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogBackdrop>) {
   return (
-    <AlertDialogPrimitive.Backdrop
+    <AlertDialogPrimitive.AlertDialogBackdrop
       className={cn(
-        // fill-mode-forwards holds the exit keyframe until Base UI unmounts (else a one-frame flash).
+        // fill-mode-forwards holds the exit keyframe until UI SDK unmounts (else a one-frame flash).
         'data-[closed]:fade-out-0 data-[open]:fade-in-0 fixed inset-0 z-50 bg-modal-overlay fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in',
         className
       )}
@@ -46,16 +45,17 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
   );
 }
 
-type AlertDialogContentProps = AlertDialogPrimitive.Popup.Props &
+type AlertDialogContentProps = React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogContent> &
   SharedProps &
   Pick<FixedPositionContentProps, 'container' | 'showOverlay'>;
 
 function AlertDialogContent({ className, testId, container, showOverlay = true, ...props }: AlertDialogContentProps) {
   const portalContainer = usePortalContainer();
   return (
-    <AlertDialogPortal container={container ?? portalContainer}>
+    <>
       {showOverlay ? <AlertDialogOverlay /> : null}
-      <AlertDialogPrimitive.Popup
+      <AlertDialogPrimitive.AlertDialogContent
+        container={container ?? portalContainer}
         aria-modal="true"
         className={cn(
           'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg border bg-background fill-mode-forwards shadow-lg duration-200 data-[closed]:animate-out data-[open]:animate-in sm:max-w-lg',
@@ -65,7 +65,7 @@ function AlertDialogContent({ className, testId, container, showOverlay = true, 
         data-testid={testId}
         {...props}
       />
-    </AlertDialogPortal>
+    </>
   );
 }
 
@@ -160,9 +160,9 @@ function AlertDialogBody({
   );
 }
 
-function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Props) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogTitle>) {
   return (
-    <AlertDialogPrimitive.Title
+    <AlertDialogPrimitive.AlertDialogTitle
       className={cn('text-heading-md', className)}
       data-slot="alert-dialog-title"
       {...props}
@@ -170,9 +170,12 @@ function AlertDialogTitle({ className, ...props }: AlertDialogPrimitive.Title.Pr
   );
 }
 
-function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.Description.Props) {
+function AlertDialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogDescription>) {
   return (
-    <AlertDialogPrimitive.Description
+    <AlertDialogPrimitive.AlertDialogDescription
       className={cn('text-body text-subtle', className)}
       data-slot="alert-dialog-description"
       // Render as <div> (not the default <p>) so block-level children don't trigger validateDOMNesting.
@@ -182,11 +185,13 @@ function AlertDialogDescription({ className, ...props }: AlertDialogPrimitive.De
   );
 }
 
-type AlertDialogActionProps = AlertDialogPrimitive.Close.Props & SharedProps & Pick<ButtonVariants, 'variant' | 'size'>;
+type AlertDialogActionProps = React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogClose> &
+  SharedProps &
+  Pick<ButtonVariants, 'variant' | 'size'>;
 
 function AlertDialogAction({ className, testId, variant, size, ...props }: AlertDialogActionProps) {
   return (
-    <AlertDialogPrimitive.Close
+    <AlertDialogPrimitive.AlertDialogClose
       className={cn(buttonVariants({ variant, size }), 'rounded-md', className)}
       data-slot="alert-dialog-action"
       data-testid={testId}
@@ -195,11 +200,13 @@ function AlertDialogAction({ className, testId, variant, size, ...props }: Alert
   );
 }
 
-type AlertDialogCancelProps = AlertDialogPrimitive.Close.Props & SharedProps & Pick<ButtonVariants, 'variant' | 'size'>;
+type AlertDialogCancelProps = React.ComponentProps<typeof AlertDialogPrimitive.AlertDialogClose> &
+  SharedProps &
+  Pick<ButtonVariants, 'variant' | 'size'>;
 
 function AlertDialogCancel({ className, testId, variant = 'outline', size, ...props }: AlertDialogCancelProps) {
   return (
-    <AlertDialogPrimitive.Close
+    <AlertDialogPrimitive.AlertDialogClose
       className={cn(buttonVariants({ variant, size }), 'rounded-md', className)}
       data-slot="alert-dialog-cancel"
       data-testid={testId}
@@ -226,7 +233,6 @@ export {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
-  AlertDialogPortal,
   AlertDialogTitle,
   AlertDialogTrigger,
 };

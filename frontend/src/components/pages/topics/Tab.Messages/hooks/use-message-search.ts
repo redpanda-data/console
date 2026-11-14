@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 import type { MessagePagingParams, MessageQueryParams } from './use-message-view-params';
 import { isServerless } from '../../../../../config';

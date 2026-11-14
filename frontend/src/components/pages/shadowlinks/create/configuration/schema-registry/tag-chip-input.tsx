@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { InlineInput } from 'components/redpanda-ui/components/input';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { useState } from 'react';
@@ -78,15 +79,15 @@ export const TagChipInput = ({ value, onChange, placeholder, testId, mono = fals
           {mono ? <code>{item}</code> : <span>{item}</span>}
         </TagsValue>
       ))}
-      <input
+      <InlineInput
         className={cn(
-          'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground',
+          'h-6 min-w-40 flex-1 rounded-none border-0! bg-transparent px-0 text-body shadow-none outline-none placeholder:text-muted-foreground',
           mono && 'font-mono'
         )}
         data-testid={`${testId}-field`}
         onBlur={commitDraft}
-        onChange={(event) => setDraft(event.target.value)}
         onKeyDown={handleKeyDown}
+        onValueChange={setDraft}
         placeholder={placeholder}
         value={draft}
       />

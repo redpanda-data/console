@@ -1,5 +1,5 @@
 import { InfoIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from 'components/redpanda-ui/components/sheet';
 import { useState } from 'react';
@@ -133,7 +133,7 @@ export const PatternHelpDrawer = () => {
 
   return (
     <>
-      <button
+      <ConsoleButton
         onClick={onOpen}
         style={{
           margin: '0 2px',
@@ -141,10 +141,11 @@ export const PatternHelpDrawer = () => {
           textDecoration: 'underline dotted',
         }}
         type="button"
+        variant="unstyled"
       >
         <InfoIcon size={15} />
         &nbsp;glob patterns
-      </button>
+      </ConsoleButton>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
         {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
             `container` opts out of the dialog's PortalContainerProvider — DialogContent is

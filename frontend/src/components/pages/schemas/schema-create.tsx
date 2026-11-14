@@ -28,11 +28,11 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';
@@ -679,8 +679,8 @@ const SchemaEditor = (p: {
             <FieldLabel>Subject name</FieldLabel>
             <Input
               disabled={isAddVersion}
-              onChange={(e) => {
-                p.onStateChange((prev) => ({ ...prev, userInput: e.target.value }));
+              onValueChange={(inputText) => {
+                p.onStateChange((prev) => ({ ...prev, userInput: inputText }));
               }}
               testId="schema-create-subject-name-input"
               value={state.computedSubjectName}
@@ -834,10 +834,10 @@ const ReferencesEditor = (p: {
             <FieldLabel>Schema reference name</FieldLabel>
             <Input
               data-testid={`schema-create-reference-name-input-${index}`}
-              onChange={(e) => {
+              onValueChange={(inputText) => {
                 p.onStateChange((prev) => ({
                   ...prev,
-                  references: prev.references.map((r, i) => (i === index ? { ...r, name: e.target.value } : r)),
+                  references: prev.references.map((r, i) => (i === index ? { ...r, name: inputText } : r)),
                 }));
               }}
               value={ref.name}

@@ -16,7 +16,7 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Group } from 'components/redpanda-ui/components/group';
+import { InlineInput } from 'components/redpanda-ui/components/input';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -150,17 +151,22 @@ const CopyableMeta = ({
   <span className="group/meta flex min-w-0 items-center gap-1.5">
     <span className="shrink-0">{label}</span>
     {href ? (
-      <a
-        className="flex min-w-0 items-center gap-1 text-foreground hover:underline"
-        href={href}
-        rel="noopener noreferrer"
-        target="_blank"
+      <ConsoleButton
+        render={
+          <a
+            className="flex min-w-0 items-center gap-1 text-foreground hover:underline"
+            href={href}
+            rel="noopener noreferrer"
+            target="_blank"
+          />
+        }
+        variant="unstyled"
       >
         <ElementTooltip content={value}>
           <span className="max-w-[18rem] truncate">{value}</span>
         </ElementTooltip>
         <ExternalLink className="size-3 shrink-0" />
-      </a>
+      </ConsoleButton>
     ) : (
       <ElementTooltip content={value}>
         <span className={cn('max-w-[18rem] truncate text-foreground', mono && 'font-mono')}>{value}</span>
@@ -228,15 +234,16 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
     name="name"
     render={({ field, fieldState }) => (
       <div className="flex min-w-0 flex-col">
-        <input
+        <InlineInput
           {...field}
           aria-invalid={fieldState.invalid}
           aria-label="Pipeline name"
           className={cn(
-            'field-sizing-content max-w-full min-w-[12rem] truncate border-b border-transparent bg-transparent py-0.5 text-heading-xl leading-none tracking-heading',
+            'field-sizing-content max-w-full min-w-[12rem] truncate rounded-none border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-heading-xl leading-none tracking-heading shadow-none',
             'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
             fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
           )}
+          onValueChange={field.onChange}
           placeholder={placeholder}
         />
         {fieldState.error ? <p className="mt-1 text-body text-destructive">{fieldState.error.message}</p> : null}
@@ -411,7 +418,7 @@ const SaveActions = ({
           />
           <DropdownMenuContent align="end">
             {alternates.map((intent) => (
-              <DropdownMenuItem key={intent} onClick={() => onSave({ run: intent })}>
+              <DropdownMenuItem key={intent} onSelect={() => onSave({ run: intent })}>
                 {runIntentLabel(intent, context)}
               </DropdownMenuItem>
             ))}

@@ -14,6 +14,7 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -107,13 +108,14 @@ const ChangeRow = ({
     <li>
       {onSelect ? (
         <ElementTooltip content={actionLabel}>
-          <button
+          <ConsoleButton
             className="group flex w-full cursor-pointer flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
             onClick={onSelect}
             type="button"
+            variant="unstyled"
           >
             {body}
-          </button>
+          </ConsoleButton>
         </ElementTooltip>
       ) : (
         <div className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left">{body}</div>

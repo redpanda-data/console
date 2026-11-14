@@ -27,6 +27,7 @@ import {
 import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { AlertCircle, CircleUser, Link, Loader2, Server, Waypoints, X } from 'lucide-react';
@@ -38,7 +39,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React, { useEffect } from 'react';
 import { useDeleteSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
@@ -215,9 +215,7 @@ function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<Secr
       <div className="flex flex-1 items-center gap-1">
         <Input
           className="h-8 w-[200px]"
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            table.getColumn('id')?.setFilterValue(event.target.value)
-          }
+          onValueChange={(inputText: string) => table.getColumn('id')?.setFilterValue(inputText)}
           placeholder="Filter by ID..."
           value={(table.getColumn('id')?.getFilterValue() as string) ?? ''}
         />

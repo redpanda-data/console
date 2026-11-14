@@ -1,5 +1,4 @@
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -51,26 +50,29 @@ function Item({
   testId,
   render,
   ...props
-}: useRender.ComponentProps<'div'> & VariantProps<typeof itemVariants> & SharedProps) {
-  return useRender({
-    defaultTagName: 'div',
+}: PartProps<'div'> & VariantProps<typeof itemVariants> & SharedProps) {
+  return renderElement(
+    'div',
+    mergeProps(
+      { 'data-slot': 'item', 'data-variant': variant, 'data-size': size },
+      mergeProps(
+        {
+          className: cn(itemVariants({ variant, size, className })),
+          'data-size': size,
+          'data-slot': 'item',
+          'data-testid': testId,
+          'data-variant': variant,
+        } as React.ComponentPropsWithRef<'div'>,
+        props
+      )
+    ),
     render,
-    state: {
+    {
       slot: 'item',
       variant,
       size,
-    },
-    props: mergeProps<'div'>(
-      {
-        className: cn(itemVariants({ variant, size, className })),
-        'data-size': size,
-        'data-slot': 'item',
-        'data-testid': testId,
-        'data-variant': variant,
-      } as React.ComponentPropsWithRef<'div'>,
-      props
-    ),
-  });
+    }
+  );
 }
 
 const itemMediaVariants = cva(

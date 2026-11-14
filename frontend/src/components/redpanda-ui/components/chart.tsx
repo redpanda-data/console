@@ -1,6 +1,6 @@
-// Copyright 2026 Redpanda Data, Inc.
-
 'use client';
+
+// Copyright 2026 Redpanda Data, Inc.
 
 import React from 'react';
 import {

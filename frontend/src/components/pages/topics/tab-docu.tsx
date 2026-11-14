@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Component, type JSX } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
@@ -175,9 +176,12 @@ function renderDocuError(title: string, body: JSX.Element) {
           <EmptyDescription>{body}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
+          <ConsoleButton
+            render={<a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank" />}
+            variant="unstyled"
+          >
             <Button variant="primary">Redpanda Console Documentation</Button>
-          </a>
+          </ConsoleButton>
         </EmptyContent>
       </Empty>
     </motion.div>

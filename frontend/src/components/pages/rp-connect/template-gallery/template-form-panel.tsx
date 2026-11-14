@@ -255,7 +255,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
             {(field) => (
               <Input
                 data-testid="slot-pipeline-name"
-                onChange={field.onChange}
+                onValueChange={field.onChange}
                 placeholder="my-pipeline"
                 value={field.value ?? ''}
               />

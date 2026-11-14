@@ -1,10 +1,10 @@
 'use client';
 
+import { useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
 
 function Int64FieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -17,7 +17,7 @@ function Int64FieldComponent({ error, field, id, inputProps }: AutoFormFieldProp
       id={id}
       inputMode="numeric"
       onBlur={inputProps.onBlur}
-      onChange={(event) => inputProps.onValueChange(event.target.value)}
+      onValueChange={(inputText) => inputProps.onValueChange(inputText)}
       placeholder={getFieldUiConfig(field).placeholder}
       testId={testIds.control}
       value={(inputProps.value as string | undefined) ?? ''}

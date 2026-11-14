@@ -11,8 +11,8 @@
 
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { isServerless } from 'config';
-import { toast } from 'sonner';
 
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';

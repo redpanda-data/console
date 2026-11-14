@@ -94,7 +94,6 @@ export function SearchInput({
       aria-label={ariaLabel}
       className={className}
       containerClassName={containerClassName}
-      onChange={(event) => onChange(event.target.value)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.nativeEvent.isComposing) {
           return;
@@ -107,6 +106,7 @@ export function SearchInput({
         event.stopPropagation();
         onChange('');
       }}
+      onValueChange={(inputText) => onChange(inputText)}
       placeholder={placeholder}
       ref={inputRef}
       testId={testId}

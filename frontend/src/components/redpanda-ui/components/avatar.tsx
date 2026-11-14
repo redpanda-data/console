@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar';
+import * as AvatarPrimitive from '@ui-sdk/react/avatar';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -24,9 +24,9 @@ function Avatar({
   size = 'md',
   testId,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root> & SharedProps & VariantProps<typeof avatarVariants>) {
+}: React.ComponentProps<typeof AvatarPrimitive.Avatar> & SharedProps & VariantProps<typeof avatarVariants>) {
   return (
-    <AvatarPrimitive.Root
+    <AvatarPrimitive.Avatar
       className={cn(avatarVariants({ size }), className)}
       data-size={size ?? 'md'}
       data-slot="avatar"
@@ -40,9 +40,9 @@ function AvatarImage({
   className,
   testId,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image> & SharedProps) {
+}: React.ComponentProps<typeof AvatarPrimitive.AvatarImage> & SharedProps) {
   return (
-    <AvatarPrimitive.Image
+    <AvatarPrimitive.AvatarImage
       className={cn('aspect-square size-full rounded-full object-cover', className)}
       data-slot="avatar-image"
       data-testid={testId}
@@ -55,9 +55,9 @@ function AvatarFallback({
   className,
   testId,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & SharedProps) {
+}: React.ComponentProps<typeof AvatarPrimitive.AvatarFallback> & SharedProps) {
   return (
-    <AvatarPrimitive.Fallback
+    <AvatarPrimitive.AvatarFallback
       className={cn(
         'flex size-full items-center justify-center rounded-full bg-surface-subtle text-body group-data-[size=sm]/avatar:text-body-sm',
         className

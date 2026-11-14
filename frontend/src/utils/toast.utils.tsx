@@ -50,15 +50,15 @@ const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
   return initialId ? `${initialId}_${resourceName}` : resourceName;
 };
 
-// Base UI: timeout 0 means sticky, and a `loading` toast never times out.
+// Sticky notifications use Infinity; errors stay until explicitly dismissed.
 const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined): number => {
   if (duration === null) {
-    return 0;
+    return Number.POSITIVE_INFINITY;
   }
   if (duration !== undefined) {
     return duration;
   }
-  return status === 'error' ? 0 : DEFAULT_TOAST_DURATION;
+  return status === 'error' ? Number.POSITIVE_INFINITY : DEFAULT_TOAST_DURATION;
 };
 
 /** Returns the toast id, for `updateToast` / `closeToast`. */
@@ -71,13 +71,13 @@ export const showToast = ({
   duration,
   onClose,
 }: ShowToastOptions): string =>
-  toast.add({
+  toast[status ?? 'info']({
     id: getToastId({ initialId: id, resourceName }),
     type: status,
     title,
     description,
-    timeout: toTimeout(status, duration),
-    onClose,
+    duration: toTimeout(status, duration),
+    onDismiss: onClose,
   });
 
 /** Only the fields given change. A new status re-applies its dismiss default unless `duration` is given. */
@@ -85,16 +85,16 @@ export const updateToast = (id: string, { status, title, description, duration }
   const timeout = status !== undefined || duration !== undefined ? toTimeout(status, duration) : undefined;
   toast.update(id, {
     ...(status !== undefined && { type: status }),
-    ...(timeout !== undefined && { timeout }),
+    ...(timeout !== undefined && { duration: timeout }),
     ...(title !== undefined && { title }),
     ...(description !== undefined && { description }),
   });
 };
 
-// Base UI closes every toast when the id is missing.
+// A missing SDK toast id dismisses all notifications.
 export const closeToast = (id: string) => {
   if (id) {
-    toast.close(id);
+    toast.dismiss(id);
   }
 };
 

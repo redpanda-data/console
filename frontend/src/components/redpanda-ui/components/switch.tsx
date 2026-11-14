@@ -1,6 +1,8 @@
-'use client';
+import { withAgentChanges } from '../lib/commit-agent-change';
+import type React from 'react';
+('use client');
 
-import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
+import * as SwitchPrimitive from '@ui-sdk/react/switch';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn, type SharedProps } from '../lib/utils';
@@ -20,32 +22,34 @@ const switchVariants = cva(
   }
 );
 
-type SwitchProps = SwitchPrimitive.Root.Props & SharedProps & VariantProps<typeof switchVariants>;
+type SwitchProps = React.ComponentProps<typeof SwitchPrimitive.Switch> &
+  SharedProps &
+  VariantProps<typeof switchVariants>;
 
 function Switch(allProps: SwitchProps) {
   const { className, testId, size, checked, ...props } = allProps;
 
-  // Normalize explicit `checked={undefined}` (e.g. react-hook-form initial value) to `false` so Base UI's `useControlled` doesn't warn.
+  // Normalize explicit `checked={undefined}` (e.g. react-hook-form initial value) to `false` so UI SDK's `useControlled` doesn't warn.
   const hasCheckedProp = 'checked' in allProps;
   const checkedOverride = hasCheckedProp && checked === undefined ? false : checked;
 
   return (
-    <SwitchPrimitive.Root
+    <SwitchPrimitive.Switch
       checked={checkedOverride}
       className={cn(switchVariants({ size }), className)}
       data-size={size ?? 'md'}
       data-slot="switch"
       data-testid={testId}
-      {...props}
+      {...withAgentChanges(props)}
     >
-      <SwitchPrimitive.Thumb
+      <SwitchPrimitive.SwitchThumb
         className={cn(
           'pointer-events-none block rounded-full bg-background ring-0 transition-transform data-checked:translate-x-[calc(100%-2px)] data-unchecked:translate-x-0 data-checked:bg-selected-foreground motion-reduce:transition-none',
           size === 'sm' ? 'size-3' : 'size-4'
         )}
         data-slot="switch-thumb"
       />
-    </SwitchPrimitive.Root>
+    </SwitchPrimitive.Switch>
   );
 }
 

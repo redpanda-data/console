@@ -1,6 +1,6 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { TrashIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 
 import { config } from '../../config';
@@ -35,7 +35,7 @@ const DebugBundleLink = ({
   return (
     <div>
       <div className="flex items-center gap-1">
-        <button
+        <ConsoleButton
           className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
             // Add JWT Bearer token if available (same as REST and gRPC calls)
@@ -70,9 +70,10 @@ const DebugBundleLink = ({
               });
           }}
           type="button"
+          variant="unstyled"
         >
           {downloadFilename}
-        </button>
+        </ConsoleButton>
         {Boolean(showDeleteButton) && (
           <Tooltip>
             <TooltipTrigger

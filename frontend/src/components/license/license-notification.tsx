@@ -1,6 +1,6 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { buttonVariants, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -104,18 +104,26 @@ export const LicenseNotification = () => {
           {/* Both CTAs navigate, preserving link semantics. */}
           <div className="my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
-              <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
+              <ConsoleButton
+                render={<Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license" />}
+                variant="unstyled"
+              >
                 Upload license
-              </Link>
+              </ConsoleButton>
             )}
-            <a
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              href="https://support.redpanda.com/"
-              rel="noopener noreferrer"
-              target="_blank"
+            <ConsoleButton
+              render={
+                <a
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                  href="https://support.redpanda.com/"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                />
+              }
+              variant="unstyled"
             >
               Request a license
-            </a>
+            </ConsoleButton>
           </div>
         </AlertDescription>
       </Alert>

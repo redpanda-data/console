@@ -101,8 +101,6 @@ export function parseNumericProp(value: unknown): number | undefined {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
-
-  return;
 }
 
 export function resolveNumericStep(inputProps: AutoFormFieldProps['inputProps'], fallbackValue?: number): number {
@@ -126,8 +124,6 @@ export function normalizeNumberValue(value: unknown): number | undefined {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
-
-  return;
 }
 
 export function getGroupedOptions(field: AutoFormFieldProps['field']): AutoFormOptionGroup[] | undefined {
@@ -195,7 +191,7 @@ export function StringLikeInput({
           disabled={inputProps.disabled}
           id={id}
           onBlur={inputProps.onBlur}
-          onChange={(event) => inputProps.onValueChange(event.target.value)}
+          onValueChange={(value) => inputProps.onValueChange(value)}
           placeholder={placeholder}
           testId={`${testId}-input`}
           type={type}
@@ -212,7 +208,7 @@ export function StringLikeInput({
       disabled={inputProps.disabled}
       id={id}
       onBlur={inputProps.onBlur}
-      onChange={(event) => inputProps.onValueChange(event.target.value)}
+      onValueChange={(inputText) => inputProps.onValueChange(inputText)}
       placeholder={placeholder}
       testId={testId}
       type={type}
@@ -234,5 +230,4 @@ export function readDataProviderId(field: AutoFormFieldProps['field'] | undefine
   if (bag.ui && typeof bag.ui === 'object' && typeof bag.ui.dataProvider === 'string') {
     return bag.ui.dataProvider;
   }
-  return;
 }

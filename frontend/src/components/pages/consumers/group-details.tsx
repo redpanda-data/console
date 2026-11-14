@@ -225,9 +225,9 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
         <div className="mb-6 flex items-center gap-4">
           <Input
             containerClassName="w-[300px]"
-            onChange={(e) => {
-              setQuickSearch(e.target.value);
-              onSearchChange({ q: e.target.value });
+            onValueChange={(inputText) => {
+              setQuickSearch(inputText);
+              onSearchChange({ q: inputText });
             }}
             placeholder="Filter by member"
             size="sm"

@@ -14,7 +14,7 @@ import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { YamlEditor } from 'components/ui/yaml/yaml-editor';
 import {
@@ -42,7 +43,6 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
@@ -670,14 +670,14 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onOpenInYaml ? (
-          <DropdownMenuItem onClick={onOpenInYaml}>
+          <DropdownMenuItem onSelect={onOpenInYaml}>
             <FileCode2 className="size-4" />
             View in YAML
           </DropdownMenuItem>
         ) : null}
         {onOpenInYaml && onDelete ? <DropdownMenuSeparator /> : null}
         {onDelete ? (
-          <DropdownMenuItem onClick={onDelete} variant="destructive">
+          <DropdownMenuItem onSelect={onDelete} variant="destructive">
             <Trash2 className="size-4" />
             Delete
           </DropdownMenuItem>
@@ -796,7 +796,7 @@ const CaseCheckInput = ({
     className="w-full"
     disabled={readOnly}
     id={id}
-    onChange={(e) => setCheck(e.target.value)}
+    onValueChange={(inputText) => setCheck(inputText)}
     placeholder={CASE_CHECK_PLACEHOLDER}
     value={check}
   />
@@ -878,10 +878,11 @@ const CaseConditionSection = ({
           <Tooltip>
             <TooltipTrigger
               render={
-                <button
+                <ConsoleButton
                   aria-label="About routing conditions"
                   className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-warning/50 transition-colors hover:text-warning"
                   type="button"
+                  variant="unstyled"
                 />
               }
             >

@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { BadRequestSchema } from 'protogen/google/rpc/error_details_pb';
 import {
   ACL_Operation,
@@ -214,9 +215,9 @@ const PrincipalField = ({ control, picker }: PrincipalFieldProps) => {
                   // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
                   autoFocus
                   className="flex-1"
-                  onChange={(e) => {
-                    setPrincipalValue(e.target.value);
-                    field.onChange(e.target.value ? `${principalType}:${e.target.value}` : '');
+                  onValueChange={(inputText) => {
+                    setPrincipalValue(inputText);
+                    field.onChange(inputText ? `${principalType}:${inputText}` : '');
                   }}
                   placeholder="Enter group name..."
                   value={principalValue}
@@ -345,7 +346,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             { value: ACL_ResourcePatternType.PREFIXED, label: 'Prefixed' },
                             { value: ACL_ResourcePatternType.ANY, label: 'Any' },
                           ].map((opt) => (
-                            <button
+                            <ConsoleButton
                               className={clsx(
                                 'inline-flex flex-1 items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
                                 field.value === opt.value
@@ -355,9 +356,10 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                               key={opt.value}
                               onClick={() => field.onChange(opt.value)}
                               type="button"
+                              variant="unstyled"
                             >
                               {opt.label}
-                            </button>
+                            </ConsoleButton>
                           ))}
                         </div>
                         {PATTERN_TYPE_HELP[field.value] && (
@@ -377,7 +379,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                       <FormItem>
                         <FormLabel>Resource Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. my-topic" {...field} />
+                          <Input placeholder="e.g. my-topic" {...field} onValueChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -459,7 +461,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                         supported by the Kafka API.
                       </FormDescription>
                       <FormControl>
-                        <Input placeholder="*" {...field} />
+                        <Input placeholder="*" {...field} onValueChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

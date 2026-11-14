@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { docsLinks } from 'utils/docs-links';
 
 import { appGlobal } from '../../../state/app-global';
@@ -244,9 +245,13 @@ class Overview extends PageComponent {
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr className="mt-4 mb-2" />
                 <div className="mt-4 flex flex-row items-center gap-2 text-subtle">
-                  <a href={docsLinks.selfManaged.home}>Documentation</a>
+                  <ConsoleButton render={<a href={docsLinks.selfManaged.home} />} variant="unstyled">
+                    Documentation
+                  </ConsoleButton>
                   <span className="mx-2 text-disabled">|</span>
-                  <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
+                  <ConsoleButton render={<a href={docsLinks.selfManaged.rpkInstall} />} variant="unstyled">
+                    CLI tools
+                  </ConsoleButton>
                 </div>
               </Section>
             </div>
@@ -392,9 +397,9 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/users">
+              <ConsoleButton key={0} render={<Link to="/security/users" />} variant="unstyled">
                 {serviceAccounts}
-              </Link>,
+              </ConsoleButton>,
             ],
           ]}
           title="Service Accounts"
@@ -403,9 +408,9 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/permissions">
+              <ConsoleButton key={0} render={<Link to="/security/permissions" />} variant="unstyled">
                 {aclCount}
-              </Link>,
+              </ConsoleButton>,
             ],
           ]}
           title="ACLs"
@@ -441,11 +446,14 @@ function ClusterDetails() {
         <>
           <div />
           <div className="col-span-1 lg:col-span-2">
-            <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
+            <ConsoleButton
+              render={<a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank" />}
+              variant="unstyled"
+            >
               <Badge tone="informative" variant="solid">
                 <span className="underline">Redpanda Enterprise trial available</span>
               </Badge>
-            </a>
+            </ConsoleButton>
           </div>
         </>
       )}
@@ -454,7 +462,9 @@ function ClusterDetails() {
         <>
           <div />
           <div className="col-span-1 lg:col-span-2">
-            <Link to="/upload-license">Upload new license</Link>
+            <ConsoleButton render={<Link to="/upload-license" />} variant="unstyled">
+              Upload new license
+            </ConsoleButton>
           </div>
         </>
       )}

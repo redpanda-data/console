@@ -12,7 +12,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   Form,
@@ -201,7 +201,14 @@ const IdleField = ({ control }: FormPartProps) => (
         <div className="flex flex-wrap items-center gap-1.5 font-mono">
           <FormControl
             render={
-              <Input aria-label="Idle timeout" className="w-20" placeholder={DEFAULT_IDLE} size="sm" {...field} />
+              <Input
+                aria-label="Idle timeout"
+                className="w-20"
+                placeholder={DEFAULT_IDLE}
+                size="sm"
+                {...field}
+                onValueChange={field.onChange}
+              />
             }
           />
           {IDLE_PRESETS.map((preset) => (
@@ -340,15 +347,20 @@ const StopExtras = ({
 const DocsLink = () => {
   const docsUrl = getConnectorDocsUrl('input', READ_UNTIL);
   return docsUrl ? (
-    <a
-      className="inline-flex items-center gap-1 text-body-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-      href={docsUrl}
-      rel="noopener noreferrer"
-      target="_blank"
+    <ConsoleButton
+      render={
+        <a
+          className="inline-flex items-center gap-1 text-body-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          href={docsUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        />
+      }
+      variant="unstyled"
     >
       About <span className="font-mono">read_until</span>
       <ExternalLink className="size-3" />
-    </a>
+    </ConsoleButton>
   ) : null;
 };
 
@@ -447,6 +459,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                                       inputMode="numeric"
                                       size="sm"
                                       {...limitField}
+                                      onValueChange={limitField.onChange}
                                     />
                                   }
                                 />
@@ -492,6 +505,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                                       placeholder='this.status == "done"'
                                       size="sm"
                                       {...checkField}
+                                      onValueChange={checkField.onChange}
                                     />
                                   }
                                 />
@@ -555,7 +569,7 @@ export function StopConditionEditor({
 
 type StopConditionPopoverProps = Omit<StopConditionEditorProps, 'onClose'> & {
   /** The trigger element (rendered via Base UI `render`). */
-  trigger: ReactElement;
+  trigger: ReactElement<Record<string, unknown>>;
   /** A tooltip on the trigger. */
   tooltip?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
@@ -634,7 +648,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
       slot={slot}
       tooltip={sentence}
       trigger={
-        <button
+        <ConsoleButton
           aria-label={`${eyebrow} ${text}: ${editable ? 'edit the stop condition' : 'stop condition'} for ${name}`}
           className={cn(
             // -mt-px folds its top rule into the header's when nothing sits between them.
@@ -648,6 +662,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           onClick={stopReactBubble}
           style={{ height: FLOW_STOP_ROW_H }}
           type="button"
+          variant="unstyled"
         >
           <TonedIcon
             className="size-3.5 shrink-0"
@@ -660,7 +675,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           <span className="min-w-0 flex-1 animate-in truncate duration-200 fade-in" key={text}>
             {text}
           </span>
-        </button>
+        </ConsoleButton>
       }
     />
   );

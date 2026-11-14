@@ -1,9 +1,10 @@
-// Copyright 2026 Redpanda Data, Inc.
-
 'use client';
 
-import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
-import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group';
+// Copyright 2026 Redpanda Data, Inc.
+
+import { withAgentChanges } from '../lib/commit-agent-change';
+import { Toggle as TogglePrimitive } from '@ui-sdk/react/toggle';
+import { ToggleGroup as ToggleGroupPrimitive } from '@ui-sdk/react/toggle';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -90,11 +91,12 @@ const useToggleGroup = (): ToggleGroupContextProps => {
   return context;
 };
 
-type ToggleGroupProps = Omit<React.ComponentProps<typeof ToggleGroupPrimitive>, 'value' | 'defaultValue'> &
+type ToggleGroupProps = Omit<React.ComponentProps<typeof ToggleGroupPrimitive>, 'value' | 'defaultValue' | 'children'> &
   VariantProps<typeof toggleVariants> &
   SharedProps & {
     variant?: Variant;
     attached?: boolean;
+    children?: React.ReactNode;
     value?: string[];
     defaultValue?: string[];
   };
@@ -139,7 +141,7 @@ function ToggleGroup({
       data-variant={variant}
       disabled={disabled}
       orientation={orientation}
-      {...props}
+      {...withAgentChanges(props)}
     >
       {segments.map((segment, index) => (
         <ToggleGroupContext.Provider

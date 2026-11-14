@@ -29,7 +29,7 @@ export const DeleteRoleConfirmModal: FC<{
   roleName: string;
   numberOfPrincipals: number;
   onConfirm: () => Promise<void> | void;
-  buttonEl?: React.ReactElement;
+  buttonEl?: React.ReactElement<Record<string, unknown>>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl, open: openProp, onOpenChange: onOpenChangeProp }) => {
@@ -68,7 +68,7 @@ export const DeleteRoleConfirmModal: FC<{
             deleted. To restore the permissions, the role will need to be recreated and reassigned to these principals.
             To confirm, type the role name in the confirmation box below.
           </DialogDescription>
-          <Input onChange={(e) => setConfirmText(e.target.value)} placeholder={roleName} value={confirmText} />
+          <Input onValueChange={(inputText) => setConfirmText(inputText)} placeholder={roleName} value={confirmText} />
         </DialogBody>
         <DialogFooter>
           <Button onClick={() => handleOpenChange(false)} variant="outline">

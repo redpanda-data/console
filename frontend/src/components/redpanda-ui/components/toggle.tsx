@@ -1,6 +1,7 @@
 'use client';
 
-import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
+import { withAgentChanges } from '../lib/commit-agent-change';
+import { Toggle as TogglePrimitive } from '@ui-sdk/react/toggle';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -36,7 +37,7 @@ function Toggle({ className, variant, size, testId, ...props }: ToggleProps) {
       className={cn(toggleVariants({ variant, size, className }))}
       data-slot="toggle"
       data-testid={testId}
-      {...props}
+      {...withAgentChanges(props)}
     />
   );
 }

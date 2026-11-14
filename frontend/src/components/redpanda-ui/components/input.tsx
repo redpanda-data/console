@@ -1,16 +1,19 @@
 'use client';
 
+import { Input as InputPrimitive } from '@ui-sdk/react/input';
+
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Eye, EyeOff, Minus, Plus } from 'lucide-react';
 import React, { createContext, useEffect, useState } from 'react';
 
 import { Button } from './button';
 import { useFieldContext } from './field';
+import { commitAgentChange, withAgentChanges } from '../lib/commit-agent-change';
 import { groupItemClasses, useGroup } from './group';
 import { cn, type SharedProps } from '../lib/utils';
 
 export const inputVariants = cva(
-  'placeholder:!text-placeholder !border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full min-w-0 border bg-input-fill text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-body file:text-foreground hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none md:text-body [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+  'flex w-full min-w-0 border !border-input bg-input-fill text-body-lg shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:text-body file:font-medium file:text-foreground placeholder:!text-placeholder hover:not-disabled:!border-input-hover hover:not-disabled:bg-input-fill-hover focus-visible:!border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:!border-destructive aria-invalid:ring-invalid motion-reduce:transition-none md:text-body [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
   {
     variants: {
       size: {
@@ -57,12 +60,14 @@ const inputContainerVariants = cva('', {
 });
 
 export interface InputProps
-  extends Omit<React.ComponentProps<'input'>, 'size'>,
+  extends Omit<React.ComponentProps<'input'>, 'size' | 'onChange'>,
     VariantProps<typeof inputVariants>,
     SharedProps {
   children?: React.ReactNode;
   containerClassName?: string;
+  onValueChange?: React.ComponentProps<typeof InputPrimitive>['onValueChange'];
   showStepControls?: boolean;
+  'data-agent-secret'?: boolean | string;
 }
 
 function useNumberInputHandlers(inputRef: React.RefObject<HTMLInputElement | null>, step: number) {
@@ -98,9 +103,12 @@ function Input({
   children,
   containerClassName,
   readOnly,
+  onValueChange,
   ref,
   ...props
 }: InputProps) {
+  const nativeProps: React.ComponentProps<'input'> = props;
+  const { onChange: _nativeChange, ...elementProps } = nativeProps;
   const fieldCtx = useFieldContext();
   const [showPassword, setShowPassword] = useState(false);
   const [startWidth, setStartWidth] = useState<number | undefined>();
@@ -147,12 +155,16 @@ function Input({
   }
 
   const inputElement = (
-    <input
-      {...props}
+    <InputPrimitive
+      {...elementProps}
+      onValueChange={(value, details) => commitAgentChange(onValueChange, value, details)}
       aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
       aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
       className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
+      data-agent-secret={isPasswordInput || props['data-agent-secret'] || undefined}
       data-slot="input"
+      defaultValue={props.defaultValue === undefined ? undefined : String(props.defaultValue)}
+      value={props.value === undefined ? undefined : String(props.value)}
       {...(testId !== undefined && { 'data-testid': testId })}
       readOnly={readOnly}
       ref={setRefs}
@@ -310,4 +322,8 @@ const InputEnd = ({ children, className, ...props }: { children: React.ReactNode
   );
 };
 
-export { Input, InputEnd, InputStart };
+function InlineInput({ testId, ...props }: React.ComponentProps<typeof InputPrimitive> & SharedProps) {
+  return <InputPrimitive data-testid={testId} {...withAgentChanges(props)} />;
+}
+
+export { InlineInput, Input, InputEnd, InputStart };

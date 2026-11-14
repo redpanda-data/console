@@ -213,10 +213,10 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
                   <Input
                     disabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
                     maxLength={20}
-                    onChange={(e) => {
-                      setCustomStartOffsetValue(e.target.value);
-                      if (!Number.isNaN(Number(e.target.value))) {
-                        changeStartOffset(Number(e.target.value));
+                    onValueChange={(inputText) => {
+                      setCustomStartOffsetValue(inputText);
+                      if (!Number.isNaN(Number(inputText))) {
+                        changeStartOffset(Number(inputText));
                       }
                     }}
                     style={{ width: '7.5em' }}
@@ -324,7 +324,7 @@ const AddFilterMenuItem: FC<{
 }> = ({ testId, disabledReason, onClick, children }) => {
   if (!disabledReason) {
     return (
-      <DropdownMenuItem data-testid={testId} onClick={onClick}>
+      <DropdownMenuItem data-testid={testId} onSelect={onClick}>
         {children}
       </DropdownMenuItem>
     );
@@ -434,19 +434,19 @@ function MessageSettingsMenu({ dialogs }: { dialogs: MessageViewDialogs }) {
       <DropdownMenuContent>
         <DropdownMenuItem
           data-testid="deserialization-settings-menu-item"
-          onClick={() => dialogs.setShowDeserializersModal(true)}
+          onSelect={() => dialogs.setShowDeserializersModal(true)}
         >
           Deserialization
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="column-settings-menu-item"
-          onClick={() => dialogs.setShowColumnSettingsModal(true)}
+          onSelect={() => dialogs.setShowColumnSettingsModal(true)}
         >
           Column settings
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="preview-fields-menu-item"
-          onClick={() => dialogs.setShowPreviewFieldsModal(true)}
+          onSelect={() => dialogs.setShowPreviewFieldsModal(true)}
         >
           Preview fields
         </DropdownMenuItem>
@@ -521,8 +521,8 @@ function QuickSearchRow({
       {/* Quick Search */}
       <Input
         data-testid="message-quick-search-input"
-        onChange={(x) => {
-          setQuickSearch(x.target.value);
+        onValueChange={(inputText) => {
+          setQuickSearch(inputText);
         }}
         placeholder="Filter table content ..."
         value={quickSearch}

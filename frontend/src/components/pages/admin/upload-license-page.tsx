@@ -89,7 +89,7 @@ const UploadLicenseForm: FC<{
               <Textarea
                 autoComplete="off"
                 id="license"
-                onChange={(e) => setLicense(e.target.value)}
+                onValueChange={(inputText) => setLicense(inputText)}
                 // `rows` only applies without content sizing.
                 resize="vertical"
                 rows={10}

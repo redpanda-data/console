@@ -1,3 +1,5 @@
+@layer ui-sdk;
+
 @import "tailwindcss";
 @import "./components/redpanda-ui/style/theme.css";
 @import "tw-animate-css";

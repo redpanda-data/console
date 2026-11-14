@@ -1721,7 +1721,7 @@ function PipelineLaneTabs({ page, expanded, onToggleExpanded }: PageSectionProps
     <div className="relative shrink-0">
       {lanes.length > 0 ? (
         <Tabs value={page.config.mode === 'view' ? activeViewLane : activeEditLane}>
-          <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
+          <TabsList className="[&_[data-slot=tabs-tab]]:w-auto" variant="underline">
             {lanes.map((lane) => (
               <TabsTrigger
                 disabled={lane.disabled}

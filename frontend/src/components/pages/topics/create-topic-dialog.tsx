@@ -121,10 +121,10 @@ function NumInput(p: {
         commit(n);
         p.onBlur?.();
       }}
-      onChange={(e) => {
-        setEditValue(e.target.value);
-        const n = Number(e.target.value);
-        p.onChange(e.target.value !== '' && !Number.isNaN(n) ? n : undefined);
+      onValueChange={(inputText) => {
+        setEditValue(inputText);
+        const n = Number(inputText);
+        p.onChange(inputText !== '' && !Number.isNaN(n) ? n : undefined);
       }}
       placeholder={p.placeholder}
       spellCheck={false}
@@ -239,6 +239,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
               placeholder="e.g. orders"
               spellCheck={false}
               {...field}
+              onValueChange={field.onChange}
             />
             <FieldDescription>Letters, numbers, dots, underscores, and hyphens.</FieldDescription>
             <FieldError errors={[fieldState.error]} />
@@ -397,6 +398,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
                       {...field}
                       aria-label="Property name"
                       autoComplete="off"
+                      onValueChange={field.onChange}
                       placeholder="Property Name..."
                       spellCheck={false}
                     />
@@ -410,6 +412,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
                       {...field}
                       aria-label="Property value"
                       autoComplete="off"
+                      onValueChange={field.onChange}
                       placeholder="Property Value..."
                       spellCheck={false}
                     />

@@ -43,7 +43,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
             name={`${fieldName}.${idx}.key` as Path<TFieldValues>}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid} className="flex-1">
-                <Input placeholder="Key" {...field} />
+                <Input placeholder="Key" {...field} onValueChange={field.onChange} />
                 {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}
@@ -53,7 +53,7 @@ export const TagsFieldList = <TFieldValues extends FieldValues>({
             name={`${fieldName}.${idx}.value` as Path<TFieldValues>}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid} className="flex-1">
-                <Input placeholder="Value" {...field} />
+                <Input placeholder="Value" {...field} onValueChange={field.onChange} />
                 {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
               </Field>
             )}

@@ -1,4 +1,4 @@
-import { Radio as RadioGroupPrimitive } from '@base-ui/react/radio';
+import * as RadioGroupPrimitive from '@ui-sdk/react/radio';
 import { Circle } from 'lucide-react';
 import type { ComponentProps, HTMLAttributes } from 'react';
 
@@ -12,12 +12,13 @@ export const Choicebox = ({ className, testId, ...props }: ChoiceboxProps) => (
   <RadioGroup className={cn('w-full', className)} data-testid={testId} {...props} />
 );
 
-export type ChoiceboxItemProps = ComponentProps<typeof RadioGroupPrimitive.Root> &
-  SharedProps &
+export type ChoiceboxItemProps = Omit<ComponentProps<typeof RadioGroupPrimitive.Radio>, 'children'> & {
+  children?: React.ReactNode;
+} & SharedProps &
   Partial<Pick<CardProps, 'size'>>;
 
 export const ChoiceboxItem = ({ className, children, testId, size, ...props }: ChoiceboxItemProps) => (
-  <RadioGroupPrimitive.Root {...props} className="group">
+  <RadioGroupPrimitive.Radio {...props} className="group">
     <Card
       className={cn(
         'flex cursor-pointer flex-row items-start justify-between rounded-md border-2 border-solid p-4 text-left shadow-none transition-all motion-reduce:transition-none',
@@ -30,7 +31,7 @@ export const ChoiceboxItem = ({ className, children, testId, size, ...props }: C
     >
       {children}
     </Card>
-  </RadioGroupPrimitive.Root>
+  </RadioGroupPrimitive.Radio>
 );
 
 export type ChoiceboxItemHeaderProps = ComponentProps<typeof CardHeader>;
@@ -70,10 +71,10 @@ export const ChoiceboxItemContent = ({ className, ...props }: ChoiceboxItemConte
   />
 );
 
-export type ChoiceboxItemIndicatorProps = ComponentProps<typeof RadioGroupPrimitive.Indicator>;
+export type ChoiceboxItemIndicatorProps = ComponentProps<typeof RadioGroupPrimitive.RadioIndicator>;
 
 export const ChoiceboxItemIndicator = ({ className, ...props }: ChoiceboxItemIndicatorProps) => (
-  <RadioGroupPrimitive.Indicator
+  <RadioGroupPrimitive.RadioIndicator
     className={cn(
       'flex items-center justify-center transition-[opacity,transform] ease-out motion-reduce:transition-none',
       'data-[starting-style]:scale-0 data-[starting-style]:opacity-0',
@@ -84,5 +85,5 @@ export const ChoiceboxItemIndicator = ({ className, ...props }: ChoiceboxItemInd
     {...props}
   >
     <Circle className="size-2.5 fill-current text-current" data-slot="radio-group-indicator-circle" />
-  </RadioGroupPrimitive.Indicator>
+  </RadioGroupPrimitive.RadioIndicator>
 );

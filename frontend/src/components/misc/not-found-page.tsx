@@ -1,4 +1,5 @@
 import { Link, useLocation, useRouter } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 
 import { getLegacyAiDestination } from './legacy-ai-route';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
@@ -21,9 +22,12 @@ export const NotFoundPage = () => {
           <p className="max-w-xl text-muted-foreground">
             AI agents, MCP servers, knowledge bases, and transcripts are now available in Redpanda AI.
           </p>
-          <a className={cn(buttonVariants(), 'rounded-md')} href={legacyAiDestination}>
+          <ConsoleButton
+            render={<a className={cn(buttonVariants(), 'rounded-md')} href={legacyAiDestination} />}
+            variant="unstyled"
+          >
             Open Redpanda AI
-          </a>
+          </ConsoleButton>
           <Button
             onClick={() => {
               router.history.back();
@@ -52,9 +56,9 @@ export const NotFoundPage = () => {
         >
           Go back
         </Button>
-        <Link className={buttonVariants({ variant: 'link' })} to="/">
+        <ConsoleButton render={<Link className={buttonVariants({ variant: 'link' })} to="/" />} variant="unstyled">
           Return home
-        </Link>
+        </ConsoleButton>
       </div>
     </div>
   );

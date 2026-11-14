@@ -9,21 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  DragDropContext,
-  Draggable,
-  type DraggableProvided,
-  Droppable,
-  type DropResult,
-  type ResponderProvided,
-} from '@hello-pangea/dnd';
-import { arrayMoveMutable } from 'array-move';
 import { CloseIcon, MenuIcon, SettingsIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label as CheckboxLabel } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
+import { SortableHandle, SortableItem, SortableList } from 'components/redpanda-ui/components/sortable';
 import React from 'react';
 
 import { PatternHelpDrawer } from './preview-settings/pattern-help-drawer';
@@ -69,15 +61,6 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
 
   assignFreeIds(tags);
 
-  const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-    if (!result.destination) {
-      return;
-    }
-    const newTags = [...tags];
-    arrayMoveMutable(newTags, result.source.index, result.destination.index);
-    setStoredPreviewTags(topicName, newTags);
-  };
-
   const content = (
     <>
       <div>
@@ -88,51 +71,55 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
       </div>
 
       <div className="previewTagsList">
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="droppable">
-            {(droppableProvided, _droppableSnapshot) => (
-              <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
-                {tags.map((tag, index) => (
-                  <Draggable draggableId={tag.id} index={index} key={tag.id}>
-                    {(draggableProvided, _draggableSnapshot) => (
-                      <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                        <PreviewTagSettings
-                          allCurrentKeys={currentKeys}
-                          draggableProvided={draggableProvided}
-                          index={index}
-                          onRemove={() => {
-                            const newTags = tags.filter((t) => t.id !== tag.id);
-                            setStoredPreviewTags(topicName, newTags);
-                          }}
-                          tag={tag}
-                          topicName={topicName}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
+        <SortableList
+          aria-label="Message preview patterns"
+          onValueChange={(order) =>
+            setStoredPreviewTags(
+              topicName,
+              order.flatMap((id) => tags.filter((tag) => tag.id === id))
+            )
+          }
+          value={tags.map((tag) => tag.id)}
+        >
+          {(order) => (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {order
+                .flatMap((id) => tags.filter((tag) => tag.id === id))
+                .map((tag, index) => (
+                  <SortableItem key={tag.id} value={tag.id}>
+                    <PreviewTagSettings
+                      allCurrentKeys={currentKeys}
+                      index={index}
+                      onRemove={() => {
+                        const newTags = tags.filter((t) => t.id !== tag.id);
+                        setStoredPreviewTags(topicName, newTags);
+                      }}
+                      tag={tag}
+                      topicName={topicName}
+                    />
+                  </SortableItem>
                 ))}
-                {droppableProvided.placeholder}
-                <Button
-                  onClick={() => {
-                    const newTag: PreviewTagV2 = {
-                      id: getFreeId(tags),
-                      isActive: true,
-                      pattern: '',
-                      searchInMessageHeaders: false,
-                      searchInMessageKey: false,
-                      searchInMessageValue: true,
-                    };
-                    const newTags = [...tags, newTag];
-                    setStoredPreviewTags(topicName, newTags);
-                  }}
-                  variant="outline"
-                >
-                  Add entry...
-                </Button>
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+
+              <Button
+                onClick={() => {
+                  const newTag: PreviewTagV2 = {
+                    id: getFreeId(tags),
+                    isActive: true,
+                    pattern: '',
+                    searchInMessageHeaders: false,
+                    searchInMessageKey: false,
+                    searchInMessageValue: true,
+                  };
+                  const newTags = [...tags, newTag];
+                  setStoredPreviewTags(topicName, newTags);
+                }}
+                variant="outline"
+              >
+                Add entry...
+              </Button>
+            </div>
+          )}
+        </SortableList>
       </div>
 
       <div style={{ marginTop: '1em' }}>
@@ -175,14 +162,12 @@ const PreviewTagSettings = ({
   tag,
   onRemove,
   allCurrentKeys,
-  draggableProvided,
   topicName,
 }: {
   tag: PreviewTagV2;
   index: number;
   onRemove: () => void;
   allCurrentKeys: string[];
-  draggableProvided: DraggableProvided;
   topicName: string;
 }) => {
   const { getPreviewTags: getStoredTags, setPreviewTags: setStoredTags } = useTopicSettingsStore();
@@ -196,9 +181,13 @@ const PreviewTagSettings = ({
   return (
     <div className="mb-1.5 flex place-items-center gap-1 rounded-sm p-1">
       {/* Move Handle */}
-      <span className="moveHandle" {...draggableProvided.dragHandleProps}>
+      <SortableHandle
+        aria-label={`Reorder pattern ${tag.customName || tag.pattern || tag.id}`}
+        className="moveHandle"
+        value={tag.id}
+      >
         <MenuIcon />
-      </span>
+      </SortableHandle>
 
       {/* Enabled */}
       <Checkbox
@@ -222,7 +211,7 @@ const PreviewTagSettings = ({
             <Label style={{ marginBottom: '.5em' }} text="Display Name">
               <Input
                 autoComplete={randomId()}
-                onChange={(e) => updateTag({ customName: e.target.value })}
+                onValueChange={(inputText) => updateTag({ customName: inputText })}
                 placeholder="Enter a display name..."
                 size="sm"
                 spellCheck={false}
@@ -266,9 +255,9 @@ const PreviewTagSettings = ({
       </div>
 
       {/* Remove */}
-      <button className="inlineButton" onClick={onRemove} type="button">
+      <ConsoleButton className="inlineButton" onClick={onRemove} type="button" variant="unstyled">
         <CloseIcon />
-      </button>
+      </ConsoleButton>
     </div>
   );
 };

@@ -10,7 +10,7 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';

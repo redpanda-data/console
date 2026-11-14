@@ -51,7 +51,7 @@ const ExplicitConfirmModal = (p: {
 
           <div className="mt-4">
             To confirm, enter "{requiredText}":
-            <Input onChange={(e) => setConfirmBoxText(e.target.value)} value={confirmBoxText} />
+            <Input onValueChange={(inputText) => setConfirmBoxText(inputText)} value={confirmBoxText} />
           </div>
         </DialogBody>
 

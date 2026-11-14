@@ -29,15 +29,15 @@ rs.mock('state/ui-state', () => ({
 }));
 
 // Mock toast notifications so we can assert on them.
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: {
     success: rs.fn(),
     error: rs.fn(),
   },
 }));
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { renderWithFileRoutes } from 'test-utils';
 
 const mockedUseListShadowLinksQuery = rs.mocked(useListShadowLinksQuery);

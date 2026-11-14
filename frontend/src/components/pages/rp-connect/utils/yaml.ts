@@ -1,5 +1,5 @@
 import { ConnectError } from '@connectrpc/connect';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { escapeRegExp } from 'utils/regex';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import {

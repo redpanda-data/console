@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import type { CSSProperties } from 'react';
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
 
 import { highlightControlChars } from './highlight-control-chars';
 import type { Payload } from '../../../../../state/rest-interfaces';
@@ -174,8 +174,16 @@ export const PayloadComponent = (p: {
   const renderData = useMemo(() => preparePayloadData(payload), [payload]);
 
   if (payload.isPayloadTooLarge) {
-    return <LargePayloadNotice loadLargeMessage={loadLargeMessage} />;
+    return (
+      <div className="contents" data-agent-hidden="true">
+        <LargePayloadNotice loadLargeMessage={loadLargeMessage} />
+      </div>
+    );
   }
 
-  return renderPayloadData(renderData, payload, p.viewerStyle);
+  return (
+    <div className="contents" data-agent-hidden="true">
+      {renderPayloadData(renderData, payload, p.viewerStyle)}
+    </div>
+  );
 };

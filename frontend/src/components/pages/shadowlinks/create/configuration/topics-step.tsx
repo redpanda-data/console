@@ -129,7 +129,12 @@ export const TopicsStep = () => {
                       render={({ field: nameField }) => (
                         <FormItem className="flex-1">
                           <FormControl>
-                            <Input placeholder="* or metrics" testId={`topic-filter-${index}-name`} {...nameField} />
+                            <Input
+                              placeholder="* or metrics"
+                              testId={`topic-filter-${index}-name`}
+                              {...nameField}
+                              onValueChange={nameField.onChange}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

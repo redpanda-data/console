@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import React from 'react';
 
 import type { BadgeEmphasis, BadgeProps, BadgeSize, BadgeTone } from './badge';
@@ -82,17 +83,16 @@ const BadgeGroup = ({
         (renderOverflowContent ? (
           <TooltipProvider>
             <Tooltip>
-              {/* A real <button>, for two reasons: Base UI's Trigger defaults to
-                    nativeButton=true, so a non-button child warns and drops native button
-                    semantics — which is also what makes the badge keyboard-focusable, opening
-                    the tooltip on focus and not just hover. The Badge *is* that button rather
-                    than sitting inside one, because Badge scopes its hover to `:is(a, button)`:
-                    nested, the selector never matches and the one interactive badge in the
-                    group becomes the only one that doesn't react. */}
               <TooltipTrigger
                 render={overflowBadge({
                   className: 'cursor-pointer appearance-none',
-                  render: <button aria-label={`Show ${overflowChildren.length} more`} type="button" />,
+                  render: (
+                    <ConsoleButton
+                      aria-label={`Show ${overflowChildren.length} more`}
+                      type="button"
+                      variant="unstyled"
+                    />
+                  ),
                 })}
               />
               <TooltipContent>{renderOverflowContent(overflowChildren)}</TooltipContent>

@@ -12,10 +12,11 @@
 import { create } from '@bufbuild/protobuf';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
+import { toast } from 'components/redpanda-ui/components/toast';
 import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
 import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import {
@@ -92,9 +93,14 @@ const encodingOptions: EncodingOption[] = [
 const protoBufInfoElement = (
   <p className="text-body-sm">
     Protobuf schemas can define multiple types. Specify which type you want to use for this message.{' '}
-    <a href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank">
+    <ConsoleButton
+      render={
+        <a href="https://protobuf.dev/reference/protobuf/google.protobuf/" rel="noopener noreferrer" target="_blank" />
+      }
+      variant="unstyled"
+    >
       Learn more here.
-    </a>
+    </ConsoleButton>
   </p>
 );
 
@@ -113,7 +119,7 @@ function encodingToLanguage(encoding: PayloadEncoding) {
   }
 }
 
-// Numeric-valued select wrapper bridging the registry Select (string values) with
+// Numeric-valued select wrapper bridging the SDK Select (string values) with
 // react-hook-form fields that hold numeric enums (partition, compression, encoding, version).
 function NumberSelect({
   value,
@@ -121,7 +127,9 @@ function NumberSelect({
   options,
   testId,
   placeholder,
+  label,
 }: {
+  label: string;
   value: number | undefined;
   onChange: (value: number) => void;
   options: { label: React.ReactNode; value: number }[];
@@ -130,7 +138,7 @@ function NumberSelect({
 }) {
   return (
     <Select onValueChange={(raw) => onChange(Number(raw))} value={value === undefined ? undefined : String(value)}>
-      <SelectTrigger testId={testId}>
+      <SelectTrigger aria-label={label} testId={testId}>
         <SelectValue placeholder={placeholder}>
           {(raw) => options.find((o) => String(o.value) === raw)?.label ?? placeholder}
         </SelectValue>
@@ -383,7 +391,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   };
 
   return (
-    <form className="flex w-full max-w-[600px] flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+    <form
+      className="flex w-full max-w-[600px] flex-col gap-6"
+      data-agent-history="draft"
+      onSubmit={handleSubmit(onSubmit)}
+    >
       <div className="flex flex-row gap-4">
         <Controller
           control={control}
@@ -391,7 +403,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           render={({ field }) => (
             <Field className="flex-1">
               <FieldLabel htmlFor="partition">Partition</FieldLabel>
-              <NumberSelect onChange={field.onChange} options={availablePartitions} value={field.value} />
+              <NumberSelect
+                label="Partition"
+                onChange={field.onChange}
+                options={availablePartitions}
+                value={field.value}
+              />
             </Field>
           )}
         />
@@ -401,7 +418,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           render={({ field }) => (
             <Field className="flex-1">
               <FieldLabel htmlFor="compressionType">Compression Type</FieldLabel>
-              <NumberSelect onChange={field.onChange} options={compressionTypes} value={field.value} />
+              <NumberSelect
+                label="Compression Type"
+                onChange={field.onChange}
+                options={compressionTypes}
+                value={field.value}
+              />
             </Field>
           )}
         />
@@ -409,7 +431,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
       <FieldSeparator />
 
-      <FieldSet>
+      <FieldSet data-agent-secret="true">
         <FieldLegend>Headers</FieldLegend>
         <Controller
           control={control}
@@ -436,7 +458,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
             render={({ field }) => (
               <Field className="col-span-2">
                 <FieldLabel htmlFor="key.encoding">Type</FieldLabel>
-                <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+                <NumberSelect
+                  label="Key Type"
+                  onChange={field.onChange}
+                  options={filteredEncodingOptions}
+                  value={field.value}
+                />
               </Field>
             )}
           />
@@ -490,7 +517,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
               render={({ field }) => (
                 <Field className="col-span-1">
                   <FieldLabel htmlFor="key.schemaVersion">Version</FieldLabel>
-                  <NumberSelect onChange={field.onChange} options={sortedKeyVersions} value={field.value} />
+                  <NumberSelect
+                    label="Key Schema Version"
+                    onChange={field.onChange}
+                    options={sortedKeyVersions}
+                    value={field.value}
+                  />
                 </Field>
               )}
             />
@@ -501,7 +533,17 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
           <Field>
             <FieldLabel htmlFor="key.protobufIndex">Index</FieldLabel>
             {protoBufInfoElement}
-            <Input id="key.protobufIndex" type="number" {...register('key.protobufIndex', { valueAsNumber: true })} />
+            <Input
+              id="key.protobufIndex"
+              type="number"
+              {...register('key.protobufIndex', { valueAsNumber: true })}
+              onValueChange={(value) =>
+                setValue('key.protobufIndex', value === '' ? Number.NaN : Number(value), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
           </Field>
         )}
 
@@ -526,7 +568,9 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 <Controller
                   control={control}
                   name="key.data"
-                  render={({ field: { onChange, value } }) => <Input onChange={onChange} value={value} />}
+                  render={({ field: { onChange, value } }) => (
+                    <Input aria-label="Key data" data-agent-secret="true" onValueChange={onChange} value={value} />
+                  )}
                 />
               )}
               <Button className="mt-1" onClick={() => setKeyExpanded(!isKeyExpanded)} size="sm" variant="link">
@@ -550,7 +594,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
               render={({ field }) => (
                 <Field className="col-span-2">
                   <FieldLabel htmlFor="value.encoding">Type</FieldLabel>
-                  <NumberSelect onChange={field.onChange} options={filteredEncodingOptions} value={field.value} />
+                  <NumberSelect
+                    label="Value Type"
+                    onChange={field.onChange}
+                    options={filteredEncodingOptions}
+                    value={field.value}
+                  />
                 </Field>
               )}
             />
@@ -599,7 +648,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 render={({ field }) => (
                   <Field className="col-span-1">
                     <FieldLabel htmlFor="value.schemaVersion">Version</FieldLabel>
-                    <NumberSelect onChange={field.onChange} options={sortedValueVersions} value={field.value} />
+                    <NumberSelect
+                      label="Value Schema Version"
+                      onChange={field.onChange}
+                      options={sortedValueVersions}
+                      value={field.value}
+                    />
                   </Field>
                 )}
               />
@@ -614,6 +668,12 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 id="value.protobufIndex"
                 type="number"
                 {...register('value.protobufIndex', { valueAsNumber: true })}
+                onValueChange={(value) =>
+                  setValue('value.protobufIndex', value === '' ? Number.NaN : Number(value), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
               />
             </Field>
           )}
@@ -637,7 +697,11 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                 />
               </div>
               {Boolean(errors.value?.data) && <FieldError>{errors.value?.data?.message}</FieldError>}
-              <input {...register('value.data')} data-testid="valueData" />
+              <Controller
+                control={control}
+                name="value.data"
+                render={({ field }) => <input {...field} data-testid="valueData" type="hidden" />}
+              />
             </Field>
           )}
         </div>
@@ -650,11 +714,15 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
+        <Button
+          data-agent-confirm="Publishes a Kafka record. Draft history cannot undo this request."
+          data-testid="produce-button"
+          isLoading={isSubmitting}
+          type="submit"
+        >
           Produce
         </Button>
         <Button
-          nativeButton={false}
           render={
             <Link params={{ topicName: encodeURIComponent(topicName) }} search={{} as never} to="/topics/$topicName" />
           }

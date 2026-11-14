@@ -110,8 +110,8 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
             className="w-[500px]"
             disabled={isUpdating}
             id="secretValue"
-            onChange={(x) => {
-              setSecret(x.target.value);
+            onValueChange={(inputText) => {
+              setSecret(inputText);
             }}
             placeholder="Enter a new secret value..."
             required

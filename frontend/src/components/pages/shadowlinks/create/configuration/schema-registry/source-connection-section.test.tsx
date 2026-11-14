@@ -15,7 +15,7 @@ import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { isEmbedded } from 'config';
 import { useForm } from 'react-hook-form';
-import { render, screen, waitFor } from 'test-utils';
+import { fireEvent, render, screen, waitFor } from 'test-utils';
 
 import { SourceConnectionSection } from './source-connection-section';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../../model';
@@ -81,9 +81,16 @@ const renderTrackingFormValues = () => {
   return { user, latest };
 };
 
-const uploadToDropzone = async (user: ReturnType<typeof userEvent.setup>, dropzoneTestId: string, file: File) => {
-  const input = screen.getByTestId(dropzoneTestId).querySelector('input[type="file"]');
-  await user.upload(input as HTMLInputElement, file);
+const uploadToDropzone = (_user: ReturnType<typeof userEvent.setup>, dropzoneTestId: string, file: File) => {
+  const input = screen
+    .getByTestId(dropzoneTestId)
+    .closest('[data-slot="file-input"]')
+    ?.querySelector<HTMLInputElement>('input[type="file"]');
+  if (!input) {
+    throw new Error('Missing SDK file input');
+  }
+  // The SDK picker input is intentionally non-interactive; deliver the file picker change.
+  fireEvent.change(input, { target: { files: [file] } });
 };
 
 describe('the SourceConnectionSection', () => {
@@ -210,7 +217,7 @@ describe('the SourceConnectionSection', () => {
       expect(screen.getByTestId('add-sr-clientKey-button')).toBeInTheDocument();
     });
 
-    await uploadToDropzone(
+    uploadToDropzone(
       user,
       'add-sr-clientKey-button',
       new File(['-----BEGIN PRIVATE KEY-----\nKEY'], 'client.key', { type: 'application/x-pkcs12' })
@@ -221,7 +228,7 @@ describe('the SourceConnectionSection', () => {
       expect(latest.values?.schemaRegistry?.mtls?.clientKey?.pemContent).toBe('-----BEGIN PRIVATE KEY-----\nKEY');
     });
 
-    await uploadToDropzone(
+    uploadToDropzone(
       user,
       'add-sr-clientCert-button',
       new File(['-----BEGIN CERTIFICATE-----\nCERT'], 'client.pem', {

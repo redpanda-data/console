@@ -1,3 +1,4 @@
+import { mergeProps } from '@ui-sdk/react/primitive';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cloneElement, type ReactElement, type ReactNode, useId, useState } from 'react';
 
@@ -18,17 +19,15 @@ export function ElementTooltip({ children, content }: { children: DescribableEle
   // stamps its own `testId` as `data-testid`, which would blank a Registry component's `testId`.
   return (
     <Tooltip
-      onOpenChange={(nextOpen, details) => {
-        // Escape still reaches the page's own shortcuts (collapsing a sheet), as it did past a native `title`.
-        if (details.reason === 'escape-key') {
-          details.allowPropagation();
-        }
+      onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
       }}
       open={open}
     >
       <TooltipTrigger
-        render={cloneElement(children, { 'aria-describedby': description })}
+        render={(props) =>
+          cloneElement(children, { ...mergeProps(children.props, props), 'aria-describedby': description })
+        }
         testId={children.props.testId}
       />
       <TooltipContent id={id} role="tooltip">

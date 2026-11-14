@@ -10,8 +10,8 @@
  */
 
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 
 import { config as appConfig, isEmbedded } from '../../config';
 import { trackHubspotPage } from '../../hubspot/hubspot.helper';

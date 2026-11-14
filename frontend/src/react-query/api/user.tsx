@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation } from '@connectrpc/connect-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   type ListUsersRequest,
   ListUsersRequestSchema,
@@ -18,7 +19,6 @@ import {
 import queryClient from 'query-client';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListUsersQuery = (

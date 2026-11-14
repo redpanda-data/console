@@ -10,6 +10,7 @@
  */
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Card, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -136,15 +137,20 @@ export const AuthenticationSection = () => {
               <p className="leading-relaxed">
                 Provide credentials for a service account on the source cluster (the one being shadowed) with ACLs to
                 manage shadow link replication.{' '}
-                <a
-                  className="inline-flex items-center gap-0.5 whitespace-nowrap text-primary hover:underline"
-                  href={SHADOW_LINK_DOCS_URL}
-                  rel="noreferrer"
-                  target="_blank"
+                <ConsoleButton
+                  render={
+                    <a
+                      className="inline-flex items-center gap-0.5 whitespace-nowrap text-primary hover:underline"
+                      href={SHADOW_LINK_DOCS_URL}
+                      rel="noreferrer"
+                      target="_blank"
+                    />
+                  }
+                  variant="unstyled"
                 >
                   View required ACLs
                   <ExternalLink className="h-3 w-3" />
-                </a>
+                </ConsoleButton>
               </p>
             </AlertDescription>
           </Alert>
@@ -158,7 +164,7 @@ export const AuthenticationSection = () => {
                   <FormItem data-testid="scram-username-field">
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} testId="scram-username-input" />
+                      <Input {...field} onValueChange={field.onChange} testId="scram-username-input" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +190,12 @@ export const AuthenticationSection = () => {
                           value={extractSecretId(scramCredentials?.password)}
                         />
                       ) : (
-                        <Input {...field} testId="scram-password-input" type="password" />
+                        <Input
+                          {...field}
+                          onValueChange={field.onChange}
+                          testId="scram-password-input"
+                          type="password"
+                        />
                       )}
                     </FormControl>
                     <FormMessage />
@@ -229,7 +240,7 @@ export const AuthenticationSection = () => {
                   <FormItem data-testid="plain-username-field">
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} testId="plain-username-input" />
+                      <Input {...field} onValueChange={field.onChange} testId="plain-username-input" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -255,7 +266,12 @@ export const AuthenticationSection = () => {
                           value={extractSecretId(plainCredentials?.password)}
                         />
                       ) : (
-                        <Input {...field} testId="plain-password-input" type="password" />
+                        <Input
+                          {...field}
+                          onValueChange={field.onChange}
+                          testId="plain-password-input"
+                          type="password"
+                        />
                       )}
                     </FormControl>
                     <FormMessage />

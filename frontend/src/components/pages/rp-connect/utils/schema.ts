@@ -1,10 +1,10 @@
 import { ConnectError } from '@connectrpc/connect';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   type ComponentList,
   type ComponentSpec,
   ComponentStatus,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { toast } from 'sonner';
 import { rpcnWizardStore } from 'state/rpcn-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

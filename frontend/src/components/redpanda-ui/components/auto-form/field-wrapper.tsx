@@ -2,6 +2,7 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { AlertCircle, ChevronDown, CircleHelp, ExternalLink, PlusIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
 import type { SharedProps } from '../../lib/utils';
@@ -114,16 +115,21 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
         {docsUrl ? (
           <>
             {helpText ? ' ' : null}
-            <a
-              className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
-              data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
-              href={docsUrl}
-              rel="noreferrer"
-              target="_blank"
+            <ConsoleButton
+              variant="unstyled"
+              render={
+                <a
+                  className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
+                  data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
+                  href={docsUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                />
+              }
             >
               Open documentation for {fallbackLabel}
               <ExternalLink aria-hidden className="h-3 w-3" />
-            </a>
+            </ConsoleButton>
           </>
         ) : null}
       </FieldDescription>

@@ -15,6 +15,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   ACLFilterSchema,
   ConsumerOffsetSyncOptionsSchema,
@@ -28,7 +29,6 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 

@@ -164,7 +164,13 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                       control={control}
                       name="givenName"
                       render={({ field }) => (
-                        <Input {...field} autoComplete="given-name" id="register-given-name" placeholder="First name" />
+                        <Input
+                          {...field}
+                          autoComplete="given-name"
+                          id="register-given-name"
+                          onValueChange={field.onChange}
+                          placeholder="First name"
+                        />
                       )}
                       rules={{
                         required: 'First name is required',
@@ -195,6 +201,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                           {...field}
                           autoComplete="family-name"
                           id="register-family-name"
+                          onValueChange={field.onChange}
                           placeholder="Last name"
                         />
                       )}
@@ -228,6 +235,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                         {...field}
                         autoComplete="email"
                         id="register-email"
+                        onValueChange={field.onChange}
                         placeholder="Email address"
                         type="email"
                       />

@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
+import * as SheetPrimitive from '@ui-sdk/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import type React from 'react';
@@ -8,17 +8,17 @@ import type React from 'react';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
-type SheetProps = SheetPrimitive.Root.Props & SharedProps;
+type SheetProps = React.ComponentProps<typeof SheetPrimitive.Dialog> & SharedProps;
 
 function Sheet({ testId, ...props }: SheetProps) {
-  return <SheetPrimitive.Root data-slot="sheet" data-testid={testId} {...props} />;
+  return <SheetPrimitive.Dialog data-slot="sheet" data-testid={testId} {...props} />;
 }
 
-type SheetTriggerProps = SheetPrimitive.Trigger.Props & SharedProps;
+type SheetTriggerProps = React.ComponentProps<typeof SheetPrimitive.DialogTrigger> & SharedProps;
 
 function SheetTrigger({ className, testId, ...props }: SheetTriggerProps) {
   return (
-    <SheetPrimitive.Trigger
+    <SheetPrimitive.DialogTrigger
       className={cn('cursor-pointer', className)}
       data-slot="sheet-trigger"
       data-testid={testId}
@@ -27,23 +27,17 @@ function SheetTrigger({ className, testId, ...props }: SheetTriggerProps) {
   );
 }
 
-type SheetCloseProps = SheetPrimitive.Close.Props;
+type SheetCloseProps = React.ComponentProps<typeof SheetPrimitive.DialogClose>;
 
 function SheetClose({ className, ...props }: SheetCloseProps) {
-  return <SheetPrimitive.Close className={cn('cursor-pointer', className)} data-slot="sheet-close" {...props} />;
+  return <SheetPrimitive.DialogClose className={cn('cursor-pointer', className)} data-slot="sheet-close" {...props} />;
 }
 
-type SheetPortalProps = SheetPrimitive.Portal.Props;
-
-function SheetPortal(props: SheetPortalProps) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
-}
-
-type SheetOverlayProps = SheetPrimitive.Backdrop.Props;
+type SheetOverlayProps = React.ComponentProps<typeof SheetPrimitive.DialogBackdrop>;
 
 function SheetOverlay({ className, ...props }: SheetOverlayProps) {
   return (
-    <SheetPrimitive.Backdrop
+    <SheetPrimitive.DialogBackdrop
       className={cn(
         'fixed inset-0 z-50 bg-modal-overlay transition-opacity duration-500 ease-in-out data-[ending-style]:duration-300 motion-reduce:transition-none',
         'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
@@ -103,8 +97,9 @@ const sheetVariants = cva(
   }
 );
 
-type SheetContentProps = SheetPrimitive.Popup.Props &
-  Omit<VariantProps<typeof sheetVariants>, 'size'> &
+type SheetContentProps = Omit<React.ComponentProps<typeof SheetPrimitive.DialogContent>, 'children'> & {
+  children?: React.ReactNode;
+} & Omit<VariantProps<typeof sheetVariants>, 'size'> &
   SharedProps &
   Pick<FixedPositionContentProps, 'container' | 'showOverlay'> & {
     /**
@@ -136,9 +131,10 @@ function SheetContent({
   const portalContainer = usePortalContainer();
 
   return (
-    <SheetPrimitive.Portal container={container ?? portalContainer} data-slot="sheet-portal">
+    <>
       {showOverlay ? <SheetOverlay /> : null}
-      <SheetPrimitive.Popup
+      <SheetPrimitive.DialogContent
+        container={container ?? portalContainer}
         aria-modal="true"
         // pt-16: the close button ends 48px down (top-5 + a 28px icon), plus one gap-4. Last, so a
         // padding shorthand in `className` cannot merge it away.
@@ -150,16 +146,16 @@ function SheetContent({
       >
         {children}
         {showCloseButton ? (
-          <SheetPrimitive.Close
+          <SheetPrimitive.DialogClose
             className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none motion-reduce:transition-none"
             data-slot="sheet-close"
           >
             <X className="h-7 w-7" />
             <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
+          </SheetPrimitive.DialogClose>
         ) : null}
-      </SheetPrimitive.Popup>
-    </SheetPrimitive.Portal>
+      </SheetPrimitive.DialogContent>
+    </>
   );
 }
 
@@ -175,7 +171,9 @@ function SheetFooter({ className, ...props }: SheetFooterProps) {
   return <div className={cn('mt-auto flex flex-col gap-2', className)} data-slot="sheet-footer" {...props} />;
 }
 
-type SheetTitleProps = Omit<SheetPrimitive.Title.Props, 'className'> & {
+type SheetTitleProps = Omit<React.ComponentProps<typeof SheetPrimitive.DialogTitle>, 'className' | 'children'> & {
+  children?: React.ReactNode;
+} & {
   className?: string;
   level?: 1 | 2 | 3 | 4;
 };
@@ -191,7 +189,7 @@ const SHEET_HEADING_CLASS = {
 function SheetTitle({ className, level = 2, children, ...props }: SheetTitleProps) {
   const SheetHeadingTag = `h${level}` as const;
   return (
-    <SheetPrimitive.Title
+    <SheetPrimitive.DialogTitle
       data-slot="sheet-title"
       render={<SheetHeadingTag className={cn(SHEET_HEADING_CLASS[level], className)}>{children}</SheetHeadingTag>}
       {...props}
@@ -199,11 +197,11 @@ function SheetTitle({ className, level = 2, children, ...props }: SheetTitleProp
   );
 }
 
-type SheetDescriptionProps = SheetPrimitive.Description.Props;
+type SheetDescriptionProps = React.ComponentProps<typeof SheetPrimitive.DialogDescription>;
 
 function SheetDescription({ className, ...props }: SheetDescriptionProps) {
   return (
-    <SheetPrimitive.Description
+    <SheetPrimitive.DialogDescription
       className={cn('text-body text-subtle', className)}
       data-slot="sheet-description"
       {...props}
@@ -225,8 +223,6 @@ export {
   type SheetHeaderProps,
   SheetOverlay,
   type SheetOverlayProps,
-  SheetPortal,
-  type SheetPortalProps,
   type SheetProps,
   SheetTitle,
   type SheetTitleProps,

@@ -86,7 +86,12 @@ export const SourceConnectionSection = () => {
           <FormItem data-testid="sr-source-url-field">
             <FormLabel required>Source URL</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="https://schema-registry.example.com:8081" testId="sr-source-url-input" />
+              <Input
+                {...field}
+                onValueChange={field.onChange}
+                placeholder="https://schema-registry.example.com:8081"
+                testId="sr-source-url-input"
+              />
             </FormControl>
             <FormDescription>The source Schema Registry URL.</FormDescription>
             <FormMessage />
@@ -125,7 +130,12 @@ export const SourceConnectionSection = () => {
                   <InfoTooltip content="For Confluent Cloud, this is the API key." />
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="sr-replicator" testId="sr-basic-username-input" />
+                  <Input
+                    {...field}
+                    onValueChange={field.onChange}
+                    placeholder="sr-replicator"
+                    testId="sr-basic-username-input"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -155,7 +165,7 @@ export const SourceConnectionSection = () => {
                       value={extractSecretId(field.value)}
                     />
                   ) : (
-                    <Input {...field} testId="sr-basic-password-input" type="password" />
+                    <Input {...field} onValueChange={field.onChange} testId="sr-basic-password-input" type="password" />
                   )}
                 </FormControl>
                 <FormMessage />

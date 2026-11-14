@@ -97,7 +97,6 @@ export const TagsTrigger = ({ className, children, testId, ...props }: TagsTrigg
   const { open, listboxId } = useTagsContext();
   return (
     <PopoverTrigger
-      nativeButton={false}
       render={
         <div
           aria-controls={listboxId}

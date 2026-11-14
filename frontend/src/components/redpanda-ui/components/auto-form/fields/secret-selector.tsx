@@ -4,14 +4,14 @@
 
 import type React from 'react';
 import { createContext, useContext } from 'react';
-import { Input } from '../../input';
 
+import { resolveSecretScopes } from './secret-selector-scopes';
+import { useFieldTestIds } from './shared';
+import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import { getProtoFieldCustomData } from '../proto';
 import type { FieldTypeDefinition } from '../registry';
-import { resolveSecretScopes } from './secret-selector-scopes';
-import { useFieldTestIds } from './shared';
 
 export interface SecretSelectorAdapterProps {
   description?: string;
@@ -53,7 +53,7 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
         aria-invalid={Boolean(props.error)}
         data-testid={testIds.control}
         disabled={props.inputProps.disabled}
-        onChange={(event) => props.inputProps.onValueChange(event.target.value)}
+        onValueChange={(inputText) => props.inputProps.onValueChange(inputText)}
         placeholder={uiConfig.placeholder}
         value={value}
       />

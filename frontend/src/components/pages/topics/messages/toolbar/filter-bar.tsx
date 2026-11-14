@@ -561,7 +561,7 @@ type SuggestionListProps = {
 const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: SuggestionListProps) => {
   let itemIdx = -1;
   return (
-    <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={id}>
+    <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={id} value={String(activeIdx)}>
       <ListboxGroupLabel>{heading}</ListboxGroupLabel>
       {items.map((item, i) => {
         if (item.kind === 'header') {
@@ -575,8 +575,9 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
             active={isActive}
             id={`${id}-option-${optionIdx}`}
             key={`${item.label}-${i}`}
-            onClick={() => onApply(item.action)}
             onMouseEnter={() => onHover(optionIdx)}
+            onSelect={() => onApply(item.action)}
+            value={String(optionIdx)}
           >
             <span
               className={cn('rounded-md border bg-background px-2 py-0.5 whitespace-nowrap', FILTER_BADGE_TEXT_CLASS)}
@@ -679,18 +680,17 @@ export const FilterBar = ({
           ghostText={suggestions.ghost && suggestions.caretAtEnd ? suggestions.ghost.rest : undefined}
           highlightClassName={PILL_HIGHLIGHT_CLASS}
           highlightRanges={line.highlightRanges}
-          onChange={(e) => {
-            const next = e.target.value;
+          onFocus={() => dropdown.setOpen(true)}
+          onKeyDown={onKeyDown}
+          onSelect={(e) => line.setCaretPos(e.currentTarget.selectionStart ?? 0)}
+          onValueChange={(next) => {
             line.setRawText(next);
             line.deriveAndEmit(next);
             dropdown.setActiveIdx(0);
             dropdown.setNavigated(false);
             dropdown.setOpen(true);
-            line.setCaretPos(e.currentTarget.selectionStart ?? next.length);
+            line.setCaretPos(inputRef.current?.selectionStart ?? next.length);
           }}
-          onFocus={() => dropdown.setOpen(true)}
-          onKeyDown={onKeyDown}
-          onSelect={(e) => line.setCaretPos(e.currentTarget.selectionStart ?? 0)}
           overlayTestId="messages-filter-highlight-overlay"
           placeholder={jsFilters.length > 0 ? 'Add another filter…' : 'Filter — type or pick a field…'}
           ref={inputRef}

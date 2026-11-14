@@ -23,6 +23,7 @@ import { tags } from '@lezer/highlight';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
+import { EditorSurface } from 'components/redpanda-ui/components/editor-surface';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { type ThemeAppearance, useThemeAppearance } from 'hooks/use-theme-appearance';
@@ -601,10 +602,16 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             </Button>
           </div>
         </div>
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
+        <EditorSurface
+          aria-label="SQL query"
+          className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background"
+          onValueChange={updateSql}
+          value={active.sql}
+        >
           <CodeMirror
             basicSetup={{ foldGutter: false }}
             className="h-full min-w-0 flex-1"
+            data-agent-hidden="true"
             extensions={extensions}
             height="100%"
             onChange={updateSql}
@@ -612,7 +619,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             theme="none"
             value={active.sql}
           />
-        </div>
+        </EditorSurface>
       </div>
     );
   }

@@ -11,6 +11,7 @@
 
 import { Link, useLocation } from '@tanstack/react-router';
 import { Avatar, AvatarFallback, AvatarImage } from 'components/redpanda-ui/components/avatar';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,13 +52,16 @@ function SidebarLogo() {
   const isExpanded = isMobile || state === 'expanded';
 
   return (
-    <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
+    <ConsoleButton
+      render={<Link aria-label="Go to Overview" className="flex items-center" to="/overview" />}
+      variant="unstyled"
+    >
       <RedpandaLogo
         className={isExpanded ? 'h-6 w-auto' : 'h-6 w-6'}
         color={isExpanded ? 'var(--color-sidebar-foreground)' : undefined}
         variant={isExpanded ? 'horizontal' : 'mark'}
       />
-    </Link>
+    </ConsoleButton>
   );
 }
 
@@ -135,7 +139,7 @@ const UserProfile = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={async () => {
+          onSelect={async () => {
             handleMenuItemClick();
             await api.logout();
             window.location.reload();

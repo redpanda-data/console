@@ -261,7 +261,11 @@ export const AclsStep = () => {
                               <FormItem className="md:col-span-2">
                                 <FormLabel>Resource name</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="All" {...resourceNameField} />
+                                  <Input
+                                    placeholder="All"
+                                    {...resourceNameField}
+                                    onValueChange={resourceNameField.onChange}
+                                  />
                                 </FormControl>
                                 <FormDescription>Empty matches all resources</FormDescription>
                                 <FormMessage />
@@ -285,6 +289,7 @@ export const AclsStep = () => {
                                     placeholder="All"
                                     testId={`acl-filter-${index}-principal`}
                                     {...principalField}
+                                    onValueChange={principalField.onChange}
                                   />
                                 </FormControl>
                                 <FormDescription>Empty matches all principals</FormDescription>
@@ -382,7 +387,7 @@ export const AclsStep = () => {
                               <FormItem>
                                 <FormLabel>Host</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="All" {...hostField} />
+                                  <Input placeholder="All" {...hostField} onValueChange={hostField.onChange} />
                                 </FormControl>
                                 <FormDescription>Empty matches all hosts</FormDescription>
                                 <FormMessage />

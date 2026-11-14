@@ -2,15 +2,16 @@
 
 import { MotionConfig } from 'motion/react';
 import React from 'react';
+
+import { formSpacing } from './form-spacing';
+import { buildAutoFormTestId } from './test-ids';
+import type { AutoFormMode, AutoFormSummaryContext } from './types';
+import { safeStringify } from './utils/serialization';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { Button } from '../button';
 import { CopyButton } from '../copy-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs';
 import { Textarea } from '../textarea';
-import { formSpacing } from './form-spacing';
-import { buildAutoFormTestId } from './test-ids';
-import type { AutoFormMode, AutoFormSummaryContext } from './types';
-import { safeStringify } from './utils/serialization';
 
 function getModeLabel(mode: AutoFormMode): string {
   if (mode === 'json') {
@@ -33,13 +34,13 @@ function JsonBlock({ description, jsonText, title }: { title: string; descriptio
       </div>
       <div className="space-y-3 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="font-medium text-body-sm text-subtle uppercase tracking-wide">Payload JSON</div>
+          <div className="text-body-sm font-medium tracking-wide text-subtle uppercase">Payload JSON</div>
           <CopyButton content={jsonText} size="sm" variant="outline">
             Copy JSON
           </CopyButton>
         </div>
         <div className="max-h-[min(60vh,38rem)] overflow-auto rounded-xl bg-surface-recess p-4">
-          <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-body-sm leading-5">
+          <pre className="overflow-auto font-mono text-body-sm leading-5 wrap-break-word whitespace-pre-wrap">
             {jsonText}
           </pre>
         </div>
@@ -102,7 +103,7 @@ function JsonEditorPanel({
       ) : null}
       <Textarea
         className="min-h-[420px] font-mono text-body-sm leading-5"
-        onChange={(event) => onJsonTextChange(event.target.value)}
+        onValueChange={(inputText) => onJsonTextChange(inputText)}
         resize="vertical"
         testId={buildAutoFormTestId(testIdPrefix, 'json-editor')}
         value={jsonText}
@@ -130,11 +131,11 @@ function FormPanel<T extends Record<string, unknown>>({
     // A container, so the summary sits beside the form only when the form's own space allows it, not
     // whenever the viewport is past `lg`: in a panel or a docs preview it would squeeze the labels.
     <div className="@container/auto-form">
-      <div className="grid @4xl/auto-form:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] @4xl/auto-form:items-start @4xl/auto-form:gap-10 gap-6">
+      <div className="grid gap-6 @4xl/auto-form:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] @4xl/auto-form:items-start @4xl/auto-form:gap-10">
         {/* formSpacing.form drives the column rhythm to match the <Form> primitive's internal spacing. */}
         <div className={`min-w-0 @4xl/auto-form:pr-2 ${formSpacing.form}`}>{children}</div>
         <aside
-          className="@4xl/auto-form:sticky @4xl/auto-form:top-6 min-w-0 @4xl/auto-form:self-start"
+          className="min-w-0 @4xl/auto-form:sticky @4xl/auto-form:top-6 @4xl/auto-form:self-start"
           data-testid={buildAutoFormTestId(testIdPrefix, 'summary')}
         >
           {renderSummary ? (

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { BookOpenIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
@@ -128,15 +129,16 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         )}
       </div>
       <div className="flex items-baseline gap-3 text-body-sm text-muted-foreground">
-        <button
+        <ConsoleButton
           aria-controls={bodyId}
           aria-expanded={expanded}
           className="text-body-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
           onClick={() => setExpanded((value) => !value)}
           type="button"
+          variant="unstyled"
         >
           {expanded ? 'Show less' : 'Show more'}
-        </button>
+        </ConsoleButton>
         {docsLink}
       </div>
     </div>

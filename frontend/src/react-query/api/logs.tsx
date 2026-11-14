@@ -12,9 +12,9 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { NO_LIVED_CACHE_STALE_TIME, ONE_MINUTE, ONE_SECOND } from 'react-query/react-query.utils';
-import { toast as sonnerToast } from 'sonner';
 
 import { config as appConfig } from '../../config';
 import { PayloadEncoding } from '../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -139,7 +139,7 @@ type HistoryStreamOpts = {
 // A missing logs topic is expected before any pipeline has logged, so only other failures are toasted.
 function historyStreamError(errMsg: string): Error {
   if (!isMissingLogsTopic(errMsg)) {
-    sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+    toast.error('Failed to search pipeline logs', { description: errMsg });
   }
   return new Error(errMsg);
 }
@@ -328,7 +328,7 @@ type LiveStreamOpts = {
 };
 
 function reportLiveError(errMsg: string, dispatch: React.Dispatch<LiveAction>) {
-  sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
+  toast.error('Failed to search pipeline logs', { description: errMsg });
   dispatch({ type: 'setError', error: errMsg });
 }
 

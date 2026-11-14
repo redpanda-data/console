@@ -25,13 +25,13 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
@@ -106,7 +106,7 @@ export const SecretCreatePage = () => {
               <Input
                 {...field}
                 data-testid="secret-id-input"
-                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                onValueChange={(inputText) => field.onChange(inputText.toUpperCase())}
                 placeholder="SECRET_ID"
               />
               <FieldDescription>
@@ -127,7 +127,13 @@ export const SecretCreatePage = () => {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel required>Value</FieldLabel>
-              <Input {...field} data-testid="secret-value-input" placeholder="Enter secret value" type="password" />
+              <Input
+                {...field}
+                data-testid="secret-value-input"
+                onValueChange={field.onChange}
+                placeholder="Enter secret value"
+                type="password"
+              />
               <FieldDescription>The secret value will be encrypted and cannot be retrieved later.</FieldDescription>
               {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
             </Field>

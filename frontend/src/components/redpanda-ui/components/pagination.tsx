@@ -1,3 +1,4 @@
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
 import type React from 'react';
 
@@ -39,20 +40,25 @@ type PaginationLinkProps = {
 
 function PaginationLink({ className, isActive, size = 'icon', testId, ...props }: PaginationLinkProps) {
   return (
-    <a
-      aria-current={isActive ? 'page' : undefined}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? 'outline' : 'ghost',
-          size,
-        }),
-        className
-      )}
-      data-active={isActive}
-      data-slot="pagination-link"
-      data-testid={testId}
-      {...props}
-    />
+    <ConsoleButton
+      variant="unstyled"
+      render={
+        <a
+          aria-current={isActive ? 'page' : undefined}
+          className={cn(
+            buttonVariants({
+              variant: isActive ? 'outline' : 'ghost',
+              size,
+            }),
+            className
+          )}
+          data-active={isActive}
+          data-slot="pagination-link"
+          data-testid={testId}
+          {...props}
+        />
+      }
+    ></ConsoleButton>
   );
 }
 

@@ -18,9 +18,12 @@ import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:t
 
 // Spies on the real manager: the unit project shares module caches across files, so a module mock
 // only takes effect when this file happens to load `toast.utils` first.
-const add = spyOn(toast, 'add').mockImplementation(() => 'toast-1');
-const update = spyOn(toast, 'update').mockImplementation(() => undefined);
-const close = spyOn(toast, 'close').mockImplementation(() => undefined);
+const add = mock((_options: unknown) => 'toast-1');
+for (const status of ['info', 'success', 'error', 'warning', 'loading'] as const) {
+  spyOn(toast, status).mockImplementation(add);
+}
+const update = spyOn(toast, 'update').mockImplementation(() => true);
+const close = spyOn(toast, 'dismiss').mockImplementation(() => undefined);
 
 afterAll(() => {
   mock.restore();
@@ -193,19 +196,19 @@ describe('showToast', () => {
   test('non-error toasts auto-dismiss after 5s', () => {
     const id = showToast({ status: 'success', title: 'Saved' });
     expect(id).toBe('toast-1');
-    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'success', title: 'Saved', timeout: 5000 }));
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'success', title: 'Saved', duration: 5000 }));
   });
 
   test('error toasts stay until closed', () => {
     showToast({ status: 'error', title: 'Failed' });
-    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'error', timeout: 0 }));
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'error', duration: Number.POSITIVE_INFINITY }));
   });
 
   test('duration null is sticky, an explicit duration is kept', () => {
     showToast({ status: 'info', duration: null });
     showToast({ status: 'info', duration: 2500 });
-    expect(add.mock.calls[0][0]).toMatchObject({ timeout: 0 });
-    expect(add.mock.calls[1][0]).toMatchObject({ timeout: 2500 });
+    expect(add.mock.calls[0][0]).toMatchObject({ duration: Number.POSITIVE_INFINITY });
+    expect(add.mock.calls[1][0]).toMatchObject({ duration: 2500 });
   });
 
   test('resourceName scopes the id, or stands in for it', () => {
@@ -213,7 +216,9 @@ describe('showToast', () => {
     showToast({ id: 'secret-update', status: 'success' });
     showToast({ resourceName: 'db-password', status: 'success' });
     showToast({ status: 'success' });
-    const ids = add.mock.calls.map(([options]) => options.id);
+    const ids = add.mock.calls.map(([options]) =>
+      typeof options === 'object' && options !== null && 'id' in options ? options.id : undefined
+    );
     expect(ids).toEqual(['secret-update_db-password', 'secret-update', 'db-password', undefined]);
   });
 });
@@ -232,18 +237,18 @@ describe('updateToast', () => {
     updateToast('toast-1', { status: 'error', description: 'Setting throttle rate... error' });
     expect(update).toHaveBeenCalledWith('toast-1', {
       type: 'error',
-      timeout: 0,
+      duration: Number.POSITIVE_INFINITY,
       description: 'Setting throttle rate... error',
     });
     updateToast('toast-1', { status: 'success' });
-    expect(update).toHaveBeenLastCalledWith('toast-1', { type: 'success', timeout: 5000 });
+    expect(update).toHaveBeenLastCalledWith('toast-1', { type: 'success', duration: 5000 });
   });
 
   test('an explicit duration wins over the status default', () => {
     updateToast('toast-1', { status: 'error', duration: 2500 });
-    expect(update).toHaveBeenCalledWith('toast-1', { type: 'error', timeout: 2500 });
+    expect(update).toHaveBeenCalledWith('toast-1', { type: 'error', duration: 2500 });
     updateToast('toast-1', { duration: null });
-    expect(update).toHaveBeenLastCalledWith('toast-1', { timeout: 0 });
+    expect(update).toHaveBeenLastCalledWith('toast-1', { duration: Number.POSITIVE_INFINITY });
   });
 });
 

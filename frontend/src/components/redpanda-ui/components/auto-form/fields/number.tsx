@@ -2,11 +2,11 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
+import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
-import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
 
 function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -22,8 +22,8 @@ function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
       max={inputProps.max as number | undefined}
       min={inputProps.min as number | undefined}
       onBlur={inputProps.onBlur}
-      onChange={(event) => {
-        const nextValue = event.target.value;
+      onValueChange={(inputText) => {
+        const nextValue = inputText;
         inputProps.onValueChange(nextValue === '' ? undefined : Number(nextValue));
       }}
       placeholder={getFieldUiConfig(field).placeholder}

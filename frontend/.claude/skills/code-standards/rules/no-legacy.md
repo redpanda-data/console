@@ -85,4 +85,4 @@ When converting observables to React state, automatic behaviors must become expl
 
 ## See Also
 
-- [use-ui-registry](../../ui-development/rules/use-ui-registry.md) — Registry component usage and installation
+- [use-ui-registry](../../ui-development/rules/use-ui-registry.md) — Console-owned UI SDK components

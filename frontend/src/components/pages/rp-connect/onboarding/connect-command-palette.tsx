@@ -618,8 +618,7 @@ export const ConnectCommandPalette = ({
     <div className="flex min-h-0 flex-1 flex-col" onKeyDown={handleKeyDown}>
       <Command
         className="min-h-0 flex-1"
-        disablePointerSelection
-        onValueChange={setActiveValue}
+        onValueChange={(value) => setActiveValue(value ?? '')}
         shouldFilter={false}
         size="full"
         value={activeValue}

@@ -78,6 +78,9 @@ export type ConsoleAppProps = {
    * Passed from Cloud UI LaunchDarkly integration.
    */
   featureFlags?: Record<string, boolean>;
+
+  /** Opt in only when Console owns WebMCP in this document. Defaults to false. */
+  enableWebMcp?: boolean;
 };
 
 /**

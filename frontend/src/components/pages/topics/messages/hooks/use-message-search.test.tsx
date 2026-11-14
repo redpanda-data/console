@@ -11,7 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 
 import { type MessageSearchParams, type MessageSearchResult, useMessageSearch } from './use-message-search';
 import { messageKey } from '../utils/message-key';
@@ -22,7 +22,7 @@ rs.mock('../../../../../utils/message-converters', () => ({
   convertListMessageData: (value: unknown) => value,
 }));
 
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: { error: rs.fn() },
 }));
 

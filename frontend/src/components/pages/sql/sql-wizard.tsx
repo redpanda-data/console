@@ -178,7 +178,7 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
         Pick a Redpanda topic to expose as a SQL table. Tables are created in <InlineCode>{CATALOG_NAME}</InlineCode> —
         the catalog for Redpanda topics.
       </div>
-      <Input onChange={(e) => setSearch(e.target.value)} placeholder="Search topics" value={search} />
+      <Input onValueChange={(inputText) => setSearch(inputText)} placeholder="Search topics" value={search} />
       {visibleTopics.length === 0 ? (
         <div className="text-body text-muted-foreground">No topics found.</div>
       ) : (
@@ -253,7 +253,13 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel htmlFor="sql-wizard-table-name">Table name</FieldLabel>
-            <Input {...field} aria-invalid={fieldState.invalid} id="sql-wizard-table-name" placeholder="cars" />
+            <Input
+              {...field}
+              aria-invalid={fieldState.invalid}
+              id="sql-wizard-table-name"
+              onValueChange={field.onChange}
+              placeholder="cars"
+            />
             <FieldDescription>How the table appears in the catalog and your queries.</FieldDescription>
             {Boolean(fieldState.invalid) && <FieldError errors={[fieldState.error]} />}
           </Field>

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { useFormContext, useWatch } from 'react-hook-form';
@@ -41,9 +42,12 @@ export const TlsConfiguration = () => {
         <div className="text-body text-muted-foreground" data-testid="tls-intro">
           The connection to the source cluster is encrypted. By default, its certificate is verified using the system
           trust store. Upload a custom CA below if the source uses a private or self-signed CA.{' '}
-          <a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank">
+          <ConsoleButton
+            render={<a className="text-primary hover:underline" href={TLS_DOCS_URL} rel="noreferrer" target="_blank" />}
+            variant="unstyled"
+          >
             Learn about TLS for shadow links
-          </a>
+          </ConsoleButton>
         </div>
       )}
     </div>

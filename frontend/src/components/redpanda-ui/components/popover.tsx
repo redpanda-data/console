@@ -2,13 +2,12 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import { mergeProps } from '@base-ui/react/merge-props';
-import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
-import { useRender } from '@base-ui/react/use-render';
+import * as PopoverPrimitive from '@ui-sdk/react/popover';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import React from 'react';
 
 import { usePortalContainer } from '../lib/use-portal-container';
-import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
+import { cn, type SharedProps } from '../lib/utils';
 
 interface PopoverAnchorContextType {
   anchor: Element | null;
@@ -17,10 +16,7 @@ interface PopoverAnchorContextType {
 
 const PopoverAnchorContext = React.createContext<PopoverAnchorContextType | undefined>(undefined);
 
-type Side = 'top' | 'bottom' | 'left' | 'right';
-type Align = 'start' | 'center' | 'end';
-
-type PopoverProps = PopoverPrimitive.Root.Props & SharedProps;
+type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Popover> & SharedProps;
 
 function Popover({ children, testId, ...props }: PopoverProps) {
   const [anchor, setAnchor] = React.useState<Element | null>(null);
@@ -29,18 +25,18 @@ function Popover({ children, testId, ...props }: PopoverProps) {
 
   return (
     <PopoverAnchorContext.Provider value={anchorCtx}>
-      <PopoverPrimitive.Root data-slot="popover" data-testid={testId} {...props}>
+      <PopoverPrimitive.Popover data-slot="popover" data-testid={testId} {...props}>
         {children}
-      </PopoverPrimitive.Root>
+      </PopoverPrimitive.Popover>
     </PopoverAnchorContext.Provider>
   );
 }
 
-type PopoverTriggerProps = PopoverPrimitive.Trigger.Props & SharedProps;
+type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.PopoverTrigger> & SharedProps;
 
 function PopoverTrigger({ className, testId, ...props }: PopoverTriggerProps) {
   return (
-    <PopoverPrimitive.Trigger
+    <PopoverPrimitive.PopoverTrigger
       className={cn('cursor-pointer', className)}
       data-slot="popover-trigger"
       data-testid={testId}
@@ -49,72 +45,33 @@ function PopoverTrigger({ className, testId, ...props }: PopoverTriggerProps) {
   );
 }
 
-type PopoverContentProps = PopoverPrimitive.Popup.Props &
-  SharedProps &
-  Pick<PortalContentProps, 'container'> & {
-    side?: Side;
-    align?: Align;
-    sideOffset?: number;
-    alignOffset?: number;
-    /** `fixed` (default) keeps the popup on-screen on open so scrolling content can't jump the page. */
-    positionMethod?: 'absolute' | 'fixed';
-    /** Keep the popup within its collision boundary when the anchor scrolls out of view. */
-    sticky?: boolean;
-    /** Space to maintain from the edge of the collision boundary. */
-    collisionPadding?: PopoverPrimitive.Positioner.Props['collisionPadding'];
-    /** Element/rect the popup is confined to (defaults to the clipping ancestors). */
-    collisionBoundary?: PopoverPrimitive.Positioner.Props['collisionBoundary'];
-    /** How the popup avoids collisions; set sides to `'none'` to make it track the anchor and clip instead of repositioning. */
-    collisionAvoidance?: PopoverPrimitive.Positioner.Props['collisionAvoidance'];
-  };
-
+type PopoverContentProps = Omit<React.ComponentProps<typeof PopoverPrimitive.PopoverContent>, 'children'> &
+  SharedProps & { children?: React.ReactNode };
 function PopoverContent({
   className,
   align = 'center',
   side = 'bottom',
   sideOffset = 4,
-  alignOffset,
-  children,
   testId,
   container,
-  positionMethod = 'fixed',
-  sticky,
-  collisionPadding,
-  collisionBoundary,
-  collisionAvoidance,
   ...props
 }: PopoverContentProps) {
   const portalContainer = usePortalContainer();
-  const anchorCtx = React.useContext(PopoverAnchorContext);
-
+  const anchor = React.useContext(PopoverAnchorContext)?.anchor;
   return (
-    <PopoverPrimitive.Portal container={container ?? portalContainer} data-slot="popover-portal">
-      <PopoverPrimitive.Positioner
-        align={align}
-        alignOffset={alignOffset}
-        {...(anchorCtx?.anchor ? { anchor: anchorCtx.anchor } : {})}
-        className="z-50"
-        collisionAvoidance={collisionAvoidance}
-        collisionBoundary={collisionBoundary}
-        collisionPadding={collisionPadding}
-        positionMethod={positionMethod}
-        side={side}
-        sideOffset={sideOffset}
-        sticky={sticky}
-      >
-        <PopoverPrimitive.Popup
-          className={cn(
-            '!border-input w-72 origin-(--transform-origin) rounded-lg border bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,transform] data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
-            className
-          )}
-          data-slot="popover-content"
-          data-testid={testId}
-          {...props}
-        >
-          {children}
-        </PopoverPrimitive.Popup>
-      </PopoverPrimitive.Positioner>
-    </PopoverPrimitive.Portal>
+    <PopoverPrimitive.PopoverContent
+      align={align}
+      side={side}
+      sideOffset={sideOffset}
+      anchor={anchor ?? undefined}
+      container={container ?? portalContainer}
+      className={cn(
+        'z-50 w-72 origin-(--transform-origin) rounded-lg border border-input bg-popover p-4 text-popover-foreground shadow-md outline-none transition-[opacity,scale] duration-150 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none',
+        className
+      )}
+      data-testid={testId}
+      {...props}
+    />
   );
 }
 
@@ -131,11 +88,11 @@ function PopoverHeader({ className, testId, ...props }: PopoverHeaderProps) {
   );
 }
 
-type PopoverTitleProps = PopoverPrimitive.Title.Props & SharedProps;
+type PopoverTitleProps = React.ComponentProps<typeof PopoverPrimitive.PopoverTitle> & SharedProps;
 
 function PopoverTitle({ className, testId, ...props }: PopoverTitleProps) {
   return (
-    <PopoverPrimitive.Title
+    <PopoverPrimitive.PopoverTitle
       className={cn('text-heading-xs', className)}
       data-slot="popover-title"
       data-testid={testId}
@@ -144,11 +101,11 @@ function PopoverTitle({ className, testId, ...props }: PopoverTitleProps) {
   );
 }
 
-type PopoverDescriptionProps = PopoverPrimitive.Description.Props & SharedProps;
+type PopoverDescriptionProps = React.ComponentProps<typeof PopoverPrimitive.PopoverDescription> & SharedProps;
 
 function PopoverDescription({ className, testId, ...props }: PopoverDescriptionProps) {
   return (
-    <PopoverPrimitive.Description
+    <PopoverPrimitive.PopoverDescription
       className={cn('text-body text-subtle', className)}
       data-slot="popover-description"
       data-testid={testId}
@@ -157,7 +114,7 @@ function PopoverDescription({ className, testId, ...props }: PopoverDescriptionP
   );
 }
 
-type PopoverAnchorProps = useRender.ComponentProps<'div'> & SharedProps;
+type PopoverAnchorProps = PartProps<'div'> & SharedProps;
 
 function PopoverAnchor({ render, testId, ...props }: PopoverAnchorProps) {
   const setAnchor = React.useContext(PopoverAnchorContext)?.setAnchor;
@@ -171,11 +128,7 @@ function PopoverAnchor({ render, testId, ...props }: PopoverAnchorProps) {
 
   const dataProps = { 'data-slot': 'popover-anchor', 'data-testid': testId } as React.HTMLAttributes<HTMLDivElement>;
 
-  return useRender({
-    render: render ?? <div />,
-    ref: setRef as React.Ref<HTMLDivElement>,
-    props: mergeProps<'div'>(dataProps, props),
-  });
+  return renderElement('div', mergeProps(dataProps, props, { ref: setRef }), render ?? <div />);
 }
 
 export {

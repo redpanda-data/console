@@ -13,7 +13,7 @@ import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle,
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -386,16 +386,17 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
     );
   }
   return (
-    <button
+    <ConsoleButton
       className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
       onClick={() => onAdd(data.section ?? '')}
       type="button"
+      variant="unstyled"
     >
       <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
         <PlusIcon className="size-4" />
       </span>
       <span className="text-body font-medium">Add {section}</span>
-    </button>
+    </ConsoleButton>
   );
 };
 
@@ -551,7 +552,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
     <>
       <Handle className={invisibleHandle} id="l" position={Position.Left} style={handlePin} type="target" />
       <Handle className={invisibleHandle} id="r" position={Position.Right} style={handlePin} type="source" />
-      <button
+      <ConsoleButton
         aria-label={data.label ?? 'Add'}
         className={cn(
           'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 text-body-sm font-medium text-primary transition-colors',
@@ -561,10 +562,11 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
         )}
         onClick={() => data.onInsert?.(payload)}
         type="button"
+        variant="unstyled"
       >
         <PlusIcon className="size-3" />
         {data.label}
-      </button>
+      </ConsoleButton>
     </>
   );
 };
@@ -625,9 +627,9 @@ const LinkLabel = ({
     <EdgeLabelRenderer>
       {onClick ? (
         <ElementTooltip content={d.label}>
-          <button className={className} onClick={onClick} style={style} type="button">
+          <ConsoleButton className={className} onClick={onClick} style={style} type="button" variant="unstyled">
             {d.label}
-          </button>
+          </ConsoleButton>
         </ElementTooltip>
       ) : (
         <ElementTooltip content={d.label}>
@@ -738,17 +740,18 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         <InputStopRow data={data} isGroup />
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
-          <button
+          <ConsoleButton
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-dashed border-border/70 px-3 py-1.5 text-body-sm font-medium text-primary transition-colors hover:bg-primary/5"
             onClick={(e) => {
               e.stopPropagation();
               data.onAddChild?.();
             }}
             type="button"
+            variant="unstyled"
           >
             <PlusIcon className="size-3.5" />
             {data.addAction.label}
-          </button>
+          </ConsoleButton>
         ) : null}
       </div>
     </div>
@@ -801,15 +804,16 @@ const EdgeInsertButton = ({
   zIndex?: number;
 }) => (
   <EdgeLabelRenderer>
-    <button
+    <ConsoleButton
       aria-label="Insert a step"
       className="nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
       onClick={onInsert}
       style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, zIndex }}
       type="button"
+      variant="unstyled"
     >
       <PlusIcon className="size-3.5" />
-    </button>
+    </ConsoleButton>
   </EdgeLabelRenderer>
 );
 

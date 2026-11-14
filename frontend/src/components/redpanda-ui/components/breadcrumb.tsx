@@ -1,8 +1,8 @@
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import type React from 'react';
 
+import { Button } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
@@ -31,22 +31,22 @@ function BreadcrumbItem({ className, testId, ...props }: React.ComponentProps<'l
   );
 }
 
-function BreadcrumbLink({ className, render, testId, ...props }: useRender.ComponentProps<'a'> & SharedProps) {
-  return useRender({
-    defaultTagName: 'a',
-    props: mergeProps<'a'>(
-      {
-        className: cn(
-          'link-standalone cursor-pointer transition-colors hover:text-foreground motion-reduce:transition-none',
-          className
-        ),
-        'data-testid': testId,
-      } as React.ComponentProps<'a'>,
-      props
+function BreadcrumbLink({ className, render, testId, ...props }: PartProps<'a'> & SharedProps) {
+  const linkProps = mergeProps(props, {
+    className: cn(
+      'link-standalone cursor-pointer transition-colors hover:text-foreground motion-reduce:transition-none',
+      className
     ),
-    render,
-    state: { slot: 'breadcrumb-link' },
+    'data-testid': testId,
   });
+  return (
+    <Button
+      variant="unstyled"
+      render={(buttonProps) =>
+        renderElement('a', mergeProps(linkProps, buttonProps), render, { slot: 'breadcrumb-link' })
+      }
+    />
+  );
 }
 
 function BreadcrumbPage({ className, testId, ...props }: React.ComponentProps<'span'> & SharedProps) {

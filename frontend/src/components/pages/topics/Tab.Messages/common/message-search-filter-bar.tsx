@@ -10,6 +10,7 @@
  */
 
 import { CloseIcon, SettingsIcon } from 'components/icons';
+import { Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { FC } from 'react';
 
@@ -36,7 +37,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
             data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
           >
-            <button
+            <ConsoleButton
               aria-label="Edit filter"
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-edit-${e.id}`}
@@ -44,26 +45,29 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
                 onEdit(e);
               }}
               type="button"
+              variant="unstyled"
             >
               <SettingsIcon size={14} />
-            </button>
-            <button
+            </ConsoleButton>
+            <ConsoleButton
               className={cn('border-x px-2 py-1 transition-colors hover:bg-accent', !e.isActive && 'line-through')}
               data-testid={`message-filter-toggle-${e.id}`}
               onClick={() => onToggle(e.id)}
               type="button"
+              variant="unstyled"
             >
               {e.name || e.code || 'New Filter'}
-            </button>
-            <button
+            </ConsoleButton>
+            <ConsoleButton
               aria-label="Remove filter"
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-remove-${e.id}`}
               onClick={() => onRemove(e.id)}
               type="button"
+              variant="unstyled"
             >
               <CloseIcon size={14} />
-            </button>
+            </ConsoleButton>
           </div>
         ))}
       </div>

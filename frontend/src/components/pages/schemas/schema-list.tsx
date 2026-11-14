@@ -15,7 +15,7 @@ import { ArchiveIcon, EditIcon, MoreHorizontalIcon, TrashIcon } from 'components
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, Button as ConsoleButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   type DataTableColumnDef,
@@ -37,12 +37,12 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
 
@@ -368,17 +368,22 @@ function useSchemaListColumns(
           return (
             <div className="wrap-break-word whitespace-break-spaces">
               <div className="flex items-center gap-2">
-                <Link
-                  data-testid="schema-registry-table-name"
-                  params={{ subjectName: encodeURIComponentPercents(name) }}
-                  search={{ version: 'latest' }}
-                  to="/schema-registry/subjects/$subjectName"
+                <ConsoleButton
+                  render={
+                    <Link
+                      data-testid="schema-registry-table-name"
+                      params={{ subjectName: encodeURIComponentPercents(name) }}
+                      search={{ version: 'latest' }}
+                      to="/schema-registry/subjects/$subjectName"
+                    />
+                  }
+                  variant="unstyled"
                 >
                   {isAllContext && parsed.context !== 'default' && (
                     <span className="text-muted-foreground">:.{parsed.context}:</span>
                   )}
                   {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
-                </Link>
+                </ConsoleButton>
                 {isSoftDeleted && (
                   <Tooltip>
                     <TooltipTrigger
@@ -502,7 +507,7 @@ function useSchemaListColumns(
               <DropdownMenuItem
                 data-testid={`schema-list-delete-btn-${subject.name}`}
                 disabled={api.userData?.canDeleteSchemas === false || undefined}
-                onClick={(e) => {
+                onSelect={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   setDeleteTarget({ kind: subject.isSoftDeleted ? 'permanent' : 'soft', name: subject.name });
@@ -864,8 +869,8 @@ const SchemaList: FC = () => {
             <div data-testid="schema-list-search-field">
               <ListLayoutSearchInput
                 aria-label="Filter by subject name or schema ID"
-                onChange={(e) => {
-                  setQuickSearch(e.target.value);
+                onValueChange={(value) => {
+                  setQuickSearch(value);
                   tableState.setPageIndex(0);
                 }}
                 placeholder="Filter by subject name or schema ID..."

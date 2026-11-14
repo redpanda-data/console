@@ -29,7 +29,7 @@ import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'p
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { useCreateServiceAccountMutation } from 'react-query/api/controlplane/service-account';
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { generateServiceAccountSecretId } from 'utils/secret.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';

@@ -138,7 +138,7 @@ describe('the ReadScopePopover', () => {
       renderPopover({ liveTail: true });
       await userEvent.click(screen.getByTestId('read-scope-button'));
       expect(screen.getByTestId('read-scope-partition-select')).toBeEnabled();
-      expect(screen.getByTestId('read-scope-limit-100')).toBeDisabled();
+      expect(screen.getByTestId('read-scope-limit-100')).toHaveAttribute('aria-disabled', 'true');
     });
 
     test('partition and max-results controls stay enabled outside live tail', async () => {

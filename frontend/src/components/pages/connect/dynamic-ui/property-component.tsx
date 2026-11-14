@@ -94,8 +94,8 @@ function renderStringInput(p: Property, fieldId: string) {
       defaultValue={def.default_value ?? undefined}
       disabled={p.isDisabled}
       id={fieldId}
-      onChange={(e) => {
-        updatePropertyValue(p, e.target.value);
+      onValueChange={(inputText) => {
+        updatePropertyValue(p, inputText);
       }}
       required={def.required}
       spellCheck={false}
@@ -110,8 +110,8 @@ function renderTextInput(p: Property, fieldId: string) {
     <Input
       defaultValue={def.default_value ?? undefined}
       id={fieldId}
-      onChange={(e) => {
-        updatePropertyValue(p, e.target.value);
+      onValueChange={(inputText) => {
+        updatePropertyValue(p, inputText);
       }}
       required={def.required}
       value={String(p.value)}
@@ -148,9 +148,9 @@ function renderPropertyInput(p: Property, fieldId: string) {
       return (
         <Input
           id={fieldId}
-          onChange={(e) => {
+          onValueChange={(inputText) => {
             // Store the string: getConfigObject sends p.value as-is and ===-compares it to default_value.
-            updatePropertyValue(p, e.target.value);
+            updatePropertyValue(p, inputText);
           }}
           required={isRequired}
           // Registry Input coerces step with Number(); "any" would become NaN.

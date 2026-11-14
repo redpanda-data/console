@@ -1,5 +1,4 @@
-import { mergeProps } from '@base-ui/react/merge-props';
-import { useRender } from '@base-ui/react/use-render';
+import { mergeProps, renderElement, type PartProps } from '@ui-sdk/react/primitive';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -142,8 +141,7 @@ function resolveBadgeVariant(tone: BadgeTone | undefined, variant: BadgeEmphasis
   return variant as BadgeVariantKey;
 }
 
-export type BadgeProps = useRender.ComponentProps<'span'> &
-  SharedProps & {
+export type BadgeProps = Omit<PartProps<'span'>, 'children'> & { children?: React.ReactNode } & SharedProps & {
     icon?: React.ReactNode;
     /** Semantic color. Recommended; pair with `variant` for emphasis. */
     tone?: BadgeTone;
@@ -183,23 +181,26 @@ function Badge({
       );
   }
 
-  return useRender({
-    defaultTagName: 'span',
+  return renderElement(
+    'span',
+    mergeProps(
+      { 'data-slot': 'badge', 'data-variant': resolvedVariant },
+      mergeProps(
+        {
+          className: cn(badgeVariants({ variant: resolvedVariant, size }), className),
+          'data-testid': testId,
+          'aria-disabled': disabled || undefined,
+          children: content,
+        } as React.ComponentPropsWithRef<'span'>,
+        props
+      )
+    ),
     render,
-    state: {
+    {
       slot: 'badge',
       variant: resolvedVariant,
-    },
-    props: mergeProps<'span'>(
-      {
-        className: cn(badgeVariants({ variant: resolvedVariant, size }), className),
-        'data-testid': testId,
-        'aria-disabled': disabled || undefined,
-        children: content,
-      } as React.ComponentPropsWithRef<'span'>,
-      props
-    ),
-  });
+    }
+  );
 }
 
 export { Badge, badgeVariants };

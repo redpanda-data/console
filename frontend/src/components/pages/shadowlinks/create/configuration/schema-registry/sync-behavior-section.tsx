@@ -92,7 +92,7 @@ export const SyncBehaviorSection = () => {
             <FormItem data-testid="sr-tail-interval-field">
               <FormLabel>Tail interval</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="10s" testId="sr-tail-interval-input" />
+                <Input {...field} onValueChange={field.onChange} placeholder="10s" testId="sr-tail-interval-input" />
               </FormControl>
               <FormDescription>Interval between incremental polls for new subjects and versions.</FormDescription>
               <FormMessage />
@@ -107,7 +107,12 @@ export const SyncBehaviorSection = () => {
             <FormItem data-testid="sr-full-sync-interval-field">
               <FormLabel>Full sync interval</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="5m" testId="sr-full-sync-interval-input" />
+                <Input
+                  {...field}
+                  onValueChange={field.onChange}
+                  placeholder="5m"
+                  testId="sr-full-sync-interval-input"
+                />
               </FormControl>
               <FormDescription>Interval between full scans of the selected source subjects.</FormDescription>
               <FormMessage />
@@ -122,7 +127,7 @@ export const SyncBehaviorSection = () => {
             <FormItem data-testid="sr-max-request-rate-field">
               <FormLabel>Max source request rate</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="30" testId="sr-max-request-rate-input" />
+                <Input {...field} onValueChange={field.onChange} placeholder="30" testId="sr-max-request-rate-input" />
               </FormControl>
               <FormDescription>Requests per second to the source Schema Registry.</FormDescription>
               <FormMessage />
