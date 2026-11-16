@@ -117,6 +117,25 @@ describe('useClusterFenceStatusQuery', () => {
     expect(result.current.blocking).toBe(true);
   });
 
+  test('retains last-known controller presentation after an ordinary refresh failure', async () => {
+    const readStatus = rs
+      .fn<() => typeof fencedStatus>()
+      .mockReturnValueOnce(fencedStatus)
+      .mockImplementation(() => {
+        throw new ConnectError('temporary failure', Code.Internal);
+      });
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getClusterFenceStatus, readStatus);
+    });
+    const { result } = renderStatusQuery(transport);
+    await waitFor(() => expect(result.current.known).toBe(true));
+    await act(() => result.current.refetch());
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.known).toBe(true);
+    expect(result.current.summary.phase).toBe('fenced');
+    expect(result.current.blocking).toBe(true);
+  });
+
   test('self-hosted, reads the fence whenever the backend serves the API, with no flag', async () => {
     host.embedded = false;
     flags.enableClusterFencing = false;
