@@ -1093,7 +1093,6 @@ components:
       description: |-
         The type of entity that the quota applies to.
 
-         - ENTITY_TYPE_USER: Not supported in Redpanda
          - ENTITY_TYPE_IP: Not supported in Redpanda
       enum:
         - ENTITY_TYPE_CLIENT_ID
@@ -5960,7 +5959,6 @@ paths:
         - description: |-
             The type of entity to filter by. If  unspecified, all entities will be returned.
 
-             - ENTITY_TYPE_USER: Not supported in Redpanda
              - ENTITY_TYPE_IP: Not supported in Redpanda
           in: query
           name: filter.entity_type
