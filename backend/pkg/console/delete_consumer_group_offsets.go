@@ -11,6 +11,7 @@ package console
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -43,6 +44,9 @@ func (s *Service) DeleteConsumerGroupOffsets(ctx context.Context, groupID string
 	offsetDeleteRes, err := req.RequestWith(ctx, cl)
 	if err != nil {
 		return nil, err
+	}
+	if err := kerr.ErrorForCode(offsetDeleteRes.ErrorCode); err != nil {
+		return nil, fmt.Errorf("failed to delete consumer group offsets: %w", err)
 	}
 
 	res := make([]DeleteConsumerGroupOffsetsResponseTopic, len(offsetDeleteRes.Topics))

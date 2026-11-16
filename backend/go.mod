@@ -51,10 +51,10 @@ require (
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.42.0
 	github.com/twmb/avro v1.8.0
-	github.com/twmb/franz-go v1.21.2
-	github.com/twmb/franz-go/pkg/kadm v1.18.0
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251115002817-3affad808a82
-	github.com/twmb/franz-go/pkg/kmsg v1.13.1
+	github.com/twmb/franz-go v1.22.3
+	github.com/twmb/franz-go/pkg/kadm v1.20.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260804154521-adb3a18abe14
+	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/franz-go/pkg/sr v1.7.0
 	github.com/twmb/franz-go/plugin/kslog v1.0.0
@@ -147,7 +147,7 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
-	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/klauspost/compress v1.20.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -177,7 +177,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.26 // indirect
+	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect

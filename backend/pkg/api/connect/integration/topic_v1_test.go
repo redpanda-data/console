@@ -1632,10 +1632,9 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		require.Error(err)
 		assert.NotEmpty(errResponse)
 
-		assert.Contains(errResponse, "INVALID_ARGUMENT")
-		assert.Contains(errResponse, "INVALID_TOPIC_EXCEPTION")
-		assert.Contains(errResponse, "Topic does not exist")
-		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
+		assert.Contains(errResponse, "NOT_FOUND")
+		assert.Contains(errResponse, "UNKNOWN_TOPIC_OR_PARTITION")
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
 	})
 
 	t.Run("validate topic partition to a valid topic (connect-go)", func(t *testing.T) {
@@ -2163,8 +2162,7 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 
 			if status.TopicName == topicName1 {
 				assert.False(status.Success)
-				assert.Contains(status.Error, "INVALID_TOPIC_EXCEPTION")
-				assert.Contains(status.Error, "Topic does not exist")
+				assert.Contains(status.Error, "UNKNOWN_TOPIC_OR_PARTITION")
 			} else {
 				assert.True(status.Success)
 				assert.Empty(status.Error)
@@ -2246,8 +2244,7 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 
 			if status.TopicName == topicName1 {
 				assert.False(status.Success)
-				assert.Contains(status.Error, "INVALID_TOPIC_EXCEPTION")
-				assert.Contains(status.Error, "Topic does not exist")
+				assert.Contains(status.Error, "UNKNOWN_TOPIC_OR_PARTITION")
 			} else {
 				assert.True(status.Success)
 				assert.Empty(status.Error)
