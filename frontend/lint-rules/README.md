@@ -1,8 +1,16 @@
 # Console policy checks
 
 A small [Oxlint JS plugin](https://oxc.rs/docs/guide/usage/linter/js-plugins) (`console/*`)
-for policy Biome does not express. Biome stays the general linter and formatter; every stock
-Oxlint category is off in `../.oxlintrc.json`, and each rule here is an error. The rule ideas
+for policy Biome does not express. Biome stays the general linter and formatter, including
+promise checks. `../.oxlintrc.json` explicitly enables all recommended `oxc/*` rules and six
+type-aware safety rules for `src` TypeScript files, alongside the Console rules, all as errors.
+Other stock rules stay off. `lint:policy` pins the type-aware backend to the `tsrs-lint` launcher
+shipped with `tsrs`; no `oxlint-tsgolint` dependency is needed. All tsrs entrypoints set
+`TSRS_FAST=1` for the [full supported fast preset](https://github.com/oxc-project/tsrs/blob/v0.25.0/docs/USAGE.md#performance-options).
+Incremental app checks retain `.tsbuildinfo`; non-incremental test checks also persist checker-cost
+estimates under `node_modules/.cache/tsrs/`. Keep the TypeScript target in the `tsrs` version aligned
+with the `typescript` pin when upgrading. Fast scheduling can change diagnostics in upstream-known
+order-sensitive cases; experimental debug switches remain off. The rule ideas
 come from the Oxlint plugin in [pingdotgg/t3code](https://github.com/pingdotgg/t3code).
 
 ```bash
@@ -11,7 +19,11 @@ bun run test:file:unit tests/lint-policy.test.ts
 ```
 
 The test drives `bun run lint:policy` in an OS-temp project whose config extends the
-checked-in one, so the real script, config and plugin load. Diagnostics carry no fixes.
+checked-in one, so the real script, config, plugin and type-aware backend load. Console rules
+offer no fixes. Only `typescript/await-thenable` is off for `src/**/*.test.{ts,tsx}` files because
+runner types can describe awaitable assertions and React `act` as returning `void`. Other type-aware
+rules still check those files, and helpers get all six rules. The `type:check` and `type:check:tests`
+compiler scopes remain separate and unchanged.
 React Doctor does not adopt this config (`adoptExistingLintConfig: false` in
 `../doctor.config.json`), so `bun run lint` is the one gate for these rules.
 

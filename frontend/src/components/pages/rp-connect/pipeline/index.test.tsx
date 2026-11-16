@@ -324,7 +324,12 @@ rs.mock('sonner', () => {
   const actual = rs.requireActual<typeof import('sonner')>('sonner');
   return {
     ...actual,
-    toast: { ...actual.toast, success: rs.fn(), error: rs.fn(), warning: rs.fn(), info: rs.fn() },
+    toast: Object.assign(actual.toast.bind(null), actual.toast, {
+      success: rs.fn(),
+      error: rs.fn(),
+      warning: rs.fn(),
+      info: rs.fn(),
+    }),
   };
 });
 
