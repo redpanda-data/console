@@ -33,8 +33,10 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 
 ## Lint policy
 
-- Biome owns general linting and formatting. `bun run lint` / `lint:fix` also run
-  the focused [Console policy checks](lint-rules/README.md); `lint:policy` is read-only.
+- Biome owns general linting and formatting, including promise checks. `bun run lint` /
+  `lint:fix` also run the [Oxlint checks](lint-rules/README.md): Console policy, recommended
+  Oxc rules, and targeted TypeScript type-safety rules via `tsrs-lint`.
+  `lint:policy` is read-only; compiler checks remain separate.
 - Pure helpers must not use hook names. Rename them instead of adding a dummy hook.
 - Tests await observable completion or drive a controlled clock, not arbitrary sleeps
   or hand-written polling. Keep real browser timing coverage for native behavior.

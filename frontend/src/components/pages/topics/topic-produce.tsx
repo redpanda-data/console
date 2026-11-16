@@ -242,7 +242,7 @@ function useSchemaVersionOptions(control: Control<Inputs>, payload: 'key' | 'val
 function buildKafkaHeaders(headers: Inputs['headers']) {
   const kafkaHeaders: KafkaRecordHeader[] = [];
   for (const h of headers) {
-    if (!(h.value || h.value)) {
+    if (!h.value) {
       continue;
     }
     const kafkaHeader = create(KafkaRecordHeaderSchema);

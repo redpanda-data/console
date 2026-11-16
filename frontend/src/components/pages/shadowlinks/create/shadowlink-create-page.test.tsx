@@ -757,7 +757,7 @@ describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
     // Mock window.location
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { ...originalLocation, href: '', pathname: '/clusters/abc/shadowlinks/create' },
+      value: { href: '', pathname: '/clusters/abc/shadowlinks/create' },
     });
   });
 

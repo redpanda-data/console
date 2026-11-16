@@ -632,7 +632,42 @@ test('not a test file', () => undefined, 5000);
 `,
 };
 
-const clusters = { suppressions, tooltips, hooks, waits, clocks, skips, helpers };
+const stockRules: Fixture[] = [
+  {
+    file: 'replace-all.ts',
+    reports: ['oxc(bad-replace-all-arg)'],
+    source: `export const normalize = (text: string) => text.replaceAll(/x/, 'y');`,
+  },
+  {
+    file: 'replace-all-valid.ts',
+    reports: [],
+    source: `export const normalize = (text: string) => text.replaceAll(/x/g, 'y');`,
+  },
+  {
+    file: 'src/type-aware.ts',
+    reports: ['typescript(await-thenable)'],
+    source: 'export async function invalidAwait() { await 42; }',
+  },
+  {
+    file: 'src/type-aware-excluded.test.ts',
+    reports: [],
+    source: 'export async function runnerSpecificTypes() { await 42; }',
+  },
+  {
+    file: 'src/type-aware-array-delete.test.ts',
+    reports: ['typescript(no-array-delete)'],
+    source: 'export function removeFirst(values: string[]) { delete values[0]; }',
+  },
+  {
+    file: 'src/type-aware-valid.ts',
+    reports: [],
+    source: `
+export async function complete() { await Promise.resolve(); }
+`,
+  },
+];
+
+const clusters = { suppressions, tooltips, hooks, waits, clocks, skips, helpers, stockRules };
 const fixtures = [...Object.values(clusters).flat(), scopeControl];
 let project = '';
 let mixed: PolicyRun;
@@ -643,6 +678,10 @@ function createProject() {
   const { scripts } = JSON.parse(readFileSync(join(frontendRoot, 'package.json'), 'utf8'));
   symlinkSync(join(frontendRoot, 'node_modules'), join(directory, 'node_modules'), 'dir');
   writeFileSync(join(directory, 'package.json'), JSON.stringify({ private: true, scripts }));
+  writeFileSync(
+    join(directory, 'tsconfig.json'),
+    JSON.stringify({ compilerOptions: { strict: true, target: 'ESNext', skipLibCheck: true }, include: ['src'] })
+  );
   writeFileSync(join(directory, '.oxlintrc.json'), JSON.stringify({ extends: [join(frontendRoot, '.oxlintrc.json')] }));
   for (const fixture of fixtures) {
     mkdirSync(dirname(join(directory, fixture.file)), { recursive: true });
@@ -680,7 +719,7 @@ afterAll(() => {
   rmSync(project, { recursive: true, force: true });
 });
 
-test.each(Object.entries(clusters))('%s fixtures report exactly the expected console rules', (_name, cases) => {
+test.each(Object.entries(clusters))('%s fixtures report exactly the expected rules', (_name, cases) => {
   const actual = cases.map((fixture) => ({ file: fixture.file, reports: reportsFor(mixed, fixture.file) }));
   const expected = cases.map((fixture) => ({ file: fixture.file, reports: fixture.reports.toSorted() }));
   expect(actual).toEqual(expected);
