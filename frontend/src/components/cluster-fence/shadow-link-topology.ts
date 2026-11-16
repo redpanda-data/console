@@ -138,14 +138,26 @@ const matchesHost = (endpoints: Endpoints, cluster: Cluster) =>
 export const findSourceCluster = (
   bootstrapServers: readonly string[],
   clusters: readonly Cluster[],
-  shadowClusterId: string
+  shadowClusterId: string,
+  allowHostMatch = true
 ): Cluster | undefined => {
   const candidates = clusters.filter((cluster) => cluster.id !== shadowClusterId);
   const endpoints = endpointsOf(bootstrapServers);
-  return (
-    candidates.find((cluster) => matchesExactly(endpoints, cluster)) ??
-    candidates.find((cluster) => matchesHost(endpoints, cluster))
-  );
+  const exact = candidates.find((cluster) => matchesExactly(endpoints, cluster));
+  if (exact || !allowHostMatch) {
+    return exact;
+  }
+  const hosts = candidates.filter((cluster) => matchesHost(endpoints, cluster));
+  return hosts.length === 1 ? hosts[0] : undefined;
+};
+
+const hasPotentialCloudSource = (
+  bootstrapServers: readonly string[],
+  candidates: SourceCandidates,
+  clusterId: string
+) => {
+  const endpoints = endpointsOf(bootstrapServers);
+  return candidates.clusters.some((candidate) => candidate.id !== clusterId && matchesHost(endpoints, candidate));
 };
 
 /**
@@ -198,7 +210,12 @@ const resolveOwnLink = (
     return details.status === 'failed' ? { kind: 'unresolved' } : { kind: 'pending' };
   }
   const bootstrapServers = details.value.clientOptions?.bootstrapServers ?? [];
-  const cluster = findSourceCluster(bootstrapServers, candidates.clusters, clusterId);
+  const cluster = findSourceCluster(
+    bootstrapServers,
+    candidates.clusters,
+    clusterId,
+    candidates.complete && !candidates.failed
+  );
   if (cluster) {
     return {
       kind: 'source',
@@ -206,8 +223,10 @@ const resolveOwnLink = (
     };
   }
   // Until every candidate is in, no match means "not yet", not "outside Cloud".
-  if (candidates.complete) {
-    return { kind: 'source', source: { kind: 'external', bootstrapServers } };
+  if (candidates.complete && !candidates.failed) {
+    return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
+      ? { kind: 'unresolved' }
+      : { kind: 'source', source: { kind: 'external', bootstrapServers } };
   }
   return candidates.failed ? { kind: 'unresolved' } : { kind: 'pending' };
 };

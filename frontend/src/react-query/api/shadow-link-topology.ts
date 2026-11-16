@@ -211,10 +211,10 @@ const usePeerFences = (sources: readonly Cluster[]) => {
       }
       readable.forEach((cluster, index) => {
         const result = results[index];
-        if (result?.data) {
-          fences.set(cluster.id, result.data);
-        } else if (result?.isError) {
+        if (result?.isError) {
           fences.set(cluster.id, unreadablePeerFence(result.error));
+        } else if (result?.data) {
+          fences.set(cluster.id, result.data);
         }
       });
       return fences;

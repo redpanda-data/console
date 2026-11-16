@@ -187,7 +187,7 @@ export const useClusterFenceStatusQuery = () => {
   );
   const noLeader = available && isNoLeaderError(query.error);
   const ownCopies = useBrokerOwnCopies(noLeader, brokers);
-  const known = available && access === 'ok' && parsed !== undefined;
+  const known = available && access === 'ok' && !query.isError && parsed !== undefined;
   const summary = parsed ?? UNFENCED_SUMMARY;
   usePublishedFencePhase(known ? summary.phase : null);
 

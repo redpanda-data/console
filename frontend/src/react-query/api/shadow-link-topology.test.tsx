@@ -36,6 +36,7 @@ import { Code, ConnectError, createRouterTransport, type Transport } from '@conn
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import {
   ClusterFenceState,
   GetClusterFenceStatusResponseSchema,
@@ -76,7 +77,13 @@ rs.mock('./peer-console-transport', () => ({
   },
 }));
 
+import {
+  type CloudSource,
+  getFailoverReadiness,
+  getSourceFenceStep,
+} from 'components/pages/shadowlinks/details/failover-model';
 import { config } from 'config';
+import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
 import { useShadowLinkTopology } from './shadow-link-topology';
@@ -186,12 +193,36 @@ const fencedProd = () => ({
 
 const renderTopology = (clusterId: string) => {
   config.clusterId = clusterId;
-  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
-  return renderHook(() => useShadowLinkTopology(), { wrapper });
+  const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+  return { ...renderHook(() => useShadowLinkTopology(), { wrapper }), queryClient };
 };
 
 const settled = (result: { current: ReturnType<typeof useShadowLinkTopology> }) =>
   waitFor(() => expect(result.current?.resolving).toBe(false));
+
+function requireCloudSource(source: ShadowLinkSource | undefined): CloudSource {
+  if (source?.kind !== 'cloud') {
+    throw new Error('Expected a Cloud source');
+  }
+  return source;
+}
+
+function expectUnreadableSource(source: ShadowLinkSource | undefined, lastKnown: CloudSource) {
+  const fence = getSourceFenceStep({
+    source,
+    resolving: false,
+    lastKnown,
+    link: { authentication: 'sasl', principal: 'shadow-orders' },
+  });
+  expect(fence?.kind).toBe('unreadable');
+  if (!fence) {
+    throw new Error('Expected an unreadable source step');
+  }
+  expect(
+    getFailoverReadiness({ fence, topics: [{ topicName: 'orders', state: ShadowTopicState.ACTIVE, totalLag: 0n }] })
+      .failover.ready
+  ).toBe(false);
+}
 
 describe('useShadowLinkTopology', () => {
   const originalClusterId = config.clusterId;
@@ -278,6 +309,30 @@ describe('useShadowLinkTopology', () => {
       });
       expect(result.current?.readers).toEqual([]);
       expect(transports.peerCalls).toContain(PROD_CONSOLE);
+    });
+
+    test('a failed refresh invalidates a previously fenced source and prevents ready failover', async () => {
+      controlplane();
+      const peer = { failed: false };
+      peerConsole(PROD_CONSOLE, () => {
+        if (peer.failed) {
+          throw new ConnectError('no controller leader', Code.Unavailable);
+        }
+        return fencedProd();
+      });
+      const { result, queryClient } = renderTopology('dr');
+      await waitFor(() => expect(result.current?.sources['orders-dr']).toMatchObject({ fence: { status: 'known' } }));
+      const lastKnown = requireCloudSource(result.current?.sources['orders-dr']);
+      peer.failed = true;
+      await act(() =>
+        queryClient.refetchQueries({ predicate: (query) => query.queryKey[0] === 'cluster-fence-peer-status' })
+      );
+      await waitFor(() =>
+        expect(result.current?.sources['orders-dr']).toMatchObject({
+          fence: { status: 'unavailable', reason: 'no-leader' },
+        })
+      );
+      expectUnreadableSource(result.current?.sources['orders-dr'], lastKnown);
     });
 
     test('a source’s fence that its Console doesn’t serve, or won’t show this viewer, reads as unavailable', async () => {

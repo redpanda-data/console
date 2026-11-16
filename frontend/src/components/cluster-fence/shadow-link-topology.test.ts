@@ -226,3 +226,36 @@ describe('clusters that share a host, as local ones do', () => {
     ).toHaveLength(1);
   });
 });
+
+test('own source waits for complete coverage before accepting a unique host-only match', () => {
+  const a = cluster('a', 'shared.example.com:30092');
+  const b = cluster('b', 'shared.example.com:31092');
+  const ownLink = create(ShadowLinkSchema, {
+    id: 'own',
+    name: 'own',
+    shadowRedpandaId: 'dr',
+    clientOptions: { bootstrapServers: ['shared.example.com:30092'] },
+  });
+  const state = (clusters: (typeof a)[], complete: boolean, failed: boolean) =>
+    inputs({
+      links: { items: [listItem(ownLink)], loading: false, complete: true },
+      details: new Map([['own', ready(ownLink)]]),
+      candidates: { clusters, complete, failed },
+    });
+  expect(buildShadowLinkTopology(state([b], false, false))).toMatchObject({ sources: {}, resolving: true });
+  expect(buildShadowLinkTopology(state([b], false, true))).toMatchObject({ sources: {}, resolving: false });
+  expect(buildShadowLinkTopology(state([b, a], true, false)).sources.own).toMatchObject({
+    kind: 'cloud',
+    clusterId: 'a',
+  });
+  expect(buildShadowLinkTopology(state([a], false, false)).sources.own).toMatchObject({
+    kind: 'cloud',
+    clusterId: 'a',
+  });
+});
+
+test('ambiguous host-only sources are never picked by arrival order', () => {
+  const a = cluster('a', 'shared.example.com:30092');
+  const b = cluster('b', 'shared.example.com:31092');
+  expect(findSourceCluster(['shared.example.com:32092'], [a, b], 'dr')).toBeUndefined();
+});

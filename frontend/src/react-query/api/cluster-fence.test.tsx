@@ -88,6 +88,35 @@ describe('useClusterFenceStatusQuery', () => {
     expect(useClusterFenceStore.getState().phase).toBe('fenced');
   });
 
+  test('uses fresh blocking broker copies after a cached unfenced controller loses leadership', async () => {
+    const readController = rs
+      .fn<() => typeof fencedStatus>()
+      .mockReturnValueOnce(
+        create(GetClusterFenceStatusResponseSchema, {
+          fence: { state: ClusterFenceState.UNFENCED, revision: 1n },
+          brokers: [{ nodeId: 1, fence: { state: ClusterFenceState.UNFENCED, revision: 1n } }],
+        })
+      )
+      .mockImplementation(() => {
+        throw new ConnectError('no controller leader', Code.Unavailable);
+      });
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getClusterFenceStatus, readController);
+      rpc(getClusterFenceBrokerStatus, () =>
+        create(GetClusterFenceBrokerStatusResponseSchema, {
+          broker: { nodeId: 1, fence: { state: ClusterFenceState.FENCED, revision: 2n } },
+        })
+      );
+    });
+    const { result } = renderStatusQuery(transport);
+    await waitFor(() => expect(result.current.known).toBe(true));
+    expect(result.current.blocking).toBe(false);
+    await act(() => result.current.refetch());
+    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 2n }]));
+    expect(result.current.known).toBe(false);
+    expect(result.current.blocking).toBe(true);
+  });
+
   test('self-hosted, reads the fence whenever the backend serves the API, with no flag', async () => {
     host.embedded = false;
     flags.enableClusterFencing = false;
