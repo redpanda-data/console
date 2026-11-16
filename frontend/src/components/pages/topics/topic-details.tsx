@@ -17,6 +17,7 @@ import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interf
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/ui-state';
 import '../../../utils/array-extensions';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
 import { ErrorBoundary } from 'components/misc/error-boundary';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
@@ -416,15 +417,17 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center">
           <TopicQuickInfoStatistic topic={topic} />
           <div className="flex shrink-0 items-center gap-2 md:ml-auto">
-            <Button
+            <FenceGuardedButton
+              action="produce"
               data-testid="produce-record-button"
               onClick={() => {
                 appGlobal.historyPush(`/topics/${encodeURIComponent(topic.topicName)}/produce-record`);
               }}
+              topic={topicName}
               variant="outline"
             >
               Produce Record
-            </Button>
+            </FenceGuardedButton>
             {deleteRecordsMenuItem(topic.cleanupPolicy === 'compact', topic.allowedActions, () => {
               setDeleteRecordsModalAlive(true);
             })}

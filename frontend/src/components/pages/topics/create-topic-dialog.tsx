@@ -31,6 +31,7 @@ import {
   validateReplicationFactor,
 } from '../../../utils/topic-utils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../utils/utils';
+import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
 import { CopyButton } from '../../redpanda-ui/components/copy-button';
@@ -702,14 +703,15 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
               <Button onClick={handleClose} variant="outline">
                 Cancel
               </Button>
-              <Button
+              <FenceGuardedButton
+                action="createTopic"
                 data-testid="onOk-button"
                 disabled={!form.formState.isValid || isLoading}
                 form="create-topic-form"
                 type="submit"
               >
                 {isLoading ? 'Creating…' : 'Create'}
-              </Button>
+              </FenceGuardedButton>
             </>
           )}
         </DialogFooter>

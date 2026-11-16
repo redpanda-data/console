@@ -12,13 +12,15 @@
 'use client';
 
 import { Code } from '@connectrpc/connect';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
+import type { LinkIdentity } from 'components/cluster-fence/cluster-fence-model';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { isGuidedFailoverEnabled } from 'react-query/api/cluster-fence';
 import {
   useDeleteShadowLinkUnified,
   useFailoverShadowLinkMutation,
@@ -30,10 +32,137 @@ import { uiState } from 'state/ui-state';
 import { ShadowLinkConfiguration } from './config/shadow-link-configuration';
 import { DeleteShadowLinkDialog } from './delete-shadowlink-dialog';
 import { FailoverDialog } from './failover-dialog';
+import type { FailoverReadiness } from './failover-model';
+import { FailoverTab } from './failover-tab';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
+import { useFailoverReadiness } from './use-failover-readiness';
 import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
 import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
+import type { UnifiedShadowLink } from '../model';
+
+type DetailsTab = 'overview' | 'tasks' | 'configuration' | 'failover';
+
+/** Lag is the thing to watch on the Failover tab, so it polls quickly there. */
+const FAILOVER_POLL_MS = 3000;
+const BACKGROUND_POLL_MS = 60_000;
+
+type ShadowLinkDetailsTabsProps = {
+  name: string;
+  tab: DetailsTab;
+  onTabChange: (tab: DetailsTab) => void;
+  shadowLink: UnifiedShadowLink;
+  hasPartialData: boolean;
+  /** Set only while the Failover tab shows; otherwise the tabs are as they were before it. */
+  readiness: FailoverReadiness | undefined;
+  linkIdentity: LinkIdentity;
+  onRefresh: () => void;
+  onFailoverTopic: (topicName?: string) => void;
+  onRetryTopics: () => void;
+};
+
+const ShadowLinkDetailsTabs = ({
+  name,
+  tab,
+  onTabChange,
+  shadowLink,
+  hasPartialData,
+  readiness,
+  linkIdentity,
+  onRefresh,
+  onFailoverTopic,
+  onRetryTopics,
+}: ShadowLinkDetailsTabsProps) => (
+  <Tabs onValueChange={(value) => onTabChange(value as DetailsTab)} value={tab}>
+    <TabsList className="mb-4" testId="shadowlink-details-tabs" variant="underline">
+      <TabsTrigger testId="overview-tab" value="overview" variant="underline">
+        Overview
+      </TabsTrigger>
+      <TabsTrigger testId="tasks-tab" value="tasks" variant="underline">
+        Tasks
+      </TabsTrigger>
+      <TabsTrigger testId="configuration-tab" value="configuration" variant="underline">
+        Configuration
+      </TabsTrigger>
+      {readiness ? (
+        <TabsTrigger testId="failover-tab-trigger" value="failover" variant="underline">
+          Failover
+        </TabsTrigger>
+      ) : null}
+    </TabsList>
+
+    <TabsContents>
+      <TabsContent testId="overview-content" value="overview">
+        <ShadowLinkDetails onFailoverTopic={onFailoverTopic} shadowLink={shadowLink} shadowLinkName={name} />
+      </TabsContent>
+
+      <TabsContent testId="tasks-content" value="tasks">
+        <TasksTable dataUnavailable={hasPartialData} onRefresh={onRefresh} tasks={shadowLink.tasksStatus} />
+      </TabsContent>
+
+      <TabsContent testId="configuration-content" value="configuration">
+        <ShadowLinkConfiguration shadowLink={shadowLink} />
+      </TabsContent>
+
+      {readiness ? (
+        <TabsContent testId="failover-content" value="failover">
+          <FailoverTab
+            linkIdentity={linkIdentity}
+            onRetryTopics={onRetryTopics}
+            readiness={readiness}
+            shadowLink={shadowLink}
+          />
+        </TabsContent>
+      ) : null}
+    </TabsContents>
+  </Tabs>
+);
+
+/**
+ * The open tab: a link that names one opens it, and the user's pick stays put while the Failover tab
+ * comes and goes, instead of the tabs resetting to Overview. `pick` writes the tab to the URL only
+ * with Failover, which other clusters' pages link to directly.
+ */
+const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
+  const navigate = useNavigate();
+  const [picked, setPicked] = useState<DetailsTab>(requested ?? 'overview');
+  const [lastRequested, setLastRequested] = useState(requested);
+  if (requested !== lastRequested) {
+    setLastRequested(requested);
+    if (requested) {
+      setPicked(requested);
+    }
+  }
+  const pick = (next: DetailsTab, inUrl: boolean) => {
+    setPicked(next);
+    if (inUrl) {
+      navigate({ to: '/shadowlinks/$name', params: { name }, search: { tab: next }, replace: true }).catch(
+        (error: unknown) => {
+          toast.error('Failed to navigate', { description: String(error) });
+        }
+      );
+    }
+  };
+  return { picked, pick };
+};
+
+/**
+ * The Failover tab shows once Console has read the source's fence in this visit. While it's still
+ * finding out, the tab shows only if the URL asks for it, so a link to it doesn't fall back to
+ * Overview early.
+ */
+const guidedReadiness = (
+  { readiness, available }: ReturnType<typeof useFailoverReadiness>,
+  requested: DetailsTab | undefined
+) => (readiness && (available || requested === 'failover') ? readiness : undefined);
+
+/** A link to the Failover tab falls back to Overview while there's no Failover tab. */
+const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean): DetailsTab => {
+  if (requested === 'failover' && !guided) {
+    return 'overview';
+  }
+  return requested ?? 'overview';
+};
 
 type UnifiedShadowLinkQuery = ReturnType<typeof useGetShadowLinkUnified>;
 
@@ -78,11 +207,16 @@ const useShadowLinkDelete = (name: string) => {
 };
 
 /** Failover for the whole link, or for one topic when the dialog is opened with its name. */
-const useShadowLinkFailover = (name: string, refetch: UnifiedShadowLinkQuery['refetch']) => {
+const useShadowLinkFailover = (
+  name: string,
+  refetch: UnifiedShadowLinkQuery['refetch'],
+  { guided, refetchTopics }: { guided: boolean; refetchTopics: () => Promise<unknown> }
+) => {
   const [showFailoverDialog, setShowFailoverDialog] = useState(false);
   const [failoverTopicName, setFailoverTopicName] = useState<string>('');
 
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
+    refreshTopics: guided,
     onSuccess: async () => {
       toast.success(failoverTopicName ? `Topic ${failoverTopicName} failed over` : 'Shadow link failed over');
       setShowFailoverDialog(false);
@@ -105,9 +239,17 @@ const useShadowLinkFailover = (name: string, refetch: UnifiedShadowLinkQuery['re
     }
   };
 
+  /** The dialog vouches for lag only from a read taken as it opens: the last poll can be a minute old. */
+  const [checkingLag, setCheckingLag] = useState(false);
+  const stopCheckingLag = () => setCheckingLag(false);
   const openFailoverDialog = (topicName?: string) => {
     setFailoverTopicName(topicName || '');
     setShowFailoverDialog(true);
+    if (guided) {
+      setCheckingLag(true);
+      // A failed read ends the check too: the dialog then reports the lag as unreadable or out of date.
+      refetchTopics().then(stopCheckingLag, stopCheckingLag);
+    }
   };
 
   const handleFailoverOpenChange = (open: boolean) => {
@@ -121,6 +263,7 @@ const useShadowLinkFailover = (name: string, refetch: UnifiedShadowLinkQuery['re
     failoverTopicName,
     showFailoverDialog,
     isFailingOver,
+    checkingLag,
     handleFailover,
     openFailoverDialog,
     handleFailoverOpenChange,
@@ -164,15 +307,24 @@ type ShadowLinkDetailsViewProps = {
 
 const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: ShadowLinkDetailsViewProps) => {
   const navigate = useNavigate();
+  const search = useSearch({ from: '/shadowlinks/$name/' });
+  const detailsTab = useDetailsTab(name, search.tab);
+  const failoverReadiness = useFailoverReadiness(shadowLink, {
+    pollMs: detailsTab.picked === 'failover' ? FAILOVER_POLL_MS : BACKGROUND_POLL_MS,
+    enabled: isGuidedFailoverEnabled(),
+  });
+  const { linkIdentity, refetchTopics } = failoverReadiness;
+  const guided = guidedReadiness(failoverReadiness, detailsTab.picked);
+  const tab = resolveDetailsTab(detailsTab.picked, guided !== undefined);
   const { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete } = useShadowLinkDelete(name);
-  const failover = useShadowLinkFailover(name, refetch);
+  const failover = useShadowLinkFailover(name, refetch, { guided: guided !== undefined, refetchTopics });
 
   return (
     <div className="flex flex-col gap-6">
       {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => failover.openFailoverDialog()} size="sm" variant="outline">
-          Failover all topics
+          {guided ? 'Fail over all topics' : 'Failover all topics'}
         </Button>
 
         <Button onClick={() => navigate({ to: `/shadowlinks/${name}/edit` })} size="sm" variant="outline">
@@ -207,37 +359,18 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="overview">
-        <TabsList testId="shadowlink-details-tabs">
-          <TabsTrigger testId="overview-tab" value="overview" variant="underline">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger testId="tasks-tab" value="tasks" variant="underline">
-            Tasks
-          </TabsTrigger>
-          <TabsTrigger testId="configuration-tab" value="configuration" variant="underline">
-            Configuration
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContents>
-          <TabsContent testId="overview-content" value="overview">
-            <ShadowLinkDetails
-              onFailoverTopic={failover.openFailoverDialog}
-              shadowLink={shadowLink}
-              shadowLinkName={name || ''}
-            />
-          </TabsContent>
-
-          <TabsContent testId="tasks-content" value="tasks">
-            <TasksTable dataUnavailable={hasPartialData} onRefresh={refetch} tasks={shadowLink.tasksStatus} />
-          </TabsContent>
-
-          <TabsContent testId="configuration-content" value="configuration">
-            <ShadowLinkConfiguration shadowLink={shadowLink} />
-          </TabsContent>
-        </TabsContents>
-      </Tabs>
+      <ShadowLinkDetailsTabs
+        hasPartialData={hasPartialData}
+        linkIdentity={linkIdentity}
+        name={name}
+        onFailoverTopic={failover.openFailoverDialog}
+        onRefresh={refetch}
+        onRetryTopics={() => refetchTopics()}
+        onTabChange={(next) => detailsTab.pick(next, guided !== undefined)}
+        readiness={guided}
+        shadowLink={shadowLink}
+        tab={tab}
+      />
 
       {/* Delete Dialog */}
       <DeleteShadowLinkDialog
@@ -250,10 +383,12 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
 
       {/* Failover Dialog */}
       <FailoverDialog
+        checkingLag={failover.checkingLag}
         isLoading={failover.isFailingOver}
         onConfirm={failover.handleFailover}
         onOpenChange={failover.handleFailoverOpenChange}
         open={failover.showFailoverDialog}
+        readiness={guided}
         topicName={failover.failoverTopicName}
       />
     </div>

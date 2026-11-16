@@ -47,6 +47,7 @@ import {
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
 import PageContent from '../../misc/page-content';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -158,6 +159,7 @@ function EditSchemaMode({
   contextMode?: SchemaRegistryModeWithDefault;
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
+  const fencedReason = useClusterFenceGuard().reasonFor('editSchemas');
   const updateGlobalMutation = useUpdateGlobalModeMutation();
   const updateSubjectMutation = useUpdateSubjectModeMutation();
   const updateContextMutation = useUpdateContextModeMutation();
@@ -249,7 +251,7 @@ function EditSchemaMode({
                 render={
                   <Button
                     data-testid="edit-mode-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false}
+                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
                     onClick={onSave}
                     variant="primary"
                   >
@@ -260,6 +262,9 @@ function EditSchemaMode({
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
+              {api.userData?.canManageSchemaRegistry !== false && fencedReason ? (
+                <TooltipContent side="top">{fencedReason}</TooltipContent>
+              ) : null}
             </Tooltip>
             <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="ghost">
               Cancel

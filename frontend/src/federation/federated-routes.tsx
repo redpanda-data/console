@@ -15,6 +15,8 @@ import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { useLayoutEffect, useRef } from 'react';
 
+import { ClusterFenceBanner } from '../components/cluster-fence/cluster-fence-banner';
+import { ShadowLinkTopologySync } from '../components/cluster-fence/shadow-link-topology-sync';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
@@ -135,6 +137,12 @@ function FederatedAppContent() {
     >
       <NullFallbackBoundary>
         <LicenseNotification />
+      </NullFallbackBoundary>
+      <NullFallbackBoundary>
+        <ShadowLinkTopologySync />
+      </NullFallbackBoundary>
+      <NullFallbackBoundary>
+        <ClusterFenceBanner />
       </NullFallbackBoundary>
       <ModalContainer />
       <AppPageHeader />

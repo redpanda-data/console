@@ -19,6 +19,7 @@ import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
+import { ClusterFenceBanner } from '../components/cluster-fence/cluster-fence-banner';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
 import AppFooter from '../components/layout/footer';
 import AppPageHeader from '../components/layout/header';
@@ -102,6 +103,9 @@ function AppContent() {
         {/* Page */}
         <NullFallbackBoundary>
           <LicenseNotification />
+        </NullFallbackBoundary>
+        <NullFallbackBoundary>
+          <ClusterFenceBanner />
         </NullFallbackBoundary>
         <ModalContainer />
         <AppPageHeader />
