@@ -85,10 +85,16 @@ const blockedReaderMessage = (reader: ShadowLinkReader) => {
   return `${reader.linkName} reads as ${reader.principal}, which isn’t exempt, so it couldn’t finish copying.`;
 };
 
+const FINDING_READERS_CHECK: PreflightCheck = {
+  id: 'readers',
+  status: 'pending',
+  message: 'Finding the shadow links that read from this cluster…',
+};
+
 /** Before any reader is found, says whether Console is still looking, gave up early, or found none. */
 const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
   if (resolving) {
-    return { id: 'readers', status: 'pending', message: 'Finding the shadow links that read from this cluster…' };
+    return FINDING_READERS_CHECK;
   }
   if (incomplete) {
     return INCOMPLETE_READERS_CHECK;
@@ -127,8 +133,12 @@ const readerChecks = (
   if (readers.length === 0) {
     return [noReadersCheck({ resolving, incomplete })];
   }
-  const more = incomplete ? [INCOMPLETE_READERS_CHECK] : [];
   const problems = readers.flatMap((reader) => readerProblems(reader, linkCanRead(policy, reader)));
+  /** Until every link is resolved, a reader still to come may be blocked, so nothing passes yet. */
+  if (resolving) {
+    return [...problems, FINDING_READERS_CHECK];
+  }
+  const more = incomplete ? [INCOMPLETE_READERS_CHECK] : [];
   if (problems.length > 0) {
     return [...problems, ...more];
   }

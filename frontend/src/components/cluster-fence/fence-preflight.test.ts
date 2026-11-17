@@ -109,6 +109,13 @@ describe('getFencePreflightChecks', () => {
       expect(messageOf(getFencePreflightChecks({ ...base, readers: [] }), 'readers')).toContain('No shadow link');
     });
 
+    test('never passes the readers it has found while other links are still being resolved', () => {
+      expect(statuses(getFencePreflightChecks({ ...base, readersResolving: true }))).toEqual({ readers: 'pending' });
+      expect(
+        statuses(getFencePreflightChecks({ ...base, exemptPrincipals: ['someone-else'], readersResolving: true }))
+      ).toEqual({ 'reader-orders-dr': 'warn', readers: 'pending' });
+    });
+
     test('when Cloud couldn’t check every link, says the readers it found may not be all of them', () => {
       expect(statuses(getFencePreflightChecks({ ...base, readers: [], readersIncomplete: true }))).toMatchObject({
         'readers-incomplete': 'warn',
