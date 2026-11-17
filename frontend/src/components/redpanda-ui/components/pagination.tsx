@@ -1,7 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
 import type React from 'react';
 
-import { type Button, buttonVariants } from './button';
+import { type Button, buttonVariants, Button as ConsoleButton } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
@@ -39,20 +39,25 @@ type PaginationLinkProps = {
 
 function PaginationLink({ className, isActive, size = 'icon', testId, ...props }: PaginationLinkProps) {
   return (
-    <a
-      aria-current={isActive ? 'page' : undefined}
-      className={cn(
-        buttonVariants({
-          variant: isActive ? 'outline' : 'ghost',
-          size,
-        }),
-        className
-      )}
-      data-active={isActive}
-      data-slot="pagination-link"
-      data-testid={testId}
-      {...props}
-    />
+    <ConsoleButton
+      variant="unstyled"
+      render={
+        <a
+          aria-current={isActive ? 'page' : undefined}
+          className={cn(
+            buttonVariants({
+              variant: isActive ? 'outline' : 'ghost',
+              size,
+            }),
+            className
+          )}
+          data-active={isActive}
+          data-slot="pagination-link"
+          data-testid={testId}
+          {...props}
+        />
+      }
+    ></ConsoleButton>
   );
 }
 

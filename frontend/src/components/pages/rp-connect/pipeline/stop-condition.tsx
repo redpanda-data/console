@@ -12,7 +12,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainAnchor, PlainButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   Form,
@@ -340,7 +340,7 @@ const StopExtras = ({
 const DocsLink = () => {
   const docsUrl = getConnectorDocsUrl('input', READ_UNTIL);
   return docsUrl ? (
-    <a
+    <PlainAnchor
       className="inline-flex items-center gap-1 text-body-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
       href={docsUrl}
       rel="noopener noreferrer"
@@ -348,7 +348,7 @@ const DocsLink = () => {
     >
       About <span className="font-mono">read_until</span>
       <ExternalLink className="size-3" />
-    </a>
+    </PlainAnchor>
   ) : null;
 };
 
@@ -555,7 +555,7 @@ export function StopConditionEditor({
 
 type StopConditionPopoverProps = Omit<StopConditionEditorProps, 'onClose'> & {
   /** The trigger element (rendered via Base UI `render`). */
-  trigger: ReactElement;
+  trigger: ReactElement<Record<string, unknown>>;
   /** A tooltip on the trigger. */
   tooltip?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
@@ -634,7 +634,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
       slot={slot}
       tooltip={sentence}
       trigger={
-        <button
+        <PlainButton
           aria-label={`${eyebrow} ${text}: ${editable ? 'edit the stop condition' : 'stop condition'} for ${name}`}
           className={cn(
             // -mt-px folds its top rule into the header's when nothing sits between them.
@@ -660,7 +660,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           <span className="min-w-0 flex-1 animate-in truncate duration-200 fade-in" key={text}>
             {text}
           </span>
-        </button>
+        </PlainButton>
       }
     />
   );

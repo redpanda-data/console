@@ -1,6 +1,10 @@
 'use client';
 
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
+import { usePart, usePrimitive, mergeProps } from '@ui-sdk/react/primitive';
+import { agentItems } from '../lib/agent-items';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { baseTabsAgent, type BaseValueDetails } from '../lib/primitives/base-value-agent';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
@@ -31,16 +35,48 @@ const tabsVariants = cva('flex data-[orientation=horizontal]:flex-col', {
   },
 });
 
-type TabsProps = TabsPrimitive.Root.Props & VariantProps<typeof tabsVariants> & SharedProps;
+type TabsProps = Omit<TabsPrimitive.Root.Props, 'onValueChange'> & {
+  onValueChange?: (value: string, details: BaseValueDetails) => void;
+} & VariantProps<typeof tabsVariants> &
+  SharedProps;
 
-function Tabs({ className, size, variant, testId, ...props }: TabsProps) {
-  return (
-    <TabsPrimitive.Root
-      className={cn(tabsVariants({ size, variant }), className)}
-      data-slot="tabs"
-      data-testid={testId}
-      {...props}
-    />
+function Tabs({ className, size, variant, testId, value, defaultValue, onValueChange, children, ...props }: TabsProps) {
+  const items = agentItems(children);
+  const initial =
+    value === undefined && defaultValue === undefined ? items.find((item) => !item.disabled)?.value : defaultValue;
+  const handle = usePrimitive(baseTabsAgent, {
+    value: value as string | null | undefined,
+    defaultValue: initial as string | null | undefined,
+    items,
+    valid: (value) => value === null || typeof value === 'string',
+    onValueChange: (next, details) => {
+      if (next === null) {
+        details.cancel();
+        return;
+      }
+      commitAgentChange(onValueChange, next, details);
+    },
+  });
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <TabsPrimitive.Root
+          className={cn(tabsVariants({ size, variant }), className)}
+          data-testid={testId}
+          {...mergeProps(partProps, props)}
+          value={state.value}
+          onValueChange={(next, details) => {
+            if (!handle.api.setValue(next as string | null, details.event)) details.cancel();
+          }}
+        >
+          {children}
+        </TabsPrimitive.Root>
+      ),
+    },
+    'div'
   );
 }
 
@@ -118,7 +154,6 @@ function TabsList({
   layout,
   gap,
   columns,
-  activateOnFocus,
   testId,
   style,
   ...props
@@ -127,7 +162,6 @@ function TabsList({
   // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
     <TabsPrimitive.List
-      activateOnFocus={activateOnFocus}
       className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
       data-slot="tabs-list"
       data-testid={testId}
@@ -210,6 +244,16 @@ type TabsTriggerProps = TabsPrimitive.Tab.Props &
     variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
   };
 
+function TabsAgentTab(props: TabsPrimitive.Tab.Props) {
+  return usePart(
+    baseTabsAgent,
+    'item',
+    { value: String(props.value), disabled: props.disabled },
+    { render: <TabsPrimitive.Tab {...props} /> },
+    'button'
+  );
+}
+
 function TabsTrigger({ className, value, variant, testId, render, ...props }: TabsTriggerProps) {
   // For a non-button render (e.g. `<a href>` link tabs), tell Base UI to polyfill button semantics instead of asserting a native button.
   const isNonButtonElement = typeof render === 'object' && render !== null && 'type' in render;
@@ -217,7 +261,7 @@ function TabsTrigger({ className, value, variant, testId, render, ...props }: Ta
     isNonButtonElement && typeof render.type === 'string' && render.type !== 'button' ? false : undefined;
 
   return (
-    <TabsPrimitive.Tab
+    <TabsAgentTab
       className={cn(tabsTriggerVariants({ variant }), className)}
       data-slot="tabs-trigger"
       data-testid={testId}

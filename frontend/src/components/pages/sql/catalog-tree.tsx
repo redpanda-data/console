@@ -11,7 +11,7 @@
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Input, InputStart } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -237,7 +237,7 @@ function FieldRows({
         return (
           <Fragment key={path}>
             {hasNested ? (
-              <button
+              <PlainButton
                 aria-expanded={isOpen}
                 className={cn(rowClass, 'cursor-pointer border-0 bg-transparent')}
                 onClick={() => toggle(path)}
@@ -245,7 +245,7 @@ function FieldRows({
                 type="button"
               >
                 {body}
-              </button>
+              </PlainButton>
             ) : (
               <div className={rowClass} style={indent}>
                 {body}
@@ -320,7 +320,7 @@ function TableRow({ catalog, table }: TableRowProps) {
         data-locked={!allowed || undefined}
         data-tiered={tiered || undefined}
       >
-        <button
+        <PlainButton
           aria-expanded={allowed ? isOpen : undefined}
           aria-level={3}
           aria-selected={isActive}
@@ -346,7 +346,7 @@ function TableRow({ catalog, table }: TableRowProps) {
             </Badge>
           ) : null}
           {allowed ? null : <TonedIcon className="ml-0.5" icon={Lock} size={12} tone="disabled" />}
-        </button>
+        </PlainButton>
         {allowed ? (
           <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
             <ElementTooltip content="Query this table">
@@ -399,7 +399,7 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
 
   return (
     <div className="ml-2.5">
-      <button
+      <PlainButton
         aria-expanded={isOpen}
         aria-level={2}
         className={cn(ROW_BASE, 'font-medium text-foreground')}
@@ -412,7 +412,7 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
         <TonedIcon className="shrink-0" icon={NsChevron} size={14} tone="disabled" />
         <TonedIcon icon={GitBranch} size={13} tone="muted" />
         <span className={LABEL}>{namespace.name}</span>
-      </button>
+      </PlainButton>
       {isOpen ? (
         // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
         <div className="ml-2.5" role="group">
@@ -471,7 +471,7 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   return (
     <div>
       <div className="group flex w-full items-center rounded pr-1">
-        <button
+        <PlainButton
           aria-expanded={isCatalogOpen}
           aria-level={1}
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-body font-semibold text-strong"
@@ -484,7 +484,7 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
           <TonedIcon className="shrink-0" icon={CatChevron} size={14} tone="disabled" />
           {engineMark(catalog.engine)}
           <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
-        </button>
+        </PlainButton>
         {showAdd ? (
           <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
             <ElementTooltip content="Add a topic to this catalog">

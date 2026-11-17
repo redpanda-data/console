@@ -41,7 +41,12 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
           <FormItem>
             <FormLabel>Partitions</FormLabel>
             <FormControl>
-              <Input {...field} onChange={createNumberChangeHandler(field.onChange)} showStepControls type="number" />
+              <Input
+                {...field}
+                onValueChange={createNumberChangeHandler(field.onChange)}
+                showStepControls
+                type="number"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -60,7 +65,7 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
               <FormControl>
                 <Input
                   {...field}
-                  onChange={createNumberChangeHandler(field.onChange)}
+                  onValueChange={createNumberChangeHandler(field.onChange)}
                   readOnly
                   showStepControls
                   type="number"
@@ -107,7 +112,7 @@ type RetentionInputGroupProps = {
   valueField: keyof AddTopicFormData;
   unitField: keyof AddTopicFormData;
   units: { value: string; label: string }[];
-  onChange: (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (onChange: (value?: number) => void) => (value: string) => void;
 };
 
 const RetentionInputGroup = memo<RetentionInputGroupProps>(
@@ -141,7 +146,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
                     placeholder={field.value?.toString() || '0'}
                     type="number"
                     {...field}
-                    onChange={onChange(field.onChange)}
+                    onValueChange={onChange(field.onChange)}
                   />
                 </FormControl>
               </FormItem>

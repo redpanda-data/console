@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { PanelSize } from 'react-resizable-panels';
 
 import { useMessageSearch } from './use-message-search';
 import { useMessagesQuery, useSearchRunner } from './use-messages-query';
@@ -54,9 +53,9 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
   // Docked panel width is a persisted preference too. A ref (not state) so
   // resize drags don't re-render the whole page; the panel reads it on mount.
   const detailPanelSizeRef = useRef(readDetailViewState().panelSizePct);
-  const handleDetailPanelResize = useCallback((size: PanelSize) => {
-    detailPanelSizeRef.current = size.asPercentage;
-    patchDetailViewState({ panelSizePct: size.asPercentage });
+  const handleDetailPanelResize = useCallback((size: number) => {
+    detailPanelSizeRef.current = size;
+    patchDetailViewState({ panelSizePct: size });
   }, []);
 
   return {

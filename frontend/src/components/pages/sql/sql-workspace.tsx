@@ -15,6 +15,7 @@ import { Code, type ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components/redpanda-ui/components/resizable';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ExpandedPageToggle } from 'components/ui/expanded-page-toggle';
 import { useExpandedPageMode } from 'hooks/use-expanded-page-mode';
@@ -48,7 +49,6 @@ import {
   useTopicIcebergQuery,
 } from 'react-query/api/sql';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { toast } from 'sonner';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 

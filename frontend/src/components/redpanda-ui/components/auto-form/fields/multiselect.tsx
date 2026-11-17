@@ -2,7 +2,6 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import { useFieldContext } from '../../field';
 import { SimpleMultiSelect } from '../../multi-select';
 import { useAutoForm } from '../context';
 import type { AutoFormFieldProps } from '../core-types';
@@ -13,7 +12,6 @@ import { getGroupedOptions, readDataProviderId, renderOptionLabel, useFieldTestI
 
 function MultiSelectFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
-  const { errorId } = useFieldContext();
   const itemField = field.schema?.[0];
   const numericOptions = Boolean(itemField?.options?.every(([value]) => NUMERIC_OPTION_PATTERN.test(value)));
   const optionGroups = itemField ? getGroupedOptions(itemField) : undefined;
@@ -37,7 +35,6 @@ function MultiSelectFieldComponent({ error, field, id, inputProps }: AutoFormFie
 
   return (
     <SimpleMultiSelect
-      aria-describedby={error ? errorId : undefined}
       aria-invalid={Boolean(error)}
       disabled={inputProps.disabled}
       id={id}
@@ -73,7 +70,6 @@ export const multiselectFieldDefinition: FieldTypeDefinition = {
 // into a single chip-based multi-select.
 function DataProviderMultiSelectComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
-  const { errorId } = useFieldContext();
   const itemField = field.schema?.[0];
   const providerId = readDataProviderId(itemField);
   const { dataProviders } = useAutoForm();
@@ -104,7 +100,6 @@ function DataProviderMultiSelectComponent({ error, field, id, inputProps }: Auto
 
   return (
     <SimpleMultiSelect
-      aria-describedby={error ? errorId : undefined}
       aria-invalid={Boolean(error)}
       disabled={inputProps.disabled || isLoading}
       id={id}

@@ -31,10 +31,18 @@ type TooltipProps = React.ComponentProps<typeof TooltipPrimitive.Root> &
     delayDuration?: number;
   };
 
-function Tooltip({ testId, delayDuration, ...props }: TooltipProps) {
+function Tooltip({ testId, delayDuration, onOpenChange, ...props }: TooltipProps) {
   return (
     <TooltipContext.Provider value={delayDuration}>
-      <TooltipPrimitive.Root data-slot="tooltip" data-testid={testId} {...props} />
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        data-testid={testId}
+        {...props}
+        onOpenChange={(open, details) => {
+          if (details.reason === 'escape-key') details.allowPropagation();
+          onOpenChange?.(open, details);
+        }}
+      />
     </TooltipContext.Provider>
   );
 }

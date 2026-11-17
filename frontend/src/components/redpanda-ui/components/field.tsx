@@ -1,23 +1,14 @@
 'use client';
 
+import * as FieldPrimitive from '@ui-sdk/react/field';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { createContext, useContext, useId, useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 
 import { Label } from './label';
 import { Separator } from './separator';
 import { cn, type SharedProps } from '../lib/utils';
 
-interface FieldContextValue {
-  errorId: string | undefined;
-  invalid: boolean;
-}
-
-const FieldContext = createContext<FieldContextValue>({ invalid: false, errorId: undefined });
-
-/** Field-level validation state for child controls: `invalid` for aria-invalid, `errorId` for aria-describedby. */
-export function useFieldContext() {
-  return useContext(FieldContext);
-}
+const FieldContext = createContext(false);
 
 function FieldSet({ className, testId, ...props }: React.ComponentProps<'fieldset'> & SharedProps) {
   return (
@@ -68,18 +59,18 @@ function FieldGroup({ className, testId, ...props }: React.ComponentProps<'div'>
   );
 }
 
-const fieldVariants = cva('group/field flex w-full gap-3 data-[invalid=true]:text-destructive', {
+const fieldVariants = cva('group/field flex w-full gap-3 data-invalid:text-destructive', {
   variants: {
     orientation: {
       vertical: ['flex-col [&>*]:w-full [&>.sr-only]:w-auto'],
       horizontal: [
         'flex-row items-center',
-        '[&>[data-slot=field-label]]:flex-auto',
+        '[&>[data-slot=label]]:flex-auto',
         'has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
       ],
       responsive: [
         '@md/field-group:flex-row flex-col @md/field-group:items-center @md/field-group:[&>*]:w-auto [&>*]:w-full [&>.sr-only]:w-auto',
-        '@md/field-group:[&>[data-slot=field-label]]:flex-auto',
+        '@md/field-group:[&>[data-slot=label]]:flex-auto',
         '@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
       ],
     },
@@ -93,17 +84,31 @@ function Field({
   className,
   orientation = 'vertical',
   testId,
+  disabled,
+  name,
+  'data-invalid': dataInvalid,
+  'data-disabled': dataDisabled,
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants> & SharedProps) {
-  const dataProps = props as Record<string, unknown>;
-  const invalid = dataProps['data-invalid'] === true || dataProps['data-invalid'] === 'true';
-  const errorId = useId();
-  const ctx = useMemo(() => ({ invalid, errorId: invalid ? errorId : undefined }), [invalid, errorId]);
+}: React.ComponentProps<'div'> &
+  VariantProps<typeof fieldVariants> &
+  SharedProps & {
+    disabled?: boolean;
+    name?: string;
+    'data-invalid'?: boolean | string;
+    'data-disabled'?: boolean | string;
+  }) {
+  const invalid =
+    dataInvalid === undefined ? undefined : dataInvalid === true || dataInvalid === 'true' || dataInvalid === '';
+  const disabledAttribute = dataDisabled === true || dataDisabled === 'true' || dataDisabled === '';
 
   return (
-    <FieldContext.Provider value={ctx}>
-      <div
+    <FieldContext.Provider value>
+      <FieldPrimitive.Field
         className={cn(fieldVariants({ orientation }), className)}
+        disabled={disabled}
+        name={name}
+        invalid={invalid}
+        data-disabled={disabledAttribute ? '' : undefined}
         data-orientation={orientation}
         data-slot="field"
         data-testid={testId}
@@ -130,12 +135,11 @@ function FieldLabel({
   ...props
 }: React.ComponentProps<typeof Label> & { required?: boolean }) {
   return (
-    <Label
+    <FieldPrimitive.FieldLabel
+      render={<Label />}
       className={cn(
-        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',
+        'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-disabled/field:opacity-50',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4',
-        'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
-        // Checkbox re-injects data-state; Base UI radio emits data-checked — match both so radio cards keep the selected highlight.
         'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
         className
       )}
@@ -148,14 +152,14 @@ function FieldLabel({
           *
         </span>
       ) : null}
-    </Label>
+    </FieldPrimitive.FieldLabel>
   );
 }
 
 function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex w-fit items-center gap-2 text-label group-data-[disabled=true]/field:opacity-50', className)}
+      className={cn('flex w-fit items-center gap-2 text-label group-data-disabled/field:opacity-50', className)}
       data-slot="field-label"
       {...props}
     />
@@ -164,8 +168,11 @@ function FieldTitle({ className, ...props }: React.ComponentProps<'div'>) {
 
 // Rendered as <div> (not <p>) so block-level children don't trip validateDOMNesting.
 function FieldDescription({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+  const connected = useContext(FieldContext);
+  const Description = connected ? FieldPrimitive.FieldDescription : 'div';
   return (
-    <div
+    <Description
+      {...(connected ? { render: <div /> } : {})}
       className={cn(
         'text-body text-subtle group-has-[[data-orientation=horizontal]]/field:text-balance',
         'nth-last-2:-mt-1 last:mt-0 [[data-variant=legend]+&]:-mt-1.5',
@@ -215,7 +222,7 @@ function FieldError({
 }: React.ComponentProps<'div'> & {
   errors?: Array<{ message?: string } | undefined>;
 } & SharedProps) {
-  const { errorId } = useContext(FieldContext);
+  const connected = useContext(FieldContext);
   const content = useMemo(() => {
     if (children) {
       return children;
@@ -242,17 +249,18 @@ function FieldError({
     return null;
   }
 
+  const ErrorMessage = connected ? FieldPrimitive.FieldError : 'div';
   return (
-    <div
+    <ErrorMessage
+      {...(connected ? { match: true } : {})}
       className={cn('font-normal text-body text-destructive', className)}
       data-slot="field-error"
       data-testid={testId}
-      id={errorId}
       role="alert"
       {...props}
     >
       {content}
-    </div>
+    </ErrorMessage>
   );
 }
 

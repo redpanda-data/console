@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
   DataTable,
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { useCallback, useMemo, useState } from 'react';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
@@ -160,7 +160,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         header: ({ column }) => <DataTableColumnHeader column={column} title="Connector" />,
         accessorKey: 'name',
         cell: ({ row: { original } }) => (
-          <Link
+          <PlainLink
             params={{
               clusterName,
               connector: original.name,
@@ -169,7 +169,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
             to="/connect-clusters/$clusterName/$connector"
           >
             <span className="wrap-break-word whitespace-break-spaces">{original.name}</span>
-          </Link>
+          </PlainLink>
         ),
       },
       {
@@ -205,9 +205,9 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       <div className="mb-2 flex">
         {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
             nesting produces — and the Registry Button takes no route `params`. */}
-        <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
+        <PlainLink params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
           <Button variant="primary">Create connector</Button>
-        </Link>
+        </PlainLink>
       </div>
 
       <div className="my-5">

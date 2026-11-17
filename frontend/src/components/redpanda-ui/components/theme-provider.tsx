@@ -2,7 +2,9 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createColorScheme, createLocalStorage } from '@ui-sdk/core';
+import { usePreference } from '@ui-sdk/react/preferences';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 type ResolvedTheme = 'dark' | 'light';
@@ -71,56 +73,24 @@ const applyTheme = (resolved: ResolvedTheme): void => {
 };
 
 function ThemeProvider({ children, defaultTheme = 'system', storageKey = DEFAULT_STORAGE_KEY }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() =>
-    typeof window === 'undefined' || storageKey === null ? defaultTheme : (readStored(storageKey) ?? defaultTheme)
+  const preference = useMemo(
+    () => createColorScheme({
+      defaultValue: defaultTheme,
+      initial: typeof window === 'undefined' ? 'unknown' : readSystemTheme(),
+      storage: storageKey === null ? undefined : createLocalStorage(storageKey),
+    }),
+    [defaultTheme, storageKey]
   );
-  // In state, not read during render: a bare `matchMedia` read cannot re-render on an OS flip.
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
-    typeof window === 'undefined' ? 'light' : readSystemTheme()
-  );
-
-  useEffect(() => {
-    const media = window.matchMedia(DARK_QUERY);
-    const sync = () => setSystemTheme(media.matches ? 'dark' : 'light');
-    // Once on mount too: the query can have moved since the initial state.
-    sync();
-    media.addEventListener('change', sync);
-    return () => media.removeEventListener('change', sync);
-  }, []);
-
-  // Another tab is the same app with the same stored preference.
-  useEffect(() => {
-    if (storageKey === null) {
-      return;
-    }
-    const sync = (event: StorageEvent) => {
-      if (event.key === storageKey) {
-        setThemeState(isTheme(event.newValue) ? event.newValue : defaultTheme);
-      }
-    };
-    window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
-  }, [storageKey, defaultTheme]);
-
-  const resolvedTheme: ResolvedTheme = theme === 'system' ? systemTheme : theme;
+  const { value: theme, resolved } = usePreference(preference);
+  const resolvedTheme: ResolvedTheme = resolved === 'dark' ? 'dark' : 'light';
 
   useEffect(() => {
     applyTheme(resolvedTheme);
   }, [resolvedTheme]);
 
-  const setTheme = useCallback(
-    (next: Theme) => {
-      if (storageKey !== null) {
-        try {
-          localStorage.setItem(storageKey, next);
-        } catch {
-          // Persisting is an optimisation; the theme still applies for this session.
-        }
-      }
-      setThemeState(next);
-    },
-    [storageKey]
-  );
+  const setTheme = useCallback((next: Theme) => {
+    preference.set(next);
+  }, [preference]);
 
   const value = useMemo<ThemeProviderState>(
     () => ({ theme, resolvedTheme, setTheme }),

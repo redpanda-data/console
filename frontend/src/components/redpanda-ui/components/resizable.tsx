@@ -2,20 +2,21 @@
 
 import { GripVerticalIcon } from 'lucide-react';
 import {
-  Group,
-  type GroupProps,
-  Panel,
-  type PanelProps,
-  Separator as PanelSeparator,
-  type SeparatorProps,
-} from 'react-resizable-panels';
+  Resizable as Group,
+  ResizablePanel as Panel,
+  ResizableHandle as PanelSeparator,
+} from '@ui-sdk/react/resizable';
+import type { ComponentProps } from 'react';
+type GroupProps = ComponentProps<typeof Group>;
+type PanelProps = ComponentProps<typeof Panel>;
+type SeparatorProps = Omit<ComponentProps<typeof PanelSeparator>, 'children'> & { children?: React.ReactNode };
 
 import { cn } from '../lib/utils';
 
 function ResizablePanelGroup({ className, ...props }: GroupProps) {
   return (
     <Group
-      className={cn('flex h-full w-full aria-[orientation=vertical]:flex-col', className)}
+      className={cn('flex h-full w-full data-[orientation=vertical]:flex-col', className)}
       data-slot="resizable-panel-group"
       {...props}
     />

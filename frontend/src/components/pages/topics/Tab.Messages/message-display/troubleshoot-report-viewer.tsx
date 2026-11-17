@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { AlertTriangle } from 'lucide-react';
 import { Fragment, useState } from 'react';
 
@@ -32,13 +33,13 @@ export const TroubleshootReportViewer = (props: { payload: Payload }) => {
       <Alert className="mt-4" icon={<AlertTriangle />} variant="destructive">
         <AlertTitle className="flex items-center">
           Errors were encountered when deserializing this message
-          <button
+          <PlainButton
             className="cursor-pointer border-none bg-transparent pl-2 font-medium text-primary underline underline-offset-4"
             onClick={() => setShow(!show)}
             type="button"
           >
             {show ? 'Hide' : 'Show'}
-          </button>
+          </PlainButton>
         </AlertTitle>
         {show ? (
           <AlertDescription className="whitespace-pre-wrap">

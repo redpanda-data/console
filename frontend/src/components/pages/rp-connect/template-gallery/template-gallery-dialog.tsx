@@ -20,12 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { QuickAddSecrets } from 'components/ui/secret/quick-add-secrets';
 import { ArrowLeft, KeyRound } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 
 import type { PipelineTemplate } from './pipeline-template-types';
 import {
@@ -225,7 +225,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     <Dialog
       // Block backdrop dismissal past the gallery so a stray click can't wipe
       // in-progress form values. ESC and X / Cancel still close.
-      disablePointerDismissal={view.kind !== 'gallery'}
+      closeOnOutsidePress={view.kind === 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}
     >

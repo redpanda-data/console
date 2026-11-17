@@ -11,6 +11,7 @@
 
 import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { Card } from 'components/redpanda-ui/components/card';
 import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypoints } from 'lucide-react';
 
@@ -51,7 +52,7 @@ export type TemplateTileProps = {
 export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
   const { label: tierLabel, Icon: TierIcon } = setupTierFor(template.setupTimeMinutes);
   return (
-    <button
+    <PlainButton
       className="group h-full w-full cursor-pointer rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       data-testid={`template-tile-${template.id}`}
       onClick={() => onSelect(template)}
@@ -77,6 +78,6 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
           <span className="line-clamp-2 text-body-sm leading-snug text-muted-foreground">{template.description}</span>
         </div>
       </Card>
-    </button>
+    </PlainButton>
   );
 };

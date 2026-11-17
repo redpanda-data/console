@@ -45,7 +45,11 @@ export class BrokerList extends Component<BrokerListProps> {
   }
 }
 
-function BrokerTooltip(p: { broker: Broker; children?: React.ReactElement; tooltipSuffix?: React.ReactNode }) {
+function BrokerTooltip(p: {
+  broker: Broker;
+  children?: React.ReactElement<Record<string, unknown>>;
+  tooltipSuffix?: React.ReactNode;
+}) {
   const broker = p.broker;
   const id = broker.brokerId;
 

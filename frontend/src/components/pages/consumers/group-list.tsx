@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { ListLayout, ListLayoutFilters, ListLayoutPagination } from 'components/redpanda-ui/components/list-layout';
@@ -38,6 +37,7 @@ import {
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
 import { Input, InputEnd, InputStart } from '../../redpanda-ui/components/input';
+import { PlainLink } from '../../redpanda-ui/components/plain-link';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Stat } from '../../redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
@@ -86,7 +86,7 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
     filterFn: groupIdFilterFn,
     meta: columnMeta({ headWidth: 'full' as const }),
     cell: ({ row: { original: group } }) => (
-      <Link
+      <PlainLink
         className="flex items-center"
         data-testid={`consumer-group-link-${group.groupId}`}
         params={{ groupId: encodeURIComponent(group.groupId) }}
@@ -99,7 +99,7 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
           </Badge>
         )}
         <span className="wrap-break-word whitespace-break-spaces">{group.groupId}</span>
-      </Link>
+      </PlainLink>
     ),
   },
   {

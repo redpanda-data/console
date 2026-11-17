@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { RedpandaLogo } from 'components/redpanda-ui/components/redpanda-logo';
 import {
   Sidebar,
@@ -51,13 +52,13 @@ function SidebarLogo() {
   const isExpanded = isMobile || state === 'expanded';
 
   return (
-    <Link aria-label="Go to Overview" className="flex items-center" to="/overview">
+    <PlainLink aria-label="Go to Overview" className="flex items-center" to="/overview">
       <RedpandaLogo
         className={isExpanded ? 'h-6 w-auto' : 'h-6 w-6'}
         color={isExpanded ? 'var(--color-sidebar-foreground)' : undefined}
         variant={isExpanded ? 'horizontal' : 'mark'}
       />
-    </Link>
+    </PlainLink>
   );
 }
 

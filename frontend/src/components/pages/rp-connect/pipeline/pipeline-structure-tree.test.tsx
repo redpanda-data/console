@@ -161,21 +161,20 @@ describe('the PipelineStructureTree', () => {
   });
 
   describe('docs links', () => {
-    // The registry Button renders `as="a"` with role="button" (Base UI), so query by that role.
     it('links each component row to its reference docs', () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
-      const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+      const docsLink = screen.getByRole('link', { name: 'kafka_franz documentation' });
       expect(docsLink).toHaveAttribute(
         'href',
         'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
       );
       expect(docsLink).toHaveAttribute('target', '_blank');
       expect(docsLink).toHaveAttribute('rel', 'noopener noreferrer');
-      expect(screen.getByRole('button', { name: 'http documentation' })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: 'http documentation' })).toHaveAttribute(
         'href',
         'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/http/'
       );
-      expect(screen.getByRole('button', { name: 'switch documentation' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'switch documentation' })).toBeInTheDocument();
     });
 
     it('omits the docs link on structural rows that name no component', () => {
@@ -187,7 +186,7 @@ describe('the PipelineStructureTree', () => {
     it('opens the docs link without also selecting the row', async () => {
       const onSelectNode = rs.fn();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
-      const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
+      const docsLink = screen.getByRole('link', { name: 'kafka_franz documentation' });
       await userEvent.click(docsLink);
       expect(onSelectNode).not.toHaveBeenCalled();
       // Enter must reach the link, not the row's select handler (which would preventDefault it).

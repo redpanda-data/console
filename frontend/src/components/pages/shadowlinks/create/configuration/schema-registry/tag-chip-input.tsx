@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { InlineInput } from 'components/redpanda-ui/components/input';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { useState } from 'react';
@@ -41,23 +42,15 @@ export const TagChipInput = ({
 }: TagChipInputProps) => {
   const [draft, setDraft] = useState('');
 
-  const commitDraft = () => {
-    const additions = draft
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-    if (additions.length === 0) {
-      return;
-    }
-
+  const commitDraft = (text: string) => {
     setDraft('');
-    const next = [...value];
-    for (const addition of additions) {
-      if (!next.includes(addition)) {
-        next.push(addition);
-      }
+    const additions = text
+      .split(/[,\r\n]/)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry && !value.includes(entry));
+    if (additions.length) {
+      onChange([...value, ...new Set(additions)]);
     }
-    onChange(next);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -68,7 +61,7 @@ export const TagChipInput = ({
     }
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
-      commitDraft();
+      commitDraft(draft);
       return;
     }
     if (event.key === 'Backspace' && !draft && value.length > 0) {
@@ -94,16 +87,26 @@ export const TagChipInput = ({
           </TagsValue>
         );
       })}
-      <input
+      <InlineInput
         className={cn(
           'h-6 min-w-40 flex-1 bg-transparent text-body outline-none placeholder:text-placeholder',
           mono && 'font-mono'
         )}
         data-testid={`${testId}-field`}
         id={id}
-        onBlur={commitDraft}
-        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => commitDraft(draft)}
         onKeyDown={handleKeyDown}
+        onPaste={(event) => {
+          const text = event.clipboardData.getData('text');
+          if (/[,\r\n]/.test(text)) {
+            event.preventDefault();
+            const { selectionStart, selectionEnd } = event.currentTarget;
+            commitDraft(
+              draft.slice(0, selectionStart ?? draft.length) + text + draft.slice(selectionEnd ?? draft.length)
+            );
+          }
+        }}
+        onValueChange={setDraft}
         placeholder={placeholder}
         value={draft}
       />

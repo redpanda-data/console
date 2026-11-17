@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { TrashIcon } from 'components/icons';
 import {
@@ -17,10 +17,10 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
-import { toast } from 'sonner';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { type SimpleAcl, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
@@ -40,6 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
+import { PlainLink } from '../../../redpanda-ui/components/plain-link';
 import { type AclRowActionsContextValue, useAclRowActions } from '../hooks/use-acl-row-actions';
 import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
@@ -141,7 +142,7 @@ const columns: DataTableColumnDef<SimpleAcl>[] = [
     // Sort on what the cell renders, not the `User:`-prefixed `principal`.
     accessorFn: (row) => row.principalName,
     cell: ({ row: { original: record } }) => (
-      <Link
+      <PlainLink
         className="cursor-pointer"
         params={{ aclName: record.principalType === 'User' ? record.principalName : record.principal }}
         search={(prev) => ({ ...prev, host: record.host })}
@@ -160,7 +161,7 @@ const columns: DataTableColumnDef<SimpleAcl>[] = [
             </Badge>
           )}
         </span>
-      </Link>
+      </PlainLink>
     ),
   },
   {

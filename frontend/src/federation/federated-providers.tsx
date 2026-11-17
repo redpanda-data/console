@@ -14,8 +14,9 @@ import { TransportProvider } from '@connectrpc/connect-query';
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-import { Toaster as BaseUiToaster } from '../components/redpanda-ui/components/toast';
+import { Toaster } from '../components/redpanda-ui/components/toast';
 import { TooltipProvider } from '../components/redpanda-ui/components/tooltip';
+import { ConsoleWebMcp } from '../components/redpanda-ui/components/webmcp';
 import { CustomFeatureFlagProvider } from '../custom-feature-flag-provider';
 
 type FederatedProvidersProps = {
@@ -23,22 +24,31 @@ type FederatedProvidersProps = {
   transport: Transport;
   queryClient: QueryClient;
   featureFlags?: Record<string, boolean>;
+  enableWebMcp?: boolean;
 };
 
 /**
  * Provider stack for federated Console app.
  * Adapted from embedded-app.tsx but designed for MF v2.0 integration.
  */
-export function FederatedProviders({ children, transport, queryClient, featureFlags }: FederatedProvidersProps) {
+export function FederatedProviders({
+  children,
+  transport,
+  queryClient,
+  featureFlags,
+  enableWebMcp = false,
+}: FederatedProvidersProps) {
   return (
     <CustomFeatureFlagProvider initialFlags={featureFlags}>
       {/* showToast viewport; mirrors app.tsx */}
-      <BaseUiToaster testId="console-toasts" />
-      <TransportProvider transport={transport}>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>{children}</TooltipProvider>
-        </QueryClientProvider>
-      </TransportProvider>
+      <Toaster testId="console-toasts" />
+      <ConsoleWebMcp enabled={enableWebMcp}>
+        <TransportProvider transport={transport}>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </QueryClientProvider>
+        </TransportProvider>
+      </ConsoleWebMcp>
     </CustomFeatureFlagProvider>
   );
 }

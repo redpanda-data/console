@@ -12,7 +12,7 @@
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
@@ -152,7 +152,6 @@ const CellPopoverContainerContext = createContext<HTMLElement | null>(null);
 
 // Track the anchor and clip rather than reposition, so popovers stick to the
 // cell and disappear behind the header on scroll instead of pinning in place.
-const TRACK_AND_CLIP = { side: 'flip', align: 'none' } as const;
 
 // Rich viewer for JSON/composite cells: a header with the column name + type, a
 // copy button and a close affordance, over a syntax-highlighted, formatted body.
@@ -165,7 +164,7 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
       <ElementTooltip content="Show JSON">
         <PopoverTrigger
           render={
-            <button
+            <PlainButton
               className={cn(
                 'block cursor-pointer truncate text-left font-mono underline decoration-dotted underline-offset-2',
                 CELL_MAX_W
@@ -173,14 +172,13 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
               type="button"
             >
               {value}
-            </button>
+            </PlainButton>
           }
         />
       </ElementTooltip>
       <PopoverContent
         align="start"
         className="pointer-events-auto w-120 max-w-[90vw] overflow-hidden"
-        collisionAvoidance={TRACK_AND_CLIP}
         container={container ?? undefined}
       >
         <div className="flex items-center gap-2 border-b border-border bg-muted px-3 py-2">
@@ -218,7 +216,7 @@ function LongCellPopover({ value }: { value: string }) {
       <ElementTooltip content="Show full value">
         <PopoverTrigger
           render={
-            <button
+            <PlainButton
               className={cn(
                 'block cursor-pointer truncate text-left underline decoration-dotted underline-offset-2',
                 CELL_MAX_W
@@ -226,14 +224,13 @@ function LongCellPopover({ value }: { value: string }) {
               type="button"
             >
               {value}
-            </button>
+            </PlainButton>
           }
         />
       </ElementTooltip>
       <PopoverContent
         align="start"
         className="pointer-events-auto max-h-72 max-w-120 overflow-auto"
-        collisionAvoidance={TRACK_AND_CLIP}
         container={container ?? undefined}
       >
         <div className="font-mono text-body-sm break-all whitespace-pre-wrap">{value}</div>

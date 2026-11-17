@@ -6,6 +6,7 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { config } from 'config';
 import {
   type ListTopicsRequest,
@@ -20,7 +21,6 @@ import {
   type QueryOptions,
   TOPIC_CONFIG_CACHE_STALE_TIME,
 } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 

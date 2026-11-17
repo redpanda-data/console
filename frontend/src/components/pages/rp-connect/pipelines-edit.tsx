@@ -10,10 +10,10 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Link } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import {
@@ -249,9 +249,9 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             'Update'
           )}
         </Button>
-        <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
+        <PlainLink params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
           <Button variant="link">Cancel</Button>
-        </Link>
+        </PlainLink>
       </div>
     </PageContent>
   );

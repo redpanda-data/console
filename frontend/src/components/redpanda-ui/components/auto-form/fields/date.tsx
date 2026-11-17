@@ -53,11 +53,8 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
       </InputGroup>
       <PopoverContent className="w-auto p-0">
         <Calendar
-          mode="single"
-          onSelect={(date) => {
-            inputProps.onValueChange(date ? format(date, 'yyyy-MM-dd') : '');
-          }}
-          selected={selectedDate}
+          onValueChange={(date) => inputProps.onValueChange(typeof date === 'string' ? date : '')}
+          value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null}
         />
       </PopoverContent>
     </Popover>

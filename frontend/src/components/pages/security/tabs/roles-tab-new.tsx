@@ -10,7 +10,6 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { Link } from '@tanstack/react-router';
 import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon } from 'components/icons';
 import { RoleCreateDialog } from 'components/pages/security/roles/role-create-dialog';
@@ -38,13 +37,14 @@ import ErrorResult from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation } from '../../../../react-query/api/security';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
-import { Button } from '../../../redpanda-ui/components/button';
+import { Button, PlainButton } from '../../../redpanda-ui/components/button';
 import {
   type DataTableColumnDef,
   DataTableColumnHeader,
   DataTablePagination,
   type DataTableRow,
 } from '../../../redpanda-ui/components/data-table';
+import { PlainLink } from '../../../redpanda-ui/components/plain-link';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../redpanda-ui/components/tooltip';
 import { type RoleEntry, useCreateRoleAvailability, useRoleListData } from '../hooks/use-role-list-data';
 import { useNameColumnFilter, useSecurityListTable } from '../hooks/use-security-list-table';
@@ -72,14 +72,14 @@ const roleColumns: DataTableColumnDef<RoleEntry>[] = [
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Role name" />,
     cell: ({ row: { original: entry } }) => (
-      <Link
+      <PlainLink
         data-testid={`role-list-item-${entry.name}`}
         params={{ roleName: encodeURIComponent(entry.name) }}
         search={{ host: undefined }}
         to="/security/roles/$roleName/details"
       >
         {entry.name}
-      </Link>
+      </PlainLink>
     ),
     filterFn: nameFilterFn,
   },
@@ -152,7 +152,7 @@ export const RolesTabNew: FC = () => {
           }
         >
           <ListLayoutSearchInput
-            onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
+            onValueChange={(value) => table.getColumn('name')?.setFilterValue(value || undefined)}
             placeholder="Filter by name (regexp)..."
             value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           />
@@ -219,9 +219,9 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
             <Button
               data-testid={`role-actions-button-${roleName}`}
               render={
-                <button type="button">
+                <PlainButton type="button">
                   <MoreHorizontalIcon className="h-4 w-4" />
-                </button>
+                </PlainButton>
               }
               size="icon-sm"
               variant="ghost"

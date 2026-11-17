@@ -29,7 +29,7 @@ export const DeleteRoleConfirmModal: FC<{
   roleName: string;
   numberOfPrincipals: number;
   onConfirm: () => Promise<void> | void;
-  buttonEl?: React.ReactElement;
+  buttonEl?: React.ReactElement<Record<string, unknown>>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }> = ({ roleName, numberOfPrincipals, onConfirm, buttonEl, open: openProp, onOpenChange: onOpenChangeProp }) => {

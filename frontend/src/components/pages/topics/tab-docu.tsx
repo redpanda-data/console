@@ -14,7 +14,7 @@ import { docsLinks } from 'utils/docs-links';
 
 import type { Topic } from '../../../state/rest-interfaces';
 import '../../../utils/array-extensions';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainAnchor } from 'components/redpanda-ui/components/button';
 import {
   Empty,
   EmptyContent,
@@ -175,9 +175,9 @@ function renderDocuError(title: string, body: JSX.Element) {
           <EmptyDescription>{body}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <a href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
+          <PlainAnchor href={docsLinks.selfManaged.console} rel="noopener noreferrer" target="_blank">
             <Button variant="primary">Redpanda Console Documentation</Button>
-          </a>
+          </PlainAnchor>
         </EmptyContent>
       </Empty>
     </motion.div>

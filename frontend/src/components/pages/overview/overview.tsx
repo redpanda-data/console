@@ -20,11 +20,11 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 import './Overview.scss';
-import { Link } from '@tanstack/react-router';
 import { AlertIcon, CheckIcon, CrownIcon, ErrorIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainAnchor } from 'components/redpanda-ui/components/button';
 import { DataTable, type DataTableColumnDef, type DataTableRow } from 'components/redpanda-ui/components/data-table';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
@@ -244,9 +244,9 @@ class Overview extends PageComponent {
                 {Boolean(api.clusterOverview?.kafka?.distribution) && <NurturePanel />}
                 <hr className="mt-4 mb-2" />
                 <div className="mt-4 flex flex-row items-center gap-2 text-subtle">
-                  <a href={docsLinks.selfManaged.home}>Documentation</a>
+                  <PlainAnchor href={docsLinks.selfManaged.home}>Documentation</PlainAnchor>
                   <span className="mx-2 text-disabled">|</span>
-                  <a href={docsLinks.selfManaged.rpkInstall}>CLI tools</a>
+                  <PlainAnchor href={docsLinks.selfManaged.rpkInstall}>CLI tools</PlainAnchor>
                 </div>
               </Section>
             </div>
@@ -392,9 +392,9 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/users">
+              <PlainLink key={0} to="/security/users">
                 {serviceAccounts}
-              </Link>,
+              </PlainLink>,
             ],
           ]}
           title="Service Accounts"
@@ -403,9 +403,9 @@ function ClusterDetails() {
         <Details
           content={[
             [
-              <Link key={0} to="/security/permissions">
+              <PlainLink key={0} to="/security/permissions">
                 {aclCount}
-              </Link>,
+              </PlainLink>,
             ],
           ]}
           title="ACLs"
@@ -441,11 +441,11 @@ function ClusterDetails() {
         <>
           <div />
           <div className="col-span-1 lg:col-span-2">
-            <a href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
+            <PlainAnchor href={getEnterpriseCTALink('tryEnterprise')} rel="noopener noreferrer" target="_blank">
               <Badge tone="informative" variant="solid">
                 <span className="underline">Redpanda Enterprise trial available</span>
               </Badge>
-            </a>
+            </PlainAnchor>
           </div>
         </>
       )}
@@ -454,7 +454,7 @@ function ClusterDetails() {
         <>
           <div />
           <div className="col-span-1 lg:col-span-2">
-            <Link to="/upload-license">Upload new license</Link>
+            <PlainLink to="/upload-license">Upload new license</PlainLink>
           </div>
         </>
       )}

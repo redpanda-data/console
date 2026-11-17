@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import {
   ServiceAccountSelector,
@@ -55,7 +56,6 @@ import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';

@@ -10,6 +10,7 @@
  */
 
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
+import { PlainAnchor } from 'components/redpanda-ui/components/button';
 import { Card, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
@@ -136,7 +137,7 @@ export const AuthenticationSection = () => {
               <p className="leading-relaxed">
                 Provide credentials for a service account on the source cluster (the one being shadowed) with ACLs to
                 manage shadow link replication.{' '}
-                <a
+                <PlainAnchor
                   className="inline-flex items-center gap-0.5 whitespace-nowrap text-primary hover:underline"
                   href={SHADOW_LINK_DOCS_URL}
                   rel="noreferrer"
@@ -144,7 +145,7 @@ export const AuthenticationSection = () => {
                 >
                   View required ACLs
                   <ExternalLink className="h-3 w-3" />
-                </a>
+                </PlainAnchor>
               </p>
             </AlertDescription>
           </Alert>
