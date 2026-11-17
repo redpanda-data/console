@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
@@ -36,13 +38,19 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
+/** The name checks, plus whether the fence rejects creating roles right now. */
+const useRoleNameChecks = (roleName: string) => ({
+  ...useRoleNameAvailability(roleName),
+  fenced: Boolean(useClusterFenceGuard().reasonFor('editRoles')),
+});
+
 export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
   const [roleName, setRoleName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
   const { mutateAsync: createRole } = useCreateRoleMutation();
-  const { trimmed, alreadyExists } = useRoleNameAvailability(roleName);
+  const { trimmed, alreadyExists, fenced } = useRoleNameChecks(roleName);
 
   const handleClose = () => {
     setRoleName('');
@@ -66,7 +74,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!trimmed || alreadyExists) {
+    if (!trimmed || alreadyExists || fenced) {
       return;
     }
     setIsSubmitting(true);
@@ -103,9 +111,13 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <Button onClick={handleClose} variant="outline">
             Cancel
           </Button>
-          <Button disabled={!trimmed || (submitted && alreadyExists) || isSubmitting} onClick={handleSubmit}>
+          <FenceGuardedButton
+            action="editRoles"
+            disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
+            onClick={handleSubmit}
+          >
             Create
-          </Button>
+          </FenceGuardedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

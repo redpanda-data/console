@@ -82,6 +82,10 @@ rs.mock('../../../../react-query/api/acl', () => ({
   }),
 }));
 
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
+}));
+
 const SORT_ASC = /Asc/;
 const ACL_ROW_TESTID = /^acl-list-item-/;
 

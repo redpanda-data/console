@@ -10,6 +10,7 @@
  */
 
 import '../../../../utils/array-extensions';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ErrorIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -27,6 +28,7 @@ import {
 import { MessageSearchControls } from './message-search-controls';
 import { MessagesResults } from './messages-results';
 import type { Topic } from '../../../../state/rest-interfaces';
+import { ErrorState } from '../messages/table/messages-table';
 
 type TopicMessageViewProps = {
   topic: Topic;
@@ -38,6 +40,27 @@ type TopicMessageViewProps = {
         - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
         - add back summary of quick search  <this.FilterSummary />
 */
+
+const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
+  const fenced = useClusterFenceGuard().isFencedRead(error.message);
+  if (fenced) {
+    return <ErrorState fenced message={error.message} onRetry={onRetry} />;
+  }
+  return (
+    <Alert icon={<ErrorIcon />} variant="destructive">
+      <AlertTitle>Backend Error</AlertTitle>
+      <AlertDescription>
+        <div>Check and modify the request before resubmitting.</div>
+        <div className="mt-4">
+          <div className="codeBox">{error.message}</div>
+        </div>
+        <Button className="mt-4" onClick={onRetry}>
+          Retry Search
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
   const settings = useTopicViewSettings(topic.topicName);
@@ -64,18 +87,7 @@ export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
       />
       {/* Message Table (or error display) */}
       {search.fetchError ? (
-        <Alert icon={<ErrorIcon />} variant="destructive">
-          <AlertTitle>Backend Error</AlertTitle>
-          <AlertDescription>
-            <div>Check and modify the request before resubmitting.</div>
-            <div className="mt-4">
-              <div className="codeBox">{search.fetchError.message}</div>
-            </div>
-            <Button className="mt-4" onClick={() => search.executeMessageSearch()}>
-              Retry Search
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <MessageSearchErrorAlert error={search.fetchError} onRetry={() => search.executeMessageSearch()} />
       ) : (
         <MessagesResults
           dialogs={dialogs}

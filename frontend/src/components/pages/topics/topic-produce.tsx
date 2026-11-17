@@ -35,6 +35,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import { setPageHeader, uiState } from '../../../state/ui-state';
 import { base64ToUInt8Array, isValidBase64, substringWithEllipsis } from '../../../utils/utils';
+import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import KowlEditor from '../../misc/kowl-editor';
 import { Alert, AlertDescription } from '../../redpanda-ui/components/alert';
 import { Button } from '../../redpanda-ui/components/button';
@@ -650,9 +651,15 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
       )}
 
       <div className="flex items-center gap-4">
-        <Button data-testid="produce-button" isLoading={isSubmitting} type="submit">
+        <FenceGuardedButton
+          action="produce"
+          data-testid="produce-button"
+          isLoading={isSubmitting}
+          topic={topicName}
+          type="submit"
+        >
           Produce
-        </Button>
+        </FenceGuardedButton>
         <Button
           nativeButton={false}
           render={

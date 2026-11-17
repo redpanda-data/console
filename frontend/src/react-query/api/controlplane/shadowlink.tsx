@@ -38,6 +38,11 @@ import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
 
+const listShadowLinksKeys = () => [
+  createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'finite' }),
+  createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'infinite' }),
+];
+
 /* ==================== CONTROLPLANE HOOKS ==================== */
 /* These hooks are used when running in embedded mode (cloud UI) */
 /* They create their own controlplane transport internally */
@@ -130,14 +135,10 @@ export const useControlplaneUpdateShadowLinkMutation = (
   return useMutation(cpUpdateShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list query
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: cpListShadowLinks,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
+      await Promise.all(
+        listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
+      );
       // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
@@ -164,14 +165,10 @@ export const useControlplaneDeleteShadowLinkMutation = (
   return useMutation(cpDeleteShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list query
-      await queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: cpListShadowLinks,
-          cardinality: 'finite',
-        }),
-        exact: false,
-      });
+      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
+      await Promise.all(
+        listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
+      );
       // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({

@@ -12,18 +12,24 @@
 'use client';
 
 import { Code } from '@connectrpc/connect';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import type { ShadowLinkTopology } from 'components/cluster-fence/shadow-link-topology';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
+import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Plus, RefreshCw } from 'lucide-react';
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { useEffect } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import {
   ShadowLinkEmptyState,
@@ -35,7 +41,10 @@ import {
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
+import { hasFenceActivity } from '../../../cluster-fence/cluster-fence-model';
+import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-source-panel';
 import { getShadowLinkStateLabel } from '../model';
+import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
 
 // Extracted component for table body content
 const ShadowLinkTableRows = ({
@@ -160,7 +169,7 @@ const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFa
   if (error?.code === Code.PermissionDenied) {
     return <ShadowLinkNoPermissionState />;
   }
-  if (error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled')) {
+  if (isShadowLinkingDisabledError(error)) {
     return <ShadowLinkFeatureDisabledState />;
   }
   // Error state for other errors
@@ -178,6 +187,8 @@ type ShadowLinkListToolbarProps = {
 
 const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLinkListToolbarProps) => {
   const navigate = useNavigate();
+  const fenceReason = useClusterFenceGuard().reasonFor('createShadowLink');
+  const fencedReason = hasShadowLink ? undefined : fenceReason;
 
   return (
     <div className="flex items-center gap-2">
@@ -196,7 +207,11 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
         <TooltipTrigger
           render={
             <span className="inline-block">
-              <Button disabled={hasShadowLink} onClick={() => navigate({ to: '/shadowlinks/create' })} size="sm">
+              <Button
+                disabled={hasShadowLink || Boolean(fencedReason)}
+                onClick={() => navigate({ to: '/shadowlinks/create' })}
+                size="sm"
+              >
                 <Plus className="h-4 w-4" />
                 Create shadow link
               </Button>
@@ -208,12 +223,13 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
             <p>Only one shadowlink can be created at this time</p>
           </TooltipContent>
         )}
+        {fencedReason ? <TooltipContent>{fencedReason}</TooltipContent> : null}
       </Tooltip>
     </div>
   );
 };
 
-export const ShadowLinkListPage = () => {
+const ShadowLinksOnThisCluster = () => {
   const navigate = useNavigate();
 
   // React Query hooks
@@ -222,7 +238,6 @@ export const ShadowLinkListPage = () => {
   // Get shadowlinks array from response
   const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
 
-  useShadowLinksPageTitle();
   useShadowLinksErrorToast(error);
 
   const table = useDataTable({
@@ -274,5 +289,137 @@ export const ShadowLinkListPage = () => {
         </TableBody>
       </Table>
     </div>
+  );
+};
+
+type ShadowLinksTab = 'links' | 'source';
+
+/**
+ * Only the list's first load. A failed list loads again from nothing each time the page mounts it,
+ * so waiting on every load would swap the page out, mount the list again and load it again.
+ */
+const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLinksQuery>) => isLoading && !isFetched;
+
+/**
+ * Whether the page opens on the Cluster fence tab: the cluster matters as a source, because links read
+ * from it or its fence isn't unfenced. Embedded in Redpanda Cloud, Console knows the links that read
+ * from it.
+ * Without that list, as in a self-hosted Console, any cluster may be a source, and a source doesn't
+ * need shadow linking turned on. Undefined until that's known.
+ */
+const opensOnFence = (
+  { known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useClusterFenceStatusQuery>,
+  topology: ShadowLinkTopology | null
+): boolean | undefined => {
+  const fenceInUse = (known && hasFenceActivity(summary.phase)) || unreadable || blocking;
+  if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
+    return true;
+  }
+  const statusRead = !isLoading && (known || isError);
+  if (!statusRead || topology?.resolving) {
+    return;
+  }
+  return !topology && known;
+};
+
+/**
+ * Open on the fence where it matters, unless this cluster has shadow links of its own; otherwise
+ * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
+ */
+const useDefaultTab = (): ShadowLinksTab | undefined => {
+  const fenceFirst = opensOnFence(
+    useClusterFenceStatusQuery(),
+    useClusterFenceStore((state) => state.topology)
+  );
+  const ownLinks = useListShadowLinksQuery({});
+  if ((ownLinks.data?.shadowLinks.length ?? 0) > 0) {
+    return 'links';
+  }
+  if (fenceFirst === undefined || (fenceFirst && isFirstLoad(ownLinks))) {
+    return;
+  }
+  return fenceFirst ? 'source' : 'links';
+};
+
+const useRequestedTab = (): ShadowLinksTab | undefined => {
+  // Read from the location, not the route match: the page also renders outside its route in tests.
+  const searchTab = (useLocation().search as { tab?: unknown }).tab;
+  return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
+};
+
+/**
+ * Writes the resolved default tab into the URL, so the banner and the host see which tab is showing.
+ * Only while the location is this page: the router keeps the page mounted while the next one loads,
+ * and writing the tab then would send the user straight back here.
+ */
+const useDefaultTabInUrl = (
+  fenceTab: boolean,
+  requestedTab: ShadowLinksTab | undefined,
+  defaultTab: ShadowLinksTab | undefined
+) => {
+  const navigate = useNavigate();
+  const onThisPage = useLocation().pathname === '/shadowlinks';
+  useEffect(() => {
+    if (onThisPage && fenceTab && defaultTab && !requestedTab) {
+      navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true }).catch((error: unknown) => {
+        toast.error('Failed to open the shadow links tab', { description: String(error) });
+      });
+    }
+  }, [onThisPage, fenceTab, requestedTab, defaultTab, navigate]);
+};
+
+/**
+ * The tab to show, and whether there's a Cluster fence tab at all: on every cluster that can be
+ * fenced, so a cluster can be fenced before any shadow link reads from it. A cluster that's only a
+ * shadow gets it too, and its Fence button says why it can't fence.
+ */
+const useShadowLinksTab = () => {
+  const requestedTab = useRequestedTab();
+  const fenceTab = useClusterFenceStatusQuery().available;
+  const defaultTab = useDefaultTab();
+  useDefaultTabInUrl(fenceTab, requestedTab, defaultTab);
+  return { fenceTab, tab: requestedTab ?? defaultTab };
+};
+
+export const ShadowLinkListPage = () => {
+  const navigate = useNavigate();
+  const { fenceTab, tab } = useShadowLinksTab();
+  useShadowLinksPageTitle();
+
+  if (!fenceTab) {
+    return <ShadowLinksOnThisCluster />;
+  }
+  if (!tab) {
+    return <Skeleton className="h-48" testId="shadowlinks-tab-loading" />;
+  }
+
+  return (
+    <Tabs
+      onValueChange={(value) => {
+        navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true }).catch(
+          (error: unknown) => {
+            toast.error('Failed to open the shadow links tab', { description: String(error) });
+          }
+        );
+      }}
+      value={tab}
+    >
+      <TabsList testId="shadowlinks-tabs" variant="underline">
+        <TabsTrigger testId="shadowlinks-tab-links" value="links" variant="underline">
+          Links on this cluster
+        </TabsTrigger>
+        <TabsTrigger testId="shadowlinks-tab-source" value="source" variant="underline">
+          Cluster fence
+        </TabsTrigger>
+      </TabsList>
+      <TabsContents className="mt-4">
+        <TabsContent value="links">
+          <ShadowLinksOnThisCluster />
+        </TabsContent>
+        <TabsContent value="source">
+          <ClusterFenceSourcePanel />
+        </TabsContent>
+      </TabsContents>
+    </Tabs>
   );
 };
