@@ -82,6 +82,26 @@ describe('getBrokerProgress', () => {
       { nodeId: 4, status: 'behind', copy: { phase: 'fenced', revision: 18n }, blocks: true },
     ]);
   });
+
+  test('keeps the read policy each broker enforces, which a settings change reaches one broker at a time', () => {
+    const withReads = (revision: number, allowAllReads: boolean) =>
+      create(ClusterFenceSchema, {
+        state: ClusterFenceState.FENCED,
+        revision: BigInt(revision),
+        settings: { readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads } },
+      });
+    const [current, earlier] = getBrokerProgress(
+      create(GetClusterFenceStatusResponseSchema, {
+        fence: withReads(19, true),
+        brokers: [
+          { nodeId: 1, fence: withReads(19, true) },
+          { nodeId: 2, fence: withReads(18, false) },
+        ],
+      })
+    );
+    expect(current?.copy?.readPolicy).toEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: true });
+    expect(earlier?.copy?.readPolicy).toEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: false });
+  });
 });
 
 describe('summarizeFence', () => {
@@ -297,6 +317,63 @@ describe('getClientEffects', () => {
     expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({
       verdict: 'partly',
       detail: expect.stringContaining('Ended on broker 1'),
+    });
+  });
+
+  describe('while new read settings reach the brokers, each broker reads by the settings it has', () => {
+    /** Broker 1 has the new settings; broker 2 is still fenced on the earlier ones. */
+    const settingsChange = (earlier: Partial<typeof settings>, now: Partial<typeof settings>) => {
+      const fenced = (nodeId: number, readPolicy: typeof settings): BrokerProgress => ({
+        nodeId,
+        status: nodeId === 1 ? 'confirmed' : 'behind',
+        copy: { phase: nodeId === 1 ? 'fencing' : 'fenced', revision: nodeId === 1 ? 19n : 18n, readPolicy },
+        blocks: true,
+      });
+      const policy = { ...settings, ...now };
+      return getClientEffects({
+        summary: { ...policy, phase: 'fencing' },
+        brokers: [fenced(1, policy), fenced(2, { ...settings, ...earlier })],
+        links: [{ linkName: 'orders-dr', authentication: 'sasl', principal: 'shadow-orders' }],
+      });
+    };
+    const effect = (effects: ReturnType<typeof getClientEffects>, id: string) =>
+      effects.find((candidate) => candidate.id === id);
+
+    test('turning on Allow all reads lets consumers read only where it has arrived', () => {
+      expect(effect(settingsChange({ allowAllReads: false }, { allowAllReads: true }), 'consume')).toMatchObject({
+        verdict: 'partly',
+        detail: 'Allowed on broker 1. Still rejected on broker 2 until the new settings reach it.',
+      });
+    });
+
+    test('turning off Allow all reads still lets consumers read where it hasn’t arrived', () => {
+      expect(effect(settingsChange({ allowAllReads: true }, { allowAllReads: false }), 'consume')).toMatchObject({
+        verdict: 'partly',
+        detail: 'Rejected on broker 1. Still allowed on broker 2 until the new settings reach it.',
+      });
+    });
+
+    test('a link’s user just exempted still can’t read where the exemption hasn’t arrived', () => {
+      const effects = settingsChange({ exemptPrincipals: ['shadow-audit'] }, { exemptPrincipals: ['shadow-orders'] });
+      expect(effect(effects, 'link-orders-dr')).toMatchObject({
+        verdict: 'partly',
+        detail: 'Allowed on broker 1. Still rejected on broker 2 until the new settings reach it.',
+      });
+    });
+
+    test('a link’s user just removed from the list can still read where that hasn’t arrived', () => {
+      const effects = settingsChange({ exemptPrincipals: ['shadow-orders'] }, { exemptPrincipals: ['shadow-audit'] });
+      expect(effect(effects, 'link-orders-dr')).toMatchObject({
+        verdict: 'partly',
+        detail: 'Rejected on broker 1. Still allowed on broker 2 until the new settings reach it.',
+      });
+    });
+
+    test('once every broker has them, reads go by the new settings alone', () => {
+      expect(effect(settingsChange({ allowAllReads: true }, { allowAllReads: true }), 'consume')).toMatchObject({
+        verdict: 'allowed',
+        detail: 'Allowed: Allow all reads is on.',
+      });
     });
   });
 

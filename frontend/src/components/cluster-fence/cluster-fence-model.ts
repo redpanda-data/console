@@ -58,7 +58,12 @@ export type BrokerProgress = {
   nodeId: number;
   /** `confirmed` once its copy matches the cluster's fence in state and revision; either other status holds a move. */
   status: 'confirmed' | 'behind' | 'not-answering';
-  copy?: { phase: FencePhase | undefined; revision: bigint };
+  copy?: {
+    phase: FencePhase | undefined;
+    revision: bigint;
+    /** The read policy this broker enforces, which a settings change reaches one broker at a time. */
+    readPolicy?: ReadPolicy;
+  };
   /** Whether this broker rejects writes now. Undefined when it didn't answer. */
   blocks: boolean | undefined;
   /** As the broker reported it. Its wording varies, so show it, never match on it. */
@@ -74,10 +79,17 @@ export const getBrokerProgress = (response: GetClusterFenceStatusResponse | unde
     const phase = toFencePhase(broker.fence.state);
     const confirmed =
       fence !== undefined && broker.fence.state === fence.state && broker.fence.revision === fence.revision;
+    const readPolicy = broker.fence.settings?.readPolicy;
     return {
       nodeId: broker.nodeId,
       status: confirmed ? 'confirmed' : 'behind',
-      copy: { phase, revision: broker.fence.revision },
+      copy: {
+        phase,
+        revision: broker.fence.revision,
+        ...(readPolicy && {
+          readPolicy: { exemptPrincipals: readPolicy.exemptPrincipals, allowAllReads: readPolicy.allowAllReads },
+        }),
+      },
       blocks: phase === undefined ? undefined : isBlockingPhase(phase),
     };
   });
@@ -360,6 +372,19 @@ type Verdict = Pick<ClientEffect, 'verdict' | 'detail'>;
 
 const reach = (nodeIds: readonly number[]) => (nodeIds.length === 1 ? 'it' : 'them');
 
+const ALLOWED: Verdict = { verdict: 'allowed', detail: 'Allowed.' };
+const REJECTED: Verdict = { verdict: 'rejected', detail: 'Rejected.' };
+
+const moveSplitDetail = (
+  phase: FencePhase,
+  blocking: readonly number[],
+  open: readonly number[],
+  words = { allowed: 'Allowed', rejected: 'Rejected' }
+) =>
+  phase === 'unfencing'
+    ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
+    : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`;
+
 /**
  * During a move only the brokers that already have it reject. The details stay general: the
  * error codes clients get are cluster settings, so Console can't name them.
@@ -372,18 +397,87 @@ const splitVerdict = (
   const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
   const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
   if (blocking.length > 0 && open.length > 0) {
-    return {
-      verdict: 'partly',
-      detail:
-        summary.phase === 'unfencing'
-          ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
-          : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`,
-    };
+    return { verdict: 'partly', detail: moveSplitDetail(summary.phase, blocking, open, words) };
   }
   const blocks = brokers.length > 0 ? blocking.length > 0 : isBlockingPhase(summary.phase);
   return blocks
     ? { verdict: 'rejected', detail: `${words.rejected}.` }
     : { verdict: 'allowed', detail: `${words.allowed}.` };
+};
+
+type ReadCheck = (policy: ReadPolicy) => boolean | undefined;
+
+/** Undefined for a broker that didn't answer, which counts neither way, as with writes. */
+const brokerRead = (broker: BrokerProgress, policy: ReadPolicy, canRead: ReadCheck) => {
+  if (broker.blocks === undefined) {
+    return;
+  }
+  if (!broker.blocks) {
+    return 'allows';
+  }
+  const verdict = canRead(broker.copy?.readPolicy ?? policy);
+  if (verdict === undefined) {
+    return 'unknown';
+  }
+  return verdict ? 'allows' : 'rejects';
+};
+
+/** A broker that still enforces settings other than the cluster's, so its reads go by those. */
+const onEarlierSettings = (broker: BrokerProgress, policy: ReadPolicy) =>
+  broker.blocks === true && broker.copy?.readPolicy !== undefined && !sameFenceSettings(broker.copy.readPolicy, policy);
+
+const readSplitDetail = (
+  summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>,
+  rejecting: readonly BrokerProgress[],
+  allowing: readonly BrokerProgress[]
+) => {
+  const ids = (brokers: readonly BrokerProgress[]) => brokers.map((broker) => broker.nodeId);
+  const earlier = (brokers: readonly BrokerProgress[]) => brokers.map((broker) => onEarlierSettings(broker, summary));
+  if (earlier(rejecting).every(Boolean) && !earlier(allowing).some(Boolean)) {
+    return `Allowed on ${brokersPhrase(ids(allowing))}. Still rejected on ${brokersPhrase(ids(rejecting))} until the new settings reach ${reach(ids(rejecting))}.`;
+  }
+  if (earlier(allowing).every(Boolean) && !earlier(rejecting).some(Boolean)) {
+    return `Rejected on ${brokersPhrase(ids(rejecting))}. Still allowed on ${brokersPhrase(ids(allowing))} until the new settings reach ${reach(ids(allowing))}.`;
+  }
+  return moveSplitDetail(summary.phase, ids(rejecting), ids(allowing));
+};
+
+const UNKNOWN_READ: Verdict = { verdict: 'unknown', detail: MTLS_LINK_NOTE };
+
+/** Without brokers to go by, the cluster's own fence and read policy decide. */
+const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, canRead: ReadCheck): Verdict => {
+  const verdict = isBlockingPhase(summary.phase) ? canRead(summary) : true;
+  if (verdict === undefined) {
+    return UNKNOWN_READ;
+  }
+  return verdict ? ALLOWED : REJECTED;
+};
+
+/**
+ * Each broker reads by its own copy of the read policy: after a settings change, a broker the new
+ * settings haven't reached keeps the old exempt list and Allow all reads until they do. Unknown when
+ * a blocking broker can't tell, as for an mTLS link.
+ */
+const readVerdict = (
+  summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>,
+  brokers: readonly BrokerProgress[],
+  canRead: ReadCheck
+): Verdict => {
+  if (brokers.length === 0) {
+    return clusterReadVerdict(summary, canRead);
+  }
+  const reads = brokers.map((broker) => brokerRead(broker, summary, canRead));
+  if (reads.includes('unknown')) {
+    return UNKNOWN_READ;
+  }
+  const rejecting = brokers.filter((_, index) => reads[index] === 'rejects');
+  const allowing = brokers.filter((_, index) => reads[index] === 'allows');
+  if (rejecting.length === 0) {
+    return ALLOWED;
+  }
+  return allowing.length === 0
+    ? REJECTED
+    : { verdict: 'partly', detail: readSplitDetail(summary, rejecting, allowing) };
 };
 
 /** Each broker ends the open transactions it coordinates as soon as the fence reaches it. */
@@ -411,19 +505,13 @@ export const getClientEffects = ({
   brokers: readonly BrokerProgress[];
   links?: readonly (LinkIdentity & { linkName: string })[];
 }): ClientEffect[] => {
-  const anyBlocking = brokers.length > 0 ? brokers.some((broker) => broker.blocks) : isBlockingPhase(summary.phase);
-  const linkRead = (canRead: boolean | undefined): Verdict => {
-    if (canRead === undefined && anyBlocking) {
-      return { verdict: 'unknown', detail: MTLS_LINK_NOTE };
-    }
-    return canRead === false ? splitVerdict(summary, brokers) : { verdict: 'allowed', detail: 'Allowed.' };
-  };
   const knownLinks = links ?? [];
   const linkRows: ClientEffect[] = knownLinks.map((link) => ({
     id: `link-${link.linkName}`,
     label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
-    ...linkRead(linkCanRead(summary, link)),
+    ...readVerdict(summary, brokers, (policy) => linkCanRead(policy, link)),
   }));
+  const consume = readVerdict(summary, brokers, (policy) => policy.allowAllReads);
   /** Without the links themselves, a reminder that comes last: not every cluster is a link's source. */
   const anyLinkRow: ClientEffect[] =
     knownLinks.length > 0
@@ -432,8 +520,8 @@ export const getClientEffects = ({
           {
             id: 'link',
             label: 'A shadow link’s user fetches',
-            ...(summary.allowAllReads || !anyBlocking
-              ? { verdict: 'allowed' as const, detail: 'Allowed.' }
+            ...(consume.verdict === 'allowed'
+              ? ALLOWED
               : { verdict: 'unknown' as const, detail: 'Allowed only if its user is on the exempt list.' }),
           },
         ];
@@ -443,9 +531,9 @@ export const getClientEffects = ({
     {
       id: 'consume',
       label: 'An app’s consumer fetches',
-      ...(summary.allowAllReads
+      ...(consume.verdict === 'allowed' && summary.allowAllReads
         ? { verdict: 'allowed' as const, detail: 'Allowed: Allow all reads is on.' }
-        : rejected),
+        : consume),
     },
     ...linkRows,
     { id: 'commit', label: 'A consumer group joins, heartbeats or commits', ...rejected },
