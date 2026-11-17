@@ -41,7 +41,7 @@ import {
 } from './shadowlink-empty-state';
 import { isEmbedded } from '../../../../config';
 import { getBasePath } from '../../../../utils/env';
-import { hasFenceActivity, linksThatStopFence } from '../../../cluster-fence/cluster-fence-model';
+import { hasFenceActivity } from '../../../cluster-fence/cluster-fence-model';
 import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-source-panel';
 import { getShadowLinkStateLabel } from '../model';
 import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
@@ -301,60 +301,44 @@ type ShadowLinksTab = 'links' | 'source';
 const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLinksQuery>) => isLoading && !isFetched;
 
 /**
- * Whether the Cluster fence tab applies: the cluster can be fenced, and it matters as a source,
- * because links read from it or its fence isn't unfenced. Embedded in Redpanda Cloud, Console knows
- * the links that read from it.
- * Without that list, as in a self-hosted Console, any cluster whose own shadow links don't stop the
- * fence may be a source, and a source doesn't need shadow linking turned on. A cluster that's only
- * a shadow doesn't get it. Undefined until that's known.
+ * Whether the page opens on the Cluster fence tab: the cluster matters as a source, because links read
+ * from it or its fence isn't unfenced. Embedded in Redpanda Cloud, Console knows the links that read
+ * from it.
+ * Without that list, as in a self-hosted Console, any cluster may be a source, and a source doesn't
+ * need shadow linking turned on. Undefined until that's known.
  */
-const fenceTabShown = (
-  {
-    available,
-    known,
-    summary,
-    unreadable,
-    blocking,
-    isLoading,
-    isError,
-  }: ReturnType<typeof useClusterFenceStatusQuery>,
-  topology: ShadowLinkTopology | null,
-  ownLinks: ReturnType<typeof useListShadowLinksQuery>
+const opensOnFence = (
+  { known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useClusterFenceStatusQuery>,
+  topology: ShadowLinkTopology | null
 ): boolean | undefined => {
-  if (!available) {
-    return false;
-  }
   const fenceInUse = (known && hasFenceActivity(summary.phase)) || unreadable || blocking;
   if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
     return true;
   }
   const statusRead = !isLoading && (known || isError);
-  if (!statusRead || topology?.resolving || (!topology && isFirstLoad(ownLinks))) {
+  if (!statusRead || topology?.resolving) {
     return;
   }
-  return !topology && known && linksThatStopFence(ownLinks.data?.shadowLinks ?? []).length === 0;
+  return !topology && known;
 };
 
-const useFenceTabShown = (): boolean | undefined =>
-  fenceTabShown(
-    useClusterFenceStatusQuery(),
-    useClusterFenceStore((state) => state.topology),
-    useListShadowLinksQuery({})
-  );
-
 /**
- * Open on the fence when the tab shows, unless this cluster has shadow links of its own; otherwise
+ * Open on the fence where it matters, unless this cluster has shadow links of its own; otherwise
  * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
  */
-const useDefaultTab = (fenceTab: boolean | undefined): ShadowLinksTab | undefined => {
+const useDefaultTab = (): ShadowLinksTab | undefined => {
+  const fenceFirst = opensOnFence(
+    useClusterFenceStatusQuery(),
+    useClusterFenceStore((state) => state.topology)
+  );
   const ownLinks = useListShadowLinksQuery({});
   if ((ownLinks.data?.shadowLinks.length ?? 0) > 0) {
     return 'links';
   }
-  if (fenceTab === undefined || (fenceTab && isFirstLoad(ownLinks))) {
+  if (fenceFirst === undefined || (fenceFirst && isFirstLoad(ownLinks))) {
     return;
   }
-  return fenceTab ? 'source' : 'links';
+  return fenceFirst ? 'source' : 'links';
 };
 
 const useRequestedTab = (): ShadowLinksTab | undefined => {
@@ -369,7 +353,7 @@ const useRequestedTab = (): ShadowLinksTab | undefined => {
  * and writing the tab then would send the user straight back here.
  */
 const useDefaultTabInUrl = (
-  fenceTab: boolean | undefined,
+  fenceTab: boolean,
   requestedTab: ShadowLinksTab | undefined,
   defaultTab: ShadowLinksTab | undefined
 ) => {
@@ -384,11 +368,15 @@ const useDefaultTabInUrl = (
   }, [onThisPage, fenceTab, requestedTab, defaultTab, navigate]);
 };
 
-/** The tab to show, and whether the fence tab applies here at all. */
+/**
+ * The tab to show, and whether there's a Cluster fence tab at all: on every cluster that can be
+ * fenced, so a cluster can be fenced before any shadow link reads from it. A cluster that's only a
+ * shadow gets it too, and its Fence button says why it can't fence.
+ */
 const useShadowLinksTab = () => {
   const requestedTab = useRequestedTab();
-  const fenceTab = useFenceTabShown();
-  const defaultTab = useDefaultTab(fenceTab);
+  const fenceTab = useClusterFenceStatusQuery().available;
+  const defaultTab = useDefaultTab();
   useDefaultTabInUrl(fenceTab, requestedTab, defaultTab);
   return { fenceTab, tab: requestedTab ?? defaultTab };
 };
@@ -398,8 +386,7 @@ export const ShadowLinkListPage = () => {
   const { fenceTab, tab } = useShadowLinksTab();
   useShadowLinksPageTitle();
 
-  // While it isn't known whether the fence tab applies, a link to it keeps it; anything else shows the links.
-  if (fenceTab === false || (fenceTab === undefined && tab === 'links')) {
+  if (!fenceTab) {
     return <ShadowLinksOnThisCluster />;
   }
   if (!tab) {

@@ -150,17 +150,23 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     expect(screen.queryByTestId('cluster-fence-source-panel-stub')).not.toBeInTheDocument();
   });
 
-  test('an unfenced cluster Cloud knows no link reads from gets no fence tab', async () => {
+  test('a cluster Cloud knows no link reads from opens on its links, and can still be fenced from its tab', async () => {
+    const user = userEvent.setup();
     mockFence({ available: true, known: true, phase: 'unfenced' });
     noLinks();
     useClusterFenceStore.setState({
       topology: { clusterName: 'dr', readers: [], sources: {}, resolving: false, readersIncomplete: false },
     });
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
+      initialLocation: '/shadowlinks',
+      transport: routeLoaderTransport,
+    });
 
     expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeInTheDocument();
-    expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
     expect(screen.queryByTestId('cluster-fence-source-panel-stub')).not.toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'links' }));
+    await user.click(screen.getByTestId('shadowlinks-tab-source'));
+    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
   });
 
   test('without Cloud’s list of links that read from it, any cluster that can be fenced gets the fence tab', async () => {
@@ -172,24 +178,13 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     expect(screen.getByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
   });
 
-  test('a shadow link of its own that failed over doesn’t stop the fence, so the cluster keeps the tab', async () => {
+  test.each([
+    ['that hasn’t failed over, so it’s only a shadow', ShadowLinkState.ACTIVE],
+    ['that failed over', ShadowLinkState.FAILED_OVER],
+  ])('a cluster with a shadow link of its own %s has the fence tab, and opens on its links', async (_label, state) => {
     mockFence({ available: true, known: true, phase: 'unfenced' });
     mockedUseListShadowLinksQuery.mockReturnValue(
-      mockQueryResult({
-        data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state: ShadowLinkState.FAILED_OVER }] },
-      } as never)
-    );
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
-
-    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
-  });
-
-  test('a cluster that’s only a shadow gets no fence tab, and its URL is left alone', async () => {
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    mockedUseListShadowLinksQuery.mockReturnValue(
-      mockQueryResult({
-        data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state: ShadowLinkState.ACTIVE }] },
-      } as never)
+      mockQueryResult({ data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state }] } } as never)
     );
     const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
       initialLocation: '/shadowlinks',
@@ -197,8 +192,8 @@ describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
     });
 
     expect(await screen.findByTestId('shadowlink-row-orders-dr')).toBeInTheDocument();
-    expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
-    expect(router.state.location.search).not.toHaveProperty('tab');
+    expect(screen.getByTestId('shadowlinks-tab-source')).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'links' }));
   });
 
   test('waits for the fence and the topology before choosing a tab', async () => {
