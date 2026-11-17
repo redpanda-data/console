@@ -41,8 +41,11 @@ const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]): strin
     : describeFencePhase(summary, brokers);
 };
 
-/** With no controller leader there's no cluster fence to read, but a broker's own blocking copy still rejects writes. */
-const describeOwnCopies = (copies: BrokerOwnCopy[]): string => {
+/**
+ * With no controller leader there's no cluster fence to read, but a broker's own blocking copy still
+ * rejects writes. Until every broker answers, the last status read still counts.
+ */
+const describeOwnCopies = (copies: BrokerOwnCopy[], lastRead: FencePhase): string => {
   const reporting = copies.flatMap(({ nodeId, phase }) => {
     if (!phase) {
       return [];
@@ -57,8 +60,14 @@ const describeOwnCopies = (copies: BrokerOwnCopy[]): string => {
       blockingCount === reporting.length
         ? ' Writes to those brokers are rejected.'
         : ' Writes are rejected on the brokers that report fencing or fenced.';
+  } else if (isBlockingPhase(lastRead)) {
+    consequence = ` Until every broker answers, Console goes by the last status it read: ${FENCE_PHASE_LABEL[lastRead].toLowerCase()}, so writes may be rejected.`;
   }
-  return `It has no controller leader right now, so Console read each broker’s own copy of the fence: ${reporting.join(', ')}.${consequence}`;
+  const read =
+    reporting.length > 0
+      ? `so Console read each broker’s own copy of the fence: ${reporting.join(', ')}.`
+      : 'so Console is asking each broker for its own copy of the fence.';
+  return `It has no controller leader right now, ${read}${consequence}`;
 };
 
 const bannerTitle = (known: boolean, summary: FenceSummary, brokers: BrokerProgress[]) => {
@@ -100,7 +109,7 @@ export const ClusterFenceBanner = () => {
       >
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
-          <p>{known ? describeBanner(summary, brokers) : describeOwnCopies(ownCopies)}</p>
+          <p>{known ? describeBanner(summary, brokers) : describeOwnCopies(ownCopies, phase)}</p>
         </AlertDescription>
         {known ? (
           // Outside AlertDescription, which restyles every descendant anchor as an inline link.

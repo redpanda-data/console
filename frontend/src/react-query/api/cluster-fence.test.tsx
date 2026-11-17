@@ -16,6 +16,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   ClusterFenceState,
   FenceResponseSchema,
+  type GetClusterFenceBrokerStatusResponse,
   GetClusterFenceBrokerStatusResponseSchema,
   GetClusterFenceStatusResponseSchema,
   UpdateClusterFenceSettingsResponseSchema,
@@ -115,6 +116,63 @@ describe('useClusterFenceStatusQuery', () => {
     await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 2n }]));
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
+  });
+
+  test.each<[string, () => GetClusterFenceBrokerStatusResponse | Promise<GetClusterFenceBrokerStatusResponse>]>([
+    /** An executor that never calls resolve or reject. */
+    ['still loading', () => new Promise<never>(rs.fn())],
+    [
+      'failing',
+      () => {
+        throw new ConnectError('broker unreachable', Code.Unavailable);
+      },
+    ],
+  ])(
+    'keeps blocking on a fenced status the controller can no longer confirm while broker copies are %s',
+    async (label, brokerStatus) => {
+      const readController = rs
+        .fn<() => typeof fencedStatus>()
+        .mockReturnValueOnce(fencedStatus)
+        .mockImplementation(() => {
+          throw new ConnectError('no controller leader', Code.Unavailable);
+        });
+      const transport = createRouterTransport(({ rpc }) => {
+        rpc(getClusterFenceStatus, readController);
+        rpc(getClusterFenceBrokerStatus, brokerStatus);
+      });
+      const { result } = renderStatusQuery(transport);
+      await waitFor(() => expect(result.current.blocking).toBe(true));
+      await act(() => result.current.refetch());
+      await waitFor(() => expect(result.current.known).toBe(false));
+      if (label === 'failing') {
+        await waitFor(() =>
+          expect(result.current.ownCopies).toEqual([{ nodeId: 1, errorMessage: 'broker unreachable' }])
+        );
+      }
+      expect(result.current.blocking).toBe(true);
+    }
+  );
+
+  test('stops blocking once every broker’s own copy says unfenced, whatever the last status said', async () => {
+    const readController = rs
+      .fn<() => typeof fencedStatus>()
+      .mockReturnValueOnce(fencedStatus)
+      .mockImplementation(() => {
+        throw new ConnectError('no controller leader', Code.Unavailable);
+      });
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getClusterFenceStatus, readController);
+      rpc(getClusterFenceBrokerStatus, () =>
+        create(GetClusterFenceBrokerStatusResponseSchema, {
+          broker: { nodeId: 1, fence: { state: ClusterFenceState.UNFENCED, revision: 4n } },
+        })
+      );
+    });
+    const { result } = renderStatusQuery(transport);
+    await waitFor(() => expect(result.current.blocking).toBe(true));
+    await act(() => result.current.refetch());
+    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 4n }]));
+    expect(result.current.blocking).toBe(false);
   });
 
   test('retains last-known controller presentation after an ordinary refresh failure', async () => {

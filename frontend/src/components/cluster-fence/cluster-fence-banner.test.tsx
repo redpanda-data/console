@@ -120,4 +120,21 @@ describe('the ClusterFenceBanner', () => {
     expect(banner).toHaveTextContent('broker 1 reports fenced. Writes to those brokers are rejected.');
     expect(screen.queryByTestId('cluster-fence-banner-view-status')).not.toBeInTheDocument();
   });
+
+  test('with no controller leader and no broker’s own copy yet, goes by the last status read', () => {
+    rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
+      known: false,
+      blocking: true,
+      summary: { phase: 'fenced', revision: 3n, exemptPrincipals: ['shadow-orders'], allowAllReads: false },
+      brokers: [{ nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true }],
+      ownCopies: [{ nodeId: 1 }],
+    } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+    renderBanner();
+
+    const banner = screen.getByTestId('cluster-fence-banner');
+    expect(banner).toHaveTextContent('This cluster may be fenced');
+    expect(banner).toHaveTextContent(
+      'so Console is asking each broker for its own copy of the fence. Until every broker answers, Console goes by the last status it read: fenced, so writes may be rejected.'
+    );
+  });
 });

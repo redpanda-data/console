@@ -139,6 +139,15 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   );
 };
 
+/**
+ * Without a status, one broker's own blocking copy is enough to block. Until every broker's copy is
+ * in, the last status read before the controller leader went still counts, so the banner and the
+ * guards don't drop while the copies load or can't be read.
+ */
+const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined): boolean =>
+  copies.some((copy) => copy.phase && isBlockingPhase(copy.phase)) ||
+  (lastRead !== undefined && isBlockingPhase(lastRead.phase) && !copies.every((copy) => copy.phase));
+
 /** The status query, polled at the pace the fence's state calls for. */
 const useClusterFenceStatusRead = (available: boolean) =>
   useQuery(
@@ -202,13 +211,8 @@ export const useClusterFenceStatusQuery = () => {
     unreadable: available && query.data !== undefined && parsed === undefined,
     /** Each broker's own copy, read while the cluster has no controller leader to give the status. */
     ownCopies,
-    /**
-     * Whether some broker rejects writes now, as far as Console can tell. Without a status, a broker's
-     * own blocking copy is enough to disable the writes it rejects.
-     */
-    blocking: known
-      ? isBlockingPhase(summary.phase)
-      : ownCopies.some((copy) => copy.phase && isBlockingPhase(copy.phase)),
+    /** Whether some broker rejects writes now, as far as Console can tell. */
+    blocking: known ? isBlockingPhase(summary.phase) : ownCopiesBlock(ownCopies, noLeader ? parsed : undefined),
     summary,
     brokers,
   };
