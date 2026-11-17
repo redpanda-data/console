@@ -13,9 +13,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/twmb/franz-go/pkg/kadm"
 )
 
 // DocumentationState denotes whether topic documentation is available for a certain
@@ -44,6 +47,55 @@ type TopicSummary struct {
 	CleanupPolicy     string             `json:"cleanupPolicy"`
 	Documentation     DocumentationState `json:"documentation"`
 	LogDirSummary     TopicLogDirSummary `json:"logDirSummary"`
+	// AllowedActions is omitted when the broker does not report authorized operations, which the
+	// frontend reads as all actions allowed.
+	AllowedActions []string `json:"allowedActions,omitempty"`
+}
+
+// Topic action names match TopicActions in the frontend's rest-interfaces.ts.
+const (
+	topicActionAll                = "all"
+	topicActionSeeTopic           = "seeTopic"
+	topicActionViewPartitions     = "viewPartitions"
+	topicActionViewMessages       = "viewMessages"
+	topicActionUseSearchFilter    = "useSearchFilter"
+	topicActionViewConsumers      = "viewConsumers"
+	topicActionViewConfig         = "viewConfig"
+	topicActionDeleteTopic        = "deleteTopic"
+	topicActionDeleteTopicRecords = "deleteTopicRecords"
+	topicActionEditConfig         = "editConfig"
+)
+
+var topicActionsByOperation = []struct {
+	op      kadm.ACLOperation
+	actions []string
+}{
+	{kadm.OpDescribe, []string{topicActionSeeTopic, topicActionViewPartitions, topicActionViewConsumers}},
+	{kadm.OpRead, []string{topicActionViewMessages, topicActionUseSearchFilter}},
+	{kadm.OpDescribeConfigs, []string{topicActionViewConfig}},
+	{kadm.OpAlterConfigs, []string{topicActionEditConfig}},
+	{kadm.OpDelete, []string{topicActionDeleteTopic, topicActionDeleteTopicRecords}},
+}
+
+// topicActionsFromOperations returns nil when the broker reported no operations.
+func topicActionsFromOperations(ops []kadm.ACLOperation) []string {
+	if len(ops) == 0 {
+		return nil
+	}
+
+	var actions []string
+	grantedAll := true
+	for _, mapping := range topicActionsByOperation {
+		if !slices.Contains(ops, mapping.op) {
+			grantedAll = false
+			continue
+		}
+		actions = append(actions, mapping.actions...)
+	}
+	if grantedAll {
+		return []string{topicActionAll}
+	}
+	return actions
 }
 
 // GetTopicsOverview returns a TopicSummary for all Kafka Topics
@@ -56,7 +108,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	}
 
 	// 1. Request metadata
-	metadata, err := adminCl.Metadata(ctx)
+	metadata, err := adminCl.Metadata(kadm.WithAuthorizedOps(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +201,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 			CleanupPolicy:     policy,
 			LogDirSummary:     logDirSummary,
 			Documentation:     docState,
+			AllowedActions:    topicActionsFromOperations(topic.AuthorizedOperations),
 		})
 	}
 
