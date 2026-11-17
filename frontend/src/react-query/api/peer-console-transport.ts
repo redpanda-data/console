@@ -28,13 +28,15 @@ const hasConnectCode = (body: unknown): boolean =>
  * Connect takes an error's code from its JSON body, or from the HTTP status when the body has none,
  * so a gateway or WAF in front of the other Console that answers 403 with `{"message":"Request
  * blocked"}` would read as that Console denying permission. The Console's own errors always carry a
- * code, so a JSON error without one fails as a request that never reached it, which is retried.
+ * code, so a JSON error without one fails as a request that never reached it, which is retried. A
+ * 404 still goes through: a Console without the API, not serving the frontend, answers it from its
+ * router with JSON but no code, and Connect reads it as unimplemented.
  */
 const consoleErrorsOnly =
   (fetchImpl: Fetch): Fetch =>
   async (input, init) => {
     const response = await fetchImpl(input, init);
-    if (response.status === 200 || !response.headers.get('content-type')?.includes('json')) {
+    if (response.status === 200 || response.status === 404 || !response.headers.get('content-type')?.includes('json')) {
       return response;
     }
     const body: unknown = await response

@@ -471,10 +471,16 @@ describe('readPeerClusterFence', () => {
     }
   );
 
-  test('reads a Console without the API, whose router answers 404 with no Connect body, as unsupported', async () => {
-    answeringWith(404, 'text/plain', '404 page not found');
-    expect(await readPeerClusterFence(PROD_CONSOLE)).toEqual({ status: 'unavailable', reason: 'unsupported' });
-  });
+  test.each([
+    ['text/plain', '404 page not found'],
+    ['application/json', JSON.stringify({ statusCode: 404, message: 'Resource was not found.' })],
+  ])(
+    'reads a Console without the API, whose router answers 404 (%s) with no Connect code, as unsupported',
+    async (type, body) => {
+      answeringWith(404, type, body);
+      expect(await readPeerClusterFence(PROD_CONSOLE)).toEqual({ status: 'unavailable', reason: 'unsupported' });
+    }
+  );
 
   test('takes the code from the Console’s own Connect error', async () => {
     answeringWith(403, 'application/json', JSON.stringify({ code: 'permission_denied', message: 'no' }));
