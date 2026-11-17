@@ -99,9 +99,11 @@ export type BrokerOwnCopy = { nodeId?: number; phase?: FencePhase; revision?: bi
 /**
  * GetClusterFenceStatus needs the controller leader; GetClusterFenceBrokerStatus doesn't. While the first
  * fails with UNAVAILABLE, this asks each broker the last status listed (or the broker that takes the
- * call, when none was) for its own copy, so Console still knows whether brokers are blocking.
+ * call, when none was) for its own copy, so Console still knows whether brokers are blocking. `since`
+ * is when that status was read, so each time the leader goes, the copies are read afresh rather than
+ * shown from the time before.
  */
-const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
+const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: number) => {
   const transport = useTransport();
   const targets = useMemo<(number | undefined)[]>(
     () => (brokers.length > 0 ? brokers.map((broker) => broker.nodeId) : [undefined]),
@@ -109,7 +111,7 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[]) => {
   );
   const results = useQueries({
     queries: targets.map((nodeId) => ({
-      queryKey: ['cluster-fence-broker-status', nodeId ?? 'self'],
+      queryKey: ['cluster-fence-broker-status', nodeId ?? 'self', since],
       queryFn: () => callUnaryMethod(transport, getClusterFenceBrokerStatus, { nodeId }),
       enabled,
       retry: false,
@@ -195,7 +197,7 @@ export const useClusterFenceStatusQuery = () => {
     [query.data]
   );
   const noLeader = available && isNoLeaderError(query.error);
-  const ownCopies = useBrokerOwnCopies(noLeader, brokers);
+  const ownCopies = useBrokerOwnCopies(noLeader, brokers, query.dataUpdatedAt);
   const known = available && access === 'ok' && !noLeader && parsed !== undefined;
   const summary = parsed ?? UNFENCED_SUMMARY;
   usePublishedFencePhase(known ? summary.phase : null);

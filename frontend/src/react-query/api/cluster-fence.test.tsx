@@ -65,6 +65,35 @@ const renderStatusQuery = (transport: Transport) => {
   return renderHook(() => useClusterFenceStatusQuery(), { wrapper });
 };
 
+/** Unfenced, no leader while every broker answers unfenced, fenced, then no leader again with brokers that never answer. */
+const twoLeaderLosses = () => {
+  const unfenced = { state: ClusterFenceState.UNFENCED, revision: 1n };
+  const noLeader = () => {
+    throw new ConnectError('no controller leader', Code.Unavailable);
+  };
+  const readController = rs
+    .fn<() => typeof fencedStatus>()
+    .mockReturnValueOnce(
+      create(GetClusterFenceStatusResponseSchema, { fence: unfenced, brokers: [{ nodeId: 1, fence: unfenced }] })
+    )
+    .mockImplementationOnce(noLeader)
+    .mockReturnValueOnce(fencedStatus)
+    .mockImplementation(noLeader);
+  const readBroker = rs
+    .fn<() => GetClusterFenceBrokerStatusResponse | Promise<GetClusterFenceBrokerStatusResponse>>()
+    .mockReturnValueOnce(create(GetClusterFenceBrokerStatusResponseSchema, { broker: { nodeId: 1, fence: unfenced } }))
+    .mockImplementation(() => new Promise<never>(rs.fn()));
+  return createRouterTransport(({ rpc }) => {
+    rpc(getClusterFenceStatus, readController);
+    rpc(getClusterFenceBrokerStatus, readBroker);
+  });
+};
+
+const refetchUntil = async (result: ReturnType<typeof renderStatusQuery>['result'], until: () => void) => {
+  await act(() => result.current.refetch());
+  await waitFor(until);
+};
+
 describe('useClusterFenceStatusQuery', () => {
   beforeEach(() => {
     flags.enableClusterFencing = true;
@@ -152,6 +181,20 @@ describe('useClusterFenceStatusQuery', () => {
       expect(result.current.blocking).toBe(true);
     }
   );
+
+  test('reads broker copies afresh each time the leader goes, never from an earlier time', async () => {
+    const { result } = renderStatusQuery(twoLeaderLosses());
+    await waitFor(() => expect(result.current.known).toBe(true));
+    await refetchUntil(result, () =>
+      expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 1n }])
+    );
+    expect(result.current.blocking).toBe(false);
+
+    await refetchUntil(result, () => expect(result.current.summary.phase).toBe('fenced'));
+    await refetchUntil(result, () => expect(result.current.known).toBe(false));
+    expect(result.current.ownCopies).toEqual([{ nodeId: 1 }]);
+    expect(result.current.blocking).toBe(true);
+  });
 
   test('stops blocking once every broker’s own copy says unfenced, whatever the last status said', async () => {
     const readController = rs
