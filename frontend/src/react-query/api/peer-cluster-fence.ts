@@ -73,7 +73,7 @@ const withDeadline = (signal: AbortSignal | undefined, timeoutMs: number) => {
  * Whether the code came from the other Console's own Connect error, which is JSON. A proxy or load
  * balancer in front of it answers with its own page, and Connect then derives the code from the HTTP
  * status alone, which would read a gateway 503 as "no controller leader" or a WAF 403 as "no
- * permission".
+ * permission". The peer transport already fails a JSON error that carries no Connect code.
  */
 const isConsoleAnswer = (error: ConnectError) => error.metadata.get('content-type')?.includes('json') ?? false;
 

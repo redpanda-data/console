@@ -33,7 +33,6 @@ import {
 } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
-import { createConnectTransport } from '@connectrpc/connect-web';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
@@ -67,6 +66,7 @@ rs.mock('hooks/use-controlplane-transport', () => ({
 }));
 
 rs.mock('./peer-console-transport', () => ({
+  ...rs.requireActual<typeof import('./peer-console-transport')>('./peer-console-transport'),
   peerConsoleTransport: (url: string) => {
     transports.peerCalls.push(url);
     const transport = transports.peers.get(url);
@@ -86,6 +86,7 @@ import { config } from 'config';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
 import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
+import { createPeerConsoleTransport } from './peer-console-transport';
 import { useShadowLinkTopology } from './shadow-link-topology';
 
 const PROD_CONSOLE = 'https://console-prod.example.com';
@@ -446,21 +447,23 @@ describe('readPeerClusterFence', () => {
     expect((failure as PeerFenceReadError).reason).toBe(reason);
   });
 
+  /** The transport the read really uses, answered by a stand-in for the network. */
   const answeringWith = (status: number, contentType: string, body: string) =>
     transports.peers.set(
       PROD_CONSOLE,
-      createConnectTransport({
-        baseUrl: PROD_CONSOLE,
-        fetch: () => Promise.resolve(new Response(body, { status, headers: { 'content-type': contentType } })),
-      })
+      createPeerConsoleTransport(PROD_CONSOLE, () =>
+        Promise.resolve(new Response(body, { status, headers: { 'content-type': contentType } }))
+      )
     );
 
   test.each([
     [503, 'text/html', '<html>Service Unavailable</html>'],
     [403, 'text/html', '<html>Request blocked</html>'],
     [502, 'application/octet-stream', ''],
+    [403, 'application/json', JSON.stringify({ message: 'Request blocked' })],
+    [503, 'application/json', JSON.stringify({ code: 'blocked', message: 'Upstream unavailable' })],
   ])(
-    'reads a gateway’s own %s page as a failed read, not as an answer from the Console',
+    'reads a gateway’s own %s %s answer as a failed read, not as an answer from the Console',
     async (status, type, body) => {
       answeringWith(status, type, body);
       const failure = await readPeerClusterFence(PROD_CONSOLE).catch((error: unknown) => error);
