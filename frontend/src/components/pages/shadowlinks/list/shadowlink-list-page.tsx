@@ -408,9 +408,13 @@ export const ShadowLinkListPage = () => {
 
   return (
     <Tabs
-      onValueChange={(value) =>
-        navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true })
-      }
+      onValueChange={(value) => {
+        navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true }).catch(
+          (error: unknown) => {
+            toast.error('Failed to open the shadow links tab', { description: String(error) });
+          }
+        );
+      }}
       value={tab}
     >
       <TabsList testId="shadowlinks-tabs" variant="underline">
