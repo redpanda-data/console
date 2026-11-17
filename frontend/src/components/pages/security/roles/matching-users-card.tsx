@@ -13,9 +13,9 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
 import { useNonMemberUserNames, useRoleMembership } from '../hooks/use-role-membership';

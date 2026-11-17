@@ -2,6 +2,10 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
+import { usePart, usePrimitive } from '@ui-sdk/react/primitive';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { agentItems } from '../lib/agent-items';
+import { baseMultiSelectAgent, type AgentItem } from '../lib/primitives/base-value-agent';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import React from 'react';
@@ -22,6 +26,8 @@ import { useControllableState } from '../lib/use-controllable-state';
 import { cn, type PortalContentProps, type PortalRootProps, type SharedProps } from '../lib/utils';
 
 export interface MultiSelectOptionItem {
+  onSelect?: (value: string, item: MultiSelectOptionItem) => void;
+  onDeselect?: (value: string, item: MultiSelectOptionItem) => void;
   label?: React.ReactNode;
   selectedTestId?: string;
   testId?: string;
@@ -47,6 +53,7 @@ interface MultiSelectContextValue {
   onSelect: (value: string, item: MultiSelectOptionItem) => void;
 
   open: boolean;
+  query?: string;
   value: string[];
 }
 
@@ -64,6 +71,9 @@ function useMultiSelect() {
 
 type MultiSelectProps = Omit<React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root>, 'onOpenChange'> &
   SharedProps & {
+    items?: AgentItem[];
+    query?: string;
+    status?: string;
     value?: string[];
     onValueChange?: (value: string[], items: MultiSelectOptionItem[]) => void;
     onSelect?: (value: string, item: MultiSelectOptionItem) => void;
@@ -89,6 +99,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   filter,
   disabled,
   maxCount,
+  items,
+  query,
+  status: _status,
   ...popoverProps
 }) => {
   const [itemCache] = React.useReducer(
@@ -114,11 +127,40 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     [onValueChangeProp, itemCache]
   );
 
-  const [value, setValue] = useControllableState({
-    prop: valueProp,
-    defaultProp: defaultValue ?? [],
-    onChange: handleValueChange,
+  const [uncontrolled, setUncontrolled] = React.useState(defaultValue ?? []);
+  const value = valueProp ?? uncontrolled;
+  const handle = usePrimitive(baseMultiSelectAgent, {
+    value,
+    disabled,
+    items: items ?? agentItems(typeof popoverProps.children === 'function' ? null : popoverProps.children),
+    valid: (next) =>
+      Array.isArray(next) &&
+      next.every((value) => typeof value === 'string') &&
+      (maxCount === undefined || next.length <= maxCount),
+    onValueChange: (next, details) =>
+      commitAgentChange(
+        () => {
+          for (const selected of next) {
+            if (value.includes(selected)) continue;
+            const item = itemCache.get(selected) ?? { value: selected };
+            item.onSelect?.(selected, item);
+            onSelectProp?.(selected, item);
+          }
+          for (const removed of value) {
+            if (next.includes(removed)) continue;
+            const item = itemCache.get(removed) ?? { value: removed };
+            item.onDeselect?.(removed, item);
+            onDeselectProp?.(removed, item);
+          }
+          handleValueChange(next);
+          if (valueProp === undefined) setUncontrolled(next);
+        },
+        next,
+        details
+      ),
   });
+  const setValue = (next: React.SetStateAction<string[]>) =>
+    handle.api.setValue(typeof next === 'function' ? next(value) : next);
 
   const [open, setOpen] = useControllableState({
     prop: openProp,
@@ -134,13 +176,11 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   );
 
   const handleSelect = React.useCallback(
-    (selectedValue: string, item: MultiSelectOptionItem) => {
+    (selectedValue: string, _item: MultiSelectOptionItem) => {
       setValue((prev: string[]) => {
         if (prev.includes(selectedValue)) {
           return prev;
         }
-
-        onSelectProp?.(selectedValue, item);
 
         return [...prev, selectedValue];
       });
@@ -149,13 +189,11 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   );
 
   const handleDeselect = React.useCallback(
-    (deselectedValue: string, item: MultiSelectOptionItem) => {
+    (deselectedValue: string, _item: MultiSelectOptionItem) => {
       setValue((prev: string[]) => {
         if (!prev.includes(deselectedValue)) {
           return prev;
         }
-
-        onDeselectProp?.(deselectedValue, item);
 
         return prev.filter((v: string) => v !== deselectedValue);
       });
@@ -167,6 +205,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     () => ({
       value: value || [],
       open,
+      query,
       onSearch,
       filter,
       disabled,
@@ -175,13 +214,21 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
       onDeselect: handleDeselect,
       itemCache,
     }),
-    [value, open, onSearch, filter, disabled, maxCount, handleSelect, handleDeselect, itemCache]
+    [value, open, query, onSearch, filter, disabled, maxCount, handleSelect, handleDeselect, itemCache]
   );
 
-  return (
-    <MultiSelectContext.Provider value={contextValue}>
-      <PopoverPrimitive.Root {...popoverProps} onOpenChange={handleOpenChange} open={open} />
-    </MultiSelectContext.Provider>
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: () => (
+        <MultiSelectContext.Provider value={contextValue}>
+          <PopoverPrimitive.Root {...popoverProps} onOpenChange={handleOpenChange} open={open} />
+        </MultiSelectContext.Provider>
+      ),
+    },
+    'div'
   );
 };
 
@@ -194,6 +241,10 @@ function PreventClick(e: React.MouseEvent | React.TouchEvent) {
   e.stopPropagation();
 }
 
+function MultiSelectAgentTrigger(props: PopoverPrimitive.Trigger.Props) {
+  return usePart(baseMultiSelectAgent, 'trigger', {}, { render: <PopoverPrimitive.Trigger {...props} /> }, 'button');
+}
+
 const MultiSelectTrigger = ({
   className,
   children,
@@ -204,7 +255,7 @@ const MultiSelectTrigger = ({
   const { disabled } = useMultiSelect();
 
   return (
-    <PopoverPrimitive.Trigger
+    <MultiSelectAgentTrigger
       disabled={disabled}
       nativeButton={false}
       ref={forwardedRef}
@@ -235,7 +286,7 @@ const MultiSelectTrigger = ({
                 }
           }
           onTouchStart={disabled ? PreventClick : props.onTouchStart}
-          role="button"
+          role="combobox"
           tabIndex={disabled ? -1 : 0}
         >
           {children}
@@ -353,12 +404,14 @@ MultiSelectList.displayName = 'MultiSelectList';
 
 interface MultiSelectContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Popup>, SharedProps {
   container?: Element;
+  keepMounted?: boolean;
 }
 
 const MultiSelectContent = ({
   className,
   children,
   container,
+  keepMounted: _keepMounted,
   testId,
   ref,
   ...props
@@ -393,7 +446,7 @@ const MultiSelectContent = ({
     if (openType === 'touch') {
       return popup;
     }
-    const input = popup.querySelector<HTMLElement>('[cmdk-input]');
+    const input = popup.querySelector<HTMLElement>('[data-slot=command-input]');
     if (input) {
       input.focus({ preventScroll: true });
       return false;
@@ -426,7 +479,8 @@ const MultiSelectContent = ({
         >
           <Command
             className={cn('max-h-96 w-full min-w-[var(--anchor-width)] px-1', className)}
-            shouldFilter={!context.onSearch}
+            query={context.query}
+            shouldFilter={!context.onSearch && context.filter !== false}
           >
             {children}
           </Command>
@@ -468,9 +522,11 @@ const MultiSelectItem = ({
             label: label || (typeof children === 'string' ? children : undefined),
             selectedTestId,
             testId,
+            onSelect: onSelectProp,
+            onDeselect: onDeselectProp,
           }
         : undefined,
-    [value, label, children, selectedTestId, testId]
+    [value, label, children, selectedTestId, testId, onSelectProp, onDeselectProp]
   );
 
   const selected = Boolean(value && contextValue.includes(value));
@@ -488,11 +544,9 @@ const MultiSelectItem = ({
       return;
     }
     if (selected) {
-      onDeselectProp?.(value, item);
       onDeselect(value, item);
     } else {
       itemCache.set(value, item);
-      onSelectProp?.(value, item);
       onSelect(value, item);
     }
   };
@@ -589,7 +643,7 @@ function renderMultiSelectOptions(list: MultiSelectOption[]) {
 
     if ('children' in option) {
       return (
-        <MultiSelectGroup heading={option.heading} key={key} testId={option.testId} value={option.value}>
+        <MultiSelectGroup heading={option.heading} key={key} testId={option.testId}>
           {renderMultiSelectOptions(option.children)}
         </MultiSelectGroup>
       );
@@ -691,7 +745,20 @@ function SimpleMultiSelect({
   );
 }
 
+function MultiSelectStatus(props: React.ComponentProps<'div'>) {
+  return (
+    <div
+      aria-live="polite"
+      className="px-3 py-2 text-body-sm text-subtle"
+      data-slot="multi-select-status"
+      role="status"
+      {...props}
+    />
+  );
+}
+
 export {
+  MultiSelectStatus,
   MultiSelect,
   MultiSelectContent,
   MultiSelectEmpty,

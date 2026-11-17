@@ -4,9 +4,7 @@ import { expect, type Locator, type Page, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 const GLOB_PATTERNS_LINK = /glob patterns/;
-const SHEET_CONTENT = '[data-slot="sheet-content"]';
-// Not `getByRole('dialog')`: Base UI's Toast.Root is one too, so it matches the messages tab's
-// own "Searching..." toast — and the Sheet, which is Base UI's Dialog.
+const PATTERN_SHEET_NAME = 'Glob Pattern Examples';
 const DIALOG_CONTENT = '[data-slot="dialog-content"]';
 
 /** Opens a dialog from the topic's message settings menu and resolves with it once visible. */
@@ -28,6 +26,13 @@ const expectColumnSettingsContent = async (dialog: Locator) => {
   await expect(dialog.getByRole('checkbox', { name: 'Offset' })).toBeVisible();
   await expect(dialog.getByRole('checkbox', { name: 'Timestamp' })).toBeVisible();
 };
+
+async function expectPatternSheetOutsideDialog(page: Page, parent: Locator) {
+  const sheet = page.getByRole('dialog', { name: PATTERN_SHEET_NAME, exact: true });
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toBeInViewport();
+  await expect(parent.getByRole('dialog', { name: PATTERN_SHEET_NAME, exact: true })).toHaveCount(0);
+}
 
 // The legacy `Tab.Messages` settings surfaces — `enableNewTopicMessagesPage` defaults to false.
 // Two Modals became Dialogs and a Drawer became a Sheet; no other spec opens any of them.
@@ -52,16 +57,12 @@ test.describe('topic messages settings dialogs', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    const dialog = await openMessageSettingsDialog(page, topicName, 'preview-fields-menu-item');
+    await openMessageSettingsDialog(page, topicName, 'preview-fields-menu-item');
+    const dialog = page.getByRole('dialog', { name: 'Preview fields', exact: true });
     await expect(dialog.getByText('Preview fields')).toBeVisible();
 
     await dialog.getByRole('button', { name: GLOB_PATTERNS_LINK }).click();
-    await expect(page.getByText('Glob Pattern Examples')).toBeVisible();
-
-    // It has to portal to the body: DialogContent is transformed and overflow-hidden, so a
-    // nested fixed panel is sized and clipped against it. `toBeVisible` cannot see that.
-    await expect(page.locator(SHEET_CONTENT)).toBeVisible();
-    await expect(dialog.locator(SHEET_CONTENT)).toHaveCount(0);
+    await expectPatternSheetOutsideDialog(page, dialog);
 
     await topicPage.deleteTopic(topicName);
   });

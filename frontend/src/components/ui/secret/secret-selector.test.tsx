@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, rs } from '@rstest/core';
 
@@ -88,7 +88,7 @@ describe('SecretSelector', () => {
     await user.type(valueInput, 'sk-test-value-that-is-long-enough');
 
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /^create secret$/i });
+    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { name: /^create secret$/i });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -120,9 +120,11 @@ describe('SecretSelector', () => {
     await user.type(screen.getByLabelText(/secret value/i), 'short');
 
     await waitFor(() => {
-      expect(screen.getByText('Secret value must be at least 20 characters')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('dialog')).getByText('Secret value must be at least 20 characters')
+      ).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /^create secret$/i })).toBeDisabled();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: /^create secret$/i })).toBeDisabled();
   });
 
   test('accepts short values when minValueLength allows them (e.g. Basic passwords)', async () => {
@@ -135,7 +137,7 @@ describe('SecretSelector', () => {
     await user.type(screen.getByLabelText(/secret name/i), 'SR_PASSWORD');
     await user.type(screen.getByLabelText(/secret value/i), 'short');
 
-    const submitButton = screen.getByRole('button', { name: /^create secret$/i });
+    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { name: /^create secret$/i });
     await waitFor(() => {
       expect(submitButton).toBeEnabled();
     });

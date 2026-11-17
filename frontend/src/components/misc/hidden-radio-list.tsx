@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Radio, RadioGroup } from '@ui-sdk/react/radio';
 import type { JSX } from 'react';
 
 import styles from './HiddenRadioList.module.scss';
@@ -37,26 +38,33 @@ export function HiddenRadioList<ValueType>({
 }: HiddenRadioListProps<ValueType>) {
   const allDisabled = rest.disabled ?? false;
 
+  const selected = options.findIndex((option) => option.value === value || option.checked);
   return (
-    <ul className={styles.radioCardGroup}>
-      {options.map((option) => {
-        const checked = (option.value === value || option.checked) ?? false;
-        const disabled = (allDisabled || option.disabled) ?? false;
-        return (
-          <li key={String(option.value)}>
-            <label>
-              <input
-                checked={checked}
-                disabled={disabled}
-                name={name}
-                onChange={() => onChange(option.value)}
-                type="radio"
-              />
-              {option.render({ ...option, checked, disabled })}
-            </label>
-          </li>
-        );
-      })}
-    </ul>
+    <RadioGroup
+      aria-label={name}
+      className={styles.radioCardGroup}
+      disabled={allDisabled}
+      name={name}
+      onValueChange={(next) => {
+        const option = options[Number(next)];
+        if (next !== null && option) {
+          onChange(option.value);
+        }
+      }}
+      value={selected < 0 ? null : String(selected)}
+    >
+      {options.map((option, index) => (
+        <Radio
+          disabled={option.disabled}
+          key={String(index)}
+          render={
+            <div className="cursor-pointer rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+          }
+          value={String(index)}
+        >
+          {option.render({ ...option, checked: index === selected, disabled: allDisabled || option.disabled })}
+        </Radio>
+      ))}
+    </RadioGroup>
   );
 }

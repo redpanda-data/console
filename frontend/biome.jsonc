@@ -89,7 +89,38 @@
         "noProcessExit": "error",
         "noPromiseExecutorReturn": "error",
         "noTailwindLegacyUtilities": "error",
-        "noTailwindRestyledComponents": "error",
+        "noTailwindRestyledComponents": {
+          "level": "error",
+          "options": {
+            "allow": [
+              {
+                "components": "EditorSurface",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "EditorSurface supplies SDK behavior only; retain the existing rich editor's container styling."
+              },
+              {
+                "components": ["ConsoleButton", "PlainButton", "PlainAnchor", "PlainLink"],
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "These unstyled actions preserve existing native-control styling; use Button variants for styled buttons."
+              },
+              {
+                "components": "InlineInput",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "InlineInput has SDK behavior but no visual styles; use Input variants for standard forms."
+              },
+              {
+                "components": "SortableItem",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "SortableItem only supplies SDK reorder behavior; the consumer owns the row layout."
+              },
+              {
+                "components": "SortableHandle",
+                "categories": ["color", "typography", "spacing", "shape", "effects", "motion", "layout"],
+                "advice": "SortableHandle is an unstyled SDK reorder control."
+              }
+            ]
+          }
+        },
         "noUnsafeUnaryMinus": "error",
         "noUselessAssignment": "error",
         "noUselessCall": "error",
@@ -117,6 +148,19 @@
               "yup": "Deprecated — use Zod instead"
             },
             "patterns": [
+              {
+                "group": [
+                  "@radix-ui/**",
+                  "cmdk",
+                  "sonner",
+                  "react-day-picker",
+                  "react-resizable-panels",
+                  "@hello-pangea/dnd",
+                  "@stepperize/react",
+                  "@stepperize/react/**"
+                ],
+                "message": "Use the Console shadcn/Base UI wrappers from components/redpanda-ui/components."
+              },
               {
                 "group": [
                   "vitest",

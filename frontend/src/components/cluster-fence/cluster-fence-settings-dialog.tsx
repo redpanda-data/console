@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useEffect } from 'react';
 import { Controller, type UseFormReturn, useForm } from 'react-hook-form';
 import {
@@ -28,7 +29,6 @@ import {
   useClusterFenceStatusQuery,
   useUpdateClusterFenceSettingsMutation,
 } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { type FenceSummary, isBlockingPhase, toExemptName } from './cluster-fence-model';

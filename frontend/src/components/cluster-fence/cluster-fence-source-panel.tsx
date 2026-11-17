@@ -19,6 +19,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusBadge } from 'components/redpanda-ui/components/status-badge';
 import { Table, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -28,7 +29,6 @@ import {
   useClusterFenceStatusQuery,
 } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import {

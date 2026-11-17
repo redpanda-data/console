@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { type FC, useEffect } from 'react';
 
 import { useUrlTableState } from '../../../hooks/use-url-table-state';
@@ -48,9 +48,13 @@ export const TopicConsumers: FC<TopicConsumersProps> = ({ topic }) => {
       accessorKey: 'groupId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Group" />,
       cell: ({ row: { original } }) => (
-        <Link params={{ groupId: encodeURIComponent(original.groupId) }} search={{} as never} to="/groups/$groupId">
+        <PlainLink
+          params={{ groupId: encodeURIComponent(original.groupId) }}
+          search={{} as never}
+          to="/groups/$groupId"
+        >
           {original.groupId}
-        </Link>
+        </PlainLink>
       ),
     },
     {

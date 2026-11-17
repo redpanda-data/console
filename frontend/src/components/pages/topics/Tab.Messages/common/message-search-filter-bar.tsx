@@ -10,6 +10,7 @@
  */
 
 import { CloseIcon, SettingsIcon } from 'components/icons';
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { FC } from 'react';
 
@@ -36,7 +37,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
             data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
           >
-            <button
+            <PlainButton
               aria-label="Edit filter"
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-edit-${e.id}`}
@@ -46,16 +47,16 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
               type="button"
             >
               <SettingsIcon size={14} />
-            </button>
-            <button
+            </PlainButton>
+            <PlainButton
               className={cn('border-x px-2 py-1 transition-colors hover:bg-accent', !e.isActive && 'line-through')}
               data-testid={`message-filter-toggle-${e.id}`}
               onClick={() => onToggle(e.id)}
               type="button"
             >
               {e.name || e.code || 'New Filter'}
-            </button>
-            <button
+            </PlainButton>
+            <PlainButton
               aria-label="Remove filter"
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-remove-${e.id}`}
@@ -63,7 +64,7 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
               type="button"
             >
               <CloseIcon size={14} />
-            </button>
+            </PlainButton>
           </div>
         ))}
       </div>

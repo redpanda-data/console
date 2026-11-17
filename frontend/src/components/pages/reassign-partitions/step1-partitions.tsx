@@ -10,7 +10,7 @@
  */
 
 import { ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   DataTable,
@@ -379,11 +379,11 @@ function renderPartitionError(partition: Partition) {
         delay={200}
         openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <PlainButton aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={19} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </PlainButton>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}
@@ -403,11 +403,11 @@ function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
         delay={200}
         openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <PlainButton aria-label="Partition error" type="button">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={20} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </PlainButton>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}

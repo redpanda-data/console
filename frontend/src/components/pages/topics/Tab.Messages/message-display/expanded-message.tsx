@@ -27,7 +27,11 @@ const ExpandedMessageFooter: FC<{ children?: ReactNode; onDownloadRecord?: () =>
   <div className="my-4 flex justify-end gap-2">
     {children}
     {Boolean(onDownloadRecord) && (
-      <Button onClick={onDownloadRecord} variant="outline">
+      <Button
+        data-agent-confirm="Downloads Kafka record content, which may contain sensitive data."
+        onClick={onDownloadRecord}
+        variant="outline"
+      >
         Download Record
       </Button>
     )}

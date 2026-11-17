@@ -1,6 +1,8 @@
 'use client';
 
 import { Menu as DropdownMenuPrimitive } from '@base-ui/react/menu';
+import { usePart, mergeProps } from '@ui-sdk/react/primitive';
+import { useBasePressAgent } from '../lib/use-base-press-agent';
 import { Check, ChevronRight, Circle, SearchIcon, X } from 'lucide-react';
 import React from 'react';
 
@@ -337,28 +339,39 @@ function DropdownMenuItem({
   children,
   inset,
   disabled,
+  onClick,
   variant = 'default',
   ...props
 }: DropdownMenuItemProps) {
-  return (
-    <DropdownMenuPrimitive.Item
-      {...props}
-      disabled={disabled}
-      render={
-        <div
-          className={cn(
-            "data-[variant=destructive]:*:[svg]:!text-destructive relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-none transition-colors data-[variant=destructive]:data-[highlighted]:bg-destructive-wash data-[variant=destructive]:data-[highlighted]:text-destructive data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[variant=destructive]:text-destructive data-[disabled]:opacity-50 motion-reduce:transition-none [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-            inset && 'pl-8',
-            className
-          )}
-          data-inset={inset}
-          data-slot="dropdown-menu-item"
-          data-variant={variant}
-        />
-      }
-    >
-      {children}
-    </DropdownMenuPrimitive.Item>
+  const { handle, ref, onClick: press } = useBasePressAgent(onClick, disabled, 'menu-item');
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <DropdownMenuPrimitive.Item
+          {...mergeProps(partProps, props, { ref })}
+          disabled={disabled || state.pending}
+          onClick={press}
+          render={
+            <div
+              className={cn(
+                "data-[variant=destructive]:*:[svg]:!text-destructive relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-body outline-none transition-colors data-[variant=destructive]:data-[highlighted]:bg-destructive-wash data-[variant=destructive]:data-[highlighted]:text-destructive data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[variant=destructive]:text-destructive data-[disabled]:opacity-50 motion-reduce:transition-none [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+                inset && 'pl-8',
+                className
+              )}
+              data-inset={inset}
+              data-slot="dropdown-menu-item"
+              data-variant={variant}
+            />
+          }
+        >
+          {children}
+        </DropdownMenuPrimitive.Item>
+      ),
+    },
+    'div'
   );
 }
 

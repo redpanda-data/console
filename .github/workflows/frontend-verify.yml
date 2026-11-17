@@ -113,6 +113,20 @@ jobs:
           REACT_APP_DEV_HINT=true
           export REACT_APP_CONSOLE_GIT_SHA REACT_APP_CONSOLE_GIT_REF REACT_APP_BUILD_TIMESTAMP REACT_APP_DEV_HINT
           bun run build
+      - name: Install Chromium and system dependencies
+        run: bun run install:chromium --with-deps
+      - name: Check SDK accessibility patterns in Chromium
+        run: bun run test:browser
+      - name: Check production UI and WebMCP workflows
+        run: bun run test:bundle
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: frontend-browser-results
+          path: frontend/.rstest
+          include-hidden-files: true
+          retention-days: 2
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v7
         with:

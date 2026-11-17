@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useCopyToClipboard } from 'components/redpanda-ui/lib/use-copy-to-clipboard';
 import { isTypingTarget } from 'hooks/use-hot-key';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
 
 export type KeyboardNavOptions = {
   /** Row keys in on-screen (sorted, paginated) order. */

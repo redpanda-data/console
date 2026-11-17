@@ -603,15 +603,20 @@ export class ShadowlinkPage {
   /**
    * Actions
    */
+  private async confirmFailover() {
+    const dialog = this.page.getByRole('alertdialog', { name: 'Confirm Failover', exact: true });
+    const confirmButton = dialog.getByRole('button', { name: 'Confirm Failover', exact: true });
+    await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
+    // The RPC can finish before modal exit releases controls behind the dialog.
+    await expect(dialog).toBeHidden();
+  }
+
   async performFailover() {
     // Find "Fail over all topics" button specifically (not individual topic failover buttons)
     const failoverButton = this.page.getByRole('button', { name: /^fail ?over all topics$/i });
     await failoverButton.click();
 
-    // Confirm in dialog and wait for the failover request to complete. The confirm button closes
-    // the dialog at once, so the response is the milestone; its listener is armed before the click.
-    const confirmButton = this.page.getByTestId('confirm-failover');
-    await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
+    await this.confirmFailover();
   }
 
   async failoverTopic(topicName: string) {
@@ -620,9 +625,7 @@ export class ShadowlinkPage {
     const failoverButton = topicRow.getByRole('button', { name: /failover/i });
     await failoverButton.click();
 
-    // Confirm in dialog and wait for the failover request, so the refresh below sees its result
-    const confirmButton = this.page.getByTestId('confirm-failover');
-    await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
+    await this.confirmFailover();
 
     // Click the refresh button for the replicated topics table and wait for the refreshed list
     // (the response listener is armed before the click)

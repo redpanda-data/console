@@ -12,7 +12,7 @@
 import { ConnectError } from '@connectrpc/connect';
 import { useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button, buttonVariants, PlainAnchor } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -187,12 +187,12 @@ const OidcAuthComponent = () => (
   <div>
     {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. `rounded-md`
         because the radius lives on the Button component, not in `buttonVariants`. */}
-    <a
+    <PlainAnchor
       className={cn(buttonVariants({ variant: 'brand' }), 'w-full rounded-md')}
       href={`${appConfig.grpcBasePath}/auth/login/oidc`}
     >
       Log in with OIDC
-    </a>
+    </PlainAnchor>
   </div>
 );
 

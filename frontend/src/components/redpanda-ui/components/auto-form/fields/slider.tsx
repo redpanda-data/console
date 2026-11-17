@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
+
+import { normalizeNumberValue, parseNumericProp, resolveNumericStep, useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import { Slider } from '../../slider';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
-import { normalizeNumberValue, parseNumericProp, resolveNumericStep, useFieldTestIds } from './shared';
 
 // Track + companion numeric input bound to the same value: the track for
 // coarse drags, the input for precise entry below a drag's resolution.

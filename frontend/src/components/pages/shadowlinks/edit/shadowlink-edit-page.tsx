@@ -15,9 +15,9 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
 
@@ -148,7 +148,7 @@ const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: 
     // Show toast notification with tab information
     toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
       description: `Navigated to ${tabName} tab`,
-      testId: 'validation-error-toast',
+      data: { testId: 'validation-error-toast' },
     });
   }
 };

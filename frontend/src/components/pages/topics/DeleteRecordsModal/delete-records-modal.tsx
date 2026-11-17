@@ -39,9 +39,9 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type JSX, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
@@ -408,8 +408,7 @@ const ManualOffsetSlider = ({
               updateOffsetFromSlider(sliderValue);
             }
           }}
-          onChange={(e) => {
-            const { value } = e.target;
+          onValueChange={(value) => {
             if (!DIGITS_ONLY_REGEX.test(value)) {
               return;
             }

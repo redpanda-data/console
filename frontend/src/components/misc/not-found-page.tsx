@@ -1,10 +1,11 @@
-import { Link, useLocation, useRouter } from '@tanstack/react-router';
+import { useLocation, useRouter } from '@tanstack/react-router';
 
 import { getLegacyAiDestination } from './legacy-ai-route';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import rocketPanda from '../../assets/redpanda/RocketPanda.svg';
 import { config } from '../../config';
-import { Button, buttonVariants } from '../redpanda-ui/components/button';
+import { Button, buttonVariants, PlainAnchor } from '../redpanda-ui/components/button';
+import { PlainLink } from '../redpanda-ui/components/plain-link';
 import { cn } from '../redpanda-ui/lib/utils';
 
 export const NotFoundPage = () => {
@@ -21,9 +22,9 @@ export const NotFoundPage = () => {
           <p className="max-w-xl text-muted-foreground">
             AI agents, MCP servers, knowledge bases, and transcripts are now available in Redpanda AI.
           </p>
-          <a className={cn(buttonVariants(), 'rounded-md')} href={legacyAiDestination}>
+          <PlainAnchor className={cn(buttonVariants(), 'rounded-md')} href={legacyAiDestination}>
             Open Redpanda AI
-          </a>
+          </PlainAnchor>
           <Button
             onClick={() => {
               router.history.back();
@@ -52,9 +53,9 @@ export const NotFoundPage = () => {
         >
           Go back
         </Button>
-        <Link className={buttonVariants({ variant: 'link' })} to="/">
+        <PlainLink className={buttonVariants({ variant: 'link' })} to="/">
           Return home
-        </Link>
+        </PlainLink>
       </div>
     </div>
   );

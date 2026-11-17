@@ -2,7 +2,7 @@
 
 import clsx from 'clsx';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import {
   Card,
   CardContent,
@@ -496,7 +496,7 @@ const AclRules = ({
                 <div className="mb-3 flex items-center justify-between">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
                   <div className="inline-flex h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle">
-                    <button
+                    <PlainButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeCustom
@@ -508,8 +508,8 @@ const AclRules = ({
                       type="button"
                     >
                       Custom
-                    </button>
-                    <button
+                    </PlainButton>
+                    <PlainButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeAllowAll
@@ -521,8 +521,8 @@ const AclRules = ({
                       type="button"
                     >
                       Allow all
-                    </button>
-                    <button
+                    </PlainButton>
+                    <PlainButton
                       className={clsx(
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeDenyAll
@@ -534,7 +534,7 @@ const AclRules = ({
                       type="button"
                     >
                       Deny all
-                    </button>
+                    </PlainButton>
                   </div>
                 </div>
 

@@ -30,7 +30,7 @@ type DeleteUserConfirmModalProps = {
   userName: string;
   onConfirm: () => Promise<void> | void;
 } & (
-  | { buttonEl: React.ReactElement; open?: never; onOpenChange?: never }
+  | { buttonEl: React.ReactElement<Record<string, unknown>>; open?: never; onOpenChange?: never }
   | { buttonEl?: never; open: boolean; onOpenChange: (open: boolean) => void }
 );
 

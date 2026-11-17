@@ -182,7 +182,7 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
 
   return (
     <AlertDialog onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger nativeButton={triggerVariant === 'button'} render={renderTrigger()} />
+      <AlertDialogTrigger render={renderTrigger()} />
       <DialogBody
         children={children}
         confirmButtonTestId={confirmButtonTestId}

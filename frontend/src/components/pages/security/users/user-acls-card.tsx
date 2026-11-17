@@ -10,9 +10,9 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';

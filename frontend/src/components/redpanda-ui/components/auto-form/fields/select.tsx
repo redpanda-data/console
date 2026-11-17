@@ -1,6 +1,5 @@
 'use client';
 
-import { useFieldContext } from '../../field';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../../select';
 import { useAutoForm } from '../context';
 import type { AutoFormFieldProps } from '../core-types';
@@ -41,7 +40,6 @@ function renderProviderSelectedValue(value: unknown, options: DataProviderOption
 
 function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
-  const { errorId } = useFieldContext();
   const { dataProviders } = useAutoForm();
   const providerId = readDataProviderId(field);
   const provider = resolveDataProvider(dataProviders, providerId);
@@ -79,7 +77,6 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
       value={currentValue}
     >
       <SelectTrigger
-        aria-describedby={error ? errorId : undefined}
         aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
         className={error ? 'border-destructive' : ''}
@@ -140,7 +137,6 @@ function SelectFieldFromProvider({
   provider: () => { options: DataProviderOption[]; isLoading?: boolean; error?: unknown };
   testIds: ReturnType<typeof useFieldTestIds>;
 }) {
-  const { errorId } = useFieldContext();
   const { options, isLoading, error: providerError } = provider();
 
   if (providerError) {
@@ -174,7 +170,6 @@ function SelectFieldFromProvider({
       value={currentValue}
     >
       <SelectTrigger
-        aria-describedby={error ? errorId : undefined}
         aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
         className={error ? 'border-destructive' : ''}

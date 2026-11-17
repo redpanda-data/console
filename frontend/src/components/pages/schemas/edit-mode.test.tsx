@@ -19,7 +19,7 @@ const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
 const mockMutateContext = rs.fn();
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: {
     success: rs.fn(),
     error: rs.fn(),
@@ -83,12 +83,12 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   useSchemaDetailsQuery,
   useSchemaModeQuery,
   useSchemaRegistryContextsQuery,
 } from 'react-query/api/schema-registry';
-import { toast } from 'sonner';
 import { api } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 

@@ -3,6 +3,10 @@
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type React from 'react';
+import { usePart, usePrimitive } from '@ui-sdk/react/primitive';
+import { agentItems } from '../lib/agent-items';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { baseSelectAgent, type BaseValueDetails } from '../lib/primitives/base-value-agent';
 
 import { groupItemClasses, useGroup } from './group';
 import { usePortalContainer } from '../lib/use-portal-container';
@@ -11,17 +15,46 @@ import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 // Pin Base UI's generic `Value` to `string`, casting at the boundary for a string-typed `onValueChange`.
 type SelectRootProps = Omit<React.ComponentProps<typeof SelectPrimitive.Root>, 'onValueChange'> &
   SharedProps & {
-    onValueChange?: (value: string, eventDetails: SelectPrimitive.Root.ChangeEventDetails) => void;
+    onValueChange?: (value: string, eventDetails: BaseValueDetails) => void;
   };
 
-function Select({ testId, onValueChange, ...props }: SelectRootProps) {
-  return (
-    <SelectPrimitive.Root
-      data-slot="select"
-      data-testid={testId}
-      onValueChange={onValueChange ? (value, eventDetails) => onValueChange(value as string, eventDetails) : undefined}
-      {...props}
-    />
+function Select({ testId, onValueChange, value, defaultValue, disabled, children, ...props }: SelectRootProps) {
+  const items = agentItems(children);
+  const handle = usePrimitive(baseSelectAgent, {
+    value: value === '' ? null : (value as string | null | undefined),
+    defaultValue: defaultValue === '' ? null : (defaultValue as string | null | undefined),
+    disabled,
+    readOnly: props.readOnly,
+    items,
+    valid: (value) => value === null || typeof value === 'string',
+    onValueChange: (next, details) => {
+      if (next === null) {
+        details.cancel();
+        return;
+      }
+      commitAgentChange(onValueChange, next, details);
+    },
+  });
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (_, state) => (
+        <SelectPrimitive.Root
+          {...props}
+          items={props.items ?? Object.fromEntries(items.map((item) => [item.value, item.label]))}
+          disabled={disabled}
+          value={state.value}
+          onValueChange={(next, details) => {
+            if (!handle.api.setValue(next as string | null, details.event)) details.cancel();
+          }}
+        >
+          {children}
+        </SelectPrimitive.Root>
+      ),
+    },
+    'div'
   );
 }
 
@@ -68,13 +101,17 @@ type SelectTriggerProps = SelectPrimitive.Trigger.Props &
     size?: 'sm' | 'default' | 'lg';
   };
 
+function SelectAgentTrigger(props: SelectPrimitive.Trigger.Props) {
+  return usePart(baseSelectAgent, 'trigger', {}, { render: <SelectPrimitive.Trigger {...props} /> }, 'button');
+}
+
 function SelectTrigger({ className, size = 'default', children, testId, ...props }: SelectTriggerProps) {
   const { position: groupPosition, attached } = useGroup();
 
   const positionClasses = groupItemClasses(attached, groupPosition);
 
   return (
-    <SelectPrimitive.Trigger
+    <SelectAgentTrigger
       // No pressed step: Base UI opens the listbox on mousedown and the portal takes the
       // pointer, so the trigger stops matching `:active` at the moment it would paint — and
       // `data-popup-open` cannot carry it either, since `hover:not-disabled:` is one selector
@@ -98,7 +135,7 @@ function SelectTrigger({ className, size = 'default', children, testId, ...props
           </span>
         }
       />
-    </SelectPrimitive.Trigger>
+    </SelectAgentTrigger>
   );
 }
 
@@ -168,9 +205,19 @@ function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) 
   );
 }
 
+function SelectAgentItem(props: SelectPrimitive.Item.Props) {
+  return usePart(
+    baseSelectAgent,
+    'item',
+    { value: props.value, disabled: props.disabled },
+    { render: <SelectPrimitive.Item {...props} /> },
+    'div'
+  );
+}
+
 function SelectItem({ className, children, testId, ...props }: SelectPrimitive.Item.Props & SharedProps) {
   return (
-    <SelectPrimitive.Item
+    <SelectAgentItem
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-body outline-hidden *:last:flex *:last:items-center *:last:gap-2 data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
@@ -185,7 +232,7 @@ function SelectItem({ className, children, testId, ...props }: SelectPrimitive.I
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    </SelectPrimitive.Item>
+    </SelectAgentItem>
   );
 }
 

@@ -1,6 +1,5 @@
 'use client';
 
-import { useFieldContext } from '../../field';
 import { ToggleGroup, ToggleGroupItem } from '../../toggle-group';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
@@ -9,14 +8,12 @@ import { getControlLabel, getFlatOptions, hasNumericOptions, renderOptionLabel, 
 
 function ToggleGroupFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
-  const { errorId } = useFieldContext();
   const numericOptions = hasNumericOptions(field);
   const value = inputProps.value === undefined || inputProps.value === null ? '' : String(inputProps.value);
   const options = getFlatOptions(field);
 
   return (
     <ToggleGroup
-      aria-describedby={error ? errorId : undefined}
       aria-invalid={Boolean(error)}
       aria-label={getControlLabel(label, field)}
       // Multi-select not supported yet — use multiselect field type instead

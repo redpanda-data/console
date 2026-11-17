@@ -148,7 +148,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
         path={'new-connector.yaml'}
         wrapperProps={{
           className: 'kowlEditor',
-          style: { minWidth: 0, width: '100px', display: 'flex', flexBasis: '100%' },
+          style: { minWidth: 0, width: '100%', display: 'flex', flexBasis: '100%' },
         }}
         {...rest}
         beforeMount={(monaco) => {

@@ -11,7 +11,7 @@
 
 import { MoreHorizontalIcon } from 'components/icons';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import type { DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
 import {
   DropdownMenu,
@@ -19,8 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { MessageKeyPreview } from './message-display/message-key-preview';
 import { MessagePreview } from './message-display/message-preview';
@@ -148,7 +148,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(keyDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Key{' '}
-            <button
+            <PlainButton
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
@@ -156,7 +156,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
               type="button"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[keyDeserializer]}</Badge>
-            </button>
+            </PlainButton>
           </div>
         ) : (
           'Key'
@@ -177,7 +177,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(valueDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Value{' '}
-            <button
+            <PlainButton
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
@@ -185,7 +185,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
               type="button"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[valueDeserializer]}</Badge>
-            </button>
+            </PlainButton>
           </div>
         ) : (
           'Value'

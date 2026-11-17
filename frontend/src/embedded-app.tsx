@@ -45,7 +45,8 @@ import queryClient from 'query-client';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
-import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
+import { Toaster } from './components/redpanda-ui/components/toast';
+import { ConsoleWebMcp } from './components/redpanda-ui/components/webmcp';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -71,6 +72,8 @@ export interface EmbeddedProps extends SetConfigArguments {
    * (`https://cloud.redpanda.com/NAMESPACE/CLUSTER/`).
    */
   basePath?: string;
+  /** Opt in only when Console owns WebMCP in this document. Defaults to false. */
+  enableWebMcp?: boolean;
   /**
    * LaunchDarkly feature flags to be used in console UI when in embedded mode.
    */
@@ -153,12 +156,14 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
       {/* showToast viewport, above the router so the error boundary and login can toast */}
-      <BaseUiToaster testId="console-toasts" />
-      <TransportProvider transport={dataplaneTransport}>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </TransportProvider>
+      <Toaster testId="console-toasts" />
+      <ConsoleWebMcp enabled={p.enableWebMcp ?? false}>
+        <TransportProvider transport={dataplaneTransport}>
+          <QueryClientProvider client={queryClient}>
+            <RouterProvider router={router} />
+          </QueryClientProvider>
+        </TransportProvider>
+      </ConsoleWebMcp>
     </CustomFeatureFlagProvider>
   );
 }

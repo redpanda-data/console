@@ -33,9 +33,9 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { KeyValueField } from 'components/redpanda-ui/components/key-value-field';
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type UseFormReturn, useFormContext } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { EgressGatewayField } from './egress-gateway-field';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';

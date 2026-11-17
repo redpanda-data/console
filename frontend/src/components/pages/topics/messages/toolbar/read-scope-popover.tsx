@@ -10,7 +10,7 @@
  */
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
@@ -81,7 +81,7 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
   const meta = READ_SCOPE_META[mode];
   const Icon = meta.icon;
   return (
-    <button
+    <PlainButton
       className={cn(
         'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
         selected && 'bg-selected-wash'
@@ -96,7 +96,7 @@ const ModeRow = ({ mode, selected, onSelect }: { mode: ReadScopeMode; selected: 
         <span className="mt-0.5 block text-body-sm leading-relaxed text-muted-foreground">{meta.description}</span>
       </span>
       {selected && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-    </button>
+    </PlainButton>
   );
 };
 
@@ -195,7 +195,7 @@ export const ReadScopePopover = ({
               </span>
               <div className="h-px flex-1 bg-border" />
             </div>
-            <button
+            <PlainButton
               className={cn(
                 'flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent',
                 liveTail && 'bg-success-wash hover:bg-success-wash'
@@ -215,7 +215,7 @@ export const ReadScopePopover = ({
                 </span>
               </span>
               {liveTail && <TonedIcon className="mt-0.5 size-4 shrink-0" icon={CheckIcon} tone="primary" />}
-            </button>
+            </PlainButton>
           </div>
 
           <div className="flex w-[290px] shrink-0 flex-col gap-3 border-l p-4">

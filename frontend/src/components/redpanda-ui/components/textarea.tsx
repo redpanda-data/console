@@ -1,11 +1,12 @@
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { Textarea as TextareaPrimitive } from '@ui-sdk/react/textarea';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
-import { useFieldContext } from './field';
 import { cn, type SharedProps } from '../lib/utils';
 
 const textareaVariants = cva(
-  '!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full rounded-md border bg-input-fill text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] selection:bg-selection selection:text-selection-foreground placeholder:text-placeholder hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none md:text-body',
+  'flex w-full rounded-md border !border-input bg-input-fill text-body-lg shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none selection:bg-selection selection:text-selection-foreground placeholder:text-placeholder hover:not-disabled:!border-input-hover hover:not-disabled:bg-input-fill-hover focus-visible:!border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:!border-destructive aria-invalid:ring-invalid motion-reduce:transition-none md:text-body',
   {
     variants: {
       size: {
@@ -28,17 +29,25 @@ const textareaVariants = cva(
   }
 );
 
-interface TextareaProps extends React.ComponentProps<'textarea'>, VariantProps<typeof textareaVariants>, SharedProps {}
+interface TextareaProps
+  extends Omit<React.ComponentProps<'textarea'>, 'onSubmit'>,
+    VariantProps<typeof textareaVariants>,
+    SharedProps {
+  onValueChange?: React.ComponentProps<typeof TextareaPrimitive>['onValueChange'];
+}
 
-function Textarea({ className, size, resize, testId, ...props }: TextareaProps) {
-  const fieldCtx = useFieldContext();
+function Textarea({ className, size, resize, testId, onValueChange, onChange, ...props }: TextareaProps) {
+  const nativeProps: React.ComponentProps<'textarea'> = props;
+  const { onSubmit: _nativeSubmit, ...elementProps } = nativeProps;
   return (
-    <textarea
-      {...props}
-      aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
-      aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
+    <TextareaPrimitive
+      {...elementProps}
+      onChange={onValueChange ? undefined : onChange}
+      onValueChange={(value, details) => commitAgentChange(onValueChange, value, details)}
       className={cn(textareaVariants({ size, resize }), className)}
       data-slot="textarea"
+      defaultValue={props.defaultValue === undefined ? undefined : String(props.defaultValue)}
+      value={props.value === undefined ? undefined : String(props.value)}
       {...(testId !== undefined && { 'data-testid': testId })}
     />
   );

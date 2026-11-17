@@ -46,9 +46,9 @@ import { Code, ConnectError, type Interceptor, type Transport } from '@connectrp
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 
 import { FederatedProviders } from './federated-providers';
 import { federatedRootRoute } from './federated-routes';
@@ -56,7 +56,7 @@ import { TokenManager } from './token-manager';
 import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { Alert, AlertDescription } from '../components/redpanda-ui/components/alert';
-import { Button } from '../components/redpanda-ui/components/button';
+import { Button, PlainButton } from '../components/redpanda-ui/components/button';
 import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
@@ -151,13 +151,13 @@ class ConsoleErrorBoundary extends Component<
             {this.state.error ? (
               <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
-            <button
+            <PlainButton
               className="mt-4 rounded-md bg-surface-informative px-4 py-2 text-body font-medium text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
             >
               Try Again
-            </button>
+            </PlainButton>
           </div>
         </div>
       );
@@ -202,6 +202,7 @@ function ConsoleAppInner({
   config: configOverrides,
   featureFlags,
   onOpenCluster,
+  enableWebMcp,
 }: ConsoleAppProps) {
   // Kept out of setup(), which would tear Console down whenever the host passed a new callback.
   useEffect(() => {
@@ -251,7 +252,12 @@ function ConsoleAppInner({
   return (
     <FederatedInitialization initialization={initialization}>
       <ConsoleErrorBoundary onError={onError}>
-        <FederatedProviders featureFlags={featureFlags} queryClient={queryClient} transport={dataplaneTransport}>
+        <FederatedProviders
+          enableWebMcp={enableWebMcp}
+          featureFlags={featureFlags}
+          queryClient={queryClient}
+          transport={dataplaneTransport}
+        >
           <RouterProvider router={router} />
         </FederatedProviders>
       </ConsoleErrorBoundary>

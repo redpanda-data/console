@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import { MoreHorizontalIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import {
@@ -32,7 +31,7 @@ import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
-import { Button } from '../../../redpanda-ui/components/button';
+import { Button, PlainButton } from '../../../redpanda-ui/components/button';
 import {
   type DataTableColumnDef,
   DataTableColumnHeader,
@@ -46,6 +45,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../redpanda-ui/components/dropdown-menu';
+import { PlainLink } from '../../../redpanda-ui/components/plain-link';
 import { Popover, PopoverContent, PopoverTrigger } from '../../../redpanda-ui/components/popover';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
@@ -116,9 +116,9 @@ const userColumns: DataTableColumnDef<UserListEntry>[] = [
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="User" />,
     cell: ({ row: { original: entry } }) => (
-      <Link params={{ userName: entry.name }} to="/security/users/$userName/details">
+      <PlainLink params={{ userName: entry.name }} to="/security/users/$userName/details">
         {entry.name}
-      </Link>
+      </PlainLink>
     ),
     filterFn: nameFilterFn,
   },
@@ -215,7 +215,7 @@ export const UsersTabNew: FC = () => {
           }
         >
           <ListLayoutSearchInput
-            onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
+            onValueChange={(value) => table.getColumn('name')?.setFilterValue(value || undefined)}
             placeholder="Filter by name (regexp)..."
             value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           />
@@ -277,14 +277,14 @@ const UserRolesCell = ({ userName }: { userName: string }) => {
   return (
     <div className="flex flex-wrap gap-1">
       {roles.map((r) => (
-        <Link
+        <PlainLink
           key={r.name}
           params={{ roleName: r.name }}
           search={{ host: undefined }}
           to="/security/roles/$roleName/details"
         >
           <TagsValue>{r.name}</TagsValue>
-        </Link>
+        </PlainLink>
       ))}
     </div>
   );
@@ -305,7 +305,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
         className="m-0.5"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        render={<Badge render={<button type="button" />} tone="default" variant="subtle" />}
+        render={<Badge render={<PlainButton type="button" />} tone="default" variant="subtle" />}
       >
         <span className="leading-tight">{`${directAcls.length} ${pluralize(directAcls.length, 'ACL')}`}</span>
       </PopoverTrigger>

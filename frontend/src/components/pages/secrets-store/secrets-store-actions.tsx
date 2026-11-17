@@ -17,11 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui/delete-resource-alert-dialog';
 import { MoreHorizontal, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useListResourcesForSecretQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 
 import { ResourceInUseAlert } from './resource-in-use-alert';
 import type { SecretTableRow } from './secrets-store-list-page';
