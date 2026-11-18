@@ -34,6 +34,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
@@ -116,8 +117,8 @@ const TopicTabPermissionNotice = ({
         </EmptyMedia>
         <EmptyTitle>Not authorized to {copy.activity}</EmptyTitle>
         <EmptyDescription>
-          You don&apos;t have the <code className="font-mono">{copy.operation}</code> permission on topic{' '}
-          <code className="font-mono">{topicName}</code>. Ask an administrator to grant it.
+          You don&apos;t have the <InlineCode>{copy.operation}</InlineCode> permission on topic{' '}
+          <InlineCode>{topicName}</InlineCode>. Ask an administrator to grant it.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
