@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
@@ -230,4 +231,36 @@ func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, table.expected, actual, "expected other result for all partitions with filter enable. Case: ", i)
 	}
+}
+
+func TestConsumeClientOptsAreIndependent(t *testing.T) {
+	baseOpts := make([]kgo.Opt, 1, 2)
+	baseOpts[0] = kgo.SeedBrokers("localhost:9092")
+	baseClient, err := kgo.NewClient(baseOpts...)
+	require.NoError(t, err)
+	t.Cleanup(baseClient.Close)
+
+	firstPartitions := map[string]map[int32]kgo.Offset{
+		"first": {
+			0: kgo.NewOffset().At(0),
+		},
+	}
+	secondPartitions := map[string]map[int32]kgo.Offset{
+		"second": {
+			1: kgo.NewOffset().At(10),
+		},
+	}
+
+	firstOpts := consumeClientOpts(baseClient, firstPartitions)
+	secondOpts := consumeClientOpts(baseClient, secondPartitions)
+
+	firstClient, err := kgo.NewClient(firstOpts...)
+	require.NoError(t, err)
+	t.Cleanup(firstClient.Close)
+	secondClient, err := kgo.NewClient(secondOpts...)
+	require.NoError(t, err)
+	t.Cleanup(secondClient.Close)
+
+	assert.Equal(t, firstPartitions, firstClient.OptValue(kgo.ConsumePartitions))
+	assert.Equal(t, secondPartitions, secondClient.OptValue(kgo.ConsumePartitions))
 }
