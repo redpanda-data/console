@@ -71,7 +71,8 @@ import { installDarkModeAvailabilitySync, isDarkModeAvailable, themeInitFor } fr
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
-  baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
+  // '' is not nullish, so it would skip window.BASE_URL.
+  baseUrl: getGrpcBasePath(),
   interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   jsonOptions: {
     registry: protobufRegistry,
