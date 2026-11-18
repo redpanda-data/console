@@ -55,6 +55,11 @@ func TestToProtoEncoding(t *testing.T) {
 			expectedProto: v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO,
 		},
 		{
+			name:          "AvroGlue encoding",
+			serdeEncoding: serde.PayloadEncodingAvroGlue,
+			expectedProto: v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO_GLUE,
+		},
+		{
 			name:          "Binary encoding",
 			serdeEncoding: serde.PayloadEncodingBinary,
 			expectedProto: v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY,
@@ -121,6 +126,11 @@ func TestFromProtoEncoding(t *testing.T) {
 			expectedSerde: serde.PayloadEncodingAvro,
 		},
 		{
+			name:          "AvroGlue encoding",
+			protoEncoding: v1alpha.PayloadEncoding_PAYLOAD_ENCODING_AVRO_GLUE,
+			expectedSerde: serde.PayloadEncodingAvroGlue,
+		},
+		{
 			name:          "Binary encoding",
 			protoEncoding: v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY,
 			expectedSerde: serde.PayloadEncodingBinary,
@@ -159,6 +169,7 @@ func TestEncodingRoundTrip(t *testing.T) {
 		serde.PayloadEncodingJSON,
 		serde.PayloadEncodingJSONSchema,
 		serde.PayloadEncodingAvro,
+		serde.PayloadEncodingAvroGlue,
 		serde.PayloadEncodingBinary,
 		serde.PayloadEncodingCbor,
 		serde.PayloadEncodingNull,
