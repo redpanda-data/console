@@ -10,7 +10,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { memo, useMemo } from 'react';
-import { type UseFormReturn, useWatch } from 'react-hook-form';
+import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 
 import type { AddTopicFormData } from '../types/wizard';
@@ -123,6 +123,9 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
     // stay interactive in both cases so the user can switch back off "infinite".
     const lockedForEdit = isExistingTopic || disabled;
     const isValueDisabled = isRetentionUnitDisabled(unitValue) || lockedForEdit;
+    // Below the attached row rather than in the value's FormItem, which would stretch the unit select.
+    const { errors } = useFormState({ control: form.control, name: valueField });
+    const valueError = errors[valueField]?.message;
 
     return (
       <div className="space-y-2">
@@ -174,6 +177,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
             )}
           />
         </div>
+        {valueError ? <p className="text-body text-destructive">{String(valueError)}</p> : null}
       </div>
     );
   }
