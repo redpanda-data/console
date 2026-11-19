@@ -154,7 +154,7 @@ export type SqlRole = 'admin' | 'viewer';
 // Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
 // "ARRAY<TEXT>"/"LIST<TEXT>" (Iceberg) — returning the element type, or null
 // when the type is not an array.
-const ARRAY_WRAPPER_RE = /^(?:ARRAY|LIST)\s*<(.+)>$/i;
+const ARRAY_WRAPPER_RE = /^(?:ARRAY|LIST)\s*<(?<elementType>.+)>$/iu;
 
 export function arrayElementPgType(pgType: string): string | null {
   const t = pgType.trim();
@@ -208,6 +208,6 @@ export function hintFromError(error: unknown): string | undefined {
 
 // Word-boundary anchored so geometric/temporal names that merely contain a
 // numeric token (POINT → INT, INTERVAL → INT) don't get misread as numeric.
-const NUMERIC_TYPE = /\b(?:INT|INTEGER|SMALLINT|BIGINT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/;
-const BOOL_TYPE = /BOOL/;
-const TEMPORAL_TYPE = /(TIMESTAMP|DATE|TIME|INTERVAL)/;
+const NUMERIC_TYPE = /\b(?:INT|INTEGER|SMALLINT|BIGINT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/u;
+const BOOL_TYPE = /BOOL/u;
+const TEMPORAL_TYPE = /(?:TIMESTAMP|DATE|TIME|INTERVAL)/u;

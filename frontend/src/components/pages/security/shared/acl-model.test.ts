@@ -33,7 +33,6 @@ import {
   ResourcePatternTypeLiteral,
   ResourcePatternTypePrefix,
   ResourceTypeTopic,
-  type Rule,
 } from './acl-model';
 import { describe, expect, test } from 'bun:test';
 
@@ -62,7 +61,7 @@ const expectHostRuleIds = (result: AclDetail[], host: string, ids: number[]) => 
   }
 };
 
-const buildRule = (id: number): Rule => ({
+const buildRule = (id: number) => ({
   id,
   resourceType: ResourceTypeTopic,
   mode: ModeCustom,
@@ -372,13 +371,6 @@ describe('getAclFromAclListResponse', () => {
         ],
       });
 
-      // for context groups, possible operations are DELETE, DESCRIBE, READ.
-      // consumerGroup: {
-      //   DELETE: OperationTypeNotSet,
-      //   DESCRIBE: OperationTypeNotSet,
-      //   READ: OperationTypeNotSet,
-      // },
-
       const result = getAclFromAclListResponse(response);
 
       expect(result[0].rules[0].mode).toBe(ModeAllowAll);
@@ -546,7 +538,6 @@ describe('getAclFromAclListResponse', () => {
 
       expect(result).toHaveLength(2);
 
-      // Each host should have 2 rules with IDs 0 and 1
       expectHostRuleIds(result, 'host-a', [0, 1]);
       expectHostRuleIds(result, 'host-b', [0, 1]);
     });

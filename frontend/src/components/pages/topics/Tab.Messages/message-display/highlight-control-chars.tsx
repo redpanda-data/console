@@ -14,7 +14,6 @@ import type { ReactNode } from 'react';
 import { splitControlChars } from './split-control-chars';
 import { getControlCharacterName } from '../helpers';
 
-// A control character renders as its name; a line feed also breaks the line.
 function controlCharElements(code: number, position: number): ReactNode[] {
   const label = (
     <span className="controlChar" key={`char-${position}`}>

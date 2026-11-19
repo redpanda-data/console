@@ -16,7 +16,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -310,7 +309,6 @@ describe('getUpdateValuesForConsumerGroups', () => {
       expect(result.fieldMaskPaths).toContain('configurations.consumer_offset_sync_options');
       expect(result.fieldMaskPaths).toHaveLength(1);
 
-      // Validate schema values
       expect(result.value.groupFilters).toHaveLength(2);
       expect(result.value.groupFilters[0]).toMatchObject({
         name: 'consumer-group-1',

@@ -14,6 +14,12 @@ import { render, screen } from '@testing-library/react';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 
 import AclList from './acl-list';
+import type {
+  AclStrOperation,
+  AclStrPermission,
+  AclStrResourceType,
+  GetAclOverviewResponse,
+} from '../../../../state/rest-interfaces';
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -21,13 +27,6 @@ rs.mock('@tanstack/react-router', () => {
 });
 
 const renderWithAdapter = (ui: React.ReactElement) => render(<NuqsTestingAdapter>{ui}</NuqsTestingAdapter>);
-
-import type {
-  AclStrOperation,
-  AclStrPermission,
-  AclStrResourceType,
-  GetAclOverviewResponse,
-} from '../../../../state/rest-interfaces';
 
 describe('the AclList', () => {
   test('renders an empty table when no data is present', () => {

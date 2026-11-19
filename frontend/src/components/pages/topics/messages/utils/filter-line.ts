@@ -12,8 +12,8 @@
 import { parseFilterInput, tokenEditText } from './filter-token';
 import type { FieldFilterToken } from '../types';
 
-const WHITESPACE_PATTERN = /\s/;
-const VALUE_START_PATTERN = /[:=<>]/;
+const WHITESPACE_PATTERN = /\s/u;
+const VALUE_START_PATTERN = /[:=<>]/u;
 
 export type LineWord = { text: string; start: number; end: number };
 
@@ -101,7 +101,6 @@ export type ParsedFilterLine = {
 export function parseFilterLine(text: string, options?: { partitionCount?: number }): ParsedFilterLine {
   const words = tokenizeLine(text).map((word) => ({ word, parsed: parseFilterInput(word.text, options) }));
   const recognized = words.filter((entry): entry is RecognizedWord => entry.parsed !== null);
-  // The last `partition:` word wins, as each one overrides the one before it.
   const partitionWord = recognized.findLast(({ parsed }) => parsed.field === 'partition');
 
   return {

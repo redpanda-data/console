@@ -23,7 +23,7 @@ export function definePlaywrightOptions(
   };
 }
 
-export function appURL(path: string, variant = process.env.E2E_VARIANT ?? 'console'): string {
+export function appURL(path: string, variant = process.env.E2E_VARIANT ?? 'console') {
   const ports: Record<string, number> = {
     console: 3000,
     'console-enterprise': 3100,

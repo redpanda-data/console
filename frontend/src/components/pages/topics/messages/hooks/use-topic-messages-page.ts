@@ -39,8 +39,6 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const fallbackFocusRef = useRef<HTMLDivElement>(null);
 
-  // Detail presentation is a persisted preference: whoever prefers the expanded
-  // sheet gets it again for the next message and after reloads.
   const [detailExpanded, setDetailExpandedState] = useState<boolean>(() => readDetailViewState().expanded);
   const setDetailExpanded = useCallback((expanded: boolean) => {
     setDetailExpandedState(expanded);
@@ -51,8 +49,6 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
     setSelectedKey(null);
   }, [setSelectedKey]);
 
-  // Docked panel width is a persisted preference too. A ref (not state) so
-  // resize drags don't re-render the whole page; the panel reads it on mount.
   const detailPanelSizeRef = useRef(readDetailViewState().panelSizePct);
   const handleDetailPanelResize = useCallback((size: PanelSize) => {
     detailPanelSizeRef.current = size.asPercentage;

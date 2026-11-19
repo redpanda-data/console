@@ -59,7 +59,7 @@ const nameFilterFn = (row: DataTableRow<RoleEntry>, columnId: string, filterValu
     return true;
   }
   try {
-    return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
+    return new RegExp(filterValue, 'iu').test(String(row.getValue(columnId)));
   } catch {
     return String(row.getValue(columnId)).toLowerCase().includes(filterValue.toLowerCase());
   }

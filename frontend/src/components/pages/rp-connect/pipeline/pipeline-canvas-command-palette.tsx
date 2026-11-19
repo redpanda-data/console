@@ -42,7 +42,6 @@ type CanvasCommandPaletteProps = {
   nodes: PipelineFlowNode[];
   /** Select + center a node on the canvas. */
   onJumpToNode: (node: PipelineFlowNode) => void;
-  // Edit-mode actions; omit to hide (e.g. view mode passes none).
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;

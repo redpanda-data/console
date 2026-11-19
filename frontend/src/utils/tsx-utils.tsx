@@ -14,7 +14,7 @@ import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
-import React, { Component, type CSSProperties, type JSX, useEffect, useId, useState } from 'react';
+import React, { type CSSProperties, type JSX, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
@@ -344,163 +344,116 @@ type StatusIndicatorProps = {
   progressText: string;
 };
 
-export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
-  toastRef: string | null = null;
-  dismissed = false;
-
-  timerHandle: NodeJS.Timeout;
+type SearchToast = {
+  toastRef: string | null;
+  dismissed: boolean;
+  lastPropsJson: string | null;
   lastUpdateTimestamp: number;
+};
 
-  state = { showWaitingText: false };
+export function StatusIndicator(props: StatusIndicatorProps) {
+  const [showWaitingText, setShowWaitingText] = useState(false);
+  const search = useRef<SearchToast>({
+    toastRef: null,
+    dismissed: false,
+    lastPropsJson: null,
+    lastUpdateTimestamp: 0,
+  });
 
-  constructor(p: StatusIndicatorProps) {
-    super(p);
-
-    // Periodically check if we got any new messages. If not, show a different text after some time
-    this.lastUpdateTimestamp = Date.now();
-    const waitMessageDelay = 3000;
-    this.timerHandle = setInterval(() => {
-      const age = Date.now() - this.lastUpdateTimestamp;
-      if (age > waitMessageDelay) {
-        this.setState({ showWaitingText: true });
+  useLayoutEffect(() => {
+    const status = search.current;
+    status.lastUpdateTimestamp = Date.now();
+    const timer = setInterval(() => {
+      if (Date.now() - status.lastUpdateTimestamp > 3000) {
+        setShowWaitingText(true);
       }
     }, 300);
-  }
+    return () => {
+      clearInterval(timer);
+      if (status.toastRef) {
+        closeToast(status.toastRef);
+      }
+      status.toastRef = null;
+    };
+  }, []);
 
-  componentDidMount() {
-    this.lastUpdateTimestamp = Date.now();
-    this.customRender();
-  }
-
-  lastPropsJson = '';
-  lastProps = {};
-  componentDidUpdate() {
-    const curJson = toJson(this.props);
-    if (curJson === this.lastPropsJson) {
-      // changes to observables
-      this.customRender();
-      return;
+  useLayoutEffect(() => {
+    const status = search.current;
+    const propsJson = toJson(props);
+    if (propsJson !== status.lastPropsJson) {
+      status.lastPropsJson = propsJson;
+      status.lastUpdateTimestamp = Date.now();
+      if (showWaitingText) {
+        setShowWaitingText(false);
+      }
     }
+    updateSearchToast(status, props, showWaitingText);
+  });
 
-    this.lastPropsJson = curJson;
+  return null;
+}
 
-    this.lastUpdateTimestamp = Date.now();
-    if (this.state.showWaitingText) {
-      this.setState({ showWaitingText: false });
-    }
-
-    this.customRender();
+function updateSearchToast(status: SearchToast, props: StatusIndicatorProps, showWaitingText: boolean) {
+  if (status.dismissed) {
+    return;
   }
+  const indeterminate = props.statusText === 'Connecting';
+  const percent = Math.round(props.fillFactor * 100);
+  const showCounters = Boolean(props.bytesConsumed && props.messagesConsumed);
 
-  componentWillUnmount() {
-    clearInterval(this.timerHandle);
-    if (this.toastRef) {
-      closeToast(this.toastRef);
-    }
-    this.toastRef = null;
-  }
-
-  customRender() {
-    if (this.dismissed) {
-      return;
-    }
-    const indeterminate = this.props.statusText === 'Connecting';
-    const percent = Math.round(this.props.fillFactor * 100);
-    const showCounters = Boolean(this.props.bytesConsumed && this.props.messagesConsumed);
-
-    // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
-    const content = (
-      <span className="flex flex-col gap-1 text-body text-foreground">
+  // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
+  const content = (
+    <span className="flex flex-col gap-1 text-body text-foreground">
+      <span
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={indeterminate ? undefined : percent}
+        className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
+        role="progressbar"
+      >
         <span
-          aria-valuemax={100}
-          aria-valuemin={0}
-          aria-valuenow={indeterminate ? undefined : percent}
-          className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
-          role="progressbar"
-        >
-          <span
-            className={
-              indeterminate
-                ? 'block h-full w-full animate-pulse rounded-full bg-primary'
-                : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
-            }
-            style={indeterminate ? undefined : { width: `${percent}%` }}
-          />
-        </span>
-        <span className="flex font-semibold">
-          <span>
-            {this.state.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}
-          </span>
-          <span className="ml-auto pl-8">{this.props.progressText}</span>
-        </span>
-        {showCounters ? (
-          <span className="flex justify-between font-semibold">
-            <span className="inline-flex items-center gap-2">
-              <DownloadIcon color="var(--color-brand)" size={14} /> {this.props.bytesConsumed}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <CopyIcon color="var(--color-brand)" size={14} /> {this.props.messagesConsumed} messages
-            </span>
-          </span>
-        ) : null}
+          className={
+            indeterminate
+              ? 'block h-full w-full animate-pulse rounded-full bg-primary'
+              : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
+          }
+          style={indeterminate ? undefined : { width: `${percent}%` }}
+        />
       </span>
-    );
+      <span className="flex font-semibold">
+        <span>{showWaitingText ? 'Redpanda Console is waiting for new messages...' : props.statusText}</span>
+        <span className="ml-auto pl-8">{props.progressText}</span>
+      </span>
+      {showCounters ? (
+        <span className="flex justify-between font-semibold">
+          <span className="inline-flex items-center gap-2">
+            <DownloadIcon color="var(--color-brand)" size={14} /> {props.bytesConsumed}
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <CopyIcon color="var(--color-brand)" size={14} /> {props.messagesConsumed} messages
+          </span>
+        </span>
+      ) : null}
+    </span>
+  );
 
-    if (this.toastRef === null) {
-      this.toastRef = showToast({
-        status: 'info',
-        description: content,
-        duration: null,
-        // A closed progress toast stays closed for this search.
-        onClose: () => {
-          this.toastRef = null;
-          this.dismissed = true;
-        },
-      });
-    } else {
-      updateToast(this.toastRef, { description: content });
-    }
-  }
-
-  render() {
-    return null;
+  if (status.toastRef === null) {
+    status.toastRef = showToast({
+      status: 'info',
+      description: content,
+      duration: null,
+      // A closed progress toast stays closed for this search.
+      onClose: () => {
+        status.toastRef = null;
+        status.dismissed = true;
+      },
+    });
+  } else {
+    updateToast(status.toastRef, { description: content });
   }
 }
 
-export class ZeroSizeWrapper extends Component<{
-  width?: string;
-  height?: string;
-  justifyContent?: string;
-  alignItems?: string;
-  positionContentAbsolute?: boolean;
-  transform?: string;
-  wrapperStyle?: CSSProperties;
-  children?: React.ReactNode;
-}> {
-  static readonly style: CSSProperties = {
-    display: 'inline-flex',
-    width: '0px',
-    height: '0px',
-    transform: 'translateY(-0.5px)',
-    // zIndex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  };
-
-  render() {
-    const p = this.props;
-    let style = ZeroSizeWrapper.style;
-    if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
-      style = { ...style, ...p, ...p.wrapperStyle };
-    }
-
-    return (
-      <span className="verticalCenter" style={style}>
-        <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>{this.props.children}</span>
-      </span>
-    );
-  }
-}
+export { ZeroSizeWrapper } from './zero-size-wrapper';
 
 const defaultSkeletonStyle = { margin: '2rem' };
 export const DefaultSkeleton = (

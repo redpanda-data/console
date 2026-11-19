@@ -31,7 +31,7 @@ import { describe, expect, it } from 'bun:test';
  * A ConnectError as it arrives off the wire: details are decoded into `{ type, value, debug }`
  * rather than the `{ desc, value }` pairs a locally-constructed error carries.
  */
-function wireError(message: string, code: Code, details: Array<{ type: string; debug?: unknown }>): ConnectError {
+function wireError(message: string, code: Code, details: Array<{ type: string; debug?: unknown }>) {
   const error = new ConnectError(message, code);
   Object.defineProperty(error, 'details', {
     value: details.map((d) => ({ ...d, value: new Uint8Array() })),
@@ -97,7 +97,6 @@ describe('isNoLongerDraftError', () => {
 
   it('leaves everything else alone', () => {
     expect(isNoLongerDraftError(new ConnectError('nope', Code.PermissionDenied))).toBe(false);
-    // A suspended cluster refuses writes with the same code.
     expect(
       isNoLongerDraftError(new ConnectError('create/edit/start operations are suspended', Code.FailedPrecondition))
     ).toBe(false);
@@ -106,7 +105,6 @@ describe('isNoLongerDraftError', () => {
 });
 
 describe('primaryRunIntent', () => {
-  // The whole point of the default: the primary click always succeeds and never starts anything.
   it('parks work that has never been deployed', () => {
     expect(primaryRunIntent(creating)).toBe('draft');
     expect(primaryRunIntent(draft)).toBe('draft');
@@ -151,7 +149,6 @@ describe('runIntentLabel', () => {
     expect(runIntentLabel('draft', draft)).toBe('Save draft');
   });
 
-  // Saving a running pipeline restarts it, and there is no apply-later to make that untrue.
   it('says out loud that applying to a running pipeline restarts it', () => {
     expect(runIntentLabel('keep', running)).toBe('Apply and restart');
     expect(runIntentLabel('keep', stopped)).toBe('Save');
@@ -177,22 +174,21 @@ describe('isBlankConfig', () => {
 
 describe('saveSuccessMessage', () => {
   it('spells out that a draft is not running', () => {
-    expect(saveSuccessMessage(creating, 'draft')).toMatch(/isn't running/i);
+    expect(saveSuccessMessage(creating, 'draft')).toMatch(/isn't running/iu);
     expect(saveSuccessMessage(draft, 'draft')).toBe('Draft saved');
   });
 
   it('spells out that a created-and-stopped pipeline is not running', () => {
-    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/i);
-    expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/i);
+    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/iu);
+    expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/iu);
   });
 
-  // It was deployed and then stopped, so "yet" would claim it had never run.
   it('does not claim a created-and-stopped pipeline has never run', () => {
-    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/i);
+    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/iu);
   });
 
   it('mentions the restart only when the pipeline was actually running', () => {
-    expect(saveSuccessMessage(running, 'keep')).toMatch(/restarting/i);
+    expect(saveSuccessMessage(running, 'keep')).toMatch(/restarting/iu);
     expect(saveSuccessMessage(stopped, 'keep')).toBe('Pipeline updated');
   });
 });
@@ -203,8 +199,6 @@ describe('unsavedChangesCopy', () => {
     expect(unsavedChangesCopy(draft).escape).toBe('save-draft');
   });
 
-  // Saving would restart it, so "save and leave" is not a kindness here — but neither is a dialog whose
-  // only ways out are losing the work or never leaving the page.
   it('offers the browser instead of a draft once a pipeline is deployed', () => {
     for (const context of [running, stopped, creatingWithoutDrafts]) {
       expect(unsavedChangesCopy(context).escape).toBe('leave-for-now');
@@ -212,27 +206,24 @@ describe('unsavedChangesCopy', () => {
   });
 
   it('says why a running pipeline cannot simply be saved', () => {
-    expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/i);
+    expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/iu);
   });
 
-  // The promise belongs to the button that keeps them: Discard clears the buffer.
   it('promises the browser keeps the edits only where leaving keeps them', () => {
     for (const context of [running, stopped, creatingWithoutDrafts]) {
-      expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/i);
+      expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/iu);
     }
-    expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/i);
+    expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/iu);
   });
 
-  // CreatePipeline always deploys, so a create without drafts is a deploy followed by a stop. Only a
-  // real draft can promise the configuration never runs.
   it('does not promise that creating without drafts never starts the pipeline', () => {
-    expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/i);
-    expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/i);
-    expect(unsavedChangesCopy(creating).body).toMatch(/does not run/i);
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/iu);
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/iu);
+    expect(unsavedChangesCopy(creating).body).toMatch(/does not run/iu);
   });
 
   // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
   it('does not warn about restarts on a stopped pipeline', () => {
-    expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/i);
+    expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/iu);
   });
 });

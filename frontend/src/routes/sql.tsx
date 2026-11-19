@@ -14,7 +14,6 @@ import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
 import { Database } from 'lucide-react';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 
-// allow: error-boundary [pure redirect in beforeLoad, no data fetching]
 export const Route = createFileRoute('/sql')({
   staticData: {
     title: 'SQL',
@@ -22,9 +21,6 @@ export const Route = createFileRoute('/sql')({
     // The studio has its own title bar; otherwise a normal in-flow page.
     breadcrumbOnlyHeader: true,
   },
-  // Gate direct navigation to /sql on the same capability check as the sidebar.
-  // isSupported() returns false both when SQLService is unsupported and when the
-  // endpoint list hasn't loaded yet, so redirecting on the latter bounces a cold
   // load off /sql before the answer is known. Only redirect once it's loaded.
   beforeLoad: () => {
     const { endpointCompatibility } = useSupportedFeaturesStore.getState();

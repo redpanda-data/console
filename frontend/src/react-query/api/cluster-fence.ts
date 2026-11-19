@@ -256,7 +256,6 @@ export const useFenceClusterMutation = () => {
           throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
         if (!sameFenceSettings(settings, saved)) {
-          // Worded to match isStaleRevisionError, like the server's own stale-revision failure.
           throw new ConnectError('the fence revision has changed', Code.FailedPrecondition);
         }
         setSavedFence(saved);
@@ -298,30 +297,30 @@ export const useUnfenceClusterMutation = () => {
   });
 };
 
-const STALE_REVISION = /revision has changed/i;
+const STALE_REVISION = /revision has changed/iu;
 
 /**
  * Fence's preconditions all fail with FAILED_PRECONDITION, so the message is the only way to tell them
  * apart. These are hints: the server's own message is always shown with them.
  */
 const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
-  { pattern: /shadow link/i, sentence: SHADOW_CLUSTER_CANT_FENCE },
+  { pattern: /shadow link/iu, sentence: SHADOW_CLUSTER_CANT_FENCE },
   {
-    pattern: /not active|feature/i,
+    pattern: /not active|feature/iu,
     sentence: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',
   },
   {
-    pattern: /migration/i,
+    pattern: /migration/iu,
     sentence: 'A data migration on this cluster hasn’t finished. Fence it once the migration is done.',
   },
-  { pattern: /recovery/i, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
+  { pattern: /recovery/iu, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
   {
-    pattern: /storage (?:mode|configuration)/i,
+    pattern: /storage (?:mode|configuration)/iu,
     sentence:
       'A topic the fence covers uses a storage mode this Redpanda doesn’t recognize, which can happen while brokers run different versions.',
   },
   {
-    pattern: /membership changed/i,
+    pattern: /membership changed/iu,
     sentence: 'A broker joined or left the cluster while the fence was changing. Check its state, then try again.',
   },
 ];

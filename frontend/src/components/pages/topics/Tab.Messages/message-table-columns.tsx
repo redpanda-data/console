@@ -32,10 +32,8 @@ import { navigatorClipboardErrorHandler, numberToThousandsString, TimestampDispl
 import { prettyBytes } from '../../../../utils/utils';
 import { PAYLOAD_ENCODING_LABELS } from '../messages/constants';
 
-// Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
-// A copied payload drops its normalized form, and its raw bytes become a plain array for JSON.
 function preparePayloadForCopy(payload: Payload) {
   payload.normalizedPayload = undefined;
   if (payload.rawBytes) {
@@ -226,12 +224,10 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
   };
 }
 
-// The columns the user picked, in the fixed column order; without a pick, the default ones.
 function selectColumnKeys(previewColumnFields: ColumnList[]): DataColumnKey[] {
   if (previewColumnFields.length === 0) {
     return ['timestamp', 'key', 'value'];
   }
-  // let's be defensive and remove any duplicates before showing in the table
   const selectedColumns = new Set(previewColumnFields.map((field) => field.dataIndex));
   return COLUMN_ORDER.filter((column) => selectedColumns.has(column));
 }

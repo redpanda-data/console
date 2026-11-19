@@ -13,8 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 
-rs.mock('../utils/fetch-with-timeout', () => ({ default: rs.fn() }));
-
 import { api, rolesApi, useApiStore, useRolesStore } from './backend-api';
 import type { TopicConsumer, TopicDescription, UserData } from './rest-interfaces';
 import { config } from '../config';
@@ -36,6 +34,8 @@ import {
 } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import fetchWithTimeout from '../utils/fetch-with-timeout';
 
+rs.mock('../utils/fetch-with-timeout', () => ({ default: rs.fn() }));
+
 const topicsResponse = (topicNames: string[]) =>
   new Response(JSON.stringify({ topics: topicNames.map((topicName) => ({ topicName })) }), {
     status: 200,
@@ -45,8 +45,6 @@ const topicsResponse = (topicNames: string[]) =>
 describe('refreshTopics topic-cache pruning (F2)', () => {
   beforeEach(() => {
     rs.mocked(fetchWithTimeout).mockReset();
-    // Reset the topic-keyed caches so state does not leak between tests (the api store is a
-    // long-lived singleton that the harness does not reset).
     useApiStore.setState({
       topics: null,
       topicConfig: new Map(),

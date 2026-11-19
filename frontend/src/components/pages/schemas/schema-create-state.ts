@@ -6,8 +6,8 @@ import {
 } from '../../../state/rest-interfaces';
 
 // Regex for extracting record names from schema text
-const JSON_NAME_REGEX = /"name"\s*:\s*"(.*)"/;
-const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(\S+)\s*\{/;
+const JSON_NAME_REGEX = /"name"\s*:\s*"(?<name>.*)"/u;
+const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(?<messageName>\S+)\s*\{/u;
 
 export type NamingStrategy =
   | 'TOPIC' // only topic name

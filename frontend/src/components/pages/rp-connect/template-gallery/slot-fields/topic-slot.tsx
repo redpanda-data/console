@@ -18,7 +18,6 @@ import type { Control, FieldValues } from 'react-hook-form';
 
 import type { TopicSlot } from '../pipeline-template-types';
 
-// Embedded mode: `/clusters/<id>/topics`. Standalone: `/topics`.
 const buildTopicsHref = () => {
   const query = '?showInternal=true';
   if (isEmbedded() && config.clusterId) {
@@ -30,8 +29,6 @@ const buildTopicsHref = () => {
 export type TopicSlotFieldProps = {
   slot: TopicSlot;
   control: Control<FieldValues>;
-  // When supplied, "Create topic" delegates to the parent (e.g. the in-dialog
-  // create-topic step) instead of linking out to the topic-management page.
   onRequestCreateTopic?: (slotId: string) => void;
 };
 

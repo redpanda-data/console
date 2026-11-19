@@ -156,7 +156,6 @@ export const useUpdateRoleMembershipMutation = () => {
       // Cancel in-flight fetches so they don't overwrite the optimistic data
       await queryClient.cancelQueries(listRoleMembersQueryFilter);
 
-      // Snapshot for rollback on error
       const previousData =
         queryClient.getQueriesData<InfiniteData<ListRoleMembersResponse>>(listRoleMembersQueryFilter);
 
@@ -185,9 +184,6 @@ export const useUpdateRoleMembershipMutation = () => {
 
     onSuccess: async () => {
       // Only invalidate the roles list (to refresh member counts).
-      // The listRoleMembers cache already reflects the correct state via the
-      // optimistic update in onMutate — invalidating it here would trigger a
-      // refetch that may return stale data before the backend catches up.
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecurityService.method.listRoles,
@@ -198,7 +194,6 @@ export const useUpdateRoleMembershipMutation = () => {
     },
 
     onError: (error, _variables, context) => {
-      // Rollback optimistic update
       if (context?.previousData) {
         for (const [queryKey, data] of context.previousData) {
           queryClient.setQueryData(queryKey, data);

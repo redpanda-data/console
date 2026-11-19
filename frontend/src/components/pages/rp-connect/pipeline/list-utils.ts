@@ -40,7 +40,6 @@ export type PipelineStateTab = {
   emptyText: string;
 };
 
-// Transitional states ride with their destination: starting counts as running, stopping as stopped.
 export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   { id: 'all', label: 'All', emptyText: 'You have no Redpanda Connect pipelines' },
   {
@@ -74,7 +73,6 @@ export function stateFilterValues(tab: PipelineStateTab): string[] | undefined {
   return values.length > 0 ? values : undefined;
 }
 
-// Inverted once, so counting is one pass over the rows rather than one scan per tab.
 const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
   PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
 );

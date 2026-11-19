@@ -132,7 +132,6 @@ const toCreateAclRequest = (values: FormValues) =>
     permissionType: values.permissionType,
   });
 
-// A violation the form can show next to its field.
 const isRenderableViolation = (violation: { field: string }, renderableFieldNames: Set<string>) =>
   Boolean(violation.field) && renderableFieldNames.has(violation.field);
 
@@ -273,7 +272,6 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     form.clearErrors();
-    // When principal is pre-set via prop its field isn't rendered, so server violations
     // on it must go to the global alert rather than being silently dropped.
     const renderableFieldNames = principal
       ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))

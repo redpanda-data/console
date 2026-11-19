@@ -60,8 +60,6 @@ type Inputs = {
   customValue: string | number | undefined | null;
 };
 
-// ── Shared config helpers ───────────────────────────────────────────────────────
-
 const SOURCE_PRIORITY_ORDER = [
   'DYNAMIC_TOPIC_CONFIG',
   'DYNAMIC_BROKER_CONFIG',
@@ -92,8 +90,6 @@ function getFirstSelectOption(entry: ConfigEntryExtended): string | undefined {
   }
 }
 
-// Curated categories + order for the grouped layout. Anything the backend tags
-// with a category outside this set falls back to "Other".
 const CONFIG_CATEGORIES = [
   { name: 'Retention', blurb: 'How long and how much data this topic retains.' },
   { name: 'Compaction', blurb: 'Log cleanup and key-based compaction behavior.' },
@@ -124,10 +120,7 @@ function getDefaultValueType(entry: ConfigEntryExtended): Inputs['valueType'] {
 function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
   const defaultConfigSynonym = getDefaultConfigSynonym(entry);
   const explicitCustomValue = entry.isExplicitlySet && !entryHasInfiniteValue(entry) ? entry.value : '';
-  // Seed Custom from the resolved/inherited value (explicit override → current effective
-  // value → inherited default) so opening Custom and saving without touching the control
   // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
-  // first enum option when nothing is resolved, so the dropdown still shows a concrete choice.
   const resolvedValue = explicitCustomValue || entry.value || defaultConfigSynonym?.value || '';
   return {
     valueType: getDefaultValueType(entry),
@@ -215,10 +208,7 @@ const ConfigEditorForm: FC<{
 
   const valueType = useWatch({ control, name: 'valueType' });
 
-  // Route "Reset to default" through the normal submit path (which DELETEs for the
-  // 'default' value type) instead of firing an out-of-band DELETE. This shares the
   // single pending/disabled state with Save/Cancel, so reset can't race a concurrent
-  // Save and the buttons disable together while the mutation is in flight.
   const handleReset = () => {
     setValue('valueType', 'default');
     void handleSubmit(onSubmit)();
@@ -322,8 +312,6 @@ const ConfigEditorForm: FC<{
   );
 };
 
-// ── Grouped, navigable layout ─────
-
 type ConfigSection = {
   name: string;
   blurb: string;
@@ -370,8 +358,6 @@ function useConfigSections(entries: ConfigEntryExtended[], query: string, scope:
     }).filter((s) => s.rows.length > 0);
   }, [entries, query, scope]);
 
-  // Sidebar is a stable index of the topic's categories — not subject to the
-  // search/scope filter, so it never reflows as you type or toggle Modified.
   const sidebarCategories = useMemo(
     () =>
       CONFIG_CATEGORIES.map(({ name }) => {
@@ -384,9 +370,6 @@ function useConfigSections(entries: ConfigEntryExtended[], query: string, scope:
   return { totalModifiedCount, sections, sidebarCategories };
 }
 
-// The sections render in their own scroll container; clicking a sidebar category
-// scrolls to its section *within this panel* (not by filtering, and without
-// scrolling the whole page).
 function useConfigScrollSpy(sections: ConfigSection[]) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
@@ -403,9 +386,6 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
     setActiveCategory(name);
   };
 
-  // Scroll-spy: highlight the sidebar category whose section is at the top of the
-  // scroll container as the user scrolls. Re-attaches whenever the rendered section
-  // set changes so the observer always tracks the current section elements.
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on section set change
   useEffect(() => {
     const container = sectionsContainerRef.current;
@@ -764,7 +744,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
   }
 };
 
-function getConfigDescription(source: string): string {
+function getConfigDescription(source: string) {
   switch (source) {
     case 'DEFAULT_CONFIG':
       return 'Inherited from DEFAULT_CONFIG';
@@ -777,8 +757,6 @@ function getConfigDescription(source: string): string {
       return '';
   }
 }
-
-// ── Local input helpers ────────────────────────────────────────────────────────
 
 function NumInput(p: {
   value: number | undefined;
@@ -846,7 +824,6 @@ function NumInput(p: {
   if (!p.addonAfter) {
     return input;
   }
-  // An attached group joins the input and its addon into one control.
   return (
     <Group attached>
       {input}

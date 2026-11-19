@@ -20,13 +20,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Regex for extracting container ID from error messages
-const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/;
-const MISSING_CONTAINER_PATTERN = /No such container/i;
-const MISSING_NETWORK_PATTERN = /No such network/i;
+const CONTAINER_ID_REGEX = /container (?<containerId>[a-f0-9]+)/u;
+const MISSING_CONTAINER_PATTERN = /No such container/iu;
+const MISSING_NETWORK_PATTERN = /No such network/iu;
 // Workspace `use` entries in go.work, one module path per line
-const GO_WORK_USE_LINE_REGEX = /^\s+(\S+)\s*$/gm;
-const MODULE_PATH_SEPARATOR_REGEX = /[./]/g;
-const EDGE_DASHES_REGEX = /^-+|-+$/g;
+const GO_WORK_USE_LINE_REGEX = /^\s+(?<modulePath>\S+)\s*$/gmu;
+const MODULE_PATH_SEPARATOR_REGEX = /[./]/gu;
+const EDGE_DASHES_REGEX = /^-+|-+$/gu;
 
 const REDPANDA_SASL_FLAGS = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256';
 
@@ -247,7 +247,7 @@ async function startKafkaContainer(network, state, ports, variantName) {
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk',
       KAFKA_OPTS: '-Djava.security.auth.login.config=/etc/kafka/jaas.conf',
     })
-    .withWaitStrategy(Wait.forLogMessage(/Kafka Server started/i))
+    .withWaitStrategy(Wait.forLogMessage(/Kafka Server started/iu))
     .withStartupTimeout(120_000)
     .start();
 
@@ -357,7 +357,7 @@ function startKafkaConnectContainer(network, ports, passwordFile) {
       })
       // Use log-based wait: avoids IPv4/IPv6 port-forwarding issues on macOS Docker Desktop.
       // Kafka Connect prints "REST resources initialized" when the HTTP API is ready.
-      .withWaitStrategy(Wait.forLogMessage(/.*REST resources initialized.*/i))
+      .withWaitStrategy(Wait.forLogMessage(/.*REST resources initialized.*/iu))
       .withStartupTimeout(300_000)
       .start()
   );

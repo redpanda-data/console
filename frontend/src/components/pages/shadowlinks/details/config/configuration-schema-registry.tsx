@@ -28,8 +28,6 @@ import type {
 } from '../../model';
 
 const UNSUPPORTED_FEATURE_POLICY_LABELS: Record<number, string> = {
-  // The proto contract defines UNSPECIFIED as "use the default behavior",
-  // and the field docs pin that default to FAIL.
   [UnsupportedSchemaFeaturePolicy.UNSPECIFIED]: 'Fail the sync',
   [UnsupportedSchemaFeaturePolicy.FAIL]: 'Fail the sync',
   [UnsupportedSchemaFeaturePolicy.REMOVE]: 'Remove unsupported features',
@@ -55,7 +53,7 @@ const hasClientCertificate = (tlsSettings?: UnifiedTLSSettings): boolean => {
   return false;
 };
 
-const formatPasswordStatus = (basicAuth: UnifiedSchemaRegistryBasicAuth): string => {
+const formatPasswordStatus = (basicAuth: UnifiedSchemaRegistryBasicAuth) => {
   if (basicAuth.passwordSet && basicAuth.passwordSetAt) {
     return `Last changed ${format(basicAuth.passwordSetAt, "MMM d, yyyy 'at' HH:mm")}`;
   }
@@ -72,19 +70,17 @@ const formatIntervalSeconds = (seconds?: number): string => {
   return prettyMilliseconds(seconds * 1000);
 };
 
-const formatRequestRate = (rate?: number): string => {
+const formatRequestRate = (rate?: number) => {
   if (rate === undefined) {
     return 'Cluster default';
   }
   return `${rate} req/s`;
 };
 
-// Small uppercase label introducing a subsection of the card
 const SectionLabel = ({ children }: { children: string }) => (
   <div className="text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">{children}</div>
 );
 
-// Label/value grid row; `narrow` is for rows nested inside split columns
 const ConfigRow = ({
   label,
   mono,
@@ -108,7 +104,6 @@ const ConfigRow = ({
   </div>
 );
 
-// Row of mono pills used for the Schema Registry contexts and subjects lists
 const PillRow = ({ label, testId, values }: { label: string; testId: string; values: string[] }) => (
   <div className="grid grid-cols-[120px_1fr] items-start gap-x-4">
     <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
@@ -124,7 +119,6 @@ const PillRow = ({ label, testId, values }: { label: string; testId: string; val
   </div>
 );
 
-// Two side-by-side columns divided by a vertical separator; stacks on small screens
 const SplitColumns = ({ left, right }: { left: React.ReactNode; right: React.ReactNode }) => (
   <div className="flex flex-col gap-6 md:flex-row">
     <div className="flex flex-1 flex-col gap-2">{left}</div>
@@ -220,9 +214,6 @@ const DestinationMappingColumn = ({
 const ScopeSection = ({ api }: { api: UnifiedSchemaRegistryApiOptions }) => {
   const contexts = api.sourceFilter?.contexts ?? [];
   const subjects = api.sourceFilter?.subjects ?? [];
-  // An unset or empty filter means the whole source Schema Registry is replicated.
-  // The destination mapping still applies then (to every source context), so its
-  // column renders regardless of the selection.
   const isEntireRegistry = contexts.length === 0 && subjects.length === 0;
 
   return (

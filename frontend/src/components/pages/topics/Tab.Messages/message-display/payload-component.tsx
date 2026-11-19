@@ -18,8 +18,7 @@ import type { Payload } from '../../../../../state/rest-interfaces';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
 import { Button } from '../../../../redpanda-ui/components/button';
 
-// Regex for checking printable ASCII characters
-const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;
 
 type PayloadRenderData =
   | { type: 'null' }
@@ -151,7 +150,6 @@ function renderPayloadData(renderData: PayloadRenderData, payload: Payload, view
         </div>
       );
     case 'json':
-      // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
       // Latin-1 code points in the viewer so copy-paste yields the original
       // bytes rather than their UTF-8 encoding.
       return (

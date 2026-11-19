@@ -22,7 +22,7 @@ import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backend-api';
 
 const NAME_VALIDATION_REGEX = /^[\p{L}\p{M}\p{N} '_-]+$/u;
-const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/iu;
 
 type FieldViolation = {
   field: string;
@@ -88,10 +88,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
         companyName: data.companyName || 'unknown',
       });
 
-      // Refresh licenses after successful registration
       api.listLicenses();
 
-      // Show success state
       setIsSuccess(true);
     } catch (error) {
       if (error instanceof ConnectError) {

@@ -23,8 +23,8 @@ export type StitchTemplateArgs = {
   pipelineName: string;
 };
 
-const SLOT_TOKEN_PATTERN = /\$\{slot\.([A-Za-z0-9_-]+)\}/g;
-const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.([A-Za-z0-9_-]+)\}$/;
+const SLOT_TOKEN_PATTERN = /\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}/gu;
+const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}$/u;
 
 // matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
 const referencedSlotIdsIn = (text: string): string[] => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);

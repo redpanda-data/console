@@ -79,7 +79,6 @@ function supportsContinuousPagination(origin: PartitionOffsetOriginType): boolea
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
 
-// The start offset for a newly chosen origin; choosing Offset keeps a custom offset already set.
 function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number): number | undefined {
   if (origin === PartitionOffsetOrigin.Custom) {
     return startOffset < 0 ? 0 : undefined;
@@ -87,8 +86,6 @@ function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number)
   return origin;
 }
 
-// The timestamp for a newly chosen origin: now when switching TO Timestamp mode (unless one is set),
-// and cleared from the URL when switching away from Timestamp.
 function nextStartTimestamp(origin: PartitionOffsetOriginType, startTimestamp: number): number | null | undefined {
   if (origin === PartitionOffsetOrigin.Timestamp) {
     return startTimestamp === -1 ? Date.now() : undefined;
@@ -154,8 +151,6 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
   const { startOffset, setStartOffset, startTimestamp, setStartTimestamp, maxResults } = query;
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
 
-  // Page resets live in the setters, not in effects watching the URL: navigating away briefly
-  // renders this view with the next route's (empty) search, and an effect reacting to that
   // queues a nuqs update that navigates back to this topic (UX-1514).
   const changeStartOffset = (value: number) => {
     if (value !== startOffset) {
@@ -179,12 +174,10 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
               changeStartOffset(offset);
             }
 
-            // Auto-disable continuous pagination for unsupported offsets
             if (paging.continuousPaginationEnabled && !supportsContinuousPagination(e)) {
               paging.setContinuousPaginationEnabled(false);
             }
 
-            // Handle timestamp parameter in URL
             const timestamp = nextStartTimestamp(e, startTimestamp);
             if (timestamp !== undefined) {
               setStartTimestamp(timestamp);
@@ -352,7 +345,6 @@ const AddFilterMenuItem: FC<{
   );
 };
 
-// Why a JavaScript filter cannot be added (undefined = enabled).
 function getJsFilterDisabledReason(canUseSearchFilters: boolean, continuousPaginationEnabled: boolean) {
   if (isServerless()) {
     return 'JavaScript filters are not available in Serverless clusters.';
@@ -378,7 +370,6 @@ function AddFilterMenu({
 }) {
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(topicName));
 
-  // Reasons explaining why a filter cannot be added (undefined = enabled).
   const partitionFilterDisabledReason = settings.dynamicFilters.includes('partition')
     ? 'Partition filter is already added. Use the existing Partition control to filter, or remove it first.'
     : undefined;
@@ -659,13 +650,10 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
-            // Check if filter exists in the array by ID
             const existingIndex = filters.findIndex((f) => f.id === filter.id);
             if (existingIndex >= 0) {
-              // Update existing filter
               setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
             } else {
-              // Add new filter
               setFilters([...filters, filter]);
             }
             search.searchFunc('manual');

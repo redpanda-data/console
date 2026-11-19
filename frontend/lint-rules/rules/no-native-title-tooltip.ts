@@ -36,7 +36,7 @@ const SVG_ELEMENTS = new Set([
 // Registry components that forward `title` to the DOM element they render.
 const INTRINSIC_ELEMENT = /^[a-z][a-z0-9]*$/u;
 const REGISTRY_EXPORTS: Record<string, string> = { button: 'Button', input: 'Input' };
-const REGISTRY_MODULE = /(?:^|\/)redpanda-ui\/components\/(button|input)(?:\.tsx?|\/index\.tsx?)?$/u;
+const REGISTRY_MODULE = /(?:^|\/)redpanda-ui\/components\/(?<component>button|input)(?:\.tsx?|\/index\.tsx?)?$/u;
 const MESSAGE =
   'Native `title` tooltips are unstyled and unreachable by keyboard and touch. Use the Registry Tooltip (`components/redpanda-ui/components/tooltip`) and keep `aria-label` for the accessible name.';
 

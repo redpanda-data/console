@@ -21,7 +21,6 @@ type ShadowLinkDiagramProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// React Flow draws its dotted grid under every node, so each node sits on an opaque surface.
 const ClusterNodeSurface = ({ children }: { children: ReactNode }) => (
   <div className="min-w-60 bg-background">{children}</div>
 );

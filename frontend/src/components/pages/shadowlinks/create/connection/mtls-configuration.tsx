@@ -57,11 +57,6 @@ type Cert = NonNullable<FormValues['mtls']>['ca'];
 
 const hasCertValue = (cert: Cert): boolean => Boolean(cert?.filePath || cert?.pemContent);
 
-// ---------------------------------------------------------------------------
-// Inline cert dropzone (PEM upload — replaces the old modal-based flow).
-// Self-contained: reads/writes form state directly via useFormContext.
-// ---------------------------------------------------------------------------
-
 function CertificateDropzone({ certType }: { certType: CertificateType }) {
   const { control, setValue } = useFormContext<FormValues>();
   const cert = useWatch({ control, name: `mtls.${certType}` });
@@ -120,10 +115,6 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// File-path input (alternative cert input mode for non-embedded users).
-// ---------------------------------------------------------------------------
-
 function CertificateInputField({ certType }: { certType: CertificateType }) {
   const { control } = useFormContext<FormValues>();
   const label = CERTIFICATE_LABELS[certType];
@@ -160,10 +151,6 @@ function CertificateInputField({ certType }: { certType: CertificateType }) {
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Embedded-mode client-key picker (lives in Cloud Secrets, not as a file).
-// ---------------------------------------------------------------------------
 
 function ClientKeySecretField() {
   const { control } = useFormContext<FormValues>();
@@ -203,10 +190,6 @@ function ClientKeySecretField() {
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Sub-fields per disclosure
-// ---------------------------------------------------------------------------
 
 /** File-path inputs replace the uploads when a self-managed user picks the "File path" method. */
 function useCertificateFilePaths() {
@@ -274,7 +257,6 @@ function CertificateInputMethodField() {
             <Tabs
               onValueChange={(value) => {
                 field.onChange(value);
-                // Switching modes invalidates any partially-entered cert values
                 // because file_path and pem use different storage shapes.
                 setValue('mtls.ca', undefined);
                 setValue('mtls.clientCert', undefined);
@@ -298,10 +280,6 @@ function CertificateInputMethodField() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Top-level component
-// ---------------------------------------------------------------------------
-
 export const MtlsConfiguration = () => {
   const { control } = useFormContext<FormValues>();
   const [useTls, mtls] = useWatch({ control, name: ['useTls', 'mtls'] });
@@ -310,8 +288,6 @@ export const MtlsConfiguration = () => {
   const hasClientCert = hasCertValue(mtls?.clientCert);
   const hasClientKey = hasCertValue(mtls?.clientKey);
 
-  // Snapshot form state at mount for initial open state. Once mounted, the user
-  // controls open/close — values arriving later won't re-open the row.
   const [caOpen, setCaOpen] = useState(hasCa);
   const [mtlsOpen, setMtlsOpen] = useState(hasClientCert || hasClientKey);
 

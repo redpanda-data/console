@@ -46,7 +46,6 @@ const toSrgb = (painted: string): Srgb | null => {
   if (!(context && painted)) {
     return null;
   }
-  // An unparseable colour leaves the previous fill, so seed the safe answer rather than black.
   context.fillStyle = '#ffffff';
   context.fillStyle = painted;
   context.fillRect(0, 0, 1, 1);
@@ -75,11 +74,9 @@ export const classifyGround = (ground: Srgb | null): ThemeAppearance => {
 /** Shared: the appearance belongs to the document, not to any one subscriber. */
 let cached: ThemeAppearance | null = null;
 
-// A palette swap always lands on the root — that is how theme.css itself is keyed.
 const THEME_ATTRIBUTES = ['class', 'data-theme', 'data-theme-palette', 'style'];
 
 function subscribe(onStoreChange: () => void): () => void {
-  // Nothing was watching until now, so any cached answer may predate a theme change.
   cached = null;
   const observer = new MutationObserver(() => {
     cached = null;
@@ -89,7 +86,6 @@ function subscribe(onStoreChange: () => void): () => void {
   return () => observer.disconnect();
 }
 
-// Cached so this stays cheap across renders; the observer clears it.
 const getSnapshot = (): ThemeAppearance => {
   cached ??= classifyGround(toSrgb(paintGround()));
   return cached;

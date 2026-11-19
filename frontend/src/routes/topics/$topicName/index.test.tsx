@@ -14,8 +14,6 @@ import { describe, expect, test } from '@rstest/core';
 import { Route } from './index';
 
 // Regression test: navigating away from the Messages tab (e.g. clicking the "Topics"
-// breadcrumb) while a nuqs query-param update is still queued can flush that update
-// after the route changed, re-navigating here with topicName literally "undefined".
 // This must bounce back to the topic list instead of rendering a 404.
 describe('topic details route', () => {
   test('redirects /topics/undefined back to the topic list', () => {

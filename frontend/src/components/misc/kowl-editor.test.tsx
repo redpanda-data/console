@@ -16,14 +16,13 @@ import { useEffect, useState } from 'react';
 import KowlEditor, { KowlDiffEditor } from './kowl-editor';
 
 const { appearance, monacoStub } = rs.hoisted(() => ({
-  appearance: rs.fn((): 'light' | 'dark' => 'light'),
+  appearance: rs.fn(() => 'light'),
   monacoStub: { editor: { defineTheme: rs.fn(), setTheme: rs.fn() } },
 }));
 
 rs.mock('./monaco-editor', () => ({ default: MockEditor, DiffEditor: MockEditor }));
 rs.mock('hooks/use-theme-appearance', () => ({ useThemeAppearance: appearance }));
 
-// Monaco calls beforeMount once, with its instance, then applies the `theme` prop.
 function MockEditor({ beforeMount, theme }: { beforeMount?: (monaco: typeof monacoStub) => void; theme?: string }) {
   const [mountMonaco] = useState(() => beforeMount);
   useEffect(

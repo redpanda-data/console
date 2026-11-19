@@ -18,7 +18,7 @@ import { FilterBar, type FilterBarProps } from './filter-bar';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FieldFilterToken } from '../types';
 
-const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage =>
+const makeMsg = (partitionID: number, offset: number, value: unknown) =>
   ({
     partitionID,
     offset,
@@ -190,7 +190,6 @@ describe('the FilterBar', () => {
       await userEvent.keyboard('{Enter}');
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
       expect(input()).toHaveAttribute('aria-expanded', 'false');
-      // the search text itself stays in the input
       expect(input()).toHaveValue('asdasd');
     });
 
@@ -199,13 +198,11 @@ describe('the FilterBar', () => {
       const el = input();
       await userEvent.click(el);
       await userEvent.keyboard('partition: value:def');
-      // move the caret back into the "partition:" word
       el.setSelectionRange(5, 5);
       fireEvent.select(el);
       expect(screen.getByText('Value for Partition')).toBeInTheDocument();
       await userEvent.click(screen.getByText('1'));
       expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
-      // the rest of the line is untouched by the mid-line splice
       expect(el).toHaveValue('partition:1 value:def');
     });
   });
@@ -215,10 +212,8 @@ describe('the FilterBar', () => {
       const props = renderBar();
       await userEvent.click(input());
       await userEvent.click(screen.getByText('partition:'));
-      // picking the bare field just inserts "partition:" text, nothing committed yet
       expect(input()).toHaveValue('partition:');
       expect(props.onPartitionIdChange).not.toHaveBeenCalled();
-      // Value list now shows distinct partition values with counts
       await userEvent.click(screen.getByText('1'));
       expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
       expect(input()).toHaveFocus();
@@ -256,7 +251,6 @@ describe('the FilterBar', () => {
       await userEvent.click(input());
       await userEvent.keyboard('key:abc');
       await userEvent.keyboard('{Enter}');
-      // caret now sits past the trailing space with an empty current word; the dropdown may
       // still be open showing default suggestions, but a stray Enter must not re-insert anything
       await userEvent.keyboard('{Enter}');
       expect(input()).toHaveValue('key:abc ');
@@ -282,7 +276,6 @@ describe('the FilterBar', () => {
       await userEvent.keyboard('{ArrowDown}{Enter}');
       expect(props.onPartitionIdChange).toHaveBeenCalledWith(1);
       expect(input()).toHaveValue('partition:1 ');
-      // the overlay paints a highlight span with the exact recognized substring
       const overlay = within(screen.getByTestId('messages-filter-highlight-overlay'));
       expect(overlay.getByText('partition:1')).toHaveClass('outline-1');
     });
@@ -298,7 +291,6 @@ describe('the FilterBar', () => {
     test('typing "partition:-1" never emits NaN and never wipes what was typed', async () => {
       const props = renderBar();
       await userEvent.click(input());
-      // the intermediate "partition:-" is exactly the state that used to produce NaN
       await userEvent.keyboard('partition:-1');
       expect(props.onPartitionIdChange).not.toHaveBeenCalledWith(Number.NaN);
       expect(input()).toHaveValue('partition:-1');
@@ -330,7 +322,6 @@ describe('the FilterBar', () => {
       const props = renderBar();
       await userEvent.click(input());
       await userEvent.keyboard('value:"New ');
-      // still empty, same as the initial state — no spurious call
       expect(props.onFieldTokensChange).not.toHaveBeenCalled();
       expect(input()).toHaveValue('value:"New ');
       await userEvent.keyboard('York"');
@@ -346,7 +337,6 @@ describe('the FilterBar', () => {
       const el = input();
       await userEvent.click(el);
       expect(el).toHaveValue('key:abc');
-      // place the caret right after "key:", in the middle of the existing text
       el.setSelectionRange(4, 4);
       fireEvent.select(el);
       await userEvent.keyboard('X');
@@ -400,7 +390,6 @@ describe('the FilterBar', () => {
       await userEvent.keyboard('key:abc value:xyz');
       // fieldTokens hasn't caught up to what was emitted yet — text must still be intact
       expect(input()).toHaveValue('key:abc value:xyz');
-      // now let the deliberately-held-back fieldTokens echo land, a render behind the rest
       rerender(<StaggeredBar flushSignal={1} spies={spies} />);
       expect(input()).toHaveValue('key:abc value:xyz');
     });
@@ -425,8 +414,6 @@ describe('the FilterBar', () => {
     test('typing js: followed by an actual expression seeds the code, not the name', async () => {
       const props = renderBar();
       await userEvent.click(input());
-      // no spaces — the dropdown's suggestions are scoped to the word under the caret, so a
-      // multi-word expression is written in the dialog's own editor, not typed inline here
       await userEvent.keyboard('js:value!=null');
       await userEvent.click(screen.getByText('ƒ value!=null'));
       expect(props.onEditJsFilter).toHaveBeenCalledWith(null, 'value!=null', undefined);
@@ -452,7 +439,6 @@ describe('the FilterBar', () => {
       const props = renderBar({ jsFilters: [jsFilter] });
       await userEvent.click(screen.getByTitle('Remove filter'));
       expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
-      // the container's onClick focuses the input, which opens the dropdown — removing a chip
       // must not trigger that via a bubbled click.
       expect(input()).not.toHaveFocus();
     });

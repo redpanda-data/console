@@ -15,7 +15,7 @@ const SASL_FLAGS = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-
  * @param variantName - The test variant name (e.g., 'console', 'console-enterprise')
  * @returns Container ID string
  */
-export function getRedpandaContainerId(variantName = 'console'): string {
+export function getRedpandaContainerId(variantName = 'console') {
   const stateFilePath = resolve(__dirname, `../.testcontainers-state-${variantName}.json`);
   const state = JSON.parse(readFileSync(stateFilePath, 'utf-8'));
   return state.redpandaId;

@@ -27,7 +27,6 @@ type AdvancedTopicSettingsProps = {
 };
 
 export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, isExistingTopic, disabled = false }) => {
-  // Generate unit options from create-topic-dialog factors for consistency
   const retentionTimeUnits = useMemo(() => getRetentionTimeUnitOptions(), []);
   const retentionSizeUnits = useMemo(() => getRetentionSizeUnitOptions(), []);
 
@@ -116,9 +115,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
       control: form.control,
       name: unitField as 'retentionTimeUnit' | 'retentionSizeUnit',
     });
-    // The numeric input is disabled when the unit is "infinite" (no value to
     // enter) or when editing an existing topic. The unit selector itself must
-    // stay interactive in both cases so the user can switch back off "infinite".
     const lockedForEdit = isExistingTopic || disabled;
     const isValueDisabled = isRetentionUnitDisabled(unitValue) || lockedForEdit;
 

@@ -39,8 +39,9 @@ import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId }
 import { SingleSelect } from '../../../misc/select';
 
 function getFreeId(tags: PreviewTagV2[]): string {
+  const ids = new Set(tags.map((tag) => tag.id));
   let i = 1;
-  while (tags.any((t) => t.id === String(i))) {
+  while (ids.has(String(i))) {
     i += 1;
   }
   return String(i);
@@ -295,7 +296,7 @@ function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2
   const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
     // We'll never get called for '*' or '**' patterns
     // So we can be sure that the pattern is not just '*'
-    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'i');
+    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'iu');
     return segmentRegex.test(propertyName);
   });
 
@@ -550,9 +551,9 @@ function wildcardToRegex(pattern: string): RegExp {
   const components = pattern.split('*'); // split by '*' symbol
   const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
   const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
-  return new RegExp(`^${joined}$`);
+  return new RegExp(`^${joined}$`, 'u');
 }
 
 function regexEscape(regexPattern: string): string {
-  return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+  return regexPattern.replace(/[/\\^$*+?.()|[\]{}]/gu, '\\$&');
 }

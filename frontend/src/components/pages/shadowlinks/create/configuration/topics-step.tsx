@@ -40,13 +40,11 @@ export const TopicsStep = () => {
   const handleModeChange = (mode: string) => {
     setValue('topicsMode', mode as 'all' | 'specify');
 
-    // Auto-expand when switching to specify mode
     if (mode === 'specify') {
       setIsOpen(true);
     }
 
     if (mode === 'specify' && fields.length === 0) {
-      // Add an empty filter when switching to specify mode
       append({
         name: '',
         patternType: PatternType.LITERAL,

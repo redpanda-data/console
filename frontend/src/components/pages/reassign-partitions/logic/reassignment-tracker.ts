@@ -72,8 +72,6 @@ export class ReassignmentTracker {
   constructor() {
     this.refreshReassignments = this.refreshReassignments.bind(this);
     this.createReassignmentState = this.createReassignmentState.bind(this);
-    this.updateReassignmentState = this.updateReassignmentState.bind(this);
-    this.computeId = this.computeId.bind(this);
     this.stop = this.stop.bind(this);
     this.start = this.start.bind(this);
   }
@@ -194,21 +192,10 @@ export class ReassignmentTracker {
     };
   }
 
-  updateReassignmentState(state: ReassignmentState) {
-    updatePartitionSizes(state);
-    updateRemaining(state);
-    updateEstimates(state);
-
-    return state;
-  }
+  updateReassignmentState = updateReassignmentState;
 
   // compute a stable ID for a PartitionReassignment
-  computeId(r: PartitionReassignments): string {
-    const id: unknown[] = [];
-    id.push(r.topicName);
-
-    return toJson(id);
-  }
+  computeId = computeId;
 
   stop() {
     if (this.clusterTimer !== null) {
@@ -280,4 +267,19 @@ function updateEstimates(state: ReassignmentState) {
     const remainingTimeSec = state.remaining.value / state.estimateSpeed;
     state.estimateCompletionTime = new Date(Date.now() + remainingTimeSec * 1000);
   }
+}
+
+function updateReassignmentState(state: ReassignmentState) {
+  updatePartitionSizes(state);
+  updateRemaining(state);
+  updateEstimates(state);
+
+  return state;
+}
+
+function computeId(r: PartitionReassignments): string {
+  const id: unknown[] = [];
+  id.push(r.topicName);
+
+  return toJson(id);
 }

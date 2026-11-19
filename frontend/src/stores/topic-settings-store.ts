@@ -95,61 +95,45 @@ export type TopicSettings = {
   produceRecordEncoding: PayloadEncoding | 'base64';
   produceRecordCompression: CompressionType;
   quickSearch: string;
-  // Added for the new messages UX; optional so entries persisted before these
   // fields existed still typecheck — read through the fallback getters.
   rowDensity?: RowDensity;
   messageColumns?: MessageColumnConfig[];
 };
 
 export type TopicSettingsStore = {
-  // Map of topic name to settings
   perTopicSettings: TopicSettings[];
 
-  // Actions for sorting (most commonly used)
   setSorting: (topicName: string, sorting: SortingState) => void;
   getSorting: (topicName: string) => SortingState;
 
-  // Actions for search params
   setSearchParams: (topicName: string, searchParams: Partial<TopicSearchParams>) => void;
   getSearchParams: (topicName: string) => TopicSearchParams | undefined;
 
-  // Actions for preview tags case sensitivity
   setPreviewTagsCaseSensitive: (topicName: string, caseSensitive: 'caseSensitive' | 'ignoreCase') => void;
   getPreviewTagsCaseSensitive: (topicName: string) => 'caseSensitive' | 'ignoreCase';
 
-  // Actions for preview tags
   setPreviewTags: (topicName: string, tags: PreviewTagV2[]) => void;
   getPreviewTags: (topicName: string) => PreviewTagV2[];
 
-  // Actions for preview multi result mode
   setPreviewMultiResultMode: (topicName: string, mode: 'showOnlyFirst' | 'showAll') => void;
   getPreviewMultiResultMode: (topicName: string) => 'showOnlyFirst' | 'showAll';
 
-  // Actions for preview display mode
   setPreviewDisplayMode: (topicName: string, mode: 'single' | 'wrap' | 'rows') => void;
   getPreviewDisplayMode: (topicName: string) => 'single' | 'wrap' | 'rows';
 
-  // Actions for the messages-table view settings (new messages UX)
   setRowDensity: (topicName: string, density: RowDensity) => void;
   getRowDensity: (topicName: string) => RowDensity;
   setMessageColumns: (topicName: string, columns: MessageColumnConfig[]) => void;
   getMessageColumns: (topicName: string) => MessageColumnConfig[];
   resetViewSettings: (topicName: string) => void;
 
-  // Actions for complete topic settings
   getTopicSettings: (topicName: string) => TopicSettings | undefined;
   setTopicSettings: (topicName: string, settings: Partial<TopicSettings>) => void;
 
-  // Utility actions
   clearTopicSettings: (topicName: string) => void;
   clearAllSettings: () => void;
 };
 
-// Default display order for the message list: newest-first by timestamp, with
-// offset descending as a cross-partition tiebreak (offset isn't global across
-// partitions, so timestamp is the primary key). The backend's listMessages
-// stream isn't globally timestamp-sorted across partitions, so this default
-// drives the table's client-side sort to give users a sensible newest-first view.
 export const DEFAULT_SORTING: SortingState = [
   { id: 'timestamp', desc: true },
   { id: 'offset', desc: true },
@@ -174,7 +158,6 @@ const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   schemaContext: '',
 };
 
-// Helper function to create default topic settings
 const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicSettings> = {}): TopicSettings => ({
   topicName,
   searchParams: { ...DEFAULT_SEARCH_PARAMS },
@@ -240,7 +223,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -258,9 +240,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
         getSorting: (topicName: string) => {
           const topic = get().perTopicSettings.find((t) => t.topicName === topicName);
           const sorting = topic?.searchParams.sorting;
-          // Treat an empty/unset sort as "use the newest-first default" so the
-          // default applies on every fresh load, including returning users whose
-          // persisted settings still hold the old empty sort.
           return sorting && sorting.length > 0 ? sorting : DEFAULT_SORTING;
         },
 
@@ -280,7 +259,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -313,7 +291,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -341,7 +318,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -369,7 +345,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -397,7 +372,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return {
               perTopicSettings: [
                 ...state.perTopicSettings,
@@ -433,7 +407,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           }
           // Heal entries corrupted by the legacy assignDeep array merge (which
           // duplicated some column ids and dropped others): keep the first
-          // occurrence of each id and restore any missing columns.
           const seen = new Set<MessageColumnConfig['id']>();
           const unique = columns.filter((c) => {
             if (seen.has(c.id)) {
@@ -485,7 +458,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               return { perTopicSettings: updated };
             }
 
-            // Create new topic settings if it doesn't exist
             return { perTopicSettings: [...state.perTopicSettings, createDefaultTopicSettings(topicName, settings)] };
           });
         },
@@ -530,7 +502,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
             return null;
           },
           setItem: (name, value) => {
-            // Read existing settings
             const existingStr = localStorage.getItem(name);
             let fullSettings: Record<string, unknown> = {};
 
@@ -538,15 +509,12 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               try {
                 fullSettings = JSON.parse(existingStr);
               } catch {
-                // If parsing fails, start with empty object
                 fullSettings = {};
               }
             }
 
-            // Merge our perTopicSettings into the full settings
             fullSettings.perTopicSettings = value.state.perTopicSettings;
 
-            // Save the merged settings
             localStorage.setItem(name, JSON.stringify(fullSettings));
           },
           removeItem: (name) => {
@@ -558,14 +526,9 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
   )
 );
 
-// Subscribe to Zustand store changes and sync them to MobX
 // This ensures that changes made via Zustand are also reflected in the legacy MobX store
-// and persisted by MobX's autorun mechanism
 useTopicSettingsStore.subscribe(syncPerTopicSettingsToMobX);
 
-// Enforce the perTopicSettings cap on every change. Registered after the MobX sync so that the
-// sync re-run (triggered by this trim's setState) ends up mirroring the trimmed array. The length
-// guard makes the re-entrant setState terminate immediately (the trimmed array is within the cap).
 useTopicSettingsStore.subscribe((state) => {
   if (state.perTopicSettings.length > MAX_PER_TOPIC_SETTINGS) {
     useTopicSettingsStore.setState({

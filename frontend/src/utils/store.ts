@@ -7,7 +7,6 @@ export const createFlatStorage = <T>(): PersistStorage<T> => {
       if (!str) {
         return null;
       }
-      // Read flat data from storage, wrap it for Zustand's internal use
       return { state: JSON.parse(str) as T, version: 0 };
     },
     setItem: (name, value) => {

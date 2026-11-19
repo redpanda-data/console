@@ -32,7 +32,6 @@ const LINT_HINT_TYPE = 'redpanda.api.common.v1.LintHint';
 const ERROR_INFO_TYPE = 'google.rpc.ErrorInfo';
 const INVALID_CONFIG_REASON = 'REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION';
 
-// Wire details are `{ type, debug }`; locally attached ones are `{ desc, value }`.
 function detailTypeAndPayload(detail: unknown): { typeName: string; payload: unknown } | null {
   if (detail === null || typeof detail !== 'object') {
     return null;
@@ -71,7 +70,7 @@ export function isInvalidConfigError(error: unknown): boolean {
  * The service refuses a `draft: true` update once the pipeline has been started. Matched on the message as
  * well as the code: a suspended cluster also answers FAILED_PRECONDITION.
  */
-const NOT_A_DRAFT = /not a draft/i;
+const NOT_A_DRAFT = /not a draft/iu;
 
 export const isNoLongerDraftError = (error: unknown): boolean =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && NOT_A_DRAFT.test(error.rawMessage);
@@ -86,7 +85,6 @@ export const wasDraftIgnored = (isDraftSave: boolean, saved: { state?: Pipeline_
 export const NO_LONGER_DRAFT_MESSAGE =
   'This pipeline has been started since you opened it, so it is no longer a draft. Reload to see the running configuration before saving.';
 
-// STOPPING is in `STARTABLE_STATES` so a row menu can rescue a stuck stop, but a save offers nothing while it settles.
 const isStartableState = (state: Pipeline_State | undefined): boolean =>
   state !== undefined &&
   state !== Pipeline_State.STOPPING &&
@@ -102,7 +100,6 @@ export function primaryRunIntent(context: SaveContext): SaveRunIntent {
   if (isUndeployed(context) && context.draftsEnabled) {
     return 'draft';
   }
-  // CreatePipeline always deploys, so without draft support a new pipeline is stopped right after.
   if (context.mode === 'create') {
     return 'stopped';
   }

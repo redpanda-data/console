@@ -38,11 +38,7 @@ import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretS
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-// Matches the server-side upper bound declared in redpanda/api/dataplane/v1/secret.proto.
 export const SECRETS_LIST_PAGE_SIZE = 50;
-// Hard cap on pagination iterations. At SECRETS_LIST_PAGE_SIZE=50 this allows 10k secrets,
-// which is far beyond any realistic tenant. Protects against a misbehaving server returning
-// non-empty nextPageToken indefinitely.
 export const SECRETS_LIST_MAX_PAGES = 200;
 
 function listSecretsPageRequest(pageToken: string, nameContains: string | undefined) {
@@ -55,7 +51,6 @@ function listSecretsPageRequest(pageToken: string, nameContains: string | undefi
   });
 }
 
-// The token of the page after this one, or null when this was the last page.
 function nextSecretsPageToken(response: ListSecretsResponse, pageToken: string): string | null {
   const next = response.response?.nextPageToken ?? '';
   if (!next) {
@@ -87,7 +82,6 @@ async function fetchSecretsPage(
 
 function listAllSecrets(transport: Transport, nameContains: string | undefined, signal: AbortSignal | undefined) {
   const secrets: Secret[] = [];
-  // Each request depends on the preceding response's token; never start pages concurrently.
   const nextPage = async (pageToken: string, iteration: number): Promise<{ secrets: Secret[] }> => {
     if (iteration >= SECRETS_LIST_MAX_PAGES) {
       throw new Error(`ListSecrets exceeded ${SECRETS_LIST_MAX_PAGES} pages; aborting to avoid runaway pagination`);
@@ -119,7 +113,6 @@ export const useListSecretsQuery = (
     ],
     enabled: options?.enabled,
     // Our queryFn throws intentionally on pagination safety violations (non-advancing token,
-    // max-pages exceeded). Retrying would multiply the server round-trips for no benefit.
     retry: false,
     queryFn: ({ signal }) => listAllSecrets(transport, nameContains, signal),
   });

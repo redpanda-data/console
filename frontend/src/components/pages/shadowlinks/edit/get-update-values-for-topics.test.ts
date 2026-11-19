@@ -26,7 +26,6 @@ import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 import { buildDefaultTopicsValues } from '../mappers/dataplane';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -359,7 +358,6 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.fieldMaskPaths).toContain('configurations.topic_metadata_sync_options');
       expect(result.fieldMaskPaths).toHaveLength(1);
 
-      // Validate schema values
       expect(result.value.autoCreateShadowTopicFilters).toHaveLength(2);
       expect(result.value.autoCreateShadowTopicFilters[0]).toMatchObject({
         name: 'topic1',

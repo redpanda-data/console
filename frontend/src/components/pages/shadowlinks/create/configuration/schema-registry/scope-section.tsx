@@ -45,14 +45,11 @@ export const ScopeSection = () => {
     setValue('schemaRegistry.destinationContextsMode', mode as 'preserve' | 'map', { shouldValidate: true });
 
     // Keep any rows the user entered when toggling to preserve; the request
-    // builder ignores them unless mode is map.
     if (mode === 'map' && fields.length === 0) {
       append({ source: '', destination: '' });
     }
   };
 
-  // The "at least one context or subject" error is anchored to contexts, so
-  // revalidate it when either changes.
   const revalidateScope = () => {
     // trigger() rejects only if the resolver itself throws; report that instead of dropping it.
     trigger('schemaRegistry.contexts').catch((error: unknown) => {

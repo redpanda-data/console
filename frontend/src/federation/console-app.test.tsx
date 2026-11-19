@@ -13,7 +13,10 @@ import { useQuery } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock TanStack Router before any imports
+import { ConsoleApp } from './console-app';
+import type { ConsoleAppProps } from './types';
+import { config, setup } from '../config';
+
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
@@ -56,10 +59,6 @@ rs.mock('../routeTree.gen', () => ({
 rs.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: MockNotFoundPage,
 }));
-
-import { ConsoleApp } from './console-app';
-import type { ConsoleAppProps } from './types';
-import { config, setup } from '../config';
 
 let pendingTopic: Promise<string> | undefined;
 let reportBreadcrumbsDuringRender = false;
@@ -120,7 +119,6 @@ describe('the ConsoleApp', () => {
     pendingTopic = undefined;
     reportBreadcrumbsDuringRender = false;
     mockGetAccessToken.mockResolvedValue('test-token-123');
-    // Reset config.jwt
     config.jwt = undefined;
   });
 
@@ -262,22 +260,13 @@ describe('the ConsoleApp', () => {
     });
 
     test('shows nothing while loading', async () => {
-      // Use a deferred promise so the component stays in its loading branch
-      // for the duration of the assertion. This prevents the async
-      // initialize() useEffect from flushing a second state update (which
-      // would trigger "update was not wrapped in act(...)" since the render()
-      // call wasn't awaited).
-      const tokenPromise = new Promise<string>(() => {
-        // never resolves
-      });
+      const tokenPromise = new Promise<string>(() => {});
       mockGetAccessToken.mockReturnValueOnce(tokenPromise);
 
       const { container } = render(<ConsoleApp {...defaultProps} />);
 
-      // Component returns null while initializing
       expect(container.firstChild).toBeNull();
 
-      // Let any queued microtasks settle inside act() so React's scheduler
       // doesn't log a deferred-update warning after the test completes.
       await act(async () => {
         await Promise.resolve();
@@ -331,14 +320,12 @@ describe('the ConsoleApp', () => {
       const { container } = render(<ConsoleApp {...defaultProps} />);
       await waitFor(() => expect(mockGetAccessToken).toHaveBeenCalledTimes(1));
 
-      // Initialization is parked on the token: no setup, nothing rendered.
       await act(async () => {
         await Promise.resolve();
       });
       expect(setup).not.toHaveBeenCalled();
       expect(container.firstChild).toBeNull();
 
-      // Control: the same app initializes as soon as the token arrives.
       await act(async () => {
         token.resolve('late-token');
         await token.promise;
@@ -352,7 +339,6 @@ describe('the ConsoleApp', () => {
         initialPath: undefined,
       };
 
-      // Should not throw
       render(<ConsoleApp {...propsWithoutInitialPath} />);
 
       await waitFor(() => {
@@ -379,13 +365,11 @@ describe('the ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // Unmount should not throw
       unmount();
     });
   });
 
   test('accepts navigateTo prop', async () => {
-    // Should not throw when navigateTo is provided
     render(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
 
     await waitFor(() => {
@@ -400,7 +384,6 @@ describe('the ConsoleApp', () => {
       expect(mockGetAccessToken).toHaveBeenCalled();
     });
 
-    // Should not throw on unmount (unsubscribe should be called)
     unmount();
   });
 
@@ -420,14 +403,12 @@ describe('the ConsoleApp', () => {
         featureFlags: undefined,
       };
 
-      // Should not throw
       render(<ConsoleApp {...propsWithoutFlags} />);
 
       await waitFor(() => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // setup should still be called
       await waitFor(() => {
         expect(setup).toHaveBeenCalled();
       });
@@ -455,10 +436,8 @@ describe('the ConsoleApp', () => {
       const createRouterCallCount = rs.mocked(createRouter).mock.calls.length;
       const createMemoryHistoryCallCount = rs.mocked(createMemoryHistory).mock.calls.length;
 
-      // Rerender with a different initialPath (simulates cloud-ui navigation)
       rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
 
-      // Router should NOT have been recreated
       expect(rs.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
       expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
     });
@@ -472,14 +451,12 @@ describe('the ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // Verify initial path was used
       expect(rs.mocked(createMemoryHistory)).toHaveBeenCalledWith(
         expect.objectContaining({ initialEntries: ['/topics'] })
       );
 
       const callCount = rs.mocked(createMemoryHistory).mock.calls.length;
 
-      // Changing initialPath should not create a new memory history
       rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
       expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
     });
@@ -487,7 +464,6 @@ describe('the ConsoleApp', () => {
 
   describe('search Params Handling', () => {
     test('onRouteChange includes searchStr when route resolves with search params', async () => {
-      // Get a reference to the subscribe callback so we can invoke it manually
       const { createRouter } = await import('@tanstack/react-router');
       let subscribedCallback: ((event: unknown) => void) | undefined;
 
@@ -508,7 +484,6 @@ describe('the ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // Simulate a route resolution with search params (e.g., ?tab=messages)
       expect(subscribedCallback).toBeDefined();
       subscribedCallback!({
         toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
@@ -549,7 +524,6 @@ describe('the ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // Rerender with navigateTo containing search params
       rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?search=my-group" />);
 
       await waitFor(() => {
@@ -575,7 +549,6 @@ describe('the ConsoleApp', () => {
         expect(mockGetAccessToken).toHaveBeenCalled();
       });
 
-      // Rerender with navigateTo without search params
       rerender(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
 
       await waitFor(() => {
@@ -597,12 +570,10 @@ describe('the ConsoleApp', () => {
 
       const { container, rerender } = render(<ConsoleApp {...defaultProps} />);
 
-      // Host navigation only runs once the app is initialized, which is when it first renders.
       await waitFor(() => {
         expect(container.firstChild).not.toBeNull();
       });
 
-      // navigateTo equals currentPath + currentSearchStr, so navigate should NOT be called
       rerender(<ConsoleApp {...defaultProps} navigateTo="/topics?tab=messages" />);
 
       expect(mockNavigate).not.toHaveBeenCalled();
@@ -649,7 +620,6 @@ describe('the ConsoleApp', () => {
         config: undefined,
       };
 
-      // Should not throw
       render(<ConsoleApp {...propsWithoutConfig} />);
 
       await waitFor(() => {

@@ -1,39 +1,18 @@
-import { render, screen } from '@testing-library/react';
-
-const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
-  mockConfig: {
-    clusterId: 'cluster-123' as string | undefined,
-  },
-  mockLocation: {
-    pathname: '/agents/agent-123',
-  },
-  mockRouter: {
-    history: {
-      back: rs.fn(),
-    },
-  },
-}));
-
-rs.mock('@tanstack/react-router', () => ({
-  Link: MockLink,
-  useLocation: () => mockLocation,
-  useRouter: () => mockRouter,
-}));
-
-rs.mock('../../config', () => ({
-  config: mockConfig,
-}));
+import { afterEach } from '@rstest/core';
+import { renderWithRouter, screen } from 'test-utils';
 
 import { NotFoundPage } from './not-found-page';
+import { config } from '../../config';
+
+const originalClusterId = config.clusterId;
+afterEach(() => {
+  config.clusterId = originalClusterId;
+});
 
 describe('the NotFoundPage', () => {
-  beforeEach(() => {
-    mockConfig.clusterId = 'cluster-123';
-    mockLocation.pathname = '/agents/agent-123';
-  });
-
   test('shows the Redpanda AI migration page for a removed AI route', () => {
-    render(<NotFoundPage />);
+    config.clusterId = 'cluster-123';
+    renderWithRouter(<NotFoundPage />, { initialLocation: '/agents/agent-123' });
 
     expect(screen.getByRole('heading', { level: 1, name: 'This feature has moved' })).toBeVisible();
     expect(
@@ -47,20 +26,10 @@ describe('the NotFoundPage', () => {
   });
 
   test('keeps the standard not-found page for other routes', () => {
-    mockLocation.pathname = '/agentship';
-
-    render(<NotFoundPage />);
+    renderWithRouter(<NotFoundPage />, { initialLocation: '/agentship' });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Resource not found.' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Return home' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('link', { name: 'Open Redpanda AI' })).not.toBeInTheDocument();
   });
 });
-
-function MockLink({ children, to, ...props }: { children: React.ReactNode; to: string }) {
-  return (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  );
-}

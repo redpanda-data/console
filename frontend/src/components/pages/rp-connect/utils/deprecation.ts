@@ -66,7 +66,7 @@ export function deprecationNotice(
 /** The warning every surface shows. */
 export function deprecationMessage({ name, replacement }: DeprecationNotice): string {
   return replacement
-    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/g, ' ')} instead.`
+    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/gu, ' ')} instead.`
     : `${name} is deprecated and may be removed in a future release.`;
 }
 
@@ -81,7 +81,6 @@ type FieldShape = Pick<RawFieldSpec, 'name' | 'type' | 'kind'> & { children?: re
 const COMPONENT_TYPES: ReadonlySet<string> = new Set(CONNECT_COMPONENT_TYPE);
 const PROCESSORS: FieldShape = { name: 'processors', type: 'processor', kind: 'array' };
 
-// Where components sit at the top level of a config.
 const CONFIG_ROOT: FieldShape = {
   name: '',
   type: 'object',
@@ -103,7 +102,6 @@ const CONFIG_ROOT: FieldShape = {
 
 type Walk = { catalog: readonly ConnectComponentSpec[]; lineCounter: LineCounter; usages: DeprecatedUsage[] };
 
-// The values a field holds, by its kind.
 function fieldValues(node: unknown, kind: string): unknown[] {
   switch (kind) {
     case 'array':
@@ -117,8 +115,7 @@ function fieldValues(node: unknown, kind: string): unknown[] {
   }
 }
 
-// Follows the schema's component-typed fields, so nested components are found wherever they sit.
-function walkField(walk: Walk, node: unknown, field: FieldShape): void {
+function walkField(walk: Walk, node: unknown, field: FieldShape) {
   for (const value of fieldValues(node, field.kind)) {
     if (COMPONENT_TYPES.has(field.type)) {
       walkComponent(walk, value, field.type as ConnectComponentType);
@@ -130,8 +127,7 @@ function walkField(walk: Walk, node: unknown, field: FieldShape): void {
   }
 }
 
-// A component slot: `{ <name>: config }` plus `label`, and `processors` on inputs and outputs.
-function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): void {
+function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType) {
   if (!isMap(node)) {
     return;
   }
@@ -142,7 +138,7 @@ function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): v
   }
 }
 
-function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType): void {
+function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType) {
   if (key.value === 'processors' && (type === 'input' || type === 'output')) {
     walkField(walk, value, PROCESSORS);
     return;

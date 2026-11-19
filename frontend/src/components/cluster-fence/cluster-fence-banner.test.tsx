@@ -13,17 +13,16 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen } from '@testing-library/react';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { renderWithFileRoutes } from 'test-utils';
+
+import { ClusterFenceBanner } from './cluster-fence-banner';
+import type { BrokerProgress, FencePhase, FenceSummary } from './cluster-fence-model';
 
 rs.mock('react-query/api/cluster-fence', () => {
   const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
   return { ...actual, useClusterFenceStatusQuery: rs.fn() };
 });
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-
-import { ClusterFenceBanner } from './cluster-fence-banner';
-import type { BrokerProgress, FencePhase, FenceSummary } from './cluster-fence-model';
 
 // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {

@@ -40,7 +40,7 @@ export type MockConnectNetworkFailureArgs = {
 /**
  * Maps a Connect error code to the HTTP status Connect transports use for JSON responses.
  */
-function connectCodeToHttpStatus(code: ConnectErrorCode): number {
+function connectCodeToHttpStatus(code: ConnectErrorCode) {
   switch (code) {
     case 'invalid_argument':
     case 'out_of_range':
@@ -86,7 +86,7 @@ function connectCodeToHttpStatus(code: ConnectErrorCode): number {
  */
 const DEBUG_CONNECT_MOCK = false;
 
-export async function mockConnectError(args: MockConnectErrorArgs): Promise<void> {
+export async function mockConnectError(args: MockConnectErrorArgs) {
   const { page, urlGlob, code, message = `mocked ${code}`, times } = args;
   if (DEBUG_CONNECT_MOCK) {
     // biome-ignore lint/suspicious/noConsole: diagnostic gated behind DEBUG_CONNECT_MOCK
@@ -116,7 +116,7 @@ export async function mockConnectError(args: MockConnectErrorArgs): Promise<void
  * Aborts all matching requests with a network-level failure. Use for simulating offline/timeout
  * behavior where no response envelope is sent at all.
  */
-export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureArgs): Promise<void> {
+export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureArgs) {
   const { page, urlGlob, reason = 'failed' } = args;
   await page.route(urlGlob, (route) => route.abort(reason));
 }
@@ -127,7 +127,7 @@ export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureA
  *
  * @example rpcUrl('redpanda.api.dataplane.v1.UserService', 'CreateUser')
  */
-export function rpcUrl(fullyQualifiedService: string, method: string): string {
+export function rpcUrl(fullyQualifiedService: string, method: string) {
   return `**/${fullyQualifiedService}/${method}`;
 }
 

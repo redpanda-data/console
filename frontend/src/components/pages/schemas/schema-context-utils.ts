@@ -12,7 +12,7 @@
 import type { SchemaRegistryContextResponse } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubject, SchemaVersion } from '../../../state/rest-interfaces';
 
-export const CONTEXT_PREFIX_RE = /^:\.([^:]+):(.+)$/;
+export const CONTEXT_PREFIX_RE = /^:\.(?<context>[^:]+):(?<subject>.+)$/u;
 
 export type ParsedSubject = {
   context: string;
@@ -49,7 +49,7 @@ export function subjectSchemaContext(name: string): string {
 // "." (default) if none.
 export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>): string {
   const raw = configEntries?.find((e) => e.name === 'redpanda.schema.registry.context')?.value?.trim() ?? '';
-  const name = raw.replace(/^:|:$/g, '');
+  const name = raw.replace(/^:|:$/gu, '');
   if (name === '' || name === '.') {
     return '.';
   }

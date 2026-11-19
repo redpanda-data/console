@@ -37,7 +37,6 @@ export const Route = createFileRoute('/quotas')({
 });
 
 function QuotasWrapper() {
-  // Set page title and breadcrumbs in route wrapper for early execution
   useLayoutEffect(() => {
     uiState.pageBreadcrumbs = [{ title: 'Quotas', linkTo: '' }];
     uiState.pageTitle = 'Quotas';

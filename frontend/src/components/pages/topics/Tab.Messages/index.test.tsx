@@ -12,7 +12,7 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import { CompressionType, type Payload, type Topic, type TopicMessage } from 'state/rest-interfaces';
+import { CompressionType, type Topic } from 'state/rest-interfaces';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 import { TopicMessageView } from '.';
@@ -45,11 +45,11 @@ const topic: Topic = {
   allowedActions: undefined,
 };
 
-function buildPayload(payload: string): Payload {
+function buildPayload(payload: string) {
   return { payload, isPayloadNull: false, encoding: 'text', schemaId: 0, size: payload.length };
 }
 
-function buildMessage(offset: number, key: string, value: string): TopicMessage {
+function buildMessage(offset: number, key: string, value: string) {
   return {
     partitionID: 0,
     offset,
@@ -164,7 +164,6 @@ describe('topicMessageView', () => {
         expect.any(AbortSignal)
       )
     );
-    // The select keeps its own hidden input with the same value, so pick the visible text input.
     const customOffsetInput = screen
       .getAllByDisplayValue('0')
       .find((input) => input.getAttribute('data-slot') === 'input');

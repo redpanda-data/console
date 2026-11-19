@@ -23,13 +23,9 @@ import { connectQueryWrapper } from 'test-utils';
 
 import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
 
-// Module scope: the hook memoizes its request on the input's identity.
 const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
 
 describe('useListPipelinesQuery', () => {
-  // connect-query omits the `pageParamKey` field from the key, and on the console-layer request that
-  // field — `request` — is the entire input. So two callers asking for different things share one
-  // cache entry and the narrower one wins, against what the hook's signature promises.
   test('shares one cache entry across callers, whatever input each asks for', async () => {
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listPipelines, (req) =>
@@ -56,7 +52,6 @@ describe('useListPipelinesQuery', () => {
 
     await waitFor(() => expect(result.current.all.data.pipelines.length).toBeGreaterThan(0));
 
-    // One entry, one result: the filtered caller never gets a view of its own, it replaces everyone's.
     expect(result.current.filtered.data.pipelines).toEqual(result.current.all.data.pipelines);
   });
 
@@ -164,7 +159,6 @@ describe('useListPipelinesQuery', () => {
   });
 
   test('stops draining when the server repeats the page token it was given', async () => {
-    // Unguarded, this drains forever, appending the same page each round.
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -187,14 +181,11 @@ describe('useListPipelinesQuery', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // First page, then the one page that reveals the repeat — and no further.
     expect(callCount).toBe(2);
     expect(result.current.data.pipelines.map((p) => p.id)).toEqual(['pipeline-1']);
   });
 
   test('stops draining on a token cycle, not just an immediate repeat', async () => {
-    // Page A points at B, B back at A. Nothing repeats consecutively, so a guard that only checks the
-    // last token would alternate forever.
     let callCount = 0;
 
     const transport = createRouterTransport(({ rpc }) => {
@@ -204,7 +195,6 @@ describe('useListPipelinesQuery', () => {
         return create(ListPipelinesResponseSchema, {
           response: create(DataPlaneListPipelinesResponseSchema, {
             pipelines: [create(PipelineSchema, { id: `pipeline-${pageToken || 'first'}`, displayName: 'cycling' })],
-            // '' → token-a, token-a → token-b, token-b → token-a, …
             nextPageToken: pageToken === 'token-a' ? 'token-b' : 'token-a',
           }),
         });
@@ -219,7 +209,6 @@ describe('useListPipelinesQuery', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Three calls: '' → token-a → token-b, whose token-a is already spent. The drain stops there.
     expect(callCount).toBe(3);
     expect(result.current.data.pipelines.map((p) => p.id)).toEqual([
       'pipeline-first',
@@ -229,8 +218,6 @@ describe('useListPipelinesQuery', () => {
   });
 
   test('deduplicates pipelines a replayed page returns twice', async () => {
-    // A dataplane resolving the token by exact id match restarts at page one when that pipeline is
-    // deleted mid-drain, so page two repeats page one.
     const page = (ids: string[], nextPageToken: string) =>
       create(ListPipelinesResponseSchema, {
         response: create(DataPlaneListPipelinesResponseSchema, {
@@ -244,7 +231,6 @@ describe('useListPipelinesQuery', () => {
         switch (req.request?.pageToken ?? '') {
           case '':
             return page(['pipeline-1', 'pipeline-2'], 'pipeline-3');
-          // The boundary pipeline is gone, so this restarts at the top.
           case 'pipeline-3':
             return page(['pipeline-1', 'pipeline-2'], 'pipeline-4');
           default:
@@ -271,8 +257,6 @@ describe('useListPipelinesQuery', () => {
 });
 
 // The server validates name_contains against ^[A-Za-z0-9-_ /]+$ and rejects anything
-// else as a malformed request, so a name carrying ordinary punctuation has to be
-// filed down before it goes on the wire rather than 400ing the lookup it belongs to.
 describe('toNameContainsFilter', () => {
   test('passes a name already inside the server pattern through unchanged', () => {
     expect(toNameContainsFilter('Untitled pipeline')).toBe('Untitled pipeline');
@@ -285,8 +269,6 @@ describe('toNameContainsFilter', () => {
     expect(toNameContainsFilter('a@b#c')).toBe('abc');
   });
 
-  // A filter that lost characters matches a superset of what was asked for, which is
-  // what every caller here can live with — they are checking which names are taken.
   test('returns empty when nothing usable is left, so the filter can be omitted', () => {
     expect(toNameContainsFilter('日本語')).toBe('');
     expect(toNameContainsFilter('')).toBe('');

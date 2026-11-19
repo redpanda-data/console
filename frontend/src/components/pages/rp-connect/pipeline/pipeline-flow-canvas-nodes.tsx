@@ -49,10 +49,8 @@ import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml';
 
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
-// Applied to the card body, never the RF node wrapper, whose `transform` drives positioning.
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 
-// RF drives pan/drag from native d3 listeners on ancestors; React's synthetic handlers run too late to
 // cancel. Stop propagation natively, only for presses on a real control, so the card body still pans.
 const CONTROL_SELECTOR = 'button, a, input, select, textarea, [role="button"]';
 const PRESS_EVENTS = ['mousedown', 'pointerdown', 'touchstart'] as const;
@@ -81,7 +79,6 @@ function useStopPanOnControls() {
   return ref;
 }
 
-// Role colour identities as theme-aware tokens; output has no status token, so it borrows a chart accent.
 const SECTION_ACCENT: Record<string, string> = {
   input: 'var(--color-success)',
   processor: 'var(--color-informative)',
@@ -93,19 +90,17 @@ export function sectionAccent(section?: string): string | undefined {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
-// A tinted title band, not a border, so it doesn't compete with selection/error rings; opaque over the card colour.
 function headerTintStyle(accent?: string): React.CSSProperties | undefined {
   return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
 }
 
-// The connector logo in a small elevated tile so it sits cleanly on the tinted header band.
 const LogoTile = ({ name }: { name: string }) => (
   <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background">
     <ConnectorLogo className="size-5" fallback={Box} name={name as ComponentName} />
   </span>
 );
 
-function branchChipText(data: FlowCardData): string {
+function branchChipText(data: FlowCardData) {
   if (data.condition) {
     return `if ${data.condition}`;
   }
@@ -205,9 +200,7 @@ export type FlowCardData = {
   condition?: string;
   isDefault?: boolean;
   isErrorPath?: boolean;
-  // A `switch` case wrapper — rendered as a condition-forward "case" card.
   isCase?: boolean;
-  // Logical parent (parser parentId) for selection/scope; nodes carry no React Flow `parentId`.
   ownerId?: string;
   editTarget?: EditTarget;
   /** Edit target for this node's switch CASE (routing condition), distinct from `editTarget`
@@ -248,7 +241,6 @@ export type FlowCardData = {
   onSetStopCondition?: (draft: StopConditionDraft | null) => boolean;
 };
 
-// An input's stop row, on cards and broker/sequence markers that can take a stop condition.
 const InputStopRow = ({ data, isGroup }: { data: FlowCardData; isGroup?: boolean }) =>
   hasStopSlot(data) ? (
     <StopRow
@@ -272,7 +264,6 @@ const NodeHandles = () => (
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
       // l/r handles keep RF's default centering so a same-rank spine reads straight; t/b pin to a
-      // fixed left offset so stacked cards of differing widths connect on a straight line.
       const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
@@ -281,7 +272,6 @@ const NodeHandles = () => (
   </>
 );
 
-// Topics as scannable chips, capped so a long list doesn't blow out the card.
 const TOPIC_CHIP_LIMIT = 4;
 const TopicChips = ({ topics }: { topics?: string[] }) => {
   if (!topics?.length) {
@@ -359,7 +349,6 @@ const MissingChip = ({
       className="nodrag nopan"
       icon={<PlusIcon className="size-3" />}
       onClick={(e) => {
-        // Adding the missing piece shouldn't also select the node.
         e.stopPropagation();
         onAdd();
       }}
@@ -399,17 +388,13 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   );
 };
 
-// The selection ring on the node the inspector is editing.
 const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
-// An error ring for nodes with lint problems (takes precedence over selection).
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
 function cardRing(data: FlowCardData): string {
   return data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
 }
 
-// A brief double-pulse ring after an undo/redo touched a node — the `brand` token, distinct from
-// selection (primary) and errors (destructive). Keyed by `token` so re-flashing replays it.
 // The motion layer only animates opacity; the ring it fades is the native span inside.
 const FlashPulse = ({ token }: { token?: number }) => (
   <motion.span
@@ -424,7 +409,6 @@ const FlashPulse = ({ token }: { token?: number }) => (
   </motion.span>
 );
 
-// Lint-problem count on a node; the messages are its tooltip, one per line.
 const LintBadge = ({ errors }: { errors?: string[] }) =>
   errors && errors.length > 0 ? (
     <ElementTooltip content={<span className="whitespace-pre-line">{errors.join('\n')}</span>}>
@@ -446,7 +430,6 @@ const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
     </ElementTooltip>
   ) : null;
 
-// An info-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
   show ? (
     <ElementTooltip content="Unsaved changes on this node">
@@ -456,7 +439,6 @@ const UnsavedDot = ({ show }: { show?: boolean }) =>
     </ElementTooltip>
   ) : null;
 
-// The component's `label:` — shown on every node (leaf, container) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
   label ? (
     <Badge
@@ -470,7 +452,6 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
     </Badge>
   ) : null;
 
-// A leaf component card. The whole card is the click target; editing happens in the inspector rail.
 const ComponentCard = ({ data }: { data: FlowCardData }) => {
   const kindLabel = sectionLabel(data.section);
   const accent = SECTION_ACCENT[data.section ?? ''];
@@ -505,7 +486,6 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         </div>
       </div>
       {data.labelText ? (
-        // When no meta rows follow, the label badge is the last row — bottom inset so it isn't flush.
         <div className={cn('px-3 pt-2', cardHasMeta(data) ? '' : 'pb-3')}>
           <LabelBadge label={data.labelText} />
         </div>
@@ -539,7 +519,6 @@ type FlowInsertData = {
   onInsert?: (payload: FlowInsertPayload) => void;
 };
 
-// An "add" affordance. As a ghost branch it's a dashed pill reached by a faint connector; inline
 // it's a plain "+". Edit mode only; the l/r handles let the ghost connector edge attach.
 const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   if (!(data.onInsert && data.payload)) {
@@ -586,7 +565,6 @@ const LINK_STROKE: Record<LinkTone, string> = {
   error: 'var(--color-destructive)',
 };
 
-// Tone-matched labels — solid pill, tinted border, text in the edge's colour — read clearly over region fills.
 const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
@@ -594,7 +572,6 @@ const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   // Routing conditions read as the warning accent, matching the legend and the cards' condition chips.
   condition: 'border-warning/40 text-warning',
 };
-// Edge labels render into RF's shared layer below the nodes; lift the pill above the cards.
 const LINK_LABEL_Z = 1000;
 const LinkLabel = ({
   d,
@@ -610,10 +587,8 @@ const LinkLabel = ({
   onClick?: () => void;
 }) => {
   const className = cn(
-    // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
     'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-mono text-2xs font-medium shadow-sm',
     LINK_LABEL_STYLE[tone],
-    // A condition label is clickable to edit its case — make that obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
   );
   const style = {
@@ -640,15 +615,12 @@ const LinkLabel = ({
   );
 };
 
-// Control-flow processors have no logo or config meta; each gets a glyph + one-line descriptor
-// (count of cases/steps, or routing role) so it reads as a router, not an empty card.
 type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
 
 function plural(n: number, noun: string): string {
   return pluralizeWithNumber(n, noun, noun.endsWith('h') ? 'es' : 's');
 }
 
-// Per-construct glyph + descriptor recipe: `noun` is counted (e.g. "3 cases"), `prefix` precedes
 // the count, `zero` is the fallback with no count (or no `noun`).
 type ControlFlowSpec = { icon: LucideIcon; noun?: string; prefix?: string; zero: string };
 const CONTROL_FLOW_SPECS: Record<string, ControlFlowSpec> = {
@@ -667,7 +639,6 @@ const CONTROL_FLOW_SPECS: Record<string, ControlFlowSpec> = {
 
 function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
   const count = data.childCount ?? 0;
-  // A broker/sequence counts its sinks or sources, per section.
   if (data.label === 'broker' || data.label === 'sequence') {
     const noun = data.section === 'output' ? 'output' : 'input';
     return { Icon: Network, descriptor: count ? plural(count, noun) : 'broker' };
@@ -682,7 +653,6 @@ function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
   return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
 }
 
-// Filled accent tile — distinct from the white `LogoTile` so a router marker never reads as a data card.
 const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (
   <span
     className="flex size-7 shrink-0 items-center justify-center rounded-md border"
@@ -696,8 +666,6 @@ const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: strin
   </span>
 );
 
-// A control-flow processor as a compact card. It never wraps children — in the Dagre graph its
-// branches fan out as labelled edges and reconverge at a merge node. This card is the fan-out marker.
 const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const ref = useStopPanOnControls();
   const isError = Boolean(data.isErrorPath);
@@ -757,7 +725,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
 
 const JOIN_HINT = 'Join — branches reconverge here';
 
-// The join point where a fan's branches reconverge; a filled primary-tint disc so it reads as a deliberate "join".
 const FlowMergeNode = () => {
   const handle = { top: 16, transform: 'none' } as const;
   return (
@@ -788,7 +755,6 @@ const FlowMergeNode = () => {
   );
 };
 
-// A "+" button at an edge's midpoint (edit mode) for inserting a step there.
 const EdgeInsertButton = ({
   x,
   y,
@@ -838,8 +804,6 @@ const lerpPoint = (a: FlowPoint, b: FlowPoint, f: number): FlowPoint => ({
   y: a.y + (b.y - a.y) * f,
 });
 
-// The point at fraction `t` (0–1) of the polyline's arc length — so an edge label / "+" sits ON
-// the line (a raw middle waypoint can sit well off a curved edge). t=0.5 = midpoint.
 function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
   if (points.length === 0) {
     return { x: 0, y: 0 };
@@ -856,8 +820,7 @@ function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: numb
   return points.at(-1) as { x: number; y: number };
 }
 
-// Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints).
-function smoothGraphPath(points: { x: number; y: number }[]): string {
+function smoothGraphPath(points: { x: number; y: number }[]) {
   if (points.length < 2) {
     return '';
   }
@@ -884,7 +847,6 @@ function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
   return LINK_STROKE[tone];
 }
 
-// Opacity tiers: dimmed (unrelated to selection) < ghost (decorative) < faint (context line) < full strength.
 function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
   return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
 }
@@ -893,14 +855,11 @@ type EdgeEndpoints = Pick<
   EdgeProps,
   'sourceX' | 'sourceY' | 'sourcePosition' | 'targetX' | 'targetY' | 'targetPosition'
 >;
-// `label` is where a condition label sits (often near its target); `insert` is the on-edge "+" (midpoint).
 type EdgeGeometry = { path: string; label: FlowPoint; insert: FlowPoint };
 
-// Routed through Dagre's waypoints when it has them, else a smooth-step path between the handles.
 function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | undefined): EdgeGeometry {
   const dagrePts = d?.points;
   if (dagrePts && dagrePts.length >= 2) {
-    // Cap Dagre's routed waypoints with the real handle endpoints for a clean attach.
     const pts = [
       { x: endpoints.sourceX, y: endpoints.sourceY },
       ...dagrePts.slice(1, -1),
@@ -917,7 +876,6 @@ function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | unde
 }
 
 // Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. No
-// arrowheads — the left-to-right layout already reads as direction.
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
   const { path, label, insert } = graphEdgeGeometry(
@@ -941,11 +899,9 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}
-          // A labelled primary edge's label IS a routing condition (flow edges are unlabelled), so
           // render it in the warning tone like the condition chips, not primary-blue. Line stays primary.
           tone={tone === 'primary' ? 'condition' : tone}
           x={label.x}
-          // When an on-edge "+" shares this midpoint, lift the label clear so the two don't overprint.
           y={d?.onInsert ? label.y - 18 : label.y}
         />
       ) : null}

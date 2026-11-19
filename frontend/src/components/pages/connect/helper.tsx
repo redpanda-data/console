@@ -97,11 +97,7 @@ const fallbackConnector: ConnectorMetadata = {
   logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
 };
 
-// Order of entries matters:
-// - first step is checking if there is any exact match for 'className'
-// - second step is going through the list and taking the first entry where 'classNamePrefix' matches
 const connectorMetadata: ConnectorMetadata[] = [
-  // Apache Connectors
   {
     classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorSourceConnector',
     logo: <img alt="Apache Software Foundation logo" className="connectorLogo" src={ApacheLogo} />,
@@ -126,7 +122,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     description: 'Generates heartbeat messages to local heartbeat topic',
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mmaker-heartbeat-connector'),
   } as const,
-  // Confluent Connectors
   {
     classNamePrefix: 'io.confluent.connect.hdfs.',
     logo: <img alt="HDFS logo" className="connectorLogo" src={HdfsLogo} />,
@@ -173,7 +168,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Confluent',
   } as const,
 
-  // Debezium Connectors
   {
     classNamePrefix: 'io.debezium.connector.mysql.',
     logo: <img alt="MySQL logo" className="connectorLogo" src={MySqlLogo} />,
@@ -214,7 +208,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Debezium',
   } as const,
 
-  // Redpanda Connectors
   {
     classNamePrefix: 'com.redpanda.kafka.connect.s3.',
     logo: <img alt="Amazon S3 logo" className="connectorLogo" src={AmazonS3} />,
@@ -248,14 +241,12 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-jdbc-sink-connector'),
   } as const,
 
-  // Stream Reactor / Lenses
   {
     classNamePrefix: 'com.datamountaineer.streamreactor.connect.cassandra.',
     logo: <img alt="Cassandra logo" className="connectorLogo" src={CassandraLogo} />,
     author: 'Lenses',
   } as const,
 
-  // WePay Connectors
   {
     classNamePrefix: 'com.wepay.kafka.connect.bigquery.',
     logo: <img alt="Google BigQuery logo" className="connectorLogo" src={BigQueryLogo} />,
@@ -265,7 +256,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-gcp-bigquery-connector'),
   } as const,
 
-  // Snowflake Connectors
   {
     classNamePrefix: 'com.snowflake.kafka.connector',
     logo: <img alt="Snowflake logo" className="connectorLogo" src={SnowflakeLogo} />,
@@ -275,7 +265,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-snowflake-connector'),
   } as const,
 
-  // MongoDB Connectors
   {
     classNamePrefix: 'com.mongodb.kafka.connect.MongoSourceConnector',
     logo: <img alt="MongoDB logo" className="connectorLogo" src={MongoDBLogo} />,
@@ -293,7 +282,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mongodb-sink-connector'),
   } as const,
 
-  // Iceberg Connectors
   {
     classNamePrefix: 'org.apache.iceberg.connect.IcebergSinkConnector',
     logo: <img alt="Iceberg logo" className="connectorLogo" src={IcebergLogo} />,
@@ -303,7 +291,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-iceberg-sink-connector'),
   } as const,
 
-  // JMS Connectors
   {
     classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
     logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
@@ -321,7 +308,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // IBM MQ Connectors
   {
     classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
     logo: <img alt="IBM MQ Logo" className="connectorLogo" src={IbmMqLogo} />,
@@ -339,7 +325,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // Community Connector
   {
     classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
     logo: <img alt="Twitter logo" className="connectorLogo" src={TwitterLogo} />,
@@ -359,7 +344,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
   {
     classNamePrefix: 'io.debezium.',
     logo: <img alt="Debezium logo" className="connectorLogo" src={DebeziumLogo} />,
@@ -386,7 +370,6 @@ const connectorMetadataMatchCache: {
   [className: string]: ConnectorMetadata;
 } = {};
 
-// Quick and dirty cache: if it has too many entries, remove some
 function trimConnectorMetadataCache() {
   const cacheKeys = Object.keys(connectorMetadataMatchCache);
   if (cacheKeys.length > 200) {
@@ -573,7 +556,6 @@ function parseApiError(text: string): ApiError | undefined {
 function describeConfirmError(error: string | Error): { title: string; content: string } {
   const txt = typeof error === 'string' ? error : error.message;
 
-  // try parsing as json
   const apiErr = parseApiError(txt);
 
   // return text only
@@ -584,7 +566,6 @@ function describeConfirmError(error: string | Error): { title: string; content: 
     };
   }
 
-  // render error object
   return {
     title: `${apiErr.statusCode}`,
     content: apiErr.message,
@@ -690,7 +671,6 @@ function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount
   }
 
   if ('clusterName' in obs) {
-    // ClusterConnectors
     if (obs.error) {
       return null;
     }
@@ -698,15 +678,11 @@ function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount
   }
 
   if ('name' in obs) {
-    // ClusterConnectorInfo
     return { running: obs.runningTasks, total: obs.totalTasks };
   }
 
   return { running: 0, total: 0 };
 }
-
-// Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
-// or an array of connectors (in which case it will show the sum)
 
 export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
   const tasks = countTasks(props.observable);

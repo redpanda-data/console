@@ -20,7 +20,7 @@ export const SHORT_POLLING_INTERVAL = 2 * ONE_SECOND;
  * `retry` for queries that should surface errors immediately: one retry for transient network
  * failures, none for ConnectErrors, which are deterministic and would fail the same way again.
  */
-export const fastFailRetry = (failureCount: number, error: Error): boolean => {
+export const fastFailRetry = (failureCount: number, error: Error) => {
   // Max 1 retry attempt (initial + 1 retry = 2 total attempts)
   if (failureCount >= 1) {
     return false;
@@ -95,13 +95,3 @@ export interface QueryOptions<O extends DescMessage, SelectOutData = MessageShap
       ) => number | false | undefined);
   refetchIntervalInBackground?: boolean;
 }
-
-// export interface QueryObserverOptions<O extends DescMessage, SelectOutData = MessageShape<O>>
-//   extends Omit<UseQueryOptions<O, SelectOutData>, 'transport'> {
-//   enabled?: boolean;
-//   refetchInterval?:
-//     | number
-//     | false
-//     | ((query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey>) => number | false | undefined);
-//   refetchIntervalInBackground?: boolean;
-// }

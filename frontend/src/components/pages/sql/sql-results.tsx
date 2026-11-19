@@ -77,17 +77,13 @@ export type SqlResultsProps = {
 
 const fmtNum = (n: number) => n.toLocaleString('en-US');
 const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
-const CSV_ESCAPE_RE = /[",\n]/;
-const CSV_QUOTE_RE = /"/g;
-// Cells starting with these are interpreted as formulas by Excel/Sheets; prefix
-// with a single quote to neutralize CSV injection.
-const CSV_FORMULA_RE = /^[=+\-@]/;
+const CSV_ESCAPE_RE = /[",\n]/u;
+const CSV_QUOTE_RE = /"/gu;
+const CSV_FORMULA_RE = /^[=+\-@]/u;
 
-// Shared inline-stat layout used across the summary bar.
 const RES_STAT =
   'inline-flex items-center gap-1.5 text-body-sm text-foreground [font-variant-numeric:tabular-nums] [&_svg]:text-muted-foreground';
 
-// Bridge-query indicator shown in the summary bar.
 function BridgeBar() {
   return (
     <Badge size="md" tone="default">
@@ -104,9 +100,6 @@ function PendingStat({ count, label }: { count: number; label: string }) {
   );
 }
 
-// Caption explaining how far the live topic tail runs ahead of Iceberg for a
-// bridge query. The offset counts are the real metric snapshot captured at
-// query time. Renders nothing when Iceberg is fully caught up.
 function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
   if (bridge.totalLag === 0) {
     return null;
@@ -127,16 +120,10 @@ function cellText(v: CellValue): string {
   return v === null || v === undefined ? '' : String(v);
 }
 
-// Cells are clamped to this width; values long enough to truncate at it
-// (~45 mono-xs chars) open the full value in a popover on click.
 const CELL_MAX_W = 'max-w-80';
 const CELL_CLAMP_CHARS = 45;
-// rdg header row height; also the top inset of the cell-popover clip overlay so
-// popovers slide behind the header rather than over it.
 const GRID_HEADER_H = 52;
 
-// Pretty-prints a JSON string with 2-space indent, falling back to the raw
-// value when it isn't parseable JSON.
 function prettyJson(raw: string): string {
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
@@ -145,17 +132,10 @@ function prettyJson(raw: string): string {
   }
 }
 
-// Cell popovers portal into a clip layer that covers the grid's data area
-// (below the sticky header), so they track the anchor cell and slide behind the
-// header — staying within the table section instead of floating over the page.
 const CellPopoverContainerContext = createContext<HTMLElement | null>(null);
 
-// Track the anchor and clip rather than reposition, so popovers stick to the
-// cell and disappear behind the header on scroll instead of pinning in place.
 const TRACK_AND_CLIP = { side: 'flip', align: 'none' } as const;
 
-// Rich viewer for JSON/composite cells: a header with the column name + type, a
-// copy button and a close affordance, over a syntax-highlighted, formatted body.
 function JsonCellPopover({ value, name, typeLabel }: { value: string; name: string; typeLabel: string }) {
   const [open, setOpen] = useState(false);
   const container = useContext(CellPopoverContainerContext);
@@ -210,7 +190,6 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
   );
 }
 
-// Viewer for a plain value too long for the clamped cell: the full text in a popover.
 function LongCellPopover({ value }: { value: string }) {
   const container = useContext(CellPopoverContainerContext);
   return (
@@ -269,14 +248,13 @@ function CellContent({
   return <LongCellPopover value={s} />;
 }
 
-// One CSV field: formula-looking values are neutralized, then quoted when needed.
 function csvField(v: CellValue): string {
   const raw = cellText(v);
   const s = CSV_FORMULA_RE.test(raw) ? `'${raw}` : raw;
   return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
 }
 
-function toCsv(cols: ColumnDef[], rows: ResultRow[]): string {
+function toCsv(cols: ColumnDef[], rows: ResultRow[]) {
   const head = cols.map((c) => c.name).join(',');
   const body = rows.map((r) => cols.map((c) => csvField(r[c.name])).join(',')).join('\n');
   return `${head}\n${body}`;
@@ -298,8 +276,6 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// Stable grid keys: rows are stable object references from the run, so a
-// WeakMap gives each a consistent id for rowKeyGetter without an index key.
 function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
   const map = new WeakMap<ResultRow, number>();
   rows.forEach((r, i) => {
@@ -309,7 +285,6 @@ function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
 }
 
 // Key for the synthetic row-number column; double underscores avoid
-// colliding with a real result column of the same name.
 const ROWNUM_KEY = '__rownum__';
 
 function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
@@ -328,8 +303,6 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
     return {
       key: c.name,
       name: c.name,
-      // At least content-sized; spare panel width is shared between columns
-      // so the grid always fills horizontally.
       width: 'minmax(max-content, 1fr)',
       minWidth: 96,
       // Headers stay left-aligned for every kind; only numeric cell values
@@ -349,22 +322,13 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
   return [rowNum, ...dataCols];
 }
 
-// Keyed by run.token from SqlResults, so a new run resets the grid's internal
-// state (scroll position, resized column widths) by remounting. Rows render
-// in server order; ordering is the query's job (ORDER BY), not the grid's.
 function SuccessGrid({ run }: { run: QueryRunSuccess }) {
   const cols = run.columns;
   const bridge = run.bridge;
 
-  // Stable references across re-renders (e.g. when the bridge lag query resolves
-  // and the workspace hands down a new `run` object with the same rows/columns),
-  // so DataGrid keeps user column widths and scroll position.
   const columns = useMemo(() => buildColumns(cols), [cols]);
   const rowKeys = useMemo(() => buildRowKeys(run.rows), [run.rows]);
 
-  // Overlay covering the grid's data area (below the sticky header) that cell
-  // popovers portal into; its `overflow-hidden` clips them to the table section
-  // and behind the header as the anchor row scrolls.
   const [clipEl, setClipEl] = useState<HTMLElement | null>(null);
 
   return (
@@ -435,8 +399,6 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
 type IdleResultsProps = Pick<SqlResultsProps, 'sqlRole' | 'onAddTable'> & { hasTables: boolean };
 
 function IdleResults({ sqlRole, onAddTable, hasTables }: IdleResultsProps) {
-  // No tables in the catalog yet: nothing to query, so prompt the caller to
-  // create one from a topic. Admins get the wizard CTA; viewers get told who can.
   if (!hasTables) {
     return (
       <Empty className="h-full">

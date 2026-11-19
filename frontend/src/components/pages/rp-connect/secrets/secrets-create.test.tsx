@@ -5,11 +5,9 @@ import { userEvent } from '@testing-library/user-event';
 import RpConnectSecretCreate from './secrets-create';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 
-// No Playwright coverage is possible: the OSS test variant configures no `SecretService`.
-// Registry `Field` wires neither the label nor `required`, so both are asserted here.
 const existingSecret = { id: 'EXISTING_SECRET' };
-const SECRET_NAME_LABEL = /Secret name/;
-const SECRET_VALUE_LABEL = /Secret value/;
+const SECRET_NAME_LABEL = /Secret name/u;
+const SECRET_VALUE_LABEL = /Secret value/u;
 
 afterEach(() => {
   rpcnSecretManagerApi.secrets = undefined;

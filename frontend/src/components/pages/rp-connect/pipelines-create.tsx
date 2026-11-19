@@ -58,11 +58,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    this.pipelinesApi.refreshPipelines(_force);
   }
 
   render() {
-    if (!pipelinesApi.pipelines) {
+    if (!this.pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
     return <RpConnectPipelinesCreateContent />;

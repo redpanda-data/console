@@ -19,7 +19,6 @@ import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 
 const CLAMP_OVER_CHARS = 200;
 
-// Field prose sits under its control: headings get no more weight than the body.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <div className="mt-1 text-body-sm font-medium text-foreground">{children}</div>
 );
@@ -32,8 +31,6 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body-sm text-muted-foreground">{children}</div>,
-  // Markdown can produce an anchor with no destination, which is text rather than a link. Every block an
-  // anchor lands in already sets `text-body-sm`, so the link takes its size from the prose around it.
   a: ({ href, children }) =>
     href ? (
       <Link href={href} rel="noopener noreferrer" target="_blank">
@@ -56,7 +53,6 @@ const MARKDOWN_COMPONENTS: Components = {
   strong: ({ children }) => <strong className="font-medium text-foreground">{children}</strong>,
 };
 
-// Paragraphs unwrapped, so a one-paragraph description can flow inline with its trailing docs link.
 const INLINE_MARKDOWN_COMPONENTS: Components = {
   ...MARKDOWN_COMPONENTS,
   p: ({ children }) => <>{children}</>,
@@ -87,7 +83,6 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
   </Link>
 );
 
-// Help text and its trailing link share one line box, so the link reads as part of the sentence.
 const InlineHelp = ({ children, docsLink }: { children: React.ReactNode; docsLink: React.ReactNode }) => (
   <div className="text-body-sm text-muted-foreground">
     {children} {docsLink}
@@ -108,7 +103,6 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
     };
   }, [source]);
 
-  // One paragraph, no block content: it can carry the link on its own line.
   if (!clampable) {
     return (
       <InlineHelp docsLink={docsLink}>
@@ -123,7 +117,6 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         {expanded ? (
           <MarkdownBody markdown={markdown} />
         ) : (
-          // Plain text collapsed: one text node, so line-clamp applies cleanly.
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>

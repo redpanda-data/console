@@ -14,9 +14,6 @@ import { z } from 'zod';
 
 import { PIPELINE_STATE_TABS, type PipelineStateTabId, stateFilterValues } from './list-utils';
 
-// The list's view as URL search params, so a view can be linked and survives a reload. Every key is
-// optional and drops out when it holds its default; a value that doesn't parse is ignored.
-
 const TAB_IDS = PIPELINE_STATE_TABS.map((tab) => tab.id) as [PipelineStateTabId, ...PipelineStateTabId[]];
 const SORTABLE_COLUMNS = ['state', 'name'] as const;
 const values = z.array(z.string()).optional().catch(undefined);
@@ -46,7 +43,6 @@ export function readPipelineListSearch(search: unknown): PipelineListSearch {
   return parsed.success ? parsed.data : {};
 }
 
-// Facet columns and the search keys that hold them.
 const FILTER_KEYS = {
   inputs: 'input',
   outputs: 'output',
@@ -83,7 +79,6 @@ export function facetSearchFromFilters(
   );
 }
 
-// Status first, so error and transitioning pipelines land on page 1 of a large cluster.
 const DEFAULT_SORT: SortingState = [{ id: 'state', desc: false }];
 
 export function sortingFromSearch(search: PipelineListSearch): SortingState {

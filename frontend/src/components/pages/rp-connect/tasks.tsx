@@ -1,7 +1,7 @@
 export const MIN_TASKS = 1,
   MAX_TASKS = 72;
 
-const milliValueRegex = /^(\d+(\.\d+)?)(m?)$/;
+const milliValueRegex = /^(?<value>\d+(?<fractionalPart>\.\d+)?)(?<suffix>m?)$/u;
 
 export function cpuToTasks(cpu: string | undefined): number | undefined {
   if (!cpu) {

@@ -21,8 +21,6 @@ export const entryHasInfiniteValue = (entry: ConfigEntry) =>
 
 export const getInfiniteValueForEntry = (entry: ConfigEntryExtended) => CONFIG_INFINITE_VALUES[entry.name] ?? -1;
 
-// Broker configs use both dot and underscore separators. Longer time suffixes
-// deliberately omit the separator so Kafka and Redpanda names both match.
 const TIME_EXTENSIONS: [string, number][] = [
   ['.ms', 1],
   ['_ms', 1],
@@ -86,7 +84,6 @@ function formatTimeConfigValue(num: number, msFactor: number, suffix: string): s
 
 function formatByteOrRatioConfigValue(name: string, value: string, num: number, suffix: string): string {
   if (BYTE_EXTENSIONS.some((extension) => name.endsWith(extension))) {
-    // uint64 max rounds above the integer boundary when represented as a JS number.
     const uint64Max = '18446744073709551615';
     const uint64Exp = 1.844_674_407_370_955e19;
     return value === uint64Max || num >= uint64Exp || num === -1 ? `Infinite${suffix}` : prettyBytesOrNA(num) + suffix;

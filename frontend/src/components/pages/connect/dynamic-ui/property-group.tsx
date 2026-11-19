@@ -41,7 +41,6 @@ export const PropertyGroupComponent = (props: {
   }
 
   if (g.group.name === 'Transforms') {
-    // Transforms + its sub groups
     const subGroups = props.allGroups
       .filter((subGroup) => subGroup.group.name?.startsWith('Transforms: '))
       .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
@@ -79,7 +78,6 @@ export const PropertyGroupComponent = (props: {
       </div>
     );
   }
-  // Normal group
   return (
     <div>
       {Boolean(g.group.name) && <h3 className="mt-8 text-heading-md">{g.group.name}</h3>}

@@ -14,7 +14,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   }),
   testEnvironment: 'node',
-  include: ['*.spec.ts'],
+  include: ['*.browser.test.ts'],
   passWithNoTests: false,
   pool: { type: 'threads', maxWorkers: 1 },
   bail: 3,

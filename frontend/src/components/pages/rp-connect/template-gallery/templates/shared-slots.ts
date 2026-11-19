@@ -17,8 +17,8 @@ import type { SecretSlot, StringSlot, TopicSlot } from '../pipeline-template-typ
 export const toReplicationSlotName = (pipelineName: string): string => {
   const sanitized = pipelineName
     .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(/[^a-z0-9_]+/gu, '_')
+    .replace(/^_+|_+$/gu, '');
   return `rpcn_${sanitized || 'pipeline'}`.slice(0, 63);
 };
 

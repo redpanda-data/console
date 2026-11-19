@@ -1,8 +1,8 @@
 import { CAT_LIMIT, namespaceTables, tablesForNamespace } from './catalog-tree-tables';
-import type { Namespace, TableRef } from './sql-types';
+import type { TableRef } from './sql-types';
 import { describe, expect, test } from 'bun:test';
 
-const table = (name: string, overrides: Partial<TableRef> = {}): TableRef => ({
+const table = (name: string, overrides: Partial<TableRef> = {}) => ({
   id: `rp.public.${name}`,
   name,
   namespaceName: 'public',
@@ -10,7 +10,7 @@ const table = (name: string, overrides: Partial<TableRef> = {}): TableRef => ({
   ...overrides,
 });
 
-const namespace = (tables: TableRef[]): Namespace => ({ id: 'rp.public', name: 'public', tables });
+const namespace = (tables: TableRef[]) => ({ id: 'rp.public', name: 'public', tables });
 
 const names = (tables: TableRef[]) => tables.map((t) => t.name);
 

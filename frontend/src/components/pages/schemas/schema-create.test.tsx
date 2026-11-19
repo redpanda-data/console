@@ -26,13 +26,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // Unmount first: re-rendered on the restored store, the page requests schema details through the
-  // real API, which the harness rejects as an unexpected request.
   cleanup();
   useApiStore.setState(initialApiState, true);
 });
 
-// The page asks for the subjects on open, so they usually arrive after the reference row exists.
 test('offers subjects that load after a reference was added', async () => {
   const user = userEvent.setup();
   render(<SchemaCreatePage matchedPath="/schema-registry/create" />);

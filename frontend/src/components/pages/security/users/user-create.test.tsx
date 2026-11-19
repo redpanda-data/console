@@ -32,6 +32,8 @@ import {
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import UserCreatePage from './user-create';
+
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
 rs.mock('config', () => ({
@@ -73,15 +75,16 @@ rs.mock('../../../../state/supported-features', () => {
 });
 
 // Polyfills
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ──────────────────────────────────────────
-import UserCreatePage from './user-create';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

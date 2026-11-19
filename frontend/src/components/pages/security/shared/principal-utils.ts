@@ -21,7 +21,6 @@ export function parsePrincipalFromParam(aclName: string): { principalType: strin
   return { principalType: 'User', principalName: aclName };
 }
 
-// Principal type prefixes (matching PrincipalType from acl.model.tsx).
 // Defined here to avoid importing acl.model.tsx which has heavy DOM dependencies.
 const PRINCIPAL_TYPE_MAP: Record<string, 'User:' | 'RedpandaRole:' | 'Group:'> = {
   user: 'User:',

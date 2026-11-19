@@ -40,10 +40,8 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-// Helper to get bootstrap server input
 const getBootstrapInput = (index: number) => screen.getByTestId(`bootstrap-server-input-${index}`);
 
-// Replaces an input's value and leaves the field, which triggers onBlur validation
 const enterBootstrapValue = async (user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string) => {
   await user.click(input);
   await user.clear(input);
@@ -51,7 +49,6 @@ const enterBootstrapValue = async (user: ReturnType<typeof userEvent.setup>, inp
   await user.tab();
 };
 
-// Adds a broker field and waits for its input to appear
 const addBootstrapInput = async (user: ReturnType<typeof userEvent.setup>, index: number) => {
   await user.click(screen.getByTestId('add-bootstrap-server-button'));
 
@@ -61,7 +58,6 @@ const addBootstrapInput = async (user: ReturnType<typeof userEvent.setup>, index
   return getBootstrapInput(index);
 };
 
-// Validation error message
 const ERROR_MESSAGE = 'Must be in format host:port (e.g., localhost:9092)';
 
 describe('the BootstrapServers', () => {
@@ -210,7 +206,6 @@ describe('the BootstrapServers', () => {
       expect(screen.getByTestId('tls-intro')).toBeInTheDocument();
       expect(screen.getByTestId('tls-ca-disclosure-trigger')).toBeInTheDocument();
       expect(screen.getByTestId('tls-mtls-disclosure-trigger')).toBeInTheDocument();
-      // Bodies are collapsed: cert add buttons should not be present
       expect(screen.queryByTestId('add-ca-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('add-clientKey-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('add-clientCert-button')).not.toBeInTheDocument();
@@ -241,7 +236,6 @@ describe('the BootstrapServers', () => {
         );
       });
 
-      // Order: client key appears before client certificate in the DOM
       const keyButton = screen.getByTestId('add-clientKey-button');
       const certButton = screen.getByTestId('add-clientCert-button');
       expect(keyButton.compareDocumentPosition(certButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -276,7 +270,6 @@ describe('the BootstrapServers', () => {
 
       const tlsToggle = screen.getByTestId('tls-toggle');
 
-      // TLS is enabled by default (initialValues.useTls = true), so clicking will disable it
       await user.click(tlsToggle);
 
       await waitFor(() => {

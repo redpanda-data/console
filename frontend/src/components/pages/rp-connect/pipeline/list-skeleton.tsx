@@ -39,7 +39,6 @@ const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
 ];
 
-// After Output, as the table orders them.
 const RUNS_COLUMN = { head: 'w-12', cell: <Skeleton className="h-4 w-20" /> };
 
 const SKELETON_ROW_COUNT = 5;

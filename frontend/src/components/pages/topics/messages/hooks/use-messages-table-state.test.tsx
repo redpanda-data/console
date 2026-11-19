@@ -1,14 +1,14 @@
 import { describe, expect, rs, test } from '@rstest/core';
 import { act, fireEvent, renderHook } from '@testing-library/react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
-import { CompressionType, type Payload, type TopicMessage } from 'state/rest-interfaces';
+import { CompressionType } from 'state/rest-interfaces';
 import { PartitionOffsetOrigin } from 'state/ui';
 
 import type { MessageSearchPhase } from './use-message-search';
 import { type MessagesTableStateOptions, useMessagesTableState } from './use-messages-table-state';
 import type { MessagesUrlState } from './use-messages-url-state';
 
-const payload = (json: string): Payload => ({
+const payload = (json: string) => ({
   payload: JSON.parse(json),
   isPayloadNull: false,
   encoding: 'json',
@@ -16,7 +16,7 @@ const payload = (json: string): Payload => ({
   size: json.length,
 });
 
-const message = (offset: number, status: string): TopicMessage => ({
+const message = (offset: number, status: string) => ({
   partitionID: 0,
   offset,
   timestamp: offset,
@@ -33,7 +33,7 @@ const message = (offset: number, status: string): TopicMessage => ({
 
 const messages = [message(1, 'created'), message(2, 'shipped'), message(3, 'created')];
 
-const urlStateWith = (overrides: Partial<MessagesUrlState> = {}): MessagesUrlState => ({
+const urlStateWith = (overrides: Partial<MessagesUrlState> = {}) => ({
   partitionId: -1,
   setPartitionId: rs.fn(),
   maxResults: 50,

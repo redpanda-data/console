@@ -17,7 +17,6 @@ import { connectQueryWrapper } from 'test-utils';
 import { useLegacyListTopicsQuery, useUpdateTopicConfigMutation } from './topic';
 import { useApiStore } from '../../state/backend-api';
 
-// Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
 
 const jsonResponse = (body: unknown, init?: ResponseInit) =>
@@ -32,9 +31,6 @@ afterEach(() => {
 
 describe('useLegacyListTopicsQuery', () => {
   test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
-    // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
-    // so without an explicit response.ok check the query settles as a success and the
-    // error UI never renders — the user sees 0 topics instead of an auth failure.
     rs.spyOn(config, 'fetch').mockResolvedValue(
       jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
     );

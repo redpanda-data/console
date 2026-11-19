@@ -25,9 +25,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
-
-const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
-
 import React, { useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -54,17 +51,16 @@ import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
 
-// These navigations run detached from effects and mutation callbacks, so report a failure instead of dropping it.
+const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
+
 function reportNavigationError(error: unknown) {
   toast.error('Failed to navigate', { description: String(error) });
 }
 
-// A `version` search param that names a specific version, else null ("latest" or missing).
 function requestedVersionNumber(versionParam: string | undefined): number | null {
   return versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : null;
 }
 
-// Schema Registry capabilities of the signed-in user, from their identity.
 function useSchemaRegistryPermissions() {
   const { data: userData } = useGetIdentityQuery();
   const capabilities = userData?.permissions?.schemaRegistry;
@@ -75,8 +71,6 @@ function useSchemaRegistryPermissions() {
   };
 }
 
-// The subject named by the route (or the prop), with the page header and a
-// default `version=latest` search param kept in sync.
 function useSchemaDetailsRoute(subjectNameProp: string) {
   const { subjectName: subjectNameParam } = routeApi.useParams();
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
@@ -86,7 +80,6 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
   const version = requestedVersionNumber(search.version) ?? 'latest';
 
-  // Update page title and breadcrumbs
   useEffect(() => {
     const parsed = parseSubjectContext(subjectNameRaw);
     uiState.pageTitle = subjectNameRaw;
@@ -110,7 +103,6 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
     ];
   }, [subjectNameRaw, version]);
 
-  // Set version in query params if not present
   useEffect(() => {
     if (!search.version) {
       navigate({ search: { version: 'latest' }, replace: true }).catch(reportNavigationError);
@@ -120,8 +112,6 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
   return { subjectNameRaw, subjectNameEncoded: encodeURIComponent(subjectNameRaw), navigate };
 }
 
-// The subject's details and soft-deleted state; also warms the registry-wide
-// config other components on the page read.
 function useSubjectDetailsData(subjectNameRaw: string) {
   const { data: schemaSubjects } = useListSchemasQuery();
   const { data: subject, isLoading: isLoadingSubject } = useSchemaDetailsQuery(subjectNameRaw);
@@ -135,7 +125,6 @@ function useSubjectDetailsData(subjectNameRaw: string) {
   };
 }
 
-// Soft or permanent deletion of the whole subject, confirmed through a dialog.
 function useSubjectDeletion(subjectNameRaw: string) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
@@ -344,8 +333,6 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   return schema.schema;
 }
 
-// Version shown when the URL doesn't pick one that exists: the latest active
-// version, or the newest one when every version is soft-deleted.
 function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryVersion: string | undefined) {
   const versionNumber = requestedVersionNumber(queryVersion);
 
@@ -353,7 +340,6 @@ function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryV
   const fallbackVersion =
     subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
 
-  // Check if requested version exists in available schemas
   const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
 
   // Use URL parameter if provided and exists, otherwise fall back to latest active version
@@ -372,18 +358,15 @@ function correctedSelectedVersion(p: {
   fallbackVersion: number | undefined;
   defaultVersion: number;
 }): number | null {
-  // A selection without a schema (for example, after a delete) resets to the default.
   if (!p.hasSchema && p.selectedVersion !== p.defaultVersion) {
     return p.defaultVersion;
   }
-  // When URL is "latest", sync selectedVersion with the actual latest version from data
   if (p.queryVersion === 'latest' && p.fallbackVersion && p.selectedVersion !== p.fallbackVersion) {
     return p.fallbackVersion;
   }
   return null;
 }
 
-// Show notification and update URL if requested version doesn't exist
 function useMissingVersionRedirect({
   versionNumber,
   requestedVersionExists,
@@ -400,7 +383,6 @@ function useMissingVersionRedirect({
   }, [versionNumber, requestedVersionExists, fallbackVersion, navigate]);
 }
 
-// The selected schema version, kept in step with the `version` search param.
 function useSelectedSchemaVersion(subjectData: SchemaRegistrySubjectDetails) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const queryVersion = routeApi.useSearch().version;
@@ -425,7 +407,6 @@ function useSelectedSchemaVersion(subjectData: SchemaRegistrySubjectDetails) {
   };
 }
 
-// Delete (soft or permanent) and recover actions for one schema version.
 function useSchemaVersionActions(
   subjectData: SchemaRegistrySubjectDetails,
   schema: SchemaRegistryVersionedSchema,
@@ -444,7 +425,6 @@ function useSchemaVersionActions(
         onSuccess: async () => {
           toast.success('Schema version permanently deleted');
 
-          // Invalidate and refetch to get updated details
           await queryClient.invalidateQueries({
             queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
           });
@@ -482,7 +462,6 @@ function useSchemaVersionActions(
             description: `Schema ID: ${result.id}`,
           });
 
-          // Navigate to the latest active version after recovery
           navigate({
             to: '/schema-registry/subjects/$subjectName',
             params: { subjectName: encodeURIComponent(subjectData.name) },
@@ -701,8 +680,6 @@ const SubjectVersionDefinition = ({
   );
 };
 
-// One side of the version diff: its selected version and schema, reset to the
-// first version when the selection has no schema.
 function useDiffSide(subject: SchemaRegistrySubjectDetails, initialVersion: number) {
   const [selectedVersion, setSelectedVersion] = useState(initialVersion);
   const schema = subject.schemas.first((x) => x.version === selectedVersion);
@@ -862,7 +839,6 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
   const { subject, schema } = p;
   const version = schema.version;
 
-  // Fetch referenced by data using React Query
   const { data: referencedByData } = useSchemaReferencedByQuery(subject.name, version);
 
   return (

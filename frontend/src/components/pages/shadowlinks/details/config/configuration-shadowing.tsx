@@ -29,7 +29,6 @@ export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// Component to display a single name filter (topic, consumer group, or role)
 const NameFilterDisplay = ({
   filter,
   index,
@@ -61,7 +60,6 @@ const NameFilterDisplay = ({
   );
 };
 
-// Reusable component for displaying name filter sections
 const NameFilterSection = ({
   title,
   filters,
@@ -101,7 +99,6 @@ const NameFilterSection = ({
   </Card>
 );
 
-// Component to display a single ACL filter
 const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: number }) => {
   const resourceFilter = filter.resourceFilter;
   const accessFilter = filter.accessFilter;
@@ -157,7 +154,6 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
   );
 };
 
-// Reusable component for displaying ACL filter section
 const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   const hasAllACLs = filters.length === 0;
 
@@ -194,7 +190,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
-  // Get filters
   const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];

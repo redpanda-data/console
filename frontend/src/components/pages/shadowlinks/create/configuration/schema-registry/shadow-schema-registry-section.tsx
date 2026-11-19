@@ -45,7 +45,6 @@ export const ShadowSchemaRegistrySection = ({ disabledModes = [], modeNotice }: 
 
   // Migrate a legacy-switch choice into this UI (the switch may have been
   // toggled either way while the gate was closed): the boolean is the legacy
-  // source of truth, so reconcile the mode with it in both directions —
   // otherwise the tabs would disagree with what gets submitted.
   useEffect(() => {
     const enabled = getValues('enableSchemaRegistrySync');

@@ -62,11 +62,8 @@ import { isStopConditionSet, READ_UNTIL } from '../utils/yaml';
 
 const IDLE_PRESETS = ['10s', '30s', '1m', '5m'] as const;
 
-// ── Presentation ───────────────────────────────────────────────────────────
-
 type EndTone = 'set' | 'natural' | 'open' | 'invalid';
 
-// How an end kind reads: set by a condition, natural, open-ended, or broken.
 function endTone(kind: InputEndKind): EndTone {
   switch (kind) {
     case 'condition':
@@ -87,8 +84,6 @@ const TONE_ICON: Record<EndTone, LucideIcon> = {
   invalid: AlertCircle,
 };
 
-// Ends (by condition or by running dry) read as the input's success accent; a set condition is
-// filled, a natural end outlined. Inputs that never end stay quiet and dashed.
 const TONE_CLASS: Record<EndTone, string> = {
   set: 'border-success/50 bg-[color-mix(in_srgb,var(--color-success)_12%,var(--color-card))] text-success',
   natural: 'border-success/40 bg-card text-success',
@@ -97,7 +92,6 @@ const TONE_CLASS: Record<EndTone, string> = {
     'border-destructive/50 bg-[color-mix(in_srgb,var(--color-destructive)_10%,var(--color-card))] text-destructive',
 };
 
-// Behavior text marks config keys as `code`.
 export const RichText = ({ text }: { text: string }) => (
   <>
     {text.split(CODE_SPAN_RE).map((part, i) =>
@@ -112,8 +106,6 @@ export const RichText = ({ text }: { text: string }) => (
     )}
   </>
 );
-
-// ── Editor ─────────────────────────────────────────────────────────────────
 
 type StopConditionEditorProps = {
   /** The input's component name. */
@@ -178,7 +170,6 @@ const ModeOption = ({
         </span>
       </Label>
       {selected && children ? (
-        // Arrow keys in these fields move the caret or focus, not the radio group's choice.
         // biome-ignore lint/a11y/noStaticElementInteractions: it only stops arrow keys bubbling up.
         // biome-ignore lint/a11y/noNoninteractiveElementInteractions: it only stops arrow keys bubbling up.
         <div className="flex flex-col gap-2 pt-2 pl-7.5" onKeyDown={keepArrowKeys}>
@@ -191,7 +182,6 @@ const ModeOption = ({
 
 type FormPartProps = { control: Control<StopFormState> };
 
-// The idle timeout, typed or picked from a preset.
 const IdleField = ({ control }: FormPartProps) => (
   <FormField
     control={control}
@@ -240,21 +230,17 @@ function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; 
   return { title: 'No stop condition', description: own.reason };
 }
 
-// What happens today; `editing` adds the nudge to the form below.
 function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false): string {
   if (slot.locked) {
-    // A wrapper with no input says so in its lock; any other lock follows the input's own reason.
     return slot.locked === CHILDLESS_WRAPPER
       ? slot.locked
       : `${withCaveat(effective.reason, effective)} ${slot.locked}`;
   }
   if (effective.kind === 'invalid') {
-    // A broken input inside isn't fixed by this slot's own condition.
     return slot.ownEnd.kind === 'invalid' || !editing
       ? effective.reason
       : `${effective.reason} Choose how it should stop below, or keep it running.`;
   }
-  // A condition that never acts (a zero timeout, a re-read input) says what happens instead.
   if (effective.kind !== 'condition' && isStopConditionSet(slot.condition)) {
     return withCaveat(editing ? `${effective.reason} Choose how it should stop below.` : effective.reason, effective);
   }
@@ -270,7 +256,6 @@ const WarningLine = ({ text }: { text: string }) => (
   </span>
 );
 
-// Enter in the check adds a line; Cmd/Ctrl+Enter applies, as Enter does in the other fields.
 function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
     e.preventDefault();
@@ -281,7 +266,6 @@ function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
 // Clicks inside the portaled popup still bubble through React to the canvas node — keep them there.
 const stopReactBubble = (e: SyntheticEvent) => e.stopPropagation();
 
-// Re-reading an input that ends before the stop condition is met.
 const RestartToggle = ({ control }: FormPartProps) => (
   <FormField
     control={control}
@@ -308,8 +292,6 @@ const RestartToggle = ({ control }: FormPartProps) => (
   />
 );
 
-// Options that refine a count/check: an idle cut-off, and re-reading an input that ends before the
-// condition is met.
 const StopExtras = ({
   control,
   alsoIdle,
@@ -379,7 +361,6 @@ type StopEditorFormProps = Pick<StopConditionEditorProps, 'slot' | 'isGroup' | '
 };
 
 function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps) {
-  // Errors show once Apply is tried, then track each edit.
   const form = useForm<StopFormState>({
     resolver: zodResolver(stopFormSchema),
     defaultValues: stopFormState(slot.condition, slot.unwrapLock === undefined),
@@ -391,7 +372,6 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
   const hint = backstopHint({ mode, alsoIdle, restart: restart && restartOffered, limit }, slot.ownEnd);
   const { batches } = slot.ownEnd;
   const extras = <StopExtras alsoIdle={alsoIdle} control={control} hint={hint} restartOffered={restartOffered} />;
-  // A refused edit keeps the form open with the choices made in it.
   const apply = form.handleSubmit((values) => {
     if (onApply(draftFromStopForm(values, offersRestart(values.mode, slot.ownEnd, slot.condition)))) {
       onClose();
@@ -405,7 +385,6 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
         onSubmit={(e) => {
           // React bubbles the submit out of the portal — keep it off any enclosing form.
           e.stopPropagation();
-          // Invalid fields report inline; this catches an apply or close handler that throws.
           apply(e).catch((error: unknown) => {
             showToast({ status: 'error', title: 'Failed to apply the stop condition', description: String(error) });
           });
@@ -604,8 +583,6 @@ function StopConditionPopover({
   );
 }
 
-// ── Stop row ───────────────────────────────────────────────────────────────
-
 type StopRowProps = {
   name: string;
   slot: StopSlot;
@@ -637,7 +614,6 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
         <button
           aria-label={`${eyebrow} ${text}: ${editable ? 'edit the stop condition' : 'stop condition'} for ${name}`}
           className={cn(
-            // -mt-px folds its top rule into the header's when nothing sits between them.
             'nodrag nopan -mt-px flex w-full cursor-pointer items-center gap-1.5 border-t border-border/60 px-3 text-left text-body-sm transition-colors hover:bg-muted/50',
             tone === 'open' && 'text-muted-foreground',
             tone === 'invalid' && 'text-destructive'
@@ -665,8 +641,6 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
     />
   );
 }
-
-// ── Inspector section ──────────────────────────────────────────────────────
 
 /** The selected input's stop condition, under the inspector header, with the same editor. */
 export function StopConditionSection({

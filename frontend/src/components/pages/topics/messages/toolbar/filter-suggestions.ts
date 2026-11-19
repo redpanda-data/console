@@ -42,9 +42,9 @@ const msgs = (n: number) => (n === 1 ? '1 msg' : `${n} msgs`);
 /** A completed `offset:N`/`offset>N`/`offset<N`/`offset=N` word — matched so the dropdown can
  * offer all three comparison alternatives (with match counts) instead of silently committing to
  * whichever operator happened to be typed. */
-const OFFSET_COMPARISON_PATTERN = /^offset[:><=](\d+)$/;
-const NESTED_VALUE_PATTERN = /^value[.:](?<path>[\w.-]*)$/;
-const EMPTY_VALUE_FIELD_PATTERN = /^(partition|key|offset|value\.[\w.*-]+):$/;
+const OFFSET_COMPARISON_PATTERN = /^offset[:><=](?<offset>\d+)$/u;
+const NESTED_VALUE_PATTERN = /^value[.:](?<path>[\w.-]*)$/u;
+const EMPTY_VALUE_FIELD_PATTERN = /^(?<field>partition|key|offset|value\.[\w.*-]+):$/u;
 
 const countMatches = (messages: TopicMessage[], field: string, op: FilterOp, value: string) =>
   messages.filter((m) => matchesFieldFilter(m, field, op, value)).length;

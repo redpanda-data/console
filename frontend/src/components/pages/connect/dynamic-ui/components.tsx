@@ -28,13 +28,11 @@ export type ConfigPageProps = {
   context: 'CREATE' | 'EDIT';
 };
 
-// Re-renders the caller whenever the store reports a change.
 function useConnectorStoreVersion(connectorStore: ConnectorPropertiesStore) {
   const subscribe = useCallback((cb: () => void) => connectorStore.subscribe(cb), [connectorStore]);
   useSyncExternalStore(subscribe, connectorStore.getVersion);
 }
 
-// Find all steps, each with its property groups
 function connectorStepsWithGroups(
   connectorStore: ConnectorPropertiesStore
 ): { step: ConnectorStep; groups: PropertyGroup[] }[] {
@@ -160,7 +158,6 @@ function findExistingConnector(connectorStore: ConnectorPropertiesStore, connect
   });
 }
 
-// Initialize connector with existing data
 function initialConnectorJson(connectorStore: ConnectorPropertiesStore): string {
   const configObj = connectorStore.getConfigObject();
   const connectorName = (configObj as { name?: string })?.name;

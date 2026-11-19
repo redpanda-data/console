@@ -37,11 +37,22 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import {
+  type CloudSource,
+  getFailoverReadiness,
+  getSourceFenceStep,
+} from 'components/pages/shadowlinks/details/failover-model';
+import { config } from 'config';
+import {
   ClusterFenceState,
   GetClusterFenceStatusResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { getClusterFenceStatus } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
+import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
+
+import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
+import { createPeerConsoleTransport } from './peer-console-transport';
+import { useShadowLinkTopology } from './shadow-link-topology';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -76,18 +87,6 @@ rs.mock('./peer-console-transport', () => ({
     return transport;
   },
 }));
-
-import {
-  type CloudSource,
-  getFailoverReadiness,
-  getSourceFenceStep,
-} from 'components/pages/shadowlinks/details/failover-model';
-import { config } from 'config';
-import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-
-import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
-import { createPeerConsoleTransport } from './peer-console-transport';
-import { useShadowLinkTopology } from './shadow-link-topology';
 
 const PROD_CONSOLE = 'https://console-prod.example.com';
 

@@ -29,7 +29,6 @@ describe('mergePrincipals', () => {
   test('marks ACL principals that are also SCRAM users', () => {
     const result = mergePrincipals([{ name: 'alice' }], [{ principalType: 'User', principalName: 'alice' }], new Map());
 
-    // alice should NOT be duplicated — she's already in the SCRAM list
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({ name: 'alice', principalType: 'User', isScramUser: true });
   });

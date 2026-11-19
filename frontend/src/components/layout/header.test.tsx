@@ -13,6 +13,8 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
+import AppPageHeader from './header';
+
 const { getMatchedRoutes, mockPageBreadcrumbs, isDarkModeAvailable } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
   mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
@@ -83,8 +85,6 @@ rs.mock('../redpanda-ui/components/button', () => ({ Button: MockButton }));
 rs.mock('../redpanda-ui/components/separator', () => ({ Separator: MockSeparator }));
 rs.mock('../redpanda-ui/components/sidebar', () => ({ SidebarTrigger: MockSidebarTrigger }));
 
-import AppPageHeader from './header';
-
 describe('the AppPageHeader', () => {
   it('hides the title row when the matched route owns it', () => {
     render(<AppPageHeader />);
@@ -93,7 +93,6 @@ describe('the AppPageHeader', () => {
   });
 
   // Regression: the current page's crumb used to be a real link back to its own
-  // bare path, which drops query params (filters, pagination, active tab) when
   // clicked. It must render as non-navigable text instead.
   it('renders every breadcrumb but the last as a link, and the last as plain text', () => {
     mockPageBreadcrumbs.push({ title: 'Topics', linkTo: '/topics' }, { title: 'my-topic', linkTo: '/topics/my-topic' });

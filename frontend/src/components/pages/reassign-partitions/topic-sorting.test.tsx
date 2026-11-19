@@ -7,7 +7,7 @@ import { StepSelectPartitions } from './step1-partitions';
 import { StepReview } from './step3-review';
 import { appGlobal } from '../../../state/app-global';
 import { useApiStore } from '../../../state/backend-api';
-import type { Partition, Topic } from '../../../state/rest-interfaces';
+import type { Topic } from '../../../state/rest-interfaces';
 
 const initialState = useApiStore.getState();
 const initialRefresh = appGlobal.onRefresh;
@@ -26,7 +26,7 @@ const topics: Topic[] = ['zebra', 'alpha'].map((topicName) => ({
   logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
   allowedActions: undefined,
 }));
-const partitions = (topicName: string): Partition[] =>
+const partitions = (topicName: string) =>
   [2, 1].map((id) => ({
     id,
     topicName,
@@ -132,7 +132,6 @@ test('keeps the sort menu open when the page re-renders', async () => {
   const { rerender } = render(<StepSelectPartitions {...props} />);
   await user.click(screen.getByRole('button', { name: 'Size' }));
   expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
-  // PageComponent forceUpdates the whole page on every store poll — three seconds here.
   rerender(<StepSelectPartitions {...props} />);
   expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
 });

@@ -13,6 +13,14 @@ import { create } from '@bufbuild/protobuf';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
+import {
+  GetClusterHealthResponseSchema,
+  TopicPartitionsSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
+import { useApiStore } from 'state/backend-api';
+import type { Topic } from 'state/rest-interfaces';
+
+import { TopicPartitions } from './tab-partitions';
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -27,20 +35,11 @@ rs.mock('state/backend-api', () => {
   };
 });
 
-import {
-  GetClusterHealthResponseSchema,
-  TopicPartitionsSchema,
-} from 'protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import { useApiStore } from 'state/backend-api';
-import type { Partition, Topic } from 'state/rest-interfaces';
-
-import { TopicPartitions } from './tab-partitions';
-
 const TOPIC_NAME = 'test-topic';
 
 const topic = { topicName: TOPIC_NAME, cleanupPolicy: 'delete' } as Topic;
 
-const makePartition = (id: number): Partition => ({
+const makePartition = (id: number) => ({
   id,
   partitionError: null,
   replicas: [0],

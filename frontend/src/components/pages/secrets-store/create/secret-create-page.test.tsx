@@ -6,6 +6,8 @@ import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha
 import { ListSecretsResponseSchema as ListSecretsResponseSchemaDataPlane } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import { SecretCreatePage } from './secret-create-page';
+
 rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
@@ -22,23 +24,17 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {
-    // Mock implementation
-  }
-  unobserve() {
-    // Mock implementation
-  }
-  disconnect() {
-    // Mock implementation
-  }
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 
 Element.prototype.scrollIntoView = rs.fn();
 
-import { SecretCreatePage } from './secret-create-page';
-
-const CREATE_SECRET_BUTTON_REGEX = /create secret/i;
+const CREATE_SECRET_BUTTON_REGEX = /create secret/iu;
 
 function renderCreatePage() {
   const listSecretsMock = rs.fn().mockReturnValue(

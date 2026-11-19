@@ -176,7 +176,7 @@ const originalError = console.error;
 const SUPPRESSED_PATTERNS = [
   // group-details.tsx nests its per-topic actions in the Accordion trigger's own <button>.
   // Matches phrase and tag separately: React logs it as a `%s ... <%s>` template.
-  /cannot appear as a descendant of[\s\S]*<button>/,
+  /cannot appear as a descendant of[\s\S]*<button>/u,
 ];
 
 function isSuppressed(args: unknown[]): boolean {

@@ -19,7 +19,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
-import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
+import { type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
 import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
@@ -127,7 +127,7 @@ class KafkaConnectOverview extends PageComponent<{
 
   // HTTP errors land in api.connectConnectorsError; this reports requests that fail outright.
   refreshData() {
-    api.refreshConnectClusters().catch((error: unknown) => {
+    this.api.refreshConnectClusters().catch((error: unknown) => {
       toast.error('Failed to load Kafka Connect clusters', { description: String(error) });
     });
   }
@@ -214,78 +214,76 @@ class KafkaConnectOverview extends PageComponent<{
 
 export default WrapKafkaConnectOverview;
 
-class TabClusters extends Component {
-  render() {
-    const clusters = api.connectConnectors?.clusters;
-    if (clusters === null || clusters === undefined) {
-      return null;
-    }
-
-    return (
-      <DataTable<ClusterConnectors>
-        columns={[
-          {
-            header: 'Cluster',
-            accessorKey: 'clusterName',
-            cell: ({ row: { original: r } }) => {
-              if (r.error) {
-                return (
-                  <Tooltip delayDuration={150}>
-                    <TooltipTrigger
-                      render={
-                        <span>
-                          <span style={mr05}>{errIcon}</span>
-                          {r.clusterName}
-                        </span>
-                      }
-                    />
-                    <TooltipContent side="top">{r.error}</TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return (
-                <span
-                  className="hoverLink"
-                  onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`);
-                    }
-                  }}
-                  role="button"
-                  style={{ display: 'inline-block', width: '100%' }}
-                  tabIndex={0}
-                >
-                  {r.clusterName}
-                </span>
-              );
-            },
-          },
-          {
-            accessorKey: 'clusterAddress',
-            header: 'Version',
-            cell: ({ row: { original } }) => original.clusterInfo.version,
-          },
-          {
-            accessorKey: 'connectors',
-            header: 'Connectors',
-            cell: ({ row: { original } }) => <ConnectorsColumn observable={original} />,
-          },
-          {
-            id: 'tasks',
-            accessorKey: 'connectors',
-            header: 'Tasks',
-            cell: ({ row: { original } }) => <TasksColumn observable={original} />,
-          },
-        ]}
-        data={clusters}
-        pagination={clusters.length > DEFAULT_TABLE_PAGE_SIZE}
-        sorting={false}
-        tableOptions={TABLE_OPTIONS}
-      />
-    );
+function TabClusters() {
+  const clusters = api.connectConnectors?.clusters;
+  if (clusters === null || clusters === undefined) {
+    return null;
   }
+
+  return (
+    <DataTable<ClusterConnectors>
+      columns={[
+        {
+          header: 'Cluster',
+          accessorKey: 'clusterName',
+          cell: ({ row: { original: r } }) => {
+            if (r.error) {
+              return (
+                <Tooltip delayDuration={150}>
+                  <TooltipTrigger
+                    render={
+                      <span>
+                        <span style={mr05}>{errIcon}</span>
+                        {r.clusterName}
+                      </span>
+                    }
+                  />
+                  <TooltipContent side="top">{r.error}</TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return (
+              <span
+                className="hoverLink"
+                onClick={() => appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(r.clusterName)}`);
+                  }
+                }}
+                role="button"
+                style={{ display: 'inline-block', width: '100%' }}
+                tabIndex={0}
+              >
+                {r.clusterName}
+              </span>
+            );
+          },
+        },
+        {
+          accessorKey: 'clusterAddress',
+          header: 'Version',
+          cell: ({ row: { original } }) => original.clusterInfo.version,
+        },
+        {
+          accessorKey: 'connectors',
+          header: 'Connectors',
+          cell: ({ row: { original } }) => <ConnectorsColumn observable={original} />,
+        },
+        {
+          id: 'tasks',
+          accessorKey: 'connectors',
+          header: 'Tasks',
+          cell: ({ row: { original } }) => <TasksColumn observable={original} />,
+        },
+      ]}
+      data={clusters}
+      pagination={clusters.length > DEFAULT_TABLE_PAGE_SIZE}
+      sorting={false}
+      tableOptions={TABLE_OPTIONS}
+    />
+  );
 }
 
 interface ConnectorType extends ClusterConnectorInfo {
@@ -306,7 +304,7 @@ const TabConnectors = () => {
 
   const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
     try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;
       const classMatch = item.class.match(quickSearchRegExp) !== null;
       if (nameMatch) {
@@ -457,31 +455,29 @@ const TASK_COLUMNS: DataTableColumnDef<TaskType>[] = [
   },
 ];
 
-class TabTasks extends Component {
-  render() {
-    const clusters = api.connectConnectors?.clusters;
-    const allConnectors: ConnectorType[] =
-      clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
-    const allTasks: TaskType[] = allConnectors.flatMap((con) =>
-      con.tasks.map((task) => ({
-        ...task,
-        connector: con,
-        cluster: con.cluster,
+function TabTasks() {
+  const clusters = api.connectConnectors?.clusters;
+  const allConnectors: ConnectorType[] =
+    clusters?.flatMap((cluster) => cluster.connectors.map((c) => ({ cluster, ...c }))) ?? [];
+  const allTasks: TaskType[] = allConnectors.flatMap((con) =>
+    con.tasks.map((task) => ({
+      ...task,
+      connector: con,
+      cluster: con.cluster,
 
-        connectorName: con.name,
-      }))
-    );
+      connectorName: con.name,
+    }))
+  );
 
-    return (
-      <DataTable<TaskType>
-        columns={TASK_COLUMNS}
-        data={allTasks}
-        pagination={allTasks.length > DEFAULT_TABLE_PAGE_SIZE}
-        sorting
-        tableOptions={TABLE_OPTIONS}
-      />
-    );
-  }
+  return (
+    <DataTable<TaskType>
+      columns={TASK_COLUMNS}
+      data={allTasks}
+      pagination={allTasks.length > DEFAULT_TABLE_PAGE_SIZE}
+      sorting
+      tableOptions={TABLE_OPTIONS}
+    />
+  );
 }
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params

@@ -1,10 +1,7 @@
 import type { Namespace, TableRef } from './sql-types';
 
-// Promote search past this many tables in a namespace.
 export const CAT_LIMIT = 20;
 
-// Merge tables seeded on the namespace with tables fetched from ListTables for
-// the catalog. Fetched tables win; seeded names fill in before the fetch lands.
 export function tablesForNamespace(namespace: Namespace, fetched: TableRef[]): TableRef[] {
   const byId = new Map<string, TableRef>();
   for (const t of namespace.tables) {
@@ -35,7 +32,6 @@ export type NamespaceTables = {
   hidden: boolean;
 };
 
-// Search and pagination for one namespace's table list.
 export function namespaceTables(
   namespace: Namespace,
   fetched: TableRef[],

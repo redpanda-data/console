@@ -43,7 +43,6 @@ export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 const transitionalStates: Pipeline_State[] = [Pipeline_State.STARTING, Pipeline_State.STOPPING];
 
-// The server does the same work per call at any page size (it lists everything and slices), and the
 // list drains page-by-page — so ask for the legacy page's 500, under the proto max.
 const LIST_PIPELINES_PAGE_SIZE = 500;
 
@@ -65,7 +64,6 @@ export const useGetPipelineQuery = (
       options?.refetchInterval ??
       ((query) => {
         const state = query?.state?.data?.response?.pipeline?.state;
-        // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
         const shouldPoll = state && transitionalStates.includes(state);
         return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
@@ -81,7 +79,6 @@ export const useListPipelinesQuery = (
     enableSmartPolling?: boolean;
   }
 ) => {
-  // Stabilize request objects to prevent unnecessary re-renders
   const listPipelinesRequestDataPlane = useMemo(
     () =>
       create(ListPipelinesRequestSchemaDataPlane, {
@@ -114,8 +111,6 @@ export const useListPipelinesQuery = (
     getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
       // Any token already requested, not just the last one: keyset tokens only move forward, so a
-      // repeat means the server sent us backwards (A→A, or a longer A→B→A cycle) and the drain would
-      // never end.
       if (!nextPageToken || allPageParams.some((param) => param?.pageToken === nextPageToken)) {
         return;
       }
@@ -127,8 +122,6 @@ export const useListPipelinesQuery = (
     pageParamKey: 'request',
   });
 
-  // Deduplicated by id: the token names the next page's first id, so a server resolving it by exact
-  // match replays page one when that pipeline is deleted mid-drain. Later pages win.
   const pipelines = useMemo(() => {
     const pages = listPipelinesResult?.data?.pages;
     if (!pages) {
@@ -180,13 +173,12 @@ export const useInvalidatePipelineQueries = () => {
 const NAME_LOOKUP_PAGE_SIZE = 100;
 
 // `name_contains` is validated server-side against `^[A-Za-z0-9-_ /]+$`, max 128; strip rather than 400.
-const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/g;
+const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/gu;
 const NAME_FILTER_MAX_LENGTH = 128;
 
 export const toNameContainsFilter = (nameContains: string): string =>
   nameContains.replace(DISALLOWED_IN_NAME_FILTER, '').slice(0, NAME_FILTER_MAX_LENGTH);
 
-// Bypasses useListPipelinesQuery: its cache key omits the input, so a narrower filter would overwrite the list.
 export const useFetchPipelineNames = () => {
   const transport = useTransport();
   return useCallback(

@@ -58,17 +58,14 @@ describe('sql helpers', () => {
   });
 
   test('isWriteKeyword blocks writes/DDL/DCL but passes read-shaped statements', () => {
-    // Read-shaped — not blocked.
     expect(isWriteKeyword('SELECT * FROM t')).toBe(false);
     expect(isWriteKeyword('WITH t AS (SELECT 1) SELECT * FROM t')).toBe(false);
     expect(isWriteKeyword('EXPLAIN SELECT 1')).toBe(false);
     expect(isWriteKeyword('(SELECT 1)')).toBe(false);
     expect(isWriteKeyword('SHOW TABLES')).toBe(false);
-    // No longer blocked in the editor.
     expect(isWriteKeyword('CREATE TABLE t (a int)')).toBe(false);
     expect(isWriteKeyword('DROP TABLE t')).toBe(false);
     expect(isWriteKeyword('GRANT ALL ON t TO u')).toBe(false);
-    // Writes / DDL / DCL — still blocked.
     expect(isWriteKeyword('INSERT INTO t VALUES (1)')).toBe(true);
     expect(isWriteKeyword('DELETE FROM t')).toBe(true);
   });
@@ -120,7 +117,6 @@ describe('sql helpers', () => {
     expect(
       bridgeTopicForQuery('SELECT * FROM default_redpanda_catalog=>cars_table -- TODO cat=>orders', CATALOGS)
     ).toBe('cars-telemetry.v1');
-    // A `=>` that only appears inside a string literal is not a table ref.
     expect(bridgeTopicForQuery("SELECT 'cat=>x' AS note", CATALOGS)).toBeNull();
   });
 });

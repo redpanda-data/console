@@ -83,8 +83,6 @@ function useUrlSorting(
   return { sorting, onSortingChange };
 }
 
-// Clamp a stale/out-of-range page index into a valid range. Effective value is
-// used for rendering immediately; the effect below repairs the URL.
 function useClampedPageIndex({
   pageIndex,
   setPageIndex,

@@ -140,12 +140,10 @@ const onClose = (key: number) => {
   const next = errorModals.length > 1 ? errorModals[1] : undefined;
 
   if (next) {
-    // Switch to next — don't animate current or next modal
     current.animate = false;
     next.animate = false;
     afterClose(key); // immediately switch to next
   } else {
-    // last modal
     current.animate = true;
     current.isVisible = false;
   }

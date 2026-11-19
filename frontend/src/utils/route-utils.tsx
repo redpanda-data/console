@@ -46,7 +46,6 @@ type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
 
 type SidebarItemIcon = LucideIcon | ((props: SVGProps<SVGSVGElement>) => JSX.Element);
 
-// Shape the sidebar renders each nav link from. Grouping lives on SidebarGroupedItems, not here.
 type NavLinkProps = {
   title: string;
   to: string;
@@ -55,7 +54,6 @@ type NavLinkProps = {
   disabledText?: string;
 };
 
-// Sidebar item definition
 export type SidebarItem = {
   path: string;
   title: string | ReactNode;
@@ -64,7 +62,6 @@ export type SidebarItem = {
   group: SidebarSectionName;
 };
 
-// Visibility state for menu items
 export type MenuItemState = {
   visible: boolean;
   disabledReasons: DisabledReason[];
@@ -177,7 +174,6 @@ function routeVisibility(
  * Ordered by display order in the sidebar.
  */
 export const SIDEBAR_ITEMS: SidebarItem[] = [
-  // --- Streaming ---
   {
     path: '/overview',
     title: 'Overview',
@@ -238,10 +234,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'SQL',
     icon: Database,
     group: SidebarSection.STREAMING,
-    // The enterprise backend mounts the SQLService and reports it in endpoint
     // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
-    // single source of truth for both embedded (cloud) and self-hosted, so the
-    // nav is gated on capability detection rather than a feature flag.
     visibilityCheck: routeVisibility(true, [Feature.SQLService]),
   },
   {
@@ -290,7 +283,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       return true;
     }),
   },
-  // --- Platform ---
   {
     path: '/secrets',
     title: 'Secrets Store',
@@ -300,10 +292,8 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
   },
 ];
 
-// Routes that should be hidden in embedded mode
 const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 
-// Routes that should be hidden in serverless mode
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
 /** Nav link for one sidebar item, or null when it has no icon or is not visible. */
@@ -337,7 +327,6 @@ function getDisabledText(reasons: DisabledReason[]): string {
   if (firstReason === undefined) {
     return '';
   }
-  // Simplified text extraction - just return the key message
   const textMap: Record<DisabledReason, string> = {
     [DisabledReasons.noPermission]: "You don't have permissions to view this page.",
     [DisabledReasons.notSupported]: 'The Kafka cluster does not support this feature.',

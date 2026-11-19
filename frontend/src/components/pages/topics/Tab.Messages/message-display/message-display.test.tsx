@@ -53,7 +53,7 @@ rs.mock('./troubleshoot-report-viewer', () => ({
   TroubleshootReportViewer: MockTroubleshootReportViewer,
 }));
 
-function buildPayload(overrides: Partial<Payload> = {}): Payload {
+function buildPayload(overrides: Partial<Payload> = {}) {
   return {
     payload: 'sample',
     isPayloadNull: false,
@@ -64,7 +64,7 @@ function buildPayload(overrides: Partial<Payload> = {}): Payload {
   };
 }
 
-function buildMessage(overrides: Partial<TopicMessage> = {}): TopicMessage {
+function buildMessage(overrides: Partial<TopicMessage> = {}) {
   return {
     partitionID: 1,
     offset: 42,
@@ -150,7 +150,7 @@ describe('topic message rendering', () => {
       <ExpandedMessage loadLargeMessage={() => Promise.resolve()} msg={msg} onDownloadRecord={onDownloadRecord} />
     );
 
-    const downloadButton = screen.getByRole('button', { name: /download record/i });
+    const downloadButton = screen.getByRole('button', { name: /download record/iu });
     await user.click(downloadButton);
 
     expect(onDownloadRecord).toHaveBeenCalledTimes(1);

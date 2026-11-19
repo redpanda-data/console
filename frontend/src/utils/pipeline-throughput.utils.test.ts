@@ -135,7 +135,7 @@ describe('insertGapMarkers', () => {
 describe('formatChartTimestamp', () => {
   test('formats millisecond timestamp to time string', () => {
     const result = formatChartTimestamp(new Date('2026-01-15T14:30:00Z').getTime());
-    expect(result).toMatch(/\d{2}:\d{2}/);
+    expect(result).toMatch(/\d{2}:\d{2}/u);
   });
 });
 

@@ -68,7 +68,7 @@ const [FIRST_SCOPE, SECOND_SCOPE] = SCOPE_OPTIONS;
 function expectLabelWithoutRawValue(trigger: HTMLElement, option: ScopeOption) {
   expect(trigger).toHaveTextContent(option.label);
   const triggerText = trigger.textContent ?? '';
-  const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`);
+  const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`, 'u');
   if (!option.label.includes(option.value)) {
     expect(triggerText).not.toMatch(rawNumberPattern);
   }

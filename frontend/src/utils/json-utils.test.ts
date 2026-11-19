@@ -183,7 +183,6 @@ describe('deepParseJson', () => {
         text: 'Weather in Singapore (fetched 2025-10-27T15:44:26.638Z):\n\n- Condition: Partly cloudy\n- Temperature: 28°C (feels like 32°C)\n- Humidity: 70%\n- Pressure: 1011 hPa\n- Wind: 7 km/h\n\nSource: wttr.in\n\nNo active weather alerts reported.',
       };
       const result = deepParseJson(input);
-      // In this case, the text is not a JSON string, so it should remain as-is
       expect(result).toEqual(input);
     });
   });
@@ -192,7 +191,6 @@ describe('deepParseJson', () => {
     test('should prevent infinite recursion with depth limit', () => {
       const deeplyNested =
         '{"a":"{\\"b\\":\\"{\\\\\\"c\\\\\\":\\\\\\"{\\\\\\\\\\\\\\"d\\\\\\\\\\\\\\":\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"e\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"f\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"value\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"}\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"}\\\\\\\\\\\\\\"}\\\\\\"}\\"}"}';
-      // Should not throw, should stop at max depth
       expect(() => deepParseJson(deeplyNested)).not.toThrow();
     });
 

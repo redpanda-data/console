@@ -74,16 +74,13 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
     validate: true,
     schemas: [
       {
-        // If YAML file is opened matching this glob
         fileMatch: ['**/*.yaml'],
-        // The following schema will be applied
         schema: {
           type: 'object',
           definitions: schema.definitions,
           properties: schema.properties,
         },
 
-        // And the URI will be linked to as the source.
         uri: 'https://github.com/redpanda-data/console/blob/master/frontend/src/assets/rp-connect-schema.json',
       },
     ],
@@ -91,7 +88,6 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
-// The live component catalog, applied to the YAML schema's docs once both have loaded.
 function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
   const { data: componentResponse } = useListComponentsQuery();
   const componentList = componentResponse?.components;

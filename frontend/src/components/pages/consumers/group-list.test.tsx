@@ -10,11 +10,11 @@
  */
 
 import { describe, expect, test } from '@rstest/core';
-import type { GroupDescription, GroupType } from 'state/rest-interfaces';
+import type { GroupType } from 'state/rest-interfaces';
 
 import { computeGroupStatistics } from './group-list';
 
-const group = (groupId: string, groupType: GroupType, state: string): GroupDescription => ({
+const group = (groupId: string, groupType: GroupType, state: string) => ({
   groupId,
   groupType,
   state,

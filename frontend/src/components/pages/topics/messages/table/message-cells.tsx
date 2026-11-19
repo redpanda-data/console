@@ -30,7 +30,6 @@ export type ValuePreviewConfig = {
 /** Max characters of the one-line JSON preview shown in key/value cells (mirrors the mock's ~92ch). */
 const PREVIEW_MAX_CHARS = 92;
 
-// The hover hint shows more than the cell without covering the table; the detail panel has the rest.
 const PAYLOAD_HINT_MAX_CHARS = 300;
 
 const truncate = (text: string, max = PREVIEW_MAX_CHARS) => (text.length > max ? `${text.slice(0, max)}…` : text);

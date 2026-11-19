@@ -32,13 +32,10 @@ export const payloadEncodingPairs = [
   { value: PayloadEncoding.CBOR, label: 'CBOR' },
 ];
 
-export const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
-);
+export const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce<Record<number, string>>((acc, pair) => {
+  acc[pair.value] = pair.label;
+  return acc;
+}, {});
 
 // Define the column order as a constant
 export const COLUMN_ORDER: DataColumnKey[] = [
@@ -52,4 +49,4 @@ export const COLUMN_ORDER: DataColumnKey[] = [
 ];
 
 // Regex for checking printable ASCII characters
-export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;

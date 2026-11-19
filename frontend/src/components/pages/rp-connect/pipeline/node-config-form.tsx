@@ -577,7 +577,7 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
 // Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
 // secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
 // like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
-const SECRET_NAME_RE = /(password|secret|token|private_key|api_key|passphrase)$/i;
+const SECRET_NAME_RE = /(?:password|secret|token|private_key|api_key|passphrase)$/iu;
 
 const isSecretField = (spec: RawFieldSpec): boolean =>
   spec.secret === true || (spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? ''));
@@ -809,7 +809,7 @@ const ScalarTextInput = ({
   );
 };
 
-const INT_VALUE_RE = /^-?\d+$/;
+const INT_VALUE_RE = /^-?\d+$/u;
 
 // A non-blocking validity hint for numeric fields. `${…}` values are interpolations (env vars,
 // secrets, Bloblang) — legitimate anywhere — so only plainly malformed literals are flagged.

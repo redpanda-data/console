@@ -166,10 +166,10 @@ class ReassignPartitions extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
-    api.refreshTopics(force);
-    api.refreshPartitions('all', force);
-    api.refreshPartitionReassignments(force);
+    this.api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
+    this.api.refreshTopics(force);
+    this.api.refreshPartitions('all', force);
+    this.api.refreshPartitionReassignments(force);
   }
 
   componentWillUnmount() {
@@ -564,50 +564,9 @@ class ReassignPartitions extends PageComponent {
     return success;
   }
 
-  async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
-    const toastRef = showToast({
-      status: 'loading',
-      description: 'Setting bandwidth throttle... 1/2',
-    });
-    try {
-      await applyReplicationThrottle(toastRef, request);
-      return true;
-    } catch (err) {
-      // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
-      // brokers is unsupported"), so the message itself is what an operator needs.
-      showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
-      return false;
-    }
-  }
+  setTrafficLimit = setTrafficLimit;
 
-  setReassignError(
-    startedCount: number,
-    errors: {
-      topicName: string;
-      partitions: AlterPartitionReassignmentsPartitionResponse[];
-    }[]
-  ) {
-    showErrorModal(
-      'Reassign Partitions',
-      `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
-      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-        {errors.map((r) => (
-          <div key={r.topicName}>
-            <div>
-              <h4>Topic: "{r.topicName}"</h4>
-              <ul>
-                {r.partitions.map((p) => (
-                  <li key={p.partitionId}>
-                    PartitionID {p.partitionId}: {p.errorMessage}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  setReassignError = setReassignError;
 
   startRefreshingTopicConfigs() {
     if (IsDev && this.refreshTopicConfigsTimer === null) {
@@ -687,7 +646,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   get topicPartitionsInProgress(): string[] {
-    return api.partitionReassignments?.map((r) => r.topicName) ?? [];
+    return this.api.partitionReassignments?.map((r) => r.topicName) ?? [];
   }
 }
 export default ReassignPartitions;
@@ -898,4 +857,49 @@ function throttledTopicNames(
 
   // Filter topics that are still being reassigned
   return newThrottledTopics.filter((t) => !topicsInProgress.includes(t));
+}
+
+async function setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
+  const toastRef = showToast({
+    status: 'loading',
+    description: 'Setting bandwidth throttle... 1/2',
+  });
+  try {
+    await applyReplicationThrottle(toastRef, request);
+    return true;
+  } catch (err) {
+    // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
+    // brokers is unsupported"), so the message itself is what an operator needs.
+    showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
+    return false;
+  }
+}
+
+function setReassignError(
+  startedCount: number,
+  errors: {
+    topicName: string;
+    partitions: AlterPartitionReassignmentsPartitionResponse[];
+  }[]
+) {
+  showErrorModal(
+    'Reassign Partitions',
+    `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
+    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+      {errors.map((r) => (
+        <div key={r.topicName}>
+          <div>
+            <h4>Topic: "{r.topicName}"</h4>
+            <ul>
+              {r.partitions.map((p) => (
+                <li key={p.partitionId}>
+                  PartitionID {p.partitionId}: {p.errorMessage}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

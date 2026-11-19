@@ -54,7 +54,6 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
         ))}
       </TabsList>
       {tabs.map((t) => (
-        // The body owns its spacing; the registry controls the panel.
         <TabsContent key={t.key} value={t.key}>
           <div className="pt-2 pb-4">
             <TabSlot slot={t.content} />

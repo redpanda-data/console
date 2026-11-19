@@ -18,8 +18,6 @@ export const ConnectorLogo = ({
   if (!Component) {
     return null;
   }
-  // Sized wrapper + inner SVG that fills it. Lets `preserveAspectRatio` (SVG
-  // default) letterbox taller-than-wide logos so they can't blow out row height.
   return (
     <span className={cn('inline-flex shrink-0 items-center justify-center', className)} style={style}>
       <Component className="block h-full max-h-full w-full max-w-full" />

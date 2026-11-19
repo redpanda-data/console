@@ -33,6 +33,8 @@ import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
+import { PipelineListPage } from './list';
+
 const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
@@ -45,8 +47,6 @@ rs.mock('config', () => {
 });
 
 type ListRequest = ListPipelinesRequest;
-
-import { PipelineListPage } from './list';
 
 const yamlFor = ({ inputs, outputs }: { inputs: string[]; outputs: string[] }) => `
 input:
@@ -159,7 +159,7 @@ const buildTransport = (opts?: {
 const renderList = (opts?: { withDraft?: boolean }) =>
   renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport(opts) });
 
-const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`) });
+const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`, 'u') });
 
 const rowFor = (displayName: string) => {
   const row = screen.getByText(displayName).closest('tr');
@@ -169,12 +169,12 @@ const rowFor = (displayName: string) => {
   return row;
 };
 
-const SEARCH_INPUT_RE = /search pipelines/i;
-const UNTIL_DONE_RE = /Until done/;
-const CLEAR_FILTERS_RE = /clear filters/i;
+const SEARCH_INPUT_RE = /search pipelines/iu;
+const UNTIL_DONE_RE = /Until done/u;
+const CLEAR_FILTERS_RE = /clear filters/iu;
 
 const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, item: RegExp) => {
-  await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+  await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
   await user.click(await screen.findByRole('menuitem', { name: item }));
 };
 
@@ -481,7 +481,7 @@ describe('the PipelineListPage', () => {
         renderList();
 
         await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
-        expect(screen.queryByRole('tab', { name: /^Drafts/ })).not.toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: /^Drafts/u })).not.toBeInTheDocument();
       });
 
       // The flag gates making drafts, not seeing them. Turning it back off would otherwise strand a
@@ -513,7 +513,7 @@ describe('the PipelineListPage', () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-        expect(screen.getByRole('tab', { name: /^Drafts/ })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /^Drafts/u })).toBeInTheDocument();
       });
 
       it('lists a draft alongside deployed pipelines, marked as a draft', async () => {
@@ -541,8 +541,8 @@ describe('the PipelineListPage', () => {
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
 
         const row = rowFor('half-built-pipeline');
-        expect(within(row).getByText(/^Edited .* ago$/)).toBeInTheDocument();
-        expect(within(row).queryByText(/author@example\.com/)).not.toBeInTheDocument();
+        expect(within(row).getByText(/^Edited .* ago$/u)).toBeInTheDocument();
+        expect(within(row).queryByText(/author@example\.com/u)).not.toBeInTheDocument();
         expect(within(row).queryByText('draft777')).not.toBeInTheDocument();
       });
 
@@ -604,10 +604,10 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
 
-        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
         await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
         // The row menu goes through the same confirmation.
-        expect(await screen.findByText(/can't go back to being a draft/)).toBeInTheDocument();
+        expect(await screen.findByText(/can't go back to being a draft/u)).toBeInTheDocument();
         await user.click(screen.getByTestId('confirm-start-draft'));
 
         await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
@@ -623,10 +623,10 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
 
-        await openDraftRowMenuItem(user, /delete draft/i);
+        await openDraftRowMenuItem(user, /delete draft/iu);
 
         // Confirmed, but without the type-to-confirm the deployed-pipeline dialog demands.
-        expect(await screen.findByText(/delete draft\?/i)).toBeInTheDocument();
+        expect(await screen.findByText(/delete draft\?/iu)).toBeInTheDocument();
         expect(deletePipelineMock).not.toHaveBeenCalled();
 
         await user.click(screen.getByTestId('confirm-delete-draft'));
@@ -650,9 +650,9 @@ describe('the PipelineListPage', () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-        await openDraftRowMenuItem(user, /delete draft/i);
+        await openDraftRowMenuItem(user, /delete draft/iu);
 
-        expect(await screen.findByText(/your unsaved changes go with it/i)).toBeInTheDocument();
+        expect(await screen.findByText(/your unsaved changes go with it/iu)).toBeInTheDocument();
         useRpcnEditorAutosaveStore.getState().clearAll();
       });
 
@@ -663,7 +663,7 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
 
-        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/i }));
+        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
 
         expect(await screen.findByRole('menuitem', { name: 'Continue editing' })).toBeInTheDocument();
         expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();

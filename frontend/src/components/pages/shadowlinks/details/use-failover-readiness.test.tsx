@@ -13,18 +13,17 @@ import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/
 import { act, renderHook } from '@testing-library/react';
 import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
+
+import { useFailoverReadiness } from './use-failover-readiness';
+import type { UnifiedShadowLink } from '../model';
 
 const noTopics = rs.hoisted(() => () => ({ data: undefined, isError: false, error: null, refetch: rs.fn() }));
 
 rs.mock('react-query/api/shadowlink', () => ({
   useListShadowTopicQuery: rs.fn(noTopics),
 }));
-
-import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-
-import { useFailoverReadiness } from './use-failover-readiness';
-import type { UnifiedShadowLink } from '../model';
 
 const link = (name: string) => ({ name }) as UnifiedShadowLink;
 

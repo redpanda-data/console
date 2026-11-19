@@ -420,7 +420,6 @@ export const PermissionsListTabNew: FC = () => {
   useSecurityPageHeader('permissions');
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [createAclOpen, setCreateAclOpen] = useState(false);
-  // Held above the error returns so a failed refetch does not collapse expanded principals.
   const rows = useExpandedRows();
   const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
     usePrincipalPermissions();

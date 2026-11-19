@@ -66,7 +66,7 @@ application features:
 
 ### 1. Adding New Todos
 
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/shared/seed.e2e.test.ts`
 
 #### 1.1 Add Valid Todo
 **Steps:**

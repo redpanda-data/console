@@ -517,7 +517,6 @@ export const mockAvroScanner = create(ComponentSpecSchema, {
         name: 'raw_json',
         type: 'bool',
         kind: 'scalar',
-        // No defaultValue - will generate boolean false
         advanced: true,
         optional: true,
       }),
@@ -787,7 +786,6 @@ export const mockComponents = {
   memoryCache: mockComponentToConnectSpec(mockMemoryCache, 'cache'),
   bloblangProcessor: mockComponentToConnectSpec(mockBloblangProcessor, 'processor'),
   avroScanner: mockComponentToConnectSpec(mockAvroScanner, 'scanner'),
-  // Real JSON schema fixtures (no proto defaults applied)
   generateInput: mockGenerateInput,
   httpClientInput: mockHttpClientInput,
 };

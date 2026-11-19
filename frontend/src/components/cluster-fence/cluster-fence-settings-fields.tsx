@@ -186,7 +186,6 @@ const AdvancedOptions = ({ value, onChange }: Pick<ClusterFenceSettingsFieldsPro
   const advancedInUse = value.allowAllReads;
   const [advancedOpen, setAdvancedOpen] = useState(advancedInUse);
 
-  // Settings loaded after opening (another tab saved them) can turn an advanced option on; show it.
   useEffect(() => {
     if (advancedInUse) {
       setAdvancedOpen(true);

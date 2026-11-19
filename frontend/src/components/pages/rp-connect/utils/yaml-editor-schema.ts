@@ -56,7 +56,6 @@ function addComponentDescriptions(
     if (!(component && node) || typeof node !== 'object') {
       continue;
     }
-    // Not `deprecationMessage`: a branch with a problem loses the anyOf match, dropping its hover and completions.
     if (isDeprecatedComponent(component)) {
       node.doNotSuggest = true;
     }

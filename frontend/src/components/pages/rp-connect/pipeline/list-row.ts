@@ -57,5 +57,4 @@ export const toPipelineRow = (apiPipeline: APIPipeline): PipelineRow => {
   };
 };
 
-// One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
 export const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;

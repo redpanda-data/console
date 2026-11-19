@@ -35,10 +35,8 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange, inline }
   // Stable fallback timestamp to avoid Date.now() changes causing re-renders
   const [initialTimestamp] = useState(() => Date.now());
 
-  // Initialize timestamp on mount if not set by user
   useEffect(() => {
     if (!searchParams?.startTimestampWasSetByUser && value === -1) {
-      // so far, the user did not change the startTimestamp, so we set it to 'now'
       onChangeRef.current(Date.now());
     }
   }, [searchParams?.startTimestampWasSetByUser, value]);

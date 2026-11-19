@@ -9,9 +9,9 @@ const MULTI_PAGE_QUOTA_COUNT = 55;
 const URL_STATE_QUOTA_COUNT = 60;
 
 // Regex patterns for pagination tests
-const ENTITY_TYPE_REGEX = /client-id|user|ip/;
-const PAGE_0_REGEX = /page=0/;
-const PAGE_1_REGEX = /page=1/;
+const ENTITY_TYPE_REGEX = /client-id|user|ip/u;
+const PAGE_0_REGEX = /page=0/u;
+const PAGE_1_REGEX = /page=1/u;
 
 /** Quotas of one test run: client IDs `<label>-<uuid>-001`, `-002`, and so on. */
 type QuotaBatch = { label: string; prefix: string };
@@ -51,7 +51,7 @@ const waitForQuotaRows = (page: Page, batch: QuotaBatch) =>
 
 /** The client IDs of the batch's quotas on the current page. */
 const captureVisibleQuotas = async (page: Page, batch: QuotaBatch) => {
-  const quotaIdPattern = new RegExp(`${batch.prefix}-\\d{3}`);
+  const quotaIdPattern = new RegExp(`${batch.prefix}-\\d{3}`, 'u');
   const rowTexts = await quotaRows(page, batch).allTextContents();
   return rowTexts.flatMap((text) => text.match(quotaIdPattern)?.[0] ?? []);
 };

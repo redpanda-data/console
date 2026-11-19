@@ -13,10 +13,10 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-// ── Hoisted mocks ─────────────────────────────────────────────────────────────
+import { CreateTopicDialog } from './create-topic-dialog';
 
 const mockMutateAsync = rs.fn();
-const TOPIC_NAME_LABEL = /topic name/i;
+const TOPIC_NAME_LABEL = /topic name/iu;
 
 rs.mock('../../../react-query/api/topic', () => {
   const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
@@ -63,12 +63,6 @@ rs.mock('sonner', () => ({
     error: rs.fn(),
   },
 }));
-
-// ── Component import (after mocks) ────────────────────────────────────────────
-
-import { CreateTopicDialog } from './create-topic-dialog';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 Element.prototype.scrollIntoView = rs.fn();
 
@@ -149,8 +143,6 @@ async function clickAndExpectPropertyRows(user: User, button: HTMLElement, count
     expect(screen.getAllByPlaceholderText('Property Name...')).toHaveLength(count);
   });
 }
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('the CreateTopicDialog', () => {
   beforeEach(() => {
@@ -235,18 +227,15 @@ describe('the CreateTopicDialog', () => {
 
       const partitionsInput = screen.getByTestId('topic-partitions');
       await user.clear(partitionsInput);
-      // Type 0 — Zod's min(1) rule rejects it
       await user.type(partitionsInput, '0');
-      // fireEvent.blur explicitly marks the field as touched so RHF renders the FieldError
       fireEvent.blur(partitionsInput);
 
       await waitFor(() => {
-        expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
+        expect(screen.getByText(/must be at least 1/iu)).toBeInTheDocument();
       });
     });
 
     test('replication factor validation error from validateReplicationFactor (even number on Redpanda)', async () => {
-      // Simulate a Redpanda cluster so superRefine runs the odd-number check
       const restoreApi = await simulateRedpandaCluster({ kafka: { version: '3.0' } });
 
       const user = userEvent.setup();
@@ -258,12 +247,11 @@ describe('the CreateTopicDialog', () => {
       fireEvent.blur(replicationFactorInput);
 
       await waitFor(() => {
-        expect(screen.getByText(/replication factor must be an odd number/i)).toBeInTheDocument();
+        expect(screen.getByText(/replication factor must be an odd number/iu)).toBeInTheDocument();
       });
 
       expect(screen.getByTestId('onOk-button')).toBeDisabled();
 
-      // Restore api defaults so other tests are not affected
       restoreApi();
     });
   });
@@ -283,25 +271,20 @@ describe('the CreateTopicDialog', () => {
       await submitWhenEnabled(user);
 
       await waitFor(() => {
-        // "Topic created" appears in both the dialog title and the success body paragraph
         const topicCreatedElements = screen.getAllByText('Topic created');
         expect(topicCreatedElements.length).toBeGreaterThanOrEqual(1);
       });
 
-      // Shows the topic name in the success view
       expect(screen.getByText('my-new-topic')).toBeInTheDocument();
 
-      // Shows partition count and label
       expect(screen.getByText('3')).toBeInTheDocument();
       expect(screen.getByText('Partitions')).toBeInTheDocument();
 
-      // Shows replication factor label
       expect(screen.getByText('Replication factor')).toBeInTheDocument();
     });
 
     test('success state falls back to the requested counts when the broker reports -1', async () => {
       const user = userEvent.setup();
-      // Brokers on CreateTopics response versions < 5 return -1 even for explicit requests
       mockMutateAsync.mockResolvedValue({
         topicName: 'my-new-topic',
         partitionCount: -1,
@@ -317,7 +300,6 @@ describe('the CreateTopicDialog', () => {
         expect(screen.getAllByText('Topic created').length).toBeGreaterThanOrEqual(1);
       });
 
-      // The values the user asked for, not the broker's -1 placeholders
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText('3')).toBeInTheDocument();
       expect(screen.queryByText('—')).not.toBeInTheDocument();
@@ -335,13 +317,10 @@ describe('the CreateTopicDialog', () => {
       await submitWhenEnabled(user);
 
       await waitFor(() => {
-        // Alert title shows the error name
         expect(screen.getByText('ConnectError')).toBeInTheDocument();
-        // Alert description shows the error message
         expect(screen.getByText('topic already exists')).toBeInTheDocument();
       });
 
-      // Form is still visible — not replaced by the success state
       expect(screen.getByTestId('topic-name')).toBeInTheDocument();
       expect(screen.getByTestId('onOk-button')).toBeInTheDocument();
     });
@@ -361,7 +340,6 @@ describe('the CreateTopicDialog', () => {
 
       expect(screen.queryByTestId('topic-min-insync-replicas')).not.toBeInTheDocument();
 
-      // Restore api defaults so other tests are not affected
       restoreApi();
     });
 
@@ -369,7 +347,6 @@ describe('the CreateTopicDialog', () => {
       const { api } = await import('../../../state/backend-api');
       const onClose = rs.fn();
 
-      // Dialog mounts closed: the unconditional mount effect still fires once.
       const { rerender } = renderDialog(false, onClose);
 
       await waitFor(() => {
@@ -379,7 +356,6 @@ describe('the CreateTopicDialog', () => {
       (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
 
       // Reopening the dialog (e.g. after closing it without a page refresh) must
-      // re-fetch the cluster overview rather than relying on a stale cached value.
       rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
 
       await waitFor(() => {
@@ -393,16 +369,13 @@ describe('the CreateTopicDialog', () => {
       const user = userEvent.setup();
       renderDialog();
 
-      // Initially one empty row is rendered (from defaultValues)
       const initialRows = screen.getAllByPlaceholderText('Property Name...');
       expect(initialRows).toHaveLength(1);
 
-      // Add a second row, then a third
-      const addEntryButton = screen.getByRole('button', { name: /add entry/i });
+      const addEntryButton = screen.getByRole('button', { name: /add entry/iu });
       await clickAndExpectPropertyRows(user, addEntryButton, 2);
       await clickAndExpectPropertyRows(user, addEntryButton, 3);
 
-      // Remove buttons are ghost buttons that contain only an svg XIcon (no text label)
       const removeButtons = screen
         .getAllByRole('button')
         .filter((btn) => btn.querySelector('svg') !== null && !btn.textContent?.trim());

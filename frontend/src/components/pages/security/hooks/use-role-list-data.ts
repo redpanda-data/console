@@ -14,9 +14,7 @@ export type RoleEntry = {
 /** Roles with their members; member lists come from the roles store, refreshed on mount. */
 export function useRoleListData() {
   useEffect(function refreshRoleMembersOnMount() {
-    rolesApi.refreshRoleMembers().catch(() => {
-      // Members stay as last loaded; the list still renders.
-    });
+    rolesApi.refreshRoleMembers().catch(() => {});
   }, []);
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);
   const { data, isLoading, isError, error } = useListRolesQuery();

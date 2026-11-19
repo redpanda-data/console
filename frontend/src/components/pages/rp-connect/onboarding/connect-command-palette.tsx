@@ -51,12 +51,10 @@ function ComponentIcon({ component, className = 'size-5' }: { component: Connect
   return <TonedIcon className={clsx(className, 'shrink-0')} icon={Waypoints} tone="muted" />;
 }
 
-// Compact section title matching the inspector's small-label style.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <div className="mt-2 text-body-sm font-semibold tracking-wide text-foreground uppercase">{children}</div>
 );
 
-// All heading levels collapse to the same compact label — these are short section titles, not a hierarchy.
 const MARKDOWN_COMPONENTS: Components = {
   h1: MarkdownHeading,
   h2: MarkdownHeading,
@@ -65,7 +63,6 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body leading-relaxed text-foreground">{children}</div>,
-  // Markdown can produce an anchor with no destination, which is text rather than a link.
   a: ({ href, children }) =>
     href ? (
       <Link href={href} rel="noopener noreferrer" target="_blank">
@@ -99,7 +96,6 @@ function statusBadge(status: ComponentStatus, name: string) {
   return null;
 }
 
-// Bold the matched span of the name so users see why a result surfaced.
 function HighlightedName({ name, query }: { name: string; query: string }) {
   const idx = query ? name.toLowerCase().indexOf(query) : -1;
   if (idx < 0) {
@@ -126,8 +122,7 @@ function Row({
   onCommit: (component: ConnectComponentSpec) => void;
 }) {
   const category = component.categories?.[0];
-  // Fall back to the humanized type so same-named components (redis cache vs redis rate-limit) stay distinguishable.
-  const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/g, ' ');
+  const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/gu, ' ');
   return (
     <CommandItem
       key={`${component.type}-${component.name}`}
@@ -149,10 +144,8 @@ function Row({
   );
 }
 
-// Facet tabs (Recent / Suggested / All / per-category) that narrow the browse list.
 type Tab = { id: string; label: string };
 
-// Right-hand preview of the highlighted row; insertion is deferred to the footer Add action.
 function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   if (!component) {
     return (
@@ -167,7 +160,6 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
   const categories = (component.categories ?? []).map(getCategoryDisplayName).filter(Boolean);
   const summary = markdownToPlainText(asciidocToMarkdown(component.summary ?? ''));
   const descriptionMd = component.description ? asciidocToMarkdown(component.description) : '';
-  // Skip the description when it just repeats the summary.
   const showDescription = descriptionMd !== '' && markdownToPlainText(descriptionMd) !== summary;
   const docsUrl = getConnectorDocsUrl(component.type, component.name);
 
@@ -181,7 +173,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
             {statusBadge(component.status, component.name)}
           </span>
           <span className="text-body-sm text-muted-foreground capitalize">
-            {component.type.replace(/_/g, ' ')}
+            {component.type.replace(/_/gu, ' ')}
             {component.version ? ` · v${component.version}` : ''}
           </span>
         </div>
@@ -237,7 +229,6 @@ type ConnectCommandPaletteProps = {
 
 type CategoryGroup = { id: string; name: string; components: ConnectComponentSpec[] };
 
-// A component appears under EVERY category it lists, not just the first.
 function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
   const groups = new Map<string, ConnectComponentSpec[]>();
   for (const component of components) {
@@ -256,7 +247,6 @@ function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// The "All" tab lists every component once, deduped across the category groups it may appear in.
 function dedupeAcrossGroups(grouped: CategoryGroup[]): CategoryGroup[] {
   const seen = new Set<string>();
   return grouped
@@ -293,7 +283,6 @@ function buildTabs(
   return list;
 }
 
-// The flat list a browse tab shows; `null` for "all", which renders the grouped view instead.
 function browseItemsForTab(
   tab: string,
   recentComponents: ConnectComponentSpec[],
@@ -313,7 +302,6 @@ function browseItemsForTab(
   return null;
 }
 
-// The in-scope catalog and its lookups, derived once per catalog rather than per keystroke.
 function usePaletteCatalog({
   components,
   additionalComponents,
@@ -333,28 +321,22 @@ function usePaletteCatalog({
 
   const inScope = useMemo(() => pickable.filter((c) => typeAllowed(c.type)), [pickable, typeAllowed]);
 
-  // Searchable text is derived once per catalog: building it walks the alias table and joins each
-  // component's full description — too costly to redo per keystroke across hundreds of components.
   const searchIndex = useMemo(
     () => new Map(pickable.map((component) => [component, searchableText(component)])),
     [pickable]
   );
   const byName = useMemo(() => new Map(inScope.map((c) => [c.name, c])), [inScope]);
-  // Keyed by CommandItem `value` (`type:name`) since two types can share a name (e.g. kafka in/out).
   const byKey = useMemo(() => new Map(inScope.map((c) => [`${c.type}:${c.name}`, c])), [inScope]);
   return { allComponents, pickable, typeAllowed, inScope, searchIndex, byName, byKey };
 }
 
 type PaletteCatalog = ReturnType<typeof usePaletteCatalog>;
 
-// Searching: a single ranked, flat list across the in-scope catalog, plus — on a type-locked
-// miss — the out-of-scope types that DO match, shown in the empty state so the miss isn't read as a gap.
 // An exact-name search for a deprecated component leads with its replacement.
 function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
   const { allComponents, pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
   const q = query.trim().toLowerCase();
   // An exact-name search for a hidden deprecated component explains the miss, unless a live
-  // component of that name other than its replacement answers it (e.g. the kafka output).
   const deprecatedMatch = useMemo(() => {
     const match = q
       ? allComponents.find((c) => c.name === q && typeAllowed(c.type) && isDeprecatedComponent(c))
@@ -402,7 +384,6 @@ function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?:
   return { q, results, outOfScopeTypes, deprecatedMatch };
 }
 
-// Browse facets (no query): recents + suggested + everything grouped by category.
 function usePaletteFacets({
   catalog,
   recents,
@@ -436,8 +417,6 @@ function usePaletteFacets({
   return { allGroups, tabs, currentTab, browseItems };
 }
 
-// Committing records the component as recent. State, not a mount-once memo, so a component
-// committed while the palette stays mounted shows up.
 function useCommitWithRecents(onSelect: ConnectCommandPaletteProps['onSelect']) {
   const [recents, setRecents] = useState(() => readRecents());
   const commit = (component: ConnectComponentSpec) => {
@@ -462,7 +441,6 @@ function PaletteFacetTabs({
       <Tabs className="min-w-0" onValueChange={onValueChange} value={value}>
         <ScrollableTabsList variant="underline">
           {tabs.map((t, index) => (
-            // Margins on the end triggers inset the labels without insetting the strip's baseline.
             <TabsTrigger
               className={clsx(index === 0 && 'ml-2', index === tabs.length - 1 && 'mr-2')}
               key={t.id}
@@ -478,7 +456,6 @@ function PaletteFacetTabs({
   );
 }
 
-// Why an exact-name search came up without the component the user typed.
 const DeprecatedMatchHint = ({ message }: { message: string }) => (
   <div
     className="flex items-start gap-2 px-3 py-2 text-body-sm text-muted-foreground"
@@ -597,7 +574,6 @@ export const ConnectCommandPalette = ({
 }: ConnectCommandPaletteProps) => {
   const [query, setQuery] = useState('');
   const [activeValue, setActiveValue] = useState('');
-  // null until the user picks a tab, so the derived default can react to the catalog.
   const [tab, setTab] = useState<string | null>(null);
   const { recents, commit } = useCommitWithRecents(onSelect);
   const catalog = usePaletteCatalog({ components, additionalComponents, allowedTypes });

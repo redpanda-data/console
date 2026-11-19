@@ -44,7 +44,7 @@ function renderIntoLegacyHostContainer(node: HTMLDivElement, props: ConsoleAppPr
   return state.version;
 }
 
-function scheduleUnmount(node: HTMLDivElement, version: number): void {
+function scheduleUnmount(node: HTMLDivElement, version: number) {
   queueMicrotask(() => {
     const state = roots.get(node);
     if (!state || state.version !== version) {

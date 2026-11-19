@@ -27,7 +27,6 @@ import { sqlserverCdcTemplate } from './sqlserver-cdc';
 import { sqsTemplate } from './sqs';
 import type { PipelineTemplate } from '../pipeline-template-types';
 
-// Registry order; the gallery regroups by category for display.
 export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
   postgresCdcTemplate,
   mysqlCdcTemplate,

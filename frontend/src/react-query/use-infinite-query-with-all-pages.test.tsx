@@ -34,20 +34,17 @@ describe('useInfiniteQueryWithAllPages', () => {
         const pageToken = req.pageToken;
 
         if (pageToken === '') {
-          // First page
           return create(ListUsersResponseSchema, {
             users: [create(ListUsersResponse_UserSchema, { name: 'user-1' })],
             nextPageToken: 'page2',
           });
         }
         if (pageToken === 'page2') {
-          // Second page
           return create(ListUsersResponseSchema, {
             users: [create(ListUsersResponse_UserSchema, { name: 'user-2' })],
             nextPageToken: 'page3',
           });
         }
-        // Last page - no nextPageToken
         return create(ListUsersResponseSchema, {
           users: [create(ListUsersResponse_UserSchema, { name: 'user-3' })],
           nextPageToken: '',
@@ -71,7 +68,6 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Wait for all pages to be fetched
     await waitFor(
       () => {
         expect(result.current.isLoading).toBe(false);
@@ -80,7 +76,6 @@ describe('useInfiniteQueryWithAllPages', () => {
       { timeout: 5000 }
     );
 
-    // Should have fetched 3 pages
     expect(callCount).toBe(3);
     expect(result.current.data?.pages).toHaveLength(3);
   });
@@ -94,13 +89,11 @@ describe('useInfiniteQueryWithAllPages', () => {
         const pageToken = req.pageToken;
 
         if (pageToken === '') {
-          // First page succeeds
           return create(ListUsersResponseSchema, {
             users: [create(ListUsersResponse_UserSchema, { name: 'user-1' })],
             nextPageToken: 'page2',
           });
         }
-        // Second page fails
         throw new Error('API Error');
       });
     });
@@ -121,8 +114,6 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // RTL's waitFor batches state updates in act(); rs.waitFor does not,
-    // so the second-page error triggers "not wrapped in act" on TestComponent.
     await waitFor(
       () => {
         expect(result.current.isFetching).toBe(false);
@@ -131,14 +122,10 @@ describe('useInfiniteQueryWithAllPages', () => {
       { timeout: 2000, interval: 50 }
     );
 
-    // Should have called API exactly twice: first page success, second page error
-    // If there's an infinite loop, callCount would be much higher
     expect(callCount).toBe(2);
 
-    // Should have error state
     expect(result.current.isError).toBe(true);
 
-    // Should have first page data
     expect(result.current.data?.pages).toHaveLength(1);
   });
 
@@ -176,8 +163,6 @@ describe('useInfiniteQueryWithAllPages', () => {
       { wrapper }
     );
 
-    // Run every timer already queued, and the microtasks between them, so a would-be fetch
-    // has a chance to run. Timers it queues in turn, such as react-query's gcTime cleanup, wait.
     await rs.runOnlyPendingTimersAsync();
 
     expect(callCount).toBe(0);

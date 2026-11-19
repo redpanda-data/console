@@ -37,7 +37,6 @@ export const s3Template: PipelineTemplate = {
       kind: 'string',
       label: 'Key prefix',
       description: 'Optional prefix to scope reads. Leave blank for the whole bucket.',
-      // Optional: connector reads the whole bucket when absent, and the stitcher drops the line when blank.
       required: false,
       placeholder: 'Leave blank for whole bucket',
       schemaField: 'prefix',

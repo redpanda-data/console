@@ -56,7 +56,7 @@ const renderDialog = (props: Partial<ComponentProps<typeof FailoverDialog>> = {}
 
 type ReadinessInput = Parameters<typeof getFailoverReadiness>[0];
 
-const EXACTLY_FAIL_OVER = /^Fail over$/;
+const EXACTLY_FAIL_OVER = /^Fail over$/u;
 
 describe('the FailoverDialog', () => {
   test('lists the safe order: stop writes and let lag drain first, repoint clients after', () => {

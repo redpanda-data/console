@@ -18,7 +18,6 @@ import { pipelineListSearchSchema } from '../../components/pages/rp-connect/pipe
 
 const connectViewValues = ['kafka-connect', 'redpanda-connect', 'redpanda-connect-secret'] as const;
 
-// The Redpanda Connect pipelines list renders here and keeps its view in these params too.
 const searchSchema = z.object({
   defaultTab: z.enum(connectViewValues).optional().catch(undefined),
   ...pipelineListSearchSchema.shape,

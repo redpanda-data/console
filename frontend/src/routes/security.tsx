@@ -17,7 +17,6 @@ import { Alert, AlertDescription } from '../components/redpanda-ui/components/al
 import { appGlobal } from '../state/app-global';
 import { api, rolesApi, useApiStoreHook } from '../state/backend-api';
 
-// allow: error-boundary [pure redirect in beforeLoad, no data fetching]
 export const Route = createFileRoute('/security')({
   staticData: {
     title: 'Security',

@@ -21,7 +21,7 @@ import { RolesStep } from './roles-step';
 import { setShadowLinkGatesSupported } from '../../shadowlink-test-helpers';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const ROLE_FILTER_PATTERN = /^role-filter-\d+$/;
+const ROLE_FILTER_PATTERN = /^role-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({
@@ -43,15 +43,12 @@ const renderExpandedRolesStep = async (roles: FormValues['roles']) => {
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, rolesMode: 'specify', roles }} />);
 
-  // Need to open the collapsible to see the editable filters
   await user.click(screen.getByTestId('roles-toggle-button'));
   return user;
 };
 
 describe('the RolesStep', () => {
   beforeEach(() => {
-    // Reset the shared store, then open the role sync gate, these tests
-    // exercise the card itself, which only renders on Redpanda >= 26.2.0.
     useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkRoleSync: false });
     setShadowLinkGatesSupported({ roleSync: true });
   });
@@ -89,13 +86,11 @@ describe('the RolesStep', () => {
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
       });
 
-      // Verify all filter type tabs are present
       expect(screen.getByTestId('role-filter-0-include-specific')).toBeInTheDocument();
       expect(screen.getByTestId('role-filter-0-include-prefix')).toBeInTheDocument();
       expect(screen.getByTestId('role-filter-0-exclude-specific')).toBeInTheDocument();
       expect(screen.getByTestId('role-filter-0-exclude-prefix')).toBeInTheDocument();
 
-      // Verify the text content of the tabs
       expect(screen.getByTestId('role-filter-0-include-specific')).toHaveTextContent('Include specific roles');
       expect(screen.getByTestId('role-filter-0-include-prefix')).toHaveTextContent('Include starting with');
       expect(screen.getByTestId('role-filter-0-exclude-specific')).toHaveTextContent('Exclude specific');
@@ -133,12 +128,10 @@ describe('the RolesStep', () => {
     test('should seed one empty filter when switching from all to specify mode', async () => {
       const user = userEvent.setup();
 
-      // initialValues default to rolesMode 'all' with no filters
       render(<TestWrapper />);
 
       await user.click(screen.getByTestId('roles-specify-tab'));
 
-      // Switching auto-expands the card and appends a single empty filter
       await waitFor(() => {
         expect(screen.getByTestId('role-filter-0-name')).toHaveValue('');
       });
@@ -163,14 +156,12 @@ describe('the RolesStep', () => {
         expect(screen.getAllByTestId(ROLE_FILTER_PATTERN)).toHaveLength(2);
       });
 
-      // Switching to all discards the filter list entirely
       await user.click(screen.getByTestId('roles-all-tab'));
 
       await waitFor(() => {
         expect(screen.queryAllByTestId(ROLE_FILTER_PATTERN)).toHaveLength(0);
       });
 
-      // Coming back to specify seeds a single empty filter, not the old list
       await user.click(screen.getByTestId('roles-specify-tab'));
 
       await waitFor(() => {
@@ -194,7 +185,6 @@ describe('the RolesStep', () => {
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
       });
 
-      // Add second filter
       const addButton = screen.getByTestId('add-role-filter-button');
       await user.click(addButton);
 
@@ -202,7 +192,6 @@ describe('the RolesStep', () => {
         expect(screen.getByTestId('role-filter-1')).toBeInTheDocument();
       });
 
-      // Verify both filters exist
       expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('role-filter-1')).toBeInTheDocument();
     });
@@ -228,18 +217,14 @@ describe('the RolesStep', () => {
         expect(screen.getByTestId('role-filter-1')).toBeInTheDocument();
       });
 
-      // Delete the first filter
       const deleteButton = screen.getByTestId('role-filter-0-delete');
       await user.click(deleteButton);
 
       await waitFor(() => {
-        // The second filter should now be at index 0
         expect(screen.getByTestId('role-filter-0')).toBeInTheDocument();
-        // The old filter at index 1 should not exist anymore
         expect(screen.queryByTestId('role-filter-1')).not.toBeInTheDocument();
       });
 
-      // Verify only one filter remains
       expect(screen.getAllByTestId(ROLE_FILTER_PATTERN)).toHaveLength(1);
     });
   });

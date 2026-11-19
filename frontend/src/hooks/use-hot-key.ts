@@ -22,7 +22,7 @@ type HotKeyOptions = {
   onTrigger: () => void;
 };
 
-const TYPING_TAG_REGEX = /^(input|textarea|select)$/i;
+const TYPING_TAG_REGEX = /^(?:input|textarea|select)$/iu;
 
 export const isTypingTarget = (target: EventTarget | null): boolean => {
   const el = target as HTMLElement | null;

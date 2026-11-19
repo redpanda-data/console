@@ -18,7 +18,6 @@ type RouteErrorProps = {
   error: unknown;
 };
 
-// Router error boundaries can receive a rejection/throw that isn't a proper Error
 // (e.g. an aborted request during navigation), so never assume `error.message` exists.
 const getRouteErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) {

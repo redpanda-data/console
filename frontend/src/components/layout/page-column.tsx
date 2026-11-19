@@ -22,7 +22,6 @@ const PAGE_TOP_VAR = '--console-page-top';
  * the host's share of it can change without Console shipping.
  */
 const usePublishPageTop = () => {
-  // State, not a ref, so re-attaching re-runs the effect: ErrorDisplay swaps the column
   // out while the API is erroring, and it must be re-measured when it comes back.
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
 
@@ -36,7 +35,6 @@ const usePublishPageTop = () => {
     const publish = createPageTopPublisher(columnEl);
 
     // Only what sits above can push the page down: the shell's wrappers (the host's too,
-    // when embedded) and the preceding chrome inside #mainLayout.
     const observer = new ResizeObserver(publish);
     const observeAll = () => {
       observer.disconnect();
@@ -50,7 +48,6 @@ const usePublishPageTop = () => {
     };
     observeAll();
 
-    // That chrome mounts and unmounts per route, changing the set to observe.
     const mutationObserver = new MutationObserver(observeAll);
     mutationObserver.observe(layoutEl, { childList: true });
 

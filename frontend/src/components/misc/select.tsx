@@ -25,7 +25,6 @@ export type SingleSelectProps<T> = {
 
 export function SingleSelect<T>(p: SingleSelectProps<T>) {
   const { 'data-testid': testId, options, value, onChange, isDisabled, placeholder, creatable, id, className } = p;
-  // The Registry controls key on strings; values round-trip through `byKey`.
   const items = options.map((option) => ({
     value: String(option.value),
     label: option.label ?? String(option.value),
@@ -39,7 +38,6 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
       className={className}
       creatable
       disabled={isDisabled}
-      // Clearing the field clears the value, so what is shown is what applies.
       onChange={(key) => onChange((byKey.has(key) ? byKey.get(key) : key) as T)}
       options={items}
       placeholder={placeholder}
@@ -54,7 +52,6 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
           onChange(byKey.get(key) as T);
         }
       }}
-      // A value outside `options` still shows as text, as the old select did.
       value={selectedKey}
     >
       <SelectTrigger className={className} id={id}>
@@ -70,7 +67,6 @@ export function SingleSelect<T>(p: SingleSelectProps<T>) {
     </Select>
   );
 
-  // Wrap in div with data-testid if provided, for E2E testing
   if (testId) {
     return <div data-testid={testId}>{selectElement}</div>;
   }

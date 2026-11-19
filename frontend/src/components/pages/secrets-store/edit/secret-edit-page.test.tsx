@@ -11,6 +11,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import { SecretEditPage } from './secret-edit-page';
+
 rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
@@ -39,23 +41,17 @@ rs.mock('@tanstack/react-router', () => {
   };
 });
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {
-    // Mock implementation
-  }
-  unobserve() {
-    // Mock implementation
-  }
-  disconnect() {
-    // Mock implementation
-  }
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 
 Element.prototype.scrollIntoView = rs.fn();
 
-import { SecretEditPage } from './secret-edit-page';
-
-const UPDATE_SECRET_BUTTON_REGEX = /update secret/i;
+const UPDATE_SECRET_BUTTON_REGEX = /update secret/iu;
 
 function renderEditPage() {
   const existingSecret = create(SecretSchema, {

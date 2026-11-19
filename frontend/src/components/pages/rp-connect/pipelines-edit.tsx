@@ -49,7 +49,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    this.pipelinesApi.refreshPipelines(_force);
   }
 
   render() {

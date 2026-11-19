@@ -53,7 +53,6 @@ export const Route = createFileRoute('/shadowlinks/$name/')({
         throw notFound();
       }
       if (error instanceof ConnectError) {
-        // The page renders its own error state for API errors.
         return;
       }
       throw error;

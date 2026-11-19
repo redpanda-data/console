@@ -172,7 +172,7 @@ function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): Unif
   };
 }
 
-const formatSubSecondDuration = (totalNs: number): string => {
+const formatSubSecondDuration = (totalNs: number) => {
   if (totalNs % 1000 !== 0) {
     return `${totalNs}ns`;
   }
@@ -183,7 +183,7 @@ const formatSubSecondDuration = (totalNs: number): string => {
   return `${totalUs / 1000}ms`;
 };
 
-const formatWholeSecondsDuration = (seconds: number): string => {
+const formatWholeSecondsDuration = (seconds: number) => {
   if (seconds % 60 !== 0) {
     return `${seconds}s`;
   }
@@ -211,7 +211,6 @@ export function formatDurationForInput(duration: Duration | undefined): string {
   }
 
   if (duration.nanos !== 0) {
-    // Sub-second precision present, so the largest exact unit is at most ms.
     return formatSubSecondDuration(seconds * 1_000_000_000 + duration.nanos);
   }
   return formatWholeSecondsDuration(seconds);
@@ -219,7 +218,6 @@ export function formatDurationForInput(duration: Duration | undefined): string {
 
 function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValues['mtls'] {
   const base = structuredClone(initialValues.schemaRegistry.mtls);
-  // Round-tripped so rebuilding the whole message doesn't reset the flag.
   base.doNotSetSniHostname = Boolean(tls?.doNotSetSniHostname);
   const settings = tls?.tlsSettings;
 
@@ -237,10 +235,7 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValu
       ca: pem.ca ? { pemContent: pem.ca, fileName: '' } : undefined,
       clientCert: pem.cert ? { pemContent: pem.cert, fileName: '' } : undefined,
       clientKey: pem.key ? { pemContent: pem.key, fileName: '' } : undefined,
-      // The key is redacted on GET; a fingerprint marks a key kept
       // server-side. A returned cert implies the same (the proto requires
-      // key and cert to be provided together), covering backends that omit
-      // the fingerprint.
       existingKeyConfigured: !pem.key && Boolean(pem.keyFingerprint || pem.cert),
       existingKeyFingerprint: pem.keyFingerprint ?? '',
     };
@@ -255,18 +250,12 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): Schem
   const exactMappings =
     api.destination?.mapping?.case === 'exact' ? (api.destination.mapping.value.mappings ?? []) : [];
 
-  // Every field is set explicitly (no base spread) so adding a schema field
   // without deciding its hydration fails to compile.
   return {
     mode: SCHEMA_REGISTRY_MODE.API,
     sourceUrl: api.sourceUrl,
     authMethod: basic ? SR_AUTH_METHOD.BASIC : SR_AUTH_METHOD.NONE,
-    // The password is never returned; like the connection credentials it is
-    // re-entered on save.
     basicCredentials: { username: basic?.username ?? '', password: '' },
-    // TLS settings may be omitted entirely (e.g. rpk-created links); infer
-    // the toggle from the URL scheme so the hydrated form passes the URL/TLS
-    // cross-check untouched.
     useTls: api.tlsSettings ? api.tlsSettings.enabled : api.sourceUrl.trim().toLowerCase().startsWith('https:'),
     mtls: mapTlsToMtlsSlice(api.tlsSettings),
     scopeMode: hasFilter ? 'specify' : 'all',

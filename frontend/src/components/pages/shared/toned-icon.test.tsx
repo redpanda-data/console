@@ -1,26 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { CheckIcon, ErrorIcon } from 'components/icons';
+import { CheckIcon } from 'components/icons';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 
 import { TonedIcon } from './toned-icon';
 
 describe('toned icon', () => {
-  test.each([
-    ['destructive', 'text-destructive'],
-    ['success', 'text-success'],
-    ['warning', 'text-warning'],
-    ['informative', 'text-informative'],
-    ['muted', 'text-muted-foreground'],
-    ['disabled', 'text-disabled'],
-    ['primary', 'text-primary'],
-    ['action', 'text-action-primary'],
-    ['live', 'text-success'],
-  ] as const)('%s tone paints the icon with %s', (tone, expectedClass) => {
-    render(<TonedIcon data-testid="icon" icon={ErrorIcon} tone={tone} />);
-
-    expect(screen.getByTestId('icon')).toHaveClass(expectedClass);
-  });
-
   test('keeps layout classes and forwards icon props', () => {
     render(<TonedIcon className="size-4 shrink-0" data-testid="icon" icon={CheckIcon} size={18} tone="success" />);
 

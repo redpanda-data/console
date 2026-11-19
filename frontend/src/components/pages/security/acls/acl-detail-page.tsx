@@ -10,9 +10,6 @@
  */
 
 import { getRouteApi } from '@tanstack/react-router';
-
-const routeApi = getRouteApi('/security/acls/$aclName/details');
-
 import { useLayoutEffect } from 'react';
 
 import { HostSelector } from './host-selector';
@@ -22,6 +19,8 @@ import { Button } from '../../../redpanda-ui/components/button';
 import { ACLDetails } from '../shared/acl-details';
 import type { AclDetail } from '../shared/acl-model';
 import { parsePrincipalFromParam } from '../shared/principal-utils';
+
+const routeApi = getRouteApi('/security/acls/$aclName/details');
 
 const getAclEditHref = (aclName: string, host: string | undefined) => {
   const hostQuery = host ? `?host=${host}` : '';

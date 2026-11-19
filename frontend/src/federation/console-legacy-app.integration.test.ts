@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
+import createConsoleCompatElement from './console-legacy-app';
 import type { ConsoleAppProps } from './types';
 
 const { mockCreateRoot, mockRender, mockUnmount } = rs.hoisted(() => {
@@ -35,22 +36,13 @@ rs.mock('./console-app', () => ({
   ConsoleApp: 'MockConsoleApp',
 }));
 
-import createConsoleCompatElement from './console-legacy-app';
-
-interface LegacyReactElement {
-  $$typeof: symbol;
-  props: { style: { height: string; width: string } };
-  ref: (node: HTMLDivElement | null) => void;
-  type: string;
-}
-
 const baseProps: ConsoleAppProps = {
   getAccessToken: () => Promise.resolve('token'),
   clusterId: 'cluster-1',
   config: {},
 };
 
-function legacyElement(overrides: Partial<ConsoleAppProps> = {}): LegacyReactElement {
+function legacyElement(overrides: Partial<ConsoleAppProps> = {}) {
   return createConsoleCompatElement({ ...baseProps, ...overrides });
 }
 

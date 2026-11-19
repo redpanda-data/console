@@ -31,7 +31,6 @@ describe('useTopicSettingsStore perTopicSettings cap', () => {
 
     const settings = useTopicSettingsStore.getState().perTopicSettings;
     expect(settings).toHaveLength(MAX_PER_TOPIC_SETTINGS);
-    // oldest-added dropped, newest kept
     expect(settings.some((t) => t.topicName === 'topic-0')).toBe(false);
     expect(settings.some((t) => t.topicName === `topic-${total - 1}`)).toBe(true);
   });
@@ -46,7 +45,6 @@ describe('useTopicSettingsStore messages view settings', () => {
     const store = useTopicSettingsStore.getState();
     expect(store.getRowDensity('unknown-topic')).toBe(DEFAULT_ROW_DENSITY);
 
-    // Simulate an entry persisted before rowDensity existed
     store.setSorting('old-topic', []);
     expect(useTopicSettingsStore.getState().getRowDensity('old-topic')).toBe(DEFAULT_ROW_DENSITY);
   });
@@ -73,7 +71,6 @@ describe('useTopicSettingsStore messages view settings', () => {
     useTopicSettingsStore.getState().setMessageColumns('topic-a', columns);
     const result = useTopicSettingsStore.getState().getMessageColumns('topic-a');
     expect(result.slice(0, 2)).toEqual(columns);
-    // columns absent from the stored value come back so they stay reachable in settings
     expect(result.map((c) => c.id).sort()).toEqual(DEFAULT_MESSAGE_COLUMNS.map((c) => c.id).sort());
   });
 
@@ -87,16 +84,12 @@ describe('useTopicSettingsStore messages view settings', () => {
       .getState()
       .getMessageColumns('topic-a')
       .map((c) => c.id);
-    // first occurrences kept in order, missing defaults appended
     expect(ids.slice(0, 2)).toEqual(['offset', 'key']);
     expect(new Set(ids).size).toBe(DEFAULT_MESSAGE_COLUMNS.length);
   });
 
   test('repeated column reorders survive the legacy uiSettings sync without duplication', () => {
     // Regression: every store change syncs into the legacy uiSettings store via
-    // assignDeep. When that merged arrays index-by-index it mutated the shared
-    // column objects in place, so the second reorder duplicated one column id
-    // and lost another (drag'n'drop in view settings produced two "offset" rows).
     const store = useTopicSettingsStore.getState();
     store.setMessageColumns('topic-a', [...DEFAULT_MESSAGE_COLUMNS]);
 

@@ -16,19 +16,17 @@ const spec = (
   name: string,
   status: ComponentStatus = ComponentStatus.STABLE,
   type: ConnectComponentType = 'processor'
-): ConnectComponentSpec => ({ name, type, status }) as ConnectComponentSpec;
+) => ({ name, type, status }) as ConnectComponentSpec;
 
 const sorted = (specs: ConnectComponentSpec[]) => [...specs].sort(byProminence).map((s) => s.name);
 
 describe('byProminence', () => {
   it('sorts common components ahead of the long tail', () => {
-    // `mapping` is a common processor; `avro` is not.
     expect(sorted([spec('avro'), spec('mapping')])).toEqual(['mapping', 'avro']);
   });
 
   it('demotes experimental below stable, even when common', () => {
     const result = sorted([spec('mapping', ComponentStatus.EXPERIMENTAL), spec('avro', ComponentStatus.STABLE)]);
-    // Stable (even uncommon) sorts above experimental.
     expect(result).toEqual(['avro', 'mapping']);
   });
 
@@ -62,7 +60,6 @@ describe('matchRank', () => {
 
 describe('component aliases', () => {
   it('maps intent terms to a component name via its fragments', () => {
-    // "queue" lists kafka, so kafka_franz surfaces under that intent.
     expect(aliasTermsForName('kafka_franz')).toContain('queue');
     expect(aliasTermsForName('kafka_franz')).toContain('stream');
   });
@@ -77,10 +74,8 @@ describe('component aliases', () => {
   });
 
   it('matches fragments on `_`/word boundaries, not mid-token substrings', () => {
-    // Whole multi-token fragments and `_`-delimited tokens match...
     expect(aliasTermsForName('rate_limit')).toEqual(expect.arrayContaining(['throttle', 'ratelimit']));
     expect(aliasTermsForName('json_schema')).toContain('json');
-    // ...but a fragment buried mid-token doesn't (`log` inside `catalog`).
     expect(aliasTermsForName('catalog')).not.toContain('log');
   });
 
@@ -155,7 +150,6 @@ describe('computeSuggested', () => {
 
   it('resolves the curated names for the allowed types against the catalog', () => {
     const result = computeSuggested(['input'], byName, []).map((c) => c.name);
-    // Only the curated input names present in `byName` survive (redpanda/http_client are absent).
     expect(result).toEqual(['kafka_franz', 'generate', 'file']);
   });
 

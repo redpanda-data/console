@@ -141,12 +141,7 @@ describe('search runner hooks', () => {
     });
 
     test('live tail starts streaming from the end of the log', async () => {
-      // A stream that stays open; one that resolved at once would restart in a tight loop
-      start.mockReturnValue(
-        new Promise<void>(() => {
-          // never settles
-        })
-      );
+      start.mockReturnValue(new Promise<void>(() => {}));
       renderRunner(true);
       await advance(0);
       expect(start).toHaveBeenCalledWith(
@@ -157,13 +152,8 @@ describe('search runner hooks', () => {
   });
 
   describe('live tail params', () => {
-    // A tail that stays open, so only a param change or a restart starts another one.
     beforeEach(() => {
-      start.mockReturnValue(
-        new Promise<void>(() => {
-          // never settles
-        })
-      );
+      start.mockReturnValue(new Promise<void>(() => {}));
     });
 
     const renderLiveRunner = (searchParams: MessageSearchParams) =>

@@ -52,7 +52,6 @@ const DIFF_OPTIONS = {
   domReadOnly: true,
   // Read-only, so no cursor line.
   renderLineHighlight: 'none',
-  // Monaco drops to inline under 900px on its own, so copy never says "left".
   renderSideBySide: true,
   hideUnchangedRegions: { enabled: true },
   renderOverviewRuler: false,
@@ -73,7 +72,6 @@ const DIFF_LOADING = (
   </div>
 );
 
-// Plain button rather than a ghost `Button`, for a dense row (matches `PipelineProblemsPanel`).
 const ChangeRow = ({
   kind,
   title,
@@ -146,7 +144,6 @@ export function ChangesPanel({
   const appearance = useThemeAppearance();
   const monacoRef = useRef<Monaco | null>(null);
 
-  // `defineTheme` is global; re-resolving on a flip re-themes the mounted diff.
   // biome-ignore lint/correctness/useExhaustiveDependencies: appearance triggers the re-resolve
   useEffect(() => {
     if (monacoRef.current) {
@@ -171,7 +168,6 @@ export function ChangesPanel({
   }
 
   const tone = changesImpactTone(pipelineState);
-  // Zero items (a comment or whitespace edit) gives the diff the full width.
   const itemCount = settingsChanges.length + changes.length;
 
   return (

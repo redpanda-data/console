@@ -34,8 +34,6 @@ type DetailsDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipeline?: Pipeline;
-  // Delete clicked in the Danger Zone. The parent should close this dialog and
-  // open the delete confirmation so the two don't stack.
   onRequestDelete?: () => void;
 };
 
@@ -84,8 +82,6 @@ const renderValue = (value: string | undefined, children: React.ReactNode | unde
   );
 };
 
-// Fixed-width label on the left, value (or children) on the right. Values wrap
-// with `wrap`, else truncate; copy button appears on hover.
 const DetailRow = ({ label, value, children, copyable = false, wrap = false }: DetailRowProps) => {
   const showCopy = copyable && Boolean(value?.length);
   return (

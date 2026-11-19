@@ -101,15 +101,11 @@ type AddUserStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
-  // Renders the form bare (no Card chrome/min-height/margin) so it can sit
-  // inside a host surface like a dialog body. Defaults to false for the wizard.
   inline?: boolean;
 };
 
 type UserForm = UseFormReturn<AddUserFormData>;
 type SubmitUser = (userData: AddUserFormData) => Promise<UserStepSubmissionResult>;
-
-// ── Hooks ──────────────────────────────────────────────────────────────────────
 
 function useAddUserForm({
   defaultUsername,
@@ -144,7 +140,6 @@ function initialUserSelectionType(
   return hasUsers ? CreatableSelectionOptions.EXISTING : CreatableSelectionOptions.CREATE;
 }
 
-// The users to pick from, the Existing/New choice, and the existing user the typed name refers to.
 function useUserSelection({
   form,
   hideInternal,
@@ -223,7 +218,6 @@ function useTopicGrant({
       filter: {
         resourceType: ACL_ResourceType.TOPIC,
         resourceName: topicName,
-        // Also returns the prefixed and wildcard ACLs that cover the topic.
         resourcePatternType: ACL_ResourcePatternType.MATCH,
       },
     },
@@ -300,7 +294,6 @@ function useMissingUserSecrets(existingUserSelected?: User) {
   }, [existingUserSelected, secretsData]);
 }
 
-// What an existing user can already do, and what the pipeline still needs to give them.
 function useExistingUserAccess({
   form,
   existingUserSelected,
@@ -396,8 +389,6 @@ function usePasswordRegeneration(form: UserForm) {
   );
   return { generateNewPassword, handleSpecialCharsChange };
 }
-
-// ── Submission ─────────────────────────────────────────────────────────────────
 
 function invalidateUserQueries(queryClient: QueryClient) {
   return Promise.all([
@@ -571,8 +562,6 @@ async function triggerUserStepSubmit({
     success: false,
   };
 }
-
-// ── Form sections ──────────────────────────────────────────────────────────────
 
 function AuthMethodField({
   authMethod,
@@ -850,7 +839,6 @@ function GrantTopicField({ form, isPending, topicName }: { form: UserForm; isPen
             <FormLabel>Grant this user full access to {topicName}</FormLabel>
           </div>
           {field.value ? (
-            // Indented past the checkbox and its gap, under the label text.
             <FormDescription className="ml-7">
               Read, write, create, delete, describe and alter permissions on the topic.
             </FormDescription>
@@ -1131,8 +1119,6 @@ function AddUserFormBody({
     </Form>
   );
 }
-
-// ── Step ───────────────────────────────────────────────────────────────────────
 
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (

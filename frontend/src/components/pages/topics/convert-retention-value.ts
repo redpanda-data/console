@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+const DECIMAL_PLACES_REGEX = /\.\d{4,}/u;
 
 /**
  * Converts a retention value when its unit picker changes, so the amount stays the same. Switching

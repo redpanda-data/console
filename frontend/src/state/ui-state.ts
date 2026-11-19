@@ -182,7 +182,7 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     // Side effect: create topic settings if needed
     if (topicName) {
       const uiSettings = useUISettingsStore.getState();
-      if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
+      if (!uiSettings.perTopicSettings.some((s) => s.topicName === topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
           perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),

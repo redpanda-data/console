@@ -49,7 +49,6 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
     { refetchInterval: SHORT_LIVED_CACHE_STALE_TIME }
   );
 
-  // Flatten all pages of topics from infinite query
   const topics = useMemo(() => shadowTopicsData?.pages?.flatMap((page) => page.shadowTopics) ?? [], [shadowTopicsData]);
 
   return (
@@ -63,7 +62,6 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
       {/* Topics Section */}
       <ShadowTopicsTable
         getNextTopicPage={async () => {
-          // Without throwOnError, TanStack Query resolves a failed page fetch and the table never sees the error.
           await fetchNextPage({ throwOnError: true });
         }}
         hasNextPage={hasNextPage}

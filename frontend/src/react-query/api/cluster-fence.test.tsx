@@ -31,6 +31,13 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { connectQueryWrapper } from 'test-utils';
 
+import {
+  describeClusterFenceError,
+  isStaleRevisionError,
+  useClusterFenceStatusQuery,
+  useFenceClusterMutation,
+} from './cluster-fence';
+
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 const host = rs.hoisted(() => ({ embedded: true }));
 
@@ -43,13 +50,6 @@ rs.mock('config', () => {
     isServerless: rs.fn(() => false),
   };
 });
-
-import {
-  describeClusterFenceError,
-  isStaleRevisionError,
-  useClusterFenceStatusQuery,
-  useFenceClusterMutation,
-} from './cluster-fence';
 
 const fencedStatus = create(GetClusterFenceStatusResponseSchema, {
   fence: {

@@ -36,7 +36,6 @@ import { useStartPipelineMutation, useStopPipelineMutation } from 'react-query/a
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State; tooltip?: string }) {
-  // A state a newer server knows and this build does not falls through to the UNSPECIFIED copy.
   const known = state ?? PipelineState.UNSPECIFIED;
   const label = PIPELINE_STATE_LABELS[known] ?? PIPELINE_STATE_LABELS[PipelineState.UNSPECIFIED];
   const variant = PIPELINE_STATE_STATUS_VARIANT[known] ?? PIPELINE_STATE_STATUS_VARIANT[PipelineState.UNSPECIFIED];
@@ -61,7 +60,6 @@ function runActionForState(state?: Pipeline_State): RunAction | null {
     case PipelineState.ERROR:
     case PipelineState.COMPLETED:
       return 'start';
-    // Drafts start through `useStartDraft`.
     default:
       return null;
   }
@@ -85,7 +83,6 @@ const CANCEL_START_COPY = {
 
 type StopCopy = typeof STOP_COPY | typeof CANCEL_START_COPY;
 
-// Both mutations live here, above the action switch, so a state change mid-request keeps their callbacks.
 function usePipelineRunActions(pipelineId: string, isCancellingStart: boolean) {
   const { mutate: startMutation, isPending: isStartPending } = useStartPipelineMutation();
   const { mutate: stopMutation, isPending: isStopPending } = useStopPipelineMutation();
@@ -201,7 +198,6 @@ export function PipelineRunButton({
 
   if (action === 'settling') {
     return (
-      // A disabled button takes no pointer events, so the reason hangs on a wrapper.
       <ElementTooltip content="Wait for the pipeline to finish stopping.">
         <span className="inline-flex cursor-not-allowed">
           <Button disabled icon={<Play />} testId="pipeline-start">

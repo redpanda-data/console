@@ -18,7 +18,7 @@ print = "yarn"
 
 [test]
 preload = ["./bun.setup.ts"]
-pathIgnorePatterns = ["**/*.test.tsx", "**/*.integration.test.ts", "**/*.spec.ts", "**/auth.setup.ts", "node_modules/**"]
+pathIgnorePatterns = ["**/*.test.tsx", "**/*.integration.test.ts", "**/*.spec.ts", "**/*.browser.test.ts", "**/*.e2e.test.ts", "**/auth.setup.ts", "node_modules/**"]
 coverageReporter = ["text", "lcov"]
 coverageDir = "coverage"
 coveragePathIgnorePatterns = ["**/protogen/**", "**/routeTree.gen.ts", "**/*.test.*", "**/*.spec.*", "**/*.stories.tsx", "tests/**", "bun.setup.ts"]

@@ -239,7 +239,6 @@ function CommandMenuContent({
   onOpenSubDialog,
 }: CommandMenuContentProps) {
   const show = (section: FilterValue) => activeFilter === 'all' || activeFilter === section;
-  // An empty category keeps its create button below but gets no heading.
   const showVariables = show('variables');
   const showSecrets = show('secrets') && secrets.length > 0;
   const showTopics = show('topics') && allTopics.length > 0;
@@ -332,7 +331,6 @@ function CommandMenuContent({
   );
 }
 
-// On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
 function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutside>) {
   const abortFocusRef = useRef(false);
   return useCallback(
@@ -344,7 +342,6 @@ function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutsid
       }
       abortFocusRef.current = false;
 
-      // setTimeout(0) clears the keystroke handler task, rAF defers past layout/paint.
       setTimeout(() => {
         if (abortFocusRef.current) {
           return;
@@ -364,7 +361,6 @@ function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutsid
   );
 }
 
-// Reset filter when the menu opens (adjust state during render, no useEffect needed)
 function useFilterResetOnOpen(open: boolean, initialFilter: FilterValue | undefined) {
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
   const [prevOpen, setPrevOpen] = useState(false);
@@ -396,7 +392,6 @@ function useCommandMenuSecrets(open: boolean, yamlContent: string) {
 }
 
 function useCommandMenuTopics(open: boolean, yamlContent: string, hideInternal: boolean) {
-  // Cap at 500 — the command menu is a quick-pick, not a full topic browser
   const { data: topicsResponse } = useListTopicsQuery({ pageSize: 500 }, { enabled: open });
   const clusterTopics = useMemo(
     () =>
@@ -430,7 +425,6 @@ function useCommandMenuUsers(open: boolean, hideInternal: boolean) {
   );
 }
 
-// Escape closes the popover; Tab picks the highlighted item, like Enter.
 function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLDivElement>, close: () => void) {
   if (e.key === 'Escape') {
     e.preventDefault();
@@ -445,7 +439,6 @@ function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLDivElement>, close: () 
   }
 }
 
-// Rendered outside Monaco's DOM via a portal for proper focus handling.
 function PipelineCommandPopover({
   editorInstance,
   slashPosition,
@@ -459,7 +452,6 @@ function PipelineCommandPopover({
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
   const anchorStyle = useAnchorPosition(editorInstance, slashPosition, open);
   const clickOutsideRef = useClickOutside(open, () => onOpenChange(false));
   const popoverRef = useCmdkInputAutoFocus(clickOutsideRef);
@@ -506,7 +498,6 @@ function PipelineCommandDialog({
 
   return (
     <CommandDialog
-      // Full width of the dialog, rather than the palette's fixed minimum.
       commandProps={{ size: 'full' }}
       description="Insert a contextual variable, secret, topic, or user"
       onOpenChange={handleOpenChange}
@@ -526,7 +517,6 @@ type CreateSubDialogProps = {
   onCreated: (name: string) => void;
 };
 
-// The step reports its own copy: a success message, or the error to show.
 function settleTopicCreation(
   result: StepSubmissionResult<AddTopicFormData>,
   close: () => void,

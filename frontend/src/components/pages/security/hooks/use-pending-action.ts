@@ -8,7 +8,6 @@ const toErrorMessage = (error: unknown) => (error instanceof Error ? error.messa
  * of escaping the click handler.
  */
 export function usePendingAction() {
-  // The ref blocks a second call before React re-renders the disabled button.
   const pendingRef = useRef<boolean>(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

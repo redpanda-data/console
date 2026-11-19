@@ -165,7 +165,7 @@ export const prettyLicenseType = (license: License, showSource = false): string 
  * @param {License_Type} license.type - The type of the license.
  * @returns {string} - A formatted expiration date string in the user's locale, or an empty string if the license is of type `COMMUNITY`.
  */
-export const prettyExpirationDate = (license: License): string => {
+export const prettyExpirationDate = (license: License) => {
   if (!licenseCanExpire(license)) {
     return '';
   }

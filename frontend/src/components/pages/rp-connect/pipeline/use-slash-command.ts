@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SlashPosition = { lineNumber: number; column: number };
 
-export const SLASH_TRIGGER_PATTERN = /\s/;
+export const SLASH_TRIGGER_PATTERN = /\s/u;
 
 /** A `/` triggers at the start of a line or after whitespace. */
 function isSlashTriggerColumn(lineContent: string, slashColumn: number): boolean {
@@ -80,16 +80,12 @@ export function useSlashCommand(
   const [isOpen, setIsOpen] = useState(false);
   const [slashPosition, setSlashPosition] = useState<SlashPosition | null>(null);
   const slashPositionRef = useRef<SlashPosition | null>(null);
-  // Preserved across close() so sub-dialog callbacks can still replace the / text
   const lastSlashRangeRef = useRef<SavedSlashRange | null>(null);
 
-  // Ref for reading isOpen inside the Monaco subscription without causing re-subscribe
-  // (event handler refs pattern — subscription stays stable across open/close cycles)
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
 
   const close = useCallback(() => {
-    // Save the slash range before clearing so sub-dialog callbacks can replace the text
     if (slashPositionRef.current) {
       lastSlashRangeRef.current = {
         start: { ...slashPositionRef.current },
@@ -99,12 +95,9 @@ export function useSlashCommand(
     setIsOpen(false);
     setSlashPosition(null);
     slashPositionRef.current = null;
-    // Refocus editor after React render
     requestAnimationFrame(() => editorInstance?.focus());
   }, [editorInstance]);
 
-  // Subscribe to editor content changes to detect `/` typed
-  // (Rule 4: mount effect for external system sync — Monaco event subscription)
   useEffect(() => {
     if (!(enabled && editorInstance)) {
       return;
@@ -144,7 +137,6 @@ export function useSlashCommand(
       if (range) {
         editorInstance.executeEdits('slash-command', [{ range, text }]);
       }
-      // An active session closes the popover; a deferred insert after a sub-dialog spends the saved range.
       if (isActiveSession) {
         close();
       } else {

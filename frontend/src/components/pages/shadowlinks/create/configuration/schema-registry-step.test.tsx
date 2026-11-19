@@ -60,8 +60,6 @@ const LegacyWrapper = ({ readOnlyApiMode }: { readOnlyApiMode?: boolean }) => {
 
 describe('the SchemaRegistryStep', () => {
   beforeEach(() => {
-    // Reset the shared store before each test. null models the boot fetch not
-    // yet having resolved (or having failed and never retried).
     useSupportedFeaturesStore.setState({ endpointCompatibility: null, shadowLinkSchemaRegistrySync: false });
   });
 
@@ -158,7 +156,6 @@ describe('the SchemaRegistryStep', () => {
 
   describe('gate states', () => {
     test('should fall back to the legacy switch while endpoint compatibility has not loaded (or the fetch failed)', () => {
-      // store left at its default null by the beforeEach reset
       render(<TestWrapper />);
 
       expect(screen.getByTestId('sr-enable-switch')).toBeInTheDocument();

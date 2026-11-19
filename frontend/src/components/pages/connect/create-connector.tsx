@@ -185,7 +185,7 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData() {
-    api.refreshConnectClusters().catch(() => {
+    this.api.refreshConnectClusters().catch(() => {
       // Error handling managed by API layer
     });
   }

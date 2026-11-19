@@ -22,7 +22,6 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
-// Single store for the RPCN creation wizard (connection/topic/user/yaml slices).
 type RpcnWizardData = Partial<OnboardingWizardFormData> &
   Partial<MinimalTopicData> &
   Partial<MinimalUserData> & { yamlContent: string | undefined };
@@ -51,7 +50,6 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-        // replace: true clears data; re-supply the action methods.
         return set(
           {
             ...initialData,
@@ -114,17 +112,13 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
     const stored = readStoredConnectionData();
     if (stored) {
       connectionData = { input: stored.input, output: stored.output };
-      // Sync the store so other consumers see the data.
       useRpcnWizardStore.getState().setWizardData(connectionData);
     }
-  } catch {
-    // Ignore malformed session storage.
-  }
+  } catch {}
 
   return connectionData;
 }
 
-// What CloudV2 wrote to session storage, or null when it wrote nothing; throws on malformed JSON.
 function readStoredConnectionData(): Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>> | null {
   const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
   return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;

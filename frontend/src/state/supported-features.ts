@@ -9,12 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-//
-// We know what features the cluster supports by calling './api/console/endpoints'.
 // That only tells us the actual routes we can use though.
-// This file translates supported routes to specific frontend features.
-// That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
-//
 
 import { create } from 'zustand';
 
@@ -206,11 +201,9 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
 }
 
 type SupportedFeaturesStore = {
-  // State
   endpointCompatibility: EndpointCompatibility | null;
   featureErrors: string[];
 
-  // Feature flags (recomputed when endpointCompatibility changes)
   clusterConfig: boolean;
   consumerGroups: boolean;
   getReassignments: boolean;
@@ -235,7 +228,6 @@ type SupportedFeaturesStore = {
   schemaRegistryContexts: boolean;
   sqlApi: boolean;
 
-  // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) => void;
   addFeatureError: (error: string) => void;
   clearFeatureErrors: () => void;
@@ -244,11 +236,9 @@ type SupportedFeaturesStore = {
 const initialFeatures = computeAllFeatures(null);
 
 export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) => ({
-  // Initial state
   endpointCompatibility: null,
   ...initialFeatures,
 
-  // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) =>
     set({
       endpointCompatibility: ec,

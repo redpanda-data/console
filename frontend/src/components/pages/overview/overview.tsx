@@ -94,29 +94,29 @@ class Overview extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    api.refreshCluster(force);
-    api.refreshClusterOverview().catch(() => {
+    this.api.refreshCluster(force);
+    this.api.refreshClusterOverview().catch(() => {
       // Error handling managed by API layer
     });
 
-    api.refreshBrokers(force);
-    api.refreshClusterHealth().catch(() => {
+    this.api.refreshBrokers(force);
+    this.api.refreshClusterHealth().catch(() => {
       // Error handling managed by API layer
     });
-    api.refreshDebugBundleStatuses().catch(() => {
+    this.api.refreshDebugBundleStatuses().catch(() => {
       // Error handling managed by API layer
     });
-    api.listLicenses().catch(() => {
+    this.api.listLicenses().catch(() => {
       // Error handling managed by API layer
     });
   }
 
   render() {
-    if (!api.clusterOverview) {
+    if (!this.api.clusterOverview) {
       return DefaultSkeleton;
     }
 
-    const overview = api.clusterOverview;
+    const overview = this.api.clusterOverview;
     const brokers = api.brokers ?? [];
     const clusterStatus = clusterStatusOf(overview.kafka?.status?.status);
 

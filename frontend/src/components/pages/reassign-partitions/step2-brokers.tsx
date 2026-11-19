@@ -37,8 +37,6 @@ export class StepSelectBrokers extends Component<{
   partitionSelection: PartitionSelection;
 }> {
   brokers: Broker[];
-  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
-  // remounts the header's sort menu out from under the pointer.
   private readonly columns: DataTableColumnDef<Broker>[];
 
   constructor(props: {

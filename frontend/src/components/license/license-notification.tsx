@@ -31,9 +31,7 @@ export const LicenseNotification = () => {
   const location = useLocation();
 
   useEffect(() => {
-    api.listLicenses().catch(() => {
-      // Error handling managed by API layer
-    });
+    api.listLicenses().catch(() => {});
   }, []);
 
   const { showSomeLicenseExpirationInfo, visibleSoonToExpireLicenses, visibleExpiredLicenses, isWarning } =
@@ -131,8 +129,6 @@ function preferCoreLicenseForSharedExpiry(licenses: License[]): License[] {
 
 function getLicenseExpirationInfo(licenses: License[], licenseViolation: boolean | undefined) {
   // This Global License Notification banner is used only for Enterprise licenses
-  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
-  // Community Licenses can't expire at all.
   const enterpriseLicenses = licenses.filter((license) => license.type === License_Type.ENTERPRISE);
 
   const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];

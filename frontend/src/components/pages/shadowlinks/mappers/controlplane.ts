@@ -117,7 +117,6 @@ function mapControlplaneClientOptions(
     fetchMinBytes: clientOptions.fetchMinBytes,
     fetchMaxBytes: clientOptions.fetchMaxBytes,
     fetchPartitionMaxBytes: clientOptions.fetchPartitionMaxBytes,
-    // Effective fields not available from controlplane yet
     effectiveMetadataMaxAgeMs: 0,
     effectiveConnectionTimeoutMs: 0,
     effectiveRetryBackoffMs: 0,
@@ -255,10 +254,6 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
   };
 }
 
-// ============================================================================
-// Controlplane → FormValues Mappers
-// ============================================================================
-
 /**
  * Extract authentication settings from controlplane shadow link client options
  * Controlplane uses the same core AuthenticationConfiguration type (oneof pattern)
@@ -295,7 +290,6 @@ const extractRawAuthConfigs = (
   if (!authConfig) {
     return {};
   }
-  // The controlplane SDK type does not yet declare plainConfiguration in the oneof, so we widen via cast.
   const oneof = authConfig.authentication as { case?: string; value?: unknown } | undefined;
   if (oneof?.case === 'scramConfiguration') {
     return { scramConfig: oneof.value as RawScramConfig };

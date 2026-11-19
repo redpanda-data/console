@@ -33,7 +33,6 @@ export function useResilientParse(yaml: string): ResilientParse {
   } else if (isConfigTextEmpty(yaml)) {
     lastGoodRef.current = [];
   }
-  // Stale = the YAML can't render as itself (unparseable, or empty over non-blank text) and a prior pipeline exists.
   const brokenOverContent = !parsed.error && isPipelineEmpty(parsed.nodes) && !isConfigTextEmpty(yaml);
   const showingStale = (Boolean(parsed.error) || brokenOverContent) && lastGoodRef.current.length > 0;
   return { nodes: showingStale ? lastGoodRef.current : parsed.nodes, error: parsed.error, showingStale };

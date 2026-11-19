@@ -148,9 +148,8 @@ export function getRetentionSizeFinalValue(value: number | undefined, unit: Rete
  * @param isRedpanda Whether this is a Redpanda cluster
  * @returns Error message if invalid, empty string if valid
  */
-export function validateReplicationFactor(replicationFactor: number, isRedpanda: boolean): string {
+export function validateReplicationFactor(replicationFactor: number, isRedpanda: boolean) {
   if (isRedpanda) {
-    // Enforce odd numbers for Redpanda
     const isOdd = replicationFactor % 2 === 1;
     if (!isOdd) {
       return 'Replication factor must be an odd number';

@@ -58,7 +58,6 @@ describe('schemaEditPageFallback', () => {
   test('explains unsupported contexts', () => {
     render(<SchemaEditPageFallback status="contexts-unsupported" />);
 
-    // PageContent fades its content in, so presence is the observable here.
     expect(screen.getByTestId('contexts-not-supported')).toHaveTextContent('Not Supported');
   });
 

@@ -71,8 +71,6 @@ type AddTopicStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
-  // Renders the form bare (no Card chrome/min-height/margin) so it can sit
-  // inside a host surface like a dialog body. Defaults to false for the wizard.
   inline?: boolean;
 };
 
@@ -80,8 +78,6 @@ type SelectionMode = NonNullable<AddTopicStepProps['selectionMode']>;
 type TopicForm = UseFormReturn<AddTopicFormData>;
 type TopicList = ReturnType<typeof useLegacyListTopicsQuery>['data'];
 type ListedTopic = NonNullable<NonNullable<TopicList>['topics']>[number];
-
-// ── Hooks ──────────────────────────────────────────────────────────────────────
 
 function useTopicOptions(hideInternal: boolean) {
   const { data: topicList } = useLegacyListTopicsQuery(create(ListTopicsRequestSchema, {}), {
@@ -104,9 +100,6 @@ function useTopicOptions(hideInternal: boolean) {
 }
 
 function useAddTopicForm(defaultTopicName?: string) {
-  // The RF field is readOnly in advanced-topic-settings, so the default is
-  // also the final value. Clamp to broker count so single-broker clusters
-  // (e.g. local-byoc) don't hit "not enough replicas" on CreateTopic.
   const { data: kafkaInfo } = useGetKafkaInfoQuery();
   const brokersOnline = kafkaInfo?.brokersOnline ?? 0;
   const defaultReplicationFactor =
@@ -123,11 +116,6 @@ function useAddTopicForm(defaultTopicName?: string) {
     [defaultTopicName, defaultReplicationFactor]
   );
 
-  // Pass defaultValues AND values so react-hook-form reactively updates
-  // replicationFactor when the KafkaInfo query resolves after mount. The
-  // `values` prop is rhf's built-in mechanism for external reactive state;
-  // `keepDirtyValues` prevents fields the user has already touched from
-  // being overwritten when kafkaInfo lands late.
   return useForm<AddTopicFormData>({
     resolver: zodResolver(addTopicFormSchema),
     mode: 'onChange',
@@ -137,7 +125,6 @@ function useAddTopicForm(defaultTopicName?: string) {
   });
 }
 
-// The existing topic the typed name refers to, whose config then replaces the form's values.
 function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
   const watchedTopicName = useWatch({
     control: form.control,
@@ -164,9 +151,7 @@ function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
       }
       if (topicConfig && !topicConfig.error) {
         const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
-        // Override the form-level `keepDirtyValues: true` default — when a user
         // selects an existing topic, its config must fully replace any partial
-        // input they've made.
         form.reset(allTopicValues, { keepDefaultValues: false, keepDirtyValues: false });
       } else {
         form.setValue('topicName', existingTopicSelected.topicName, {
@@ -212,8 +197,6 @@ function useTopicSelectionType({
   return { topicSelectionType, handleTopicSelectionTypeChange };
 }
 
-// ── Submission ─────────────────────────────────────────────────────────────────
-
 function buildCreateTopicRequest(data: AddTopicFormData) {
   const configs = [
     create(CreateTopicRequest_Topic_ConfigSchema, {
@@ -222,7 +205,6 @@ function buildCreateTopicRequest(data: AddTopicFormData) {
     }),
   ];
 
-  // Add retention configs if they differ from defaults
   if (!isUsingDefaultRetentionSettings(data)) {
     const retentionMs = convertRetentionTimeToMs(data.retentionTimeMs, data.retentionTimeUnit);
     const retentionBytes = convertRetentionSizeToBytes(data.retentionSize, data.retentionSizeUnit);
@@ -290,8 +272,6 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
   );
   return { handleSubmit, isPending: createTopicMutation.isPending };
 }
-
-// ── Form sections ──────────────────────────────────────────────────────────────
 
 type TopicNameSectionProps = {
   form: TopicForm;
@@ -365,7 +345,6 @@ function TopicNameSection({
   watchedTopicName,
   existingTopicSelected,
 }: TopicNameSectionProps) {
-  // Show info alert when user types a name that matches an existing topic in "new" mode
   const showExistingTopicAlert =
     topicSelectionType === CreatableSelectionOptions.CREATE && Boolean(existingTopicSelected);
 
@@ -378,7 +357,6 @@ function TopicNameSection({
           <ToggleGroup
             disabled={isPending}
             onValueChange={([value]) => {
-              // Prevent deselection - ToggleGroup emits empty string when trying to deselect
               if (!value) {
                 return;
               }
@@ -476,8 +454,6 @@ function AdvancedSettingsDisclosure({
     </div>
   );
 }
-
-// ── Step ───────────────────────────────────────────────────────────────────────
 
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
   (

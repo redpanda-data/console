@@ -17,9 +17,6 @@ import { parseSchema } from './schema';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import type { ConnectComponentSpec } from '../types/schema';
 
-// Parsing + enrichment JSON.parses the multi-megabyte config schema and clones every component's
-// field tree. The query responses are shared cache objects, so memoize on their identities
-// module-wide: the pipeline editor, onboarding wizard, and template panel mount at different
 // times but must not each redo the work.
 let lastEnrichment: {
   componentList: ComponentList;

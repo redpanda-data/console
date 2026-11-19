@@ -71,7 +71,6 @@ export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterO
   const resolved = resolveField(msg, field);
   if (resolved === undefined) {
     // A field that isn't present doesn't equal the filter value either — `neq` should keep
-    // the message, not hide it. Every other operator has nothing to compare against.
     return op === 'neq';
   }
   switch (op) {
@@ -149,7 +148,6 @@ export function valuePaths(messages: TopicMessage[], filter = ''): string[] {
   if (!needle) {
     return all;
   }
-  // Prefix matches first, then substring matches
   const prefixed = all.filter((p) => p.toLowerCase().startsWith(needle));
   const contained = all.filter((p) => !p.toLowerCase().startsWith(needle) && p.toLowerCase().includes(needle));
   return [...prefixed, ...contained];

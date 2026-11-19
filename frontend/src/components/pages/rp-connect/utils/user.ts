@@ -44,7 +44,7 @@ type TopicPermissionCheck = {
   missingPermissions: ACL_Operation[];
 };
 
-export const getACLOperationName = (operation: ACL_Operation): string => {
+export const getACLOperationName = (operation: ACL_Operation) => {
   switch (operation) {
     case ACL_Operation.READ:
       return 'READ';
@@ -138,7 +138,6 @@ export const checkUserHasTopicPermissions = (
 ): TopicPermissionCheck => {
   const requiredOps = TOPIC_ACCESS_OPERATIONS[access];
 
-  // Filter ACLs for this specific topic (including LITERAL, PREFIXED, and ANY patterns)
   const topicACLs = aclResources.filter(
     (resource) =>
       resource.resourceType === ACL_ResourceType.TOPIC &&
@@ -159,7 +158,6 @@ export const checkUserHasConsumerGroupPermissions = (
 ): TopicPermissionCheck => {
   const requiredOps = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
 
-  // Filter ACLs for this specific consumer group (including LITERAL, PREFIXED, and ANY patterns)
   const groupACLs = aclResources.filter(
     (resource) =>
       resource.resourceType === ACL_ResourceType.GROUP &&
@@ -211,11 +209,10 @@ const configureUserPermissions = async (
   }
 };
 
-// One grant at a time: they share a single mutation observer, and a failed grant stops the rest.
 const createACLsInOrder = async (
   [config, ...rest]: ReturnType<typeof createConsumerGroupACLs>,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<void> => {
+) => {
   if (!config) {
     return;
   }
@@ -385,7 +382,7 @@ const handleOperationResult = (result: OperationResult) => {
 };
 
 // Toasts a required step's outcome; false when it failed, so the flow stops there.
-const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
+const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string) => {
   if (!result.success) {
     toast.error(result.error || failureMessage);
     return false;
@@ -394,7 +391,6 @@ const reportRequiredStep = (result: OperationResult, failureMessage: string, suc
   return true;
 };
 
-// Step 1: Create user, unless it exists
 const ensureUser = async (
   userData: AddUserFormData,
   existingUserSelected: boolean,
@@ -408,7 +404,6 @@ const ensureUser = async (
   return reportRequiredStep(userResult, 'Failed to create user', `User "${userData.username}" created`);
 };
 
-// Step 2: Configure topic ACL if needed
 const grantTopicAccess = async (
   userData: AddUserFormData,
   topicName: string | undefined,
@@ -421,7 +416,6 @@ const grantTopicAccess = async (
   return reportRequiredStep(aclResult, 'Failed to configure topic permissions', 'Topic permissions configured');
 };
 
-// Step 3: Configure consumer group ACL if needed
 const grantConsumerGroupAccess = async (
   userData: AddUserFormData,
   consumerGroup: string | undefined,
@@ -455,11 +449,9 @@ const grantConsumerGroupAccess = async (
 const storeUserSecrets = async (
   userData: AddUserFormData,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<void> => {
-  // Step 4: Create username secret
+) => {
   handleOperationResult(await createUsernameSecret(userData.username, createSecretMutation));
 
-  // Step 5: Create password secret
   handleOperationResult(await createPasswordSecret(userData.username, userData.password, createSecretMutation));
 };
 
@@ -469,7 +461,6 @@ export const useCreateUserWithSecretsMutation = () => {
   const createSecretMutation = useCreateSecretMutation();
   const queryClient = useQueryClient();
 
-  // Aggregate isPending from all mutations
   const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
   const createUserWithSecrets = async ({

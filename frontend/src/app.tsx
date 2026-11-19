@@ -69,7 +69,6 @@ import { routeTree } from './routeTree.gen';
 import { installUISettingsSideEffects } from './state/ui';
 import { installDarkModeAvailabilitySync, isDarkModeAvailable, themeInitFor } from './theme-init';
 
-// Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
   baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
   interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
@@ -78,7 +77,6 @@ const dataplaneTransport = createConnectTransport({
   },
 });
 
-// Create router instance
 const router = createRouter({
   routeTree,
   ...routerDefaults,
@@ -99,7 +97,6 @@ declare global {
   }
 }
 
-// Register router for type safety
 declare module '@tanstack/react-router' {
   // biome-ignore lint/style/useConsistentTypeDefinitions: Required for TanStack Router module augmentation
   interface Register {
@@ -124,7 +121,6 @@ const App = () => {
 
   useEffect(() => {
     const setupTeardown = setup(EMPTY_SETUP_ARGS);
-    // Apply local debug feature-flag overrides AFTER setup() (which clobbers
     // config.featureFlags). Dev-only mechanism — see debug-helper/feature-flag-overrides.ts.
     applyDebugFeatureFlagOverrides();
     const uiSettingsTeardown = installUISettingsSideEffects();
@@ -136,7 +132,6 @@ const App = () => {
     };
   }, []);
 
-  // Need to use CustomFeatureFlagProvider for completeness with EmbeddedApp
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />

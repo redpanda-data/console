@@ -114,10 +114,8 @@ describe('the SyncBehaviorSection', () => {
       />
     );
 
-    // Collapsed with hydrated non-default values → badge signals customization.
     expect(screen.getByTestId('sr-sync-behavior-customized-badge')).toBeInTheDocument();
 
-    // Expanded → the fields themselves are visible, badge disappears.
     await user.click(screen.getByTestId('sr-sync-behavior-trigger'));
     await waitFor(() => {
       expect(screen.queryByTestId('sr-sync-behavior-customized-badge')).not.toBeInTheDocument();

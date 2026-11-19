@@ -31,7 +31,7 @@ rs.mock('react-query/api/secret', () => ({
   useListSecretsQuery: () => ({ data: mockSecretsData }),
 }));
 
-const apiModeValues = (schemaRegistry: Partial<FormValues['schemaRegistry']> = {}): FormValues => ({
+const apiModeValues = (schemaRegistry: Partial<FormValues['schemaRegistry']> = {}) => ({
   ...structuredClone(initialValues),
   schemaRegistry: {
     ...structuredClone(initialValues.schemaRegistry),
@@ -105,7 +105,6 @@ describe('the SrTlsConfiguration', () => {
       />
     );
 
-    // Hydrated pair opens the mTLS disclosure and shows the configured badge.
     expect(screen.getByTestId('sr-clientKey-existing-status')).toBeInTheDocument();
     expect(screen.getByTestId('sr-existing-key-fingerprint')).toHaveTextContent('SHA-256: abc123=');
 
@@ -114,10 +113,8 @@ describe('the SrTlsConfiguration', () => {
     await waitFor(() => {
       expect(formValues?.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
     });
-    // The dropzone replaces the configured row so a new key can be uploaded.
     expect(screen.queryByTestId('sr-clientKey-existing-status')).not.toBeInTheDocument();
     expect(screen.getByTestId('add-sr-clientKey-button')).toBeInTheDocument();
-    // With the cert still present, the pair rule now demands a new key.
     await waitFor(() => {
       expect(screen.getByTestId('sr-mtls-client-key-error')).toHaveTextContent(
         'Client private key is required when client certificate is provided'
@@ -150,7 +147,6 @@ describe('the SrTlsConfiguration', () => {
     expect(screen.getByTestId('sr-clientKey-status')).toBeInTheDocument();
     expect(screen.getByText('client.key')).toBeInTheDocument();
 
-    // Removing the upload falls back to the kept server-side key.
     await user.click(screen.getByTestId('remove-sr-clientKey-button'));
 
     await waitFor(() => {
@@ -189,11 +185,10 @@ describe('the SrTlsConfiguration', () => {
         expect(screen.getByText('Client private key secret')).toBeInTheDocument();
       });
       expect(screen.queryByTestId('add-sr-clientKey-button')).not.toBeInTheDocument();
-      // The client certificate stays a PEM upload; only the key is a secret.
       expect(screen.getByTestId('add-sr-clientCert-button')).toBeInTheDocument();
 
       // Queried by accessible name: form wiring must reach the trigger.
-      await user.click(screen.getByRole('combobox', { name: /client private key secret/i }));
+      await user.click(screen.getByRole('combobox', { name: /client private key secret/iu }));
       await user.click(await screen.findByRole('option', { name: 'SR_MTLS_CLIENT_KEY' }));
 
       await waitFor(() => {

@@ -13,12 +13,10 @@
  * Unit abbreviations map
  */
 const UNIT_ABBREV: Record<string, string> = {
-  // Bytes
   byte: 'B',
   bytes: 'B',
   b: 'B',
 
-  // Time
   second: 's',
   seconds: 's',
   sec: 's',
@@ -51,7 +49,6 @@ function abbreviateUnit(unit: string): string {
     return UNIT_ABBREV[normalized];
   }
 
-  // Truncate to 3 chars
   return normalized.substring(0, 3);
 }
 
@@ -105,11 +102,9 @@ export function formatWithUnit(value: number, unit: string | undefined): string 
   const canonical = canonicalizeUnit(unit);
   const { formatted, scale } = formatNumber(value);
 
-  // If numerator is B (bytes), attach scale to the unit
   if (canonical === 'B' || canonical.startsWith('B/')) {
     return `${formatted} ${scale}${canonical}`.trim();
   }
 
-  // For other units, attach scale to the number
   return `${formatted}${scale} ${canonical}`.trim();
 }

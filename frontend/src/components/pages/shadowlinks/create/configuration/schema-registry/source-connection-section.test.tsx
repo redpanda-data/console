@@ -160,7 +160,7 @@ describe('the SourceConnectionSection', () => {
       expect(screen.queryByTestId('sr-basic-password-input')).not.toBeInTheDocument();
 
       // Queried by accessible name: form wiring must reach the trigger.
-      await user.click(screen.getByRole('combobox', { name: /password/i }));
+      await user.click(screen.getByRole('combobox', { name: /password/iu }));
       await user.click(await screen.findByRole('option', { name: 'SR_PASSWORD' }));
 
       await waitFor(() => {
@@ -189,7 +189,6 @@ describe('the SourceConnectionSection', () => {
 
     render(<TestWrapper />);
 
-    // useTls defaults to true
     expect(screen.getByTestId('sr-tls-intro')).toBeInTheDocument();
     expect(screen.getByTestId('sr-tls-ca-disclosure')).toBeInTheDocument();
     expect(screen.getByTestId('sr-tls-mtls-disclosure')).toBeInTheDocument();
@@ -234,7 +233,6 @@ describe('the SourceConnectionSection', () => {
       expect(latest.values?.schemaRegistry?.mtls?.clientCert?.pemContent).toBe('-----BEGIN CERTIFICATE-----\nCERT');
     });
 
-    // Removing the key clears it from form state again
     await user.click(screen.getByTestId('remove-sr-clientKey-button'));
     await waitFor(() => {
       expect(latest.values?.schemaRegistry?.mtls?.clientKey).toBeUndefined();

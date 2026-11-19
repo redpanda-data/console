@@ -53,8 +53,6 @@ export function useCreateUserForm(onCreated: () => void) {
         }),
       });
     } catch {
-      // Toast is shown by useCreateUserMutation's onError handler.
-      // mutateAsync re-throws after onError, so we catch to prevent unhandled rejection.
       return false;
     }
     await Promise.allSettled(

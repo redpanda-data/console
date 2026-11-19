@@ -33,8 +33,6 @@ type SchemaContextSelectorProps = {
   onContextChange: (id: string) => void;
 };
 
-// Custom combobox instead of registry Combobox: we need a button trigger,
-// two-line items (label + subject count), and a search bar inside the popover.
 export const SchemaContextSelector: FC<SchemaContextSelectorProps> = ({
   contexts,
   selectedContext,

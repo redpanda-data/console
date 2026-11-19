@@ -3,9 +3,8 @@ import { ComponentSpecSchema, ComponentStatus } from 'protogen/redpanda/api/data
 
 import { withYamlDocumentation } from './yaml-editor-schema';
 import { describe, expect, test } from 'bun:test';
-import type { ConnectComponentSpec } from '../types/schema';
 
-function component(type: 'input' | 'output', description: string): ConnectComponentSpec {
+function component(type: 'input' | 'output', description: string) {
   return {
     ...create(ComponentSpecSchema, {
       name: 'example',
@@ -155,7 +154,6 @@ describe('withYamlDocumentation', () => {
     const modern = { ...component('input', ''), name: 'modern' };
     const [deprecatedBranch, modernBranch] = withYamlDocumentation(schema, [deprecated, modern]).definitions.input
       .allOf[0].anyOf;
-    // Its field schema survives, so existing configs keep hover and field completion.
     expect(deprecatedBranch.properties.example).toMatchObject({
       doNotSuggest: true,
       properties: { topic: { type: 'string' } },

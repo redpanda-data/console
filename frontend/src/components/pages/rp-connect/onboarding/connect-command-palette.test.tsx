@@ -6,20 +6,16 @@ import { render, screen, waitFor } from 'test-utils';
 import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
-const KAFKA_OPTION = /kafka_franz/;
-const KAFKA_OUTPUT_OPTION = /kafka/;
-const PG_STREAM_OPTION = /pg_stream/;
-const POSTGRES_CDC_OPTION = /postgres_cdc/;
-const GENERATE_OPTION = /generate/;
-const HTTP_CLIENT_OPTION = /http_client/;
-const NO_INPUTS_MATCH = /No inputs match/;
-const EXISTS_AS_CACHE = /it exists as a cache/;
+const KAFKA_OPTION = /kafka_franz/u;
+const KAFKA_OUTPUT_OPTION = /kafka/u;
+const PG_STREAM_OPTION = /pg_stream/u;
+const POSTGRES_CDC_OPTION = /postgres_cdc/u;
+const GENERATE_OPTION = /generate/u;
+const HTTP_CLIENT_OPTION = /http_client/u;
+const NO_INPUTS_MATCH = /No inputs match/u;
+const EXISTS_AS_CACHE = /it exists as a cache/u;
 
-const component = (
-  name: string,
-  type: ConnectComponentType,
-  extra: Partial<ExtendedConnectComponentSpec> = {}
-): ExtendedConnectComponentSpec =>
+const component = (name: string, type: ConnectComponentType, extra: Partial<ExtendedConnectComponentSpec> = {}) =>
   ({ name, type, status: ComponentStatus.STABLE, ...extra }) as ExtendedConnectComponentSpec;
 
 const INPUT_COMPONENTS: ExtendedConnectComponentSpec[] = [
@@ -45,7 +41,6 @@ describe('the ConnectCommandPalette', () => {
 
   it('lists the in-scope components when browsing', async () => {
     renderPalette();
-    // Scope to listbox options — the selected component also echoes its name in the detail pane.
     expect(await screen.findByRole('option', { name: KAFKA_OPTION })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: GENERATE_OPTION })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: HTTP_CLIENT_OPTION })).toBeInTheDocument();
@@ -64,7 +59,6 @@ describe('the ConnectCommandPalette', () => {
 
   it('explains a type-locked miss in the empty state', async () => {
     const user = userEvent.setup();
-    // `redis` is only in scope as a cache, so a query for it while locked to inputs is a scoped miss.
     renderPalette({
       additionalComponents: [...INPUT_COMPONENTS, component('redis', 'cache', { summary: 'Redis cache' })],
     });
@@ -154,7 +148,6 @@ describe('the ConnectCommandPalette', () => {
     await user.dblClick(await screen.findByRole('option', { name: GENERATE_OPTION }));
 
     expect(onSelect).toHaveBeenCalledWith('generate', 'input');
-    // The committed component now surfaces its own browse facet.
     expect(await screen.findByRole('tab', { name: 'Recent' })).toBeInTheDocument();
   });
 });

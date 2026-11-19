@@ -127,7 +127,6 @@ function usePartitionsTable(topicName: string, partitions: Partition[] | null | 
 export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
 
-  // All hooks stay above the early returns so the hook order is stable while partitions load.
   const { table, columnCount } = usePartitionsTable(topic.topicName, partitions);
 
   if (partitions === undefined) {

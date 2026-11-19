@@ -2,7 +2,6 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ComponentType, SVGProps } from 'react';
 
-// Icons inherit `currentColor`; a tone picks a design token instead of a free-form colour class.
 const tonedIconVariants = cva('', {
   variants: {
     tone: {

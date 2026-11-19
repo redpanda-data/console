@@ -53,7 +53,7 @@ type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
-const DIGITS_ONLY_REGEX = /^\d*$/;
+const DIGITS_ONLY_REGEX = /^\d*$/u;
 
 const { Stepper } = defineStepper(
   { id: 'partitions', title: 'Select partitions' },
@@ -455,15 +455,12 @@ function getMarks(partition: Partition) {
 }
 
 function formatMarks(marks: number[]) {
-  return marks.reduce(
-    (acc, it) => {
-      const key = it.toFixed(0);
-      const value = prettyNumber(it);
-      acc[key] = value;
-      return acc;
-    },
-    {} as { [index: string]: string }
-  );
+  return marks.reduce<Record<string, string>>((acc, it) => {
+    const key = it.toFixed(0);
+    const value = prettyNumber(it);
+    acc[key] = value;
+    return acc;
+  }, {});
 }
 
 type DeleteRecordsModalProps = {

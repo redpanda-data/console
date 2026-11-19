@@ -44,20 +44,13 @@ function useDisplayWindow(
   continuousActive: boolean,
   { readScopeMode, liveTail }: Pick<MessagesUrlState, 'readScopeMode' | 'liveTail'>
 ) {
-  // Continuous mode disables the table's own sort to preserve server order for paging, but for
-  // "Newest" that server order is partition-grouped, not chronological — force it back to
   // newest-first here, same as the legacy page did. This must run *before* windowing below:
-  // the display window trims by arrival position, and continuous+"Newest" arrives
-  // newest→oldest per partition batch, not oldest→newest like every other scope.
   const orderedMessages = useMemo(
     () => orderForContinuousNewest(filteredMessages, continuousActive, readScopeMode),
     [filteredMessages, continuousActive, readScopeMode]
   );
 
   // In continuous or live mode only DISPLAY_WINDOW_CAP rows stay rendered. The window keeps
-  // the tail of the ordered array — the loading frontier — so "Load more" always reveals the
-  // page it just fetched: continuous+"Newest" pages backward through ever-older rows (trimming
-  // the newest once past the cap — the footer says so), every other scope trims the oldest.
   const { rows: windowedMessages, trimmed } = useMemo(
     () =>
       continuousActive || liveTail
@@ -66,8 +59,6 @@ function useDisplayWindow(
     [orderedMessages, continuousActive, liveTail]
   );
 
-  // Stable mutable copy for consumers typed as TopicMessage[] — a fresh array on
-  // every render would defeat react-table's data memoization.
   const tableData = useMemo(() => [...windowedMessages], [windowedMessages]);
 
   return {
@@ -116,11 +107,8 @@ function useMessageSelection(
   { selectedKey, setSelectedKey }: Pick<MessagesUrlState, 'selectedKey' | 'setSelectedKey'>,
   setViewSettingsOpen: (open: boolean) => void
 ) {
-  // Row clicks always select (mock behavior) — switching rows swaps the open
-  // detail (docked or expanded) in place; closing is the panel's own X.
   const handleRowClick = useCallback(
     (msg: TopicMessage) => {
-      // Detail and view settings are distinct right-side surfaces — one at a time
       setViewSettingsOpen(false);
       setSelectedKey(messageKey(msg));
     },

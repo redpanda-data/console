@@ -4,42 +4,15 @@ import { InlineCode, Link, List, ListItem } from 'components/redpanda-ui/compone
 import { docsLinks } from 'utils/docs-links';
 
 import Tabs from '../../misc/tabs/tabs';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 
 const rpkInitTransform = 'rpk transform init --language=tinygo';
 
-export class TransformsSetup extends PageComponent {
-  initPage(p: PageInitHelper) {
-    p.title = 'Transforms Setup';
-    p.addBreadcrumb('Transforms', '/transforms');
-    p.addBreadcrumb('Transforms Setup', '/transforms-setup');
-  }
-
-  render() {
-    return (
-      <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-3">
-          <h2 className="text-heading-lg">Data transforms</h2>
-          <p className="text-body">
-            Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
-            Redpanda.{' '}
-            <Link href={docsLinks.selfManaged.dataTransformsBuild} rel="noopener noreferrer" target="_blank">
-              Learn more
-            </Link>
-          </p>
-
-          <h3 className="text-heading-md">Getting started</h3>
-
-          <Tabs
-            tabs={[
-              { key: 'go', title: 'Go', content: <TabGo /> },
-              { key: 'rust', title: 'Rust', content: <TabRust />, disabled: true },
-            ]}
-          />
-        </div>
-      </div>
-    );
-  }
+function configurePage(p: PageInitHelper) {
+  p.title = 'Transforms Setup';
+  p.addBreadcrumb('Transforms', '/transforms');
+  p.addBreadcrumb('Transforms Setup', '/transforms-setup');
 }
 
 const exampleDir = `.
@@ -90,3 +63,31 @@ function TabGo(_p: Record<string, never>) {
 function TabRust(_p: Record<string, never>) {
   return 'rust content';
 }
+
+function TransformsSetupContent() {
+  return (
+    <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-heading-lg">Data transforms</h2>
+        <p className="text-body">
+          Data transforms let you run common data streaming tasks, like filtering, scrubbing, and transcoding, within
+          Redpanda.{' '}
+          <Link href={docsLinks.selfManaged.dataTransformsBuild} rel="noopener noreferrer" target="_blank">
+            Learn more
+          </Link>
+        </p>
+
+        <h3 className="text-heading-md">Getting started</h3>
+
+        <Tabs
+          tabs={[
+            { key: 'go', title: 'Go', content: <TabGo /> },
+            { key: 'rust', title: 'Rust', content: <TabRust />, disabled: true },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+export class TransformsSetup extends pageWithContent(TransformsSetupContent, configurePage) {}

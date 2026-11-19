@@ -19,7 +19,6 @@ const pressSave = (init: KeyboardEventInit = {}) => {
   return event;
 };
 
-// Remove any dialog nodes a test appended so a leaked modal can't disable the shortcut elsewhere.
 afterEach(() => {
   for (const el of document.querySelectorAll('[role="dialog"], [role="alertdialog"]')) {
     el.remove();
@@ -73,7 +72,6 @@ describe('useSaveHotkey', () => {
 
     pressSave();
     // Holding the key fires repeats faster than isSaving can re-render — they must not re-save,
-    // but still preventDefault so the browser's save dialog can't open mid-hold.
     const repeatEvent = pressSave({ repeat: true });
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(repeatEvent.defaultPrevented).toBe(true);
@@ -117,11 +115,9 @@ describe('useSaveHotkey', () => {
       }
     );
 
-    // While saving, the press is swallowed.
     pressSave();
     expect(first).not.toHaveBeenCalled();
 
-    // After isSaving flips false and onSave changes, the same listener sees both.
     rerender({ cb: second, saving: false });
     pressSave();
     expect(first).not.toHaveBeenCalled();

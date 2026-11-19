@@ -78,7 +78,7 @@ declare global {
   }
 }
 
-Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
+Array.prototype.remove = function remove<T>(this: T[], obj: T) {
   const index = this.indexOf(obj);
   if (index === -1) {
     return false;
@@ -249,7 +249,7 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
   return { removed: removed.length, added: added.length };
 };
 
-Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boolean {
+Array.prototype.isEqual = function isEqual(this: string[], other: string[]) {
   if (this.length === 0 && other.length === 0) {
     return true;
   }
@@ -286,7 +286,7 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
   return ar;
 };
 
-Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
+Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]) {
   if (this.length + elements.length > 50) {
     const s = new Set(this);
     for (const e of elements) {
@@ -340,7 +340,6 @@ Array.prototype.genericJoin = function genericJoin<T>(
     ar.push(last, separator);
   }
 
-  // add final element
   const lastElement = this.at(-1);
   if (lastElement !== undefined) {
     ar.push(lastElement);
@@ -407,7 +406,7 @@ Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item:
   return result;
 };
 
-function haveSameArrayItems<T>(current: T[], next: T[]): boolean {
+function haveSameArrayItems<T>(current: T[], next: T[]) {
   if (current.length !== next.length) {
     return false;
   }

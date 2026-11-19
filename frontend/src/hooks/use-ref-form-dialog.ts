@@ -67,13 +67,12 @@ function settleSubmissionError<TData>(error: unknown, abort: AbortController, ha
   }
 }
 
-// The handlers run inside the try, so one that throws settles like a failed submit.
 async function settleSubmission<TData>(
   formRef: RefFormSubmittable<TData>,
   abort: AbortController,
   timeout: number,
   handlers: SubmissionHandlers<TData>
-): Promise<void> {
+) {
   try {
     const result = await raceWithTimeout(formRef.triggerSubmit(abort.signal), timeout);
 

@@ -55,8 +55,8 @@ export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
 /**
  * Regex patterns for test IDs
  */
-export const BOOTSTRAP_SERVER_INPUT_PATTERN = /bootstrap-server-input-\d+/;
-export const TOPIC_FILTER_NAME_PATTERN = /topic-filter-\d+-name/;
+export const BOOTSTRAP_SERVER_INPUT_PATTERN = /bootstrap-server-input-\d+/u;
+export const TOPIC_FILTER_NAME_PATTERN = /topic-filter-\d+-name/u;
 
 /**
  * Action types for table-driven tests
@@ -121,11 +121,9 @@ const expandSectionInSpecifyMode = async (
 ) => {
   await waitForTestId(scr, `${section}-toggle-button`);
 
-  // Expand the section
   await user.click(scr.getByTestId(`${section}-toggle-button`));
   await waitForTestId(scr, `${section}-specify-tab`);
 
-  // Switch to specify mode
   await user.click(scr.getByTestId(`${section}-specify-tab`));
 };
 
@@ -151,14 +149,12 @@ const openTopicFiltersInSpecifyMode = async (
 ) => {
   await waitForTestId(scr, 'topics-toggle-button');
 
-  // Expand topics section if not already expanded
   if (!scr.queryByTestId('topics-filters-container')) {
     await user.click(scr.getByTestId('topics-toggle-button'));
   }
 
   await waitForTestId(scr, 'topics-specify-tab');
 
-  // Switch to specify mode if not already in it
   const specifyTab = scr.getByTestId('topics-specify-tab');
   if (specifyTab.getAttribute('data-state') !== 'active') {
     await user.click(specifyTab);
@@ -181,7 +177,6 @@ const nextTopicFilterIndex = async (
     return 0;
   }
 
-  // First filter is filled, add a new one
   await user.click(scr.getByTestId('add-topic-filter-button'));
   const filterIndex = existingNameInputs.length;
   await waitForTestId(scr, `topic-filter-${filterIndex}-name`);
@@ -257,38 +252,30 @@ export const uploadCACertificate = async (
   scr: typeof import('@testing-library/react').screen,
   filePath: string
 ) => {
-  // Wait for the CA button to appear after TLS is enabled
   const addCaButton = await waitFor(() => scr.getByTestId('add-ca-button'));
   await user.click(addCaButton);
 
-  // Wait for dialog to open and be interactive
   const filePathTab = await waitFor(
     () => {
       const tab = scr.getByTestId('mtls-mode-file-path-tab');
-      // Ensure it's visible and not disabled
       expect(tab).toBeVisible();
       return tab;
     },
     { timeout: 5000 }
   );
 
-  // Switch to file path mode (from default PEM mode)
   await user.click(filePathTab);
 
-  // Wait for file path input to appear
   await waitFor(() => {
     expect(scr.getByTestId('ca-file-path-input')).toBeInTheDocument();
   });
 
-  // Type the file path
   const filePathInput = scr.getByTestId('ca-file-path-input');
   await user.type(filePathInput, filePath);
 
-  // Save the certificate
   const saveButton = scr.getByTestId('save-certificate-button');
   await user.click(saveButton);
 
-  // Wait for dialog to close
   await waitFor(() => {
     expect(scr.queryByTestId('certificate-dialog-ca')).not.toBeInTheDocument();
   });
@@ -303,7 +290,6 @@ export const uploadClientCertificates = async (
   certPem: string,
   keyPem: string
 ) => {
-  // Upload client certificate
   const addClientCertButton = scr.getByTestId('add-clientCert-button');
   await user.click(addClientCertButton);
 
@@ -314,7 +300,6 @@ export const uploadClientCertificates = async (
   const certInput = scr.getByTestId('clientCert-pem-input');
   await user.type(certInput, certPem);
 
-  // Upload client key
   const addClientKeyButton = scr.getByTestId('add-clientKey-button');
   await user.click(addClientKeyButton);
 
@@ -357,7 +342,6 @@ export const updateAdvancedOption = async (
 ) => {
   await expandAdvancedOptions(user, scr);
 
-  // Get the field container and find the input within it
   const fieldInput = scr.getByTestId(`${field}-field`).querySelector('input');
   if (!fieldInput) {
     throw new Error(`No input found in field container: ${field}`);
@@ -374,13 +358,11 @@ export const addTopicFilter = async (
   scr: typeof import('@testing-library/react').screen,
   name: string
 ) => {
-  // Navigate to Shadowing tab
   await user.click(scr.getByTestId('tab-shadowing'));
 
   await expandSectionInSpecifyMode(user, scr, 'topics');
   await waitForTestId(scr, 'add-topic-filter-button');
 
-  // Find the first empty filter and fill it
   await typeIntoTestId(user, scr, 'topic-filter-0-name', name);
 };
 
@@ -396,7 +378,6 @@ export const addConsumerFilter = async (
   await expandSectionInSpecifyMode(user, scr, 'consumers');
   await waitForTestId(scr, 'add-consumer-filter-button');
 
-  // Add a consumer filter
   await user.click(scr.getByTestId('add-consumer-filter-button'));
   await typeIntoTestId(user, scr, 'consumer-filter-0-name', name);
 };
@@ -413,7 +394,6 @@ export const addACLFilter = async (
   await expandSectionInSpecifyMode(user, scr, 'acls');
   await waitForTestId(scr, 'add-acl-filter-button');
 
-  // Add an ACL filter
   await user.click(scr.getByTestId('add-acl-filter-button'));
   await typeIntoTestId(user, scr, 'acl-filter-0-principal', principal);
 };
@@ -425,7 +405,6 @@ export const toggleExcludeDefault = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  // Navigate to Topic Config tab
   const topicConfigTab = scr.getByTestId('tab-topic-config');
   await user.click(topicConfigTab);
 
@@ -447,7 +426,6 @@ export const navigateToConfigurationStep = async (
   const nextButton = scr.getByText('Next');
   await user.click(nextButton);
 
-  // Wait for configuration step to be visible
   await waitFor(() => {
     expect(scr.getByTestId('topics-toggle-button')).toBeInTheDocument();
   });
@@ -468,10 +446,8 @@ export const addTopicFilterCreate = async (
   await openTopicFiltersInSpecifyMode(user, scr);
   const filterIndex = await nextTopicFilterIndex(user, scr);
 
-  // Fill in name
   await user.type(scr.getByTestId(`topic-filter-${filterIndex}-name`), name);
 
-  // Set pattern and filter type if not default
   if (patternType !== PatternType.LITERAL || filterType !== FilterType.INCLUDE) {
     await selectTopicFilterType(user, scr, filterIndex, { patternType, filterType });
   }
@@ -490,7 +466,6 @@ export const addConsumerFilterCreate = async (
   await expandSectionInSpecifyMode(user, scr, 'consumers');
   await waitForTestId(scr, 'add-consumer-filter-button');
 
-  // Add a consumer filter
   await user.click(scr.getByTestId('add-consumer-filter-button'));
   await typeIntoTestId(user, scr, 'consumer-filter-0-name', name);
 };
@@ -503,7 +478,6 @@ export const addACLFilterCreate = async (
   scr: typeof import('@testing-library/react').screen,
   principal: string
 ) => {
-  // Switching to specify mode auto-expands the card and seeds an empty filter
   await expandSectionInSpecifyMode(user, scr, 'acls');
   await waitForTestId(scr, 'add-acl-filter-button');
 
@@ -527,7 +501,6 @@ export const addRoleFilterCreate = async (
     expect(scr.getByTestId('roles-specify-tab')).toBeInTheDocument();
   });
 
-  // Switch to specify mode (auto-expands the card and seeds an empty filter)
   const rolesSpecifyTab = scr.getByTestId('roles-specify-tab');
   await user.click(rolesSpecifyTab);
 
@@ -548,7 +521,6 @@ export const addTopicFilterWithPattern = async (
   options: { name: string; patternType: PatternType; filterType: FilterType }
 ) => {
   const { name, patternType, filterType } = options;
-  // Navigate to Shadowing tab if not already there
   const currentTab = scr.queryByTestId('tab-shadowing');
   if (currentTab && currentTab.getAttribute('data-state') !== 'active') {
     await user.click(currentTab);
@@ -557,10 +529,8 @@ export const addTopicFilterWithPattern = async (
   await openTopicFiltersInSpecifyMode(user, scr);
   const filterIndex = await nextTopicFilterIndex(user, scr);
 
-  // Fill in name
   await user.type(scr.getByTestId(`topic-filter-${filterIndex}-name`), name);
 
-  // Set pattern and filter type
   await selectTopicFilterType(user, scr, filterIndex, { patternType, filterType });
 };
 
@@ -571,7 +541,6 @@ export const enableSchemaRegistrySync = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  // Navigate to Shadowing tab (may already be there)
   const shadowingTab = scr.queryByTestId('tab-shadowing');
   if (shadowingTab) {
     await user.click(shadowingTab);

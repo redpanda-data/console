@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { type BreadcrumbEntry, uiState } from '../../../state/ui-state';
 
 // Shared by the edit-mode and edit-compatibility pages, which edit one setting
-// for a subject, a context, or the whole registry.
 
 /** What an edit page edits: one subject, one context, or (neither) the global config. */
 export type SchemaEditTarget = { subjectName?: string; contextName?: string };
@@ -51,7 +50,6 @@ export function useSchemaEditPageHeader({ subjectName, contextName }: SchemaEdit
   );
 }
 
-// Closing runs from button clicks and mutation callbacks, so report a failed navigation instead of dropping it.
 function reportCloseError(error: unknown) {
   toast.error('Failed to navigate', { description: String(error) });
 }

@@ -98,7 +98,6 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
   </div>
 );
 
-// Description gets its own block (not the narrow key/value column): quiet label, prose width, kept line breaks.
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
@@ -217,11 +216,9 @@ const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
   </ElementTooltip>
 );
 
-// Expanded mode insets the header while the panel below it goes flush.
 const headerClassName = (expanded: boolean) =>
   cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
 
-// Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
   <Controller
     control={form.control}
@@ -266,7 +263,6 @@ const StartDraftControl = ({ pipeline, units }: { pipeline: Pipeline; units: num
   );
 };
 
-// The facts under a pipeline's name: its id, size, topics and end, then its tags and description.
 function PipelineViewMeta({
   pipeline,
   units,
@@ -389,7 +385,6 @@ const SaveActions = ({
   const primary = primaryRunIntent(context);
   const alternates = alternateRunIntents(context).filter((intent) => intent !== primary);
   return (
-    // Positions come from JSX order, not DOM siblings: the open menu's focus guards land inside this div.
     <Group attached className="w-auto">
       <Button disabled={isSaving || disabled} onClick={() => onSave({ run: primary })} testId="save-pipeline">
         {runIntentLabel(primary, context)}

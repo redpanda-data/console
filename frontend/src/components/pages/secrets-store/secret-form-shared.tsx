@@ -13,7 +13,7 @@ import { CircleUser, Link, Server, Waypoints } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { z } from 'zod';
 
-export const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/;
+export const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/u;
 
 export const SCOPE_OPTIONS = [
   {

@@ -48,7 +48,6 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 );
 
 // One problem (or, with `warning`, a deprecation): clickable row that selects its node, or inert
-// when it maps to no node.
 const ProblemRow = ({
   problem,
   onSelect,
@@ -99,7 +98,6 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
       <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Missing secrets</span>
       {onAddSecrets ? (
-        // The icon is a child rather than the `icon` prop, which would widen the `xs` gap.
         <Button data-testid="missing-secrets-add" onClick={onAddSecrets} size="xs" variant="outline">
           Add secrets
           <KeyRound className="size-3" />
@@ -135,7 +133,6 @@ function issuesLabel(problemCount: number, secretCount: number, deprecationCount
   return pluralizeWithNumber(deprecationCount, 'deprecated component');
 }
 
-// Clicking a located issue selects its node and collapses the list.
 function selectHandler(
   problem: PipelineProblem,
   onSelectProblem: PipelineProblemsPanelProps['onSelectProblem'],

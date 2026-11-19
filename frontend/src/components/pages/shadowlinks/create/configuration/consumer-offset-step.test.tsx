@@ -19,7 +19,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { ConsumerOffsetStep } from './consumer-offset-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const CONSUMER_FILTER_PATTERN = /^consumer-filter-\d+$/;
+const CONSUMER_FILTER_PATTERN = /^consumer-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({
@@ -41,7 +41,6 @@ const renderExpandedConsumerOffsetStep = async (consumers: FormValues['consumers
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, consumersMode: 'specify', consumers }} />);
 
-  // Need to open the collapsible to see the editable filters
   await user.click(screen.getByTestId('consumers-toggle-button'));
   return user;
 };
@@ -61,13 +60,11 @@ describe('the ConsumerOffsetStep', () => {
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
       });
 
-      // Verify all filter type tabs are present
       expect(screen.getByTestId('consumer-filter-0-include-specific')).toBeInTheDocument();
       expect(screen.getByTestId('consumer-filter-0-include-prefix')).toBeInTheDocument();
       expect(screen.getByTestId('consumer-filter-0-exclude-specific')).toBeInTheDocument();
       expect(screen.getByTestId('consumer-filter-0-exclude-prefix')).toBeInTheDocument();
 
-      // Verify the text content of the tabs
       expect(screen.getByTestId('consumer-filter-0-include-specific')).toHaveTextContent(
         'Include specific consumer groups'
       );
@@ -91,7 +88,6 @@ describe('the ConsumerOffsetStep', () => {
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
       });
 
-      // Add second filter
       const addButton = screen.getByTestId('add-consumer-filter-button');
       await user.click(addButton);
 
@@ -99,7 +95,6 @@ describe('the ConsumerOffsetStep', () => {
         expect(screen.getByTestId('consumer-filter-1')).toBeInTheDocument();
       });
 
-      // Verify both filters exist
       expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('consumer-filter-1')).toBeInTheDocument();
     });
@@ -125,18 +120,14 @@ describe('the ConsumerOffsetStep', () => {
         expect(screen.getByTestId('consumer-filter-1')).toBeInTheDocument();
       });
 
-      // Delete the first filter
       const deleteButton = screen.getByTestId('consumer-filter-0-delete');
       await user.click(deleteButton);
 
       await waitFor(() => {
-        // The second filter should now be at index 0
         expect(screen.getByTestId('consumer-filter-0')).toBeInTheDocument();
-        // The old filter at index 1 should not exist anymore
         expect(screen.queryByTestId('consumer-filter-1')).not.toBeInTheDocument();
       });
 
-      // Verify only one filter remains
       expect(screen.getAllByTestId(CONSUMER_FILTER_PATTERN)).toHaveLength(1);
     });
   });

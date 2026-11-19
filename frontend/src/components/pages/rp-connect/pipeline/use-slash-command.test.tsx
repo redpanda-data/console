@@ -115,7 +115,6 @@ describe('useSlashCommand', () => {
       act(() => fireContentChange('/'));
       expect(result.current.isOpen).toBe(true);
 
-      // Fire another slash while open — should be ignored
       act(() => fireContentChange('/'));
       expect(result.current.isOpen).toBe(true);
       expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
@@ -210,15 +209,12 @@ describe('useSlashCommand', () => {
       const { instance, fireContentChange } = createMockEditor('  /', 4);
       const { result } = renderHook(() => useSlashCommand(instance, true));
 
-      // Open menu
       act(() => fireContentChange('/'));
-      // Close without selecting (sub-dialog scenario)
       act(() => {
         result.current.close();
         rs.runAllTimers();
       });
 
-      // Select via sub-dialog callback
       act(() => {
         result.current.handleSlashSelect(bloblangSnippet);
         rs.runAllTimers();
@@ -262,7 +258,6 @@ describe('useSlashCommand', () => {
     it('does nothing when editor is null', () => {
       const { result } = renderHook(() => useSlashCommand(null, true));
 
-      // Should not throw
       act(() => {
         result.current.handleSlashSelect('text');
       });

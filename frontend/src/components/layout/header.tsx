@@ -58,9 +58,6 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {index === breadcrumbItems.length - 1 ? (
-                      // The current page's crumb isn't a link: it points at the exact URL
-                      // we're already on, and re-navigating to that bare path (no search/hash)
-                      // would drop the page's query params (filters, pagination, active tab).
                       <BreadcrumbPage>{item.title}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
@@ -221,7 +218,6 @@ function useShouldHideHeader() {
   const { pathname } = useLocation();
   const matchRoute = useMatchRoute();
 
-  // Hide header when PipelinePage renders (it has its own header/breadcrumbs)
   const isPipelineRoute =
     matchRoute({ to: '/rp-connect/$pipelineId' }) ||
     matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
@@ -240,10 +236,8 @@ function useShouldHideHeader() {
     return false;
   }
 
-  // Pages that have their own header components - hide AppPageHeader for these
   const pagesWithOwnHeaders = ['/secrets'];
 
-  // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));
 }
 

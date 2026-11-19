@@ -44,8 +44,6 @@ export const CertificateUploadRow = ({ fileName, onDrop, onError, testId }: Cert
     maxFiles={1}
     onDrop={onDrop}
     onError={onError}
-    // Dropzone picks empty or filled rendering from src. A placeholder File is enough for
-    // DropzoneContent to render — the real PEM bytes live in form state.
     src={fileName ? [new File([], fileName)] : undefined}
     testId={testId}
     variant={fileName ? 'primary-outline' : 'outline'}

@@ -36,7 +36,6 @@ export const DataRefreshButton = () => {
     const interval = setInterval(() => {
       const currentRequests = api.activeRequests.length;
 
-      // Track max request count
       if (currentRequests === 0) {
         stateRef.current.maxRequestCount = 0;
       } else if (currentRequests > stateRef.current.maxRequestCount) {
@@ -74,8 +73,6 @@ export const DataRefreshButton = () => {
         <Tooltip>
           <TooltipTrigger
             render={
-              // Size variants also set `[&_svg]:size-*`, so a box size from className alone would
-              // leave the glyph oversized.
               <Button
                 aria-label={isActive ? 'Pause auto refresh' : 'Start auto refresh'}
                 onClick={toggleAutorefresh}
@@ -138,7 +135,6 @@ function getRemainingRefreshSeconds(
     state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
     appGlobal.onRefresh();
   } else if (state.isActive && currentRequests > 0) {
-    // Active requests — delay the next refresh
     state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
   }
 

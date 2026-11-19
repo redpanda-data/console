@@ -26,7 +26,6 @@ export type DataType =
   | 'null';
 
 const seen = new Set();
-// Serialize object to json, handling reference loops gracefully
 export function toJson(obj: unknown, space?: string | number | undefined): string {
   seen.clear();
   try {
@@ -52,7 +51,6 @@ export function toJson(obj: unknown, space?: string | number | undefined): strin
     seen.clear();
   }
 }
-// Clone object using serialization
 
 export function clone<T>(obj: T): T {
   if (!obj) {
@@ -60,9 +58,8 @@ export function clone<T>(obj: T): T {
   }
   return JSON.parse(toJson(obj));
 }
-// Accesses all members of an object by serializing it
 
-export function touch(obj: unknown): void {
+export function touch(obj: unknown) {
   JSON.stringify(obj, (_k, v) => {
     if (typeof v === 'object') {
       return v;
@@ -165,7 +162,6 @@ function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
 function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonObject {
   const [key, ...restPath] = path;
 
-  // Validate object key
   if (typeof key !== 'string') {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid object key: ${key}`);
@@ -224,28 +220,23 @@ function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], de
  * that don't parse are left alone. `depth`/`maxDepth` bound the recursion.
  */
 export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
-  // Prevent infinite recursion
   if (depth > maxDepth || value === null || value === undefined) {
     return value;
   }
 
-  // Handle arrays - recursively parse each element
   if (Array.isArray(value)) {
     return value.map((item) => deepParseJson(item, depth + 1, maxDepth));
   }
 
-  // Handle objects - recursively parse each property
   if (typeof value === 'object') {
     return deepParseObject(value, depth, maxDepth);
   }
 
-  // Handle strings - attempt to parse as JSON
   if (typeof value === 'string') {
     const parseResult = tryParseJson(value);
     return parseResult.success ? deepParseJson(parseResult.data, depth + 1, maxDepth) : value;
   }
 
-  // For all other types (number, boolean, etc.), return as-is
   return value;
 }
 

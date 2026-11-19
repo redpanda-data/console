@@ -123,7 +123,6 @@ type EnrichedSubject = SchemaRegistrySubject & {
   detailsLoading: boolean;
 };
 
-// Faceted filters set an array of selected values; match rows whose column value is one of them.
 const multiSelectFilterFn: FilterFn<DataTableFeatures, EnrichedSubject> = (row, columnId, filterValue) => {
   const selected = filterValue as string[] | undefined;
   if (!selected?.length) {
@@ -134,7 +133,6 @@ const multiSelectFilterFn: FilterFn<DataTableFeatures, EnrichedSubject> = (row, 
 
 type DeleteTarget = { kind: 'soft' | 'permanent'; name: string };
 
-// The quick search and the soft-deleted toggle, both kept in the URL.
 function useSchemaListSearch() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
   const [showSoftDeleted, setShowSoftDeleted] = useQueryStateWithCallback<boolean>(
@@ -150,7 +148,6 @@ function useSchemaListSearch() {
   return { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted };
 }
 
-// Registry-wide data for the list (subjects, contexts, global mode and
 // compatibility); also owns the page header and the refresh action.
 function useSchemaRegistryOverview() {
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
@@ -186,7 +183,6 @@ function useSchemaRegistryOverview() {
   };
 }
 
-// The selected context (kept in the URL), the contexts to pick from, and the
 // mode and compatibility to show for the selection.
 function useSelectedSchemaContext({
   schemaRegistryContextsSupported,
@@ -205,7 +201,6 @@ function useSelectedSchemaContext({
     [contexts, schemaSubjects, schemaRegistryContextsSupported]
   );
 
-  // Reset to default if the selected context no longer exists (e.g. deleted server-side).
   // Wait until both contexts and subjects have loaded to avoid resetting during partial data.
   const contextsLoaded = contexts !== undefined;
   const subjectsLoaded = schemaSubjects !== undefined;
@@ -258,8 +253,6 @@ function useSchemaListPagination() {
   return { pagination, setPageIndex, handlePaginationChange };
 }
 
-// Faceted filter state lives in the URL, one param per column, so a filtered view
-// survives a reload and can be shared — same as the search, context and page params.
 function useSchemaListColumnFilters(setPageIndex: (pageIndex: number) => unknown) {
   const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
   const [compatibilityFilter, setCompatibilityFilter] = useQueryState(
@@ -292,7 +285,6 @@ function useSchemaListColumnFilters(setPageIndex: (pageIndex: number) => unknown
   return { columnFilters, handleColumnFiltersChange };
 }
 
-// Sorting, pagination and column filters for the subject table, all kept in the URL.
 function useSchemaListTableState() {
   const [sorting, setSorting] = useQueryState('sort', sortingParser.withDefault([]));
   const { pagination, setPageIndex, handlePaginationChange } = useSchemaListPagination();
@@ -308,9 +300,7 @@ function useSchemaListTableState() {
   };
 }
 
-// The subjects to list: the selected context, soft-deleted toggle and search
 // applied, each enriched with its details so type and compatibility can be
-// filtered list-wide.
 function useVisibleSubjects({
   schemaSubjects,
   quickSearch,
@@ -324,7 +314,6 @@ function useVisibleSubjects({
   schemaRegistryContextsSupported: boolean;
   selectedContext: string;
 }) {
-  // Parse schema ID from search query
   const schemaIdSearch = useMemo(() => {
     const trimmedValue = quickSearch.trim();
     const searchAsNum = Number(trimmedValue);
@@ -602,7 +591,6 @@ function SchemaListTableBody({
   );
 }
 
-// Confirmation dialogs for soft- and permanently deleting the subject picked in the table.
 function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteTarget | null; onClose: () => void }) {
   const deleteSchemaMutation = useDeleteSchemaSubjectMutation();
 
@@ -854,9 +842,6 @@ const SchemaList: FC = () => {
                       data-testid="schema-list-create-btn"
                       disabled={api.userData?.canCreateSchemas === false || Boolean(createFencedReason)}
                       onClick={() => {
-                        // Carry the selected context into the create page URL so the
-                        // form pre-fills it and survives a reload. "All" has no single
-                        // context to pre-fill, so it uses the plain create page.
                         if (schemaRegistryContextsSupported && selectedContext !== ALL_CONTEXT_ID) {
                           const contextName = selectedContext === DEFAULT_CONTEXT_ID ? 'default' : selectedContext;
                           appGlobal.historyPush(`/schema-registry/contexts/${encodeURIComponent(contextName)}/create`);

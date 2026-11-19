@@ -18,8 +18,8 @@ import type { Catalog } from './sql-types';
 
 // Leading whitespace, line/block comments, and opening parens — so a query
 // wrapped like `(SELECT …)` still resolves to its first keyword.
-const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/;
-const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/;
+const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/u;
+const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/u;
 
 // First meaningful keyword of a statement (used to gate which statements run).
 export function firstKeyword(stmt: string): string {
@@ -70,11 +70,11 @@ export function isCatalogChangingKeyword(stmt: string): boolean {
 
 // Strip line/block comments and single-quoted string literals so `=>` inside
 // them isn't mistaken for a catalog reference. Leaves the structural SQL intact.
-const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/g;
+const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/gu;
 
 // Oxla addresses catalog tables as `catalog=>table`. A bridge indicator is
 // only meaningful for a single Redpanda-catalog table reference.
-const BRIDGE_REF_RE = /([A-Za-z_][\w$]*)\s*=>\s*"?([a-zA-Z0-9._-]+)/g;
+const BRIDGE_REF_RE = /(?<catalog>[A-Za-z_][\w$]*)\s*=>\s*"?(?<bridgeName>[a-zA-Z0-9._-]+)/gu;
 
 // The statement's only `catalog=>table` reference, or null when it has none or several.
 function singleCatalogTableRef(stmt: string): { catalogName: string; tableName: string } | null {

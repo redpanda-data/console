@@ -54,7 +54,7 @@ const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string,
   }
   const group = row.original;
   try {
-    const re = new RegExp(filterValue, 'i');
+    const re = new RegExp(filterValue, 'iu');
     return re.test(group.groupId) || re.test(group.protocol);
   } catch {
     const term = filterValue.toLowerCase();

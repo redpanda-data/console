@@ -51,7 +51,7 @@ const DURATION_SUBSECOND_UNITS: Record<string, { perSecond: number; nsPerUnit: n
   ms: { perSecond: 1000, nsPerUnit: 1_000_000 },
 };
 const DURATION_SECOND_UNITS: Record<string, number> = { s: 1, m: 60, h: 3600 };
-const DURATION_INPUT_REGEX = /^(\d+)(ns|us|ms|s|m|h)$/;
+const DURATION_INPUT_REGEX = /^(?<value>\d+)(?<unit>ns|us|ms|s|m|h)$/u;
 
 /**
  * Parse a user-entered duration string ("10s", "5m", "100ms", "1h") into a

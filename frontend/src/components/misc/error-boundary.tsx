@@ -21,14 +21,6 @@ import { toJson } from '../../utils/json-utils';
 import { showToast } from '../../utils/toast.utils';
 import { navigatorClipboardErrorHandler, objToKv } from '../../utils/tsx-utils';
 
-// background       rgb(35, 35, 35)
-// div              rgba(206, 17, 38, 0.1)
-// title            rgb(232, 59, 70)
-// foreground
-//    - main        rgb(252, 207, 207)
-//    - highligh    rgb(204, 102, 102)
-//    - secondary   rgb(135, 142, 145)
-
 type InfoItem = {
   name: string;
   value: string;
@@ -68,11 +60,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       infoItems,
     });
 
-    // Decode stack trace asynchronously
     if (error?.stack) {
       StackTrace.fromError(error)
         .then((frames) => {
-          // Decode Success
           this.setState((prevState) => {
             const newInfoItems = [...prevState.infoItems];
             newInfoItems[decodedStackIndex] = {
@@ -83,7 +73,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           });
         })
         .catch((err) => {
-          // Decode Error
           this.setState((prevState) => {
             const newInfoItems = [...prevState.infoItems];
             newInfoItems[decodedStackIndex] = {
@@ -193,7 +182,7 @@ function InfoItemDisplay({ data }: { data: InfoItem }) {
   let content: React.ReactNode = data.value;
 
   if (typeof content === 'string') {
-    content = content.replace(/\n\s*/g, '\n').trim();
+    content = content.replace(/\n\s*/gu, '\n').trim();
   }
 
   return (

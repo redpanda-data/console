@@ -34,7 +34,7 @@ import { buildDefaultFormValues } from '../mappers/dataplane';
  * Create a mock shadow link matching the fixture in shadowlink-edit-page.test.tsx
  * (SCRAM auth, '*' topic filter, empty ACLs).
  */
-const createMockShadowLink = (): ShadowLink =>
+const createMockShadowLink = () =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',
     uid: 'test-uid-123',

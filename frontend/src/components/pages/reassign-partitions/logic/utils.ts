@@ -59,8 +59,6 @@ function resolveTopicPartitions(
     return; // at least one selected partition not available
   }
 
-  // we've checked that there can't be any falsy partitions
-  // so we assert that 'relevantPartitions' is the right type
   return { topic, partitions: relevantPartitions as Partition[] };
 }
 
@@ -71,9 +69,6 @@ export function computeMovedReplicas(
   apiTopicPartitions: Map<string, Partition[] | null>
 ): TopicWithMoves[] {
   const ar: TopicWithMoves[] = [];
-  // For each partition in each topic:
-  // - get Partition objects
-  // - compute number of moved replicas
   for (const [topicName, allPartitions] of apiTopicPartitions) {
     const topicWithMoves = computeTopicMoves(topicName, allPartitions, partitionSelection, assignments, apiTopics);
     if (topicWithMoves) {
@@ -110,7 +105,6 @@ function computeTopicMoves(
   };
 }
 
-// Count how many replicas will be moved
 function selectedPartitionsWithMoves(
   allPartitions: Partition[],
   selectedIds: number[],
@@ -141,7 +135,6 @@ function partitionWithMoves(partition: Partition, newBrokers: number[] | null | 
 function replicaMoves(oldBrokers: number[], newBrokers: number[]) {
   const changedLeader = oldBrokers[0] !== newBrokers[0];
   return {
-    // find those brokers that are completely new (did not previously host a replica of this partition)
     numAddedBrokers: newBrokers.except(oldBrokers).length,
     numRemovedBrokers: oldBrokers.except(newBrokers).length,
     changedLeader,
@@ -156,7 +149,6 @@ function replicaMoves(oldBrokers: number[], newBrokers: number[]) {
 export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
   const result = clone(topicAssignments);
 
-  // Remove partition reassignments that have no effect
   for (const t of Object.keys(result)) {
     const curTopicPartitions = apiData.topicPartitions.get(t);
     if (curTopicPartitions) {
@@ -178,7 +170,6 @@ function removeRedundantPartitions(result: TopicAssignments, t: string, curTopic
   );
 
   if (partitionIdsToRemove.length === partitionIds.length) {
-    // All partition reassignments for this topic have are redundant, remove the whole topic
     delete result[t];
     return;
   }
@@ -201,7 +192,6 @@ function keepsReplicas(brokersBefore: number[] | undefined, brokersAfter: Broker
 export function topicAssignmentsToReassignmentRequest(
   topicAssignments: TopicAssignments
 ): PartitionReassignmentRequest {
-  // Construct reassignment request from topicAssignments
   const topics: { topicName: string; partitions: { partitionId: number; replicas: number[] | null }[] }[] = [];
   for (const t in topicAssignments) {
     if (Object.hasOwn(topicAssignments, t)) {

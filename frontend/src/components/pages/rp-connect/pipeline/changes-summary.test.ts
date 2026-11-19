@@ -88,7 +88,7 @@ describe('summarizeComponentChanges', () => {
   it('never reports a section container', () => {
     const changes = summarize(config({ input: 'generate' }), config({ input: 'kafka_franz' }));
 
-    expect(changes.every((c) => !/^(input|output|pipeline)$/.test(c.id))).toBe(true);
+    expect(changes.every((c) => !/^(?:input|output|pipeline)$/u.test(c.id))).toBe(true);
   });
 
   it('says nothing about a document it cannot parse, rather than throwing', () => {
@@ -171,19 +171,19 @@ describe('changesImpactMessage', () => {
   it('warns that applying to a running pipeline restarts it', () => {
     for (const state of [Pipeline_State.RUNNING, Pipeline_State.STARTING]) {
       const message = changesImpactMessage(state);
-      expect(message).toMatch(/not live/i);
-      expect(message).toMatch(/restarts/i);
+      expect(message).toMatch(/not live/iu);
+      expect(message).toMatch(/restarts/iu);
     }
   });
 
   it('says a draft edit is unsaved rather than unapplied', () => {
-    expect(changesImpactMessage(Pipeline_State.DRAFT)).toMatch(/aren't saved to the draft/i);
+    expect(changesImpactMessage(Pipeline_State.DRAFT)).toMatch(/aren't saved to the draft/iu);
   });
 
   it('does not talk about restarts for a stopped pipeline', () => {
     const message = changesImpactMessage(Pipeline_State.STOPPED);
-    expect(message).toMatch(/not saved/i);
-    expect(message).not.toMatch(/restart/i);
+    expect(message).toMatch(/not saved/iu);
+    expect(message).not.toMatch(/restart/iu);
   });
 });
 
@@ -206,7 +206,7 @@ describe('changesImpactTone', () => {
 describe('the NO_CHANGES_COPY', () => {
   // The lane covers both halves of a save, so the empty state has to claim both are unchanged.
   it('accounts for the settings as well as the configuration', () => {
-    expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/i);
-    expect(NO_CHANGES_COPY.body).toMatch(/settings/i);
+    expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/iu);
+    expect(NO_CHANGES_COPY.body).toMatch(/settings/iu);
   });
 });

@@ -36,7 +36,8 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionStatus }) => {
@@ -70,7 +71,7 @@ export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionS
   }
 };
 
-class TransformsList extends PageComponent {
+class TransformsList extends pageWithContent(() => <TransformsListContent />) {
   initPage(p: PageInitHelper): void {
     p.addBreadcrumb('Data Transforms', '/transforms');
 
@@ -79,11 +80,7 @@ class TransformsList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
-  }
-
-  render() {
-    return <TransformsListContent />;
+    this.transformsApi.refreshTransforms(force);
   }
 }
 
@@ -185,7 +182,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
 
 const compileQuickSearch = (quickSearch: string): RegExp | null => {
   try {
-    return new RegExp(quickSearch, 'i');
+    return new RegExp(quickSearch, 'iu');
   } catch {
     return null;
   }

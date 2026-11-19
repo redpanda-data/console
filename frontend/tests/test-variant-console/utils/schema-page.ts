@@ -1,12 +1,12 @@
 import type { Locator, Page } from '../../shared/e2e';
 import { appURL, expect } from '../../shared/e2e';
 
-const SCHEMA_REGISTRY_HEADING = /schema registry/i;
-const CREATE_SCHEMA_HEADING = /create schema/i;
-const EDIT_COMPATIBILITY_HEADING = /edit.*compatibility/i;
-const SUBJECT_DETAILS_URL = /\/schema-registry\/subjects\/.+/;
-const REFERENCE_NAME_INPUT = /schema-create-reference-name-input-\d+/;
-const RECOVER_CONFIRM_BUTTON = /confirm|recover|yes/i;
+const SCHEMA_REGISTRY_HEADING = /schema registry/iu;
+const CREATE_SCHEMA_HEADING = /create schema/iu;
+const EDIT_COMPATIBILITY_HEADING = /edit.*compatibility/iu;
+const SUBJECT_DETAILS_URL = /\/schema-registry\/subjects\/.+/u;
+const REFERENCE_NAME_INPUT = /schema-create-reference-name-input-\d+/u;
+const RECOVER_CONFIRM_BUTTON = /confirm|recover|yes/iu;
 
 /**
  * Helper function to select an option from a custom Select component (react-select based)
@@ -236,7 +236,7 @@ export class SchemaPage {
 
   async selectCompatibilityMode(mode: string) {
     const radioGroup = this.page.getByTestId('edit-compatibility-mode-radio');
-    await radioGroup.getByRole('radio', { name: new RegExp(mode, 'i') }).click();
+    await radioGroup.getByRole('radio', { name: new RegExp(mode, 'iu') }).click();
   }
 
   async saveCompatibility() {

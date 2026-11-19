@@ -68,7 +68,6 @@ export const createAllowAllRules = (schemaRegistryEnabled: boolean, firstId: num
 export const hasConfiguredOperation = (rules: Rule[]) =>
   rules.some((rule) => Object.values(rule.operations).some((operation) => operation !== OperationTypeNotSet));
 
-// A resource type limited to one rule stays selectable on the rule that already uses it.
 const isSingleRuleTypeDisabled = (rules: Rule[], ruleId: number, resourceType: ResourceType, available: boolean) => {
   const currentRule = rules.find((rule) => rule.id === ruleId);
   if (!currentRule || currentRule.resourceType === resourceType) {

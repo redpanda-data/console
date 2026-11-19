@@ -45,7 +45,7 @@ const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]): strin
  * With no controller leader there's no cluster fence to read, but a broker's own blocking copy still
  * rejects writes. Until every broker answers, the last status read still counts.
  */
-const describeOwnCopies = (copies: BrokerOwnCopy[], lastRead: FencePhase): string => {
+const describeOwnCopies = (copies: BrokerOwnCopy[], lastRead: FencePhase) => {
   const reporting = copies.flatMap(({ nodeId, phase }) => {
     if (!phase) {
       return [];
@@ -102,8 +102,6 @@ export const ClusterFenceBanner = () => {
         className="my-4"
         data-phase={known ? phase : 'no-leader'}
         icon={unfencing ? <InfoIcon /> : <TriangleAlertIcon />}
-        // A region, not an alert: it stays on screen while the fence moves, and an alert would be
-        // announced again on every change.
         role="region"
         variant={unfencing ? 'informative' : 'warning'}
       >
@@ -112,7 +110,6 @@ export const ClusterFenceBanner = () => {
           <p>{known ? describeBanner(summary, brokers) : describeOwnCopies(ownCopies, phase)}</p>
         </AlertDescription>
         {known ? (
-          // Outside AlertDescription, which restyles every descendant anchor as an inline link.
           <div className="col-start-2 mt-2">
             <Button
               render={<Link search={{ tab: 'source' }} to="/shadowlinks" />}

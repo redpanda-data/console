@@ -67,7 +67,6 @@ export type SchemaRegistryEditSectionProps = {
 export const SchemaRegistryEditSection = ({ originalMode }: SchemaRegistryEditSectionProps) => {
   // Requires Redpanda >= 26.2.0. Fails closed: on older or unknown backends
   // the edit page keeps the legacy switch / read-only card, which cannot
-  // touch an existing api-mode configuration.
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
   if (!showRedesigned) {

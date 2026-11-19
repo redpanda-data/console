@@ -28,9 +28,7 @@ function createFakeLogSearch() {
     searchRequest: null as MessageSearchRequest | null,
     startSearch: rs.fn((request: MessageSearchRequest) => {
       search.searchRequest = request;
-      return new Promise<TopicMessage[]>(() => {
-        // stays open until stopped
-      });
+      return new Promise<TopicMessage[]>(() => {});
     }),
     stopSearch: rs.fn(),
   };
@@ -50,7 +48,6 @@ function lastLogFilter() {
 const initialState = useTransformsStore.getState();
 const initialRefresh = appGlobal.onRefresh;
 afterEach(() => {
-  // The page is still mounted and subscribed when this runs.
   act(() => {
     useTransformsStore.setState(initialState, true);
   });
@@ -58,7 +55,6 @@ afterEach(() => {
   logSearches.length = 0;
 });
 
-// Two running partitions whose lag order is the reverse of their id order.
 function renderTransformWithPartitionLags() {
   const transform = create(TransformMetadataSchema, {
     name: 'example',

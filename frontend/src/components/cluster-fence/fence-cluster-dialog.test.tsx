@@ -14,9 +14,12 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSyncExternalStore } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
+import { FenceClusterDialog } from './fence-cluster-dialog';
 import type { ShadowLinkReader } from './shadow-link-topology';
 
 const mutate = rs.fn();
@@ -32,11 +35,6 @@ rs.mock('react-query/api/cluster-fence', () => {
 });
 rs.mock('react-query/api/shadowlink', () => ({ useListShadowLinksQuery: rs.fn() }));
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-
-import { FenceClusterDialog } from './fence-cluster-dialog';
 
 const mockOwnLinks = (names: string[] | 'loading') =>
   rs

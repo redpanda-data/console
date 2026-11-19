@@ -16,6 +16,7 @@ import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
 import { createStore as createZustandStore } from 'zustand/vanilla';
 
+import { RolesTab } from './roles-tab';
 import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
 
 const NuqsWrapper = ({ children }: { children: ReactNode }) => (
@@ -37,7 +38,6 @@ rs.mock('@tanstack/react-router', () => {
   return {
     ...actual,
     Link: MockLink,
-    // Real navigate() returns a promise that settles once the route commits.
     useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
@@ -141,8 +141,6 @@ rs.mock('react-query/api/security', () => ({
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
   useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
-
-import { RolesTab } from './roles-tab';
 
 describe('the RolesTab role navigation', () => {
   beforeEach(() => {

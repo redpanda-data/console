@@ -12,9 +12,6 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
-
-const routeApi = getRouteApi('/secrets/$id/edit');
-
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
@@ -41,6 +38,8 @@ import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
 import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
+
+const routeApi = getRouteApi('/secrets/$id/edit');
 
 /** The console-managed `owner: console` label is hidden from the form. */
 const toFormValues = (secret: Secret): SecretUpdateFormValues => ({
@@ -93,7 +92,6 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
     try {
       await updateSecret({ request });
       toast.success('Secret updated');
-      // Handled here so a navigation failure is not reported as a failed update.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
         toast.error('Failed to navigate', { description: String(navigationError) });
       });

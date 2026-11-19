@@ -108,7 +108,7 @@ export const addSchemaVersion = async (
     // Click add version button
     await page.getByRole('button', { name: 'Add version' }).click();
     await expect(page).toHaveURL(
-      new RegExp(`/schema-registry/subjects/${encodeURIComponent(subjectName)}/add-version`)
+      new RegExp(`/schema-registry/subjects/${encodeURIComponent(subjectName)}/add-version`, 'u')
     );
 
     // Update schema text in Monaco editor

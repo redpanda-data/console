@@ -8,6 +8,12 @@ type ErrorBoundaryState = {
   hasError: boolean;
 };
 
+function reportBoundaryError(error: Error, errorInfo: ErrorInfo): void {
+  // Log the error to an error reporting service, if needed
+  // biome-ignore lint/suspicious/noConsole: error boundary logging for debugging component errors
+  console.error('NullFallbackBoundary caught an error', error, errorInfo);
+}
+
 class NullFallbackBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
@@ -19,11 +25,7 @@ class NullFallbackBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log the error to an error reporting service, if needed
-    // biome-ignore lint/suspicious/noConsole: error boundary logging for debugging component errors
-    console.error('NullFallbackBoundary caught an error', error, errorInfo);
-  }
+  componentDidCatch = reportBoundaryError;
 
   render(): ReactNode {
     if (this.state.hasError) {

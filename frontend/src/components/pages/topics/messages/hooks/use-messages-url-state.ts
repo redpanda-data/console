@@ -23,11 +23,9 @@ import { parseFilterInput, sameFieldTokens, tokenQueryText } from '../utils/filt
 
 const DEFAULT_MAX_RESULTS = 50;
 
-// Comma-separated `field op value` texts (`key:abc,offset>5`). Commas inside
-// values are escaped so splitting stays unambiguous. JS filters are
 // intentionally NOT persisted in the URL — code doesn't belong in share links.
-const escapeToken = (text: string) => text.replace(/%/g, '%25').replace(/,/g, '%2C');
-const unescapeToken = (text: string) => text.replace(/%2C/g, ',').replace(/%25/g, '%');
+const escapeToken = (text: string) => text.replace(/%/gu, '%25').replace(/,/gu, '%2C');
+const unescapeToken = (text: string) => text.replace(/%2C/gu, ',').replace(/%25/gu, '%');
 
 export const fieldTokensParser = createParser<FieldFilterToken[]>({
   parse: (value) => {
@@ -98,7 +96,6 @@ function useReadScopeParams(topicName: string) {
       onUpdate: (val) => setSearchParams(topicName, { startOffset: val }),
       getDefaultValue: () => {
         const stored = getSearchParams(topicName)?.startOffset ?? PartitionOffsetOrigin.EndMinusResults;
-        // Live tail is no longer a start-offset mode; stored End means "was live"
         return stored === PartitionOffsetOrigin.End ? PartitionOffsetOrigin.EndMinusResults : stored;
       },
     },
@@ -131,7 +128,6 @@ function useReadScopeParams(topicName: string) {
 function useFilterParams() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
-  // Committed filter chips (`key:abc`, `offset>5`, …). JS filter chips are excluded.
   const [fieldTokens, setFieldTokens] = useQueryState('f', fieldTokensParser.withDefault([]));
 
   return { quickSearch, setQuickSearch, fieldTokens, setFieldTokens };
@@ -220,7 +216,6 @@ function useStreamModeParams(topicName: string) {
 
   const [liveTail, setLiveTail] = useQueryState('live', parseAsBoolean.withDefault(false));
 
-  // Selected message (`partition-offset`), so a reload or shared link reopens the detail
   const [selectedKey, setSelectedKey] = useQueryState('selected', parseAsString);
 
   return { continuousMode, setContinuousMode, liveTail, setLiveTail, selectedKey, setSelectedKey };
@@ -248,10 +243,8 @@ function useReadScopeMode(
   const readScopeMode = readScopeModeFromOffset(startOffset);
 
   // A deep link (`?o=-4` with no `t`) or a topic left over from the legacy tab (which clears
-  // startTimestamp when switching away) can land here already in timestamp mode with no
   // timestamp set. The picker itself only seeds Date.now() once mounted, which requires the
   // read-scope popover to be open — so cover the gap here too, same default as legacy's
-  // mode-change handler used.
   useEffect(() => {
     if (readScopeMode === 'timestamp' && startTimestamp < 0) {
       setStartTimestamp(Date.now());
@@ -263,8 +256,6 @@ function useReadScopeMode(
       setStartOffset(offsetForReadScopeMode(mode, customOffset));
       setPageIndex(0);
       // Mirrors legacy's offset-origin select handler: seed "now" switching into timestamp
-      // mode (unless a real value is already set), and drop it switching away so a later
-      // return to timestamp mode starts fresh instead of an ancient sticky value.
       if (mode === 'timestamp') {
         if (startTimestamp < 0) {
           setStartTimestamp(Date.now());

@@ -45,9 +45,6 @@ import {
 import { CollapsibleSectionCard } from '../collapsible-section-card';
 import type { FormValues } from '../model';
 
-// Render labels via children to bypass Base UI's `<Select.Value>` auto-
-// resolution, which falls back to the raw numeric enum until the popup is
-// first opened.
 const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
   value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
 const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
@@ -82,7 +79,6 @@ const matchesAllAcls = (filter: AclFilterValues | undefined) =>
   filter.permissionType === ACLPermissionType.ACL_PERMISSION_TYPE_ANY &&
   isBlank(filter.host);
 
-// ACL Filter Alert Component
 const ACLFilterAlert = ({ index }: { index: number }) => {
   const { control } = useFormContext<FormValues>();
   const filter = useWatch({ control, name: `aclFilters.${index}` });
@@ -112,13 +108,11 @@ export const AclsStep = () => {
   const handleModeChange = (mode: string) => {
     setValue('aclsMode', mode as 'all' | 'specify');
 
-    // Auto-expand when switching to specify mode
     if (mode === 'specify') {
       setIsOpen(true);
     }
 
     if (mode === 'specify' && fields.length === 0) {
-      // Add an empty filter when switching to specify mode
       append(allAclsFilter);
     }
   };

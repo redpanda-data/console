@@ -5,7 +5,6 @@ import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema
 const RECENTS_KEY = 'rpcn-recent-components';
 const MAX_RECENTS = 6;
 
-// Curated "likely next" defaults per slot kind, shown before the user types. Names absent from the catalog are dropped.
 const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
   input: ['kafka_franz', 'redpanda', 'generate', 'http_client', 'file'],
   output: ['kafka_franz', 'redpanda', 'http_client', 'drop', 'stdout'],
@@ -14,7 +13,6 @@ const SUGGESTED_BY_TYPE: Partial<Record<ConnectComponentType, string[]>> = {
   rate_limit: ['local'],
 };
 
-// Everyday components sorted ahead of the long tail when browsing.
 const COMMON_COMPONENTS = new Set([
   ...Object.values(SUGGESTED_BY_TYPE).flat(),
   'kafka',
@@ -38,7 +36,6 @@ function isDemoted(status: ComponentStatus): boolean {
   return status === ComponentStatus.EXPERIMENTAL;
 }
 
-// Tiebreaker order (after relevance, primary when browsing): stable before demoted, common before long tail, then name.
 export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): number {
   const demoted = (isDemoted(a.status) ? 1 : 0) - (isDemoted(b.status) ? 1 : 0);
   if (demoted !== 0) {
@@ -66,7 +63,7 @@ export function readRecents(): RecentEntry[] {
   }
 }
 
-export function pushRecent(entry: RecentEntry): void {
+export function pushRecent(entry: RecentEntry) {
   if (typeof window === 'undefined') {
     return;
   }
@@ -76,12 +73,9 @@ export function pushRecent(entry: RecentEntry): void {
       MAX_RECENTS
     );
     window.localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
-  } catch {
-    // Best-effort; ignore storage failures.
-  }
+  } catch {}
 }
 
-// Search synonyms: a query matching an alias key surfaces every component whose name contains a
 // listed fragment (e.g. "queue" finds kafka/nats/redis). Keep entries lowercase.
 export const COMPONENT_ALIASES: Record<string, string[]> = {
   queue: ['kafka', 'nats', 'redis', 'amqp', 'sqs', 'pubsub', 'nsq', 'mqtt'],
@@ -115,9 +109,7 @@ export const COMPONENT_ALIASES: Record<string, string[]> = {
   json: ['mapping', 'bloblang', 'json'],
 };
 
-// Does `name` contain `fragment` on `_`/string boundaries? Matches `kafka` in `kafka_franz` and
-// `rate_limit` whole, but not a fragment buried mid-token (`log` in `catalog`) — names are snake_case.
-function nameContainsToken(name: string, fragment: string): boolean {
+function nameContainsToken(name: string, fragment: string) {
   let from = 0;
   for (;;) {
     const at = name.indexOf(fragment, from);
@@ -131,7 +123,6 @@ function nameContainsToken(name: string, fragment: string): boolean {
   }
 }
 
-// Is the `length`-char match at `at` bounded by `_` or a string edge on both sides?
 function isTokenBoundedAt(name: string, at: number, length: number): boolean {
   const end = at + length;
   const boundedBefore = at === 0 || name[at - 1] === '_';
@@ -139,7 +130,6 @@ function isTokenBoundedAt(name: string, at: number, length: number): boolean {
   return boundedBefore && boundedAfter;
 }
 
-// Every alias key whose fragments the name contains as a token ("queue" matches `kafka_franz`).
 export function aliasTermsForName(name: string): string[] {
   const lower = name.toLowerCase();
   const terms: string[] = [];
@@ -151,7 +141,6 @@ export function aliasTermsForName(name: string): string[] {
   return terms;
 }
 
-// Lowercased searchable text (name + aliases + summary + description + categories) for substring matching.
 export function searchableText(component: ConnectComponentSpec): string {
   return [
     component.name,
@@ -164,7 +153,6 @@ export function searchableText(component: ConnectComponentSpec): string {
     .toLowerCase();
 }
 
-// Rank a match: exact name > prefix > substring > other text. Lower is better; -1 = no match.
 export function matchRank(component: ConnectComponentSpec, query: string, text: string): number {
   const name = component.name.toLowerCase();
   if (name === query) {
@@ -179,20 +167,18 @@ export function matchRank(component: ConnectComponentSpec, query: string, text: 
   return text.includes(query) ? 3 : -1;
 }
 
-const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/;
+const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/u;
 
-// Humanize + pluralize snake_case labels, joined with "or": ['cache', 'rate_limit'] → 'caches or rate limits'.
 function pluralTypeLabel(labels: string[] | undefined, emptyLabel: string): string {
   if (!labels || labels.length === 0) {
     return emptyLabel;
   }
-  return labels.map((label) => `${label.replace(/_/g, ' ')}s`).join(' or ');
+  return labels.map((label) => `${label.replace(/_/gu, ' ')}s`).join(' or ');
 }
 
-// Humanized labels prefixed with "a"/"an", joined with "or": ['cache', 'input'] → 'a cache or an input'.
 function withArticles(labels: string[]): string {
   const labeled = labels.map((label) => {
-    const humanized = label.replace(/_/g, ' ');
+    const humanized = label.replace(/_/gu, ' ');
     return `${STARTS_WITH_VOWEL_REGEX.test(humanized) ? 'an' : 'a'} ${humanized}`;
   });
   if (labeled.length <= 1) {
@@ -201,12 +187,11 @@ function withArticles(labels: string[]): string {
   return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
 }
 
-// Empty-state copy; a type-locked miss that exists as another type is called out ("it exists as an input").
 export function buildEmptyMessage(
   query: string,
   allowedTypes?: ConnectComponentType[],
   outOfScopeTypes: ConnectComponentType[] = []
-): string {
+) {
   if (!query) {
     return 'No components available.';
   }
@@ -216,7 +201,6 @@ export function buildEmptyMessage(
   return `No ${pluralTypeLabel(allowedTypes, 'components')} match “${query}” — it exists as ${withArticles(outOfScopeTypes)}.`;
 }
 
-// "Suggested" tab: curated names for the slot's allowed types, resolved against the catalog, minus recents.
 export function computeSuggested(
   allowedTypes: ConnectComponentType[] | undefined,
   byName: Map<string, ConnectComponentSpec>,

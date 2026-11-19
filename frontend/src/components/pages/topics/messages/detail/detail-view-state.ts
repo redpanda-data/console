@@ -51,11 +51,9 @@ export const readDetailViewState = (): DetailViewState => {
 };
 
 /** Read-modify-write so independent writers (mode, widths, sections) don't clobber each other. */
-export const patchDetailViewState = (patch: Partial<DetailViewState>): void => {
+export const patchDetailViewState = (patch: Partial<DetailViewState>) => {
   try {
     const next = { ...readDetailViewState(), ...patch };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // storage unavailable (private mode) — preferences just won't persist
-  }
+  } catch {}
 };

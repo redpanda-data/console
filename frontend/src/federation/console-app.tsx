@@ -11,7 +11,6 @@
 
 // Array prototype extensions (must be imported early)
 import '../utils/array-extensions';
-// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
 import {
@@ -94,7 +93,6 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
         throw error;
       }
 
-      // Use TokenManager for deduplicated refresh
       try {
         await tokenManager.refresh();
       } catch {
@@ -103,7 +101,6 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
 
       // Retry the request with refreshed token.
       // Header mutation is necessary because the original request was created
-      // with the old token by addBearerTokenInterceptor on the first attempt.
       if (config.jwt) {
         request.header.set('Authorization', `Bearer ${config.jwt}`);
       }
@@ -203,21 +200,16 @@ function ConsoleAppInner({
   featureFlags,
   onOpenCluster,
 }: ConsoleAppProps) {
-  // Kept out of setup(), which would tear Console down whenever the host passed a new callback.
   useEffect(() => {
     useClusterFenceStore.getState().setOpenCluster(onOpenCluster ?? null);
   }, [onOpenCluster]);
 
-  // Create stable QueryClient instance
   const queryClient = useMemo(() => createFederatedQueryClient(), []);
 
-  // Create stable TokenManager instance with initial getAccessToken
   const tokenManager = useFederatedTokenManager(getAccessToken);
 
-  // Create token refresh interceptor using TokenManager
   const tokenRefreshInterceptor = useMemo(() => createTokenRefreshInterceptor(tokenManager), [tokenManager]);
 
-  // Initialize Console on mount and cleanup on unmount
   const initialization = useFederatedInitialization({
     tokenManager,
     queryClient,
@@ -229,7 +221,6 @@ function ConsoleAppInner({
     onError,
   });
 
-  // Create transport with token interceptors (including refresh on 401)
   const dataplaneTransport = useMemo(
     () =>
       createConnectTransport({
@@ -242,10 +233,8 @@ function ConsoleAppInner({
     [configOverrides?.urlOverride?.grpc, tokenRefreshInterceptor]
   );
 
-  // Create memory history router (host controls browser URL)
   const router = useFederatedRouter(queryClient, dataplaneTransport, initialPath);
 
-  // Subscribe to route changes and notify host (with loop prevention)
   useHostNavigation(router, initialPath, initialization.isInitialized, onRouteChange, navigateTo);
 
   return (
@@ -342,7 +331,6 @@ function useFederatedInitialization({
         return;
       }
 
-      // Setup Console config with overrides
       setupTeardown = setup({
         clusterId,
         setSidebarItems: (items) => hostCallbacks.current.onSidebarItemsChange?.(items),
@@ -365,7 +353,6 @@ function useFederatedInitialization({
 
     const uiSettingsTeardown = installUISettingsSideEffects();
 
-    // Cleanup on unmount
     return () => {
       cancelled = true;
       uiSettingsTeardown();
@@ -381,9 +368,6 @@ function useFederatedInitialization({
 
 function useFederatedRouter(queryClient: QueryClient, dataplaneTransport: Transport, initialPath: string) {
   // Capture initialPath on first render only — subsequent navigation is handled
-  // by the navigateTo prop via router.navigate(). Including initialPath in the
-  // useMemo deps would recreate the entire router on every host navigation,
-  // remounting all route components and retriggering all data fetches.
 
   const initialPathRef = useRef(initialPath);
   const router = useMemo(() => {
@@ -420,19 +404,15 @@ function useHostNavigation(
       return;
     }
 
-    // onResolved doesn't say whether the navigation replaced its history entry, so watch the
     // history: a replace (like a page writing its default tab) must replace on the host too, or
-    // Back returns to the URL the page then rewrites, and the user can't leave it.
     let replaced = false;
     const unsubscribeHistory = router.history.subscribe(({ action }) => {
       replaced = action.type === 'REPLACE';
     });
 
     const unsubscribe = router.subscribe('onResolved', ({ toLocation }) => {
-      // Include search params so tab state and filters sync to Cloud UI's URL
       const newPath = toLocation.pathname + (toLocation.searchStr || '');
 
-      // Skip if path hasn't changed (prevents loops)
       if (newPath === lastNotifiedPathRef.current) {
         return;
       }
@@ -453,10 +433,7 @@ function useHostNavigation(
 
     const currentPath = router.state.location.pathname + (router.state.location.searchStr || '');
     if (navigateTo !== currentPath) {
-      // Update ref to prevent echo back to host
       lastNotifiedPathRef.current = navigateTo;
-      // As an href, so the router parses the search the way it writes it: the host's router quotes
-      // values that would read as JSON, such as a user named `1001`.
       router.navigate({ href: navigateTo }).catch((error: unknown) => {
         toast.error('Failed to navigate', { description: String(error) });
       });

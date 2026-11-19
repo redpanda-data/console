@@ -336,13 +336,19 @@ const mergeByComponentType = (
 
 function convertRequiredFieldSentinels(yamlString: string): string {
   // With inline comment: `key: __REQUIRED_FIELD__ # comment` → `# key: comment`
-  let result = yamlString.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(.+)$/gm, '$1# $2: $3');
+  let result = yamlString.replace(
+    /^(?<indent>\s*)(?<key>[\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(?<description>.+)$/gmu,
+    '$1# $2: $3'
+  );
   // Without comment: `key: __REQUIRED_FIELD__` → `# key: Required`
-  result = result.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gm, '$1# $2: Required');
+  result = result.replace(
+    /^(?<indent>\s*)(?<key>[\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gmu,
+    '$1# $2: Required'
+  );
   return result;
 }
 
-const keyMatchRegex = /^([^:#\n]+):/;
+const keyMatchRegex = /^(?<key>[^:#\n]+):/u;
 
 /** The key of an unindented `key:` line, if the line is one. */
 const rootKeyOf = (line: string): string | undefined => {
@@ -795,7 +801,7 @@ function stripCommentedKeys(yaml: string, keys: string[], componentPath: string[
   }
 
   const keyPattern = keys.map(escapeRegExp).join('|');
-  const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`);
+  const commentRegex = new RegExp(`^\\s*#\\s*(?:${keyPattern}):.*$`, 'u');
   return lines.filter((line, i) => i <= block.start || i >= block.end || !commentRegex.test(line)).join('\n');
 }
 
@@ -817,7 +823,7 @@ function findComponentBlock(lines: string[], componentPath: string[]): LineBlock
 
 function findKeyLine(lines: string[], parent: LineBlock, depth: number, segment: string): number {
   const indent = depth * 2;
-  const keyRegex = new RegExp(`^ {${indent}}${escapeRegExp(segment)}:`);
+  const keyRegex = new RegExp(`^ {${indent}}${escapeRegExp(segment)}:`, 'u');
   for (let i = parent.start + 1; i < parent.end; i++) {
     if (keyRegex.test(lines[i])) {
       return i;

@@ -13,7 +13,12 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps, useState } from 'react';
-import { act, screen } from 'test-utils';
+import { useApiStore } from 'state/backend-api';
+import type { GroupDescription } from 'state/rest-interfaces';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+import { act, renderWithFileRoutes, screen } from 'test-utils';
+
+import GroupDetails from './group-details';
 
 const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = rs.hoisted(() => ({
   refreshConsumerGroupMock: rs.fn(),
@@ -57,18 +62,9 @@ rs.mock('config', () => {
   };
 });
 
-import { useApiStore } from 'state/backend-api';
-import type { GroupDescription } from 'state/rest-interfaces';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes } from 'test-utils';
-
-import GroupDetails from './group-details';
-
 const TOPIC = 'test-topic';
 const GROUP_ID = 'test-group';
 
-// Backend now returns all partitions in partitionOffsets.
-// Partition 0: committed offset 5. Partitions 1 and 2: no committed offset (groupOffset: null).
 const mockGroup: GroupDescription = {
   groupId: GROUP_ID,
   groupType: 'classic',
@@ -197,10 +193,6 @@ describe('the GroupDetails - unconsumed partitions', () => {
   });
 
   afterEach(() => {
-    // This afterEach runs before the harness's RTL cleanup() (test hooks are
-    // LIFO), so the GroupDetails tree is still mounted and its PageComponent
-    // store subscription fires forceUpdate() on this reset. Wrap the store
-    // mutation in act() so that re-render is flushed inside act().
     act(() => {
       useApiStore.setState({ consumerGroups: new Map(), consumerGroupAcls: new Map() });
     });
@@ -209,14 +201,10 @@ describe('the GroupDetails - unconsumed partitions', () => {
   test('edit button is enabled for consumed partition and disabled for unconsumed partitions', async () => {
     renderGroupDetails();
 
-    // findBy* polls inside act(), flushing the class component's async
-    // refreshData updates and the GroupState Popover's deferred effects.
     expect(await screen.findByTestId('partition-edit-0')).toBeInTheDocument();
 
-    // Partition 0 has a committed offset → edit button renders as <button>
     expect(screen.getByTestId('partition-edit-0').tagName).toBe('BUTTON');
 
-    // Partitions 1 and 2 have no committed offset → edit button renders as disabled <span>
     expect(screen.getByTestId('partition-edit-1').tagName).toBe('SPAN');
     expect(screen.getByTestId('partition-edit-2').tagName).toBe('SPAN');
   });
@@ -224,11 +212,8 @@ describe('the GroupDetails - unconsumed partitions', () => {
   test('unconsumed partitions render "—" for group offset and lag', async () => {
     renderGroupDetails();
 
-    // findBy* polls inside act(), flushing the class component's async
-    // refreshData updates and the GroupState Popover's deferred effects.
     expect(await screen.findByTestId('partition-edit-1')).toBeInTheDocument();
 
-    // Each unconsumed partition (1 and 2) shows "—" for both group offset and lag = 4 dashes minimum
     const dashes = screen.getAllByText('—');
     expect(dashes.length).toBeGreaterThanOrEqual(4);
   });

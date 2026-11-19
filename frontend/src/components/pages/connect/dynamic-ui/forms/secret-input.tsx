@@ -12,7 +12,6 @@ export type SecretInputProps = {
 };
 
 const EditButton = ({ onClick }: { onClick: () => void }) => (
-  // Without a provider the trigger falls back to Base UI's 600ms open delay; the app's is 150ms.
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger

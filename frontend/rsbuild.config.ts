@@ -12,15 +12,15 @@ import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 
 import { moduleFederationConfig } from './module-federation.config';
-import { HEAP_APP_ID } from './src/heap/heap.helper';
-import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import { HEAP_APP_ID } from './src/heap/heap-tracking';
+import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot-tracking';
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
 import { fileURLToPath } from 'node:url';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
 // Matches the `?raw` import query (load files as raw source strings).
-const RAW_QUERY = /raw/;
+const RAW_QUERY = /raw/u;
 
 export const consolePlugins = (federationConfig = moduleFederationConfig) => [
   pluginReact({
@@ -124,7 +124,7 @@ export default defineConfig({
       // so monaco's lazily imported language services and tokenizers (the worker-only
       // TypeScript compiler included) stay out and split on demand instead.
       monaco: {
-        test: /[\\/]node_modules[\\/]monaco-editor[\\/](?!esm[\\/]vs[\\/](?:language|basic-languages)[\\/])/,
+        test: /[\\/]node_modules[\\/]monaco-editor[\\/](?!esm[\\/]vs[\\/](?:language|basic-languages)[\\/])/u,
         name: 'lib-monaco-editor',
         priority: 30,
         enforce: true,

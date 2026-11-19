@@ -16,11 +16,6 @@ import {
   type ShadowLinkTaskStatus,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
-// ============================================================================
-// Plain TypeScript Types - No Proto Dependencies
-// These types decouple UI components from proto version mismatches
-// ============================================================================
-
 /**
  * Plain TypeScript name filter interface
  * Used for topic filters and consumer group filters
@@ -95,7 +90,6 @@ export type UnifiedClientOptions = {
   sourceClusterId?: string;
   tlsSettings?: UnifiedTLSSettings;
   authenticationConfiguration?: UnifiedAuthenticationConfiguration;
-  // Mutable fields (for forms)
   metadataMaxAgeMs?: number;
   connectionTimeoutMs?: number;
   retryBackoffMs?: number;
@@ -103,7 +97,6 @@ export type UnifiedClientOptions = {
   fetchMinBytes?: number;
   fetchMaxBytes?: number;
   fetchPartitionMaxBytes?: number;
-  // Effective fields (for display)
   effectiveMetadataMaxAgeMs?: number;
   effectiveConnectionTimeoutMs?: number;
   effectiveRetryBackoffMs?: number;
@@ -259,15 +252,10 @@ export type UnifiedShadowLink = {
   updatedAt?: Date;
 };
 
-// ============================================================================
-// State Mapping Functions
-// ============================================================================
-
 /**
  * Map console API state (3 states) to unified state
  */
 export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedShadowLinkState {
-  // CoreShadowLinkState: UNSPECIFIED=0, ACTIVE=1, PAUSED=2, FAILING_OVER=3, FAILED_OVER=4, FAILOVER_FAULTED=5
   switch (state) {
     case 1: // ACTIVE
       return UnifiedShadowLinkState.ACTIVE;
@@ -288,7 +276,6 @@ export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedSha
  * Map controlplane API state (8 states) to unified state
  */
 export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState): UnifiedShadowLinkState {
-  // ControlplaneShadowLinkState: UNSPECIFIED=0, CREATING=1, CREATION_FAILED=2, DELETING=3, DELETION_FAILED=4, ACTIVE=5, PAUSED=6
   switch (state) {
     case 1: // CREATING
       return UnifiedShadowLinkState.CREATING;
@@ -312,7 +299,7 @@ export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState
  * Use this when you have the raw proto state from API responses.
  * For unified state, use UnifiedShadowLinkStateLabel instead.
  */
-export function getShadowLinkStateLabel(state: ShadowLinkState): string {
+export function getShadowLinkStateLabel(state: ShadowLinkState) {
   switch (state) {
     case ShadowLinkState.ACTIVE:
       return 'Running';

@@ -59,7 +59,6 @@ function propertyErrorDisplay(property: Property) {
 
 function topicChoices(property: Property) {
   const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
-  // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
   // before the topic list resolves) is only removable if its value is among the options.
   const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
 
@@ -67,7 +66,6 @@ function topicChoices(property: Property) {
 }
 
 export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
-  // A TopicInput is rendered per property group, so a fixed id would collide.
   const regexCheckboxId = useId();
   const { propsMap, selected, setSelected } = useTopicSelection(p.properties);
 

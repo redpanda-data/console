@@ -146,7 +146,6 @@ describe('parseFilterLine', () => {
       partitionId: null,
       fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
       remainder: 'hello world',
-      // "hello" and "world" don't parse, so only the middle word contributes a range
       tokenRanges: [{ start: 6, end: 13 }],
     });
   });
@@ -222,7 +221,6 @@ describe('wordRangeAtCaret', () => {
   });
 
   test('caret sitting in whitespace between words returns null', () => {
-    // two spaces so the caret can sit strictly between them, touching neither word
     expect(wordRangeAtCaret('key:abc  value:def', 8)).toBeNull();
   });
 

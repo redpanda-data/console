@@ -11,16 +11,16 @@
 
 import type { FieldFilterToken, FilterOp, FilterToken } from '../types';
 
-const FIELD_PATTERN = /^(key|value(?:\.[\w.*-]+)?|partition|offset)/;
-const INTEGER_VALUE_PATTERN = /^\d+$/;
-const NEEDS_QUOTING_PATTERN = /["\s]/;
+const FIELD_PATTERN = /^(?<field>key|value(?:\.[\w.*-]+)?|partition|offset)/u;
+const INTEGER_VALUE_PATTERN = /^\d+$/u;
+const NEEDS_QUOTING_PATTERN = /["\s]/u;
 
 /** Fields whose value must be a plain non-negative integer, and whose bare `:` means equality
  * rather than substring containment (`offset:12` must not match offset 1123). */
 export const NUMERIC_FIELDS = new Set(['partition', 'offset']);
 
 /** Backslash-escapes `\` and `"` so the result can sit safely inside a `"..."`-quoted value. */
-const escapeForQuoting = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+const escapeForQuoting = (value: string) => value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"');
 
 /**
  * Quotes a value when it needs to be — contains whitespace (including just leading/trailing) or
@@ -242,10 +242,10 @@ export function looksLikeJs(text: string): boolean {
   if (trimmed.startsWith('js:') || trimmed.startsWith('javascript:')) {
     return true;
   }
-  return /return |=>|[=!<>]==?|&&|\|\||[();{}]/.test(trimmed) && !parseFilterInput(trimmed);
+  return /return |=>|[=!<>]==?|&&|\|\||[();{}]/u.test(trimmed) && !parseFilterInput(trimmed);
 }
 
-const JS_CODE_LIKE_PATTERN = /return\b|=>|[=!<>]==?|&&|\|\||[();{}[\].]/;
+const JS_CODE_LIKE_PATTERN = /return\b|=>|[=!<>]==?|&&|\|\||[();{}[\].]/u;
 
 /**
  * True when text already stripped of a `js:`/`javascript:` prefix reads like

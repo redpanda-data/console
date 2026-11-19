@@ -16,7 +16,7 @@ import type { RawFieldSpec } from '../types/schema';
 
 const enriched = enrichComponentsWithConfigSchema(groundTruthComponents, groundTruthConfigSchema);
 
-function getField(componentType: string, componentName: string, path: string): RawFieldSpec {
+function getField(componentType: string, componentName: string, path: string) {
   const component = enriched.find((c) => c.type === componentType && c.name === componentName);
   let current: RawFieldSpec | undefined = component?.config as RawFieldSpec | undefined;
   for (const segment of path.split('.')) {
@@ -39,16 +39,13 @@ describe('enrichComponentsWithConfigSchema', () => {
     });
 
     test('fields whose non-string default is dropped by the proto are NOT required', () => {
-      // checkpoint_limit defaults to 1024 (int) — the proto serializes defaultValue: ''.
       const checkpointLimit = getField('input', 'kafka', 'checkpoint_limit');
       expect(checkpointLimit.defaultValue).toBe('');
       expect(checkpointLimit.requiredBySchema).toBe(false);
-      // auto_replay_nacks defaults to true (bool).
       expect(getField('input', 'kafka', 'auto_replay_nacks').requiredBySchema).toBe(false);
     });
 
     test('string fields with an empty-string default are NOT required', () => {
-      // Indistinguishable from a required field on the proto side; the schema knows better.
       expect(getField('input', 'kafka', 'consumer_group').requiredBySchema).toBe(false);
       expect(getField('input', 'kafka', 'rack_id').requiredBySchema).toBe(false);
     });
@@ -58,9 +55,7 @@ describe('enrichComponentsWithConfigSchema', () => {
     });
 
     test('stamps nested fields through object and object-array wrappers', () => {
-      // sasl is an object: its children get their own stamps.
       expect(getField('input', 'kafka', 'sasl.mechanism').requiredBySchema).toBe(false);
-      // tls.client_certs is an array of objects: children live under items.properties.
       expect(getField('input', 'kafka', 'tls.client_certs.cert').requiredBySchema).toBe(false);
       expect(getField('input', 'kafka', 'tls.client_certs.password').secret).toBe(true);
     });
@@ -89,8 +84,6 @@ describe('enrichComponentsWithConfigSchema', () => {
     });
 
     test('an ancient schema with no required arrays at all is treated as absent', () => {
-      // Stamping requiredBySchema=false everywhere from a document that never emitted the arrays
-      // would erase genuinely required fields.
       const legacySchema = JSON.stringify({
         definitions: { input: { allOf: [{ anyOf: [{ properties: { kafka: { properties: {} } } }] }] } },
       });
@@ -100,8 +93,6 @@ describe('enrichComponentsWithConfigSchema', () => {
     });
 
     test('a mid-generation schema (required arrays, no per-field flags) still stamps required-ness', () => {
-      // Live dataplanes commonly serve this format: `required` arrays but no is_optional/is_secret.
-      // Without stamping, string fields whose "" default was lost in the proto all show as required.
       const withoutFlags = JSON.stringify(JSON.parse(groundTruthConfigSchema), (key, value) =>
         key === 'is_optional' || key === 'is_secret' ? undefined : value
       );
@@ -109,7 +100,6 @@ describe('enrichComponentsWithConfigSchema', () => {
       const field = (name: string) => result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
       expect(field('addresses').requiredBySchema).toBe(true);
       expect(field('topics').requiredBySchema).toBe(true);
-      // The proto shows an empty default for these; only the required arrays reveal they're optional.
       expect(field('consumer_group').requiredBySchema).toBe(false);
       expect(field('rack_id').requiredBySchema).toBe(false);
     });
@@ -133,7 +123,6 @@ describe('enrichComponentsWithConfigSchema', () => {
 describe('lint-required overrides', () => {
   // Mirrors the production redpanda input: its schema flags every field optional because runtime
   // lints ("either topics or regexp_topics_include must be specified", "a consumer group is
-  // mandatory when not using explicit topic partitions") carry the real requirements.
   const redpandaInput = {
     name: 'redpanda',
     type: 'input',

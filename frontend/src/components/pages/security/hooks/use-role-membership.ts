@@ -49,9 +49,7 @@ export function useRoleMembership(roleName: string) {
       );
       toast.success('Member removed from role');
       setDeletingPrincipal(null);
-    } catch {
-      // Error handling is done in onError callback
-    }
+    } catch {}
   };
 
   return {

@@ -40,7 +40,6 @@ const renderPopover = (overrides: Partial<ReadScopePopoverProps> = {}) => {
   return props;
 };
 
-// The Registry tooltip is shown and announced as the element's description, with no native `title` left.
 const expectTooltipHint = async (element: HTMLElement, hint: string) => {
   expect(await screen.findByRole('tooltip')).toHaveTextContent(hint);
   expect(element).toHaveAccessibleDescription(hint);
@@ -65,7 +64,6 @@ describe('the ReadScopePopover', () => {
       renderPopover({ onOpenChange });
       await userEvent.click(screen.getByTestId('read-scope-button'));
       expect(onOpenChange).toHaveBeenLastCalledWith(true);
-      // picking "Live tail" is one of the paths that explicitly closes the popover
       await userEvent.click(screen.getByTestId('read-scope-mode-live'));
       expect(onOpenChange).toHaveBeenLastCalledWith(false);
     });
@@ -98,7 +96,6 @@ describe('the ReadScopePopover', () => {
       const offsetInput = screen.getByTestId('read-scope-offset-input');
       expect(offsetInput).toHaveValue('48210');
       await userEvent.type(offsetInput, '7');
-      // The input is controlled by the parent; each keystroke reports the parsed offset
       expect(props.onCustomOffsetChange).toHaveBeenCalledWith(482_107);
     });
 

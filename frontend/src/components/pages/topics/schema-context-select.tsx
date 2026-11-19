@@ -25,7 +25,6 @@ export const AUTO_SCHEMA_CONTEXT = '';
 /** Force the default context, even when the topic is bound to another one. */
 export const DEFAULT_SCHEMA_CONTEXT = '.';
 
-// Select items need a non-empty value.
 const AUTO_OPTION = '__auto__';
 
 export type SchemaContextSelectProps = {

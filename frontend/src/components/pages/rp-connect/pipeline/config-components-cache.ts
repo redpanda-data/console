@@ -27,7 +27,6 @@ const orElse = <T>(read: () => T, fallback: T): T => {
   }
 };
 
-// One parse serves both, and each fails on its own.
 function readConfigFacts(configYaml: string): ConfigListFacts {
   const config = configYaml
     ? orElse(() => parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null, undefined)

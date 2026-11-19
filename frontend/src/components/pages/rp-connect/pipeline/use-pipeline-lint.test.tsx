@@ -17,7 +17,6 @@ import { renderHook } from '@testing-library/react';
 
 import { usePipelineLint } from './use-pipeline-lint';
 
-// Deterministic: skip the 500ms debounce so the hook lints the passed YAML immediately.
 rs.mock('hooks/use-debounced-value', () => ({ useDebouncedValue: (v: string) => v }));
 
 const mockUseLintQuery = rs.fn();
@@ -57,7 +56,6 @@ describe('usePipelineLint', () => {
     const { result } = renderHook(() => usePipelineLint(SYNTAX_ERROR_YAML, saveError, true));
     const hints = Object.values(result.current.lintHints);
     expect(hints.length).toBeGreaterThan(0);
-    // The redundant save-error copy is dropped; only the precise local hint(s) remain.
     expect(hints.every((h) => h.hint !== 'server syntax error')).toBe(true);
   });
 

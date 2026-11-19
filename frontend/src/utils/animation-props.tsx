@@ -41,15 +41,12 @@ const time = 0.25; // 0.15
 const dist = 2;
 const dx100em = [`${-dist}em`, 0, `${dist}em`];
 const dx50em = [`${-(dist * 0.5)}em`, 0, `${dist * 0.5}em`];
-// ease:
-// "linear" | "easeIn" | "easeOut" | "easeInOut" | "circIn" | "circOut" | "circInOut" | "backIn" | "backOut" | "backInOut" | "anticipate"
 
 const transition: Transition = {
   ease: 'easeInOut', //staggerChildren: 0,
   duration: time,
 };
 
-// Page switch
 export const animProps = {
   transition,
   initial: { opacity: 0, position: 'static' as PositionProp },

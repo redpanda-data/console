@@ -10,7 +10,11 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen } from 'test-utils';
+import { useApiStore } from 'state/backend-api';
+import type { TopicAction } from 'state/rest-interfaces';
+import { renderWithFileRoutes, screen } from 'test-utils';
+
+import TopicDetails from './topic-details';
 
 rs.mock('state/app-global', () => ({
   appGlobal: {
@@ -41,15 +45,9 @@ function MockTopicMessagesTab() {
 
 rs.mock('./messages', () => ({ TopicMessagesTab: MockTopicMessagesTab }));
 
-import { useApiStore } from 'state/backend-api';
-import type { Topic, TopicAction } from 'state/rest-interfaces';
-import { renderWithFileRoutes } from 'test-utils';
-
-import TopicDetails from './topic-details';
-
 const TOPIC_NAME = 'orders';
 
-const makeTopic = (allowedActions: TopicAction[] | undefined): Topic => ({
+const makeTopic = (allowedActions: TopicAction[] | undefined) => ({
   topicName: TOPIC_NAME,
   isInternal: false,
   partitionCount: 1,

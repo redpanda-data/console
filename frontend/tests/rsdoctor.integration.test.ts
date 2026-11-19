@@ -63,7 +63,6 @@ describe('console build analysis', () => {
   const build = (enabled: boolean, signal: AbortSignal, config?: string) =>
     execute(process.execPath, [fixture, directory, ...(config ? [config] : [])], {
       cwd: tmpdir(),
-      // Rsdoctor's own test mode overrides disableClientServer.
       env: { ...process.env, RSDOCTOR: enabled ? 'true' : '', RSTEST: undefined },
       signal,
       maxBuffer: 10 * 1024 * 1024,
@@ -84,7 +83,6 @@ describe('console build analysis', () => {
     expect(existsSync(join(directory, 'build-stats/rsdoctor-react19/rsdoctor-data.json'))).toBe(true);
   });
 
-  // Covers the configuration's opt-in gate, not the plugin's disabled behavior.
   test('keeps analysis reports out of normal builds', async ({ signal }) => {
     await build(false, signal);
     expect(existsSync(join(directory, 'dist/fixture.js'))).toBe(true);
