@@ -29,11 +29,15 @@ const offsets: GroupOffset[] = [
   { topicName: 'orders', partitionId: 1, offset: 3 },
 ];
 
-function renderModal() {
+const REVIEW_BUTTON = /Review/;
+const OUT_OF_RANGE = /outside the partition's available range/;
+const OFFSET_AFTER_1234 = /1\D*234$/;
+
+function renderModal({ initialPartition = null }: { initialPartition?: number | null } = {}) {
   return render(
     <EditOffsetsModal
       group={group}
-      initialPartition={null}
+      initialPartition={initialPartition}
       initialTopic="orders"
       offsets={offsets}
       onClose={() => {
@@ -46,6 +50,12 @@ function renderModal() {
 async function chooseStrategy(user: ReturnType<typeof userEvent.setup>, strategy: string) {
   await user.click(screen.getByRole('combobox', { name: 'Strategy' }));
   await user.click(await screen.findByRole('option', { name: strategy }));
+}
+
+async function reviewCustomOffset(user: ReturnType<typeof userEvent.setup>, value: string) {
+  await chooseStrategy(user, 'Custom Offset');
+  await user.type(await screen.findByRole('spinbutton', { name: 'Offset' }), value);
+  await user.click(screen.getByRole('button', { name: REVIEW_BUTTON }));
 }
 
 describe('editOffsetsModal', () => {
@@ -112,6 +122,90 @@ describe('editOffsetsModal', () => {
 
     expect(await screen.findByRole('radio', { name: 'Copy matching offsets' })).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Full Copy' })).toBeVisible();
+  });
+});
+
+describe('editOffsetsModal custom offset', () => {
+  const initialApiState = useApiStore.getState();
+
+  beforeEach(() => {
+    useApiStore.setState({
+      consumerGroups: new Map(),
+      refreshConsumerGroups: rs.fn(),
+      refreshPartitions: rs.fn(() => Promise.resolve()),
+    });
+  });
+
+  afterEach(() => {
+    rs.restoreAllMocks();
+    useApiStore.setState(initialApiState, true);
+  });
+
+  test('labels the custom offset input', async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await chooseStrategy(user, 'Custom Offset');
+
+    expect(await screen.findByRole('spinbutton', { name: 'Offset' })).toBeVisible();
+  });
+
+  test.each([
+    ['', true],
+    ['-4', true],
+    ['1.5', true],
+    ['42', false],
+    ['0', false],
+  ])('custom offset %j disables review: %s', async (value, disabled) => {
+    const user = userEvent.setup();
+    renderModal();
+
+    await chooseStrategy(user, 'Custom Offset');
+    if (value) {
+      await user.type(await screen.findByRole('spinbutton', { name: 'Offset' }), value);
+    }
+
+    const review = screen.getByRole('button', { name: REVIEW_BUTTON });
+    if (disabled) {
+      expect(review).toBeDisabled();
+    } else {
+      expect(review).toBeEnabled();
+    }
+  });
+
+  test('previews and applies the custom offset for the selected partition only', async () => {
+    const user = userEvent.setup();
+    const editConsumerGroupOffsets = rs.fn(() =>
+      Promise.resolve([{ topicName: 'orders', partitions: [{ partitionID: 1, error: '' }] }])
+    );
+    useApiStore.setState({ editConsumerGroupOffsets, refreshConsumerGroup: rs.fn() });
+    renderModal({ initialPartition: 1 });
+
+    await reviewCustomOffset(user, '1234');
+
+    const rows = await screen.findAllByRole('row');
+    expect(rows.at(-1)?.textContent).toMatch(OFFSET_AFTER_1234);
+
+    await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+    await waitFor(() =>
+      expect(editConsumerGroupOffsets).toHaveBeenCalledWith('test-group', [
+        { topicName: 'orders', partitions: [{ partitionId: 1, offset: 1234 }] },
+      ])
+    );
+  });
+
+  test('warns when the custom offset is outside the partition watermarks', async () => {
+    const user = userEvent.setup();
+    const partition = { id: 1, waterMarkLow: 0, waterMarkHigh: 100, waterMarksError: null };
+    useApiStore.setState({ topicPartitions: new Map([['orders', [partition as never]]]) });
+    renderModal({ initialPartition: 1 });
+
+    await reviewCustomOffset(user, '1234');
+
+    const rows = await screen.findAllByRole('row');
+    await user.hover(within(rows.at(-1) as HTMLElement).getByTestId('offset-out-of-range'));
+    expect(await screen.findByText(OUT_OF_RANGE)).toBeVisible();
   });
 });
 

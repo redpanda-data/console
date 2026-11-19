@@ -67,6 +67,7 @@ const STRATEGY_LABELS: Record<EditOptions, string> = {
   startOffset: 'Earliest',
   endOffset: 'Latest',
   shiftBy: 'Shift By',
+  customOffset: 'Custom Offset',
   time: 'Specific Time',
   otherGroup: 'Other Consumer Group',
 };
@@ -83,7 +84,7 @@ const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) 
   </TooltipProvider>
 );
 
-type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy';
+type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy' | 'customOffset';
 
 // props:
 // - consumer group
@@ -115,6 +116,7 @@ type EditOffsetsModalState = {
   timestampUtcMs: number;
   offsetShiftByValue: number;
   offsetShiftByValueAsString: string;
+  customOffsetAsString: string;
   selectedGroup: string | undefined;
   otherGroupCopyMode: 'all' | 'onlyExisting';
   isLoadingTimestamps: boolean;
@@ -145,6 +147,7 @@ export class EditOffsetsModal extends Component<{
     timestampUtcMs: Date.now(),
     offsetShiftByValue: 0,
     offsetShiftByValueAsString: '0',
+    customOffsetAsString: '',
     selectedGroup: undefined,
     otherGroupCopyMode: 'onlyExisting',
     isLoadingTimestamps: false,
@@ -272,6 +275,7 @@ export class EditOffsetsModal extends Component<{
                 <SelectItem value="startOffset">Earliest</SelectItem>
                 <SelectItem value="endOffset">Latest</SelectItem>
                 <SelectItem value="shiftBy">Shift By</SelectItem>
+                <SelectItem value="customOffset">Custom Offset</SelectItem>
                 <SelectItem value="time">Specific Time</SelectItem>
                 <SelectItem value="otherGroup">Other Consumer Group</SelectItem>
               </SelectContent>
@@ -288,6 +292,7 @@ export class EditOffsetsModal extends Component<{
                 time: "Choose a timestamp to which all partition's offsets will be set.",
                 otherGroup: 'Copy offsets from another (inactive) consumer group',
                 shiftBy: 'Adjust offsets by a specified positive or negative value.',
+                customOffset: 'Set the offset of every selected partition to a specific value.',
               } as Record<EditOptions, string>
             )[this.state.selectedOption]
           }
@@ -323,6 +328,20 @@ export class EditOffsetsModal extends Component<{
               }}
               type="number"
               value={this.state.offsetShiftByValueAsString}
+            />
+          </div>
+        )}
+
+        {this.state.selectedOption === 'customOffset' && (
+          <div className="mt-2 flex max-w-[300px] flex-col gap-1">
+            <Label htmlFor={`${this.fieldId}-custom-offset`}>Offset</Label>
+            <Input
+              id={`${this.fieldId}-custom-offset`}
+              min={0}
+              onChange={(e) => this.setState({ customOffsetAsString: e.target.value })}
+              step={1}
+              type="number"
+              value={this.state.customOffsetAsString}
             />
           </div>
         )}
@@ -428,6 +447,12 @@ export class EditOffsetsModal extends Component<{
       // Latest
       endOffset: () => assignNewOffset(selectedOffsets, -1),
       shiftBy: () => shiftOffsets(selectedOffsets, this.state.offsetShiftByValue),
+      customOffset: () => {
+        const customOffset = parseCustomOffset(this.state.customOffsetAsString);
+        if (customOffset !== null) {
+          assignNewOffset(selectedOffsets, customOffset);
+        }
+      },
       time: () => this.computeOffsetsForTimestamp(selectedOffsets),
       otherGroup: () => this.copyOffsetsFromOtherGroup(selectedOffsets, offsets),
     };
@@ -496,7 +521,9 @@ export class EditOffsetsModal extends Component<{
   }
 
   footer() {
-    const disableContinue = this.state.selectedOption === 'otherGroup' && !this.state.selectedGroup;
+    const disableContinue =
+      (this.state.selectedOption === 'otherGroup' && !this.state.selectedGroup) ||
+      (this.state.selectedOption === 'customOffset' && parseCustomOffset(this.state.customOffsetAsString) === null);
     const disableNav = this.state.isApplyingEdit || this.state.isLoadingTimestamps;
 
     if (this.state.page === 0) {
@@ -694,11 +721,43 @@ const TimestampNewOffset = ({
   );
 };
 
+/** A concrete offset, flagged when it lies outside the partition's low/high watermarks. */
+const ConcreteNewOffset = ({ record, val }: { record: GroupOffset; val: number }) => {
+  const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
+  const formatted = numberToThousandsString(val);
+
+  if (!partition || partition.waterMarksError || (val >= partition.waterMarkLow && val <= partition.waterMarkHigh)) {
+    return formatted;
+  }
+
+  const low = numberToThousandsString(partition.waterMarkLow);
+  const high = numberToThousandsString(partition.waterMarkHigh);
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-flex items-center gap-1.5" data-testid="offset-out-of-range">
+              <TonedIcon icon={WarningIcon} size={14} tone="destructive" />
+              <span>{formatted}</span>
+            </span>
+          }
+        />
+        <TooltipContent className="max-w-[350px]">
+          This offset is outside the partition's available range ({low} to {high}). Consumers resuming from it will
+          apply their auto.offset.reset policy.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 /** New offset copied from another group (a concrete offset), or Earliest (-2) / Latest (-1). */
 const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number }) => {
-  // copied from other group
+  // copied from other group or entered by the user
   if (val >= 0) {
-    return numberToThousandsString(val);
+    return <ConcreteNewOffset record={record} val={val} />;
   }
 
   // Get offset from current partition values
@@ -1038,6 +1097,15 @@ function assignNewOffset(offsets: GroupOffset[], newOffset: number) {
   for (const x of offsets) {
     x.newOffset = newOffset;
   }
+}
+
+/** Parses the custom offset input; null unless it is a non-negative whole number (negative values are reserved for Earliest/Latest). */
+function parseCustomOffset(value: string): number | null {
+  if (value.trim() === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function shiftOffsets(offsets: GroupOffset[], shiftBy: number) {
