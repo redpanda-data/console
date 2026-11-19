@@ -12,15 +12,6 @@
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
-  Choicebox,
-  ChoiceboxItem,
-  ChoiceboxItemContent,
-  ChoiceboxItemDescription,
-  ChoiceboxItemHeader,
-  ChoiceboxItemIndicator,
-  ChoiceboxItemTitle,
-} from 'components/redpanda-ui/components/choicebox';
-import {
   Dialog,
   DialogBody,
   DialogContent,
@@ -29,6 +20,7 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Input } from 'components/redpanda-ui/components/input';
+import { RadioGroup } from 'components/redpanda-ui/components/radio-group';
 import {
   Select,
   SelectContent,
@@ -40,6 +32,7 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
+import { ChoiceCard } from 'components/ui/choice-card';
 import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -115,15 +108,7 @@ function DeleteOption({
 }) {
   return (
     <div>
-      <ChoiceboxItem value={value}>
-        <ChoiceboxItemHeader>
-          <ChoiceboxItemTitle>{title}</ChoiceboxItemTitle>
-          <ChoiceboxItemDescription>{subTitle}</ChoiceboxItemDescription>
-        </ChoiceboxItemHeader>
-        <ChoiceboxItemContent>
-          <ChoiceboxItemIndicator />
-        </ChoiceboxItemContent>
-      </ChoiceboxItem>
+      <ChoiceCard description={subTitle} title={title} value={value} />
       {isSelected && children ? <div className="mt-2 border-l-2 border-l-selected py-2 pl-5">{children}</div> : null}
     </div>
   );
@@ -148,7 +133,7 @@ function SelectPartitionStep({
         You are about to delete records in your topic. Choose on what partitions you want to delete records. In the next
         step you can choose the new low water mark for your selected partitions.
       </DeleteRecordsIntro>
-      <Choicebox
+      <RadioGroup
         onValueChange={(v) => {
           const option = v as PartitionOption;
           if (option === 'allPartitions') {
@@ -191,7 +176,7 @@ function SelectPartitionStep({
             </SelectContent>
           </Select>
         </DeleteOption>
-      </Choicebox>
+      </RadioGroup>
     </div>
   );
 }
@@ -224,7 +209,7 @@ const SelectOffsetStep = ({
         Choose the new low offset for your selected partitions. Take note that this is a soft delete and that the actual
         data may still be on the hard drive but not visible for any clients, even if they request the data.
       </DeleteRecordsIntro>
-      <Choicebox onValueChange={(v) => selectValue(v as OffsetOption)} value={selectedValue ?? ''}>
+      <RadioGroup onValueChange={(v) => selectValue(v as OffsetOption)} value={selectedValue ?? ''}>
         {isAllPartitions ? (
           <DeleteOption
             isSelected={selectedValue === 'highWatermark'}
@@ -254,7 +239,7 @@ const SelectOffsetStep = ({
         >
           <KowlTimePicker onChange={onTimestampChanged} valueUtcMs={timestamp ?? 0} />
         </DeleteOption>
-      </Choicebox>
+      </RadioGroup>
     </div>
   );
 };
@@ -672,12 +657,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                   ) : (
                     <div className="space-y-6">
                       <Stepper.Navigation>
-                        <Stepper.Step of="partitions">
-                          <Stepper.Title>Select partitions</Stepper.Title>
-                        </Stepper.Step>
-                        <Stepper.Step of="offset">
-                          <Stepper.Title>Choose offset</Stepper.Title>
-                        </Stepper.Step>
+                        <Stepper.Step of="partitions" title="Select partitions" />
+                        <Stepper.Step of="offset" title="Choose offset" />
                       </Stepper.Navigation>
                       {isOffsetStep ? null : (
                         <SelectPartitionStep

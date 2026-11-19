@@ -34,14 +34,17 @@ import { KeyValueField } from 'components/redpanda-ui/components/key-value-field
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
-import { type UseFormReturn, useFormContext } from 'react-hook-form';
+import { type UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
 import { toast } from 'sonner';
+import { applyKeyValueRowChange, keyValueRowsFromFieldArray } from 'utils/key-value-rows';
 
 import { EgressGatewayField } from './egress-gateway-field';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
+import { toBadgeGroupItems } from '../utils/badge-group-items';
 
 function TagsField({ readonly }: { readonly?: boolean }) {
   const { control, formState } = useFormContext();
+  const tagFields = useFieldArray({ control, name: 'tags' });
 
   const tagsError = formState.errors.tags;
   const rootError = String(tagsError?.root?.message ?? (tagsError as { message?: string })?.message ?? '');
@@ -62,37 +65,37 @@ function TagsField({ readonly }: { readonly?: boolean }) {
                 <p className="text-body text-muted-foreground">No tags</p>
               ) : (
                 <BadgeGroup
+                  items={toBadgeGroupItems(filtered, {
+                    id: (t) => t.key,
+                    text: (t) => `${t.key}: ${t.value}`,
+                    content: (t) => (
+                      <Badge tone="default" variant="outline">
+                        {t.key}: {t.value}
+                      </Badge>
+                    ),
+                  })}
                   maxVisible={5}
                   renderOverflowContent={(overflow) => (
                     <List>
-                      {filtered.slice(-overflow.length).map((t) => (
-                        <ListItem key={t.key}>
-                          {t.key}: {t.value}
-                        </ListItem>
+                      {overflow.map((item) => (
+                        <ListItem key={item.id}>{item.textValue}</ListItem>
                       ))}
                     </List>
                   )}
                   tone="default"
                   variant="outline"
-                >
-                  {filtered.map((t) => (
-                    <Badge key={t.key} tone="default" variant="outline">
-                      {t.key}: {t.value}
-                    </Badge>
-                  ))}
-                </BadgeGroup>
+                />
               )}
             </FormItem>
           );
         }
 
-        // Seed with one empty row so the add button is always visible
-        const editableValue = field.value && field.value.length > 0 ? field.value : [{ key: '', value: '' }];
+        const rows = keyValueRowsFromFieldArray(tagFields.fields, tags);
 
         // Derive per-item errors from the field values directly.
         // With a single FormField for the whole array, RHF may not populate
         // per-item errors, so we compute them to match the Zod schema rules.
-        const fieldErrors = editableValue.map((pair: { key: string; value: string }) => {
+        const fieldErrors = rows.map(({ pair }) => {
           const hasKey = pair.key.length > 0;
           const hasValue = pair.value.length > 0;
           if (!(hasKey || hasValue)) {
@@ -111,8 +114,14 @@ function TagsField({ readonly }: { readonly?: boolean }) {
               errors={fieldErrors}
               keyFieldProps={{ placeholder: 'Key' }}
               label="Tags"
-              onChange={field.onChange}
-              value={editableValue}
+              onChange={(next) =>
+                applyKeyValueRowChange(rows, next, {
+                  append: tagFields.append,
+                  remove: tagFields.remove,
+                  edit: field.onChange,
+                })
+              }
+              value={rows}
               valueFieldProps={{ placeholder: 'Value' }}
             />
             {rootError ? <p className="text-body text-destructive">{rootError}</p> : null}

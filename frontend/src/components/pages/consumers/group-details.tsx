@@ -182,7 +182,7 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
 
   return (
     // The small card carries px-6 py-4; max-w-none lifts its width cap. Its single child makes the gap moot.
-    <Card className="max-w-none" size="sm" variant="standard">
+    <Card className="max-w-none" size="sm">
       <CardContent>
         {/* The stats sit in a row, so they need a flex child rather than CardContent's vertical stack. */}
         <div className="flex flex-wrap items-start justify-between gap-4">

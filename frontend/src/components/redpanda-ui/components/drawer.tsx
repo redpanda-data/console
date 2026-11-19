@@ -3,7 +3,6 @@
 import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
@@ -46,21 +45,15 @@ type DrawerProps = Omit<DrawerPrimitive.Root.Props, 'swipeDirection'> &
      * is swiped down, a top drawer up, and a side drawer toward its own edge.
      * @default 'bottom'
      */
-    direction?: DrawerDirection;
+    direction?: DrawerDirection | undefined;
     /**
      * When false, Escape, outside presses, focus leaving the drawer and swipes no longer close it.
      * `DrawerClose`, the trigger and a controlled `open` still do.
      * @default true
      */
-    dismissible?: boolean;
+    dismissible?: boolean | undefined;
     /** Where the drawer portals to, as on vaul's root. A `container` on `DrawerContent` wins. */
-    container?: HTMLElement | null;
-    /** @deprecated vaul's name for `snapPoint`. */
-    activeSnapPoint?: DrawerPrimitive.Root.SnapPoint | null;
-    /** @deprecated vaul's name for `onSnapPointChange`. */
-    setActiveSnapPoint?: (snapPoint: DrawerPrimitive.Root.SnapPoint | null) => void;
-    /** @deprecated vaul's name for `snapToSequentialPoints`. */
-    snapToSequentialPoint?: boolean;
+    container?: HTMLElement | null | undefined;
   };
 
 function Drawer({
@@ -71,12 +64,9 @@ function Drawer({
   dismissible = true,
   disablePointerDismissal,
   onOpenChange,
-  activeSnapPoint,
-  snapPoint = activeSnapPoint,
-  setActiveSnapPoint,
+  snapPoint,
   onSnapPointChange,
-  snapToSequentialPoint,
-  snapToSequentialPoints = snapToSequentialPoint,
+  snapToSequentialPoints,
   ...props
 }: DrawerProps) {
   function handleOpenChange(open: boolean, eventDetails: DrawerPrimitive.Root.ChangeEventDetails) {
@@ -92,7 +82,6 @@ function Drawer({
     eventDetails: DrawerPrimitive.Root.SnapPointChangeEventDetails
   ) {
     onSnapPointChange?.(nextSnapPoint, eventDetails);
-    setActiveSnapPoint?.(nextSnapPoint);
   }
 
   return (
@@ -139,7 +128,7 @@ function DrawerClose({ className, ...props }: DrawerCloseProps) {
 
 /**
  * vaul's 500ms open curve. A close takes up to 400ms, shortened by Base UI after a fast swipe.
- * allow: motion-design — a full-viewport-edge slide; the iOS sheet convention vaul matched.
+ * This full-viewport-edge slide follows the iOS sheet convention vaul matched.
  */
 const DRAWER_TIMING =
   'duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] data-[ending-style]:duration-[calc(var(--drawer-swipe-strength,1)*400ms)]';
@@ -254,7 +243,10 @@ function DrawerContent({
       {/* Base UI's swipe and snap point handling lives on the viewport. It lets clicks through to the
           page or overlay; an explicit container gets an `absolute` viewport so the drawer stays in it. */}
       <DrawerPrimitive.Viewport
-        className={cn('pointer-events-none inset-0 z-50', explicitContainer ? 'absolute' : 'fixed')}
+        className={cn(
+          'pointer-events-none inset-0 z-50',
+          explicitContainer !== undefined && explicitContainer !== null ? 'absolute' : 'fixed'
+        )}
         data-slot="drawer-viewport"
       >
         <DrawerPrimitive.Popup
@@ -299,7 +291,7 @@ type DrawerTitleProps = DrawerPrimitive.Title.Props;
 function DrawerTitle({ className, ...props }: DrawerTitleProps) {
   return (
     <DrawerPrimitive.Title
-      className={cn('text-foreground text-heading-md', className)}
+      className={cn('text-heading-md text-foreground', className)}
       data-slot="drawer-title"
       {...props}
     />

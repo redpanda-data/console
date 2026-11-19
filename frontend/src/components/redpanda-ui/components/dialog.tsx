@@ -4,7 +4,6 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React from 'react';
-
 import { Button } from './button';
 import { useAnimatedAutoHeight } from '../lib/use-animated-auto-height';
 import { useMediaQuery } from '../lib/use-media-query';
@@ -48,7 +47,7 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // `height` is intentionally omitted from the transition list — useAnimatedAutoHeight drives it.
 const dialogContentVariants = cva(
-  'fixed top-[50%] left-[50%] z-50 flex w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl border bg-background shadow-lg transition-[opacity,transform,max-height,min-height] duration-200 ease-out data-[ending-style]:scale-95 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none',
+  'fixed top-[50%] left-[50%] z-50 flex w-full max-w-[calc(100%-2rem)] translate-[-50%] flex-col overflow-hidden rounded-xl border bg-background shadow-lg transition-[opacity,transform,max-height,min-height] duration-200 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none',
   {
     variants: {
       size: {
@@ -64,11 +63,11 @@ const dialogContentVariants = cva(
         destructive: 'border-destructive-line',
       },
       height: {
-        auto: 'max-h-[85vh]',
-        sm: 'h-[min(85vh,400px)]',
-        md: 'h-[min(85vh,560px)]',
-        lg: 'h-[min(85vh,720px)]',
-        xl: 'h-[min(85vh,880px)]',
+        auto: 'max-h-[85dvh]',
+        sm: 'h-[min(85dvh,400px)]',
+        md: 'h-[min(85dvh,560px)]',
+        lg: 'h-[min(85dvh,720px)]',
+        xl: 'h-[min(85dvh,880px)]',
       },
     },
     defaultVariants: {
@@ -84,10 +83,10 @@ interface DialogContentProps
     VariantProps<typeof dialogContentVariants>,
     SharedProps {
   /** Container element for inline rendering (no portal to body). */
-  container?: HTMLElement;
-  showCloseButton?: boolean;
+  container?: HTMLElement | undefined;
+  showCloseButton?: boolean | undefined;
   /** When false, hides the overlay/backdrop. Defaults to `true`. */
-  showOverlay?: boolean;
+  showOverlay?: boolean | undefined;
 }
 
 function DialogContent({
@@ -105,14 +104,20 @@ function DialogContent({
   const portalContainer = usePortalContainer();
   // Skip the JS height animation under reduced motion (height snaps instantly).
   const prefersReducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
-  const isAutoHeight = !height || height === 'auto';
+  const isAutoHeight = !(height !== undefined && height !== null) || height === 'auto';
   const setPopupRef = useAnimatedAutoHeight<HTMLDivElement>(isAutoHeight && !prefersReducedMotion);
   return (
     <DialogPortal container={container ?? portalContainer}>
       {showOverlay ? <DialogOverlay /> : null}
       <DialogPrimitive.Popup
         aria-modal="true"
-        className={cn(dialogContentVariants({ size, variant, height }), className)}
+        className={cn(
+          dialogContentVariants({ size, variant, height }),
+          // Only the direct body reserves close clearance; nested dialogs keep their own anatomy.
+          'data-[close-button=true]:not-has-[>[data-slot=dialog-header]]:[&>[data-slot=dialog-body]>[data-slot=dialog-body-content]]:pr-12',
+          className
+        )}
+        data-close-button={showCloseButton}
         data-slot="dialog-content"
         data-testid={testId}
         ref={setPopupRef}
@@ -122,12 +127,7 @@ function DialogContent({
         {showCloseButton ? (
           <DialogPrimitive.Close
             render={
-              <Button
-                aria-label="Close"
-                className="absolute top-2 right-2 text-subtle hover:text-foreground"
-                size="icon-sm"
-                variant="ghost"
-              >
+              <Button aria-label="Close" className="absolute top-2 right-2" size="icon-sm" variant="ghost">
                 <X />
               </Button>
             }
@@ -193,7 +193,7 @@ const dialogFooterVariants = cva('flex shrink-0 p-4 [[data-slot=dialog-body]+&]:
 
 interface DialogFooterProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogFooterVariants> {
   /** Render a built-in "Close" button that dismisses the dialog. Defaults to `false`. */
-  showCloseButton?: boolean;
+  showCloseButton?: boolean | undefined;
 }
 
 function DialogFooter({
@@ -268,7 +268,7 @@ const dialogScrollShadowState = (visible: boolean) => (visible ? 'opacity-100' :
 
 interface DialogBodyProps extends React.ComponentProps<'div'>, VariantProps<typeof dialogBodyContentVariants> {
   /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
-  scrollShadow?: boolean;
+  scrollShadow?: boolean | undefined;
 }
 
 function DialogBody({ className, padding, spacing, scrollShadow = true, children, style, ...props }: DialogBodyProps) {
@@ -285,13 +285,15 @@ function DialogBody({ className, padding, spacing, scrollShadow = true, children
     >
       {scrollShadow ? (
         <div aria-hidden className={cn(dialogScrollShadow, 'top-0', dialogScrollShadowState(edges.start))}>
-          <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-black/[0.10] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-3 bg-linear-to-b from-black/[0.10] to-transparent" />
         </div>
       ) : null}
-      <div className={cn(dialogBodyContentVariants({ padding, spacing }))}>{children}</div>
+      <div className={cn(dialogBodyContentVariants({ padding, spacing }))} data-slot="dialog-body-content">
+        {children}
+      </div>
       {scrollShadow ? (
         <div aria-hidden className={cn(dialogScrollShadow, 'bottom-0', dialogScrollShadowState(edges.end))}>
-          <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-black/[0.10] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-3 bg-linear-to-t from-black/[0.10] to-transparent" />
         </div>
       ) : null}
     </div>

@@ -518,7 +518,7 @@ export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics
   const sourceName = fence.source?.clusterName ?? 'the source cluster';
 
   return (
-    <Card size="full" testId="failover-tab" variant="standard">
+    <Card testId="failover-tab">
       <CardContent>
         <div className="flex flex-col gap-8">
           <h2 className="text-heading-sm">Fail over from {sourceName}</h2>

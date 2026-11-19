@@ -19,6 +19,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import {
   MultiSelect,
   MultiSelectContent,
+  MultiSelectControl,
   MultiSelectEmpty,
   MultiSelectItem,
   MultiSelectList,
@@ -144,9 +145,10 @@ export const SecretCreatePage = () => {
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >
-                <MultiSelectTrigger className="w-full" data-testid="secret-scopes-select">
-                  <MultiSelectValue placeholder="Select scopes" />
-                </MultiSelectTrigger>
+                <MultiSelectControl className="w-full">
+                  <MultiSelectValue />
+                  <MultiSelectTrigger aria-label="Scopes" placeholder="Select scopes" testId="secret-scopes-select" />
+                </MultiSelectControl>
                 <MultiSelectContent>
                   <MultiSelectList>
                     {SCOPE_OPTIONS.map((option) => (

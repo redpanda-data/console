@@ -261,7 +261,7 @@ const ResourceTypeSelection = ({
 
 const Summary = ({ sharedConfig, rules }: SummaryProps) => {
   return (
-    <Card size="full">
+    <Card>
       <CardHeader>
         <h3>Summary</h3>
       </CardHeader>
@@ -380,7 +380,7 @@ const AclRules = ({
   const labelIdPrefix = useId();
 
   return (
-    <Card size={'full'}>
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -394,12 +394,7 @@ const AclRules = ({
       </CardHeader>
       <CardContent>
         {rules.map((rule, index) => (
-          <Card
-            data-testid={`card-content-rule-${getRuleDataTestId(rule)}`}
-            key={rule.id}
-            size={'full'}
-            variant={'elevated'}
-          >
+          <Card data-testid={`card-content-rule-${getRuleDataTestId(rule)}`} key={rule.id}>
             <CardContent>
               {/* Resource Type Selection */}
               <div className="flex items-center justify-between">
@@ -637,7 +632,7 @@ const SharedConfiguration = ({
   const gbacEnabled = useGbacEnabled();
 
   return (
-    <Card size={'full'}>
+    <Card>
       <CardHeader>
         <CardTitle level={3}>Shared configuration</CardTitle>
         <CardDescription>These settings apply to all rules.</CardDescription>

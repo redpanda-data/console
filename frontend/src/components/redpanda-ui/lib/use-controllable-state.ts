@@ -4,11 +4,6 @@
 
 import React from 'react';
 
-import { useLayoutEffect } from './use-layout-effect';
-
-// Prevent bundlers from trying to optimize the import
-const useInsertionEffect = React.useInsertionEffect ?? useLayoutEffect;
-
 type ChangeHandler<T> = (state: T) => void;
 type SetStateFn<T> = React.Dispatch<React.SetStateAction<T>>;
 
@@ -41,7 +36,11 @@ export function useControllableState<T>({
 
   React.useEffect(
     function warnAboutControlModeChange() {
-      if (process.env.NODE_ENV === 'production' || wasControlledRef.current === isControlled) {
+      if (
+        typeof process === 'undefined' ||
+        process.env['NODE_ENV'] === 'production' ||
+        wasControlledRef.current === isControlled
+      ) {
         return;
       }
       const from = wasControlledRef.current ? 'controlled' : 'uncontrolled';
@@ -54,19 +53,16 @@ export function useControllableState<T>({
     [caller, isControlled]
   );
 
-  const setValue = React.useCallback<SetStateFn<T>>(
-    (nextValue) => {
-      if (isControlled) {
-        const newValue = isFunction(nextValue) ? nextValue(prop) : nextValue;
-        if (newValue !== prop) {
-          onChangeRef.current?.(newValue as T);
-        }
-      } else {
-        setUncontrolledProp(nextValue);
+  const setValue: SetStateFn<T> = (nextValue) => {
+    if (prop === undefined) {
+      setUncontrolledProp(nextValue);
+    } else {
+      const newValue = isFunction(nextValue) ? nextValue(prop) : nextValue;
+      if (newValue !== prop) {
+        onChangeRef.current?.(newValue);
       }
-    },
-    [isControlled, prop, setUncontrolledProp, onChangeRef]
-  );
+    }
+  };
 
   return [value, setValue];
 }
@@ -83,7 +79,7 @@ function useUncontrolledState<T>({
   const prevValueRef = React.useRef(value);
 
   const onChangeRef = React.useRef(onChange);
-  useInsertionEffect(() => {
+  React.useInsertionEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
@@ -97,6 +93,6 @@ function useUncontrolledState<T>({
   return [value, setValue, onChangeRef];
 }
 
-function isFunction(value: unknown): value is (...args: unknown[]) => unknown {
+function isFunction<T>(value: React.SetStateAction<T>): value is (previous: T) => T {
   return typeof value === 'function';
 }

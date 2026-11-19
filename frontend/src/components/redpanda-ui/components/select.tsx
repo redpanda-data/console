@@ -3,15 +3,13 @@
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import type React from 'react';
-
-import { groupItemClasses, useGroup } from './group';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type PortalContentProps, type SharedProps } from '../lib/utils';
 
-// Pin Base UI's generic `Value` to `string`, casting at the boundary for a string-typed `onValueChange`.
-type SelectRootProps = Omit<React.ComponentProps<typeof SelectPrimitive.Root>, 'onValueChange'> &
+// Preserve the string-valued public contract; Base UI represents an empty selection as null.
+type SelectRootProps = Omit<SelectPrimitive.Root.Props<string>, 'onValueChange'> &
   SharedProps & {
-    onValueChange?: (value: string, eventDetails: SelectPrimitive.Root.ChangeEventDetails) => void;
+    onValueChange?: ((value: string, eventDetails: SelectPrimitive.Root.ChangeEventDetails) => void) | undefined;
   };
 
 function Select({ testId, onValueChange, ...props }: SelectRootProps) {
@@ -19,7 +17,13 @@ function Select({ testId, onValueChange, ...props }: SelectRootProps) {
     <SelectPrimitive.Root
       data-slot="select"
       data-testid={testId}
-      onValueChange={onValueChange ? (value, eventDetails) => onValueChange(value as string, eventDetails) : undefined}
+      onValueChange={
+        onValueChange === undefined
+          ? undefined
+          : (value, eventDetails) => {
+              onValueChange(value ?? '', eventDetails);
+            }
+      }
       {...props}
     />
   );
@@ -30,8 +34,8 @@ function SelectGroup({ testId, ...props }: SelectPrimitive.Group.Props & SharedP
 }
 
 type SelectValueProps = Omit<SelectPrimitive.Value.Props, 'children'> & {
-  placeholder?: React.ReactNode;
-  children?: React.ReactNode | ((value: unknown) => React.ReactNode);
+  placeholder?: React.ReactNode | undefined;
+  children?: React.ReactNode | ((value: unknown) => React.ReactNode) | undefined;
 };
 
 // Base UI resolves an item's label only after the popup mounts, flashing the raw value (e.g. `1`
@@ -56,7 +60,7 @@ function SelectValue({ placeholder, children, ...props }: SelectValueProps) {
   if (children !== undefined) {
     return (
       <SelectPrimitive.Value data-slot="select-value" placeholder={placeholder} {...props}>
-        {children as SelectPrimitive.Value.Props['children']}
+        {children}
       </SelectPrimitive.Value>
     );
   }
@@ -65,14 +69,10 @@ function SelectValue({ placeholder, children, ...props }: SelectValueProps) {
 
 type SelectTriggerProps = SelectPrimitive.Trigger.Props &
   SharedProps & {
-    size?: 'sm' | 'default' | 'lg';
+    size?: 'sm' | 'default' | 'lg' | undefined;
   };
 
 function SelectTrigger({ className, size = 'default', children, testId, ...props }: SelectTriggerProps) {
-  const { position: groupPosition, attached } = useGroup();
-
-  const positionClasses = groupItemClasses(attached, groupPosition);
-
   return (
     <SelectPrimitive.Trigger
       // No pressed step: Base UI opens the listbox on mousedown and the portal takes the
@@ -81,8 +81,8 @@ function SelectTrigger({ className, size = 'default', children, testId, ...props
       // heavier and outranks it while the pointer is still on the trigger. The listbox
       // appearing is the feedback, as it is for Navigation Menu and Menubar.
       className={cn(
-        "!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full cursor-pointer items-center justify-between gap-2 whitespace-nowrap border bg-input-fill px-3 py-2 text-body shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid data-[size=default]:h-9 data-[size=lg]:h-10 data-[size=sm]:h-8 data-[placeholder]:text-placeholder *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
-        positionClasses,
+        "flex w-full cursor-pointer items-center justify-between gap-2 border !border-input bg-input-fill px-3 py-2 text-body whitespace-nowrap shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none hover:not-disabled:!border-input-hover hover:not-disabled:bg-input-fill-hover focus-visible:!border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:!border-destructive aria-invalid:ring-invalid data-[placeholder]:text-placeholder data-[size=default]:h-9 data-[size=lg]:h-10 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle",
+        'rounded-md',
         className
       )}
       data-size={size}
@@ -126,15 +126,15 @@ function SelectContent({
         align={align}
         alignItemWithTrigger={alignItemWithTrigger}
         alignOffset={alignOffset}
-        className="z-50 max-h-[var(--available-height)]"
+        className="z-50 max-h-(--available-height)"
         side={side}
         sideOffset={sideOffset}
       >
         <SelectPrimitive.Popup
           className={cn(
-            'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[align-trigger=true]:animate-none data-[closed]:animate-out data-[open]:animate-in',
-            !alignItemWithTrigger &&
-              'data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
+            'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[closed]:animate-out data-[open]:animate-in relative z-50 max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[align-trigger=true]:animate-none',
+            alignItemWithTrigger !== true &&
+              'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
             className
           )}
           data-align-trigger={alignItemWithTrigger}
@@ -145,8 +145,8 @@ function SelectContent({
           <SelectScrollUpButton />
           <SelectPrimitive.List
             className={cn(
-              'max-h-(--available-height) w-full overflow-y-auto overflow-x-hidden p-1',
-              !alignItemWithTrigger && 'min-w-[var(--anchor-width)] scroll-my-1'
+              'max-h-(--available-height) w-full overflow-x-hidden overflow-y-auto p-1',
+              alignItemWithTrigger !== true && 'min-w-(--anchor-width) scroll-my-1'
             )}
           >
             {children}
@@ -172,7 +172,7 @@ function SelectItem({ className, children, testId, ...props }: SelectPrimitive.I
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-body outline-hidden *:last:flex *:last:items-center *:last:gap-2 data-[disabled]:pointer-events-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-body outline-hidden select-none *:last:flex *:last:items-center *:last:gap-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-subtle",
         className
       )}
       data-slot="select-item"

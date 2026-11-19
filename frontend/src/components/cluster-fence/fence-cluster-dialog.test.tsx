@@ -213,7 +213,7 @@ describe('the FenceClusterDialog', () => {
       const user = userEvent.setup();
       renderDialog();
 
-      await user.click(await screen.findByLabelText('Remove tag'));
+      await user.click(await screen.findByLabelText('Remove shadow-orders'));
       expect(screen.getByTestId('fence-preflight-reader-orders-dr')).toHaveAttribute('data-status', 'warn');
       expect(screen.queryByTestId('fence-preflight-policy-empty')).not.toBeInTheDocument();
     });

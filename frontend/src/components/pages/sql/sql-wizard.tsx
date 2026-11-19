@@ -13,20 +13,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import {
-  Choicebox,
-  ChoiceboxItem,
-  ChoiceboxItemContent,
-  ChoiceboxItemHeader,
-  ChoiceboxItemIndicator,
-  ChoiceboxItemSubtitle,
-  ChoiceboxItemTitle,
-} from 'components/redpanda-ui/components/choicebox';
-import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Field, FieldDescription, FieldError, FieldLabel, FieldTitle } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Progress } from 'components/redpanda-ui/components/progress';
+import { RadioGroup } from 'components/redpanda-ui/components/radio-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
+import { ChoiceCard } from 'components/ui/choice-card';
 import { GitBranch, GitMerge, Layers, Plus, X } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { Controller, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
@@ -182,31 +175,29 @@ function TopicStep({ topics, selectedTopicName, onSelect }: TopicStepProps) {
       {visibleTopics.length === 0 ? (
         <div className="text-body text-muted-foreground">No topics found.</div>
       ) : (
-        <Choicebox
+        <RadioGroup
           aria-label="Topics"
-          onValueChange={(value) => onSelect(value as string)}
+          onValueChange={(value) => onSelect(String(value))}
           value={selectedTopicName ?? ''}
         >
           <div className="grid gap-2">
             {visibleTopics.map((topic) => (
-              <ChoiceboxItem className="items-center" key={topic.name} size="full" value={topic.name}>
-                <ChoiceboxItemContent>
-                  <ChoiceboxItemIndicator />
-                </ChoiceboxItemContent>
-                <ChoiceboxItemHeader>
-                  <ChoiceboxItemTitle>
-                    <span className="flex items-center gap-2 font-mono text-body">
-                      <TonedIcon className="shrink-0" icon={Layers} size={15} tone="action" />
-                      {topic.name}
-                    </span>
-                  </ChoiceboxItemTitle>
-                  <ChoiceboxItemSubtitle>{describeTopic(topic)}</ChoiceboxItemSubtitle>
-                </ChoiceboxItemHeader>
-                {topic.iceberg ? <IcebergBadge /> : null}
-              </ChoiceboxItem>
+              <ChoiceCard
+                addon={topic.iceberg ? <IcebergBadge /> : null}
+                description={describeTopic(topic)}
+                key={topic.name}
+                radioPosition="start"
+                title={
+                  <span className="flex items-center gap-2 font-mono text-body">
+                    <TonedIcon className="shrink-0" icon={Layers} size={15} tone="action" />
+                    {topic.name}
+                  </span>
+                }
+                value={topic.name}
+              />
             ))}
           </div>
-        </Choicebox>
+        </RadioGroup>
       )}
     </div>
   );
@@ -264,7 +255,7 @@ function TableNameStep({ topic, form, error }: TableNameStepProps) {
         <FieldTitle id={previewLabelId}>
           <span className="text-strong">This will run</span>
         </FieldTitle>
-        <SyncCodeBlock className="my-0" code={createTableSql(tableName, topic.name)} keepBackground lang="sql" />
+        <SimpleCodeBlock code={createTableSql(tableName, topic.name)} language="sql" width="full" />
       </figure>
 
       {error ? (

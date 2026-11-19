@@ -11,9 +11,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 import { z } from 'zod';
 
 import { convertRetentionValue } from './convert-retention-value';
@@ -44,7 +46,6 @@ import {
   DialogTitle,
 } from '../../redpanda-ui/components/dialog';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../../redpanda-ui/components/field';
-import { Group } from '../../redpanda-ui/components/group';
 import { Input } from '../../redpanda-ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
@@ -88,6 +89,7 @@ function NumInput(p: {
   placeholder?: string;
   min?: number;
   disabled?: boolean;
+  className?: string;
   containerClassName?: string;
   'data-testid'?: string;
 }) {
@@ -106,6 +108,7 @@ function NumInput(p: {
   return (
     <Input
       autoComplete="off"
+      className={p.className}
       containerClassName={p.containerClassName}
       data-testid={p['data-testid']}
       disabled={p.disabled}
@@ -174,8 +177,9 @@ function RetentionSelect<U extends string>(p: {
   }));
 
   return (
-    <Group attached>
+    <div className="flex w-full items-stretch">
       <NumInput
+        className={attachedFirstClassName}
         containerClassName="min-w-0 flex-1"
         data-testid={p['data-testid']}
         disabled={numDisabled}
@@ -196,7 +200,7 @@ function RetentionSelect<U extends string>(p: {
       >
         <SelectTrigger
           aria-label={`${p.label} unit`}
-          className="w-28 shrink-0"
+          className={cn(attachedLastClassName, 'w-28 shrink-0')}
           data-testid={`${p['data-testid']}-unit`}
         >
           <SelectValue />
@@ -209,7 +213,7 @@ function RetentionSelect<U extends string>(p: {
           ))}
         </SelectContent>
       </Select>
-    </Group>
+    </div>
   );
 }
 

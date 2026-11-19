@@ -17,9 +17,9 @@ import {
   FormLabel,
   FormMessage,
 } from 'components/redpanda-ui/components/form';
-import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
+import { labelStyles } from 'components/redpanda-ui/components/label/label-styles';
 import {
   Select,
   SelectContent,
@@ -585,7 +585,7 @@ function AuthMethodField({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <FormLabel>Authentication method</FormLabel>
+      <div className={labelStyles({})}>Authentication method</div>
       <Tabs
         onValueChange={(value) => {
           if (!value) {
@@ -766,7 +766,7 @@ function PasswordField({ form, isPending, isReadOnly }: { form: UserForm; isPend
             Make sure to save the password somewhere safe. It cannot be retrieved after creation.
           </FormDescription>
           <FormControl>
-            <Group>
+            <div className="flex w-full items-end gap-1.5">
               <Input type="password" {...field} />
               <CopyButton content={field.value} disabled={isReadOnly} size="icon" variant="outline" />
               <Button
@@ -779,7 +779,7 @@ function PasswordField({ form, isPending, isReadOnly }: { form: UserForm; isPend
               >
                 <RefreshCcw size={15} />
               </Button>
-            </Group>
+            </div>
           </FormControl>
           <FormMessage />
           <FormField
@@ -942,11 +942,11 @@ function ConsumerGroupField({
   const queryClient = useQueryClient();
   return (
     <div className="flex flex-col gap-2">
-      <FormLabel>Consumer group (optional)</FormLabel>
-      <FormDescription>
+      <div className={labelStyles({})}>Consumer group (optional)</div>
+      <div className="text-body-sm text-subtle">
         The group this input reads as, so its offsets are kept between restarts. It's set on the input and the user is
         granted access to it. Leave it empty if the input reads explicit topic partitions.
-      </FormDescription>
+      </div>
       <div className="flex flex-col gap-2">
         <FormField
           control={form.control}
@@ -1006,8 +1006,8 @@ function SaslUserFields({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <FormLabel>Username</FormLabel>
-        <FormDescription>Use an existing user, or create a new one.</FormDescription>
+        <div className={labelStyles({})}>Username</div>
+        <div className="text-body-sm text-subtle">Use an existing user, or create a new one.</div>
         <div className="flex flex-col gap-2">
           <UsernameField form={form} isPending={isPending} selectionMode={selectionMode} users={users} />
           <ExistingUserAlerts access={access} isPending={isPending} topicName={topicName} users={users} />
@@ -1052,8 +1052,10 @@ function ServiceAccountFields({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <FormLabel htmlFor="serviceAccountName">Service account name</FormLabel>
-        <FormDescription>Auto-generated name for the service account. You can customize it if needed.</FormDescription>
+        <Label htmlFor="serviceAccountName">Service account name</Label>
+        <div className="text-body-sm text-subtle">
+          Auto-generated name for the service account. You can customize it if needed.
+        </div>
         <Input
           disabled={isPending || isServiceAccountPending}
           id="serviceAccountName"

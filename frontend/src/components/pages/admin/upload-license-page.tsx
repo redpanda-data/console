@@ -63,9 +63,9 @@ const UploadLicenseForm: FC<{
                   })
                   .catch((err: Error) => setErrorMessage(err.message));
               }}
-              onError={(err) => {
-                // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.
-                setErrorMessage(err.message);
+              onError={() => {
+                // Dropzone reports the rejection itself. It replaces nothing, so drop the previous file too.
+                setErrorMessage('');
                 setLicenseFile(undefined);
                 setDroppedFiles(undefined);
               }}

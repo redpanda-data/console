@@ -1,21 +1,8 @@
 import { Separator as SeparatorPrimitive } from '@base-ui/react/separator';
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import type React from 'react';
-
 import { cn, type SharedProps } from '../lib/utils';
-
-const separatorVariants = cva('shrink-0', {
-  variants: {
-    variant: {
-      default: 'bg-border',
-      subtle: 'bg-border-subtle',
-      strong: 'bg-border-strong',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
+import { separatorVariants } from './separator/variants';
 
 // Plain classes (not data-[orientation] variants) so a consumer's explicit size wins.
 const orientationClasses = {
@@ -41,9 +28,9 @@ export type SeparatorVariant = VariantProps<typeof separatorVariants>['variant']
 
 type SeparatorProps = React.ComponentProps<typeof SeparatorPrimitive> &
   SharedProps & {
-    variant?: SeparatorVariant;
+    variant?: SeparatorVariant | undefined;
     /** `true` (default): decorative (`role="none"` + `aria-hidden`). `false`: native `role="separator"`. */
-    decorative?: boolean;
+    decorative?: boolean | undefined;
   };
 
 function Separator({
@@ -74,4 +61,4 @@ function Separator({
   );
 }
 
-export { Separator, separatorVariants };
+export { Separator };

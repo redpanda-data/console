@@ -30,7 +30,7 @@ export const LegacySchemaRegistrySection = ({ readOnlyApiMode = false }: { readO
 
   if (readOnlyApiMode) {
     return (
-      <Card size="full">
+      <Card>
         <CardHeader>
           <CardTitle>Shadow Schema Registry</CardTitle>
         </CardHeader>
@@ -45,7 +45,7 @@ export const LegacySchemaRegistrySection = ({ readOnlyApiMode = false }: { readO
   }
 
   return (
-    <Card size="full">
+    <Card>
       <CardHeader>
         <CardTitle>Shadow Schema Registry</CardTitle>
       </CardHeader>

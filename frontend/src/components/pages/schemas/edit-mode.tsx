@@ -11,15 +11,10 @@
 
 import { InfoIcon, WarningIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import {
-  Choicebox,
-  ChoiceboxItem,
-  ChoiceboxItemDescription,
-  ChoiceboxItemHeader,
-  ChoiceboxItemTitle,
-} from 'components/redpanda-ui/components/choicebox';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { RadioGroup } from 'components/redpanda-ui/components/radio-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ChoiceCard } from 'components/ui/choice-card';
 import { type FC, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -222,28 +217,24 @@ function EditSchemaMode({
         </div>
 
         <div className="mt-6 max-w-[800px]">
-          <Choicebox
+          <RadioGroup
             aria-label="Schema Registry mode"
             className="w-full"
-            data-testid="edit-mode-radio"
             onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
+            testId="edit-mode-radio"
             value={selectedMode}
           >
             {allOptions.map((option) => (
-              <ChoiceboxItem className="max-w-full" key={option.value} value={option.value}>
-                <ChoiceboxItemHeader>
-                  <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
-                  <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
-                  {option.warning && (
-                    <div className="mt-2 flex items-start gap-2 text-body text-warning">
-                      <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                      <span>{option.warning}</span>
-                    </div>
-                  )}
-                </ChoiceboxItemHeader>
-              </ChoiceboxItem>
+              <ChoiceCard description={option.description} key={option.value} title={option.title} value={option.value}>
+                {option.warning ? (
+                  <div className="mt-2 flex items-start gap-2 text-body text-warning">
+                    <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                    <span>{option.warning}</span>
+                  </div>
+                ) : null}
+              </ChoiceCard>
             ))}
-          </Choicebox>
+          </RadioGroup>
 
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
@@ -281,7 +272,12 @@ function EditSchemaMode({
             {subjectName}
           </div>
           <div className="mt-8 mb-4 text-heading-md font-bold">Schema</div>
-          <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
+          <SimpleCodeBlock
+            className="my-4"
+            code={getFormattedSchemaText(schema)}
+            language={schemaTypeToCodeBlockLanguage(schema.type)}
+            width="full"
+          />
         </div>
       )}
     </div>

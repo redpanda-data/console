@@ -4,7 +4,16 @@
 
 import type { Root } from 'hast';
 import { type Components, toJsxRuntime } from 'hast-util-to-jsx-runtime';
-import { type DependencyList, Fragment, type ReactNode, useEffect, useEffectEvent, useId, useState } from 'react';
+import {
+  createElement,
+  type DependencyList,
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useState,
+} from 'react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 import type {
   Awaitable,
@@ -15,17 +24,22 @@ import type {
   CodeToHastOptionsCommon,
   Highlighter,
   RegexEngine,
+  ShikiTransformer,
+  ShikiTransformerContext,
   StringLiteralUnion,
   ThemeRegistrationAny,
 } from 'shiki';
 import type { BundledTheme } from 'shiki/themes';
+import type {} from './hast-jsx';
+import { omitUndefined } from './utils/omit-undefined';
+import { hastRootSchema } from './use-shiki/hast-schema';
 
 const SPECIAL_LANGUAGES = new Set(['ansi', 'plain', 'plaintext', 'text', 'txt']);
 type LoadableLanguage = Parameters<Highlighter['loadLanguage']>[number];
 type LoadableTheme = Parameters<Highlighter['loadTheme']>[number];
 
 export const defaultThemes = {
-  light: 'github-light',
+  light: 'github-light-high-contrast',
   dark: 'github-dark-default',
 };
 
@@ -39,22 +53,36 @@ export type HighlightOptionsCommon = CodeToHastOptionsCommon<BundledLanguage> &
 
 export type HighlightOptionsThemes = CodeOptionsThemes<BundledTheme>;
 
-export type HighlightOptions = HighlightOptionsCommon & (HighlightOptionsThemes | Record<never, never>);
+export type HighlightOptions = HighlightOptionsCommon & Partial<HighlightOptionsThemes>;
 
 const highlighters = new Map<string, Promise<Highlighter>>();
+
+const registryTokenColors: ShikiTransformer = {
+  name: 'redpanda:token-colors',
+  span(this: ShikiTransformerContext, node) {
+    // This utility owns only the registry's exact light/dark variable protocol.
+    // Single themes retain inline colors; custom prefixes and named themes stay caller-owned.
+    const themes = 'themes' in this.options ? this.options.themes : undefined;
+    const prefix = 'cssVariablePrefix' in this.options ? this.options.cssVariablePrefix : undefined;
+    if (themes?.['light'] !== undefined && themes['dark'] !== undefined && (prefix ?? '--shiki-') === '--shiki-') {
+      this.addClassToHast(node, 'code-token');
+    }
+  },
+};
 
 export async function _highlight(code: string, options: HighlightOptions) {
   const { lang: initialLang, fallbackLanguage, components: _, engine = 'oniguruma', ...rest } = options;
   let lang = initialLang;
   let themes: CodeOptionsThemes<BundledTheme>;
-  let themesToLoad: (ThemeRegistrationAny | StringLiteralUnion<BundledTheme, string>)[];
+  let themesToLoad: (ThemeRegistrationAny | StringLiteralUnion<BundledTheme>)[];
 
-  if ('theme' in options && options.theme) {
-    themes = { theme: options.theme };
+  const theme = 'theme' in options ? options.theme : undefined;
+  if (theme !== undefined && theme !== '') {
+    themes = { theme };
     themesToLoad = [themes.theme];
   } else {
     themes = {
-      themes: 'themes' in options && options.themes ? options.themes : defaultThemes,
+      themes: 'themes' in options ? (options.themes ?? defaultThemes) : defaultThemes,
     };
     themesToLoad = Object.values(themes.themes).filter((v) => v !== undefined);
   }
@@ -74,18 +102,35 @@ export async function _highlight(code: string, options: HighlightOptions) {
   }
 
   try {
-    await highlighter.loadLanguage(lang as BundledLanguage);
+    await loadLanguage(highlighter, lang);
   } catch {
     lang = fallbackLanguage ?? 'text';
-    await highlighter.loadLanguage(lang as BundledLanguage);
+    await loadLanguage(highlighter, lang);
   }
 
-  return highlighter.codeToHast(code, {
-    lang,
-    ...rest,
-    ...themes,
-    defaultColor: 'themes' in themes ? false : undefined,
-  });
+  const transformers: ShikiTransformer[] = [registryTokenColors, ...(rest.transformers ?? [])];
+  return highlighter.codeToHast(
+    code,
+    omitUndefined({
+      lang,
+      ...rest,
+      ...themes,
+      defaultColor: 'themes' in themes ? false : undefined,
+      transformers,
+    })
+  );
+}
+
+async function loadLanguage(highlighter: Highlighter, language: string): Promise<void> {
+  if (SPECIAL_LANGUAGES.has(language) || highlighter.getLoadedLanguages().includes(language)) {
+    return;
+  }
+  const { bundledLanguages } = await import('shiki/langs');
+  const registration = Object.entries(bundledLanguages).find(([name]) => name === language)?.[1];
+  if (registration === undefined) {
+    throw new Error(`Unknown syntax language: ${language}`);
+  }
+  await highlighter.loadLanguage(registration);
 }
 
 export function _renderHighlight(hast: Root, options?: HighlightOptions) {
@@ -115,12 +160,12 @@ export async function getHighlighter(
   ]);
   let highlighter = highlighters.get(engineType);
 
-  if (!highlighter) {
+  if (highlighter === undefined) {
     let engine: Awaitable<RegexEngine>;
 
     if (engineType === 'js') {
       engine = import('shiki/engine/javascript').then((res) => res.createJavaScriptRegexEngine());
-    } else if (engineType === 'oniguruma' || !options.engine) {
+    } else if (engineType === 'oniguruma' || options.engine === undefined) {
       engine = import('shiki/engine/oniguruma').then((res) => res.createOnigurumaEngine(import('shiki/wasm')));
     } else {
       engine = options.engine;
@@ -143,10 +188,10 @@ export async function getHighlighter(
     });
 
     highlighters.set(engineType, highlighter);
-    return highlighter;
+    return await highlighter;
   }
 
-  return highlighter.then(async (instance) => {
+  return await highlighter.then(async (instance) => {
     const languages = options.langs.filter(
       (language): language is LoadableLanguage =>
         typeof language !== 'string' || language in bundledLanguages || SPECIAL_LANGUAGES.has(language)
@@ -181,12 +226,12 @@ export function useShiki(
     loading,
     ...options
   }: HighlightOptions & {
-    withPrerenderScript?: boolean;
+    withPrerenderScript?: boolean | undefined;
 
     /**
      * Displayed before highlighter is loaded.
      */
-    loading?: ReactNode;
+    loading?: ReactNode | undefined;
   },
   deps?: DependencyList
 ): ReactNode {
@@ -210,9 +255,13 @@ export function useShiki(
         : null;
     const attr = element?.getAttribute('data-markup');
 
-    if (attr) {
-      const hast = JSON.parse(attr);
-      return { key, node: renderHighlightWithMarkup(markupId, hast, shikiOptions, attr) };
+    if (attr !== undefined && attr !== null && attr !== '') {
+      try {
+        const hast = hastRootSchema.parse(JSON.parse(attr));
+        return { key, node: renderHighlightWithMarkup(markupId, hast, shikiOptions, attr) };
+      } catch (error) {
+        return { key, node: highlightError(code, loading, error) };
+      }
     }
 
     return { key, node: loading };
@@ -227,20 +276,7 @@ export function useShiki(
       })
       .catch((error: unknown) => {
         if (!task.aborted) {
-          const message = error instanceof Error ? error.message : 'Could not highlight code.';
-          setRendered({
-            key: task.key,
-            node: (
-              <>
-                {loading ?? (
-                  <pre>
-                    <code>{code}</code>
-                  </pre>
-                )}
-                <p role="alert">Syntax highlighting unavailable. Showing plain text. {message}</p>
-              </>
-            ),
-          });
+          setRendered({ key: task.key, node: highlightError(code, loading, error) });
         }
       });
   });
@@ -268,14 +304,31 @@ export function useShiki(
   return rendered.key === key ? rendered.node : loading;
 }
 
+function highlightError(code: string, loading: ReactNode, error: unknown): ReactNode {
+  const message = error instanceof Error ? error.message : 'Could not highlight code.';
+  return (
+    <>
+      {loading ?? (
+        <pre>
+          <code>{code}</code>
+        </pre>
+      )}
+      <p role="alert">Syntax highlighting unavailable. Showing plain text. {message}</p>
+    </>
+  );
+}
+
 function renderHighlightWithMarkup(id: string, tree: Root, shikiOptions: HighlightOptions, rawAttr?: string) {
-  const Pre = (shikiOptions.components?.pre ?? 'pre') as 'pre';
+  const Pre = shikiOptions.components?.pre ?? 'pre';
 
   return _renderHighlight(tree, {
     ...shikiOptions,
     components: {
       ...shikiOptions.components,
-      pre: (props) => <Pre {...props} data-markup={rawAttr ?? JSON.stringify(tree)} data-markup-id={id} />,
+      pre: (props) => {
+        const markupProps = { ...props, 'data-markup': rawAttr ?? JSON.stringify(tree), 'data-markup-id': id };
+        return createElement(Pre, markupProps);
+      },
     },
   });
 }

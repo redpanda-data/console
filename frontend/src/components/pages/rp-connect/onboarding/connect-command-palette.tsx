@@ -19,7 +19,7 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { ExternalLink, TriangleAlert, Waypoints } from 'lucide-react';
 import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { pluralizeWithNumber } from 'utils/string';
 
@@ -35,6 +35,7 @@ import {
 import { ConnectorLogo } from './connector-logo';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
+import { toBadgeGroupItems } from '../utils/badge-group-items';
 import { getCategoryDisplayName } from '../utils/categories';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import { deprecationMessage, deprecationNotice, isDeprecatedComponent } from '../utils/deprecation';
@@ -196,18 +197,27 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
           <div className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Categories</div>
           <BadgeGroup
             gap="md"
+            items={toBadgeGroupItems(categories, {
+              id: (category) => category,
+              text: (category) => category,
+              content: (category) => (
+                <Badge size="sm" tone="default" variant="subtle">
+                  {category}
+                </Badge>
+              ),
+            })}
             maxVisible={6}
-            renderOverflowContent={(overflow) => <div className="flex flex-col gap-1">{overflow}</div>}
+            renderOverflowContent={(overflow) => (
+              <div className="flex flex-col gap-1">
+                {overflow.map((item) => (
+                  <Fragment key={item.id}>{item.content}</Fragment>
+                ))}
+              </div>
+            )}
             tone="default"
             variant="subtle"
             wrap
-          >
-            {categories.map((category) => (
-              <Badge key={category} size="sm" tone="default" variant="subtle">
-                {category}
-              </Badge>
-            ))}
-          </BadgeGroup>
+          />
         </div>
       ) : null}
 

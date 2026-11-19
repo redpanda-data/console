@@ -57,14 +57,14 @@ const variants: Record<RedpandaLogoVariant, { viewBox: string; markPath: string;
 
 export interface RedpandaLogoProps extends React.SVGProps<SVGSVGElement> {
   /** Render the mark in `currentColor` too, for single-color placements. */
-  monochrome?: boolean;
+  monochrome?: boolean | undefined;
   /**
    * Which brand lockup to render:
    * - `horizontal` — mark + wordmark side by side (headers, expanded sidebars)
    * - `stacked` — mark above wordmark (square placements, splash screens)
    * - `mark` — logomark only (collapsed sidebars, avatars, favicons)
    */
-  variant?: RedpandaLogoVariant;
+  variant?: RedpandaLogoVariant | undefined;
 }
 
 /**

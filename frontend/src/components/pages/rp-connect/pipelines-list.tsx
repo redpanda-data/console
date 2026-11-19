@@ -18,7 +18,6 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
-import { Text } from 'components/redpanda-ui/components/typography';
 import type { FC, ReactNode } from 'react';
 import { showToast } from 'utils/toast.utils';
 
@@ -185,7 +184,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
         search={{} as never}
         to="/rp-connect/$pipelineId"
       >
-        <Text>{original.id}</Text>
+        <div className="text-body">{original.id}</div>
       </Link>
     ),
   },
@@ -201,7 +200,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
           search={{} as never}
           to="/rp-connect/$pipelineId"
         >
-          <Text className="wrap-break-word whitespace-break-spaces">{original.displayName}</Text>
+          <div className="text-body wrap-break-word whitespace-break-spaces">{original.displayName}</div>
         </Link>
       </div>
     ),
@@ -211,7 +210,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'description',
     accessorKey: 'description',
     cell: ({ row: { original } }) => (
-      <Text className="min-w-[200px] wrap-break-word whitespace-break-spaces">{original.description}</Text>
+      <div className="min-w-[200px] text-body wrap-break-word whitespace-break-spaces">{original.description}</div>
     ),
   },
   {

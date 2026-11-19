@@ -103,7 +103,7 @@ export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
   ];
 
   return (
-    <Card size="full">
+    <Card>
       <CardContent>
         <div className="relative h-[200px] w-full">
           <ReactFlowProvider>

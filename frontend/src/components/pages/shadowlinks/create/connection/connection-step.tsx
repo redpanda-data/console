@@ -25,7 +25,7 @@ export const ConnectionStep = () => {
   return (
     <div className="space-y-4">
       {/* SL name */}
-      <Card size="full">
+      <Card>
         <CardHeader>Name</CardHeader>
         <CardContent>
           <FormField

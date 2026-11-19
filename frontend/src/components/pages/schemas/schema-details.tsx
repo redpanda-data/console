@@ -16,7 +16,7 @@ import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence
 import { EditIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Separator } from 'components/redpanda-ui/components/separator';
@@ -667,10 +667,12 @@ const SubjectVersionDefinition = ({
         )}
 
         {/* Code Block */}
-        <DynamicCodeBlock
+        <SimpleCodeBlock
+          className="my-4"
           code={getFormattedSchemaText(schema)}
-          lang={schemaTypeToCodeBlockLanguage(schema.type)}
+          language={schemaTypeToCodeBlockLanguage(schema.type)}
           testId="schema-definition-code-block"
+          width="full"
         />
       </div>
       {/* References Box */}

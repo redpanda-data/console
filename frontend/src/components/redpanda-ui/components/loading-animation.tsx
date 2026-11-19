@@ -7,11 +7,10 @@ import type {
   AnimationEventCallback,
   AnimationEventName,
   AnimationEvents,
-  AnimationItem,
 } from 'lottie-web/build/player/lottie_light';
 import React from 'react';
-
 import { cn, type SharedProps } from '../lib/utils';
+import { type LottieAnimation, loadLottiePlayer } from './loading-animation/lottie-player';
 
 export interface LoadingAnimationLottieOptions extends Omit<AnimationConfigWithData, 'animationData' | 'container'> {
   onComplete?: AnimationEventCallback<AnimationEvents['complete']> | null;
@@ -27,34 +26,30 @@ export interface LoadingAnimationLottieOptions extends Omit<AnimationConfigWithD
 }
 
 export interface LoadingAnimationProps extends SharedProps {
-  aspectRatio?: string;
-  centered?: boolean;
-  children?: React.ReactNode;
-  className?: string;
-  containerProps?: React.HTMLAttributes<HTMLDivElement>;
+  aspectRatio?: string | undefined;
+  centered?: boolean | undefined;
+  children?: React.ReactNode | undefined;
+  className?: string | undefined;
+  containerProps?: React.HTMLAttributes<HTMLDivElement> | undefined;
   data?: unknown;
-  height?: string | number;
-  lottieOptions?: LoadingAnimationLottieOptions;
-  minHeight?: string | number;
-  progress?: number;
-  responsive?: boolean;
-  scale?: number;
-  style?: React.CSSProperties;
+  height?: string | number | undefined;
+  lottieOptions?: LoadingAnimationLottieOptions | undefined;
+  minHeight?: string | number | undefined;
+  progress?: number | undefined;
+  responsive?: boolean | undefined;
+  scale?: number | undefined;
+  style?: React.CSSProperties | undefined;
   type: 'lottie' | 'svg';
-  width?: string | number;
+  width?: string | number | undefined;
 }
 
 interface LottieViewProps {
   data: unknown;
   options: LoadingAnimationLottieOptions;
-  progress?: number;
+  progress?: number | undefined;
 }
 
 const defaultLottieOptions: LoadingAnimationLottieOptions = {};
-
-function loadLottiePlayer() {
-  return import('lottie-web/build/player/lottie_light').then((module) => module.default);
-}
 
 function getOptionalLottieConfig(
   assetsPath: LoadingAnimationLottieOptions['assetsPath'],
@@ -76,7 +71,7 @@ function getOptionalLottieConfig(
 // `destroy()` clears lottie's listener map wholesale, and calling one afterwards
 // reads off that nulled map and throws.
 function subscribeToLottieEvent<Name extends AnimationEventName>(
-  animation: AnimationItem,
+  animation: LottieAnimation,
   optionsRef: React.RefObject<LoadingAnimationLottieOptions>,
   name: Name,
   selectHandler: (
@@ -88,7 +83,10 @@ function subscribeToLottieEvent<Name extends AnimationEventName>(
   });
 }
 
-function subscribeToLottieEvents(animation: AnimationItem, optionsRef: React.RefObject<LoadingAnimationLottieOptions>) {
+function subscribeToLottieEvents(
+  animation: LottieAnimation,
+  optionsRef: React.RefObject<LoadingAnimationLottieOptions>
+) {
   subscribeToLottieEvent(animation, optionsRef, 'complete', (options) => options.onComplete);
   subscribeToLottieEvent(animation, optionsRef, 'loopComplete', (options) => options.onLoopComplete);
   subscribeToLottieEvent(animation, optionsRef, 'enterFrame', (options) => options.onEnterFrame);
@@ -101,14 +99,14 @@ function subscribeToLottieEvents(animation: AnimationItem, optionsRef: React.Ref
   subscribeToLottieEvent(animation, optionsRef, 'destroy', (options) => options.onDestroy);
 }
 
-function seekToProgress(animation: AnimationItem, progress: number) {
+function seekToProgress(animation: LottieAnimation, progress: number) {
   const boundedProgress = Math.min(100, Math.max(0, progress));
   animation.goToAndStop((boundedProgress / 100) * animation.totalFrames, true);
 }
 
 function LottieView({ data, options, progress }: LottieViewProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const animationRef = React.useRef<AnimationItem>(undefined);
+  const animationRef = React.useRef<LottieAnimation>(undefined);
   const optionsRef = React.useRef(options);
   const progressRef = React.useRef(progress);
   const [loadError, setLoadError] = React.useState<string | null>(null);
@@ -133,12 +131,12 @@ function LottieView({ data, options, progress }: LottieViewProps) {
   React.useEffect(
     function loadLottieAnimation() {
       const container = containerRef.current;
-      if (!container) {
+      if (container === null) {
         return;
       }
 
       let disposed = false;
-      let loadedAnimation: AnimationItem | undefined;
+      let loadedAnimation: LottieAnimation | undefined;
       loadLottiePlayer()
         .then((player) => {
           if (disposed) {
@@ -182,7 +180,7 @@ function LottieView({ data, options, progress }: LottieViewProps) {
 
   React.useEffect(
     function synchronizeLottieProgress() {
-      if (progress === undefined || !animationRef.current) {
+      if (progress === undefined || animationRef.current === undefined) {
         return;
       }
       seekToProgress(animationRef.current, progress);
@@ -192,13 +190,64 @@ function LottieView({ data, options, progress }: LottieViewProps) {
 
   return (
     <>
-      <div aria-hidden="true" className="h-full w-full" ref={containerRef} />
-      {loadError && (
+      <div aria-hidden="true" className="size-full" ref={containerRef} />
+      {loadError !== null && loadError !== '' ? (
         <div className="text-body-sm text-destructive" role="alert">
           {loadError}
         </div>
+      ) : (
+        loadError
       )}
     </>
+  );
+}
+
+interface ContainerSizing {
+  '--loading-aspect-ratio': React.CSSProperties['aspectRatio'];
+  '--loading-height': string | undefined;
+  '--loading-min-height': string | undefined;
+  '--loading-transform': string | undefined;
+  '--loading-width': string | undefined;
+}
+
+function resolveLength(value: string | number | undefined, fallback: React.CSSProperties['width']) {
+  const resolved = value === undefined || value === 0 || value === '' ? fallback : value;
+  return typeof resolved === 'number' ? `${resolved}px` : resolved;
+}
+
+function resolveTransform(scale: number | undefined, fallback: React.CSSProperties['transform']) {
+  return scale === undefined || scale === 0 ? fallback : `scale(${scale})`;
+}
+
+function loadingContainerClasses(
+  sizing: Readonly<{
+    width: string | undefined;
+    height: string | undefined;
+    minHeight: string | undefined;
+    aspectRatio: React.CSSProperties['aspectRatio'];
+    transform: string | undefined;
+  }>,
+  {
+    centered,
+    className,
+    containerProps,
+    responsive,
+  }: Pick<LoadingAnimationProps, 'centered' | 'className' | 'containerProps' | 'responsive'>
+) {
+  const base =
+    containerProps !== undefined && Object.hasOwn(containerProps, 'className')
+      ? containerProps.className
+      : cn(responsive === true && 'size-full', centered === true && 'flex items-center justify-center', className);
+  if (containerProps !== undefined && Object.hasOwn(containerProps, 'style')) {
+    return base;
+  }
+  return cn(
+    base,
+    sizing.width !== undefined && 'w-(--loading-width)',
+    sizing.height !== undefined && 'h-(--loading-height)',
+    sizing.minHeight !== undefined && 'min-h-(--loading-min-height)',
+    sizing.aspectRatio !== undefined && 'aspect-(--loading-aspect-ratio)',
+    sizing.transform !== undefined && 'transform-(--loading-transform)'
   );
 }
 
@@ -221,67 +270,48 @@ export const LoadingAnimation = ({
   testId,
   ref,
   ...props
-}: LoadingAnimationProps & { ref?: React.Ref<HTMLDivElement> }) => {
-  const containerStyle: React.CSSProperties = {
-    ...style,
-    ...(width && { width }),
-    ...(height && { height }),
-    ...(minHeight && { minHeight }),
-    ...(aspectRatio && { aspectRatio }),
-    ...(scale && { transform: `scale(${scale})` }),
+}: LoadingAnimationProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => {
+  const {
+    width: styleWidth,
+    height: styleHeight,
+    minHeight: styleMinHeight,
+    aspectRatio: styleAspectRatio,
+    transform: styleTransform,
+    ...forwardedStyle
+  } = style ?? {};
+  const containerStyle: React.CSSProperties & ContainerSizing = {
+    ...forwardedStyle,
+    '--loading-width': resolveLength(width, styleWidth),
+    '--loading-height': resolveLength(height, styleHeight),
+    '--loading-min-height': resolveLength(minHeight, styleMinHeight),
+    '--loading-aspect-ratio': aspectRatio === undefined || aspectRatio === '' ? styleAspectRatio : aspectRatio,
+    '--loading-transform': resolveTransform(scale, styleTransform),
   };
-
-  const containerClasses = cn(responsive && 'h-full w-full', centered && 'flex items-center justify-center', className);
-
-  const childrenWithProgress = React.Children.map(children, (child) => {
-    if (React.isValidElement<{ progress?: number }>(child) && progress !== undefined) {
-      return React.cloneElement(child, { progress });
-    }
-    return child;
-  });
-
-  if (type === 'svg') {
-    return (
-      <div
-        className={containerClasses}
-        ref={ref}
-        style={containerStyle}
-        {...containerProps}
-        {...props}
-        data-testid={testId}
-      >
-        {childrenWithProgress}
-      </div>
-    );
-  }
-
-  if (type === 'lottie' && data) {
-    return (
-      <div
-        className={containerClasses}
-        ref={ref}
-        style={containerStyle}
-        {...containerProps}
-        {...props}
-        data-testid={testId}
-      >
-        <LottieView data={data} options={lottieOptions} progress={progress} />
-      </div>
-    );
-  }
+  const containerClasses = loadingContainerClasses(
+    {
+      width: containerStyle['--loading-width'],
+      height: containerStyle['--loading-height'],
+      minHeight: containerStyle['--loading-min-height'],
+      aspectRatio: containerStyle['--loading-aspect-ratio'],
+      transform: containerStyle['--loading-transform'],
+    },
+    { centered, className, containerProps, responsive }
+  );
 
   return (
     <div
-      className={containerClasses}
       ref={ref}
       style={containerStyle}
       {...containerProps}
       {...props}
+      className={containerClasses}
       data-testid={testId}
     >
-      {childrenWithProgress}
+      {type === 'lottie' && data !== undefined && data !== null ? (
+        <LottieView data={data} options={lottieOptions} progress={progress} />
+      ) : (
+        children
+      )}
     </div>
   );
 };
-
-LoadingAnimation.displayName = 'LoadingAnimation';

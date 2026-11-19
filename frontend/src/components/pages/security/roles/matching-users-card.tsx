@@ -190,7 +190,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
   return (
     <div className="lg:col-span-1">
-      <Card size="full">
+      <Card>
         <CardHeader>
           <h3>Matching users / principals ({membersCount})</h3>
         </CardHeader>

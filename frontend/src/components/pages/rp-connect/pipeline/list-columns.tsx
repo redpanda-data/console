@@ -36,6 +36,7 @@ import { type PipelineRow, tagFilterValue } from './list-row';
 import { aggregateConnectors, matchesNameOrId } from './list-utils';
 import { PipelineRunsCell } from './pipeline-end-chip';
 import { ConnectorLogo } from '../onboarding/connector-logo';
+import { toBadgeGroupItems } from '../utils/badge-group-items';
 
 const EmptyCell = () => <span className="text-muted-foreground">—</span>;
 
@@ -46,26 +47,29 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
   }
   return (
     <BadgeGroup
+      items={toBadgeGroupItems(connectors, {
+        id: (c) => c.name,
+        text: (c) => (c.count > 1 ? `${c.name} ×${c.count}` : c.name),
+        content: (c) => (
+          <Badge tone="default" variant="subtle">
+            <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
+            {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
+            <span>
+              {c.name}
+              {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
+            </span>
+          </Badge>
+        ),
+      })}
       maxVisible={2}
       renderOverflowContent={(overflow) => (
         <List>
-          {connectors.slice(-overflow.length).map((c) => (
-            <ListItem key={c.name}>{c.count > 1 ? `${c.name} ×${c.count}` : c.name}</ListItem>
+          {overflow.map((item) => (
+            <ListItem key={item.id}>{item.textValue}</ListItem>
           ))}
         </List>
       )}
-    >
-      {connectors.map((c) => (
-        <Badge key={c.name} tone="default" variant="subtle">
-          <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
-          {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
-          <span>
-            {c.name}
-            {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
-          </span>
-        </Badge>
-      ))}
-    </BadgeGroup>
+    />
   );
 };
 
@@ -177,25 +181,26 @@ export const createColumns = ({
       }
       return (
         <BadgeGroup
+          items={toBadgeGroupItems(tags, {
+            id: (t) => t.key,
+            text: (t) => `${t.key}: ${t.value}`,
+            content: (t) => (
+              <Badge tone="default" variant="outline">
+                {t.key}: {t.value}
+              </Badge>
+            ),
+          })}
           maxVisible={2}
           renderOverflowContent={(overflow) => (
             <List>
-              {tags.slice(-overflow.length).map((t) => (
-                <ListItem key={t.key}>
-                  {t.key}: {t.value}
-                </ListItem>
+              {overflow.map((item) => (
+                <ListItem key={item.id}>{item.textValue}</ListItem>
               ))}
             </List>
           )}
           tone="default"
           variant="outline"
-        >
-          {tags.map((t) => (
-            <Badge key={t.key} tone="default" variant="outline">
-              {t.key}: {t.value}
-            </Badge>
-          ))}
-        </BadgeGroup>
+        />
       );
     },
   },

@@ -41,8 +41,11 @@ export const ScopeSection = () => {
     setValue('schemaRegistry.scopeMode', mode as 'all' | 'specify', { shouldValidate: true });
   };
 
-  const handleDestinationModeChange = (mode: string) => {
-    setValue('schemaRegistry.destinationContextsMode', mode as 'preserve' | 'map', { shouldValidate: true });
+  const handleDestinationModeChange = (mode: unknown) => {
+    if (mode !== 'preserve' && mode !== 'map') {
+      return;
+    }
+    setValue('schemaRegistry.destinationContextsMode', mode, { shouldValidate: true });
 
     // Keep any rows the user entered when toggling to preserve; the request
     // builder ignores them unless mode is map.

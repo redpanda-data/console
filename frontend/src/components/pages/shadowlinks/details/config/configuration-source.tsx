@@ -75,7 +75,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         Source
       </h2>
       {/* Name Section */}
-      <Card size="full" testId="source-name-card">
+      <Card testId="source-name-card">
         <CardHeader>
           <h3 className="text-heading-md">Name</h3>
         </CardHeader>
@@ -87,7 +87,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       </Card>
 
       {/* Source Cluster Section */}
-      <Card size="full" testId="source-cluster-card">
+      <Card testId="source-cluster-card">
         <CardHeader>
           <h3 className="text-heading-md">Source cluster</h3>
         </CardHeader>
@@ -132,7 +132,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       </Card>
 
       {/* Authentication Section */}
-      <Card size="full" testId="authentication-card">
+      <Card testId="authentication-card">
         <CardHeader>
           <h3 className="text-heading-md">Authentication</h3>
         </CardHeader>
@@ -165,7 +165,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       </Card>
 
       {/* Advanced Options Section */}
-      <Card size="full" testId="advanced-options-card">
+      <Card testId="advanced-options-card">
         <CardContent>
           <Accordion>
             <AccordionItem value="advanced">

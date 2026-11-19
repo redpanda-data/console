@@ -27,7 +27,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
 
   return (
     <div className="flex w-2/3 items-center">
-      <Card size={'full'}>
+      <Card>
         <CardHeader>
           <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>

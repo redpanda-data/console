@@ -82,7 +82,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
 
   if (allProperties.length === 0) {
     return (
-      <Card size="full" testId="topic-replication-placeholder-card">
+      <Card testId="topic-replication-placeholder-card">
         <CardContent>No topic properties configured for shadowing</CardContent>
       </Card>
     );
@@ -97,7 +97,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
         const categoryKey = category.toLowerCase().replace(/\s+/g, '-');
 
         return (
-          <Card key={categoryKey} size="full" testId={`category-${categoryKey}-card`}>
+          <Card key={categoryKey} testId={`category-${categoryKey}-card`}>
             <CardContent>
               <Accordion defaultValue={[categoryKey]}>
                 <AccordionItem value={categoryKey}>

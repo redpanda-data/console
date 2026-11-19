@@ -197,7 +197,8 @@ const uploadCertificatePem = async (
     { timeout: 200 }
   );
 
-  const input = scr.getByTestId(`add-${certType}-button`).querySelector('input[type="file"]');
+  // The file input is the upload action's sibling inside the Dropzone wrapper.
+  const input = scr.getByTestId(`add-${certType}-button`).parentElement?.querySelector('input[type="file"]');
   const file = new File([pemContent], `${certType}.pem`, { type: 'application/x-pem-file' });
 
   if (input) {

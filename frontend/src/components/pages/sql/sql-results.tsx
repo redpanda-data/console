@@ -13,7 +13,7 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { CodeBlock, CodeBlockContent, CodeBlockLines } from 'components/redpanda-ui/components/code-block';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
   Empty,
@@ -196,15 +196,11 @@ function JsonCellPopover({ value, name, typeLabel }: { value: string; name: stri
             <X size={14} />
           </Button>
         </div>
-        <SyncCodeBlock
-          allowCopy={false}
-          className="!my-0"
-          code={pretty}
-          keepBackground
-          lang="json"
-          themes={{ dark: 'github-dark', light: 'github-light' }}
-          viewportProps={{ className: 'max-h-96' }}
-        />
+        <CodeBlock>
+          <CodeBlockContent className="max-h-96">
+            <CodeBlockLines code={pretty} language="json" />
+          </CodeBlockContent>
+        </CodeBlock>
       </PopoverContent>
     </Popover>
   );

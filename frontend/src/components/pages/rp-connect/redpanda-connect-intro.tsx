@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
-import { Heading, List, ListItem, Text, Link as UILink } from 'components/redpanda-ui/components/typography';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { List, ListItem, Link as UILink } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
@@ -60,23 +60,23 @@ redpanda:
   return (
     <div className="grid grid-cols-[1fr_320px] gap-10">
       <div className="flex flex-col gap-3">
-        <Heading as="h2">Using Redpanda Connect</Heading>
-        <Text>
+        <h2 className="text-heading-xl">Using Redpanda Connect</h2>
+        <div className="text-body">
           Redpanda Connect is a declarative data streaming service with wide range of{' '}
           <UILink href={docsLinks.connect.componentCatalog} rel="noopener noreferrer" target="_blank">
             connectors and processors
           </UILink>
           .
-        </Text>
+        </div>
 
         <List className="flex flex-col" ordered>
           <ListItem>
-            <Text className="mt-3">Install Redpanda Connect</Text>
+            <div className="mt-3 text-body">Install Redpanda Connect</div>
             <div>
               <div className="mb-6 flex flex-col gap-2">
-                <Text>
+                <div className="text-body">
                   <strong>Choose your install method</strong>
-                </Text>
+                </div>
                 <div className="w-[275px]">
                   <SingleSelect<typeof selectedInstall>
                     onChange={setSelectedInstall}
@@ -85,21 +85,26 @@ redpanda:
                   />
                 </div>
                 <div>
-                  <DynamicCodeBlock code={installInstructions[selectedInstall]} lang="bash" />
+                  <SimpleCodeBlock
+                    className="my-4"
+                    code={installInstructions[selectedInstall]}
+                    language="bash"
+                    width="full"
+                  />
                 </div>
               </div>
             </div>
           </ListItem>
 
           <ListItem>
-            <Text className="mt-3">
+            <div className="mt-3 text-body">
               Build your first pipeline. Start from the Redpanda data generator example below. Explore the components
               using autocomplete (CTRL/CMD+Space). For other examples and use cases, see{' '}
               <UILink href={docsLinks.connect.cookbookCustomMetrics} rel="noopener noreferrer" target="_blank">
                 our documentation
               </UILink>
               .
-            </Text>
+            </div>
             <div className="mt-3 -ml-4 flex min-h-[550px] min-w-[500px]">
               <PipelinesYamlEditor
                 defaultPath="config.yaml"
@@ -116,7 +121,7 @@ redpanda:
           </ListItem>
 
           <ListItem>
-            <Text className="mt-3">
+            <div className="mt-3 text-body">
               Set up your connection to Redpanda for data in the{' '}
               <UILink href={docsLinks.connect.outputKafkaFranz} rel="noopener noreferrer" target="_blank">
                 kafka_franz
@@ -126,36 +131,36 @@ redpanda:
                 logs
               </UILink>{' '}
               in the redpanda component.
-            </Text>
-          </ListItem>
-
-          <ListItem>
-            <Text className="mt-3">Make sure that your output topic and logs topic both exist.</Text>
-          </ListItem>
-
-          <ListItem>
-            <Text className="mt-3">
-              To test the above config in the Terminal, first save your configuration from the editor to your working
-              directory as <code>config.yaml</code>.
-            </Text>
-          </ListItem>
-
-          <ListItem>
-            <Text className="mt-3">Test the config by executing it:</Text>
-            <div className="my-3 max-w-[400px]">
-              <DynamicCodeBlock code="rpk connect run ./config.yaml" lang="sh" />
-              <Text className="mt-3">Anything you write to stdin will be written unchanged to stdout.</Text>
             </div>
           </ListItem>
 
           <ListItem>
-            <Text className="mt-3">
+            <div className="mt-3 text-body">Make sure that your output topic and logs topic both exist.</div>
+          </ListItem>
+
+          <ListItem>
+            <div className="mt-3 text-body">
+              To test the above config in the Terminal, first save your configuration from the editor to your working
+              directory as <code>config.yaml</code>.
+            </div>
+          </ListItem>
+
+          <ListItem>
+            <div className="mt-3 text-body">Test the config by executing it:</div>
+            <div className="my-3 max-w-[400px]">
+              <SimpleCodeBlock className="my-4" code="rpk connect run ./config.yaml" language="sh" width="full" />
+              <div className="mt-3 text-body">Anything you write to stdin will be written unchanged to stdout.</div>
+            </div>
+          </ListItem>
+
+          <ListItem>
+            <div className="mt-3 text-body">
               Go to the{' '}
               <UILink as={Link} to="/topics">
                 Topics
               </UILink>{' '}
               page to read the logs and your output topic.{' '}
-            </Text>
+            </div>
           </ListItem>
         </List>
       </div>

@@ -128,8 +128,9 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
     [certType, label, setValue, trigger]
   );
 
-  const handleUploadError = useCallback((error: Error) => {
-    setUploadError(error.message || 'File was not accepted.');
+  // Dropzone reports a rejected file itself; clear a stale read error so only one shows.
+  const handleUploadError = useCallback(() => {
+    setUploadError(null);
   }, []);
 
   const handleRemove = useCallback(() => {

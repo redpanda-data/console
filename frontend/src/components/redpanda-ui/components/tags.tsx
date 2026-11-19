@@ -3,56 +3,47 @@
 import { XIcon } from 'lucide-react';
 import {
   type ComponentProps,
+  type CSSProperties,
   createContext,
   type MouseEventHandler,
   type ReactNode,
   useContext,
   useEffect,
-  useId,
   useRef,
   useState,
 } from 'react';
-import { Button, buttonVariants } from './button';
+import { Button } from './button';
+import { buttonVariants } from './button/variants';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { cn, type SharedProps } from '../lib/utils';
+import { requireDefined } from '../lib/utils/require-defined';
 
 interface TagsContextType {
-  listboxId: string;
   onOpenChange: (open: boolean) => void;
   open: boolean;
-  setValue?: (value: string) => void;
-  setWidth?: (width: number) => void;
-  value?: string;
-  width?: number;
+  setValue?: ((value: string) => void) | undefined;
+  setWidth?: ((width: number) => void) | undefined;
+  value?: string | undefined;
+  width?: number | undefined;
 }
-const TagsContext = createContext<TagsContextType>({
-  value: undefined,
-  setValue: undefined,
-  open: false,
-  onOpenChange: () => {
-    // no-op
-  },
-  width: undefined,
-  setWidth: undefined,
-  listboxId: 'tags-listbox',
-});
+const TagsContext = createContext<TagsContextType | null>(null);
 
 const useTagsContext = () => {
   const context = useContext(TagsContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useTagsContext must be used within a TagsProvider');
   }
   return context;
 };
 
 export type TagsProps = {
-  value?: string;
-  setValue?: (value: string) => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
-  className?: string;
+  value?: string | undefined;
+  setValue?: ((value: string) => void) | undefined;
+  open?: boolean | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
+  children?: ReactNode | undefined;
+  className?: string | undefined;
 } & SharedProps;
 
 export const Tags = ({
@@ -66,16 +57,15 @@ export const Tags = ({
 }: TagsProps) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [width, setWidth] = useState<number>();
-  const listboxId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const open = controlledOpen ?? uncontrolledOpen;
   const onOpenChange = controlledOnOpenChange ?? setUncontrolledOpen;
   useEffect(() => {
-    if (!ref.current) {
+    if (ref.current === null) {
       return;
     }
     const resizeObserver = new ResizeObserver((entries) => {
-      setWidth(entries[0].contentRect.width);
+      setWidth(requireDefined(entries[0], 'index.tsx: expected entries[0]').contentRect.width);
     });
     resizeObserver.observe(ref.current);
     return () => {
@@ -83,7 +73,7 @@ export const Tags = ({
     };
   }, []);
   return (
-    <TagsContext.Provider value={{ value, setValue, open, onOpenChange, width, setWidth, listboxId }}>
+    <TagsContext.Provider value={{ value, setValue, open, onOpenChange, width, setWidth }}>
       <Popover onOpenChange={onOpenChange} open={open}>
         <div className={cn('relative w-full', className)} data-testid={testId} ref={ref}>
           {children}
@@ -92,79 +82,91 @@ export const Tags = ({
     </TagsContext.Provider>
   );
 };
-export type TagsTriggerProps = ComponentProps<'div'> & { testId?: string };
-export const TagsTrigger = ({ className, children, testId, ...props }: TagsTriggerProps) => {
-  const { open, listboxId } = useTagsContext();
+export type TagsTriggerProps = ComponentProps<'div'> & { testId?: string | undefined };
+export const TagsTrigger = ({ className, children, testId, 'aria-label': label, ...props }: TagsTriggerProps) => {
+  useTagsContext();
   return (
     <PopoverTrigger
+      aria-label={label ?? 'Tags'}
       nativeButton={false}
       render={
         <div
-          aria-controls={listboxId}
-          aria-expanded={open}
           className={cn(
             buttonVariants({ variant: 'outline' }),
-            'h-auto w-full justify-between p-2 hover:bg-accent active:bg-accent-pressed',
+            'h-auto w-full min-w-0 justify-between p-2 whitespace-normal hover:bg-accent active:bg-accent-pressed',
             className
           )}
           data-testid={testId}
-          role="combobox"
-          tabIndex={0}
           {...props}
+          data-slot="tags-trigger"
         >
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-1">
             {children}
             <span className="px-2 py-px text-subtle">Select a tag...</span>
           </div>
         </div>
       }
+      role="combobox"
+      tabIndex={0}
     />
   );
 };
-export type TagsValueProps = ComponentProps<'span'> & { testId?: string };
-export const TagsValue = ({
-  className,
-  children,
-  onRemove,
-  testId,
-  ...props
-}: TagsValueProps & { onRemove?: () => void }) => {
+export type TagsValueProps = ComponentProps<'span'> & { testId?: string | undefined } & (
+    | { onRemove: () => void; removeLabel: string }
+    | { onRemove?: undefined; removeLabel?: never }
+  );
+export const TagsValue = ({ className, children, onRemove, removeLabel, testId, ...props }: TagsValueProps) => {
   const handleRemove: MouseEventHandler<HTMLButtonElement> = (event) => {
     event.preventDefault();
     event.stopPropagation();
+    const trigger = event.currentTarget.closest('[data-slot="tags-trigger"]');
+    if (trigger instanceof HTMLElement) {
+      trigger.focus();
+    }
     onRemove?.();
   };
   return (
     <span
       className={cn(
-        'm-0.5 inline-flex min-h-6 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 font-medium text-body text-strong transition-colors hover:bg-surface-subtle-hover active:bg-surface-subtle-pressed motion-reduce:transition-none',
+        'inline-flex min-h-6 max-w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1 text-body font-medium text-strong transition-colors hover:bg-surface-subtle-hover active:bg-surface-subtle-pressed motion-reduce:transition-none',
         className
       )}
       data-testid={testId}
       {...props}
     >
-      <span className="leading-tight">{children}</span>
-      {onRemove ? (
+      <span className="min-w-0 leading-tight [overflow-wrap:anywhere] whitespace-normal">{children}</span>
+      {onRemove === undefined ? null : (
         <Button
-          aria-label="Remove tag"
-          className="size-auto cursor-pointer border-0 bg-transparent p-0 transition-colors hover:text-destructive motion-reduce:transition-none"
+          aria-label={removeLabel}
+          className="shrink-0"
           onClick={handleRemove}
+          size="icon-xs"
           type="button"
-          variant="unstyled"
+          variant="destructive-ghost"
         >
-          <XIcon className="text-subtle" size={12} />
+          <XIcon aria-hidden="true" />
         </Button>
-      ) : null}
+      )}
     </span>
   );
 };
 
 export type TagsContentProps = ComponentProps<typeof PopoverContent>;
-export const TagsContent = ({ className, children, ...props }: TagsContentProps) => {
+export const TagsContent = ({ className, children, style, ...props }: TagsContentProps) => {
   const { width } = useTagsContext();
+  const label = props['aria-label'] ?? 'Search tags';
+  const measuredWidth: CSSProperties & { '--tags-width': string | undefined } = {
+    '--tags-width': width === undefined ? undefined : `${width}px`,
+  };
   return (
-    <PopoverContent className={cn('p-0', className)} style={{ width }} {...props}>
-      <Command>{children}</Command>
+    <PopoverContent
+      className={cn(className, style === undefined && width !== undefined && 'w-(--tags-width)')}
+      padding="none"
+      style={style ?? measuredWidth}
+      {...props}
+      aria-label={label}
+    >
+      <Command label={label}>{children}</Command>
     </PopoverContent>
   );
 };
@@ -174,14 +176,15 @@ export const TagsInput = ({ className, ...props }: TagsInputProps) => (
   <CommandInput className={cn('h-9', className)} {...props} />
 );
 export type TagsListProps = ComponentProps<typeof CommandList>;
-export const TagsList = ({ className, ...props }: TagsListProps) => {
-  const { listboxId } = useTagsContext();
-  return <CommandList className={cn('max-h-[200px]', className)} id={listboxId} {...props} />;
-};
+export const TagsList = ({ className, ...props }: TagsListProps) => (
+  <CommandList className={cn('max-h-[200px]', className)} {...props} />
+);
 
 export type TagsEmptyProps = ComponentProps<typeof CommandEmpty>;
 export const TagsEmpty = ({ children, className, ...props }: TagsEmptyProps) => (
-  <CommandEmpty {...props}>{children ?? 'No tags found.'}</CommandEmpty>
+  <CommandEmpty className={className} {...props}>
+    {children ?? 'No tags found.'}
+  </CommandEmpty>
 );
 
 export type TagsGroupProps = ComponentProps<typeof CommandGroup>;

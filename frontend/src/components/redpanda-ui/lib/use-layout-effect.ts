@@ -11,10 +11,11 @@ import React from 'react';
  * @see https://github.com/radix-ui/primitives/blob/main/packages/react/use-layout-effect/src/use-layout-effect.tsx
  * @see https://reactjs.org/docs/hooks-reference.html#uselayouteffect
  */
-const useLayoutEffect = globalThis?.document
-  ? React.useLayoutEffect
-  : () => {
-      // Server-side no-op
-    };
+const useLayoutEffect =
+  typeof document === 'undefined'
+    ? () => {
+        // Server-side no-op
+      }
+    : React.useLayoutEffect;
 
 export { useLayoutEffect };

@@ -11,7 +11,7 @@
 
 import type { VariantProps } from 'class-variance-authority';
 import type { DataTableColumnDef } from 'components/redpanda-ui/components/data-table';
-import type { tableHeadVariants } from 'components/redpanda-ui/components/table';
+import type { tableHeadVariants } from 'components/redpanda-ui/components/table/variants';
 
 type TableHeadVariants = VariantProps<typeof tableHeadVariants>;
 

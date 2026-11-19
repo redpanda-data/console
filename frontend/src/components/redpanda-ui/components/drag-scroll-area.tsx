@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-
 import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -12,7 +11,7 @@ const DRAG_THRESHOLD = 4;
 const DEFAULT_FADE_SIZE = 32;
 
 // Manual horizontal scroll (not `scrollIntoView`) so the page's vertical scroll isn't disturbed.
-function scrollChildIntoView(scroller: HTMLDivElement, child: HTMLElement, fadeSize: number) {
+function scrollChildIntoView(scroller: HTMLDivElement, child: Element, fadeSize: number) {
   const view = scroller.getBoundingClientRect();
   const rect = child.getBoundingClientRect();
   // Inset by the fade so the child clears the gradient, not just the frame edge.
@@ -28,17 +27,19 @@ function scrollChildIntoView(scroller: HTMLDivElement, child: HTMLElement, fadeS
 function useFocusScroll(ref: React.RefObject<HTMLDivElement | null>, fadeSize: number) {
   React.useEffect(() => {
     const el = ref.current;
-    if (!el) {
+    if (el === null) {
       return;
     }
     const onFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && el.contains(target)) {
+      const target = e.target;
+      if (target instanceof Element && el.contains(target)) {
         scrollChildIntoView(el, target, fadeSize);
       }
     };
     el.addEventListener('focusin', onFocusIn);
-    return () => el.removeEventListener('focusin', onFocusIn);
+    return () => {
+      el.removeEventListener('focusin', onFocusIn);
+    };
   }, [ref, fadeSize]);
 }
 
@@ -49,7 +50,7 @@ function useDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const el = ref.current;
-    if (!el || e.button !== 0) {
+    if (el === null || e.button !== 0) {
       return;
     }
     drag.current = { x: e.clientX, left: el.scrollLeft };
@@ -58,7 +59,7 @@ function useDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const el = ref.current;
     const start = drag.current;
-    if (!(el && start)) {
+    if (!(el !== null && start !== null)) {
       return;
     }
     const dx = e.clientX - start.x;
@@ -88,34 +89,31 @@ function useDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
   return { onPointerDown, onPointerMove, onPointerEnd, onClickCapture };
 }
 
-type MaskStyle = Pick<React.CSSProperties, 'maskImage' | 'WebkitMaskImage' | 'maskComposite' | 'WebkitMaskComposite'>;
-
 // Alpha mask fading the content to transparent on the overflowing side(s) — no track-color
 // knowledge needed, so it blends on any background. Snaps when an edge flips (reduced-motion-safe).
 // `preserveBottomEdge` keeps the bottom N px opaque (e.g. an underline baseline) by unioning a
-// second layer with `mask-composite: add` (legacy WebKit spells `add` as `source-over`).
-function edgeMask(start: boolean, end: boolean, fadeSize: number, preserveBottomEdge: number): MaskStyle {
+// second layer with `mask-composite: add`.
+function edgeMask(start: boolean, end: boolean, fadeSize: number, preserveBottomEdge: number): string | undefined {
   if (!(start || end)) {
-    return {};
+    return;
   }
   const left = start ? `transparent 0, #000 ${fadeSize}px` : '#000 0';
   const right = end ? `#000 calc(100% - ${fadeSize}px), transparent 100%` : '#000 100%';
   const horizontal = `linear-gradient(to right, ${left}, ${right})`;
 
-  if (!preserveBottomEdge) {
-    return { maskImage: horizontal, WebkitMaskImage: horizontal };
+  if (preserveBottomEdge === 0 || Number.isNaN(preserveBottomEdge)) {
+    return horizontal;
   }
   const bottom = `linear-gradient(to top, #000 ${preserveBottomEdge}px, transparent ${preserveBottomEdge}px)`;
-  const image = `${horizontal}, ${bottom}`;
-  return { maskImage: image, WebkitMaskImage: image, maskComposite: 'add', WebkitMaskComposite: 'source-over' };
+  return `${horizontal}, ${bottom}`;
 }
 
 type DragScrollAreaProps = React.ComponentProps<'div'> &
   SharedProps & {
     // Width of the edge fade in px, and the inset a focused child is scrolled clear of.
-    fadeSize?: number;
+    fadeSize?: number | undefined;
     // Keep the bottom N px fully opaque, exempt from the edge fade (e.g. an underline baseline).
-    preserveBottomEdge?: number;
+    preserveBottomEdge?: number | undefined;
   };
 
 /**
@@ -137,7 +135,10 @@ function DragScrollArea({
   const drag = useDragScroll(scrollerRef);
   useFocusScroll(scrollerRef, fadeSize);
 
-  const mask = edgeMask(edges.start, edges.end, fadeSize, preserveBottomEdge);
+  const maskStyle = {
+    '--drag-scroll-mask': edgeMask(edges.start, edges.end, fadeSize, preserveBottomEdge),
+    ...style,
+  } satisfies React.CSSProperties & { '--drag-scroll-mask': string | undefined };
   const overflowing = edges.start || edges.end;
 
   return (
@@ -146,7 +147,7 @@ function DragScrollArea({
       {...props}
       className={cn(
         // `min-w-0` lets the area shrink below its content (and thus overflow) inside flex parents.
-        'min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        'min-w-0 [scrollbar-width:none] overflow-x-auto overscroll-x-contain mask-(--drag-scroll-mask) mask-add [&::-webkit-scrollbar]:hidden',
         overflowing && 'cursor-grab active:cursor-grabbing',
         className
       )}
@@ -158,7 +159,7 @@ function DragScrollArea({
       onPointerMove={drag.onPointerMove}
       onPointerUp={drag.onPointerEnd}
       ref={scrollerRef}
-      style={{ ...mask, ...style }}
+      style={maskStyle}
     >
       {children}
     </div>

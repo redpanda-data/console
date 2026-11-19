@@ -5,16 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { labelStyles } from 'components/redpanda-ui/components/label/label-styles';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { ChevronDown, XIcon } from 'lucide-react';
 import { type MotionProps, motion } from 'motion/react';
@@ -371,8 +364,8 @@ function TopicNameSection({
 
   return (
     <div className="flex flex-col gap-2">
-      <FormLabel>Topic name</FormLabel>
-      <FormDescription>{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</FormDescription>
+      <div className={labelStyles({})}>Topic name</div>
+      <div className="text-body-sm text-subtle">{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</div>
       <div className="flex flex-col items-start gap-2">
         {selectionMode === 'both' && (
           <ToggleGroup

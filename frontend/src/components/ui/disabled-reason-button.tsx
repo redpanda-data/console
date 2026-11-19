@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, type ButtonProps, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button, type ButtonProps } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ReactNode } from 'react';

@@ -31,6 +31,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuLink,
   SidebarProvider,
   useSidebar,
 } from 'components/redpanda-ui/components/sidebar';
@@ -168,20 +169,19 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        aria-current={isActive ? 'page' : undefined}
-        aria-disabled={item.isDisabled}
-        disabled={item.isDisabled}
-        isActive={isActive}
-        render={
-          item.isDisabled ? undefined : (
-            <Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to} />
-          )
-        }
-        tooltip={item.isDisabled ? { children: item.disabledText } : titleString}
-      >
-        {item.isDisabled ? <span className="flex items-center gap-2">{itemContent}</span> : itemContent}
-      </SidebarMenuButton>
+      {item.isDisabled ? (
+        <SidebarMenuLink disabled href={item.to} tooltip={{ children: item.disabledText }}>
+          <span className="flex items-center gap-2">{itemContent}</span>
+        </SidebarMenuLink>
+      ) : (
+        <SidebarMenuLink
+          isActive={isActive}
+          render={<Link aria-current={isActive ? 'page' : undefined} onClick={onNavClick} to={item.to} />}
+          tooltip={titleString}
+        >
+          {itemContent}
+        </SidebarMenuLink>
+      )}
     </SidebarMenuItem>
   );
 }

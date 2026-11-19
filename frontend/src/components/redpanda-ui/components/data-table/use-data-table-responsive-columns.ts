@@ -28,7 +28,7 @@ function applyResponsiveColumnVisibility<TData extends RowData>(
     let changed = false;
     const next = { ...current };
     for (const { columnId, hideBelowPx } of rules) {
-      if (!table.getColumn(columnId)) {
+      if (table.getColumn(columnId) === undefined) {
         continue;
       }
       const visible = width >= hideBelowPx;
@@ -65,7 +65,7 @@ export function useDataTableResponsiveColumns<TData extends RowData>(
   useLayoutEffect(
     function observeDataTableWidth() {
       const container = containerRef.current;
-      if (!container || rulesRef.current.length === 0) {
+      if (container === null || rulesRef.current.length === 0) {
         return;
       }
 
@@ -82,7 +82,9 @@ export function useDataTableResponsiveColumns<TData extends RowData>(
         applyResponsiveColumnVisibility(tableRef.current, rulesRef.current, width);
       });
       observer.observe(container);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+      };
     },
     [containerRef, rulesKey]
   );

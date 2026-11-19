@@ -101,7 +101,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
 
   if (!acls || acls.length === 0) {
     return (
-      <Card size="full">
+      <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>ACLs (0)</CardTitle>
           <CardAction>
@@ -129,7 +129,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
   }
 
   return (
-    <Card size="full">
+    <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle>ACLs ({acls.length})</CardTitle>
       </CardHeader>

@@ -1,22 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-
 import { cn, type DotSize, dotColorVariants, type SharedProps, type StackableProps } from '../lib/utils';
-
-const statusDotSizeVariants = cva('', {
-  variants: {
-    size: {
-      xxs: 'size-2',
-      xs: 'size-3',
-      sm: 'size-4',
-      md: 'size-5',
-      lg: 'size-6',
-    },
-  },
-  defaultVariants: {
-    size: 'md',
-  },
-});
+import { statusDotSizeVariants } from './status-dot/variants';
 
 const statusDotCenterSizeVariants = cva('', {
   variants: {
@@ -33,6 +18,19 @@ const statusDotCenterSizeVariants = cva('', {
   },
 });
 
+// A shadow ring preserves the halo's footprint and center when dots overlap.
+const statusDotStackedVariants = cva('ring-background', {
+  variants: {
+    size: {
+      xxs: 'ring-1',
+      xs: 'ring-2',
+      sm: 'ring-1',
+      md: 'ring-[1.5px]',
+      lg: 'ring-2',
+    },
+  },
+});
+
 function StatusDot({
   variant,
   size = 'md',
@@ -46,14 +44,18 @@ function StatusDot({
   SharedProps &
   StackableProps &
   VariantProps<typeof dotColorVariants> & {
-    pulsing?: boolean;
-    size?: DotSize;
+    pulsing?: boolean | undefined;
+    size?: DotSize | undefined;
   }) {
   return (
     <span
       // `w-fit` so the wrapper keeps the ring's width wherever it is placed: the core is
       // centred on the wrapper, so a stretched grid or flex item pulls the two apart.
-      className={cn('relative inline-flex w-fit shrink-0 rounded-full', className)}
+      className={cn(
+        'relative inline-flex w-fit shrink-0 rounded-full',
+        stacked && statusDotStackedVariants({ size }),
+        className
+      )}
       data-slot="status-dot"
       data-testid={testId}
       {...props}
@@ -70,7 +72,7 @@ function StatusDot({
         aria-hidden="true"
         className={cn(
           statusDotCenterSizeVariants({ size }),
-          'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full',
+          'absolute top-1/2 left-1/2 -translate-1/2 rounded-full',
           dotColorVariants({ variant })
         )}
       >
@@ -80,4 +82,4 @@ function StatusDot({
   );
 }
 
-export { StatusDot, statusDotSizeVariants };
+export { StatusDot };

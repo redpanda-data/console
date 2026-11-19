@@ -14,7 +14,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import AnnouncementBar from 'components/builder-io/announcement-bar';
-import { Toaster } from 'components/redpanda-ui/components/sonner';
+import { SonnerToaster } from 'components/misc/sonner-toaster';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
@@ -123,7 +123,7 @@ function AppContent() {
         <ErrorModalsRenderer />
 
         {/* Toaster for notifications */}
-        <Toaster position="top-right" richColors theme={toasterTheme} />
+        <SonnerToaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>
   );

@@ -44,7 +44,7 @@ export function wrapStringChild(
   child: React.ReactNode,
   Wrapper: React.ComponentType<{
     children: React.ReactNode;
-    className?: string;
+    className?: string | undefined;
   }>,
   className?: string
 ): React.ReactNode {
@@ -55,54 +55,40 @@ export function wrapStringChild(
 }
 
 export interface SharedProps {
-  testId?: string;
+  testId?: string | undefined;
 }
+
+/** Native data attributes keep primitive values when composing props outside JSX. */
+export type DataAttributes = Record<`data-${string}`, string | number | boolean | null | undefined>;
 
 /* Portal props, in one place so a visual-regression test can open any of them the same way. */
 
 /** Controlled open state, for Dialog, Popover, Sheet, Drawer and friends. */
 export interface PortalRootProps {
   /** Uncontrolled default open state */
-  defaultOpen?: boolean;
+  defaultOpen?: boolean | undefined;
   /** Callback when open state changes */
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: ((open: boolean) => void) | undefined;
   /** Controlled open state */
-  open?: boolean;
+  open?: boolean | undefined;
 }
 
 /** Adds non-modal mode: Dialog, Sheet, Drawer, DropdownMenu. */
 export type ModalRootProps = PortalRootProps & {
   /** When false, prevents body pointer-events:none and focus trapping */
-  modal?: boolean;
+  modal?: boolean | undefined;
 };
 
-/**
- * Radix-compat auto-focus hooks. Base UI exposes neither, so these type-check and then do nothing,
- * silently. Drawer, now Base UI too, doesn't accept them at all.
- */
-export interface FocusScopeContentProps {
-  /**
-   * @deprecated Honoured by nothing. Handle close-focus in a `ref` callback or an `onOpenChange`
-   * handler. Scheduled for removal in a future major.
-   */
-  onCloseAutoFocus?: (event: Event) => void;
-  /**
-   * @deprecated Honoured by nothing. Use `initialFocus` on the underlying `Popup` (`initialFocus={false}`
-   * replaces `onOpenAutoFocus={(e) => e.preventDefault()}`). Scheduled for removal in a future major.
-   */
-  onOpenAutoFocus?: (event: Event) => void;
-}
-
-/** Content props: the focus hooks plus where to render. */
-export type PortalContentProps = FocusScopeContentProps & {
+/** Content portal placement. Focus behavior belongs to the underlying Base UI popup. */
+export interface PortalContentProps {
   /** Container element for inline rendering (no portal to body) */
-  container?: HTMLElement;
-};
+  container?: HTMLElement | undefined;
+}
 
 /** Fixed-position modals: Dialog, Sheet, Drawer, Credenza, AlertDialog. */
 export type FixedPositionContentProps = PortalContentProps & {
   /** When false, hides the overlay/backdrop */
-  showOverlay?: boolean;
+  showOverlay?: boolean | undefined;
 };
 
 /* Shared by StatusDot, CountDot and StatusBadge. */
@@ -110,7 +96,7 @@ export type FixedPositionContentProps = PortalContentProps & {
 export type SemanticVariant = 'success' | 'informative' | 'warning' | 'destructive' | 'disabled';
 export type DotSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
 export interface StackableProps {
-  stacked?: boolean;
+  stacked?: boolean | undefined;
 }
 
 export const dotColorVariants = cva('', {
@@ -127,20 +113,5 @@ export const dotColorVariants = cva('', {
   },
   defaultVariants: {
     variant: 'informative',
-  },
-});
-
-export const dotStackedVariants = cva('!border-background', {
-  variants: {
-    size: {
-      xxs: 'border-[1px]',
-      xs: 'border-[2px]',
-      sm: 'border',
-      md: 'border-[1.5px]',
-      lg: 'border-2',
-    },
-  },
-  defaultVariants: {
-    size: 'md',
   },
 });

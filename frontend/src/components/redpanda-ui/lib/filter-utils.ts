@@ -1,3 +1,5 @@
+import { requireDefined } from './utils/require-defined';
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type FilterType = 'text' | 'option' | 'multiOption';
@@ -150,17 +152,17 @@ export function determineNewOperator(
   }
 
   const opDetails = filterTypeOperatorDetails[type][currentOperator];
-  if (!opDetails) {
+  if (opDetails === undefined) {
     return currentOperator;
   }
 
   // Single → multiple
   if (a < b && b >= 2) {
-    return (opDetails.singularOf as string) ?? currentOperator;
+    return opDetails.singularOf ?? currentOperator;
   }
   // Multiple → single
   if (a > b && b <= 1) {
-    return (opDetails.pluralOf as string) ?? currentOperator;
+    return opDetails.pluralOf ?? currentOperator;
   }
 
   return currentOperator;
@@ -168,8 +170,8 @@ export function determineNewOperator(
 
 // ── Filter Predicate Functions (for TanStack Table filterFn) ───────────
 
-export function optionFilterFn(rowValue: string, filterModel: FilterModel<'option'>): boolean {
-  if (!rowValue) {
+export function optionFilterFn(rowValue: string, filterModel: Pick<FilterModel, 'operator' | 'values'>): boolean {
+  if (rowValue === '') {
     return false;
   }
   if (filterModel.values.length === 0) {
@@ -191,10 +193,10 @@ export function optionFilterFn(rowValue: string, filterModel: FilterModel<'optio
   }
 }
 
-export function multiOptionFilterFn(rowValue: string[], filterModel: FilterModel<'multiOption'>): boolean {
-  if (!rowValue) {
-    return false;
-  }
+export function multiOptionFilterFn(
+  rowValue: string[],
+  filterModel: Pick<FilterModel, 'operator' | 'values'>
+): boolean {
   if (filterModel.values.length === 0) {
     return true;
   }
@@ -214,13 +216,15 @@ export function multiOptionFilterFn(rowValue: string[], filterModel: FilterModel
   }
 }
 
-export function textFilterFn(rowValue: string, filterModel: FilterModel<'text'>): boolean {
-  if (!filterModel.values.length) {
+export function textFilterFn(rowValue: string, filterModel: Pick<FilterModel, 'operator' | 'values'>): boolean {
+  if (filterModel.values.length === 0) {
     return true;
   }
 
-  const value = rowValue?.toLowerCase().trim() ?? '';
-  const filterStr = filterModel.values[0].toLowerCase().trim();
+  const value = rowValue.toLowerCase().trim();
+  const filterStr = requireDefined(filterModel.values[0], 'index.ts: expected filterModel.values[0]')
+    .toLowerCase()
+    .trim();
 
   if (filterStr === '') {
     return true;
@@ -240,7 +244,7 @@ export function textFilterFn(rowValue: string, filterModel: FilterModel<'text'>)
 
 export function createFilterFn(type: FilterType) {
   return (row: { getValue: (id: string) => unknown }, columnId: string, filterModel: FilterModel) => {
-    if (!filterModel || filterModel.values.length === 0) {
+    if (filterModel.values.length === 0) {
       return true;
     }
 
@@ -248,11 +252,15 @@ export function createFilterFn(type: FilterType) {
 
     switch (type) {
       case 'option':
-        return optionFilterFn(value as string, filterModel as FilterModel<'option'>);
+        return typeof value === 'string' && optionFilterFn(value, filterModel);
       case 'multiOption':
-        return multiOptionFilterFn(value as string[], filterModel as FilterModel<'multiOption'>);
+        return (
+          Array.isArray(value) &&
+          value.every((entry: unknown): entry is string => typeof entry === 'string') &&
+          multiOptionFilterFn(value, filterModel)
+        );
       case 'text':
-        return textFilterFn(value as string, filterModel as FilterModel<'text'>);
+        return typeof value === 'string' && textFilterFn(value, filterModel);
       default:
         return true;
     }

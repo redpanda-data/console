@@ -71,7 +71,7 @@ export const ShadowSchemaRegistrySection = ({ disabledModes = [], modeNotice }: 
   };
 
   return (
-    <Card data-testid="shadow-schema-registry-section" size="full">
+    <Card data-testid="shadow-schema-registry-section">
       <CardHeader>
         <CardTitle>Shadow Schema Registry</CardTitle>
       </CardHeader>

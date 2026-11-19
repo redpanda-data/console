@@ -4,15 +4,14 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
 import { Separator } from './separator';
-import { cn, type SharedProps } from '../lib/utils';
+import { cn, type DataAttributes, type SharedProps } from '../lib/utils';
 
-function ItemGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+function ItemGroup({ className, testId, ...props }: React.ComponentProps<'ul'> & SharedProps) {
   return (
-    <div
+    <ul
       className={cn('group/item-group flex w-full flex-col', className)}
       data-slot="item-group"
       data-testid={testId}
-      role="list"
       {...props}
     />
   );
@@ -23,7 +22,7 @@ function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Sepa
 }
 
 const itemVariants = cva(
-  'group/item flex w-full flex-wrap items-center rounded-md border border-transparent text-body outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none [a]:transition-colors [a]:hover:bg-accent [a]:active:bg-accent-pressed',
+  'group/item flex w-full flex-wrap items-center rounded-md border border-transparent text-body transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none [a]:transition-colors [a]:hover:bg-accent [a]:active:bg-accent-pressed',
   {
     variants: {
       variant: {
@@ -52,6 +51,14 @@ function Item({
   render,
   ...props
 }: useRender.ComponentProps<'div'> & VariantProps<typeof itemVariants> & SharedProps) {
+  const elementProps = {
+    className: cn(itemVariants({ variant, size, className })),
+    'data-size': size,
+    'data-slot': 'item',
+    'data-testid': testId,
+    'data-variant': variant,
+  } satisfies React.ComponentPropsWithRef<'div'> & DataAttributes;
+
   return useRender({
     defaultTagName: 'div',
     render,
@@ -60,16 +67,7 @@ function Item({
       variant,
       size,
     },
-    props: mergeProps<'div'>(
-      {
-        className: cn(itemVariants({ variant, size, className })),
-        'data-size': size,
-        'data-slot': 'item',
-        'data-testid': testId,
-        'data-variant': variant,
-      } as React.ComponentPropsWithRef<'div'>,
-      props
-    ),
+    props: mergeProps<'div'>(elementProps, props),
   });
 }
 
@@ -128,8 +126,8 @@ function ItemDescription({ className, ...props }: React.ComponentProps<'p'>) {
   return (
     <p
       className={cn(
-        'line-clamp-2 text-balance text-body text-subtle',
-        '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
+        'line-clamp-2 text-body text-balance text-subtle',
+        '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
         className
       )}
       data-slot="item-description"

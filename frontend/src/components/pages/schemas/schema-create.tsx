@@ -998,7 +998,7 @@ const ReferencesEditor = (p: {
 };
 
 const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
-  const pairs = p.state.metadataProperties.map(({ key, value }) => ({ key, value }));
+  const rows = p.state.metadataProperties.map(({ id, key, value }) => ({ id, pair: { key, value } }));
 
   return (
     <div className="w-1/2">
@@ -1008,14 +1008,11 @@ const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateCh
         onChange={(updated) => {
           p.onStateChange((prev) => ({
             ...prev,
-            metadataProperties: updated.map((pair, i) => ({
-              id: prev.metadataProperties[i]?.id ?? crypto.randomUUID(),
-              ...pair,
-            })),
+            metadataProperties: updated.map(({ id, pair }) => ({ id, key: pair.key, value: pair.value })),
           }));
         }}
         testId="schema-create-metadata"
-        value={pairs}
+        value={rows}
         valueFieldProps={{ placeholder: 'e.g. team-platform' }}
       />
     </div>

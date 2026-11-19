@@ -40,7 +40,8 @@ type CertificateUploadRowProps = {
 export const CertificateUploadRow = ({ fileName, onDrop, onError, testId }: CertificateUploadRowProps) => (
   <Dropzone
     accept={CERTIFICATE_ACCEPT}
-    className="h-auto! flex-row! justify-start!"
+    // The upload action is the wrapper's button child; Dropzone forwards className to the wrapper.
+    className="[&>button]:flex-row! [&>button]:justify-start!"
     maxFiles={1}
     onDrop={onDrop}
     onError={onError}

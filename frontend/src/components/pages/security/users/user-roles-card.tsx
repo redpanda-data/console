@@ -131,7 +131,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
 
   if (roles.length === 0) {
     return (
-      <Card size="full">
+      <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>Roles</CardTitle>
           <CardAction>
@@ -150,7 +150,7 @@ export const UserRolesCard = ({ roles, onChangeRoles }: UserRolesCardProps) => {
   }
 
   return (
-    <Card size="full">
+    <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle>Roles</CardTitle>
         <CardAction>

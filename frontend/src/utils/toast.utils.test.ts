@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { toast } from 'components/redpanda-ui/components/toast';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 import {
   BadRequest_FieldViolationSchema,
   BadRequestSchema,

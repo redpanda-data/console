@@ -3,7 +3,7 @@ import { useRender } from '@base-ui/react/use-render';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 import type React from 'react';
 
-import { cn, type SharedProps } from '../lib/utils';
+import { cn, type DataAttributes, type SharedProps } from '../lib/utils';
 
 function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" data-testid={testId} {...props} />;
@@ -12,7 +12,7 @@ function Breadcrumb({ testId, ...props }: React.ComponentProps<'nav'> & SharedPr
 function BreadcrumbList({ className, testId, ...props }: React.ComponentProps<'ol'> & SharedProps) {
   return (
     <ol
-      className={cn('wrap-break-word flex flex-wrap items-center gap-1.5 text-body text-subtle sm:gap-2.5', className)}
+      className={cn('flex flex-wrap items-center gap-1.5 text-body wrap-break-word text-subtle sm:gap-2.5', className)}
       data-slot="breadcrumb-list"
       data-testid={testId}
       {...props}
@@ -32,18 +32,17 @@ function BreadcrumbItem({ className, testId, ...props }: React.ComponentProps<'l
 }
 
 function BreadcrumbLink({ className, render, testId, ...props }: useRender.ComponentProps<'a'> & SharedProps) {
+  const elementProps = {
+    className: cn(
+      'inline-flex cursor-pointer items-center gap-1.5 link-standalone transition-colors hover:text-foreground motion-reduce:transition-none',
+      className
+    ),
+    'data-testid': testId,
+  } satisfies React.ComponentProps<'a'> & DataAttributes;
+
   return useRender({
     defaultTagName: 'a',
-    props: mergeProps<'a'>(
-      {
-        className: cn(
-          'link-standalone cursor-pointer transition-colors hover:text-foreground motion-reduce:transition-none',
-          className
-        ),
-        'data-testid': testId,
-      } as React.ComponentProps<'a'>,
-      props
-    ),
+    props: mergeProps<'a'>(elementProps, props),
     render,
     state: { slot: 'breadcrumb-link' },
   });
@@ -53,7 +52,7 @@ function BreadcrumbPage({ className, testId, ...props }: React.ComponentProps<'s
   return (
     <span
       aria-current="page"
-      className={cn('font-normal text-foreground', className)}
+      className={cn('inline-flex items-center gap-1.5 font-normal text-foreground', className)}
       data-slot="breadcrumb-page"
       data-testid={testId}
       {...props}

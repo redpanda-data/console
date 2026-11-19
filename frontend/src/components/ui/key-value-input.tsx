@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Group } from 'components/redpanda-ui/components/group';
+import { cn } from 'components/redpanda-ui/lib/utils';
+import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 import { Input } from 'components/redpanda-ui/components/input';
 
 export type KeyValuePair = { key: string; value: string };
@@ -30,22 +31,22 @@ export function KeyValueInput({
   disabled,
 }: KeyValueInputProps) {
   return (
-    <Group attached>
+    <div className="flex w-full items-stretch">
       <Input
-        className="max-w-[100px] border-r-input border-r bg-primary-wash font-medium text-primary"
+        className={cn(attachedFirstClassName, 'max-w-[100px] border-r-input border-r bg-primary-wash font-medium text-primary')}
         disabled={disabled}
         onChange={(e) => onChange({ ...value, key: e.target.value })}
         placeholder={keyPlaceholder}
         value={value.key}
       />
       <Input
-        className="w-full"
+        className={cn(attachedLastClassName, 'w-full')}
         containerClassName="w-full"
         disabled={disabled}
         onChange={(e) => onChange({ ...value, value: e.target.value })}
         placeholder={valuePlaceholder}
         value={value.value}
       />
-    </Group>
+    </div>
   );
 }

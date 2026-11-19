@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@rstest/core';
+import { afterAll, beforeAll, describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useReducer } from 'react';
@@ -62,6 +62,25 @@ async function typeReplacementThenUndo(user: User) {
 }
 
 describe('connector property controls', () => {
+  // The registry Input steps with native stepUp()/stepDown(). Happy DOM's versions step from 0 rather
+  // than the synced `value` attribute, and assign through React's tracked `value` setter, so React
+  // never sees the change. Step the way Chromium does here: from the current value, untracked.
+  const proto = HTMLInputElement.prototype;
+  const nativeStep = { stepUp: proto.stepUp, stepDown: proto.stepDown };
+  beforeAll(() => {
+    const setValue = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    const stepBy = (direction: 1 | -1) =>
+      function steppedValue(this: HTMLInputElement) {
+        setValue?.call(this, String(Number(this.value || 0) + direction * Number(this.step || 1)));
+      };
+    proto.stepUp = stepBy(1);
+    proto.stepDown = stepBy(-1);
+  });
+  afterAll(() => {
+    proto.stepUp = nativeStep.stepUp;
+    proto.stepDown = nativeStep.stepDown;
+  });
+
   test.each(['DOUBLE', 'FLOAT'] as const)('%s steppers preserve fractional configuration values', async (type) => {
     const user = userEvent.setup();
     const property = makeProperty(type);

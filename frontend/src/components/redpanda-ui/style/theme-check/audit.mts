@@ -16,7 +16,6 @@ const DECL = /^\s*(--color-[a-z0-9-]+)\s*:\s*([^;]+);/i;
 const DARK_SELECTOR = /(\[data-theme=['"]?dark['"]?\]|\.dark\b)[^{]*\{/;
 const COLOR_PREFIX = /^--color-/;
 const VAR_REF = /^var\((--[a-z0-9-]+)\)$/i;
-const STATIC = /^--color-static-/;
 /** `static-dark` / `static-light` themselves, not their `-hover`/`-accent`/`-foreground` parts. */
 const STATIC_GROUND = /^--color-static-(?:dark|light)$/;
 
@@ -63,7 +62,7 @@ const parse = (file: string): Declaration[] => {
   const lines = readFileSync(file, 'utf8').split('\n');
   for (const [index, line] of lines.entries()) {
     const match = DECL.exec(line);
-    if (match) {
+    if (match?.[1] !== undefined && match[2] !== undefined) {
       declarations.push({
         name: match[1],
         value: match[2].trim(),
@@ -95,16 +94,21 @@ interface Sheet {
 
 /** dead — a name theme.css does not declare, so the declaration paints nothing. */
 const findDead = ({ rel, registryNames, overrides, isPalette }: Sheet): string[] =>
-  overrides
-    .filter((declaration) => !(isPalette(declaration.name) || registryNames.has(declaration.name)))
-    .map((declaration) => `${rel}:${declaration.line}  dead override — theme.css does not declare ${declaration.name}`);
+  overrides.flatMap((declaration) =>
+    isPalette(declaration.name) || registryNames.has(declaration.name)
+      ? []
+      : [`${rel}:${declaration.line}  dead override — theme.css does not declare ${declaration.name}`]
+  );
 
 /** duplicate — the same name twice in one block, so the first is unreachable. */
 const findDuplicates = ({ rel, overrides }: Sheet): string[] => {
   const failures: string[] = [];
   for (const block of ['light', 'dark'] as const) {
     const seen = new Map<string, number>();
-    for (const declaration of overrides.filter((other) => other.block === block)) {
+    for (const declaration of overrides) {
+      if (declaration.block !== block) {
+        continue;
+      }
       const first = seen.get(declaration.name);
       if (first === undefined) {
         seen.set(declaration.name, declaration.line);
@@ -121,7 +125,7 @@ const findDuplicates = ({ rel, overrides }: Sheet): string[] => {
 /** unresolved — a `var()` chain with nothing behind it. The dark block inherits the light block's names. */
 const findUnresolved = ({ rel, registryNames, overrides }: Sheet): string[] => {
   const lightNames = new Set(
-    overrides.filter((declaration) => declaration.block === 'light').map((declaration) => declaration.name)
+    overrides.flatMap((declaration) => (declaration.block === 'light' ? [declaration.name] : []))
   );
   const inScope = (declaration: Declaration, reference: string): boolean =>
     lightNames.has(reference) ||
@@ -130,7 +134,7 @@ const findUnresolved = ({ rel, registryNames, overrides }: Sheet): string[] => {
 
   return overrides.flatMap((declaration) => {
     const match = VAR_REF.exec(declaration.value);
-    if (!match || inScope(declaration, match[1])) {
+    if (match?.[1] === undefined || inScope(declaration, match[1])) {
       return [];
     }
     return [
@@ -141,25 +145,27 @@ const findUnresolved = ({ rel, registryNames, overrides }: Sheet): string[] => {
 
 /** flipped — a `static-*` role in the dark block, which is the one family with no dark value. */
 const findFlippedStatics = ({ rel, overrides }: Sheet): string[] =>
-  overrides
-    .filter((declaration) => declaration.block === 'dark' && STATIC.test(declaration.name))
-    .map(
-      (declaration) =>
-        `${rel}:${declaration.line}  flipped — ${declaration.name} is declared in the dark block, but the static-* family is the one family with no dark value by definition. Its paired -foreground does not flip either, so moving the ground here is what puts light ink on a light fill (or dark on dark) in exactly one theme.`
-    );
+  overrides.flatMap((declaration) =>
+    declaration.block === 'dark' && declaration.name.startsWith('--color-static-')
+      ? [
+          `${rel}:${declaration.line}  flipped — ${declaration.name} is declared in the dark block, but the static-* family is the one family with no dark value by definition. Its paired -foreground does not flip either, so moving the ground here is what puts light ink on a light fill (or dark on dark) in exactly one theme.`,
+        ]
+      : []
+  );
 
 /** incomplete — a static ground with no ink. Light-block only: the dark block is `flipped` already. */
 const findIncompleteStatics = ({ rel, registryNames, overrides }: Sheet): string[] =>
-  overrides
-    .filter((declaration) => declaration.block === 'light' && STATIC_GROUND.test(declaration.name))
-    .filter((ground) => {
-      const ink = `${ground.name}-foreground`;
-      return registryNames.has(ink) && !overrides.some((declaration) => declaration.name === ink);
-    })
-    .map(
-      (ground) =>
-        `${rel}:${ground.line}  incomplete — ${ground.name} is overridden but ${ground.name}-foreground is not, so the ink on this ground stays the registry's while the ground is yours`
-    );
+  overrides.flatMap((ground) => {
+    if (ground.block !== 'light' || !STATIC_GROUND.test(ground.name)) {
+      return [];
+    }
+    const ink = `${ground.name}-foreground`;
+    return registryNames.has(ink) && overrides.every((declaration) => declaration.name !== ink)
+      ? [
+          `${rel}:${ground.line}  incomplete — ${ground.name} is overridden but ${ground.name}-foreground is not, so the ink on this ground stays the registry's while the ground is yours`,
+        ]
+      : [];
+  });
 
 /**
  * hole — half a family, per `rule.mts`. Per block, because the dark block is its own complete sheet: a
@@ -171,13 +177,15 @@ const findHoles = ({ rel, registryNames }: Sheet, semantic: Declaration[]): stri
 
   for (const block of ['light', 'dark'] as const) {
     const overridden = new Set(
-      semantic
-        .filter((declaration) => declaration.block === block || (block === 'dark' && declaration.block === 'light'))
-        .map((declaration) => bareName(declaration.name))
+      semantic.flatMap((declaration) =>
+        declaration.block === block || (block === 'dark' && declaration.block === 'light')
+          ? [bareName(declaration.name)]
+          : []
+      )
     );
     // Report against the block that is missing the rung, so the line number lands where it is set.
     const declaredHere = new Set(
-      semantic.filter((declaration) => declaration.block === block).map((declaration) => bareName(declaration.name))
+      semantic.flatMap((declaration) => (declaration.block === block ? [bareName(declaration.name)] : []))
     );
     for (const hole of findOverrideHoles(declared, overridden)) {
       // The obliging token is light-only, so the light block already reported it.

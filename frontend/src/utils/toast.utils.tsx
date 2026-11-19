@@ -1,6 +1,6 @@
 import type { ConnectError } from '@connectrpc/connect';
 import { hasFenceActivity } from 'components/cluster-fence/cluster-fence-model';
-import { toast } from 'components/redpanda-ui/components/toast';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 import {
   BadRequestSchema,
   ErrorInfoSchema,

@@ -346,7 +346,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
 
   return (
     <div className="flex flex-col gap-3">
-      <Card>
+      <Card size="md">
         <CardHeader>
           <CardTitle>Variables</CardTitle>
           <CardDescription>Add a reference to a new or existing secret value, such as a key.</CardDescription>

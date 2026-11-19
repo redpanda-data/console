@@ -1,28 +1,11 @@
 'use client';
 
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import React, { type HTMLAttributes, useContext, useState } from 'react';
-
 import { Button, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
-
-const bannerVariants = cva(
-  'sticky top-0 z-40 flex w-full flex-row items-center justify-between gap-4 px-4 text-left font-medium text-body selection:bg-selection selection:text-selection-foreground',
-  {
-    variants: {
-      variant: {
-        secondary: 'bg-secondary text-secondary-foreground',
-        brand: 'bg-brand text-brand-foreground',
-        muted: 'bg-surface-subtle text-subtle',
-        primary: 'bg-primary text-primary-foreground',
-      },
-    },
-    defaultVariants: {
-      variant: 'secondary',
-    },
-  }
-);
+import { bannerVariants } from './banner/variants';
 
 /** No `open`: the provider only renders while the banner is open, so a consumer could only read `true`. */
 interface BannerContextValue {
@@ -55,22 +38,22 @@ const markDismissed = (key: string): void => {
 
 function useBanner() {
   const context = useContext(BannerContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('Banner components must be used within a Banner');
   }
   return context;
 }
 
-interface BannerProps extends HTMLAttributes<HTMLDivElement>, VariantProps<typeof bannerVariants>, SharedProps {
-  height?: string;
+interface BannerProps extends React.ComponentProps<'div'>, VariantProps<typeof bannerVariants>, SharedProps {
+  height?: string | undefined;
 }
 
 interface BannerContentRootProps extends BannerProps {
   globalKey: string | null;
 }
 
-function BannerContentRoot({ globalKey, id, height = '3rem', variant, testId, ...props }: BannerContentRootProps) {
-  const [open, setOpen] = useState(() => (globalKey ? !isDismissed(globalKey) : true));
+function BannerContentRoot({ globalKey, id, height, style, variant, testId, ...props }: BannerContentRootProps) {
+  const [open, setOpen] = useState(() => (globalKey !== null && globalKey !== '' ? !isDismissed(globalKey) : true));
 
   // Unmounted rather than hidden, so a dismissed banner takes no layout and holds no focusable child.
   // Nothing below needs a `hidden` class for the closed state — there is no closed state down here.
@@ -78,16 +61,21 @@ function BannerContentRoot({ globalKey, id, height = '3rem', variant, testId, ..
     return null;
   }
 
+  const { height: styleHeight, ...consumerStyle } = style ?? {};
+  const resolvedHeight = height ?? styleHeight ?? '3rem';
+  const bannerStyle: React.CSSProperties & { '--banner-height': string } = {
+    ...consumerStyle,
+    '--banner-height': typeof resolvedHeight === 'number' ? `${resolvedHeight}px` : resolvedHeight,
+  };
+
   return (
     <BannerContext.Provider value={{ setOpen, globalKey }}>
       <div
         data-testid={testId}
         id={id}
         {...props}
-        className={cn(bannerVariants({ variant }), props.className)}
-        style={{
-          height,
-        }}
+        className={cn(bannerVariants({ variant }), 'h-(--banner-height)', props.className)}
+        style={bannerStyle}
       >
         {props.children}
       </div>
@@ -96,7 +84,7 @@ function BannerContentRoot({ globalKey, id, height = '3rem', variant, testId, ..
 }
 
 function Banner(props: BannerProps) {
-  const globalKey = props.id ? `redpanda-cloud-banner-${props.id}` : null;
+  const globalKey = props.id === undefined || props.id === '' ? null : `redpanda-cloud-banner-${props.id}`;
   return <BannerContentRoot {...props} globalKey={globalKey} key={globalKey ?? 'banner-without-id'} />;
 }
 
@@ -125,7 +113,7 @@ function BannerClose({ variant = 'current-ghost', className, ...props }: BannerC
       className={className}
       onClick={() => {
         setOpen(false);
-        if (globalKey) {
+        if (globalKey !== null && globalKey !== '') {
           markDismissed(globalKey);
         }
       }}
@@ -139,4 +127,4 @@ function BannerClose({ variant = 'current-ghost', className, ...props }: BannerC
   );
 }
 
-export { Banner, BannerClose, BannerContent, bannerVariants };
+export { Banner, BannerClose, BannerContent };

@@ -14,9 +14,9 @@ import {
   useFormContext,
   useFormState,
 } from 'react-hook-form';
-
 import { Label } from './label';
-import { cn, type SharedProps } from '../lib/utils';
+import { hasSlotContent } from '../lib/has-slot-content';
+import { cn, type DataAttributes, type SharedProps } from '../lib/utils';
 
 const Form = FormProvider;
 
@@ -86,14 +86,7 @@ const formSectionVariants = cva('', {
   },
 });
 
-interface FormFieldContextValue<
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-> {
-  name: TName;
-}
-
-const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
+const FormFieldContext = React.createContext<string | null>(null);
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -101,27 +94,27 @@ const FormField = <
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => (
-  <FormFieldContext.Provider value={{ name: props.name }}>
+  <FormFieldContext.Provider value={props.name}>
     <Controller {...props} />
   </FormFieldContext.Provider>
 );
 
 const useFormField = () => {
-  const fieldContext = React.useContext(FormFieldContext);
-  const itemContext = React.useContext(FormItemContext);
-  const { getFieldState } = useFormContext();
-  const formState = useFormState({ name: fieldContext.name });
-  const fieldState = getFieldState(fieldContext.name, formState);
-
-  if (!fieldContext) {
+  const name = React.useContext(FormFieldContext);
+  const id = React.useContext(FormItemContext);
+  if (name === null) {
     throw new Error('useFormField should be used within <FormField>');
   }
-
-  const { id } = itemContext;
+  if (id === null) {
+    throw new Error('useFormField should be used within <FormItem>');
+  }
+  const { getFieldState } = useFormContext();
+  const formState = useFormState({ name });
+  const fieldState = getFieldState(name, formState);
 
   return {
     id,
-    name: fieldContext.name,
+    name,
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
@@ -129,11 +122,7 @@ const useFormField = () => {
   };
 };
 
-interface FormItemContextValue {
-  id: string;
-}
-
-const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
+const FormItemContext = React.createContext<string | null>(null);
 
 interface FormItemProps extends React.ComponentProps<'div'>, VariantProps<typeof formItemVariants>, SharedProps {}
 
@@ -141,7 +130,7 @@ function FormItem({ className, layout, spacing, testId, ...props }: FormItemProp
   const id = React.useId();
 
   return (
-    <FormItemContext.Provider value={{ id }}>
+    <FormItemContext.Provider value={id}>
       <div
         className={cn(formItemVariants({ layout, spacing }), className)}
         data-slot="form-item"
@@ -157,19 +146,20 @@ function FormLabel({
   required,
   children,
   ...props
-}: React.ComponentProps<'label'> & { required?: boolean }) {
+}: Omit<React.ComponentProps<typeof Label>, 'invalid'> & { required?: boolean | undefined }) {
   const { error, formItemId } = useFormField();
 
   return (
     <Label
-      className={cn('data-[error=true]:text-destructive', className)}
-      data-error={!!error}
+      className={className}
+      data-error={error !== undefined}
       data-slot="form-label"
       htmlFor={formItemId}
+      invalid={error !== undefined}
       {...props}
     >
       {children}
-      {required ? (
+      {required === true ? (
         <span aria-hidden="true" className="ml-1 text-destructive">
           *
         </span>
@@ -183,17 +173,16 @@ function FormControl({ render, children, ...props }: useRender.ComponentProps<'d
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
   const element = render ?? (React.isValidElement(children) ? children : <div>{children}</div>);
 
+  const elementProps = {
+    'aria-describedby': error === undefined ? formDescriptionId : `${formDescriptionId} ${formMessageId}`,
+    'aria-invalid': error !== undefined,
+    'data-slot': 'form-control',
+    id: formItemId,
+  } satisfies useRender.ElementProps<'div'> & DataAttributes;
+
   return useRender({
     render: element,
-    props: mergeProps<'div'>(
-      {
-        'aria-describedby': error ? `${formDescriptionId} ${formMessageId}` : `${formDescriptionId}`,
-        'aria-invalid': !!error,
-        'data-slot': 'form-control',
-        id: formItemId,
-      } as useRender.ElementProps<'div'>,
-      props
-    ),
+    props: mergeProps<'div'>(elementProps, props),
   });
 }
 
@@ -213,9 +202,9 @@ function FormDescription({ className, ...props }: React.ComponentProps<'div'>) {
 
 function FormMessage({ className, ...props }: React.ComponentProps<'div'>) {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message ?? '') : props.children;
+  const body = error === undefined ? props.children : (error.message ?? '');
 
-  if (!body) {
+  if (!hasSlotContent(body)) {
     return null;
   }
 
@@ -227,7 +216,7 @@ function FormMessage({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 interface FormContainerProps extends React.ComponentProps<'form'>, VariantProps<typeof formVariants> {
-  testId?: string;
+  testId?: string | undefined;
 }
 
 function FormContainer({ className, layout, width, testId, ...props }: FormContainerProps) {
@@ -242,8 +231,8 @@ function FormContainer({ className, layout, width, testId, ...props }: FormConta
 }
 
 interface FormSectionProps extends React.ComponentProps<'div'>, VariantProps<typeof formSectionVariants>, SharedProps {
-  description?: string;
-  title?: string;
+  description?: string | undefined;
+  title?: string | undefined;
 }
 
 function FormSection({
@@ -263,10 +252,12 @@ function FormSection({
       data-testid={testId}
       {...props}
     >
-      {title || description ? (
+      {(title !== undefined && title !== '') || (description !== undefined && description !== '') ? (
         <div className="mb-4">
-          {title ? <h3 className="text-heading-md">{title}</h3> : null}
-          {description ? <div className="mt-1 text-body text-subtle">{description}</div> : null}
+          {title !== undefined && title !== '' ? <h3 className="text-heading-md">{title}</h3> : null}
+          {description !== undefined && description !== '' ? (
+            <div className="mt-1 text-body text-subtle">{description}</div>
+          ) : null}
         </div>
       ) : null}
       {children}
@@ -279,11 +270,11 @@ interface SimpleFormFieldProps<
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > extends Omit<ControllerProps<TFieldValues, TName>, 'render'> {
   children: (field: ControllerRenderProps<TFieldValues, TName>) => React.ReactElement;
-  description?: string;
-  descriptionPosition?: 'top' | 'bottom';
-  label?: string;
-  layout?: FormItemProps['layout'];
-  required?: boolean;
+  description?: string | undefined;
+  descriptionPosition?: 'top' | 'bottom' | undefined;
+  label?: string | undefined;
+  layout?: FormItemProps['layout'] | undefined;
+  required?: boolean | undefined;
 }
 
 function SimpleFormField<
@@ -298,20 +289,20 @@ function SimpleFormField<
   children,
   ref,
   ...fieldProps
-}: SimpleFormFieldProps<TFieldValues, TName> & { ref?: React.Ref<HTMLDivElement> }) {
+}: SimpleFormFieldProps<TFieldValues, TName> & { ref?: React.Ref<HTMLDivElement> | undefined }) {
   return (
     <FormField
       {...fieldProps}
       render={({ field }) => (
         <FormItem layout={layout} ref={ref}>
-          {label ? (
-            <FormLabel className="leading-normal" required={required}>
-              {label}
-            </FormLabel>
+          {label !== undefined && label !== '' ? <FormLabel required={required}>{label}</FormLabel> : null}
+          {description !== undefined && description !== '' && descriptionPosition === 'top' ? (
+            <FormDescription>{description}</FormDescription>
           ) : null}
-          {description && descriptionPosition === 'top' ? <FormDescription>{description}</FormDescription> : null}
           <FormControl>{children(field)}</FormControl>
-          {description && descriptionPosition === 'bottom' ? <FormDescription>{description}</FormDescription> : null}
+          {description !== undefined && description !== '' && descriptionPosition === 'bottom' ? (
+            <FormDescription>{description}</FormDescription>
+          ) : null}
           <FormMessage />
         </FormItem>
       )}

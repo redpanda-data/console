@@ -1,3 +1,5 @@
+import { requireDefined } from './utils/require-defined';
+
 /**
  * An editor theme built from the design tokens. Monaco's `defineTheme` wants `#rrggbb` and cannot read a
  * custom property, so the tokens are resolved by painting: a probe takes `color: var(--color-X)` and the
@@ -29,7 +31,7 @@ const EDITOR_TOKENS = {
 
 export type EditorTokenName = keyof typeof EDITOR_TOKENS;
 
-const HEX_CHANNEL = (value: number) =>
+const hexChannel = (value: number) =>
   Math.max(0, Math.min(255, Math.round(value)))
     .toString(16)
     .padStart(2, '0');
@@ -41,8 +43,11 @@ const toHex = (painted: string): string => {
   if (parts.length < 3) {
     return '#000000';
   }
-  const alpha = parts.length > 3 && parts[3] < 1 ? HEX_CHANNEL(parts[3] * 255) : '';
-  return `#${HEX_CHANNEL(parts[0])}${HEX_CHANNEL(parts[1])}${HEX_CHANNEL(parts[2])}${alpha}`;
+  const alpha =
+    parts.length > 3 && requireDefined(parts[3], 'index.tsx: expected parts[3]') < 1
+      ? hexChannel(requireDefined(parts[3], 'index.tsx: expected parts[3]') * 255)
+      : '';
+  return `#${hexChannel(requireDefined(parts[0], 'index.tsx: expected parts[0]'))}${hexChannel(requireDefined(parts[1], 'index.tsx: expected parts[1]'))}${hexChannel(requireDefined(parts[2], 'index.tsx: expected parts[2]'))}${alpha}`;
 };
 
 /** One probe for every token, appended to `container` so it inherits the theme. */
@@ -51,14 +56,30 @@ export function resolveEditorTokens(container: HTMLElement = document.body): Rec
   probe.style.display = 'none';
   container.append(probe);
 
-  const resolved = {} as Record<EditorTokenName, string>;
-  for (const [name, token] of Object.entries(EDITOR_TOKENS) as [EditorTokenName, string][]) {
+  const readToken = (token: string) => {
     probe.style.color = `var(${token})`;
-    resolved[name] = toHex(getComputedStyle(probe).color);
+    return toHex(getComputedStyle(probe).color);
+  };
+  try {
+    return {
+      background: readToken(EDITOR_TOKENS.background),
+      foreground: readToken(EDITOR_TOKENS.foreground),
+      comment: readToken(EDITOR_TOKENS.comment),
+      gutter: readToken(EDITOR_TOKENS.gutter),
+      gutterForeground: readToken(EDITOR_TOKENS.gutterForeground),
+      lineHighlight: readToken(EDITOR_TOKENS.lineHighlight),
+      selection: readToken(EDITOR_TOKENS.selection),
+      cursor: readToken(EDITOR_TOKENS.cursor),
+      border: readToken(EDITOR_TOKENS.border),
+      literal: readToken(EDITOR_TOKENS.literal),
+      keyword: readToken(EDITOR_TOKENS.keyword),
+      string: readToken(EDITOR_TOKENS.string),
+      operator: readToken(EDITOR_TOKENS.operator),
+      invalid: readToken(EDITOR_TOKENS.invalid),
+    };
+  } finally {
+    probe.remove();
   }
-
-  probe.remove();
-  return resolved;
 }
 
 export interface EditorThemeOptions {
@@ -128,10 +149,18 @@ const bare = (hex: string) => hex.replace('#', '').slice(0, 6);
 
 /** Whether the resolved ground is dark, by relative luminance. */
 function isDarkGround(hex: string): boolean {
-  const parts = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) || 0);
+  const parts = [1, 3, 5].map((at) => {
+    const value = Number.parseInt(hex.slice(at, at + 2), 16);
+    return Number.isNaN(value) ? 0 : value;
+  });
   const channel = (value: number) => {
     const scaled = value / 255;
     return scaled <= 0.040_45 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
   };
-  return 0.2126 * channel(parts[0]) + 0.7152 * channel(parts[1]) + 0.0722 * channel(parts[2]) < 0.4;
+  return (
+    0.2126 * channel(requireDefined(parts[0], 'index.tsx: expected parts[0]')) +
+      0.7152 * channel(requireDefined(parts[1], 'index.tsx: expected parts[1]')) +
+      0.0722 * channel(requireDefined(parts[2], 'index.tsx: expected parts[2]')) <
+    0.4
+  );
 }

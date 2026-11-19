@@ -54,7 +54,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
@@ -161,7 +161,7 @@ function DebugSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="w-full max-w-full overflow-hidden" size="sm" variant="standard">
+    <Card className="w-full max-w-full overflow-hidden" size="sm">
       <CardHeader spacing="tight">
         <CardTitle>
           <span className="text-body-sm font-medium">{title}</span>
@@ -1001,7 +1001,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   return (
     <ItemGroup className="overflow-hidden">
       {rows.map(({ panel, icon, label, value, active }, index) => (
-        <Fragment key={panel}>
+        <li key={panel}>
           {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
           {index > 0 ? <ItemSeparator /> : null}
           <Item
@@ -1025,7 +1025,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
             </AnimatePresence>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" color="var(--color-muted-foreground)" />
           </Item>
-        </Fragment>
+        </li>
       ))}
     </ItemGroup>
   );

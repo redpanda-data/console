@@ -1,6 +1,6 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
-import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
+import { labelStyles } from 'components/redpanda-ui/components/label/label-styles';
 import {
   Select,
   SelectContent,
@@ -8,8 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/redpanda-ui/components/select';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { memo, useMemo } from 'react';
 import { type UseFormReturn, useWatch } from 'react-hook-form';
+import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 
 import type { AddTopicFormData } from '../types/wizard';
 import {
@@ -124,11 +126,11 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
 
     return (
       <div className="space-y-2">
-        <FormLabel>{label}</FormLabel>
+        <div className={labelStyles({})}>{label}</div>
         {Boolean(isExistingTopic) && (
           <p className="mb-2 text-body-sm text-subtle">Existing topic values cannot be modified</p>
         )}
-        <Group attached>
+        <div className="flex w-full items-stretch">
           <FormField
             control={form.control}
             disabled={isValueDisabled}
@@ -137,6 +139,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
               <FormItem className="flex-1">
                 <FormControl>
                   <Input
+                    className={attachedFirstClassName}
                     min="0"
                     placeholder={field.value?.toString() || '0'}
                     type="number"
@@ -155,7 +158,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
               <FormItem>
                 <FormControl>
                   <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="w-32" disabled={field.disabled}>
+                    <SelectTrigger className={cn(attachedLastClassName, 'w-32')} disabled={field.disabled}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -170,8 +173,7 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
               </FormItem>
             )}
           />
-        </Group>
-        <FormMessage />
+        </div>
       </div>
     );
   }

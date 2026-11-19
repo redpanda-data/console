@@ -380,7 +380,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         (inline ? (
           <div className="space-y-4">{requiredSecretsForm}</div>
         ) : (
-          <Card size="full" variant="elevated">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-4 w-4" />
@@ -423,7 +423,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             </div>
           )
         ) : (
-          <Card size="full">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-4 w-4" />
