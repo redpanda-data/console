@@ -249,8 +249,8 @@ export const ShadowLinkCreatePage = () => {
           <div className="flex flex-col gap-4">
             <div className="xl:w-1/3">
               <Stepper.Navigation>
-                <Stepper.Step of="shadow-connection" title="Connection" />
-                <Stepper.Step of="shadow-configuration" title="Configuration" />
+                <Stepper.Step of="shadow-connection" title={<Stepper.Title>Connection</Stepper.Title>} />
+                <Stepper.Step of="shadow-configuration" title={<Stepper.Title>Configuration</Stepper.Title>} />
               </Stepper.Navigation>
             </div>
 

@@ -624,6 +624,16 @@ describe('the ShadowLinkCreatePage', () => {
 
     await waitForCreateSuccess();
   });
+
+  test('heads each step with its title and marks the current one', async () => {
+    const user = userEvent.setup();
+
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+
+    expect(screen.getByRole('heading', { name: 'Connection' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configuration' })).toHaveAttribute('aria-current', 'step');
+  });
 });
 
 describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {

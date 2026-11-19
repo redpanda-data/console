@@ -657,8 +657,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                   ) : (
                     <div className="space-y-6">
                       <Stepper.Navigation>
-                        <Stepper.Step of="partitions" title="Select partitions" />
-                        <Stepper.Step of="offset" title="Choose offset" />
+                        <Stepper.Step of="partitions" title={<Stepper.Title>Select partitions</Stepper.Title>} />
+                        <Stepper.Step of="offset" title={<Stepper.Title>Choose offset</Stepper.Title>} />
                       </Stepper.Navigation>
                       {isOffsetStep ? null : (
                         <SelectPartitionStep
