@@ -31,7 +31,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { ALPHANUMERIC_WITH_HYPHENS } from 'utils/regex';
-import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { failureSummary, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 
@@ -182,9 +182,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       if (onError) {
         onError(errorMessages);
       } else {
-        for (const message of errorMessages) {
-          showToast({ status: 'error', title: message });
-        }
+        showToast({ status: 'error', ...failureSummary(errorMessages, `Failed to create ${errorMessages.length} secrets`) });
       }
     }
   };

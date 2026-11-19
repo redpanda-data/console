@@ -34,7 +34,7 @@ import {
 import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
+import { failureSummary, formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
 import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
@@ -143,15 +143,16 @@ const toastGrantAllResults = (results: PromiseSettledResult<unknown>[]) => {
     showToast({ status: 'success', title: 'ACLs created' });
     return;
   }
-  const someCreated = failed.length < results.length;
-  for (const f of failed) {
-    const description = formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' });
-    if (someCreated) {
-      showToast({ status: 'warning', title: 'Some ACLs were created, but there were errors', description });
-    } else {
-      showToast({ status: 'error', title: description });
-    }
+  const messages = failed.map((f) => formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' }));
+  if (failed.length < results.length) {
+    showToast({
+      status: 'warning',
+      title: 'Some ACLs were created, but there were errors',
+      description: [...new Set(messages)].join('; '),
+    });
+    return;
   }
+  showToast({ status: 'error', ...failureSummary(messages, `Failed to create ${failed.length} ACLs`) });
 };
 
 type GrantAllPermissionsDialogProps = {
@@ -326,13 +327,11 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
     const results = await Promise.allSettled(
       rows.filter((r) => selection.selected.has(r.id)).map((r) => deleteAcl(deleteRequestFor(r)))
     );
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        showToast({
-          status: 'error',
-          title: formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }),
-        });
-      }
+    const messages = results
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((result) => formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
+    if (messages.length > 0) {
+      showToast({ status: 'error', ...failureSummary(messages, `Failed to delete ${messages.length} ACLs`) });
     }
     selection.clear();
   };

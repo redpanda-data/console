@@ -131,7 +131,13 @@ const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
       error.code !== Code.Unavailable &&
       error.code !== Code.PermissionDenied
     ) {
-      showToast({ status: 'error', title: 'Failed to load shadowlinks', description: error.message });
+      // Each refetch brings a new error; the id keeps one toast up.
+      showToast({
+        id: 'shadowlinks-load-error',
+        status: 'error',
+        title: 'Failed to load shadowlinks',
+        description: error.message,
+      });
     }
   }, [error]);
 };

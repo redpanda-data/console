@@ -97,6 +97,18 @@ export const updateToast = (id: string, { status, title, description, duration }
   });
 };
 
+/**
+ * Title and description for one toast that reports a batch of failures. Error toasts stay until closed,
+ * so a toast per failure would each need closing; a single failure keeps its message as the title.
+ */
+export const failureSummary = (
+  messages: readonly string[],
+  batchTitle: string
+): Pick<ShowToastOptions, 'title' | 'description'> => {
+  const unique = [...new Set(messages)];
+  return messages.length === 1 ? { title: unique[0] } : { title: batchTitle, description: unique.join('; ') };
+};
+
 // Base UI closes every toast when the id is missing.
 export const closeToast = (id: string) => {
   if (id) {

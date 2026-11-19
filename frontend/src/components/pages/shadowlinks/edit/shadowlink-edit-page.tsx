@@ -143,8 +143,9 @@ const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: 
     // Format tab name for display
     const tabName = tabDisplayNames[errorTab] || errorTab;
 
-    // Show toast notification with tab information
+    // Show toast notification with tab information; the id updates it on each submit instead of stacking
     showToast({
+      id: 'shadowlink-validation-errors',
       status: 'error',
       title: `Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`,
       description: `Navigated to ${tabName} tab`,

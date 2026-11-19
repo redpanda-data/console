@@ -128,7 +128,13 @@ class KafkaConnectOverview extends PageComponent<{
   // HTTP errors land in api.connectConnectorsError; this reports requests that fail outright.
   refreshData() {
     api.refreshConnectClusters().catch((error: unknown) => {
-      showToast({ status: 'error', title: 'Failed to load Kafka Connect clusters', description: String(error) });
+      // Auto-refresh retries every few seconds; the id keeps one toast up instead of one per attempt.
+      showToast({
+        id: 'connect-clusters-load-error',
+        status: 'error',
+        title: 'Failed to load Kafka Connect clusters',
+        description: String(error),
+      });
     });
   }
 

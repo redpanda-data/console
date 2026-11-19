@@ -296,7 +296,13 @@ const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: Str
 const onErrorFrame = (value: ListMessagesResponse_ErrorMessage, run: StreamRun) => {
   // Doesn't necessarily mean the whole request failed (e.g. "N partitions
   // offline") — the stream can still reach `done` normally afterwards.
-  showToast({ status: 'error', title: 'Backend error', description: value.message });
+  // One toast across searches and frames: a repeated id updates it in place.
+  showToast({
+    id: 'message-search-backend-error',
+    status: 'error',
+    title: 'Backend error',
+    description: value.message,
+  });
   run.pendingBackendError = new Error(value.message);
 };
 
