@@ -14,7 +14,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
 import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
@@ -60,7 +60,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
 
   const createAndOpenRole = async (name: string) => {
     await createRole(create(CreateRoleRequestSchema, { role: { name } }));
-    toast.success(`Role "${name}" created`);
+    showToast({ status: 'success', title: `Role "${name}" created` });
     handleClose();
     // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
@@ -68,7 +68,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
       params: { roleName: encodeURIComponent(name) },
       search: { host: undefined },
     }).catch((error: unknown) => {
-      toast.error('Failed to navigate', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
     });
   };
 
@@ -81,7 +81,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     try {
       await createAndOpenRole(trimmed);
     } catch (err) {
-      toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
+      showToast({ status: 'error', title: `Failed to create role: ${ConnectError.from(err).message}` });
     } finally {
       setIsSubmitting(false);
     }

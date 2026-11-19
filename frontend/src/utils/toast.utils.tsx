@@ -33,9 +33,11 @@ export type ShowToastOptions = {
   duration?: number | null;
   /** Fires when the user closes the toast or it times out. */
   onClose?: () => void;
+  /** A button in the toast, such as Undo. */
+  action?: { label: ReactNode; onClick: () => void };
 };
 
-export type UpdateToastOptions = Omit<ShowToastOptions, 'id' | 'resourceName'>;
+export type UpdateToastOptions = Omit<ShowToastOptions, 'id' | 'resourceName' | 'action'>;
 
 const DEFAULT_TOAST_DURATION = 5000;
 
@@ -72,6 +74,7 @@ export const showToast = ({
   description,
   duration,
   onClose,
+  action,
 }: ShowToastOptions): string =>
   toast.add({
     id: getToastId({ initialId: id, resourceName }),
@@ -80,6 +83,7 @@ export const showToast = ({
     description,
     timeout: toTimeout(status, duration),
     onClose,
+    ...(action && { actionProps: { children: action.label, onClick: action.onClick } }),
   });
 
 /** Only the fields given change. A new status re-applies its dismiss default unless `duration` is given. */

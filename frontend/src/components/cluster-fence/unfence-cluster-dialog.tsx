@@ -26,7 +26,7 @@ import {
   useClusterFenceStatusQuery,
   useUnfenceClusterMutation,
 } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { FENCE_PHASE_LABEL, isBlockingPhase } from './cluster-fence-model';
 import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';
@@ -65,7 +65,9 @@ const UnfenceClusterBody = ({ label, onClose }: { label: string; onClose: () => 
       { expectedRevision: opened.revision },
       {
         onSuccess: () => {
-          toast.success(`Unfencing ${label}`, {
+          showToast({
+            status: 'success',
+            title: `Unfencing ${label}`,
             description: 'It takes a few moments for the change to reach the whole cluster.',
           });
           onClose();

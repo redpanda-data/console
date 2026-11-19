@@ -31,7 +31,6 @@ rs.mock('react-query/api/cluster-fence', () => {
   };
 });
 rs.mock('react-query/api/shadowlink', () => ({ useListShadowLinksQuery: rs.fn() }));
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';

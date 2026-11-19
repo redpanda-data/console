@@ -34,7 +34,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import type { FlowCardData } from './pipeline-flow-canvas-nodes';
@@ -80,7 +80,7 @@ const animMs = (ms: number): number =>
 
 // Viewport moves resolve once their animation ends; surface a move that fails rather than dropping it.
 const reportViewportMoveFailure = (error: unknown) => {
-  toast.error('Failed to move the pipeline view', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to move the pipeline view', description: String(error) });
 };
 
 const MIN_ZOOM = 0.5;

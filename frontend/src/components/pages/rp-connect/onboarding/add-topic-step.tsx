@@ -28,8 +28,8 @@ import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { isFalsy } from 'utils/falsy';
+import { showToast } from 'utils/toast.utils';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
 import { StepSurface } from './step-surface';
@@ -331,7 +331,7 @@ function TopicNameInput({
                       }),
                     }),
                   ]).catch((error: unknown) => {
-                    toast.error('Failed to refresh topics', { description: String(error) });
+                    showToast({ status: 'error', title: 'Failed to refresh topics', description: String(error) });
                   });
                 }}
                 options={topicOptions}

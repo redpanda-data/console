@@ -17,7 +17,7 @@ import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skele
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { ChoiceCard } from 'components/ui/choice-card';
 import { type FC, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
@@ -182,11 +182,11 @@ function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, on
   return (configMode: SchemaRegistryCompatibilityModeWithDefault) => {
     const callbacks = {
       onSuccess: () => {
-        toast.success(`Compatibility mode updated to ${configMode}`);
+        showToast({ status: 'success', title: `Compatibility mode updated to ${configMode}` });
         onClose();
       },
       onError: (err: Error) => {
-        toast.error('Failed to update compatibility mode', { description: String(err) });
+        showToast({ status: 'error', title: 'Failed to update compatibility mode', description: String(err) });
       },
     };
 

@@ -38,8 +38,8 @@ import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
+import { showToast } from 'utils/toast.utils';
 
 import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -204,7 +204,7 @@ const ConfigEditorForm: FC<{
           value: configValue,
         },
       ]);
-      toast.success(`Config ${editedEntry.name} updated`);
+      showToast({ status: 'success', title: `Config ${editedEntry.name} updated` });
       onSuccess();
       onClose();
     } catch (err) {
@@ -339,7 +339,7 @@ function useConfigSearchParams() {
   const setFilter = (value: string) => {
     navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true }).catch(
       (error: unknown) => {
-        toast.error('Failed to update configuration filter', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to update configuration filter', description: String(error) });
       }
     );
   };
@@ -349,7 +349,7 @@ function useConfigSearchParams() {
       search: (prev) => ({ ...prev, configScope: value === 'all' ? undefined : value }),
       replace: true,
     }).catch((error: unknown) => {
-      toast.error('Failed to update configuration scope', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to update configuration scope', description: String(error) });
     });
   };
 

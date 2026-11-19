@@ -27,10 +27,9 @@ rs.mock('react-query/api/cluster-fence', () => {
     useUpdateClusterFenceSettingsMutation: rs.fn(() => mutation),
   };
 });
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
+import { aToast, spyOnToasts } from 'test-toasts';
 
 import type { FencePhase } from './cluster-fence-model';
 import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
@@ -52,6 +51,8 @@ const Harness = () => {
   reopen = () => setOpen(true);
   return <ClusterFenceSettingsDialog onOpenChange={setOpen} open={open} />;
 };
+
+const toasts = spyOnToasts();
 
 describe('the ClusterFenceSettingsDialog', () => {
   beforeEach(() => {
@@ -78,9 +79,9 @@ describe('the ClusterFenceSettingsDialog', () => {
       },
       expectedRevision: 4n,
     });
-    expect(toast.success).toHaveBeenCalledWith('Cluster fence settings saved', {
-      description: 'The next Fence uses them.',
-    });
+    expect(toasts).toHaveBeenCalledWith(
+      aToast('success', 'Cluster fence settings saved', { description: 'The next Fence uses them.' })
+    );
   });
 
   test.each([

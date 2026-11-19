@@ -55,10 +55,9 @@ import { type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { useListUsersQuery } from 'react-query/api/user';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { generatePassword } from 'utils/password';
 import { generateServiceAccountName } from 'utils/service-account.utils';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { SASL_MECHANISMS } from 'utils/user';
 
 import { StepSurface } from './step-surface';
@@ -444,7 +443,10 @@ async function createPipelineServiceAccount(
     };
   } catch (createServiceAccountError) {
     const error = ConnectError.from(createServiceAccountError);
-    toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'service account' }));
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({ error, action: 'create', entity: 'service account' }),
+    });
     return { success: false };
   }
 }
@@ -467,7 +469,7 @@ function submitServiceAccount({
     });
   }
   if (!selector) {
-    toast.error('Service account selector not initialized');
+    showToast({ status: 'error', title: 'Service account selector not initialized' });
     return Promise.resolve({ success: false });
   }
   return createPipelineServiceAccount(selector, serviceAccountLabel, serviceAccountName);
@@ -674,7 +676,7 @@ function UsernameField({
                         }),
                       }),
                     ]).catch((error: unknown) => {
-                      toast.error('Failed to refresh users', { description: String(error) });
+                      showToast({ status: 'error', title: 'Failed to refresh users', description: String(error) });
                     });
                   }}
                   options={users.userOptions}
@@ -966,7 +968,11 @@ function ConsumerGroupField({
                         }),
                       })
                       .catch((error: unknown) => {
-                        toast.error('Failed to refresh permissions', { description: String(error) });
+                        showToast({
+                          status: 'error',
+                          title: 'Failed to refresh permissions',
+                          description: String(error),
+                        });
                       });
                   }}
                   placeholder="Enter a consumer group name"

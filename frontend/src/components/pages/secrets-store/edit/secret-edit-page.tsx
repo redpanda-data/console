@@ -35,9 +35,8 @@ import { type Secret, UpdateSecretRequestSchema } from 'protogen/redpanda/api/da
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
@@ -93,14 +92,17 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
 
     try {
       await updateSecret({ request });
-      toast.success('Secret updated');
+      showToast({ status: 'success', title: 'Secret updated' });
       // Handled here so a navigation failure is not reported as a failed update.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
-        toast.error('Failed to navigate', { description: String(navigationError) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(navigationError) });
       });
     } catch (updateError) {
       const connectError = ConnectError.from(updateError);
-      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'update', entity: 'secret' }));
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({ error: connectError, action: 'update', entity: 'secret' }),
+      });
     }
   };
 

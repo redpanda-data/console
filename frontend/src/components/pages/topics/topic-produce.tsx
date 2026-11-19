@@ -15,8 +15,8 @@ import { Link } from '@tanstack/react-router';
 import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
 import { type Control, Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 import { applyKeyValueRowChange, keyValueRowsFromFieldArray } from 'utils/key-value-rows';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import {
@@ -407,7 +407,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     });
 
     if (result) {
-      toast.success(`Record published on partition ${result.partitionId} with offset ${Number(result.offset)}`);
+      showToast({
+        status: 'success',
+        title: `Record published on partition ${result.partitionId} with offset ${Number(result.offset)}`,
+      });
       appGlobal.historyPush(`/topics/${encodeURIComponent(topicName)}`);
     }
   };

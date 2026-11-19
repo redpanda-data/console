@@ -11,7 +11,7 @@
 
 import { createFileRoute, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useCallback } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import GroupDetails from '../../components/pages/consumers/group-details';
@@ -49,7 +49,7 @@ function GroupDetailsWrapper() {
         }),
         replace: true,
       }).catch((error: unknown) => {
-        toast.error('Failed to update consumer group filters', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to update consumer group filters', description: String(error) });
       });
     },
     [navigate]

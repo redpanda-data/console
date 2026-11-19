@@ -16,7 +16,7 @@ import { RadioGroup } from 'components/redpanda-ui/components/radio-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { ChoiceCard } from 'components/ui/choice-card';
 import { type FC, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
@@ -184,11 +184,11 @@ function EditSchemaMode({
   const onSave = () => {
     const callbacks = {
       onSuccess: () => {
-        toast.success(`Mode updated to ${selectedMode}`);
+        showToast({ status: 'success', title: `Mode updated to ${selectedMode}` });
         onClose();
       },
       onError: (err: Error) => {
-        toast.error('Failed to update mode', { description: String(err) });
+        showToast({ status: 'error', title: 'Failed to update mode', description: String(err) });
       },
     };
 

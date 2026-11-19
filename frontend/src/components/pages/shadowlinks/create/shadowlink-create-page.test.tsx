@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { toast } from 'sonner';
+import { aToast, spyOnToasts } from 'test-toasts';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
@@ -50,14 +50,6 @@ rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
-  },
-}));
-
-// Mock toast notifications
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
   },
 }));
 
@@ -315,14 +307,14 @@ const submitCreateForm = async (
 
 /**
  * The submit succeeds asynchronously: after mutateAsync resolves, the
- * onSuccess callback fires toast.success and navigate(). Those land as a
+ * onSuccess callback fires a success toast and navigate(). Those land as a
  * late RHF/router re-render of the still-mounted form fields. Await the
  * settled side effect so any final update is flushed inside act() before
  * the test ends.
  */
 const waitForCreateSuccess = async () => {
   await waitFor(() => {
-    expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    expect(toasts).toHaveBeenCalledWith(aToast('success', 'Shadow link created'));
   });
 };
 
@@ -553,6 +545,8 @@ const testCases: CreateTestCase[] = [
     },
   },
 ];
+
+const toasts = spyOnToasts();
 
 describe('the ShadowLinkCreatePage', () => {
   const mockMutateAsync = rs.fn();

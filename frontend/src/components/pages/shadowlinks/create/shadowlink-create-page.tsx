@@ -29,9 +29,9 @@ import {
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { showToast } from 'utils/toast.utils';
 
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
@@ -202,16 +202,14 @@ export const ShadowLinkCreatePage = () => {
 
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
-      toast.success('Shadow link created');
+      showToast({ status: 'success', title: 'Shadow link created' });
       // Handled here so a navigation failure is not reported as a failed create.
       navigate({ to: '/shadowlinks' }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
       });
     },
     onError: (error) => {
-      toast.error('Shadow link create failed', {
-        description: error.message,
-      });
+      showToast({ status: 'error', title: 'Shadow link create failed', description: error.message });
     },
   });
 

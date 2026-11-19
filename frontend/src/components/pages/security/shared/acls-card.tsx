@@ -20,7 +20,6 @@ import {
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import {
@@ -35,7 +34,7 @@ import {
 import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
 import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
@@ -141,16 +140,16 @@ const deleteRequestFor = (row: AclRow) =>
 const toastGrantAllResults = (results: PromiseSettledResult<unknown>[]) => {
   const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
   if (failed.length === 0) {
-    toast.success('ACLs created');
+    showToast({ status: 'success', title: 'ACLs created' });
     return;
   }
   const someCreated = failed.length < results.length;
   for (const f of failed) {
     const description = formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' });
     if (someCreated) {
-      toast.warning('Some ACLs were created, but there were errors', { description });
+      showToast({ status: 'warning', title: 'Some ACLs were created, but there were errors', description });
     } else {
-      toast.error(description);
+      showToast({ status: 'error', title: description });
     }
   }
 };
@@ -329,7 +328,10 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
     );
     for (const result of results) {
       if (result.status === 'rejected') {
-        toast.error(formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
+        showToast({
+          status: 'error',
+          title: formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }),
+        });
       }
     }
     selection.clear();

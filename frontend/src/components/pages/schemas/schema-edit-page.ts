@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { type BreadcrumbEntry, uiState } from '../../../state/ui-state';
 
@@ -53,7 +53,7 @@ export function useSchemaEditPageHeader({ subjectName, contextName }: SchemaEdit
 
 // Closing runs from button clicks and mutation callbacks, so report a failed navigation instead of dropping it.
 function reportCloseError(error: unknown) {
-  toast.error('Failed to navigate', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
 }
 
 /** Navigates back to where the edit page was opened from. */

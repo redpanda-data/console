@@ -34,7 +34,7 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { ChoiceCard } from 'components/ui/choice-card';
 import { type JSX, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
@@ -548,7 +548,7 @@ function useDeleteRecordsSubmission(wizardState: WizardState, onFinish: () => vo
       setOkButtonLoading(false);
     } else {
       onFinish();
-      toast.success('Records deleted');
+      showToast({ status: 'success', title: 'Records deleted' });
     }
   };
 

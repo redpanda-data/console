@@ -7,7 +7,7 @@ import {
   type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useGetRedpandaInfoQuery } from '../../../../react-query/api/cluster-status';
@@ -57,19 +57,25 @@ export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure
     canDeleteUsers: Boolean(featureDeleteUser),
     deleteAclsForPrincipal: async (principal, host) => {
       await deleteACLMutation(allAclsFor(principal, host));
-      toast.success(
-        <span>
-          Deleted ACLs for <CodeEl>{principal}</CodeEl>
-        </span>
-      );
+      showToast({
+        status: 'success',
+        title: (
+          <span>
+            Deleted ACLs for <CodeEl>{principal}</CodeEl>
+          </span>
+        ),
+      });
     },
     deleteUser: async (name) => {
       await deleteUserMut({ name });
-      toast.success(
-        <span>
-          Deleted user <CodeEl>{name}</CodeEl>
-        </span>
-      );
+      showToast({
+        status: 'success',
+        title: (
+          <span>
+            Deleted user <CodeEl>{name}</CodeEl>
+          </span>
+        ),
+      });
     },
     invalidateUsers: invalidateUsersCache,
     onFailure,

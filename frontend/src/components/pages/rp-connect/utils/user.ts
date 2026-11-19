@@ -8,8 +8,7 @@ import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplan
 import { useCreateACLMutation } from 'react-query/api/acl';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useCreateUserMutation } from 'react-query/api/user';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import type { SaslMechanism } from 'utils/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
@@ -378,19 +377,19 @@ type CreateUserWithSecretsParams = {
 
 const handleOperationResult = (result: OperationResult) => {
   if (result.success && result.message) {
-    toast.success(result.message);
+    showToast({ status: 'success', title: result.message });
   } else if (!result.success && result.error) {
-    toast.error(result.error);
+    showToast({ status: 'error', title: result.error });
   }
 };
 
 // Toasts a required step's outcome; false when it failed, so the flow stops there.
 const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
   if (!result.success) {
-    toast.error(result.error || failureMessage);
+    showToast({ status: 'error', title: result.error || failureMessage });
     return false;
   }
-  toast.success(result.message || successMessage);
+  showToast({ status: 'success', title: result.message || successMessage });
   return true;
 };
 
@@ -401,7 +400,7 @@ const ensureUser = async (
   createUserMutation: ReturnType<typeof useCreateUserMutation>
 ): Promise<boolean> => {
   if (existingUserSelected) {
-    toast.success(`Using existing user "${userData.username}"`);
+    showToast({ status: 'success', title: `Using existing user "${userData.username}"` });
     return true;
   }
   const userResult = await createKafkaUser(userData, createUserMutation);

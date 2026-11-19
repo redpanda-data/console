@@ -5,7 +5,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { useListUsersQuery } from '../../../../react-query/api/user';
@@ -32,7 +32,7 @@ export function useRoleMembership(roleName: string) {
     } catch {
       return false; // Error handling is done in onError callback
     }
-    toast.success(`${principalType} "${name}" added to role`);
+    showToast({ status: 'success', title: `${principalType} "${name}" added to role` });
     return true;
   };
 
@@ -47,7 +47,7 @@ export function useRoleMembership(roleName: string) {
           create: false,
         })
       );
-      toast.success('Member removed from role');
+      showToast({ status: 'success', title: 'Member removed from role' });
       setDeletingPrincipal(null);
     } catch {
       // Error handling is done in onError callback

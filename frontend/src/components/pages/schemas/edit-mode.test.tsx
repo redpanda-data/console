@@ -19,13 +19,6 @@ const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
 const mockMutateContext = rs.fn();
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
@@ -88,15 +81,18 @@ import {
   useSchemaModeQuery,
   useSchemaRegistryContextsQuery,
 } from 'react-query/api/schema-registry';
-import { toast } from 'sonner';
 import { api } from 'state/backend-api';
 import { useSupportedFeaturesStore } from 'state/supported-features';
+import { aToast, spyOnToasts } from 'test-toasts';
 
 import EditSchemaModePage from './edit-mode';
 
 describe('the EditSchemaModePage', () => {
+  // Re-spied per test: afterEach restores every mock.
+  let toasts = spyOnToasts();
   beforeEach(() => {
     rs.clearAllMocks();
+    toasts = spyOnToasts();
   });
 
   afterEach(() => {
@@ -359,7 +355,7 @@ describe('the EditSchemaModePage', () => {
       const callbacks = mutateCall[1];
       callbacks.onSuccess();
 
-      expect(toast.success).toHaveBeenCalledWith('Mode updated to READWRITE');
+      expect(toasts).toHaveBeenCalledWith(aToast('success', 'Mode updated to READWRITE'));
       expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
     });
 
@@ -373,9 +369,9 @@ describe('the EditSchemaModePage', () => {
       const callbacks = mutateCall[1];
       callbacks.onError(new Error('Server error'));
 
-      expect(toast.error).toHaveBeenCalledWith('Failed to update mode', {
-        description: 'Error: Server error',
-      });
+      expect(toasts).toHaveBeenCalledWith(
+        aToast('error', 'Failed to update mode', { description: 'Error: Server error' })
+      );
     });
   });
 });

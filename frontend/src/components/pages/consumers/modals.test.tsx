@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { QueryClient } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { toast } from 'sonner';
 import { useApiStore } from 'state/backend-api';
 import type { GroupDescription } from 'state/rest-interfaces';
+import { aToast, spyOnToasts } from 'test-toasts';
 import { render, screen, waitFor, within } from 'test-utils';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './modals';
@@ -65,15 +65,15 @@ describe('editOffsetsModal', () => {
   });
 
   test('reports a failed watermark refresh when the modal opens', async () => {
-    const toastError = rs.spyOn(toast, 'error');
+    const toasts = spyOnToasts();
     useApiStore.setState({ refreshPartitions: rs.fn(() => Promise.reject(new Error('watermarks unavailable'))) });
 
     renderModal();
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('Failed to load partition offsets', {
-        description: 'Error: watermarks unavailable',
-      })
+      expect(toasts).toHaveBeenCalledWith(
+        aToast('error', 'Failed to load partition offsets', { description: 'Error: watermarks unavailable' })
+      )
     );
   });
 
@@ -141,28 +141,30 @@ describe('deleteOffsetsModal', () => {
   }
 
   test('keeps a successful delete when refreshing the groups fails', async () => {
-    const toastSuccess = rs.spyOn(toast, 'success');
-    const toastError = rs.spyOn(toast, 'error');
+    const toasts = spyOnToasts();
 
     const onClose = await confirmDeleteWithFailingRefresh(() => Promise.resolve());
 
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Failed to refresh consumer groups', refreshFailure));
-    expect(toastSuccess).toHaveBeenCalledWith('Deleting offsets - done', expect.anything());
+    await waitFor(() =>
+      expect(toasts).toHaveBeenCalledWith(aToast('error', 'Failed to refresh consumer groups', refreshFailure))
+    );
+    expect(toasts).toHaveBeenCalledWith(aToast('success', 'Deleting offsets - done'));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(useApiStore.getState().refreshConsumerGroups).toHaveBeenCalledWith(true);
   });
 
   test('still reports the delete failure when refreshing the groups also fails', async () => {
-    const toastError = rs.spyOn(toast, 'error');
+    const toasts = spyOnToasts();
     const consoleError = rs.spyOn(console, 'error').mockImplementation(() => undefined);
     const deleteFailure = new Error('delete denied');
 
     const onClose = await confirmDeleteWithFailingRefresh(() => Promise.reject(deleteFailure));
 
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Failed to refresh consumer groups', refreshFailure));
-    expect(toastError).toHaveBeenCalledWith(
-      expect.stringContaining('Could not delete selected offsets in consumer group test-group'),
-      expect.anything()
+    await waitFor(() =>
+      expect(toasts).toHaveBeenCalledWith(aToast('error', 'Failed to refresh consumer groups', refreshFailure))
+    );
+    expect(toasts).toHaveBeenCalledWith(
+      aToast('error', expect.stringContaining('Could not delete selected offsets in consumer group test-group'))
     );
     expect(consoleError).toHaveBeenCalledWith(deleteFailure);
     expect(onClose).not.toHaveBeenCalled();

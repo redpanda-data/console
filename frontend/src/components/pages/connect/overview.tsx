@@ -21,8 +21,8 @@ import { InlineCode, Link } from 'components/redpanda-ui/components/typography';
 import { WaitingRedpanda } from 'components/redpanda-ui/components/waiting-redpanda';
 import { Component, type FunctionComponent, useCallback, useMemo, useState } from 'react';
 import { useKafkaConnectConnectorsQuery } from 'react-query/api/kafka-connect';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import {
   ConnectorClass,
@@ -128,7 +128,7 @@ class KafkaConnectOverview extends PageComponent<{
   // HTTP errors land in api.connectConnectorsError; this reports requests that fail outright.
   refreshData() {
     api.refreshConnectClusters().catch((error: unknown) => {
-      toast.error('Failed to load Kafka Connect clusters', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to load Kafka Connect clusters', description: String(error) });
     });
   }
 

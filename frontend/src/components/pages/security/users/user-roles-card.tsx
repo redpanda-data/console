@@ -12,7 +12,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -66,7 +66,7 @@ const RoleTableRow = ({ role, isExpanded, onToggle }: RoleTableRowProps) => {
                 params: { roleName: role.principalName },
                 search: { host: undefined },
               }).catch((error: unknown) => {
-                toast.error('Failed to navigate', { description: String(error) });
+                showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
               });
             }}
             size="sm"

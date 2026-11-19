@@ -26,8 +26,8 @@ import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
@@ -101,16 +101,18 @@ const useCreatePipeline = () => {
         })
       )
       .then(async (r) => {
-        toast.success('Pipeline created');
+        showToast({ status: 'success', title: 'Pipeline created' });
         const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
         if (retUnits && tasks !== retUnits) {
-          toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
+          showToast({ status: 'warning', title: `Pipeline has been resized to use ${retUnits} compute units` });
         }
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush('/connect-clusters');
       })
       .catch((err) => {
-        toast.error('Failed to create pipeline', {
+        showToast({
+          status: 'error',
+          title: 'Failed to create pipeline',
           description: formatPipelineError(ConnectError.from(err)),
         });
       })
@@ -310,7 +312,7 @@ const TemplateGalleryStart = ({ editorContent, onApplyTemplate, onRestoreYaml }:
         onSubmit={(template) => {
           onApplyTemplate(template);
           setIsTemplateDialogOpen(false);
-          toast.success('Template applied — review the YAML and click Create to deploy.');
+          showToast({ status: 'success', title: 'Template applied — review the YAML and click Create to deploy.' });
         }}
         open={isTemplateDialogOpen}
       />

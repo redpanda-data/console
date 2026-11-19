@@ -35,8 +35,8 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Textarea } from 'components/redpanda-ui/components/textarea';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
-import { toast } from 'sonner';
 import { applyKeyValueRowChange, keyValueRowsFromFieldArray } from 'utils/key-value-rows';
+import { showToast } from 'utils/toast.utils';
 
 import { EgressGatewayField } from './egress-gateway-field';
 import { MAX_TASKS, MIN_TASKS } from '../tasks';
@@ -233,7 +233,7 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
     form.setValue('tags', tags);
     // Invalid fields report through FormMessage; this catches a resolver or close handler that throws.
     handleSave().catch((error: unknown) => {
-      toast.error('Failed to save pipeline settings', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to save pipeline settings', description: String(error) });
     });
   };
 

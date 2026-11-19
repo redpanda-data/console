@@ -1,7 +1,6 @@
 import { ConnectError } from '@connectrpc/connect';
-import { toast } from 'sonner';
 import { escapeRegExp } from 'utils/regex';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import {
   Document,
   isMap,
@@ -382,13 +381,14 @@ const isBlankConfigText = (text: string): boolean => {
 };
 
 const toastMergeFailure = (error: unknown, action: string): void => {
-  toast.error(
-    formatToastErrorMessageGRPC({
+  showToast({
+    status: 'error',
+    title: formatToastErrorMessageGRPC({
       error: ConnectError.from(error),
       action,
       entity: 'mergeConnectConfigs',
-    })
-  );
+    }),
+  });
 };
 
 const parseExistingDocument = (existingYaml: string): Document.Parsed | undefined => {
@@ -570,13 +570,14 @@ export const configToYaml = (
     }
     return addRootSpacing(convertRequiredFieldSentinels(yamlStringify(doc, yamlConfig)));
   } catch (error) {
-    toast.error(
-      formatToastErrorMessageGRPC({
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({
         error: ConnectError.from(error),
         action: 'Convert connect config to YAML',
         entity: 'configToYaml',
-      })
-    );
+      }),
+    });
 
     // Empty string preserves the editor's existing YAML (prevents JSON output appearing).
     return '';
@@ -605,13 +606,14 @@ const findTemplateSpec = (
       : undefined;
 
   if (!componentSpec) {
-    toast.error(
-      formatToastErrorMessageGRPC({
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({
         error: new ConnectError('Component spec not found'),
         action: 'Get connect template',
         entity: 'getConnectTemplate',
-      })
-    );
+      }),
+    });
   }
   return componentSpec;
 };
@@ -622,13 +624,14 @@ const isScannerWithoutInput = (spec: ConnectComponentSpec, existingYaml?: string
   if (spec.type !== 'scanner' || yamlHasInput(existingYaml)) {
     return false;
   }
-  toast.error(
-    formatToastErrorMessageGRPC({
+  showToast({
+    status: 'error',
+    title: formatToastErrorMessageGRPC({
       error: new ConnectError('a scanner attaches to an input, and this config has none'),
       action: 'add scanner',
       entity: spec.name,
-    })
-  );
+    }),
+  });
   return true;
 };
 

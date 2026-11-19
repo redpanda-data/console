@@ -28,8 +28,8 @@ import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nu
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { showToast } from 'utils/toast.utils';
 
 import { CreateTopicDialog } from './create-topic-dialog';
 import { TopicListPagination } from './topic-list-pagination';
@@ -110,14 +110,12 @@ function useDeleteTopic(onDeleted: () => void) {
     api
       .deleteTopic(topicName)
       .then(() => {
-        toast.success('Topic deleted', {
-          description: `Topic "${topicName}" has been deleted.`,
-        });
+        showToast({ status: 'success', title: 'Topic deleted', description: `Topic "${topicName}" has been deleted.` });
         setTopicToDelete(null);
         onDeleted();
       })
       .catch((err: Error) => {
-        toast.error('Failed to delete topic', { description: err.message });
+        showToast({ status: 'error', title: 'Failed to delete topic', description: err.message });
       })
       .finally(() => setDeletionPending(false));
   };

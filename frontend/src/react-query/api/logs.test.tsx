@@ -13,7 +13,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
-import { toast } from 'sonner';
+import { anyToast, spyOnToasts } from 'test-toasts';
 
 import type { TopicMessage } from '../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../state/ui';
@@ -32,10 +32,6 @@ rs.mock('../../utils/message-converters', () => ({
     convertCallIndex++;
     return msg;
   },
-}));
-
-rs.mock('sonner', () => ({
-  toast: { error: rs.fn(), success: rs.fn() },
 }));
 
 // Mock config with a fake consoleClient
@@ -97,6 +93,8 @@ const untilAborted = (signal: AbortSignal) =>
   new Promise<void>((resolve) => {
     signal.addEventListener('abort', () => resolve());
   });
+
+const toasts = spyOnToasts();
 
 describe('useLogSearch live mode', () => {
   beforeEach(() => {
@@ -327,7 +325,7 @@ describe('useLogSearch history mode', () => {
     await waitFor(() => expect(result.current.phase).toBeNull());
     expect(result.current.error).toBeNull();
     expect(result.current.messages).toEqual([]);
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(toasts).not.toHaveBeenCalledWith(anyToast('error'));
   });
 
   // The embedded app's client retries once by default.

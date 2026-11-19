@@ -29,8 +29,8 @@ import {
   useClusterFenceStatusQuery,
 } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { showToast } from 'utils/toast.utils';
 
 import {
   type BrokerProgress,
@@ -508,7 +508,7 @@ const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | 
       setDialog(open ? dialog : null);
       if (!open && action) {
         navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
-          toast.error('Failed to navigate', { description: String(error) });
+          showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
         });
       }
     },

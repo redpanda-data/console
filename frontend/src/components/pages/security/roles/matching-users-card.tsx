@@ -15,7 +15,7 @@ import { Empty, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
 import { useNonMemberUserNames, useRoleMembership } from '../hooks/use-role-membership';
@@ -98,7 +98,7 @@ const AddRoleMember = ({ gbacEnabled, isSubmitting, userSuggestions, onAdd }: Ad
 
   const handleAdd = async () => {
     if (!name.trim()) {
-      toast.error(`Enter a ${principalType === 'Group' ? 'group name' : 'username'}`);
+      showToast({ status: 'error', title: `Enter a ${principalType === 'Group' ? 'group name' : 'username'}` });
       return;
     }
     if (await onAdd(principalType, name)) {

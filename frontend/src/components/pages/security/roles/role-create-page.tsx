@@ -16,7 +16,7 @@ import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field'
 import { Input } from 'components/redpanda-ui/components/input';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useLayoutEffect } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
@@ -46,7 +46,7 @@ const RoleCreatePage = () => {
   const createRoleWithAcls = async (roleName: string, principal: string, host: string, rules: Rule[]) => {
     // First create the role
     await createRole(create(CreateRoleRequestSchema, { role: { name: roleName } }));
-    toast.success(`Role "${roleName}" created`);
+    showToast({ status: 'success', title: `Role "${roleName}" created` });
 
     // Then create the ACLs for the role
     const applyResult = await createAcls(convertRulesToCreateACLRequests(rules, principal, host));
@@ -54,7 +54,7 @@ const RoleCreatePage = () => {
 
     // Handled here so a navigation failure is not reported as a failed role create.
     navigate({ to: `/security/roles/${roleName}/details` }).catch((error: unknown) => {
-      toast.error('Failed to navigate', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
     });
   };
 
@@ -63,14 +63,17 @@ const RoleCreatePage = () => {
     const roleName = parsePrincipal(principal).name;
 
     if (!roleName || roleName.trim() === '') {
-      toast.error('Enter a role name');
+      showToast({ status: 'error', title: 'Enter a role name' });
       return;
     }
 
     try {
       await createRoleWithAcls(roleName, principal, host, rules);
     } catch (error) {
-      toast.error(`Failed to create role: ${error instanceof Error ? error.message : String(error)}`);
+      showToast({
+        status: 'error',
+        title: `Failed to create role: ${error instanceof Error ? error.message : String(error)}`,
+      });
     }
   };
 

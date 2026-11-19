@@ -21,7 +21,7 @@ import { DeleteResourceAlertDialog, DeleteResourceMenuItem } from 'components/ui
 import { MoreHorizontal, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useListResourcesForSecretQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { ResourceInUseAlert } from './resource-in-use-alert';
 import type { SecretTableRow } from './secrets-store-list-page';
@@ -45,9 +45,9 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
   const handleCopyId = async () => {
     try {
       await navigator.clipboard.writeText(secret.id);
-      toast.success('Secret ID copied to clipboard');
+      showToast({ status: 'success', title: 'Secret ID copied to clipboard' });
     } catch {
-      toast.error('Could not copy the secret ID');
+      showToast({ status: 'error', title: 'Could not copy the secret ID' });
     }
   };
 

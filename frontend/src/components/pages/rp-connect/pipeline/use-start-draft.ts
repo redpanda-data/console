@@ -16,8 +16,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { StartPipelineRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { useCallback } from 'react';
 import { useStartPipelineMutation } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { startBlockedMessage } from './draft-copy';
 import { isInvalidConfigError } from './save-actions';
@@ -38,11 +37,11 @@ function reportStartDraftError(err: unknown, pipelineId: string, navigate: Retur
   if (isInvalidConfigError(error)) {
     const hints = extractLintHintsFromError(error);
     pendingStartLintHints.set(pipelineId, hints);
-    toast.error(startBlockedMessage(Object.keys(hints).length));
+    showToast({ status: 'error', title: startBlockedMessage(Object.keys(hints).length) });
     navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } });
     return;
   }
-  toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
+  showToast({ status: 'error', title: formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }) });
 }
 
 /** Starting a draft validates it; a lint refusal opens the editor, where the hints are actionable. */
@@ -54,7 +53,7 @@ export function useStartDraft() {
     async (pipelineId: string): Promise<void> => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
-        toast.success('Pipeline starting');
+        showToast({ status: 'success', title: 'Pipeline starting' });
       } catch (err) {
         reportStartDraftError(err, pipelineId, navigate);
       }

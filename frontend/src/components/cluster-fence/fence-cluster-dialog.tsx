@@ -35,8 +35,8 @@ import {
   useFenceClusterMutation,
 } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import {
@@ -212,7 +212,7 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
       { settings: values.settings, opened },
       {
         onSuccess: () => {
-          toast.success(`Fencing ${clusterName ?? 'this cluster'}`);
+          showToast({ status: 'success', title: `Fencing ${clusterName ?? 'this cluster'}` });
           onClose();
         },
       }

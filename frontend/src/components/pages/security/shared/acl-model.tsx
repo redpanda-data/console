@@ -9,7 +9,7 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 const UNDERSCORE_REGEX = /_/g;
 const FIRST_CHAR_REGEX = /^\w/;
@@ -615,14 +615,14 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
 export const handleResponses = (errors: ConnectError[], created: boolean) => {
   if (errors.length > 0 && created) {
     for (const er of errors) {
-      toast.warning('Some ACLs were created, but there were errors', { description: er.message });
+      showToast({ status: 'warning', title: 'Some ACLs were created, but there were errors', description: er.message });
     }
   } else if (errors.length > 0 && !created) {
     for (const er of errors) {
-      toast.error(er.message);
+      showToast({ status: 'error', title: er.message });
     }
   } else {
-    toast.success('ACLs created');
+    showToast({ status: 'success', title: 'ACLs created' });
   }
 };
 

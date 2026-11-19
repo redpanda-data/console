@@ -11,7 +11,7 @@
 
 import type { CSSProperties } from 'react';
 import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { highlightControlChars } from './highlight-control-chars';
 import type { Payload } from '../../../../../state/rest-interfaces';
@@ -118,7 +118,7 @@ function LargePayloadNotice({ loadLargeMessage }: { loadLargeMessage: () => Prom
         onClick={() => {
           setLoadingLargeMessage(true);
           loadLargeMessage()
-            .catch((err) => toast.error(err instanceof Error ? err.message : String(err)))
+            .catch((err) => showToast({ status: 'error', title: err instanceof Error ? err.message : String(err) }))
             .finally(() => setLoadingLargeMessage(false));
         }}
         size="sm"
