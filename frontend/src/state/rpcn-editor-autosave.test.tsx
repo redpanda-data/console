@@ -26,11 +26,10 @@ import {
   useRpcnEditorAutosaveStore,
 } from './rpcn-editor-autosave';
 
-// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
 const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
 rs.mock('config', () => ({ config: mockConfig }));
 
-const buffer = (overrides: Partial<EditorAutosaveInput> = {}): EditorAutosaveInput => ({
+const buffer = (overrides: Partial<EditorAutosaveInput> = {}) => ({
   targetKey: CREATE_AUTOSAVE_TARGET,
   name: 'work in progress',
   description: '',
@@ -40,12 +39,10 @@ const buffer = (overrides: Partial<EditorAutosaveInput> = {}): EditorAutosaveInp
   ...overrides,
 });
 
-// Buffer ages are measured from this instant, which every test pins as the system time.
 const NOW = new Date(2026, 0, 15, 12);
 
 const stored = () => JSON.parse(localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY) ?? '[]');
 
-// Saves a full per-cluster set of buffers for each cluster in turn, one second apart, oldest first.
 function saveFullBufferSetPerCluster(clusterIds: string[]) {
   let tick = 0;
   for (const clusterId of clusterIds) {
@@ -79,14 +76,12 @@ describe('rpcn-editor-autosave', () => {
     it('survives a reload, which is the entire point', () => {
       rpcnEditorAutosave.save(buffer({ configYaml: 'input:\n  mid_sentence' }));
 
-      // A fresh read of storage, as a reloaded page would do.
       useRpcnEditorAutosaveStore.setState({ entries: [] });
       useRpcnEditorAutosaveStore.getState().refresh();
 
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.configYaml).toBe('input:\n  mid_sentence');
     });
 
-    // One buffer per editor, not a history: the point is the last thing typed, not every version of it.
     it('replaces the buffer for a target rather than accumulating', () => {
       rpcnEditorAutosave.save(buffer({ configYaml: 'first' }));
       rpcnEditorAutosave.save(buffer({ configYaml: 'second' }));
@@ -130,7 +125,6 @@ describe('rpcn-editor-autosave', () => {
   describe('capacity', () => {
     it('evicts the stalest buffers past the cap', () => {
       for (let i = 0; i < MAX_AUTOSAVE_BUFFERS + 3; i++) {
-        // Distinct timestamps, so "stalest" is well-defined.
         rs.setSystemTime(new Date(2026, 0, 1, 0, 0, i));
         rpcnEditorAutosave.save(buffer({ targetKey: `p${i}` }));
       }
@@ -142,7 +136,6 @@ describe('rpcn-editor-autosave', () => {
       expect(entries.map((e) => e.targetKey)).toContain(`p${MAX_AUTOSAVE_BUFFERS + 2}`);
     });
 
-    // Ten per cluster with an uncapped tail is no cap at all against the origin's storage budget.
     it('caps buffers across clusters, newest kept', () => {
       saveFullBufferSetPerCluster(['cluster-a', 'cluster-b', 'cluster-c']);
       rs.useRealTimers();
@@ -187,7 +180,6 @@ describe('rpcn-editor-autosave', () => {
     // Another tab's buffer must not be clobbered by this tab's stale snapshot.
     it('writes through storage rather than over an in-memory snapshot', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
-      // Simulate another tab: write directly, leaving this store's state behind.
       const otherTab = [
         ...stored(),
         {
@@ -220,7 +212,6 @@ describe('rpcn-editor-autosave', () => {
       expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
     });
 
-    // The browser-local drafts prototype this replaced; superseded by server-side drafts.
     it('cleans up the storage the old local-drafts prototype left behind', () => {
       localStorage.setItem('rpcn-pipeline-drafts', JSON.stringify([{ id: 'old', configYaml: 'x' }]));
 
@@ -230,7 +221,6 @@ describe('rpcn-editor-autosave', () => {
     });
   });
 
-  // Everything an entry feeds into `form.reset`; a shape change bumps the version rather than risking a render crash.
   describe('shape guard', () => {
     const persisted = () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', tags: [{ key: 'team', value: 'data' }] }));
@@ -264,8 +254,6 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('age cap', () => {
-    // Written straight to storage: the store stamps `updatedAt` itself, so an old
-    // buffer can only be simulated the way a previous session left one behind.
     const storeAged = (ageMs: number, targetKey = CREATE_AUTOSAVE_TARGET) => {
       localStorage.setItem(
         EDITOR_AUTOSAVE_STORAGE_KEY,
@@ -293,8 +281,6 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).toBeNull();
     });
 
-    // The point of the cap is that the stored YAML goes away, not just that it stops
-    // being offered — someone who never opens the editor again writes nothing to evict it.
     it('removes the expired buffer from storage rather than only hiding it', () => {
       storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
 
@@ -318,8 +304,6 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('basedOnUpdateTime', () => {
-    // Staleness compares this against the pipeline's current update_time, both server
-    // values. Round-tripping it is the whole contract the editor relies on.
     it('round-trips the pipeline version the edits were based on', () => {
       rpcnEditorAutosave.save(buffer({ basedOnUpdateTime: 1_700_000_000_123 }));
 
@@ -336,7 +320,6 @@ describe('rpcn-editor-autosave', () => {
   describe('serviceAccount', () => {
     const account = { serviceAccountId: 'sa-123', secretName: 'ORDERS_SA' };
 
-    // The config only names the login mechanism; the account it logs in with is stored beside it.
     it('round-trips the account the edits attached', () => {
       rpcnEditorAutosave.save(buffer({ serviceAccount: account }));
       useRpcnEditorAutosaveStore.getState().refresh();

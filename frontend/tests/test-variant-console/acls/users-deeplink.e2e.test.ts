@@ -37,7 +37,6 @@ const seedTopicReadAcl = async (page: Page, principal: string, topicName: string
 const expectDeepLinkedAclDetails = async (freshPage: Page, principal: string, topicName: string) => {
   await freshPage.goto(`/security/acls/User:${principal}/details`, { waitUntil: 'domcontentloaded' });
 
-  // Structural: detail page renders the seeded rule without a prior list visit.
   await expect(freshPage.getByTestId('acl-rules-length').first()).toHaveText('ACL rules (1)', {
     timeout: 15_000,
   });
@@ -47,7 +46,6 @@ const expectDeepLinkedAclDetails = async (freshPage: Page, principal: string, to
 
 test.describe('security pages deep-link (cold cache)', () => {
   test('direct-load /security/users/e2euser/details renders without prior list navigation', async ({ page }) => {
-    // Collect console/page errors to guard against cache-miss crashes.
     const consoleErrors: string[] = [];
     page.on('pageerror', (err) => consoleErrors.push(err.message));
     page.on('console', (msg) => {
@@ -56,16 +54,11 @@ test.describe('security pages deep-link (cold cache)', () => {
       }
     });
 
-    // Directly load details URL without visiting /security/users first.
-    // e2euser is seeded by tests/shared/seed.e2e.test.ts per the existing test-variant-console stack.
     await page.goto('/security/users/e2euser/details', { waitUntil: 'domcontentloaded' });
 
-    // Structural: page rendered (not an error boundary). The Roles card only renders when the
-    // backend's Roles API is available (RBAC/enterprise), so this OSS suite only checks ACLs.
     await expect(page.getByText('Principal:User:e2euser')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: ACLS_HEADING_NAME })).toBeVisible();
 
-    // Guard: no console errors mentioning undefined user / missing data.
     const suspicious = consoleErrors.filter((msg) => CACHE_MISS_ERROR_PATTERN.test(msg));
     expect(suspicious).toEqual([]);
   });
@@ -78,12 +71,8 @@ test.describe('security pages deep-link (cold cache)', () => {
     const principal = `deeplink-${crypto.randomUUID()}`;
     const topicName = 'deeplink-topic';
 
-    // Seed: grant a topic-read ACL to a fresh principal via the live Permissions List UI
-    // flow so the Connect backend has a real entry to fetch.
     await seedTopicReadAcl(page, principal, topicName);
 
-    // Cold-cache simulation: open a fresh page in a new context so Connect Query has no
-    // hydrated `getAclsByPrincipal` entry, then deep-link straight to the detail URL.
     const freshContext = await browser.newContext(playwright.contextOptions);
     const freshPage = await freshContext.newPage();
     try {

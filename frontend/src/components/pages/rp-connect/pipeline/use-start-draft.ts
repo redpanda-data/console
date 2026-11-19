@@ -32,8 +32,7 @@ export function takeStartLintHints(pipelineId: string): Record<string, LintHint>
   return hints;
 }
 
-// A lint refusal stashes its hints and opens the editor, where they are actionable; anything else is a toast.
-function reportStartDraftError(err: unknown, pipelineId: string, navigate: ReturnType<typeof useNavigate>): void {
+function reportStartDraftError(err: unknown, pipelineId: string, navigate: ReturnType<typeof useNavigate>) {
   const error = ConnectError.from(err);
   if (isInvalidConfigError(error)) {
     const hints = extractLintHintsFromError(error);
@@ -51,7 +50,7 @@ export function useStartDraft() {
   const { mutateAsync, isPending } = useStartPipelineMutation();
 
   const startDraft = useCallback(
-    async (pipelineId: string): Promise<void> => {
+    async (pipelineId: string) => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');

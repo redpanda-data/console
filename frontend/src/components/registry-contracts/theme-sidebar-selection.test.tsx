@@ -21,7 +21,6 @@ import { describe, expect, it } from '@rstest/core';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-// Test commands run from the frontend root.
 const THEME_CSS = readFileSync(resolve(process.cwd(), 'src/components/redpanda-ui/style/theme.css'), 'utf8');
 
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//gu;
@@ -32,10 +31,10 @@ const PAGE_SELECTION_RULE = /(?:^|\})\s*::selection\s*\{(?<declarations>[^}]*)\}
 const SELECTION_PSEUDO = /::selection$/u;
 
 /** Comments mention `::selection` in prose, so they'd otherwise land inside a selector capture. */
-const withoutComments = (css: string): string => css.replace(CSS_COMMENT, '');
+const withoutComments = (css: string) => css.replace(CSS_COMMENT, '');
 
 /** The selector list of the `::selection` rule that paints the sidebar pair. */
-const sidebarSelectionSelectors = (): string[] => {
+const sidebarSelectionSelectors = () => {
   const rule = withoutComments(THEME_CSS).match(SIDEBAR_SELECTION_RULE);
   if (!rule) {
     throw new Error('No ::selection rule setting --color-sidebar-primary found in theme.css');
@@ -66,7 +65,7 @@ const renderShell = () => {
   return wrapper;
 };
 
-const matchedBySidebarRule = (id: string, selectors: string[], root: HTMLElement): boolean => {
+const matchedBySidebarRule = (id: string, selectors: string[], root: HTMLElement) => {
   const element = root.querySelector(`#${id}`);
   if (!element) {
     throw new Error(`Fixture is missing #${id}`);
@@ -86,7 +85,6 @@ describe('theme.css sidebar ::selection scoping', () => {
     const selectors = sidebarSelectionSelectors();
     const shell = renderShell();
 
-    // Both would match again under `[data-slot*='sidebar']`.
     expect(matchedBySidebarRule('page-heading', selectors, shell)).toBe(false);
     expect(matchedBySidebarRule('page-copy', selectors, shell)).toBe(false);
   });

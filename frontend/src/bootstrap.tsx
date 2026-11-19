@@ -17,7 +17,7 @@ import { isDarkModeAvailable, themeInitFor } from './theme-init';
 // Pre-paint theme stamp, for a load whose inline index.html script could not run.
 initTheme(themeInitFor(isDarkModeAvailable()));
 
-const rootElement = document.getElementById('root');
+const rootElement = document.querySelector('#root');
 // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app
 const root = createRoot(rootElement!);
 root.render(<App />);

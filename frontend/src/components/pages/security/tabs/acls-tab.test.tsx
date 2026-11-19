@@ -14,15 +14,11 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 
-// The Playwright spec cannot reach the row menu — a fresh cluster has no ACLs — so it is covered
-// here, along with the delete-option enablement.
-
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
     Link: MockLink,
-    // Real navigate() returns a promise that settles once the route commits.
     useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
@@ -59,11 +55,9 @@ rs.mock('../../../../react-query/api/cluster-status', () => ({
 rs.mock('../../../../react-query/api/user', () => ({
   useInvalidateUsersCache: () => rs.fn(),
   useDeleteUserMutation: () => ({ mutateAsync: rs.fn().mockResolvedValue(undefined) }),
-  // `acl-only` has ACLs but no account.
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-admin' }, { name: 'shadowed' }] }, isLoading: false }),
 }));
 
-// A refetch can fail after data loaded; tests flip this to drive the error screen.
 const { aclQuery } = rs.hoisted(() => ({ aclQuery: { failed: false } }));
 
 rs.mock('../../../../react-query/api/acl', () => ({
@@ -73,7 +67,6 @@ rs.mock('../../../../react-query/api/acl', () => ({
       { principal: 'User:scram-admin', principalType: 'User', principalName: 'scram-admin', host: '*' },
       { principal: 'User:acl-only', principalType: 'User', principalName: 'acl-only', host: '10.0.0.1' },
       { principal: 'Group:engineering', principalType: 'Group', principalName: 'engineering', host: '*' },
-      // Name collides with the `shadowed` SASL user, to pin the principalType guard.
       { principal: 'Group:shadowed', principalType: 'Group', principalName: 'shadowed', host: '10.0.0.9' },
     ],
     isLoading: false,
@@ -103,7 +96,6 @@ describe('the AclsTab', () => {
 
     expect(screen.getByTestId('acl-list-item-scram-admin-*')).toBeInTheDocument();
     expect(screen.getByTestId('acl-list-item-acl-only-10.0.0.1')).toBeInTheDocument();
-    // A wildcard host reads as "Any"; a real one prints.
     expect(screen.getByText('10.0.0.1')).toBeInTheDocument();
   });
 
@@ -173,7 +165,6 @@ describe('the AclsTab', () => {
 
     expect(within(menu).getByRole('menuitem', { name: 'Delete (User and ACLs)' })).toHaveAttribute('data-disabled');
     expect(within(menu).getByRole('menuitem', { name: 'Delete (User only)' })).toHaveAttribute('data-disabled');
-    // Deleting only the ACLs never depends on an account existing.
     expect(within(menu).getByRole('menuitem', { name: 'Delete (ACLs only)' })).not.toHaveAttribute('data-disabled');
   });
 });

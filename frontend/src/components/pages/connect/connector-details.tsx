@@ -610,12 +610,14 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
   async refreshData(force: boolean): Promise<void> {
     ConnectClusterStore.connectClusters.clear();
-    await api.refreshConnectClusters();
+    await this.api.refreshConnectClusters();
 
     // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
     // and show the logs tab
-    api.refreshTopics(force);
+    this.api.refreshTopics(force);
   }
+
+  private readonly refreshConnectorData = this.refreshData.bind(this);
 
   render() {
     const clusterName = decodeURIComponent(this.props.clusterName);
@@ -630,7 +632,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
     return (
       <PageContent>
-        <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />
+        <KafkaConnectorMain
+          clusterName={clusterName}
+          connectorName={connectorName}
+          refreshData={this.refreshConnectorData}
+        />
       </PageContent>
     );
   }

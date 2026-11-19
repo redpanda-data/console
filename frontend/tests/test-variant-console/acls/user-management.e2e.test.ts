@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: User Management Tests (new security UI)
-// seed: tests/shared/seed.e2e.test.ts
-
-import { appURL, expect, type Page, test } from '../../shared/e2e';
+import { appURL, expect, type Page, step, test } from '../../shared/e2e';
 
 const TEST_USER_LINK_NAME = /test-user-.*/u;
 const URL_NAME_QUERY_PARAM = /[?&]name=/u;
@@ -20,8 +15,6 @@ test.describe('user Management', () => {
     });
     await expect(page).toHaveURL(appURL('/security/users'));
 
-    // Wait for API initialization to complete and button to be enabled
-    // This handles timing differences between local and CI environments
     await expect(page.getByTestId('create-user-button')).toBeEnabled({ timeout: 10_000 });
   });
 
@@ -246,8 +239,6 @@ test.describe('user Management', () => {
     });
 
     await step('4. Verify user information section', async () => {
-      // The Roles card only renders when the backend's Roles API is available (RBAC/enterprise),
-      // so this OSS suite only asserts on the always-present ACLs section.
       await expect(page.getByRole('heading', { name: ACLS_HEADING_NAME })).toBeVisible();
     });
 

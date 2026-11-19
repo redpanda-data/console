@@ -26,7 +26,6 @@ export const NoClipboardPopover: FunctionComponent<{ children: ReactElement }> =
   isClipboardAvailable ? (
     children
   ) : (
-    // Hover-triggered and informational, so a Tooltip rather than a Popover.
     <Tooltip>
       {/* Wrapper span: the child forwards no props and renders a disabled button, which emits no pointer events. */}
       <TooltipTrigger render={<span className="inline-flex">{children}</span>} />

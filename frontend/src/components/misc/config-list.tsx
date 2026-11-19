@@ -34,7 +34,6 @@ export function ConfigList({
 }) {
   const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
 
-  // The Registry DataTable renders no expander column for `subComponent`.
   const expanderColumn: DataTableColumnDef<ConfigEntry> = {
     id: 'expander',
     enableSorting: false,

@@ -29,7 +29,6 @@ export const dynamodbCdcTemplate: PipelineTemplate = {
       kind: 'string',
       label: 'AWS region',
       placeholder: 'us-east-1',
-      // Schema-optional (the SDK can infer a region), but cloud dataplanes have no ambient AWS config.
       required: true,
       schemaField: 'region',
     },

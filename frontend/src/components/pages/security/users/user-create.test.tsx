@@ -75,11 +75,13 @@ rs.mock('../../../../state/supported-features', () => {
 });
 
 // Polyfills
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ──────────────────────────────────────────

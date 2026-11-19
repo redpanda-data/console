@@ -88,7 +88,6 @@ type SearchProgress = ReturnType<typeof useSearchProgress>;
 // Refs avoid stale closures in effects and callbacks that outlive a render.
 function useSlidingWindowRefs(pageIndex: number) {
   const virtualStartIndexRef = useRef(0);
-  // Sliding window: the global page number of the first page currently in memory
   const windowStartPageRef = useRef(0);
   const prevPageIndexRef = useRef<number>(pageIndex);
   const lastLoadMoreRef = useRef<LastLoadMore>({ pageIndex: -1, total: -1 });
@@ -151,7 +150,6 @@ function useSearchRefSync(searchState: SearchState, pageIndex: number, refs: Sea
     pageIndexRef.current = pageIndex;
   }, [pageIndex, pageIndexRef]);
 
-  // Cleanup effect (replaces componentWillUnmount)
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -192,9 +190,6 @@ function buildMessageSearchRequest(params: SearchRequestParams): MessageSearchRe
     console.log(`constructed filter code (${functionCount} functions)`, `\n\n${filterCode}`);
   }
 
-  // Calculate backend page size: for continuous pagination mode,
-  // initial load fetches maxResults at once, subsequent loadMore calls use smaller pageSize.
-  // We send maxResults as pageSize to enable pagination mode in the backend.
   return {
     topicName,
     partitionId: params.partitionID,
@@ -343,7 +338,6 @@ function useExecuteMessageSearch(
   );
 }
 
-// Abort the current search if one is running
 function abortRunningSearch(abortControllerRef: SearchRefs['abortControllerRef']) {
   if (abortControllerRef.current) {
     abortControllerRef.current.abort();
@@ -351,7 +345,6 @@ function abortRunningSearch(abortControllerRef: SearchRefs['abortControllerRef']
   }
 }
 
-// Clear messages immediately when starting a new search
 function clearForNewSearch(
   setSearchState: SetSearchState,
   { windowStartPageRef, lastLoadMoreRef }: Pick<SearchRefs, 'windowStartPageRef' | 'lastLoadMoreRef'>
@@ -395,7 +388,6 @@ function useSearchRunner(
 
       abortRunningSearch(abortControllerRef);
 
-      // Start new search
       currentSearchRunRef.current = searchParams;
       abortControllerRef.current = new AbortController();
       clearForNewSearch(setSearchState, { windowStartPageRef, lastLoadMoreRef });
@@ -418,7 +410,6 @@ function useSearchRunner(
       maxResults,
       partitionID,
       startTimestamp,
-      // A schema context change still re-searches: executeMessageSearch is rebuilt with it.
       executeMessageSearch,
       keyDeserializer,
       valueDeserializer,
@@ -431,10 +422,8 @@ function useSearchRunner(
     ]
   );
 
-  // Auto search when parameters change
   // biome-ignore lint/correctness/useExhaustiveDependencies: forceRefresh is intentionally watched to trigger forced re-search
   useEffect(() => {
-    // Set up auto-search with 100ms delay
     const timer = setTimeout(() => {
       searchFunc('auto');
     }, 100);
@@ -479,7 +468,6 @@ function startLoadMore({
 }: LoadMoreRun) {
   const { windowStartPageRef, virtualStartIndexRef, lastLoadMoreRef, loadMoreAbortRef, pageIndexRef } = refs;
   const { currentMessageSearchRef, isMountedRef } = refs;
-  // Prevent duplicate loads from effect re-runs
   lastLoadMoreRef.current = { pageIndex, total: totalVirtualMessages };
 
   const abortController = new AbortController();
@@ -509,12 +497,10 @@ function startLoadMore({
           virtualStartIndex: virtualStartIndexRef.current,
         });
 
-        // Free memory from the MobX observable array
         if (trimResult.trimCount > 0) {
           capturedMessageSearch.messages.splice(0, trimResult.trimCount);
         }
 
-        // Update refs BEFORE setting state to prevent cascading
         windowStartPageRef.current = trimResult.windowStartPage;
         virtualStartIndexRef.current = trimResult.virtualStartIndex;
         lastLoadMoreRef.current = {
@@ -649,14 +635,11 @@ function useContinuousLoadMore(
   ]);
 }
 
-// Reset pagination when navigating back to page 1 in continuous pagination mode
-// This prevents keeping many pages in memory and triggering excessive requests
 function usePaginationReset(paging: MessagePagingParams, setSearchState: SetSearchState, refs: SearchRefs) {
   const { pageIndex, continuousPaginationEnabled } = paging;
   const { prevPageIndexRef, currentMessageSearchRef, windowStartPageRef, lastLoadMoreRef, currentSearchRunRef } = refs;
 
   useEffect(() => {
-    // Check if we're in continuous pagination mode and user navigated back to page 1 from a higher page
     // Use ref to check messageSearch existence to avoid circular dependency
     if (
       continuousPaginationEnabled &&
@@ -664,7 +647,6 @@ function usePaginationReset(paging: MessagePagingParams, setSearchState: SetSear
       prevPageIndexRef.current > 1 &&
       currentMessageSearchRef.current
     ) {
-      // Reset all search and pagination state, trigger forced refresh
       setSearchState((prev) => ({
         ...prev,
         messages: [],
@@ -677,14 +659,11 @@ function usePaginationReset(paging: MessagePagingParams, setSearchState: SetSear
         forceRefresh: prev.forceRefresh + 1,
       }));
       windowStartPageRef.current = 0;
-      // Reset last loadMore page tracking
       lastLoadMoreRef.current = { pageIndex: -1, total: -1 };
-      // Clear the search run ref
       currentSearchRunRef.current = null;
     }
     prevPageIndexRef.current = pageIndex;
     // Note: messageSearch intentionally excluded to avoid circular dependency
-    // We use currentMessageSearchRef.current instead which is always in sync
   }, [
     pageIndex,
     continuousPaginationEnabled,

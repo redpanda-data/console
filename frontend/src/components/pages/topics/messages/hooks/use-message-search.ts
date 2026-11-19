@@ -294,8 +294,6 @@ const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: Str
 };
 
 const onErrorFrame = (value: ListMessagesResponse_ErrorMessage, run: StreamRun) => {
-  // Doesn't necessarily mean the whole request failed (e.g. "N partitions
-  // offline") — the stream can still reach `done` normally afterwards.
   toast.error('Backend error', { description: value.message });
   run.pendingBackendError = new Error(value.message);
 };
@@ -362,13 +360,7 @@ const settleRun = (session: SearchSession, setters: SearchSetters) => {
 };
 
 const finalizeRun = ({ session, setters, abortController }: StreamRun) => {
-  // An abort's rejection surfaces on a later microtask than the synchronous setup of
-  // whichever newer run replaced us (stop() + a fresh AbortController, both synchronous).
-  // If someone else now owns the session's abortController, this run's completion is stale —
-  // finalizing here (the shared buffer flush, phase, backendPhase, isLoadingMore) would clobber
   // the newer run's in-progress state with our own "done". Only finalize when no one else has
-  // taken over (still us, or genuinely idle — e.g. an explicit stop with nothing queued to
-  // replace it).
   const supersededByNewerRun = session.abortController !== null && session.abortController !== abortController;
   if (session.abortController === abortController) {
     session.abortController = null;
@@ -444,8 +436,6 @@ function useSearchState() {
   const [stats, setStats] = useState<StreamStats>(EMPTY_STATS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newKeys, setNewKeys] = useState<ReadonlySet<string>>(new Set());
-  // setState functions never change identity, so the bundle is captured once and stays a
-  // stable dependency for the callbacks below.
   const [setters] = useState<SearchSetters>(() => ({
     setMessages,
     setNewKeys,
@@ -467,7 +457,6 @@ function useSearchState() {
  */
 export function useMessageSearch(topicName: string): MessageSearchResult {
   const { state, setters } = useSearchState();
-  // Lazy, so the session is built once rather than on every render; its identity never changes.
   const [session] = useState(createSearchSession);
 
   const stop = useCallback(() => abortSession(session, 'stopped by user'), [session]);
@@ -478,8 +467,6 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
       const run = beginRun(session, setters, params, options);
       const req = buildListMessagesRequest(topicName, params, options.pageToken);
       const streamError = await consumeStream(client, req, run);
-      // Surfaced via `error` above; reject so a caller that auto-restarts on completion
-      // (live tail) can tell a real failure apart from a clean finish and stop looping.
       if (streamError && !run.abortController.signal.aborted) {
         throw streamError;
       }

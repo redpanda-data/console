@@ -22,7 +22,6 @@ import { checkRequired, findComponentByName, resolveFieldByPath } from '../utils
 
 const componentList = schemaJson as unknown as ComponentList;
 
-// Bridge snapshot field names (is_optional/default/...) to proto FieldSpec names so we reuse the form's required-field logic.
 type SnapshotField = {
   is_optional?: boolean;
   default?: unknown;
@@ -31,8 +30,6 @@ type SnapshotField = {
   children?: SnapshotField[];
 };
 
-// benthos's required rule (jSchemaIsRequired): no default and not optional; objects follow children.
-// The snapshot has full default info, so we stamp requiredBySchema exactly like runtime enrichment does.
 const snapshotRequired = (f: SnapshotField) => {
   if (f.is_optional || 'default' in f) {
     return false;
@@ -47,7 +44,6 @@ const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
   ({
     ...f,
     optional: f.is_optional,
-    // Mirror the proto's loss: only string defaults survive serialization.
     defaultValue: typeof f.default === 'string' ? f.default : undefined,
     advanced: f.is_advanced,
     deprecated: f.is_deprecated,
@@ -55,16 +51,13 @@ const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
     children: f.children?.map(toRawFieldSpec),
   }) as unknown as RawFieldSpec;
 
-// Framework-injected keys every input/output accepts; absent from a component's own field tree.
 const FRAMEWORK_KEYS = new Set(['label', 'processors']);
 
-// Fill every slot so nothing is dropped: validates the maximal field set a template can emit.
 const sampleValues = (slotIds: string[]): Record<string, string> =>
   Object.fromEntries(slotIds.map((id) => [id, `value_${id}`]));
 
 type FieldNode = { children?: { name: string }[] };
 
-// Field paths under one stitched mapping pair that are absent from the component schema.
 function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string): string[] {
   const key = (pair.key as { value?: unknown } | null)?.value;
   if (typeof key !== 'string') {
@@ -83,7 +76,6 @@ function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefi
     : [];
 }
 
-// Walk a stitched mapping, collecting field paths absent from the component schema (recurses into nested maps).
 function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | undefined, prefix: string): string[] {
   if (!isMap(node)) {
     return [];
@@ -93,7 +85,6 @@ function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | un
 
 type StitchedComponent = { type: 'input' | 'output'; name: string; config: unknown };
 
-// The components a stitched config declares under its `input:` and `output:` sections.
 function stitchedComponents(doc: Document): StitchedComponent[] {
   const components: StitchedComponent[] = [];
   for (const type of ['input', 'output'] as const) {
@@ -111,7 +102,6 @@ function stitchedComponents(doc: Document): StitchedComponent[] {
   return components;
 }
 
-// The schema-required fields of `comp` that a stitched component mapping leaves unset.
 function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>): string[] {
   const present = new Set(
     isMap(config)
@@ -124,7 +114,6 @@ function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComp
     .filter((name): name is string => !!name && !present.has(name));
 }
 
-// Looks up a bundled template, failing the test when it is missing.
 function requireTemplate(id: string): PipelineTemplate {
   const template = PIPELINE_TEMPLATES.find((t) => t.id === id);
   expect(template).toBeDefined();
@@ -134,8 +123,6 @@ function requireTemplate(id: string): PipelineTemplate {
   return template;
 }
 
-// Stitches each template with sample values and asserts every emitted field resolves against the
-// schema snapshot, so connector field renames/removals fail here rather than as a server lint error post-submit.
 describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
   test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
     '$id stitches to YAML with only known component fields',
@@ -175,7 +162,6 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
 
   test('blank optional slots without a fallback are dropped, not left empty', () => {
     const postgres = requireTemplate('postgres-cdc-to-redpanda');
-    // includedTable is optional with no fallback; blank should drop the whole `tables:` key, not emit `tables: []`.
     const yaml = stitchTemplateYaml({
       template: postgres,
       values: { dsn: 'PG_DSN', slotName: '', includedTable: '', targetTopic: 'orders' },
@@ -186,7 +172,6 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     expect(doc.getIn(['input', 'postgres_cdc', 'tables'])).toBeUndefined();
   });
 
-  // Mirrors applySchemaToSlots: required if the slot says so, else the schema decides.
   const endpointForSection = (template: PipelineTemplate, section: TemplateSlot['section']) => {
     if (section === 'source') {
       return template.source;
@@ -209,7 +194,6 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     return field ? checkRequired(toRawFieldSpec(field as unknown as SnapshotField)) : false;
   };
 
-  // Fill only the form-required slots; blank the rest (defaultWhenBlank slots still emit a value).
   const minimalValues = (template: PipelineTemplate): Record<string, string> =>
     Object.fromEntries(template.slots.map((s) => [s.id, isSlotRequired(template, s) ? `value_${s.id}` : '']));
 
@@ -272,7 +256,6 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     });
     const doc = parseDocument(yaml);
     expect(doc.errors).toHaveLength(0);
-    // Only separators/whitespace → zero entries → the `collections:` key is dropped, not left as [].
     expect(doc.getIn(['input', 'mongodb_cdc', 'collections'])).toBeUndefined();
   });
 });

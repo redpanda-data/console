@@ -9,12 +9,10 @@ import { expect, test } from '../console-enterprise.fixture';
 const failOverOneTopicThenAll = async (shadowlinkPage: ShadowlinkPage, shadowlinkName: string) => {
   await step('Failover single topic and wait for all topics', async () => {
     await shadowlinkPage.gotoDetails(shadowlinkName);
-    // Failover single topic (will verify state change)
     await shadowlinkPage.failoverTopic('owlshop-orders');
   });
 
   await step('Failover all topics', async () => {
-    // Wait for all 7 topics to sync (uses metrics which is faster)
     await shadowlinkPage.verifyMetrics({
       totalTopics: 7,
     });
@@ -52,7 +50,6 @@ test.describe('shadow Link E2E Tests', () => {
       });
 
       await step('Verify we reached configuration step', async () => {
-        // After clicking Next, we should be on step 2 (Configuration)
         await expect(page.getByRole('heading', { name: /configuration/iu })).toBeVisible();
       });
     });
@@ -137,14 +134,12 @@ test.describe('shadow Link E2E Tests', () => {
 
       await step('Wait for topics to sync (excluding addresses)', async () => {
         await shadowlinkPage.gotoDetails(shadowlinkName);
-        // Wait for 9 topics (10 total - 1 excluded addresses)
         await shadowlinkPage.verifyMetrics({
           totalTopics: 9,
         });
       });
 
       await step('Verify addresses topic is excluded', async () => {
-        // Should not see owlshop-addresses in the topics list
         await expect(page.getByTestId('shadowlink-topic-owlshop-addresses')).not.toBeVisible();
       });
     });

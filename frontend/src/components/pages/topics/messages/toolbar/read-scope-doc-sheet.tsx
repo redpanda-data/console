@@ -168,7 +168,6 @@ export const ReadScopeDocSheet = ({
 }) => {
   const [previewMode, setPreviewMode] = useState<AxisMode>(liveTail ? 'live' : mode);
 
-  // Every open starts on the mode the user is actually reading with
   useEffect(() => {
     if (open) {
       setPreviewMode(liveTail ? 'live' : mode);

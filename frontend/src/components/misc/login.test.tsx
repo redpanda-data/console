@@ -75,7 +75,6 @@ async function submitCredentials(user: ReturnType<typeof userEvent.setup>, usern
 }
 
 function expectSingleLoginRequest(login: ReturnType<typeof rs.fn>, submit: HTMLElement) {
-  // In flight: one request went out and the button cannot fire a second one.
   expect(login).toHaveBeenCalledTimes(1);
   expect(login).toHaveBeenCalledWith(
     expect.objectContaining({

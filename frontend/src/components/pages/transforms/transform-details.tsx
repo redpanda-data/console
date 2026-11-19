@@ -73,7 +73,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
+    this.transformsApi.refreshTransforms(force);
   }
 
   render() {

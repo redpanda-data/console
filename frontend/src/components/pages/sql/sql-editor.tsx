@@ -190,7 +190,8 @@ function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) =
 
 // Matches an identifier followed by `=>` or `.` and a partial table name,
 // anchored at the cursor: [, name, gap1, separator, gap2, quote, partial].
-const CATALOG_REF_RE = /([A-Za-z_][\w$]*)(\s*)(=>|\.)(\s*)("?)([\w$]*)$/u;
+const CATALOG_REF_RE =
+  /(?<catalog>[A-Za-z_][\w$]*)(?<whitespaceBeforeSeparator>\s*)(?<separator>=>|\.)(?<whitespaceAfterSeparator>\s*)(?<quote>"?)(?<prefix>[\w$]*)$/u;
 const COMMENT_OR_STRING_NODE_RE = /Comment|String/u;
 const CATALOG_REF_BOUNDARY_RE = /[\w$".]/u;
 const COMPLETION_IDENTIFIER_RE = /[\w$]+/u;

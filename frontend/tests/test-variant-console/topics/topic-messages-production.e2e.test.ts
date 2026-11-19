@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: specs/topics.md
-// seed: tests/shared/seed.e2e.test.ts
-
-import { expect, test } from '../../shared/e2e';
+import { expect, step, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 test.describe('produce Messages', () => {
@@ -53,7 +48,6 @@ test.describe('produce Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    // Chained in order: every message goes through the same page and produce form, one after another.
     await messages.reduce<Promise<unknown>>(
       (previousMessage, message) =>
         previousMessage.then(() =>
@@ -63,7 +57,6 @@ test.describe('produce Messages', () => {
             const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
             await valueEditor.click();
 
-            // Clear any existing content before inserting new text
             await page.keyboard.press('Meta+A'); // Select all (Mac)
             await page.keyboard.press('Control+A'); // Select all (Windows/Linux)
             await page.keyboard.press('Backspace');
@@ -71,7 +64,6 @@ test.describe('produce Messages', () => {
             await page.keyboard.insertText(message);
             await page.getByTestId('produce-button').click();
 
-            // Verify message appears
             await expect(page.getByRole('cell', { name: new RegExp(message, 'iu') }).first()).toBeVisible({
               timeout: 10_000,
             });
@@ -83,7 +75,6 @@ test.describe('produce Messages', () => {
     await step('Verify all messages in topic', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // All messages should be visible
       await Promise.all(messages.map((message) => expect(page.getByText(message)).toBeVisible()));
     });
 
@@ -98,7 +89,6 @@ test.describe('produce Messages', () => {
     await page.goto(`/topics/${topicName}/produce-record`);
 
     await step('Produce large message', async () => {
-      // Create message larger than 20KB (DefaultMaxDeserializationPayloadSize)
       const maxMessageSize = 30_000;
       const fillText = 'example content ';
       const content = fillText.repeat(Math.floor(maxMessageSize / fillText.length) + 1);
@@ -106,7 +96,6 @@ test.describe('produce Messages', () => {
       const monacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
       await monacoEditor.click();
 
-      // Copy to clipboard and paste (faster than typing)
       await page.evaluate(`navigator.clipboard.writeText("${content}")`);
       await page.keyboard.press('Control+KeyV');
       await page.keyboard.press('Meta+KeyV');
@@ -121,7 +110,6 @@ test.describe('produce Messages', () => {
     });
 
     await step('Load large message', async () => {
-      // Click on the message row to expand
       await page.getByLabel('Expand row').first().click();
 
       // Should show warning about performance
@@ -134,10 +122,8 @@ test.describe('produce Messages', () => {
           timeout: 5000,
         });
 
-      // Click "Load anyway"
       await page.getByTestId('load-anyway-button').click();
 
-      // Full message content should load
       await expect(page.getByTestId('payload-content')).toBeVisible({ timeout: 5000 });
     });
 
@@ -153,12 +139,10 @@ test.describe('produce Messages', () => {
     await step('Navigate to produce page', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
-      // Verify produce page loaded with all elements
       await expect(page.getByTestId('produce-button')).toBeVisible();
       await expect(page.getByTestId('produce-value-editor')).toBeVisible();
       await expect(page.getByTestId('produce-key-editor')).toBeVisible();
 
-      // Page title or heading should indicate produce/publish
       await expect(page.locator('text=/Produce|Publish/i').first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -174,15 +158,11 @@ test.describe('produce Messages', () => {
     await step('Try to produce empty message', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
-      // Don't enter any value
       const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
       await valueEditor.click();
 
-      // Try to produce
       await page.getByTestId('produce-button').click();
 
-      // Message might be produced (empty is valid) or button might be disabled
-      // Just verify no crash occurs — page may navigate after producing
       await page.waitForLoadState('networkidle', { timeout: 10_000 });
     });
 
@@ -212,16 +192,13 @@ test.describe('produce Messages', () => {
     await step('Produce second message - editor should be clear or have previous content', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
-      // Editor might be cleared or might have previous content
       const valueEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
       await valueEditor.click();
 
-      // Select all and delete to ensure clean state
       await page.keyboard.press('Control+A');
       await page.keyboard.press('Meta+A');
       await page.keyboard.press('Backspace');
 
-      // Type new message
       await page.keyboard.insertText(message2);
       await page.getByTestId('produce-button').click();
 

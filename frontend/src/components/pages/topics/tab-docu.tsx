@@ -34,7 +34,7 @@ import { animProps } from '../../../utils/animation-props';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
 // Regex for extracting language from code blocks
-const CODE_LANGUAGE_REGEX = /language-(\w+)/u;
+const CODE_LANGUAGE_REGEX = /language-(?<language>\w+)/u;
 
 // Regex for removing trailing newlines
 const TRAILING_NEWLINE_REGEX = /\n$/u;

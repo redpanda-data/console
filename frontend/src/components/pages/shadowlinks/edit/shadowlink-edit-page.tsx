@@ -33,7 +33,6 @@ import { ShadowLinkLoadErrorState } from '../list/shadowlink-empty-state';
  */
 const getTabForField = (fieldName: string): string => {
   const fieldToTabMap: Record<string, string> = {
-    // Source tab fields
     name: 'source',
     bootstrapServers: 'source',
     authMethod: 'source',
@@ -43,7 +42,6 @@ const getTabForField = (fieldName: string): string => {
     useTls: 'source',
     mtls: 'source',
     mtlsMode: 'source',
-    // Shadowing tab fields
     topicsMode: 'shadowing',
     topics: 'shadowing',
     rolesMode: 'shadowing',
@@ -54,7 +52,6 @@ const getTabForField = (fieldName: string): string => {
     aclFilters: 'shadowing',
     enableSchemaRegistrySync: 'shadowing',
     schemaRegistry: 'shadowing',
-    // Topic config tab fields
     topicProperties: 'topic-config',
     excludeDefault: 'topic-config',
   };
@@ -93,7 +90,6 @@ const useShadowLinkUpdateFeedback = (
 ) => {
   const navigate = useNavigate();
 
-  // Set up mutation callbacks
   useEffect(() => {
     const unsubscribeDataplane = dataplaneUpdate.reset;
     const unsubscribeControlplane = controlplaneUpdate.reset;
@@ -104,7 +100,6 @@ const useShadowLinkUpdateFeedback = (
     };
   }, [dataplaneUpdate.reset, controlplaneUpdate.reset]);
 
-  // Handle success/error for mutations
   useEffect(() => {
     if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
       toast.success('Shadow link updated');
@@ -129,23 +124,17 @@ const useShadowLinkUpdateFeedback = (
  * Navigate to the tab containing the first error
  */
 const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: string) => void) => {
-  // Find the first field with an error
   const firstErrorField = Object.keys(errors)[0];
 
   if (firstErrorField) {
-    // Get the tab that contains this field
     const errorTab = getTabForField(firstErrorField);
 
-    // Navigate to that tab
     showTab(errorTab);
 
-    // Get error count
     const errorCount = Object.keys(errors).length;
 
-    // Format tab name for display
     const tabName = tabDisplayNames[errorTab] || errorTab;
 
-    // Show toast notification with tab information
     toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
       description: `Navigated to ${tabName} tab`,
       testId: 'validation-error-toast',
@@ -153,8 +142,6 @@ const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: 
   }
 };
 
-// Load errors (e.g. a timeout while Redpanda aggregates shadow link status
-// on a large cluster) are not the same as a missing shadow link.
 const ShadowLinkEditUnavailable = ({ error }: { error: EditShadowLink['error'] }) => {
   const navigate = useNavigate();
 
@@ -182,16 +169,13 @@ type ShadowLinkEditFormProps = {
 const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: ShadowLinkEditFormProps) => {
   const navigate = useNavigate();
 
-  // Track current active tab
   const [currentTab, setCurrentTab] = useState<string>('source');
 
-  // While the SR feature gate is closed, the redesigned Schema Registry
   // section isn't rendered, so its rules must not run: an api-mode link
   // hydrates a basic-auth password that is never returned and has no input
   // to re-enter it, which would otherwise block saving every other field.
   const srGateOpen = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
-  // Initialize form with values that automatically update when shadowLink data changes
   const form = useForm<FormValues>({
     resolver: zodResolver(srGateOpen ? FormSchema : FormSchemaWithoutSchemaRegistryRules),
     values: formValues,
@@ -268,7 +252,6 @@ export const ShadowLinkEditPage = () => {
     throw new Error('Shadow link name is required');
   }
 
-  // Use the unified edit hook that handles embedded/dataplane logic
   const { formValues, isLoading, error, isUpdating, hasData, updateShadowLink, dataplaneUpdate, controlplaneUpdate } =
     useEditShadowLink(name);
 

@@ -105,11 +105,13 @@ rs.mock('@tanstack/react-router', () => {
 });
 
 // Polyfills
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ────────────────────────────────────────────
@@ -637,7 +639,7 @@ describe('the AddUserStep', () => {
 
       await user.type(await screen.findByPlaceholderText('Enter a username'), 'existing-user');
       expect(await screen.findByText('No stored credentials for this user')).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(named))).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(named, 'u'))).toBeInTheDocument();
     });
   });
 

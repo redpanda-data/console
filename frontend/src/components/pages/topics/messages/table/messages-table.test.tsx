@@ -14,7 +14,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { MessagesTable, type MessagesTableProps } from './messages-table';
-import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
+import { CompressionType } from '../../../../../state/rest-interfaces';
 import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
 
 const guard = rs.hoisted(() => ({ fencedRead: false }));
@@ -102,7 +102,7 @@ describe('the MessagesTable — column sorting is keyboard-accessible', () => {
   });
 });
 
-const message = (offset: number): TopicMessage => ({
+const message = (offset: number) => ({
   partitionID: 0,
   offset,
   timestamp: offset,
@@ -135,7 +135,6 @@ describe('messagesTable — new rows and the corner actions', () => {
   });
 });
 
-// Checks prop-to-preset wiring, not computed pixels.
 test.each([
   ['compact', 'h-14'],
   ['detailed', 'h-16'],

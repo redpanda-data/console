@@ -181,7 +181,7 @@ test.describe('topic Creation', () => {
 
     await step('Navigate to topic details', async () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
-      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`, 'u'));
       await expect(page.getByText(topicName).first()).toBeVisible();
     });
 

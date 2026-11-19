@@ -45,10 +45,8 @@ const useMetricChart = ({ queryName, timeRange }: MetricChartProps) => {
     },
   });
 
-  // Transform the time series data into chart format
   const chartData = useMemo(() => transformTimeSeriesData(data?.results || []), [data]);
 
-  // Extract series names for creating lines
   const seriesNames = useMemo(() => {
     if (!data?.results) {
       return [];
@@ -58,7 +56,6 @@ const useMetricChart = ({ queryName, timeRange }: MetricChartProps) => {
       .filter((name, index, self) => self.indexOf(name) === index);
   }, [data]);
 
-  // Chart configuration
   const chartConfig = useMemo(() => {
     const config: Record<string, { label: string; color: string }> = {};
 

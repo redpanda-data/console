@@ -28,10 +28,6 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import ObservabilityPage from './observability-page';
 
-// Recharts' ResponsiveContainer requires parent-container dimensions to
-// render. happy-dom reports 0×0 for every element, which makes recharts
-// emit "width(0) and height(0) of chart should be greater than 0" on every
-// chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
 // so the inner LineChart gets a positive layout and the warning stops.
 function MockResponsiveContainer({ children }: { children: React.ReactNode }) {
   return React.createElement('div', { style: { width: 800, height: 600 } }, children);
@@ -72,7 +68,6 @@ rs.mock('state/app-global', () => ({
   },
 }));
 
-// Two data points an hour apart, so the chart has a line to draw.
 function createLastHourTimeSeries() {
   const now = Date.UTC(2026, 0, 15, 12);
   const oneHourAgo = now - 60 * 60 * 1000;
@@ -132,7 +127,6 @@ describe('the ObservabilityPage', () => {
 
     renderWithFileRoutes(<ObservabilityPage />, { transport });
 
-    // Wait for titles to appear
     await waitFor(() => {
       expect(screen.getByText('CPU usage percentage')).toBeInTheDocument();
       expect(screen.getByText('Memory usage in bytes')).toBeInTheDocument();

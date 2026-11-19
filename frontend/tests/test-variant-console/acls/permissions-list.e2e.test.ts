@@ -91,7 +91,6 @@ test.describe('permissions List - delete dropdown', () => {
       await expect(page.getByTestId('txt-confirmation-delete')).toBeVisible({ timeout: 5000 });
       await page.getByTestId('txt-confirmation-delete').fill(username);
       await page.getByTestId('test-delete-item').click();
-      // Wait for the confirm dialog to close — it only does so once the delete mutation resolves.
       await expect(page.getByTestId('txt-confirmation-delete')).not.toBeVisible({ timeout: 10_000 });
     });
 
@@ -129,7 +128,6 @@ test.describe('permissions List - delete dropdown', () => {
     });
 
     await step('Verify ACLs removed', async () => {
-      // The principal row persists (the user still exists) but its ACL count drops to zero.
       const row = await openPrincipalRow(page, username);
       await row.click();
       await expect(row.getByText('No ACLs assigned')).toBeVisible({ timeout: 5000 });

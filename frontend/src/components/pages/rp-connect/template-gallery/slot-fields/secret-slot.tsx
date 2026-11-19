@@ -30,9 +30,6 @@ export type SecretSlotFieldProps = {
   slot: SecretSlot;
   control: Control<FieldValues>;
   onSecretCreated?: (slotId: string, secretName: string) => void;
-  // When supplied, "Create secret" delegates to the parent instead of opening
-  // the nested AddSecretsDialog (avoids dialog-within-a-dialog). The existing-
-  // secret select stays in the slot regardless.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
 };
 
@@ -68,8 +65,6 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
         required={slot.required}
       >
         {(field) => {
-          // Include a just-created value the listSecrets query hasn't reported
-          // yet, so the Select shows it instead of the placeholder.
           const selectedValue = (field.value as string | undefined) ?? '';
           const options =
             selectedValue && !existingSecrets.includes(selectedValue)

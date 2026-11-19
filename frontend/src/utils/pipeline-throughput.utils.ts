@@ -10,14 +10,9 @@
  */
 
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
-// null values mark no-data gaps so recharts breaks the line (see insertGapMarkers).
 export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };
 
-export function addSeriesToMap(
-  map: Map<number, MergedPoint>,
-  results: TimeSeriesResult[],
-  key: 'ingress' | 'egress'
-): void {
+export function addSeriesToMap(map: Map<number, MergedPoint>, results: TimeSeriesResult[], key: 'ingress' | 'egress') {
   for (const series of results) {
     for (const point of series.values) {
       if (!point.timestamp || point.value === undefined) {
@@ -31,7 +26,6 @@ export function addSeriesToMap(
   }
 }
 
-// Smallest spacing between points — the fixed-step query step.
 function inferStepMs(points: MergedPoint[]): number | null {
   if (points.length < 2) {
     return null;

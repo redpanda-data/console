@@ -40,16 +40,12 @@ import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../typ
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
-  // Closed via X, ESC, or backdrop. If the user entered any form values,
   // `stashedYaml` carries the partial config so the host editor can keep it.
   onClose: (stashedYaml: string | null) => void;
-  // Parent owns the deploy mutation.
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
 };
 
 // `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
-// mounted across `form ↔ addSecret ↔ createTopic` transitions and the user's
-// in-progress form values survive the round-trip.
 type DialogView =
   | { kind: 'gallery' }
   | { kind: 'form' }
@@ -90,9 +86,6 @@ const StepBackHeader = ({
   </DialogHeader>
 );
 
-// The sub-steps hold a single small form; xl dimensions would leave them floating in dead
-// space, so the dialog steps down to a compact content-hugging size (auto height animates
-// via DialogContent's useAnimatedAutoHeight) and back up on return.
 const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | null) => {
   const isFormViewActive = view.kind === 'form';
   const isAddSecretViewActive = view.kind === 'addSecret';
@@ -110,9 +103,6 @@ const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | nul
 const useTemplateDialogSteps = (open: boolean) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
-  // Slot write requested by an in-dialog step; the form panel consumes it via
-  // an effect and clears it. Props rather than a ref since React 18 function
-  // components don't receive `ref`.
   const [applySlotValue, setApplySlotValue] = useState<ApplySlotValueRequest | null>(null);
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
@@ -127,8 +117,6 @@ const useTemplateDialogSteps = (open: boolean) => {
     addTopicStepRef.current = null;
   };
 
-  // Reset to the gallery when the parent closes the dialog directly (e.g. after
-  // `onSubmit`) without routing through `onClose`, so it reopens clean.
   useEffect(() => {
     if (!open) {
       setView({ kind: 'gallery' });
@@ -204,7 +192,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     }
     if (!result.success && result.error) {
       // AddTopicStep shows field-level validation in its own form; only toast
-      // the higher-level failure.
       toast.error(result.message ?? result.error);
     }
   };
@@ -223,7 +210,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
 
   return (
     <Dialog
-      // Block backdrop dismissal past the gallery so a stray click can't wipe
       // in-progress form values. ESC and X / Cancel still close.
       disablePointerDismissal={view.kind !== 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
@@ -341,7 +327,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
         ) : null}
 
         {isCreateTopicViewActive ? (
-          // Single action: back navigation is the header's arrow, same as the addSecret view.
           <DialogFooter>
             <Button
               data-testid="template-create-topic-submit"

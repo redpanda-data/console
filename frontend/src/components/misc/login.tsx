@@ -270,7 +270,7 @@ const LoginPage = () => {
                 <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
-            {methods.reduce((acc, method, index) => {
+            {methods.reduce<React.ReactNode[]>((acc, method, index) => {
               let authComponent: React.ReactNode = null;
               if (method === AuthenticationMethod.NONE) {
                 authComponent = <NoneAuthComponent hasMethodsError={methodsError !== null} />;
@@ -290,7 +290,7 @@ const LoginPage = () => {
                 acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
-            }, [] as React.ReactNode[])}
+            }, [])}
           </div>
         </div>
       </div>

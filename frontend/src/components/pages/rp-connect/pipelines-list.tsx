@@ -34,7 +34,8 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 
 const STATUS_ICON_SIZE = 24;
 
@@ -261,7 +262,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
 ];
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
-class RpConnectPipelinesList extends PageComponent<{}> {
+class RpConnectPipelinesList extends pageWithContent(() => <RpConnectPipelinesListContent />) {
   initPage(p: PageInitHelper): void {
     p.addBreadcrumb('Redpanda Connect Pipelines', '/rp-connect');
 
@@ -274,7 +275,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       return;
     }
 
-    pipelinesApi.refreshPipelines(force).catch((err) => {
+    this.pipelinesApi.refreshPipelines(force).catch((err) => {
       if (String(err).includes('404')) {
         // Hacky special handling for OSS version, it is possible for the /endpoints request to not complete in time for this to render
         // so in this case there would be an error shown because we were too fast (with rendering, or the req was too slow)
@@ -290,10 +291,6 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         });
       }
     });
-  }
-
-  render() {
-    return <RpConnectPipelinesListContent />;
   }
 }
 

@@ -662,22 +662,7 @@ export class ShadowlinkPage {
     await this.cleanupDestinationTopics();
   }
 
-  async cleanupDestinationTopics() {
-    console.log('Cleaning up replicated topics in destination cluster...');
-    try {
-      const execAsync = await createExecAsync();
-      const containerId = await findDestinationContainerId(execAsync);
-      if (!containerId) {
-        console.log('  No destination cluster container found, skipping cleanup');
-        return;
-      }
-      await deleteReplicatedTopics(execAsync, containerId.trim());
-    } catch (error) {
-      console.log(
-        `  Warning: Could not clean up destination topics: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
+  cleanupDestinationTopics = cleanupDestinationTopics;
 
   /**
    * Helper methods
@@ -686,5 +671,22 @@ export class ShadowlinkPage {
     const tab = this.page.getByRole('tab', { name: new RegExp(tabName, 'iu') });
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');
+  }
+}
+
+async function cleanupDestinationTopics() {
+  console.log('Cleaning up replicated topics in destination cluster...');
+  try {
+    const execAsync = await createExecAsync();
+    const containerId = await findDestinationContainerId(execAsync);
+    if (!containerId) {
+      console.log('  No destination cluster container found, skipping cleanup');
+      return;
+    }
+    await deleteReplicatedTopics(execAsync, containerId.trim());
+  } catch (error) {
+    console.log(
+      `  Warning: Could not clean up destination topics: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }

@@ -85,7 +85,6 @@ describe('the ShadowSchemaRegistrySection', () => {
     await user.click(screen.getByTestId('sr-mode-api-tab'));
     await waitFor(() => {
       expect(formValues?.schemaRegistry?.mode).toBe(SCHEMA_REGISTRY_MODE.API);
-      // API mode is not the legacy topic sync, so the mirrored switch is off.
       expect(formValues?.enableSchemaRegistrySync).toBe(false);
     });
 

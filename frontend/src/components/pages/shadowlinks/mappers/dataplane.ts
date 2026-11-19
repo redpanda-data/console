@@ -49,10 +49,6 @@ import {
   type UnifiedTopicMetadataSyncOptions,
 } from '../model';
 
-// ============================================================================
-// Dataplane → UnifiedShadowLink Mappers
-// ============================================================================
-
 /**
  * Map dataplane authentication configuration to unified type
  */
@@ -238,10 +234,6 @@ export function fromDataplaneShadowLink(sl: DataplaneShadowLink): UnifiedShadowL
   };
 }
 
-// ============================================================================
-// Dataplane → FormValues Mappers
-// ============================================================================
-
 /**
  * Extract TLS settings from shadow link client options
  * mTLS is determined by presence of certificates
@@ -272,7 +264,6 @@ const extractTLSSettings = (
     };
   }
 
-  // tlsPemSettings case
   if (tlsCertsSettings.case === 'tlsPemSettings') {
     const pemSettings = tlsCertsSettings.value;
     return {
@@ -423,7 +414,6 @@ export const buildDefaultTopicsValues = (
   const topicMetadataSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters || [];
 
-  // Check if using "all topics" mode
   const isAllMode = isAllNameFilter(filters);
 
   return {
@@ -435,7 +425,6 @@ export const buildDefaultTopicsValues = (
           patternType: filter.patternType,
           filterType: filter.filterType,
         })),
-    // Use the computed list from shadowLink which includes defaults merged with custom properties
     topicProperties: shadowLink.syncedShadowTopicProperties || [],
     excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
   };
@@ -450,7 +439,6 @@ export const buildDefaultConsumerGroupsValues = (
   const consumerOffsetSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const groupFilters = consumerOffsetSyncOptions?.groupFilters || [];
 
-  // Check if using "all consumer groups" mode
   const isAllMode = isAllNameFilter(groupFilters);
 
   return {
@@ -475,7 +463,6 @@ export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<F
   const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
   const roleNameFilters = roleSyncOptions?.roleNameFilters || [];
 
-  // Check if using "all roles" mode
   const isAllMode = isAllNameFilter(roleNameFilters);
 
   return {
@@ -499,7 +486,6 @@ export const buildDefaultACLsValues = (
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const aclFilters = securitySyncOptions?.aclFilters || [];
 
-  // Check if using "all ACLs" mode
   const isAllMode = isAllACLFilter(aclFilters);
 
   return {

@@ -15,7 +15,7 @@ async function mountRevealFixture(page: Page, reducedMotion: ReducedMotion) {
     `);
 }
 
-function captureRevealAnimations(page: Page): Promise<RevealAnimation[]> {
+function captureRevealAnimations(page: Page) {
   return page.evaluate(async () => {
     const editor = document.querySelector('div');
     if (!editor) {
@@ -26,7 +26,6 @@ function captureRevealAnimations(page: Page): Promise<RevealAnimation[]> {
     });
     await transition.ready;
     const activeAnimations = document.getAnimations();
-    // Hold the active snapshots to exercise hit testing during, not after, the reveal.
     for (const animation of activeAnimations) {
       animation.pause();
     }

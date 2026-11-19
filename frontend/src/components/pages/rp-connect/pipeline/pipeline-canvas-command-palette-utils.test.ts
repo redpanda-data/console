@@ -59,11 +59,8 @@ describe('searchValue', () => {
     const a = searchValue(node({ label: 'kafka' }), 0);
     const b = searchValue(node({ label: 'kafka' }), 1);
 
-    // Distinct values so cmdk can track each row separately...
     expect(a).not.toBe(b);
-    // ...but identical once the invisible suffix is stripped.
     expect(a.replace(new RegExp(ZWSP, 'gu'), '')).toBe(b.replace(new RegExp(ZWSP, 'gu'), ''));
-    // Suffix length is index-derived (index + 1 zero-width spaces).
     expect(a.match(new RegExp(ZWSP, 'gu'))).toHaveLength(1);
     expect(b.match(new RegExp(ZWSP, 'gu'))).toHaveLength(2);
   });

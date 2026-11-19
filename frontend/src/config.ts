@@ -125,7 +125,6 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
         }
       }
     }
-    // Re-throw the error to ensure it's handled by other interceptors or the calling code
     throw error;
   }
 };
@@ -187,7 +186,6 @@ type Config = {
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
-// Config object - plain JavaScript object, no longer using MobX observable
 export const config: Config = {
   restBasePath: getRestBasePath(),
   grpcBasePath: getGrpcBasePath(),
@@ -195,12 +193,8 @@ export const config: Config = {
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
-  setSidebarItems: () => {
-    // no op - set by parent application
-  },
-  setBreadcrumbs: () => {
-    // no op - set by parent application
-  },
+  setSidebarItems: () => {},
+  setBreadcrumbs: () => {},
   isServerless: false,
   featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
 };
@@ -261,15 +255,10 @@ const setConfig = ({
   return config;
 };
 
-// Subscribe to UI state changes for breadcrumbs and sidebar items.
-// Installed from `setup()` so it is tied to the app's lifecycle and can be
-// torn down by the returned teardown function — not at module-top-level,
-// which previously pinned store subscribers across test-runner module resets.
 function installUiStateSubscriptions(): () => void {
   const unsubs: Array<() => void> = [];
 
   try {
-    // Subscribe to breadcrumbs changes
     let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
 
     const unsubUi = useUIStateStore.subscribe((state) => {
@@ -320,8 +309,6 @@ function installUiStateSubscriptions(): () => void {
       setSidebarItems(sidebarItems);
     };
 
-    // Call once on initialization; also re-call whenever endpointCompatibility
-    // becomes available (it starts null and is populated after the first API fetch).
     updateSidebarItems();
     const unsubApi = useApiStore.subscribe((state, prev) => {
       if (state.endpointCompatibility !== prev.endpointCompatibility) {
@@ -329,17 +316,13 @@ function installUiStateSubscriptions(): () => void {
       }
     });
     unsubs.push(unsubApi);
-  } catch {
-    // Ignore errors in test environments where stores might not be properly initialized
-  }
+  } catch {}
 
   return () => {
     for (const unsub of unsubs) {
       try {
         unsub();
-      } catch {
-        // ignore — teardown is best-effort
-      }
+      } catch {}
     }
   };
 }
@@ -376,8 +359,6 @@ export const embeddedAvailableRoutesObservable = {
 };
 
 // Module-level state for cancelling `setup()`'s recursive user-data poll and
-// for holding the current setup teardown. `setup` is memoized with
-// memoize-one, so repeated calls with the same args no-op; these refs let the
 // harness (and app lifecycle) cancel the pending work explicitly.
 let checkUserDataCancelled = false;
 let currentSetupTeardown: (() => void) | null = null;
@@ -387,7 +368,7 @@ let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
  * Cancels the recursive `checkUserData` polling timer started by `setup()`.
  * Exposed for test cleanup + explicit app teardown.
  */
-export function cancelCheckUserData(): void {
+export function cancelCheckUserData() {
   checkUserDataCancelled = true;
 }
 
@@ -395,7 +376,7 @@ export function cancelCheckUserData(): void {
  * Tear down anything `setup()` installed (store subscriptions + polling timer).
  * Safe to call multiple times.
  */
-export function teardownSetup(): void {
+export function teardownSetup() {
   if (subscriptionInstallTimeoutId !== null) {
     clearTimeout(subscriptionInstallTimeoutId);
     subscriptionInstallTimeoutId = null;
@@ -411,7 +392,6 @@ export function teardownSetup(): void {
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // If setup() is re-invoked (memoize-one only caches the latest args), tear
   // down any state installed by the previous invocation first to avoid
-  // stacking subscribers / pending timeouts.
   teardownSetup();
 
   setConfig(setupArgs);
@@ -419,19 +399,13 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Reset the cancel flag now that we're installing fresh state.
   checkUserDataCancelled = false;
 
-  // Install UI / API store subscriptions on a short delay (matches historical
   // behavior that waited for stores to initialize). Tracked so teardown can
-  // unsubscribe and clear the pending timeout.
   subscriptionInstallTimeoutId = setTimeout(() => {
     subscriptionInstallTimeoutId = null;
     currentSetupTeardown = installUiStateSubscriptions();
   }, 50);
 
-  // Get supported endpoints / kafka cluster version
-  // In the business version, that endpoint (like any other api endpoint) is
-  // protected, so we need to delay the call until the user is logged in.
   if (AppFeatures.SINGLE_SIGN_ON) {
-    // Poll for user data instead of using MobX when
     const checkUserData = () => {
       if (checkUserDataCancelled) {
         return;

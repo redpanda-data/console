@@ -15,8 +15,6 @@ import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { idleTimeoutFires, parseMessageLimit, type StopConditionDraft } from '../utils/read-until';
 import { isStopConditionSet, type StopCondition } from '../utils/yaml';
 
-// The stop condition editor's form model.
-
 const STOP_MODES = ['none', 'count', 'idle', 'check'] as const;
 
 export type StopMode = (typeof STOP_MODES)[number];
@@ -111,8 +109,7 @@ export function draftFromStopForm(s: StopFormState, restartOffered = true): Stop
   return { check: s.check.trim(), idleTimeout, restartInput };
 }
 
-// A count or check on an input that never ends, with no idle timeout behind it.
-function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior): string {
+function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior) {
   const limit = s.limit.trim();
   const unit = own.batches ? 'batches' : 'messages';
   const shortfall =

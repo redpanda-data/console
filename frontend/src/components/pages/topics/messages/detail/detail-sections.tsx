@@ -50,9 +50,6 @@ const DetailSection = ({
 }) => (
   <AccordionItem
     className={cn(
-      // `relative` anchors the copy button: it can't live in the trigger's `end` slot
-      // (a button inside the trigger button), so it overlays the header row instead.
-      // The simple accordion variant already draws the item's `border-b`.
       'relative shrink-0',
       fill &&
         open &&

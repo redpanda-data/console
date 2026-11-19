@@ -66,7 +66,6 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
-// A slot's presence check. Optional slots accept anything; a comma-separated list needs one
 // non-blank entry (",," must not pass).
 const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<string> => {
   if (!slot.required) {
@@ -146,14 +145,10 @@ export type ApplySlotValueRequest = {
 
 export type TemplateFormPanelProps = {
   template: PipelineTemplate;
-  // Lets an out-of-tree submit button target the form via the `form` attribute.
   formId: string;
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
-  // When set, secret slots delegate "Create secret" to the parent instead of a nested dialog.
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
-  // When set, topic slots delegate "Create topic" to the parent.
   onRequestCreateTopic?: (slotId: string) => void;
-  // Writes `value` into the named slot once per `requestId`, then calls `onSlotValueApplied`.
   applySlotValue?: ApplySlotValueRequest | null;
   onSlotValueApplied?: () => void;
 };
@@ -181,10 +176,7 @@ const useTemplateForm = (template: PipelineTemplate) => {
 
   const lastAppliedTemplateId = useRef<string | null>(null);
   useEffect(() => {
-    // Wait for the config schema too (isLoading), so the one-shot reset uses schema-exact
     // required-ness/defaults rather than locking in values derived from proto flags alone.
-    // If that query hangs forever the reset never fires (errors settle isLoading) and the
-    // form stays on its first-render defaults — degraded but usable.
     if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
       return;
     }
@@ -218,7 +210,6 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
       isDirty: () => form.formState.isDirty,
     }));
 
-    // Apply an externally-requested slot write (e.g. from the in-dialog secret step).
     // biome-ignore lint/correctness/useExhaustiveDependencies: requestId is the intentional change detector; slotId/value are read fresh from applySlotValue and shouldn't refire repeats.
     useEffect(() => {
       if (!applySlotValue) {

@@ -14,7 +14,7 @@ import type { TopicMessage } from '../state/rest-interfaces';
 /**
  * Case-insensitive substring match against a message's offset, key JSON, and value JSON.
  */
-export function isFilterMatch(str: string, m: TopicMessage): boolean {
+export function isFilterMatch(str: string, m: TopicMessage) {
   const lowerStr = str.toLowerCase();
   if (m.offset.toString().toLowerCase().includes(lowerStr)) {
     return true;
@@ -56,7 +56,6 @@ export function trimSlidingWindow({
 
   const currentLocalPage = Math.max(0, currentGlobalPage - windowStartPage);
 
-  // Never trim the page the user is currently viewing or the one before it
   const maxPagesToTrim = Math.max(0, currentLocalPage - 1);
   const pagesToTrim = Math.min(Math.floor((messages.length - maxWindowSize) / pageSize), maxPagesToTrim);
   const trimCount = pagesToTrim * pageSize;

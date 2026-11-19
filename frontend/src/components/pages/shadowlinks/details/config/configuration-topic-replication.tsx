@@ -27,7 +27,6 @@ export type ConfigurationTopicReplicationProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// Default properties that are synced when excludeDefault is false
 const DEFAULT_PROPERTIES = [
   'compression.type',
   'retention.bytes',
@@ -38,7 +37,6 @@ const DEFAULT_PROPERTIES = [
   'max.compaction.lag.ms',
 ];
 
-// Category mapping: category name -> array of property names
 const CATEGORY_PROPERTIES_MAP: Record<string, string[]> = {
   Retention: ['retention.bytes', 'retention.ms', 'delete.retention.ms'],
   Compaction: ['min.compaction.lag.ms', 'max.compaction.lag.ms', 'min.cleanable.dirty.ratio'],
@@ -77,7 +75,6 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
   const excludeDefault = topicSyncOptions?.excludeDefault ?? false;
   const syncedProperties = shadowLink.syncedShadowTopicProperties || [];
 
-  // Combine default properties (if not excluded) with synced properties
   const allProperties = excludeDefault ? syncedProperties : [...new Set([...DEFAULT_PROPERTIES, ...syncedProperties])];
 
   if (allProperties.length === 0) {

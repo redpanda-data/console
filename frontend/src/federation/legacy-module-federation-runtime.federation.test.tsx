@@ -15,12 +15,7 @@ const container: {
 test('keeps legacy exports isolated from a React 18 host share scope', async () => {
   const host = createLegacyHost();
   await container.init(host.scope);
-  const getAccessToken = rs.fn(
-    () =>
-      new Promise<string>(() => {
-        // Keep backend initialization pending while exercising the real renderer.
-      })
-  );
+  const getAccessToken = rs.fn(() => new Promise<string>(() => {}));
   const fixture = await mountLegacyEntries(getAccessToken);
   try {
     await waitFor(() => expect(getAccessToken).toHaveBeenCalledTimes(2));

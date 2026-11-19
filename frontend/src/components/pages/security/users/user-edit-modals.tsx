@@ -176,7 +176,6 @@ const getRoleChanges = (originalRoles: string[], selectedRoles: string[]) => ({
   removedRoles: originalRoles.except(selectedRoles),
 });
 
-// Removals first, then additions.
 const toMembershipUpdates = (userName: string, addedRoles: string[], removedRoles: string[]) => [
   ...removedRoles.map((r) =>
     create(UpdateRoleMembershipRequestSchema, { roleName: r, remove: [{ principal: userName }] })

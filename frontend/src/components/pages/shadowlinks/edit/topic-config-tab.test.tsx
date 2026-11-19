@@ -43,7 +43,6 @@ const renderTopicConfigTab = (overrides: Partial<FormValues>) => {
   return { user, toggle: screen.getByTestId('exclude-default-switch') };
 };
 
-// The form state the wrapper mirrors into the DOM
 const readFormState = () => JSON.parse(screen.getByTestId('form-state').textContent || '{}');
 
 describe('the TopicConfigTab', () => {
@@ -55,17 +54,14 @@ describe('the TopicConfigTab', () => {
       });
       expect(toggle).not.toBeChecked();
 
-      // Enable exclude default
       await user.click(toggle);
 
       await waitFor(() => {
         expect(toggle).toBeChecked();
       });
 
-      // Check that default properties were removed from topicProperties
       const state = readFormState();
 
-      // Only non-default properties should remain
       expect(state.topicProperties).toEqual(['segment.bytes', 'flush.ms']);
       expect(state.topicProperties).not.toContain('retention.bytes');
       expect(state.topicProperties).not.toContain('retention.ms');
@@ -78,17 +74,14 @@ describe('the TopicConfigTab', () => {
       });
       expect(toggle).toBeChecked();
 
-      // Disable exclude default
       await user.click(toggle);
 
       await waitFor(() => {
         expect(toggle).not.toBeChecked();
       });
 
-      // Check that default properties were added to topicProperties
       const state = readFormState();
 
-      // Should contain all default properties plus the existing ones
       expect(state.topicProperties).toEqual(
         expect.arrayContaining([
           'segment.bytes',

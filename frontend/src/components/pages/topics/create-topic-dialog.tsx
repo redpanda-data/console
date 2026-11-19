@@ -112,7 +112,6 @@ function NumInput(p: {
       id={p.id}
       inputMode="numeric"
       onBlur={() => {
-        // An empty box and a non-numeric entry both clear the value.
         const n = editValue ? Number(editValue) : Number.NaN;
         if (!Number.isFinite(n)) {
           commit(undefined);
@@ -510,7 +509,6 @@ function buildTopicConfigs(values: CreateTopicFormValues) {
   for (const x of values.additionalConfig) {
     setVal(x.name, x.value);
   }
-  // The form's own fields override user-entered entries of the same name.
   for (const [name, value] of formConfigEntries(values)) {
     setVal(name, value);
   }
@@ -555,7 +553,6 @@ function getRequestedCounts(values: CreateTopicFormValues) {
 type CreatedCounts = ReturnType<typeof getRequestedCounts>;
 
 // Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
-// return -1 even when the request named explicit values, so fall back to what we asked for.
 function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, requested: CreatedCounts) {
   return {
     topicName: apiResult.topicName,
@@ -566,9 +563,7 @@ function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, 
 
 function refreshClusterAfterCreate() {
   api.refreshClusterOverview();
-  api.refreshClusterHealth().catch(() => {
-    // Best-effort refresh; the topic was created either way.
-  });
+  api.refreshClusterHealth().catch(() => {});
 }
 
 export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -637,7 +632,6 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
     }
   };
 
-  // Not `Boolean(...)`: the truthiness check narrows `result` to non-null for the success branch below.
   const isSuccess = result && !result.error;
 
   return (

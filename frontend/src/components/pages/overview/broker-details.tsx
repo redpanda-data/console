@@ -24,7 +24,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
 class BrokerDetails extends PageComponent<{ brokerId: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Broker Details';
     p.addBreadcrumb('Overview', '/overview');
 
@@ -59,7 +59,6 @@ const BrokerDetailsContent: FC<{ brokerId: number }> = ({ brokerId }) => {
     return DefaultSkeleton;
   }
 
-  // Handle error while getting config
   if (typeof brokerConfigs === 'string') {
     return (
       <div className="error">

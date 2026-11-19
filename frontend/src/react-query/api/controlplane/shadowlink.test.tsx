@@ -24,7 +24,6 @@ import { connectQueryWrapper } from 'test-utils';
 
 import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
-// Mock config module
 rs.mock('config', () => ({
   isEmbedded: rs.fn(),
   config: {
@@ -33,7 +32,6 @@ rs.mock('config', () => ({
   },
 }));
 
-// Mock controlplane transport hook
 rs.mock('hooks/use-controlplane-transport', () => ({
   useControlplaneTransport: rs.fn(),
 }));
@@ -84,12 +82,10 @@ const renderListShadowLinksHook = (testCase: ListTestCase) => {
 type ListHookRender = ReturnType<typeof renderListShadowLinksHook>;
 
 const expectListRequestMade = async ({ result, mockListShadowLinks }: ListHookRender, clusterId: string) => {
-  // Wait for data to load
   await waitFor(() => {
     expect(result.current.isSuccess).toBe(true);
   });
 
-  // Verify request was made with correct filter
   expect(mockListShadowLinks).toHaveBeenCalledTimes(1);
   expect(mockListShadowLinks).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -102,12 +98,10 @@ const expectListRequestMade = async ({ result, mockListShadowLinks }: ListHookRe
 };
 
 const expectNoListRequest = async ({ result, mockListShadowLinks }: ListHookRender) => {
-  // Wait a tick to ensure query would have been made if enabled
   await waitFor(() => {
     expect(result.current.fetchStatus).toBe('idle');
   });
 
-  // Verify request was NOT made
   expect(mockListShadowLinks).not.toHaveBeenCalled();
   expect(result.current.data).toBeUndefined();
 };
@@ -142,7 +136,6 @@ describe('useControlplaneListShadowLinksQuery', () => {
   ];
 
   test.each(testCases)('$name → shouldMakeRequest=$shouldMakeRequest', async (testCase) => {
-    // Setup mocks
     mockIsEmbedded.mockReturnValue(testCase.isEmbedded);
     mockConfig.clusterId = testCase.clusterId;
 

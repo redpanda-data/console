@@ -24,7 +24,6 @@ import { renderWithFileRoutes, screen } from 'test-utils';
 
 import EditSchemaCompatibilityPage from './edit-compatibility';
 
-// Real navigate() resolves once the route commits.
 const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
@@ -124,7 +123,6 @@ describe('the EditSchemaCompatibilityPage', () => {
 
     test('does not show schema preview panel', async () => {
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-      // Await the Radio group settling before assertions on absence.
       await screen.findByTestId('edit-compatibility-description');
 
       expect(screen.queryByTestId('edit-compatibility-subject-name')).not.toBeInTheDocument();
@@ -203,12 +201,7 @@ describe('the EditSchemaCompatibilityPage', () => {
     });
 
     afterEach(() => {
-      // Unmount the React tree BEFORE mutating the supported-features store.
       // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
-      // subscribers outside any act boundary and emits "update inside a test
-      // was not wrapped in act(...)" warnings attributed to the just-finished
-      // test. The global afterEach also calls cleanup() but runs after this
-      // block, so we have to unmount eagerly here.
       cleanup();
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
     });
@@ -330,7 +323,6 @@ describe('the EditSchemaCompatibilityPage', () => {
 
       const mutateCall = mockMutateContext.mock.calls[0];
       const callbacks = mutateCall[1];
-      // Should not throw
       callbacks.onError(new Error('Server error'));
     });
   });
@@ -344,7 +336,6 @@ describe('the EditSchemaCompatibilityPage', () => {
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
-      // No Radio group renders during skeleton — no async state update to wait for.
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
     });
 
@@ -387,13 +378,11 @@ describe('the EditSchemaCompatibilityPage', () => {
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
 
       // Unmount before mutating supported-features; otherwise the store
-      // update notifies still-mounted subscribers outside any act boundary.
       cleanup();
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
     });
 
     test('disables save button when user lacks permission', async () => {
-      // Ensure mocks are in correct state
       rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,

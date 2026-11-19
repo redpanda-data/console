@@ -104,7 +104,6 @@ export type GetTopicsResponse = {
 export type Partition = {
   id: number;
 
-  // When set, all props from replicas to partitionLogDirs are null
   partitionError: string | null;
   replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
   offlineReplicas: number[] | null;
@@ -117,12 +116,10 @@ export type Partition = {
     size: number; // size (in bytes) of log dir on that broker
   }[];
 
-  // When set, waterMarkLow/High are not set
   waterMarksError: string | null;
   waterMarkLow: number;
   waterMarkHigh: number;
 
-  // added by frontend:
   replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
   topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
   hasErrors: boolean; // just (partitionError || waterMarksError)
@@ -220,7 +217,6 @@ export type TopicMessage = {
   key: Payload;
   value: Payload;
 
-  // Added by the frontend
   valueJson: string; // Value json is what is used for (local) filtering
   valueBinHexPreview: string;
   keyJson: string;
@@ -275,7 +271,6 @@ export type ConfigEntryExtended = ConfigEntry & {
   enumValues?: string[];
   noInfiniteValue?: boolean;
 
-  // added by frontend
   currentValue: string | number | null | undefined;
 };
 
@@ -284,7 +279,6 @@ export type ConfigEntrySynonym = {
   value: string | null;
   source: string;
 
-  // added by frontend
   type: string | null;
 };
 
@@ -300,13 +294,9 @@ export type PartialTopicConfigsResponse = {
   topicDescriptions: TopicDescription[];
 };
 export type TopicDocumentation = {
-  // if false: topic documentation is not configured
   isEnabled: boolean;
-  // empty: actually empty
-  // null:  no .md docu file found for this topic
   markdown: string | null; // base64
 
-  // added by frontend:
   text: string | null; // atob(markdown)
 };
 export type TopicDocumentationResponse = {
@@ -330,7 +320,6 @@ export type GroupMemberDescription = {
   targetAssignments?: GroupMemberAssignment[];
   subscribedTopics?: string[];
 
-  // added by frontend:
   hasMissingPartitionIds: boolean;
   hasMissingAssignments: boolean;
 };
@@ -354,10 +343,8 @@ export type GroupDescription = {
   topicOffsets: GroupTopicOffsets[];
   allowedActions: GroupAction[] | null;
 
-  // Added by frontend
   lagSum: number; // sum of lag for all topic offsets
 
-  // reasons for why the group can't be editted
   isInUse: boolean;
   noEditPerms: boolean;
   noDeletePerms: boolean;
@@ -371,7 +358,6 @@ export type GroupTopicOffsets = {
   partitionOffsets: GroupPartitionOffset[];
 };
 
-// PartitionOffset describes the kafka lag for a partition for a single consumer group
 export type GroupPartitionOffset = {
   partitionId: number;
   groupOffset: number | null; // null when no committed offset exists for this partition
@@ -454,12 +440,8 @@ export type PartitionOffset = {
   error: string | undefined;
   partitionId: number;
 
-  // will return the first message after the given timestamp
-  // if there is no message at or after this timestamp, the offset will be -1
   offset: number;
 
-  // unix ms
-  // if offset is not -1, this will tell us the timestamp of that message
   timestamp: number;
 };
 
@@ -518,7 +500,6 @@ export type RedpandaLicense = {
   source: 'console' | 'cluster' | string;
   // Type is the type of license (free, trial, enterprise)
   type: 'free_trial' | 'open_source' | 'enterprise' | string;
-  // unix seconds
   expiresAt: number;
 };
 
@@ -533,12 +514,10 @@ export type EndpointCompatibilityEntry = {
   isSupported: boolean;
 };
 
-// Response when requesting configuration of a single broker
 export type BrokerConfigResponse = {
   brokerConfigs: ConfigEntry[];
 };
 
-// Current user
 export type User = {
   id: string;
   internalIdentifier: string;
@@ -593,9 +572,6 @@ export type TopicPermissions = {
   canEditTopicConfig: boolean;
 };
 
-//
-// Listing ACLs
-
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export const AclResourceType = {
   Unknown: 0,
@@ -649,7 +625,6 @@ export const AclPermission = {
 
 export type AclPermissionType = (typeof AclPermission)[keyof typeof AclPermission];
 
-// list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
 export type GetAclsRequest = {
   resourceType: AclStrResourceType;
@@ -727,7 +702,6 @@ export const SchemaType = {
 
 export type SchemaTypeType = (typeof SchemaType)[keyof typeof SchemaType];
 
-// Partition Reassignments - Get
 export type PartitionReassignmentsResponse = {
   topics: PartitionReassignments[];
 };
@@ -742,22 +716,15 @@ export type PartitionReassignmentsPartition = {
   replicas: number[];
 };
 
-// PartitionReassignments - Patch
 export type PartitionReassignmentRequest = {
   topics: TopicAssignment[];
 };
 export type TopicAssignment = {
   topicName: string; // name of topic to change
   partitions: {
-    // partitions to reassign
     partitionId: number;
     replicas: number[] | null;
-    // Entries are brokerIds.
-    // Since the replicationFactor of a partition tells us the total number
-    // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
-    // The first entry in the array is the brokerId that will host the leader replica
     // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
-    //
     // Can also be null to cancel a pending reassignment.
   }[];
 };
@@ -774,8 +741,6 @@ export type AlterPartitionReassignmentsPartitionResponse = {
   errorMessage: string | null;
 };
 
-// Change broker config
-// PATCH api/operations/configs
 export const ConfigResourceType = {
   Unknown: 0,
   Topic: 2,
@@ -795,33 +760,22 @@ export const AlterConfigOperation = {
 export type AlterConfigOperationType = (typeof AlterConfigOperation)[keyof typeof AlterConfigOperation];
 
 export type IncrementalAlterConfigsRequestResourceConfig = {
-  // name of key to modify (e.g segment.bytes)
   name: string;
 
   // set(0) value must not be null
-  // delete(1) delete a config key
   // append(2) append value to list of values, the config entry must be a list
-  // subtract(3) remove an entry from a list of values
   op: AlterConfigOperationType;
 
-  // value to set the key to
   value?: string;
 };
 
-// e.g. to throttle reassignment replication (bytes/sec), set
-// `leader.replication.throttled.rate` / `follower.replication.throttled.rate` per broker.
-
 export type ResourceConfig = {
-  // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
   resourceType: ConfigResourceTypeType;
 
-  // Name of the config to alter: a topic name for topics; for brokers, empty to update all broker
-  // configs or a broker ID to update just that one (an ID also forces a reload of config/secret files
   // even when the path is unchanged, and password options are per-broker only); a broker ID is
   // required for broker logger.
   resourceName: string;
 
-  // key/value config pairs to set on the resource.
   configs: IncrementalAlterConfigsRequestResourceConfig[];
 };
 export type PatchConfigsRequest = {
@@ -845,9 +799,7 @@ export type PatchTopicConfigsRequest = {
   configs: PatchTopicConfigsEntry[];
 };
 
-// GET "/kafka-connect/clusters"
 export type ConnectClusters = {
-  // response
   clusterShards: ConnectClusterShard[];
   filtered: {
     clusterCount: number;
@@ -855,11 +807,9 @@ export type ConnectClusters = {
   };
 };
 export type ConnectClusterShard = {
-  // GetClusterShard
   clusterName: string;
   clusterAddress: string;
   clusterInfo: {
-    // RootResource
     version: string;
     commit: string;
     kafka_cluster_id: string;
@@ -873,9 +823,7 @@ export type ConnectClusterShard = {
   error?: string;
 };
 
-// GET "/kafka-connect/connectors"
 export type KafkaConnectors = {
-  // response
   clusters: ClusterConnectors[] | null; // only null when isConfigured=false
   isConfigured: boolean;
 };
@@ -884,7 +832,6 @@ export const ConnectClusterActions = ['viewConnectCluster', 'editConnectCluster'
 export type ConnectClusterAction = 'all' | (typeof ConnectClusterActions)[number];
 
 export type ClusterConnectors = {
-  // ClusterConnectors
   clusterName: string;
   clusterAddress: string;
   clusterInfo: {
@@ -900,7 +847,6 @@ export type ClusterConnectors = {
 
   error?: string;
 
-  // Added by frontend
   canViewCluster: boolean;
   canEditCluster: boolean;
   canDeleteCluster: boolean;
@@ -943,7 +889,6 @@ export type ClusterConnectorInfo = {
   trace?: string;
   tasks: ClusterConnectorTaskInfo[];
 
-  // added by frontend
   jsonConfig: string;
 };
 
@@ -954,7 +899,6 @@ export type ClusterConnectorTaskInfo = {
   trace?: string; // error message
 };
 
-// GET "/kafka-connect/clusters/{clusterName}"
 export type ClusterAdditionalInfo = {
   clusterName: string;
   host: string;
@@ -967,12 +911,6 @@ export type ClusterAdditionalInfo = {
   enabledFeatures?: string[];
 };
 
-// DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
-// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
-// POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
-// all 4 return either nothing (code 200), or an ApiError
-
 export type ConnectorValidationResult = {
   name: string;
   configs: ConnectorProperty[];
@@ -984,7 +922,6 @@ export type ConnectorStep = {
   description?: string;
   groups: ConnectorGroup[];
 
-  // added by frontend:
   stepIndex: number;
 };
 
@@ -1008,13 +945,11 @@ export type ConnectorProperty = {
     default_value: null | string;
     importance: PropertyImportanceType;
     documentation: string;
-    // group: null | string;
     width: PropertyWidthType;
     display_name: string;
     dependents: string[];
     order: number;
 
-    // added by backend
     custom_default_value?: string;
   };
   value: {
@@ -1087,17 +1022,13 @@ export function compressionTypeToNum(type: CompressionTypeType) {
   }
 }
 export type PublishRecordsRequest = {
-  // TopicNames is a list of topic names into which the records shall be produced to.
   topicNames: string[];
 
-  // CompressionType that shall be used when producing the records to Kafka.
   compressionType: CompressionTypeNumType;
 
   // UseTransactions indicates whether we should produce the records transactional. If only one record shall
-  // be produced this option should always be false.
   useTransactions: boolean;
 
-  // Records contains one or more records (key, value, headers) that shall be produced.
   records: PublishRecord[];
 };
 
@@ -1117,7 +1048,6 @@ export type ProduceRecordsResponse = {
   records: ProduceRecordResponse[];
   // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
   // when transactions were enabled. Another option could be that the Kafka client creation has failed because
-  // brokers are temporarily offline.
   error?: string;
 };
 
@@ -1199,24 +1129,16 @@ export type OverviewStatus = {
   statusReason?: string;
 };
 
-// GET /api/brokers
-// from pkg/console/brokers.go
 export type BrokerWithConfigAndStorage = {
   brokerId: number;
   isController: boolean;
   address: string;
   rack?: string;
-  // TotalLogDirSizeBytes is the total sum of bytes that is returned via the
-  // DescribeLogDirs API. Thus, this also includes replicas stored on that
-  // broker. If we fail to retrieve the storage for this broker this
-  // will be nil.
   totalLogDirSizeBytes?: number;
   // TotalPrimaryLogDirSizeBytes is the log dir size of the unique/leading partitions only.
-  // It represents the data size without replication.
   totalPrimaryLogDirSizeBytes?: number;
 };
 
-// GET /schema-registry/mode
 export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
 export type SchemaRegistryModeWithDefault = 'DEFAULT' | SchemaRegistryMode;
 
@@ -1225,7 +1147,6 @@ export type SchemaRegistryModeResponse = {
   mode: string;
 };
 
-// GET /schema-registry/config
 export type SchemaRegistryCompatibilityMode =
   | 'NONE'
   | 'BACKWARD'
@@ -1252,25 +1173,20 @@ export type SchemaRegistryConfigResponse = {
   compatibility: SchemaRegistryCompatibilityMode;
 };
 
-// PUT /schema-registry/config
 export type SchemaRegistrySetCompatibilityModeRequest = {
   compatibility: SchemaRegistryCompatibilityMode;
 };
 
-// GET /schema-registry/subjects
 export type SchemaRegistrySubject = {
   name: string;
   isSoftDeleted: boolean;
 };
 
-// GET /schema-registry/schemas/types
 export type SchemaRegistrySchemaTypesResponse = {
   isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
   schemaTypes: string[];
 };
 
-// GET /schema-registry/subjects/{subject}/versions/{version}
-// version can be 'all' or 'latest'
 export type SchemaRegistrySubjectDetails = {
   name: string;
   type: SchemaTypeType;
@@ -1308,17 +1224,14 @@ export type SchemaMetadata = {
   sensitive?: string[];
 };
 
-// DELETE /schema-registry/subjects/{subject}/versions/{version}
 export type SchemaRegistryDeleteSubjectVersionResponse = {
   deletedVersion: number;
 };
 
-// DELETE /schema-registry/subjects/{subject}?permanent=false
 export type SchemaRegistryDeleteSubjectResponse = {
   deletedVersions: number[];
 };
 
-// POST /schema-registry/subjects/{subject}/versions
 export type SchemaRegistryCreateSchema = {
   schema: string;
   schemaType: SchemaTypeType;
@@ -1333,7 +1246,6 @@ export type SchemaRegistryCreateSchemaResponse = {
   id: number;
 };
 
-// POST /schema-registry/subjects/{subject}/versions/{version}/validate
 export type SchemaRegistryValidateSchemaResponse = {
   compatibility: {
     isCompatible: boolean;
@@ -1346,7 +1258,6 @@ export type SchemaRegistryValidateSchemaResponse = {
   isValid: boolean;
 };
 
-// GET /schema-registry/subjects/{subject}/versions/{version}/referencedby
 export type SchemaReferencedByEntry = {
   schemaId: number;
   error?: string;
@@ -1357,7 +1268,6 @@ export type SchemaReferencedByUsage = {
   version: number;
 };
 
-// GET /schema-registry/schemas/ids/{id}/versions
 export type SchemaVersion = {
   subject: string;
   version: number;

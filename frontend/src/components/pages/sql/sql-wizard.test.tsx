@@ -46,7 +46,7 @@ const renderWizard = (overrides: Partial<SqlWizardProps> = {}) => {
 };
 
 const pickTopicAndContinue = async (topicName: string) => {
-  await userEvent.click(screen.getByRole('radio', { name: new RegExp(topicName) }));
+  await userEvent.click(screen.getByRole('radio', { name: new RegExp(topicName, 'u') }));
   await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 };
 

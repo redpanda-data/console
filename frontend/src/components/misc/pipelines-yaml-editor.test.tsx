@@ -15,7 +15,6 @@ rs.mock('./monaco-editor', () => ({ default: MockEditor }));
 
 const MONACO_STUB = { editor: { defineTheme: () => undefined, setTheme: () => undefined } };
 
-// Monaco calls beforeMount once, with its instance; the page passes a new callback on every render.
 function MockEditor({ beforeMount }: { beforeMount: (monaco: typeof MONACO_STUB) => void }) {
   const [mountMonaco] = useState(() => beforeMount);
   useEffect(

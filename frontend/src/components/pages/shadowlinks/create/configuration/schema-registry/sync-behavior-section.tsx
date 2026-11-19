@@ -49,8 +49,6 @@ export const SyncBehaviorSection = () => {
     ],
   });
 
-  // Force open while a field has an error: the messages render inside, and a
-  // collapsed panel would block submit with no visible feedback.
   const open = isOpen || Boolean(errors.schemaRegistry?.syncBehavior);
 
   const [tailInterval, fullSyncInterval, maxSourceRequestRate, unsupportedSchemaFeatures] = useWatch({
@@ -62,8 +60,6 @@ export const SyncBehaviorSection = () => {
       'schemaRegistry.syncBehavior.unsupportedSchemaFeatures',
     ],
   });
-  // Signal non-default values while collapsed (e.g. a hydrated link being
-  // edited) so customization isn't mistaken for cluster defaults.
   const isCustomized =
     Boolean(tailInterval || fullSyncInterval || maxSourceRequestRate) || unsupportedSchemaFeatures === 'remove';
 

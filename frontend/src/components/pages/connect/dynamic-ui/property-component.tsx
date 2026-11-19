@@ -39,7 +39,6 @@ function renderRadioGroupInput(p: Property, fieldId: string) {
   const def = p.entry.definition;
   return (
     <RadioGroup
-      // A radiogroup div is not labelable; it takes its name from the label instead of htmlFor.
       aria-labelledby={`${fieldId}-label`}
       aria-required={def.required || undefined}
       name={p.name}
@@ -72,7 +71,6 @@ function renderStringInput(p: Property, fieldId: string) {
   }
 
   if (recValues?.length) {
-    // Enum (recommended_values)
     const options = recValues.map((x: string) => ({ label: x, value: x }));
     return (
       <div className="max-w-[260px]">
@@ -88,7 +86,6 @@ function renderStringInput(p: Property, fieldId: string) {
     );
   }
 
-  // Input
   return (
     <Input
       defaultValue={def.default_value ?? undefined}
@@ -149,11 +146,9 @@ function renderPropertyInput(p: Property, fieldId: string) {
         <Input
           id={fieldId}
           onChange={(e) => {
-            // Store the string: getConfigObject sends p.value as-is and ===-compares it to default_value.
             updatePropertyValue(p, e.target.value);
           }}
           required={isRequired}
-          // Registry Input coerces step with Number(); "any" would become NaN.
           showStepControls
           step={1}
           type="number"
@@ -201,10 +196,8 @@ export const PropertyComponent = (props: { property: Property }) => {
     return null;
   }
 
-  // Field generates no ids; the label and the control share this one.
   const fieldId = `property-${p.name}`;
 
-  // Wrap name and input element
   return (
     <div className={clsx('mt-6', inputSizeToClass[p.entry.definition.width])} data-testid={`property-${p.name}`}>
       <ErrorWrapper input={renderPropertyInput(p, fieldId)} inputId={fieldId} property={p} />

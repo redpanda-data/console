@@ -17,7 +17,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -540,7 +539,6 @@ describe('getUpdateValuesForACLs', () => {
       expect(result.fieldMaskPaths).toContain('configurations.security_sync_options');
       expect(result.fieldMaskPaths).toHaveLength(1);
 
-      // Validate schema values
       expect(result.value.aclFilters).toHaveLength(2);
       expect(result.value.aclFilters[0]).toMatchObject({
         resourceFilter: {

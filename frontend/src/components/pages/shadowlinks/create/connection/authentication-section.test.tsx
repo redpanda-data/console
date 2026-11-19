@@ -33,9 +33,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
     mode: 'onBlur',
   });
 
-  const onSubmit = () => {
-    // Test form submission
-  };
+  const onSubmit = () => {};
 
   return (
     <Form {...form}>

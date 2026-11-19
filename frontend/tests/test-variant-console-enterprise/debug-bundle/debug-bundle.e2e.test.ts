@@ -19,13 +19,10 @@ test.describe('debug Bundle - Navigation and Display', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Verify navigation
     await expect(page).toHaveURL(appURL('/debug-bundle'));
 
-    // Verify basic mode is active (generate button visible)
     await debugBundlePage.verifyBasicModeActive();
 
-    // Verify there is no in-progress bundle
     const progressLink = page.getByRole('link', { name: /progress|in progress|view progress/iu });
     await expect(progressLink).not.toBeVisible();
   });
@@ -44,10 +41,8 @@ test.describe('debug Bundle - Form Mode Switching', () => {
     await debugBundlePage.goto();
     await debugBundlePage.switchToAdvancedMode();
 
-    // Switch back to basic
     await debugBundlePage.switchToBasicMode();
 
-    // Verify we're back in basic mode
     await debugBundlePage.verifyBasicModeActive();
   });
 });
@@ -57,14 +52,12 @@ test.describe('debug Bundle - Generation Progress', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.generateBasicBundle();
 
-    // Should navigate to progress page
     await expect(page).toHaveURL(/\/debug-bundle\/progress\//u);
   });
 
   test('should display broker status during generation', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
 
-    // First check if there's an existing bundle in progress
     const hasProgress = await debugBundlePage.isBundleGenerationInProgress();
 
     if (hasProgress) {
@@ -98,7 +91,6 @@ test.describe('debug Bundle - Generation Progress', () => {
       await debugBundlePage.gotoProgress();
       await debugBundlePage.verifyBrokerStatus();
 
-      // Verify we have broker statuses
       const brokerStatuses = page.locator('[data-testid^="debug-bundle-broker-status-"]');
       const count = await brokerStatuses.count();
       expect(count).toBeGreaterThan(0);
@@ -113,7 +105,6 @@ test.describe('debug Bundle - Download and Deletion', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Check if there's a download link available
     const downloadLink = page.getByRole('link', { name: /download/iu });
     const hasDownload = await downloadLink.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -144,7 +135,6 @@ test.describe('debug Bundle - Download and Deletion', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Look for delete button (might be icon button)
     const deleteButton = page
       .getByRole('button', { name: /delete/iu })
       .or(page.locator('button[aria-label*="delete"]'));
@@ -164,7 +154,6 @@ test.describe.skipIf(!!process.env.CI)('debug Bundle - Error Handling', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Check for error indicators using testId
     const errorText = page.getByTestId('debug-bundle-error-text');
     const hasError = await errorText.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -179,7 +168,6 @@ test.describe.skipIf(!!process.env.CI)('debug Bundle - Error Handling', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Look for try again button using testId
     const retryButton = page.getByTestId('debug-bundle-try-again-button');
     const hasRetry = await retryButton.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -196,7 +184,6 @@ test.describe('debug Bundle - Permissions and Access', () => {
   test('should show debug bundle link in header if user has permissions', async ({ page }) => {
     await page.goto('/');
 
-    // Look for debug bundle link in navigation
     const debugBundleLink = page.getByRole('link', { name: /debug bundle/iu });
     const hasLink = await debugBundleLink.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -208,7 +195,6 @@ test.describe('debug Bundle - Permissions and Access', () => {
   test('should navigate to debug bundle from cluster health overview', async ({ page }) => {
     await page.goto('/overview');
 
-    // Look for debug bundle link in overview
     const debugBundleLink = page.getByRole('link', { name: /debug bundle|generate.*bundle/iu });
     const hasLink = await debugBundleLink.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -225,7 +211,6 @@ test.describe('debug Bundle - Bundle Expiration', () => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();
 
-    // Look for expired status using testId
     const expiredText = page.getByTestId('debug-bundle-expired-text');
     const hasExpired = await expiredText.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -240,7 +225,6 @@ test.describe('debug Bundle - Bundle Expiration', () => {
 test.describe('debug Bundle - Confirmation Dialogs', () => {
   test('should show confirmation dialog when generating bundle if one exists', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);
-    // Generate asks before replacing a bundle, so one has to exist first.
     await debugBundlePage.generateBasicBundle();
     await debugBundlePage.goto();
 
@@ -253,7 +237,6 @@ test.describe('debug Bundle - Confirmation Dialogs', () => {
       )
     ).toBeVisible();
 
-    // Cancel to avoid actually generating
     await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(confirmDialog).not.toBeVisible();
     await expect(page).toHaveURL(appURL('/debug-bundle'));
@@ -266,7 +249,6 @@ test.describe('debug Bundle - SCRAM Authentication', () => {
     await debugBundlePage.goto();
     await debugBundlePage.switchToAdvancedMode();
 
-    // Look for SCRAM/SASL configuration
     const scramFields = page.getByText(/scram|sasl/iu);
     const hasScram = await scramFields
       .first()

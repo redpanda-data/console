@@ -73,8 +73,6 @@ const buildColumn = (
   sortingDisabled: boolean,
   valuePreview?: ValuePreviewConfig
 ): DataTableColumnDef<TopicMessage> => {
-  // enableSorting mirrors isSortableColumnId exactly — message-order.ts's visiblePageKeys reads
-  // off the same predicate so keyboard nav walks the same order tanstack actually renders.
   const base: DataTableColumnDef<TopicMessage> = {
     id: config.id,
     header: COLUMN_LABELS[config.id],
@@ -217,8 +215,6 @@ export const MessagesTable = ({
   error,
   onRetry,
 }: MessagesTableProps) => {
-  // All configured columns are registered (so sorting can reference hidden ones,
-  // e.g. the offset tiebreaker); visibility is controlled through table state.
   const columns = useMemo(
     () => columnConfig.map((config) => buildColumn(config, density, timestampFormat, sortingDisabled, valuePreview)),
     [columnConfig, density, timestampFormat, sortingDisabled, valuePreview]
@@ -235,8 +231,6 @@ export const MessagesTable = ({
     state: { sorting, pagination, columnVisibility },
     onSortingChange,
     onPaginationChange,
-    // Pagination is controlled through URL state; auto-reset would fire
-    // onPaginationChange on every data change and loop with the URL updates.
     autoResetPageIndex: false,
     getRowId: (msg) => messageKey(msg),
   });
@@ -244,7 +238,6 @@ export const MessagesTable = ({
   const rows = table.getRowModel().rows;
   const visibleColumnCount = table.getVisibleLeafColumns().length;
   // A failed request has nothing to show either, but it must never look like the empty/waiting
-  // states below — those read as "this topic genuinely has no matching messages," which is not
   // what a network/auth/timeout failure means.
   const showEmpty = !(error || isLoading) && rows.length === 0;
   const fencedRead = useClusterFenceGuard().isFencedRead(error ?? '');
@@ -256,8 +249,6 @@ export const MessagesTable = ({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header, index) => {
-                // The table-corner action buttons (save / view settings) float over the header's
-                // top-right; a right margin on the last title's content keeps it clear of them.
                 const clearOfCornerActions = index === headerGroup.headers.length - 1 && 'mr-16';
                 const canSort = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
@@ -307,8 +298,6 @@ export const MessagesTable = ({
               <Fragment key={key}>
                 {liveSeparatorKey === key && <LiveSeparatorRow columnCount={visibleColumnCount} key={`${key}-sep`} />}
                 <TableRow
-                  // Row heights are floors; detailed payload metadata may expand them.
-                  // The registry row paints `data-state=selected` with the selection wash.
                   className={cn('cursor-pointer', density === 'compact' ? 'h-14' : 'h-16')}
                   data-state={selectedKey === key ? 'selected' : undefined}
                   data-testid="messages-table-row"

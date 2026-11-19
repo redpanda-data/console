@@ -63,7 +63,6 @@ const userWithoutAclAccess: UserData = {
   canDeleteTransforms: false,
 };
 
-// The permission check runs before the first await, so any load would already have started.
 test('loads nothing for a user who cannot list ACLs', () => {
   useApiStore.setState({ userData: userWithoutAclAccess });
 

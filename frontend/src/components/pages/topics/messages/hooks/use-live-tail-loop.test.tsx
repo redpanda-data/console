@@ -33,8 +33,6 @@ describe('liveTailRetryDelayMs', () => {
 });
 
 describe('useLiveTailLoop', () => {
-  // Hoisted: the hook re-renders on its own status updates now, so an inline rs.fn()
-  // would be a new `stop` identity every render and re-trigger the effect in a loop.
   const noopStop = rs.fn();
   beforeEach(() => {
     rs.useFakeTimers();
@@ -52,11 +50,7 @@ describe('useLiveTailLoop', () => {
     });
 
     // Regression: the tail must keep tailing (restart transparently) for as long as it's
-    // active, since the backend bounds a single consume to a page and then completes.
     test('restarts, appending, on every clean completion', async () => {
-      // A real `start` always has async work in between (the network round-trip); with none here,
-      // an uncapped success chain would recurse in a tight synchronous loop and never yield back to
-      // the test — so it hangs after the 3rd call, which is enough to prove the restart happens.
       let calls = 0;
       const start = rs.fn().mockImplementation(() => {
         calls += 1;
@@ -82,7 +76,6 @@ describe('useLiveTailLoop', () => {
 
   describe('failures', () => {
     // Regression for the retry-storm bug: a rejecting `start` must not be retried
-    // immediately — that hammered the backend at RTT speed while hiding the error
     // behind a fast reset loop. It must back off instead.
     test('a hard failure backs off instead of restarting immediately', async () => {
       const start = rs.fn().mockRejectedValue(new Error('boom'));
@@ -128,7 +121,6 @@ describe('useLiveTailLoop', () => {
         if (calls === 1) {
           return Promise.reject(new Error('boom'));
         }
-        // Hang from the 2nd success onward so the immediate-restart chain has somewhere to stop.
         return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
       });
       renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
@@ -138,8 +130,6 @@ describe('useLiveTailLoop', () => {
       });
       expect(start).toHaveBeenCalledTimes(1);
 
-      // First backoff (1000ms) elapses; the retry (call 2) succeeds and immediately restarts
-      // (call 3) with no further backoff — proving the failure count reset on success.
       await act(async () => {
         await rs.advanceTimersByTimeAsync(1000);
       });
@@ -163,7 +153,6 @@ describe('useLiveTailLoop', () => {
 
     // Regression: with retries exhausted, the page's Retry action was a no-op — nothing could
     // re-arm the loop while the live toggle stayed on. restart() must start over with a fresh
-    // failure budget.
     test('restart() re-arms an exhausted loop with a fresh failure budget', async () => {
       const { start, result } = renderFailingLoop({ maxRetries: 1 });
 

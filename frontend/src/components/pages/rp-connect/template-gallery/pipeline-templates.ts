@@ -9,5 +9,4 @@
  * by the Apache License, Version 2.0
  */
 
-// Barrel preserving the original import path; templates live one-per-directory under ./templates.
 export { getTemplateById, PIPELINE_TEMPLATES } from './templates';

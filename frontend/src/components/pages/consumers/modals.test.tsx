@@ -36,9 +36,7 @@ function renderModal() {
       initialPartition={null}
       initialTopic="orders"
       offsets={offsets}
-      onClose={() => {
-        // no op - test callback
-      }}
+      onClose={() => {}}
     />
   );
 }
@@ -129,7 +127,6 @@ describe('deleteOffsetsModal', () => {
 
   const refreshFailure = { description: 'Error: refresh failed' };
 
-  // Confirms a group delete whose follow-up consumer-group refresh rejects; resolves to the modal's onClose.
   async function confirmDeleteWithFailingRefresh(deleteConsumerGroup: () => Promise<void>) {
     const user = userEvent.setup();
     const onClose = rs.fn();

@@ -19,33 +19,18 @@ import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
 import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
-// This type interface extends the default options for render from RTL, as well
-// as allows the user to specify other things such as initialState, store.
 interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
 
-// Track every QueryClient and router created by the test harness so the
-// side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
 // tear them down after each test. A plain render + RTL cleanup only unmounts
-// the React tree — the QueryClient and the TanStack router are still held
-// alive by closures inside the test file, so every test's fetched data,
-// route matches, and history entries accumulate in the worker heap
 // otherwise. That retention is the primary cause of the +100–240 MB
-// intra-file heap growth measured during the TDD audit.
-//
-// `cleanupTestHarness` is kept in a separate module so that
-// `rstest.setup.ts` does not transitively import `routeTree.gen`
-// (and therefore `config`), which would pin `isEmbedded` live
-// bindings before test files' `rs.mock('config', ...)` hoists can take
-// effect.
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
 const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) =>
   render(ui, { wrapper: renderTransportQueryProviders.bind(null, renderOptions), ...renderOptions });
 
-// File-based routing test utilities
 interface RenderWithFileRoutesOptions extends ExtendedRenderOptions {
   initialLocation?: string;
   routerContext?: Partial<RouterContext>;
@@ -59,10 +44,6 @@ export function renderWithFileRoutes(
     defaultOptions: {
       queries: {
         retry: false,
-        // gcTime + staleTime: 0 guarantees Connect Query caches are dropped
-        // the moment their observers unmount (end of test), so tests that
-        // render lists of fixtures don't retain those fixtures for the
-        // duration of the file.
         gcTime: 0,
         staleTime: 0,
       },
@@ -116,7 +97,6 @@ export async function waitForRouter(router: ReturnType<typeof createRouter>) {
   await router.load();
 }
 
-// Create test router with generated route tree
 export function createTestRouterFromFiles(initialLocation = '/') {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -191,11 +171,9 @@ const connectQueryWrapper = (
   };
 };
 
-// re-export everything
 // biome-ignore lint/performance/noBarrelFile: Test utilities intentionally re-export for convenience
 export * from '@testing-library/react';
 
-// override render method
 export { connectQueryWrapper, customRender as render, renderWithRouter };
 
 function TransportQueryProviders({
@@ -209,7 +187,6 @@ function TransportQueryProviders({
     });
 
   // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
-  // This prevents the client from being recreated when the Wrapper re-renders
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       defaultOptions: {

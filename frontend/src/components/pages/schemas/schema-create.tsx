@@ -70,6 +70,8 @@ import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
+export { SchemaAddVersionPage } from './schema-add-version';
+
 type SetSchemaState = Dispatch<SetStateAction<SchemaEditorStateData>>;
 
 function createInitialSchemaState(): SchemaEditorStateData {
@@ -101,8 +103,8 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
   }
 
   refreshData(force?: boolean) {
-    api.refreshSchemaSubjects(force); // for references editor -> subject selector
-    api.refreshTopics(force); // for the topics selector
+    this.api.refreshSchemaSubjects(force); // for references editor -> subject selector
+    this.api.refreshTopics(force); // for the topics selector
   }
 
   render() {
@@ -111,35 +113,6 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
         contextName={this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined}
       />
     );
-  }
-}
-
-export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
-  initPage(p: PageInitHelper): void {
-    const subjectName = decodeURIComponent(this.props.subjectName);
-    const encodedSubjectName = encodeURIComponent(subjectName);
-    p.title = 'Add schema version';
-    p.addBreadcrumb('Schema Registry', '/schema-registry');
-    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${encodedSubjectName}`, undefined, {
-      canBeTruncated: true,
-    });
-    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${encodedSubjectName}/add-version`);
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
-
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    api.refreshSchemaSubjects(force);
-    api.refreshSchemaTypes(force);
-
-    const subjectName = decodeURIComponent(this.props.subjectName);
-    api.refreshSchemaDetails(subjectName, force);
-  }
-
-  render() {
-    return <SchemaAddVersionPageContent subjectName={decodeURIComponent(this.props.subjectName)} />;
   }
 }
 
@@ -171,7 +144,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
   );
 };
 
-const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
+export const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
   const subject = useApiStoreHook((s) => s.schemaDetails.get(subjectName));
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);

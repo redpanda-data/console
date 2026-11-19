@@ -92,7 +92,6 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
     try {
       await updateSecret({ request });
       toast.success('Secret updated');
-      // Handled here so a navigation failure is not reported as a failed update.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
         toast.error('Failed to navigate', { description: String(navigationError) });
       });

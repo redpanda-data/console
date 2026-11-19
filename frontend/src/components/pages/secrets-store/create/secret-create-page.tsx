@@ -77,7 +77,6 @@ export const SecretCreatePage = () => {
     try {
       await createSecret({ request });
       toast.success('Secret created');
-      // Handled here so a navigation failure is not reported as a failed create.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
         toast.error('Failed to navigate', { description: String(navigationError) });
       });

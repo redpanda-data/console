@@ -33,14 +33,10 @@ describe('applyDisplayWindow', () => {
   });
 
   // Regression: continuous + "Newest" orders newest-first, and "Load more" pages sort to the
-  // tail. Keeping the head instead (the earlier behavior) pinned the window to the first
-  // `cap` rows forever — every fetched page was silently discarded and pagination was stuck.
   test('newest-first ordering: keeps the tail so newly loaded older pages become visible', () => {
-    // Sorted newest-first, as continuous + "Newest" ordering produces before windowing.
     const firstThreePages = Array.from({ length: 10 }, (_, i) => 9 - i);
     const withOlderPage = [...firstThreePages, ...Array.from({ length: 4 }, (_, i) => -1 - i)];
     const result = applyDisplayWindow(withOlderPage, 4);
-    // The freshly fetched older page is what the window shows — the frontier advanced.
     expect(result.rows).toEqual([-1, -2, -3, -4]);
     expect(result.trimmed).toBe(10);
   });

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 
 type HeapUserData = {

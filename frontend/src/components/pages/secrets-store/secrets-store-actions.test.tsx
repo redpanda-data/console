@@ -14,17 +14,13 @@ import { render, screen, waitFor } from 'test-utils';
 import { SecretsStoreActionsCell } from './secrets-store-actions';
 import type { SecretTableRow } from './secrets-store-list-page';
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {
-    // Mock implementation
-  }
-  unobserve() {
-    // Mock implementation
-  }
-  disconnect() {
-    // Mock implementation
-  }
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 
 Element.prototype.scrollIntoView = rs.fn();
 

@@ -22,9 +22,6 @@ import { render, screen, waitFor } from 'test-utils';
 import { AddTopicStep } from './add-topic-step';
 import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
-// ── Mocks ──────────────────────────────────────────────────────────────
-
-// 1. Mock config module with a controllable fetch
 const mockFetch = rs.fn();
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
@@ -39,7 +36,6 @@ rs.mock('config', () => {
   };
 });
 
-// 2. Mock backend-api (used by useCreateTopicMutation onSuccess + useTopicConfigQuery)
 rs.mock('state/backend-api', () => ({
   api: {
     refreshTopics: rs.fn(() => Promise.resolve()),
@@ -48,7 +44,6 @@ rs.mock('state/backend-api', () => ({
   },
 }));
 
-// 3. Mock AdvancedTopicSettings sub-component (not under test)
 function MockAdvancedTopicSettings() {
   return <div data-testid="advanced-topic-settings" />;
 }
@@ -57,12 +52,7 @@ rs.mock('./advanced-topic-settings', () => ({
   AdvancedTopicSettings: MockAdvancedTopicSettings,
 }));
 
-// 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
 Element.prototype.scrollIntoView = rs.fn();
-
-// Import component after mocks
-
-// ── Helpers ────────────────────────────────────────────────────────────
 
 /** REST response for useLegacyListTopicsQuery */
 function createTopicsResponse(topicNames: string[]) {
@@ -122,12 +112,9 @@ async function selectComboboxOption(user: ReturnType<typeof userEvent.setup>, pl
   await user.click(option);
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────
-
 describe('the AddTopicStep', () => {
   beforeEach(() => {
     mockFetch.mockReset();
-    // Default: return empty topic list
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(createTopicsResponse([])),
@@ -155,18 +142,12 @@ describe('the AddTopicStep', () => {
         { transport }
       );
 
-      // Wait for topics to load so the combobox has options
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalled();
       });
 
-      // The component starts in "Existing" mode when topics exist.
-      // Open the combobox, type to filter, then click the matching option.
-      // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
-      // load — clicking the rendered option is deterministic.)
       await selectComboboxOption(user, 'Select a topic', 'my-topic');
 
-      // Submit
       const submitBtn = screen.getByTestId('submit');
       await user.click(submitBtn);
 
@@ -250,7 +231,6 @@ describe('the AddTopicStep', () => {
         { transport }
       );
 
-      // Do not type anything — leave topic name empty
       const submitBtn = screen.getByTestId('submit');
       await user.click(submitBtn);
 
@@ -351,20 +331,16 @@ describe('the AddTopicStep', () => {
 
       render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
 
-      // Wait for topics to load
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalled();
       });
 
-      // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
       const newButton = await screen.findByRole('button', { name: 'New' });
       await user.click(newButton);
 
-      // Type a name matching an existing topic
       const input = screen.getByPlaceholderText('Enter a topic name');
       await user.type(input, 'existing-topic');
 
-      // Assert alert about existing topic appears
       await waitFor(() => {
         expect(screen.getByText(/already exists/u)).toBeInTheDocument();
       });

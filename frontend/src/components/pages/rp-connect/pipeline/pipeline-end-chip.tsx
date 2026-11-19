@@ -223,7 +223,6 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
   );
 }
 
-// How a pipeline runs, as the list says it: "runs until done", "runs continuously", …
 const RUNS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; tone: string }> = {
   finite: { label: 'Until done', tone: 'text-success' },
   continuous: { label: 'Continuously', tone: 'text-muted-foreground' },
@@ -241,7 +240,6 @@ const NoInputIcon = ({ className }: OptionIconProps) => (
 
 /** The list's "Runs" filter options, in the order they read; `none` is a config with no input to judge. */
 export const PIPELINE_END_RUNS: { value: PipelineEndStatus; label: string; icon: ComponentType<OptionIconProps> }[] = [
-  // Built once, so the facet list doesn't remount its icons; the status's tone wins over the list's ink.
   ...(['finite', 'continuous', 'invalid', 'unknown'] as const).map((status) => ({
     value: status,
     label: RUNS_COPY[status].label,

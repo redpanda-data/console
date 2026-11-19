@@ -103,7 +103,6 @@ describe('classifyInputSlot plain inputs', () => {
 });
 
 describe('classifyInputSlot unknown names', () => {
-  // A draft isn't linted, so its input can be any name, built-in object keys included.
   test('a name the catalog doesn’t know is unknown, even a built-in object key', () => {
     for (const name of ['not_a_real_input', 'constructor', 'toString', '__proto__']) {
       expect([name, kindOf(`${name}: {}`)]).toEqual([name, 'unknown']);
@@ -180,7 +179,6 @@ input_resources:
     kafka: {}
 `) as ParsedYamlConfig;
     const viaResource = classifyInputSlot(config.input, config);
-    // The resource's own stop condition makes it end on its own from this input's point of view.
     expect(viaResource.kind).toBe('natural');
     expect(viaResource.reason).toContain('input resource `drain`');
     expect(classifyInputSlot({ resource: 'forever' }, config).kind).toBe('continuous');
@@ -298,7 +296,6 @@ describe('classifyInputSlot restart_input and check-only stop conditions', () =>
     expect(untilMatch).toMatchObject({ kind: 'condition' });
     expect(untilMatch.caveat).toContain('If none does, it never stops.');
 
-    // An input that never finishes is never restarted, so its timeout still ends it.
     expect(kindOf('read_until: { idle_timeout: 30s, restart_input: true, input: { kafka: {} } }')).toBe('condition');
   });
 
@@ -371,7 +368,6 @@ describe('classifyInputSlot batching', () => {
     });
     expect(kindOf('broker: { inputs: [{ sql_select: {} }], batching: { count: 2 } }')).toBe('unknown');
     expect(kindOf('broker: { inputs: [{ sql_select: {} }], batching: { count: 2, period: 1s } }')).toBe('natural');
-    // A broker with nothing to batch on doesn't batch at all.
     expect(kindOf('broker: { inputs: [{ sql_select: {} }], batching: { count: 0 } }')).toBe('natural');
   });
 
@@ -390,7 +386,6 @@ describe('classifyInputSlot batching', () => {
 
   test('inputs that read in batches say so', () => {
     const batches = (yaml: string) => classifyInputSlot(parseYaml(yaml)).batches ?? false;
-    // The ordered Kafka readers pass on each partition fetch as one batch.
     expect(batches('redpanda: { topics: [a] }')).toBe(true);
     expect(batches('redpanda: { topics: [a], unordered_processing: { enabled: true } }')).toBe(false);
     expect(batches('kafka_franz: { topics: [a] }')).toBe(false);
@@ -406,7 +401,6 @@ describe('classifyInputSlot batching', () => {
     );
     expect(limited).toMatchObject({ reason: 'Stops after 1,000 batches, or after 30 seconds without new messages.' });
     expect(limited.caveat).toBeUndefined();
-    // The check sees only each batch's first message, so a match later in one goes unseen.
     const matched = classifyInputSlot(
       parseYaml('{ read_until: { check: this.last, idle_timeout: 30s, input: { redpanda: {} } } }')
     );

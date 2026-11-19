@@ -15,7 +15,6 @@ import type { PipelineTemplate } from './pipeline-template-types';
 import { stitchTemplateYaml } from './template-deploy';
 import { describe, expect, test } from 'bun:test';
 
-// Build `${...}` tokens at runtime so biome's noTemplateCurlyInString doesn't fire.
 const DOLLAR = '$';
 const secretRef = (name: string) => `${DOLLAR}{secrets.${name}}`;
 const slotToken = (id: string) => `${DOLLAR}{slot.${id}}`;
@@ -85,7 +84,6 @@ describe('stitchTemplateYaml', () => {
   test('drops the YAML key entirely when an optional slot is blank', () => {
     const yaml = stitch(buildTemplate(), { dsn: 'X', topic: 'my-topic' });
 
-    // Blank optional slot drops the key so the connector uses its own default, not an empty/`null` value.
     expect(yaml).not.toMatch(/^\s*note:/mu);
     expect(yaml).not.toContain('slot.optionalNote');
   });

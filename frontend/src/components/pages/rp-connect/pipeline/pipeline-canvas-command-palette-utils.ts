@@ -11,15 +11,12 @@
 
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
-// Palette-reachable nodes: ones with an editable target. Structural wrappers (bare switch cases,
-// merge dots) carry no target and are skipped.
 export function jumpableNodes(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
   return nodes.filter((n) => n.editTarget && n.section);
 }
 
 // Match on visible fields only — cmdk fuzzy-matches the whole `value`, so internal node ids would
-// cause invisible matches. Duplicate names stay unique via a zero-width-space suffix the user can't type.
-export function searchValue(node: PipelineFlowNode, index: number): string {
+export function searchValue(node: PipelineFlowNode, index: number) {
   const visible = [node.label, node.labelText, node.section].filter(Boolean).join(' ');
   return `${visible}${'\u200B'.repeat(index + 1)}`;
 }

@@ -6,8 +6,6 @@ const PRINCIPAL_HEADER = /^Principal$/u;
 const HOST_HEADER = /^Host$/u;
 const SORT_ASC = /Asc/u;
 
-// Sorting is reachable only through `DataTableColumnHeader`, and nothing fails if it is missing,
-// so this asserts it is present. A fresh cluster has no ACLs, so it checks the chrome, not rows.
 test.describe('security ACLs tab', () => {
   test('renders the filter, the table and reachable sorting', async ({ page }) => {
     await page.goto('/security/acls');
@@ -20,7 +18,6 @@ test.describe('security ACLs tab', () => {
     await expect(table.getByRole('button', { name: PRINCIPAL_HEADER })).toBeVisible();
     await expect(table.getByRole('button', { name: HOST_HEADER })).toBeVisible();
 
-    // The header is a dropdown trigger, not a one-click sort.
     await table.getByRole('button', { name: PRINCIPAL_HEADER }).click();
     await expect(page.getByRole('menuitem', { name: SORT_ASC })).toBeVisible();
     await page.keyboard.press('Escape');

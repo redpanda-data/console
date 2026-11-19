@@ -17,8 +17,6 @@ const READ_ONLY_EDITOR_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
   // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
-  // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
-  // Solution: Wrap at fixed column to break long lines into manageable chunks
   wordWrap: 'wordWrapColumn',
   wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
   wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
@@ -51,9 +49,6 @@ const READ_ONLY_EDITOR_OPTIONS = {
 export const KowlJsonView = (props: {
   srcObj: object | string | null | undefined;
   style?: CSSProperties;
-  // escapeLatin1 re-escapes code points in 0x80-0xFF as \u00XX so bytes from
-  // Avro's JSON bytes encoding survive copy-paste out of the viewer. Without
-  // this, JSON.stringify emits the code point as a literal glyph and the
   // clipboard receives the UTF-8 encoding, not the original byte.
   escapeLatin1?: boolean;
 }) => {

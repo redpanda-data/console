@@ -46,7 +46,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     super(p);
   }
 
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
     p.title = clusterName;
     p.addBreadcrumb('Connectors', '/connect-clusters');
@@ -151,8 +151,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
     uiSettings.connectorsList.quickSearch = filterText;
   }, []);
 
-  // Memoised on clusterName: DataTable memoises its column model on `columns` identity, and this
-  // component re-renders on every keystroke in the SearchBar.
   const connectorColumns = useMemo<DataTableColumnDef<ClusterConnectorInfo>[]>(
     () => [
       {
@@ -191,7 +189,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       },
       {
         id: 'tasks',
-        // Derived from the task list, so there is nothing to sort on.
         enableSorting: false,
         header: 'Tasks',
         cell: ({ row: { original } }) => <TasksColumn observable={original} />,

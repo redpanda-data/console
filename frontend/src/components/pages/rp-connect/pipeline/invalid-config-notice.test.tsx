@@ -32,7 +32,6 @@ describe('the InvalidConfigNotice', () => {
     );
     const alert = screen.getByRole('alert');
     expect(alert).toHaveClass('absolute', 'px-3');
-    // The variant's padding wins over the Alert's default on the same axis.
     expect(alert).not.toHaveClass('px-4');
   });
 });

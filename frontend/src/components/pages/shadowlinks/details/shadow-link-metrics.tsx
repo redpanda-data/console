@@ -21,7 +21,6 @@ import { type UnifiedShadowLink, type UnifiedShadowLinkState, UnifiedShadowLinkS
 
 const getStateDisplay = (state: UnifiedShadowLinkState): string => UnifiedShadowLinkStateLabel[state] || 'Unknown';
 
-// Revealed while the card is hovered or the button has focus, so it stays out of the way of the value.
 const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolean; onRefresh: () => void }) =>
   isFetching ? (
     <span className="absolute top-2 right-2 flex">

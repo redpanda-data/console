@@ -49,7 +49,6 @@ describe('the PipelineProblemsPanel', () => {
     await user.click(chip);
     await user.click(screen.getByText('field required'));
     expect(onSelectProblem).toHaveBeenCalledWith('input-0', { kind: 'input' }, undefined);
-    // The list collapses after a selection.
     expect(screen.queryByTestId('pipeline-problems-list')).not.toBeInTheDocument();
   });
 
@@ -63,7 +62,6 @@ describe('the PipelineProblemsPanel', () => {
     expect(chip.className).toContain('text-warning');
 
     await user.click(chip);
-    // No section heading when it's the only kind of issue.
     expect(screen.queryByText('Deprecated components')).not.toBeInTheDocument();
     await user.click(screen.getByText(USE_THE_REPLACEMENT));
     expect(onSelectProblem).toHaveBeenCalledWith('input-0', { kind: 'input' }, undefined);

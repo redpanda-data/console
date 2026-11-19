@@ -50,9 +50,6 @@ export function useCreateModeInitialYaml(opts: {
     return () => clearTimeout(timer);
   }, [enabled, isServerlessMode, resolved, timeoutMs]);
 
-  // Serverless path: generate YAML from wizard data once components are loaded.
-  // After the timeout has already surfaced the editor, never resolve late: the user may have
-  // started typing, and resolveInitialYaml would replace the buffer with the generated YAML.
   useEffect(() => {
     if (!(enabled && isServerlessMode) || resolved || timedOut || components.length === 0) {
       return;
@@ -71,7 +68,6 @@ export function useCreateModeInitialYaml(opts: {
     setResolved(true);
   }, [enabled, isServerlessMode, components, isPipelineDiagramsEnabled, resolved, timedOut]);
 
-  // Non-serverless path: restore persisted YAML from in-memory store
   useEffect(() => {
     if (!enabled || isServerlessMode || isPipelineDiagramsEnabled || resolved || !persistedYamlContent) {
       return;

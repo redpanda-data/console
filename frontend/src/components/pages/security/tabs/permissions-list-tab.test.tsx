@@ -27,7 +27,6 @@ import { PermissionsListTab } from './permissions-list-tab';
  */
 
 const { deleteAclMock, deleteUserMock } = rs.hoisted(() => ({ deleteAclMock: rs.fn(), deleteUserMock: rs.fn() }));
-// A refetch can fail after data loaded; tests flip this to drive the error screen.
 const { aclsQuery } = rs.hoisted(() => ({ aclsQuery: { failed: false } }));
 
 const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
@@ -37,7 +36,6 @@ rs.mock('@tanstack/react-router', () => {
   return {
     ...actual,
     Link: MockLink,
-    // Real navigate() returns a promise that settles once the route commits.
     useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
@@ -185,7 +183,6 @@ describe('the Permissions List - delete dropdown for different principal types',
     const actionsDiv = within(groupRow).getByTestId('actions-engineering');
     await user.click(within(actionsDiv).getByRole('button'));
 
-    // Group should only have "Delete (ACLs only)", not user-delete options
     expect(screen.queryByText('Delete (User and ACLs)')).not.toBeInTheDocument();
     expect(screen.queryByText('Delete (User only)')).not.toBeInTheDocument();
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
@@ -200,7 +197,6 @@ describe('the Permissions List - delete dropdown for different principal types',
     const actionsDiv = within(scramRow).getByTestId('actions-scram-admin');
     await user.click(within(actionsDiv).getByRole('button'));
 
-    // SCRAM user should have all delete options available and enabled
     const deleteUserAndAcls = screen.getByText('Delete (User and ACLs)');
     expect(deleteUserAndAcls).not.toHaveAttribute('data-disabled');
 
@@ -281,7 +277,6 @@ describe('the Permissions List - delete dropdown for different principal types',
 
     expect(await screen.findByText('acl delete denied')).toBeVisible();
     expect(deleteAclMock).toHaveBeenCalledTimes(1);
-    // The dialog unmounts once its exit transition ends.
     await waitFor(() => expect(screen.queryByText('Delete ACLs for engineering')).not.toBeInTheDocument());
   });
 
@@ -333,7 +328,6 @@ function MockDeleteUserConfirmModal({
   onConfirm: () => Promise<void> | void;
   onOpenChange: (open: boolean) => void;
 }) {
-  // Mirrors the real modal: it closes only once onConfirm settles.
   const handleConfirm = async () => {
     await onConfirm();
     onOpenChange(false);

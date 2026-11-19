@@ -717,35 +717,30 @@ const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number })
   );
 };
 
-class ColAfter extends Component<{
-  selectedTime?: number;
-  record: GroupOffset;
-}> {
-  render() {
-    const val = this.props.record.newOffset;
+function ColAfter({ record, selectedTime }: { selectedTime?: number; record: GroupOffset }) {
+  const val = record.newOffset;
 
-    // No change
-    if (val === null) {
-      return <SkipIconTooltip text="Offset will not be changed" />;
-    }
-
-    // Set by timestamp
-    if (typeof val === 'object') {
-      return <TimestampNewOffset record={this.props.record} selectedTime={this.props.selectedTime} val={val} />;
-    }
-
-    // Earliest / Latest / OtherGroup
-    if (typeof val === 'number') {
-      return <NumericNewOffset record={this.props.record} val={val} />;
-    }
-
-    // Loading placeholder
-    if (typeof val === 'string') {
-      return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
-    }
-
-    return unknownNewOffsetText(val);
+  // No change
+  if (val === null) {
+    return <SkipIconTooltip text="Offset will not be changed" />;
   }
+
+  // Set by timestamp
+  if (typeof val === 'object') {
+    return <TimestampNewOffset record={record} selectedTime={selectedTime} val={val} />;
+  }
+
+  // Earliest / Latest / OtherGroup
+  if (typeof val === 'number') {
+    return <NumericNewOffset record={record} val={val} />;
+  }
+
+  // Loading placeholder
+  if (typeof val === 'string') {
+    return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
+  }
+
+  return unknownNewOffsetText(val);
 }
 
 /** Page-2 preview of a single topic's partition offsets (Before/After). */

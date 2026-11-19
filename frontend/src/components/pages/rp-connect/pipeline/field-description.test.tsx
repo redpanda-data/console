@@ -16,10 +16,9 @@ import { render, screen } from 'test-utils';
 import { FieldDescription } from './field-description';
 import type { RawFieldSpec } from '../types/schema';
 
-const field = (overrides: Partial<RawFieldSpec>): RawFieldSpec =>
+const field = (overrides: Partial<RawFieldSpec>) =>
   ({ name: 'topics', type: 'string', kind: 'scalar', ...overrides }) as RawFieldSpec;
 
-// The `input: redpanda` topics field: a one-line short description over a multi-paragraph AsciiDoc one.
 const LONG_TOPICS_DESCRIPTION =
   '\nA list of topics to consume from. Multiple comma separated topics can be listed in a single element. ' +
   'When a `consumer_group` is specified partitions are automatically distributed across consumers of a topic, ' +
@@ -47,7 +46,6 @@ describe('the FieldDescription', () => {
 
       expect(screen.getByText(SHORT_TOPICS_DESCRIPTION)).toBeInTheDocument();
       expect(screen.queryByText(ALTERNATIVELY_RE)).not.toBeInTheDocument();
-      // A one-liner needs no expander.
       expect(screen.queryByRole('button', { name: SHOW_MORE_RE })).not.toBeInTheDocument();
     });
 
@@ -80,7 +78,6 @@ describe('the FieldDescription', () => {
 
       const toggle = screen.getByRole('button', { name: SHOW_MORE_RE });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
-      // Collapsed is the flattened single-line rendering: no code spans, trailing paragraph clipped by CSS.
       expect(screen.queryByText('consumer_group', { selector: 'code' })).not.toBeInTheDocument();
 
       await user.click(toggle);
@@ -102,7 +99,6 @@ describe('the FieldDescription', () => {
       expect(link).toHaveAttribute('target', '_blank');
       unmount();
 
-      // A code span binds tighter than the link, so a `]` inside the label doesn't end it.
       render(<FieldDescription spec={field({ description: 'A DSN: https://x.com/dsn[`user[:pass\\]@host`].' })} />);
       expect(screen.getByRole('link', { name: 'user[:pass]@host' })).toHaveAttribute('href', 'https://x.com/dsn');
     });
@@ -130,7 +126,6 @@ describe('the FieldDescription', () => {
         <FieldDescription docsUrl={TOPICS_DOCS_URL} spec={field({ description: 'Set the `topic` to publish to.' })} />
       );
 
-      // One block, so the link reads as part of the help text instead of claiming a row of its own.
       const link = screen.getByRole('link', { name: TOPICS_DOCS_RE });
       expect(link.parentElement?.textContent).toBe('Set the topic to publish to. Docs');
       expect(screen.getByText('topic', { selector: 'code' })).toBeInTheDocument();

@@ -11,11 +11,8 @@ const SCHEMA_REGISTRY_TABLE_NAME_TESTID = 'schema-registry-table-name';
  * @param optionText - The text of the option to select
  */
 async function selectOption(selectContainer: Locator, optionText: string) {
-  // Click on the select to open the dropdown
   await selectContainer.click();
 
-  // Wait for and click the option with matching text
-  // React-select renders options with specific attributes
   const option = selectContainer.page().getByText(optionText, { exact: true });
   await option.click();
 }
@@ -27,13 +24,8 @@ async function selectFirstTopicIfAny(page: Page) {
   if (!hasTopics) {
     return;
   }
-  // Open the topic select. Scope option lookup to the open popup (the
-  // registry's Base UI Select keeps a transitioning closed popup briefly,
-  // so the page-wide `[role="option"]` first match can be a stale item
-  // from the strategy select that's animating out).
   await topicSelect.click();
   if (await clickFirstOpenOption(page)) {
-    // Verify key/value radio appears
     await expect(page.getByTestId('schema-create-key-value-radio')).toBeVisible();
   }
 }
@@ -61,18 +53,14 @@ async function expectAllSchemaFormats(page: Page) {
 async function showSoftDeletedSchemas(page: Page) {
   await page.goto('/schema-registry');
 
-  // Enable soft-deleted checkbox to see deleted schemas
   await page.getByTestId('schema-list-show-soft-deleted-checkbox').check();
 
-  // Wait for the table to update after toggling soft-deleted
   await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 }
 
 async function expectRecoverButtonOnFirstSchema(page: Page) {
-  // Click on a soft-deleted schema
   await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first().click();
 
-  // Check for soft-deleted alert or recover button
   const recoverButton = page.getByTestId('schema-definition-recover-btn');
   const hasRecoverButton = await recoverButton.isVisible({ timeout: 1000 }).catch(() => false);
 
@@ -85,11 +73,9 @@ async function expectSubjectCompatibilityEditor(page: Page, editButton: Locator)
   await editButton.click();
   await expect(page).toHaveURL(/\/schema-registry\/subjects\/.+\/edit-compatibility/u);
 
-  // Verify subject name is displayed
   await expect(page.getByTestId('edit-compatibility-subject-name')).toBeVisible();
 }
 
-// Browsing the subject list: filtering, search, pagination and navigation.
 function describeSubjectListSuites() {
   /**
    * This test is depentent on a certain owlshop-data configuration.
@@ -147,7 +133,6 @@ function describeSubjectListSuites() {
       const checkbox = page.getByText('Show soft-deleted').locator('..');
       await checkbox.click();
 
-      // Wait for the table to update after toggling soft-deleted
       await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
     });
 
@@ -178,7 +163,6 @@ function describeSubjectListSuites() {
     });
 
     test("should show 'Schema search help'", async ({ page }) => {
-      // Let's search for 7
       await page.goto('/schema-registry');
       await expect(page.getByTestId('schema-help-title')).not.toBeVisible();
       await page.getByTestId('schema-search-help').click();
@@ -197,7 +181,6 @@ function describeSubjectListSuites() {
 
       await searchInput.clear();
 
-      // Wait for the table to repopulate after clearing search
       await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first()).toBeVisible();
 
       const finalCount = await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count();
@@ -210,7 +193,6 @@ function describeSubjectListSuites() {
       const searchInput = page.getByPlaceholder('Filter by subject name or schema ID...');
       await searchInput.fill('non-existent-schema-12345-xyz');
 
-      // Wait for the table to show no results
       await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
   });
@@ -243,7 +225,6 @@ function describeSubjectListSuites() {
   });
 }
 
-// Schema workflows: creation, versions, compatibility, references, permissions and errors.
 function describeSchemaWorkflowSuites() {
   /**
    * Comprehensive Schema Creation Tests
@@ -254,17 +235,13 @@ function describeSchemaWorkflowSuites() {
       const schemaPage = new SchemaPage(page);
       await schemaPage.gotoCreate();
 
-      // Verify creation page loads
       await expect(page.getByTestId('schema-create-strategy-select')).toBeVisible();
       await expect(page.getByTestId('schema-create-format-radio')).toBeVisible();
 
-      // Select TOPIC_NAME strategy using helper for custom select
       await selectOption(page.getByTestId('schema-create-strategy-select'), 'Topic-Record Name');
 
-      // Check if topic selector appears and has options
       await selectFirstTopicIfAny(page);
 
-      // Verify format selection is always available
       await expectAllSchemaFormats(page);
     });
 
@@ -275,7 +252,6 @@ function describeSchemaWorkflowSuites() {
       const strategySelectContainer = page.getByTestId('schema-create-strategy-select');
       await selectOption(strategySelectContainer, 'Custom');
 
-      // Verify subject name input appears
       const subjectInput = page.getByTestId('schema-create-subject-name-input');
       await expect(subjectInput).toBeVisible();
     });
@@ -363,7 +339,6 @@ function describeSchemaWorkflowSuites() {
       await firstSchema.click();
 
       const addVersionButton = page.getByTestId('schema-details-add-version-btn');
-      // Button may not be visible if user doesn't have permissions
       const isVisible = await addVersionButton.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (isVisible) {
@@ -378,7 +353,6 @@ function describeSchemaWorkflowSuites() {
       await firstSchema.click();
 
       const deleteButton = page.getByTestId('schema-definition-delete-version-btn');
-      // Button may not be visible if user doesn't have permissions
       const isVisible = await deleteButton.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (isVisible) {
@@ -402,10 +376,8 @@ function describeSchemaWorkflowSuites() {
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
       await firstSchema.click();
 
-      // Click on Diff tab
       await page.getByRole('tab', { name: /diff/iu }).click();
 
-      // Verify diff controls are visible
       const leftSelect = page.getByTestId('schema-diff-version-left-select');
       const rightSelect = page.getByTestId('schema-diff-version-right-select');
 
@@ -416,7 +388,6 @@ function describeSchemaWorkflowSuites() {
     test('should show soft-deleted alert when version is deleted', async ({ page, skip }) => {
       await showSoftDeletedSchemas(page);
 
-      // Look for any soft-deleted schema indicator
       const softDeletedIcon = page.getByTestId('schema-list-soft-deleted-icon').first();
       const hasSoftDeleted = await softDeletedIcon.isVisible({ timeout: 2000 }).catch(() => false);
 
@@ -472,7 +443,6 @@ function describeSchemaWorkflowSuites() {
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
       await firstSchema.click();
 
-      // Click edit compatibility button
       const editButton = page.getByTestId('schema-details-edit-compatibility-btn');
       const hasEditButton = await editButton.isVisible({ timeout: 1000 }).catch(() => false);
 
@@ -496,7 +466,6 @@ function describeSchemaWorkflowSuites() {
       await firstSchema.click();
 
       const editButton = page.getByTestId('schema-details-edit-compatibility-btn');
-      // Button may not be visible if user doesn't have permissions
       const isVisible = await editButton.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (isVisible) {
@@ -511,7 +480,6 @@ function describeSchemaWorkflowSuites() {
       await firstSchema.click();
 
       const deleteButton = page.getByTestId('schema-details-delete-subject-btn');
-      // Button may not be visible if user doesn't have permissions
       const isVisible = await deleteButton.isVisible({ timeout: 1000 }).catch(() => false);
 
       if (isVisible) {
@@ -522,11 +490,9 @@ function describeSchemaWorkflowSuites() {
     test('should display schema references section', async ({ page }) => {
       await page.goto('/schema-registry');
 
-      // Look for a schema that might have references
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
       await firstSchema.click();
 
-      // Check if References heading exists
       await expect(page.getByTestId('schema-references-heading')).toBeVisible();
     });
 
@@ -536,7 +502,6 @@ function describeSchemaWorkflowSuites() {
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
       await firstSchema.click();
 
-      // Check if Referenced By heading exists
       await expect(page.getByTestId('schema-referenced-by-heading')).toBeVisible();
     });
 
@@ -613,7 +578,6 @@ function describeSchemaWorkflowSuites() {
 
       await schemaPage.searchSchemas('nonexistent-schema-xyz-12345');
 
-      // Wait for the table to show no results
       await expect(page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID)).toHaveCount(0);
     });
 
@@ -623,9 +587,7 @@ function describeSchemaWorkflowSuites() {
 
       await schemaPage.searchSchemas('999999');
 
-      // Check if spinner appears
       const spinner = page.getByTestId('schema-list-search-spinner');
-      // Spinner may appear briefly or not at all if search is fast
       const isVisible = await spinner.isVisible({ timeout: 500 }).catch(() => false);
 
       if (isVisible) {

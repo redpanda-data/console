@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter, type OnUrlUpdateFunction } from 'nuqs/adapters/testing';
-import type { GetTopicsResponse, Topic } from 'state/rest-interfaces';
+import type { GetTopicsResponse } from 'state/rest-interfaces';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import TopicList from './topic-list-new';
@@ -34,7 +34,7 @@ rs.mock('state/backend-api', () => {
 
 const TOPIC_LINK_NAME = /^orders-/u;
 
-const topics = (count: number): Topic[] =>
+const topics = (count: number) =>
   Array.from({ length: count }, (_, i) => ({
     topicName: `orders-${i}`,
     isInternal: false,

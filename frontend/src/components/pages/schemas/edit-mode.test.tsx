@@ -24,7 +24,6 @@ import { renderWithFileRoutes, screen } from 'test-utils';
 
 import EditSchemaModePage from './edit-mode';
 
-// Real navigate() resolves once the route commits.
 const mockNavigate = rs.fn(() => Promise.resolve());
 const mockMutateGlobal = rs.fn();
 const mockMutateSubject = rs.fn();
@@ -109,7 +108,6 @@ describe('the EditSchemaModePage', () => {
       expect(await screen.findByText('Read/Write')).toBeInTheDocument();
       expect(screen.getByText('Read Only')).toBeInTheDocument();
       expect(screen.getByText('Import')).toBeInTheDocument();
-      // Should NOT show Default option when no subjectName
       expect(screen.queryByText('Default')).not.toBeInTheDocument();
     });
 
@@ -132,7 +130,6 @@ describe('the EditSchemaModePage', () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaModePage />);
 
-      // Click the Read Only option
       await user.click(screen.getByText('Read Only'));
       await user.click(screen.getByTestId('edit-mode-save-btn'));
 
@@ -156,10 +153,8 @@ describe('the EditSchemaModePage', () => {
 
     test('does not show schema preview panel', async () => {
       renderWithFileRoutes(<EditSchemaModePage />);
-      // Await Radio group settling so absence assertions run inside act scope.
       await screen.findByTestId('edit-mode-description');
 
-      // This is only present in the subject-mode.
       expect(screen.queryByTestId('edit-mode-subject-name')).not.toBeInTheDocument();
     });
   });
@@ -260,12 +255,7 @@ describe('the EditSchemaModePage', () => {
     });
 
     afterEach(() => {
-      // Unmount the React tree BEFORE mutating the supported-features store.
       // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
-      // subscribers outside any act boundary and emits "update inside a test
-      // was not wrapped in act(...)" warnings attributed to the just-finished
-      // test. The global afterEach also calls cleanup() but runs after this
-      // block, so we have to unmount eagerly here.
       cleanup();
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
     });
@@ -299,7 +289,6 @@ describe('the EditSchemaModePage', () => {
 
       renderWithFileRoutes(<EditSchemaModePage />);
 
-      // Should not render the form content
       expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
     });
 
@@ -326,7 +315,6 @@ describe('the EditSchemaModePage', () => {
       const saveBtn = await screen.findByTestId('edit-mode-save-btn');
       expect(saveBtn).toBeDisabled();
 
-      // Restore
       (api as Record<string, unknown>).userData = { canManageSchemaRegistry: true };
     });
 
@@ -340,7 +328,6 @@ describe('the EditSchemaModePage', () => {
 
       expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
 
-      // Restore default mock
       rs.mocked(useSchemaModeQuery).mockReturnValue({
         data: 'READWRITE',
         isLoading: false,
@@ -353,7 +340,6 @@ describe('the EditSchemaModePage', () => {
 
       await user.click(screen.getByTestId('edit-mode-save-btn'));
 
-      // Get the onSuccess callback from the mutation call
       const mutateCall = mockMutateGlobal.mock.calls[0];
       const callbacks = mutateCall[1];
       callbacks.onSuccess();

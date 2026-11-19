@@ -18,11 +18,13 @@ import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
 
 // Happy DOM polyfills needed by Radix Popover + cmdk
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+global.ResizeObserver = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = rs.fn();
@@ -45,7 +47,7 @@ function renderSelector(props: { contexts: DerivedContext[]; selectedContext: st
   );
 }
 
-const makeContexts = (): DerivedContext[] => [
+const makeContexts = () => [
   { id: DEFAULT_CONTEXT_ID, label: 'Default', subjectCount: 2, mode: 'READWRITE', compatibility: 'BACKWARD' },
   { id: '.staging', label: '.staging', subjectCount: 3, mode: 'READWRITE', compatibility: 'FULL' },
   { id: ALL_CONTEXT_ID, label: 'All', subjectCount: 5, mode: 'READWRITE', compatibility: 'BACKWARD' },

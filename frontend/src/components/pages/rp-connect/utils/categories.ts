@@ -6,7 +6,6 @@ export type ConnectNodeCategory = {
 };
 
 const displayNames: Record<string, string> = {
-  // Component types
   input: 'Inputs',
   output: 'Outputs',
   processor: 'Processors',
@@ -16,7 +15,6 @@ const displayNames: Record<string, string> = {
   scanner: 'Scanners',
   metrics: 'Metrics',
   tracer: 'Tracers',
-  // Semantic categories
   databases: 'Databases',
   messaging: 'Message Queues',
   storage: 'File Storage',
@@ -28,7 +26,6 @@ const displayNames: Record<string, string> = {
   export: 'Data Export',
   transformation: 'Data Transformation',
   monitoring: 'Monitoring & Observability',
-  // Additional categories
   windowing: 'Windowing',
   utility: 'Utility',
   local: 'Local',
@@ -52,7 +49,6 @@ export const getAllCategories = (
 ): ConnectNodeCategory[] => {
   const categorySet = new Set<string>();
 
-  // Collect categories from built-in components
   for (const component of components) {
     if (
       component.categories &&
@@ -64,7 +60,6 @@ export const getAllCategories = (
     }
   }
 
-  // Convert to ConnectNodeCategory array with display names
   return Array.from(categorySet)
     .sort((a, b) => a.localeCompare(b))
     .map((categoryId) => ({

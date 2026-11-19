@@ -16,9 +16,6 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './license-utils';
-
-const WARNING_THRESHOLD_DAYS = 5;
-
 import { RegisterModal } from './register-modal';
 import {
   type License,
@@ -27,6 +24,8 @@ import {
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backend-api';
 import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
+
+const WARNING_THRESHOLD_DAYS = 5;
 
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
 const getLicenseAlertContentForFeature = (

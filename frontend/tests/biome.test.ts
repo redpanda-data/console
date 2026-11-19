@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url';
 
 const frontendRoot = new URL('../', import.meta.url);
 
-// Keep interrupted probes outside Git without losing project imports or type inference.
 function createLintProject(source: string) {
   const directory = mkdtempSync(join(tmpdir(), 'console-biome-test-'));
   const file = join(directory, 'probe.tsx');

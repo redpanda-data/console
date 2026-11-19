@@ -37,12 +37,10 @@ import {
   setShadowLinkGatesSupported,
 } from '../shadowlink-test-helpers';
 
-// Mock the hooks
 rs.mock('react-query/api/shadowlink', () => ({
   useCreateShadowLinkMutation: rs.fn(),
 }));
 
-// Mock config module
 rs.mock('../../../../config', () => {
   const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
   return {
@@ -51,7 +49,6 @@ rs.mock('../../../../config', () => {
   };
 });
 
-// Mock env module
 rs.mock('../../../../utils/env', () => {
   const actual = rs.requireActual<typeof import('../../../../utils/env')>('../../../../utils/env');
   return {
@@ -60,7 +57,6 @@ rs.mock('../../../../utils/env', () => {
   };
 });
 
-// Mock ui-state
 rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
@@ -68,7 +64,6 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock toast notifications
 rs.mock('sonner', () => ({
   toast: {
     success: rs.fn(),
@@ -116,16 +111,12 @@ type CreateAction =
  * Set an input's value directly and let the async form validation settle
  */
 const fillInputValue = async (input: HTMLElement, value: string) => {
-  // Value-only — tests assert submitted payload shape, not keystroke behaviour.
   fireEvent.input(input, { target: { value } });
-  // mode: 'onChange' kicks off the async zodResolver, which re-renders the
-  // form fields once it settles. Await that settle so it lands inside act().
   await waitFor(() => {
     expect((input as HTMLInputElement).value).toBe(value);
   });
 };
 
-// Map certificate type to its file path input testId suffix
 const CERTIFICATE_PATH_TEST_ID_SUFFIX: Record<CertificateType, string> = {
   ca: 'ca',
   clientCert: 'client-cert',
@@ -155,7 +146,6 @@ const addCertificateFilePath = async (
 ) => {
   await openCertificateDisclosure(user, scr, certType);
 
-  // The mode picker only renders once a disclosure is open. Switch to file path.
   await waitFor(
     () => {
       expect(scr.getByTestId('mtls-mode-file-path-tab')).toBeInTheDocument();
@@ -166,7 +156,6 @@ const addCertificateFilePath = async (
 
   const testIdSuffix = CERTIFICATE_PATH_TEST_ID_SUFFIX[certType];
 
-  // Wait for the file path input to appear
   await waitFor(
     () => {
       expect(scr.getByTestId(`mtls-${testIdSuffix}-path-input`)).toBeInTheDocument();
@@ -280,10 +269,8 @@ const CONNECTION_STEP_ACTIONS: CreateAction[] = [
 const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, actions: CreateAction[]) => {
   renderCreatePage();
 
-  // Wait for the form to load and the connection step to render
   await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
 
-  // Each action drives the same form and may move to another step, so chain them in order.
   await actions.reduce<Promise<void>>(
     (previous, action) => previous.then(() => performCreateAction(user, screen, action)),
     Promise.resolve()
@@ -299,7 +286,6 @@ const submitCreateForm = async (
 ) => {
   await user.click(screen.getByRole('button', { name: 'Create shadow link' }));
 
-  // Verify mutateAsync was called
   await waitFor(
     () => {
       expect(mockMutateAsync).toHaveBeenCalledTimes(1);
@@ -377,7 +363,6 @@ const testCases: CreateTestCase[] = [
       exp(scramConfig.username).toBe('admin');
       exp(scramConfig.password).toBe('admin-secret');
       exp(scramConfig.scramMechanism).toBeDefined();
-      // Untouched roles default to all: a single wildcard include filter
       exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toEqual([
         exp.objectContaining({ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
       ]);
@@ -557,15 +542,12 @@ describe('the ShadowLinkCreatePage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
 
-    // SR gate closed: these cases exercise the legacy Schema Registry switch.
-    // Role gate open: the roles card and its default-all payload need >= 26.2.0.
     setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
 
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
     // Mock create mutation - must return the mutation hook properly
     rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      // Wrap mutateAsync to call onSuccess callback
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);
         options?.onSuccess?.(result, request, undefined, {} as any);
@@ -603,7 +585,6 @@ describe('the ShadowLinkCreatePage', () => {
 
     const createRequest = await submitCreateForm(user, mockMutateAsync);
 
-    // Run custom verification function
     verify(createRequest, expect);
 
     await waitForCreateSuccess();
@@ -616,12 +597,9 @@ describe('the ShadowLinkCreatePage', () => {
 
     await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
-    // The whole roles card is gated out
     expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
     expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
 
-    // Not even the default include-all filter may be sent to a cluster
-    // that predates role sync
     const createRequest = await submitCreateForm(user, mockMutateAsync);
     expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
 
@@ -635,7 +613,6 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
   beforeEach(() => {
     rs.clearAllMocks();
 
-    // Gate open: the redesigned Schema Registry section renders.
     seedSchemaRegistrySyncGate(true);
 
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
@@ -676,7 +653,6 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
 
     await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
-    // The redesigned section replaces the legacy switch
     expect(screen.queryByTestId('sr-enable-switch')).not.toBeInTheDocument();
 
     await fillSchemaRegistryApiConnection(user);
@@ -690,7 +666,6 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
           authOptions: {
             authOptions: {
               case: 'basic',
-              // Raw password, never a secret reference
               value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
             },
           },
@@ -752,7 +727,6 @@ describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
       } as any;
     });
 
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: { ...originalLocation, href: '', pathname: '/clusters/abc/shadowlinks/create' },
@@ -767,9 +741,6 @@ describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
   });
 
   test('redirects to correct path when in embedded mode', async () => {
-    // happy-dom blocks `window.location.href` assignment when
-    // disableMainFrameNavigation is on (see rstest.setup.ts), so
-    // replace window.location with a plain object whose href we can inspect.
     const originalLocation = window.location;
     const locationStub = { href: '' };
     Object.defineProperty(window, 'location', {

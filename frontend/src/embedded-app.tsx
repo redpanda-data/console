@@ -11,7 +11,6 @@
 
 // Array prototype extensions (must be imported early)
 import './utils/array-extensions';
-// Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
 import { useEffect, useMemo } from 'react';
@@ -58,10 +57,8 @@ import { routeTree } from './routeTree.gen';
 import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
 
-// Regex for normalizing paths by removing trailing slashes
 const TRAILING_SLASH_REGEX = /\/+$/u;
 
-// Normalize a path by removing trailing slashes for consistent comparison
 const normalizePath = (path: string) => path.replace(TRAILING_SLASH_REGEX, '') || '/';
 
 export interface EmbeddedProps extends SetConfigArguments {
@@ -89,8 +86,6 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
       const pathname = (event as CustomEvent<string>).detail;
       const currentPath = appGlobal.historyLocation()?.pathname;
 
-      // Skip if already at this path to prevent navigation loops
-      // This works in tandem with AppGlobal.historyPush deduplication
       if (normalizePath(pathname) === normalizePath(currentPath ?? '')) {
         return;
       }
@@ -114,8 +109,6 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
   setup(p);
 
-  // This transport handles the grpc requests for the embedded app.
-  // Created before router so loaders can use it via context.
   const dataplaneTransport = useMemo(
     () =>
       createConnectTransport({
@@ -128,7 +121,6 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
     [p.urlOverride?.grpc]
   );
 
-  // Create router with dynamic basePath
   const router = useMemo(
     () =>
       createRouter({

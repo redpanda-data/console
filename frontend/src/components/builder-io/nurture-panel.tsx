@@ -24,7 +24,6 @@ export default function NurturePanel() {
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
   const { content, isLoading, hasError, modelName } = useNurtureContent(embedded, platform);
 
-  // Early return for embedded mode - Builder.io content not needed
   if (embedded) {
     return null;
   }

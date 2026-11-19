@@ -20,11 +20,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Regex for extracting container ID from error messages
-const CONTAINER_ID_REGEX = /container ([a-f0-9]+)/u;
+const CONTAINER_ID_REGEX = /container (?<containerId>[a-f0-9]+)/u;
 const MISSING_CONTAINER_PATTERN = /No such container/iu;
 const MISSING_NETWORK_PATTERN = /No such network/iu;
 // Workspace `use` entries in go.work, one module path per line
-const GO_WORK_USE_LINE_REGEX = /^\s+(\S+)\s*$/gmu;
+const GO_WORK_USE_LINE_REGEX = /^\s+(?<modulePath>\S+)\s*$/gmu;
 const MODULE_PATH_SEPARATOR_REGEX = /[./]/gu;
 const EDGE_DASHES_REGEX = /^-+|-+$/gu;
 

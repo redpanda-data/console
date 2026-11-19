@@ -19,9 +19,7 @@ const slotDescription = (field: RawFieldSpec): string | undefined =>
   field.shortDescription?.trim() || markdownToPlainText(asciidocToMarkdown(field.description ?? '')) || undefined;
 
 // Slot-level values win; schema only fills unset `description` / `required` /
-// `default`. Slots without `schemaField` (or with unresolvable paths) pass through.
 // Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
-// backend-computed signal rather than the proto heuristic.
 export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]): TemplateSlot[] {
   if (!components?.length) {
     return template.slots;

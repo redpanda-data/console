@@ -14,7 +14,7 @@ import { createRoot } from 'react-dom/client';
 import EmbeddedApp, { type EmbeddedProps } from './embedded-app';
 
 const injector = (parentElementId: string, props: EmbeddedProps) => {
-  const container = document.getElementById(parentElementId);
+  const container = parentElementId ? document.querySelector(`#${CSS.escape(parentElementId)}`) : null;
   // biome-ignore lint/style/noNonNullAssertion: bootstrapping the app for embedded mode
   const root = createRoot(container!);
   root.render(<EmbeddedApp {...props} />);

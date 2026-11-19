@@ -14,7 +14,8 @@ import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/license-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 const UploadLicenseForm: FC<{
@@ -128,15 +129,9 @@ const UploadLicenseForm: FC<{
   );
 };
 
-export default class UploadLicensePage extends PageComponent {
-  initPage(p: PageInitHelper): void {
-    p.title = 'Upload Enterprise License';
-    p.addBreadcrumb('Upload License', '/upload-license');
-  }
-
-  render() {
-    return <UploadLicensePageContent />;
-  }
+function configurePage(p: PageInitHelper): void {
+  p.title = 'Upload Enterprise License';
+  p.addBreadcrumb('Upload License', '/upload-license');
 }
 
 const UploadLicensePageContent: FC = () => {
@@ -206,3 +201,5 @@ const UploadLicensePageContent: FC = () => {
     </PageContent>
   );
 };
+
+export default class UploadLicensePage extends pageWithContent(UploadLicensePageContent, configurePage) {}

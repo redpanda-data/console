@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: specs/topics.md
-// seed: tests/shared/seed.e2e.test.ts
-
-import { expect, test } from '../../shared/e2e';
+import { expect, step, test } from '../../shared/e2e';
 import { execRpk, produceToPartition } from '../../shared/rpk.utils';
 import { TopicPage } from '../utils/topic-page';
 
@@ -19,17 +14,13 @@ test.describe('view and Filter Messages', () => {
     await step('Expand message row', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Wait for message to appear
       await expect(page.getByText(messageContent)).toBeVisible();
 
-      // Click expand button
       const expandButton = page.getByLabel('Expand row').first();
       await expandButton.click();
 
-      // Expanded details should be visible
       await expect(page.getByTestId('payload-content')).toBeVisible({ timeout: 5000 });
 
-      // Metadata should be visible
       await expect(page.getByText(/Offset|Partition|Timestamp/iu).first()).toBeVisible();
     });
 
@@ -50,17 +41,12 @@ test.describe('view and Filter Messages', () => {
     await step('Search for messages', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Find search input
       const searchInput = page.getByPlaceholder(/search|filter/iu);
       if (await searchInput.isVisible()) {
         await searchInput.fill(searchTerm);
         await page.keyboard.press('Enter');
 
-        // Message with search term should be visible
         await expect(page.getByText(message1)).toBeVisible();
-
-        // Message without search term may be hidden
-        // (behavior depends on implementation)
       }
     });
 
@@ -98,7 +84,6 @@ test.describe('view and Filter Messages', () => {
     const topicPage = new TopicPage(page);
     await topicPage.createTopic(topicName);
 
-    // Produce multiple messages, chained through the same page so they land at offsets 0, 1 and 2 in order
     await [0, 1, 2].reduce<Promise<unknown>>(
       (previousProduce, i) => previousProduce.then(() => topicPage.produceMessage(topicName, `Message ${i}`)),
       Promise.resolve()
@@ -107,14 +92,11 @@ test.describe('view and Filter Messages', () => {
     await step('Filter by start offset', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Look for offset filter input
       const offsetInput = page.getByPlaceholder(/offset/iu);
       if (await offsetInput.isVisible()) {
-        // Set start offset to 1 (skip first message)
         await offsetInput.fill('1');
         await page.keyboard.press('Enter');
 
-        // Messages from offset 1 onwards should be visible
         await expect(page.getByTestId('messages-table').locator('td').first()).toBeVisible();
       }
     });
@@ -132,19 +114,16 @@ test.describe('view and Filter Messages', () => {
     await step('Apply and clear filters', async () => {
       await page.goto(`/topics/${topicName}`);
 
-      // Apply a search filter
       const searchInput = page.getByPlaceholder(/search|filter/iu);
       if (await searchInput.isVisible()) {
         await searchInput.fill('some-filter');
         await page.keyboard.press('Enter');
       }
 
-      // Look for clear filters button
       const clearButton = page.getByRole('button', { name: /clear|reset/iu });
       if (await clearButton.isVisible()) {
         await clearButton.click();
 
-        // All messages should be visible again
         await expect(page.getByText('Message for filter clearing')).toBeVisible();
       }
     });
@@ -161,13 +140,10 @@ test.describe('view and Filter Messages', () => {
     await step('View empty topic', async () => {
       await page.goto(`/topics/${topicName}#messages`);
 
-      // Wait for the topic page to load (tablist indicates TopicDetailsContent is rendered)
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
 
-      // Produce button should be available
       await expect(page.getByTestId('produce-record-button')).toBeVisible({ timeout: 10_000 });
 
-      // Should show empty state message once search completes
       await expect(page.getByText('No messages')).toBeVisible({ timeout: 10_000 });
     });
 
@@ -186,14 +162,12 @@ test.describe('view and Filter Messages', () => {
 
       const searchInput = page.getByPlaceholder(/search|filter/iu);
       if (await searchInput.isVisible()) {
-        // Rapidly change search terms
         await searchInput.fill('filter1');
         await searchInput.fill('filter2');
         await searchInput.fill('filter3');
         await searchInput.clear();
         await searchInput.fill('Test');
 
-        // Should handle gracefully without errors
         await expect(page.getByText('Test rapid filtering')).toBeVisible();
       }
     });
@@ -211,31 +185,24 @@ test.describe('view and Filter Messages', () => {
     await step('Apply filter and check URL', async () => {
       await page.goto(`/topics/${topicName}#messages`);
 
-      // Use the specific testId for message quick search
       const searchInput = page.getByTestId('message-quick-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
       await searchInput.fill('test-search');
       await page.keyboard.press('Enter');
 
-      // Wait for URL to update with filter parameters
       await page.waitForURL(/q=test-search/u);
 
-      // URL should contain filter parameters (quick search uses 'q' param)
       const currentUrl = page.url();
       expect(currentUrl).toContain('q=test-search');
     });
 
     await step('Reload page and verify filter persists', async () => {
-      // Reload the page
       await page.reload();
 
-      // Wait for page to load
       await expect(page.getByTestId('message-quick-search-input')).toBeVisible({ timeout: 5000 });
 
-      // Verify the search parameter is still in URL
       expect(page.url()).toContain('q=test-search');
 
-      // Verify the search input has the value
       await expect(page.getByTestId('message-quick-search-input')).toHaveValue('test-search');
     });
 

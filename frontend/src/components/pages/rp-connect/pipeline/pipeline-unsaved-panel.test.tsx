@@ -42,7 +42,6 @@ describe('the PipelineUnsavedPanel', () => {
 
     await user.click(screen.getByText('mapping'));
     expect(onSelect).toHaveBeenCalledWith('proc-0');
-    // The list collapses after a selection.
     expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
   });
 

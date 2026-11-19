@@ -81,7 +81,6 @@ const FIRST_CHAR_REGEX = /^\w/u;
 const COLON_REGEX = /:/u;
 const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/u;
 
-// Helper function to convert UPPER_CASE strings to sentence case ex: ALTER => Alter ALTER_CONFIG => Alter config
 export const formatLabel = (text: string): string => {
   return text
     .replace(UNDERSCORE_REGEX, ' ')
@@ -90,12 +89,10 @@ export const formatLabel = (text: string): string => {
     .replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
-// Helper function to format summary labels, keeping certain words capitalized
 export const formatSummaryLabel = (text: string): string => {
   return text.replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
-// Helper function to get resource name for selector label
 const getResourceName = (resourceType: ResourceType): string => {
   const resourceNames: Record<string, string> = {
     [ResourceTypeTopic]: 'Topic',
@@ -107,7 +104,6 @@ const getResourceName = (resourceType: ResourceType): string => {
   return resourceNames[resourceType] || resourceType;
 };
 
-// Helper function to get plural resource name
 const getPluralResourceName = (resourceType: ResourceType): string => {
   const pluralNames: Record<string, string> = {
     [ResourceTypeCluster]: 'clusters',
@@ -154,7 +150,6 @@ const PermissionIcon = ({ value }: { value: string }) => {
   }
 };
 
-// Descriptions hold one API list per line.
 const PermissionDescription = ({ operation, resourceType }: { operation: string; resourceType: string }) => {
   const description = getPermissionDescription(operation, resourceType);
   if (!description) {
@@ -286,7 +281,6 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
         <div className="space-y-3">
           {rules.map((rule) => {
             const ops = Object.entries(rule.operations);
-            // Filter out operations that are not set
             const enabledOperations = ops
               .filter(([_, operationValue]) => operationValue !== OperationTypeNotSet)
               .map(([op, operationValue]) => ({
@@ -679,7 +673,6 @@ const SharedConfiguration = ({
                   }}
                   onValueChange={(value) => {
                     setPrincipalType(value);
-                    // Update the principal to include the new type
                     const currentValue = parsePrincipal(sharedConfig.principal).name || '';
                     setSharedConfig({
                       ...sharedConfig,

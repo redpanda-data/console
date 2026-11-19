@@ -233,11 +233,9 @@ export const useDeleteShadowLinkMutation = (options?: {
 export const useDeleteShadowLinkUnified = (params: { name: string }) => {
   const embedded = isEmbedded();
 
-  // Get shadowlink ID for embedded mode (controlplane uses ID-based deletion)
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
   const shadowLinkId = controlplaneQuery.data?.id;
 
-  // Mutations
   const dataplaneDelete = useDeleteShadowLinkMutation();
   const controlplaneDelete = useControlplaneDeleteShadowLinkMutation();
 
@@ -325,7 +323,6 @@ export type UnifiedShadowLinkResult = {
 type DataplaneShadowLink = NonNullable<Parameters<typeof fromDataplaneShadowLink>[0]>;
 type ControlplaneShadowLink = NonNullable<Parameters<typeof fromControlplaneShadowLink>[0]>;
 
-// State and timestamps come from controlplane, which owns them in embedded mode.
 function applyControlplaneOverrides(unifiedData: UnifiedShadowLink, controlplane: ControlplaneShadowLink) {
   unifiedData.state = mapControlplaneStateToUnified(controlplane.state);
   unifiedData.shadowRedpandaId = controlplane.shadowRedpandaId;
@@ -343,12 +340,10 @@ function unifyShadowLink(
     return unifiedData;
   }
 
-  // In embedded mode: if dataplane fails but controlplane succeeds, use controlplane data
   if (!unifiedData) {
     return fromControlplaneShadowLink(controlplane);
   }
 
-  // In embedded mode, override state from controlplane
   applyControlplaneOverrides(unifiedData, controlplane);
   return unifiedData;
 }
@@ -359,7 +354,6 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
   // In embedded mode, use retry: 1 to fail fast and fallback to controlplane data sooner
   const dataplaneQuery = useGetShadowLinkQuery({ name: params.name }, { retry: embedded ? 1 : undefined });
 
-  // In embedded mode, also fetch controlplane to get the correct state
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });
 
   const unifiedData = unifyShadowLink(embedded, dataplaneQuery.data?.shadowLink, controlplaneQuery.data);
@@ -397,7 +391,6 @@ function editFormValues(
   }
 }
 
-// Embedded updates go through controlplane by ID; everything else through dataplane by name.
 function useShadowLinkUpdate({
   name,
   embedded,
@@ -411,26 +404,21 @@ function useShadowLinkUpdate({
 }) {
   const shadowLinkId = controlplaneShadowLink?.id;
 
-  // Mutations
   const dataplaneUpdate = useUpdateShadowLinkMutation();
   const controlplaneUpdate = useControlplaneUpdateShadowLinkMutation();
 
-  // Role sync needs Redpanda >= 26.2.0 (fails closed); on older clusters the
   // update request must not carry role sync options at all.
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
-  // Unified update function
   const submitUpdate = useCallback(
     (values: FormValues) => {
       if (embedded && shadowLinkId && controlplaneShadowLink) {
-        // Use controlplane API with ID
         const request = buildControlplaneUpdateRequest(shadowLinkId, values, controlplaneShadowLink, {
           roleSyncSupported,
         });
         return controlplaneUpdate.mutateAsync(request);
       }
       if (shadowLink) {
-        // Use dataplane API with name
         const request = buildDataplaneUpdateRequest(name, values, shadowLink, { roleSyncSupported });
         return dataplaneUpdate.mutateAsync(request);
       }
@@ -469,7 +457,6 @@ export const useEditShadowLink = (
 } => {
   const embedded = isEmbedded();
 
-  // Queries - in embedded mode, also fetch controlplane for state override
   const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name }, { enabled: embedded });
 
@@ -483,7 +470,6 @@ export const useEditShadowLink = (
     controlplaneShadowLink,
   });
 
-  // Build form values based on data source
   const formValues = useMemo(
     () => editFormValues(embedded, controlplaneShadowLink, shadowLink),
     [embedded, controlplaneShadowLink, shadowLink]
@@ -494,7 +480,6 @@ export const useEditShadowLink = (
     isLoading: embedded ? controlplaneQuery.isLoading : dataplaneQuery.isLoading,
     error: embedded ? controlplaneQuery.error : dataplaneQuery.error,
     isUpdating: embedded ? controlplaneUpdate.isPending : dataplaneUpdate.isPending,
-    // Check if data is available based on mode
     hasData: embedded ? !!controlplaneShadowLink : !!shadowLink,
     updateShadowLink: submitUpdate,
     dataplaneUpdate,

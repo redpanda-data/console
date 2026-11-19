@@ -26,7 +26,6 @@ const natural: InputEndBehavior = { kind: 'natural', reason: 'Reads every object
 const openSlot: StopSlot = { path: ['input'], ownEnd: continuous };
 const CHOOSE_BELOW_RE = /Choose how it should stop below/u;
 
-// The editor, by default for a `redpanda` input with no stop condition.
 function renderEditor(props: Partial<ComponentProps<typeof StopConditionEditor>> = {}) {
   const user = userEvent.setup();
   const onApply = rs.fn(() => true);

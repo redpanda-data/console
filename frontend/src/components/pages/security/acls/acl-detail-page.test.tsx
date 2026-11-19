@@ -13,11 +13,9 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
 
 import AclDetailPage from './acl-detail-page';
-import type { AclDetail } from '../shared/acl-model';
 
 const { mockUseGetAclsByPrincipal, mockNavigate } = rs.hoisted(() => ({
   mockUseGetAclsByPrincipal: rs.fn(),
-  // Real navigate() returns a promise that settles once the route commits.
   mockNavigate: rs.fn(() => Promise.resolve()),
 }));
 
@@ -26,7 +24,6 @@ rs.mock('react-query/api/acl', () => {
   return { ...actual, useGetAclsByPrincipal: mockUseGetAclsByPrincipal };
 });
 
-// Control params/search per-test via module-level variables
 let currentAclName = '';
 let currentHost: string | undefined;
 
@@ -51,7 +48,7 @@ rs.mock('./acl-details', () => ({
   ACLDetails: MockACLDetails,
 }));
 
-const singleHostAclDetail = (principal: string): AclDetail => ({
+const singleHostAclDetail = (principal: string) => ({
   sharedConfig: { principal, host: '*' },
   rules: [],
 });

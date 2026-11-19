@@ -21,7 +21,6 @@ import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
 const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
 
-// Owns the time-range picker. A refresh bumps `refreshKey`, which recomputes the same range ending now.
 const useRefreshableTimeRange = (refetch: () => unknown) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
   const [refreshKey, setRefreshKey] = useState(0);

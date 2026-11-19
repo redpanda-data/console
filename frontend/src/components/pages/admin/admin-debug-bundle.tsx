@@ -12,6 +12,8 @@
 import { Link } from '@tanstack/react-router';
 import { type FC, useEffect, useRef, useState } from 'react';
 
+import { pageWithContent } from '../page-with-content';
+
 import '../../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
 import { timestampDate, timestampFromDate } from '@bufbuild/protobuf/wkt';
@@ -67,7 +69,7 @@ import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
 import { SingleSelect } from '../../misc/select';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
 
 // Unit mappings for consistent dropdown handling
 const SIZE_UNITS = [
@@ -204,7 +206,7 @@ type FieldViolationsMap = {
   [field: string]: string;
 };
 
-export class AdminDebugBundle extends PageComponent {
+export class AdminDebugBundle extends pageWithContent(() => <AdminDebugBundleContent />) {
   initPage(p: PageInitHelper): void {
     p.title = 'Debug bundle';
     p.addBreadcrumb('Debug bundle', '/debug-bundle');
@@ -214,13 +216,9 @@ export class AdminDebugBundle extends PageComponent {
   }
 
   refreshData() {
-    api.refreshDebugBundleStatuses().catch(() => {
+    this.api.refreshDebugBundleStatuses().catch(() => {
       // Error handling managed by API layer
     });
-  }
-
-  render() {
-    return <AdminDebugBundleContent />;
   }
 }
 
@@ -335,10 +333,10 @@ const NewDebugBundleForm: FC<{
 
   const fieldViolationsMap = error?.details
     ?.find(({ debug }) => debug?.fieldViolations)
-    ?.debug?.fieldViolations?.reduce((acc, violation) => {
+    ?.debug?.fieldViolations?.reduce<FieldViolationsMap>((acc, violation) => {
       acc[violation.field] = violation.description;
       return acc;
-    }, {} as FieldViolationsMap);
+    }, {});
 
   const [formState, setFormState] = useState({
     scramUsername: undefined as string | undefined,

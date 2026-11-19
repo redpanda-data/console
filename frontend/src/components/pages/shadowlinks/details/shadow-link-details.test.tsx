@@ -24,7 +24,6 @@ const shadowLink: UnifiedShadowLink = {
   syncedShadowTopicProperties: [],
 };
 
-// The first page loads and announces a second page; every later page fails.
 function secondPageFailsTransport(nextPageRequests: string[]) {
   return createRouterTransport(({ rpc }) => {
     rpc(listShadowLinkTopics, (request) => {
@@ -46,8 +45,6 @@ const topicsPage = (topicName: string, nextPageToken: string) =>
     nextPageToken,
   });
 
-// The unfiltered list stalls on its second page until that page is failed; the "p" filter's first
-// page is held back, so the stale failure settles before the filtered list can paginate.
 function filterChangeScenario() {
   const requests: string[] = [];
   const stalledPage = Promise.withResolvers<never>();
@@ -76,7 +73,6 @@ function filterChangeScenario() {
 
 describe('the ShadowLinkDetails topic pagination', () => {
   beforeEach(() => {
-    // Happy DOM has no layout; give the virtualized scroll area a height so its rows render.
     rs.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
   });
 

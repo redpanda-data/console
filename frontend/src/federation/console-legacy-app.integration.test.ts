@@ -36,20 +36,13 @@ rs.mock('./console-app', () => ({
   ConsoleApp: 'MockConsoleApp',
 }));
 
-interface LegacyReactElement {
-  $$typeof: symbol;
-  props: { style: { height: string; width: string } };
-  ref: (node: HTMLDivElement | null) => void;
-  type: string;
-}
-
 const baseProps: ConsoleAppProps = {
   getAccessToken: () => Promise.resolve('token'),
   clusterId: 'cluster-1',
   config: {},
 };
 
-function legacyElement(overrides: Partial<ConsoleAppProps> = {}): LegacyReactElement {
+function legacyElement(overrides: Partial<ConsoleAppProps> = {}) {
   return createConsoleCompatElement({ ...baseProps, ...overrides });
 }
 

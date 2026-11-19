@@ -22,8 +22,6 @@ function mockEditor(lineContent: string, cursorColumn: number, lineNumber = 1) {
   } as unknown as editor.IStandaloneCodeEditor;
 }
 
-// ─── SLASH_TRIGGER_PATTERN ───────────────────────────────────────────
-
 describe('the SLASH_TRIGGER_PATTERN', () => {
   it('matches space', () => {
     expect(SLASH_TRIGGER_PATTERN.test(' ')).toBe(true);
@@ -50,8 +48,6 @@ describe('the SLASH_TRIGGER_PATTERN', () => {
     expect(SLASH_TRIGGER_PATTERN.test('-')).toBe(false);
   });
 });
-
-// ─── detectSlashTrigger ──────────────────────────────────────────────
 
 describe('detectSlashTrigger', () => {
   describe('returns position when slash is at a valid trigger point', () => {

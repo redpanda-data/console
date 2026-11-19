@@ -31,7 +31,6 @@ async function expectColdRouteRendered(page: Page, route: string, heading: strin
   }
 }
 
-// Opens the topic on its default Messages tab and returns the scripts loaded so far.
 async function openTopicMessages(page: Page, scripts: Set<string>) {
   await page.goto('/topics/bundle-test');
   await expect(tab(page, 'Messages')).toHaveAttribute('aria-selected', 'true');

@@ -48,7 +48,6 @@ const topicPartitions = new Map<string, Partition[] | null>([
   ['hidden', null],
 ]);
 
-// Fresh objects: the clone inside removeRedundantReassignments serializes a repeated object only once.
 const brokersById = (ids: number[]) => ids.map((id) => makeBroker(id));
 
 describe('partitionSelectionToTopicPartitions', () => {
@@ -133,7 +132,6 @@ describe('computeMovedReplicas', () => {
       },
       {
         topicName: 'beta',
-        // Same leader, but the followers swapped places.
         moves: [
           {
             id: 0,
@@ -192,7 +190,6 @@ describe('removeRedundantReassignments', () => {
     expect(Object.keys(result)).toEqual(['alpha']);
     expect(Object.keys(result.alpha)).toEqual(['1', '2']);
     expect(result.alpha[1].brokers.map((b) => b.brokerId)).toEqual([2, 3]);
-    // The input is left untouched.
     expect(Object.keys(assignments.alpha)).toEqual(['0', '1', '2']);
   });
 

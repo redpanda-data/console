@@ -10,8 +10,6 @@ const LOGIN_URL = /\/login/u;
  * every enterprise spec, so a rejected password is only asserted here.
  */
 test.describe('login', () => {
-  // A fresh context: the shared storageState would skip the form entirely.
-
   test('rejects a wrong password inline and stays on the login page', async ({ page }) => {
     await page.goto('/login');
 
@@ -24,7 +22,6 @@ test.describe('login', () => {
     await expect(alert).toBeVisible();
     await expect(alert).not.toBeEmpty();
     await expect(page).toHaveURL(LOGIN_URL);
-    // In flight the button is disabled; once the request settles a retry is possible.
     await expect(submit).toBeEnabled();
   });
 });

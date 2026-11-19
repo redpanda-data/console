@@ -69,9 +69,7 @@ export const installDarkModeAvailabilitySync = (isAvailable: () => boolean): (()
       } else {
         localStorage.removeItem(DARK_MODE_AVAILABLE_KEY);
       }
-    } catch {
-      // Without storage the next load stays light, which is the safe answer.
-    }
+    } catch {}
   };
 
   sync();

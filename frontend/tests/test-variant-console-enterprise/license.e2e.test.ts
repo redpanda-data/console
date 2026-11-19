@@ -7,7 +7,6 @@ test.describe('licenses', () => {
     });
     const licensingEl = page.locator('[data-testid="overview-license-name"]');
 
-    // Assert that at least one element is visible and contains the text
     await expect(licensingEl.first()).toBeVisible();
   });
 

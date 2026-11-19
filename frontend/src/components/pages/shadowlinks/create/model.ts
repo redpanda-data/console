@@ -355,7 +355,7 @@ const refineMtlsConsistency = (
   }
 };
 
-const SR_DURATION_REGEX = /^(\d+)(ns|us|ms|s|m|h)$/u;
+const SR_DURATION_REGEX = /^(?<value>\d+)(?<unit>ns|us|ms|s|m|h)$/u;
 const SR_DURATION_UNIT_SECONDS: Record<string, number> = {
   ns: 0.000_000_001,
   us: 0.000_001,

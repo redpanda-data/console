@@ -12,6 +12,7 @@
 import { Link } from '@tanstack/react-router';
 
 import { api, useApiStoreHook } from '../../../state/backend-api';
+import { pageWithContent } from '../page-with-content';
 import '../../../utils/array-extensions';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
@@ -20,9 +21,11 @@ import DebugBundleOverview from './debug-bundle-overview';
 import { DebugBundleStatus_Status } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/app-global';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
 
-export default class AdminPageDebugBundleProgress extends PageComponent {
+export default class AdminPageDebugBundleProgress extends pageWithContent(() => (
+  <AdminPageDebugBundleProgressContent />
+)) {
   initPage(p: PageInitHelper): void {
     p.title = 'Generate debug bundle';
     p.addBreadcrumb('Generate debug bundle', '/debug-bundle/progress');
@@ -32,13 +35,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
   }
 
   refreshData() {
-    api.refreshDebugBundleStatuses().catch(() => {
+    this.api.refreshDebugBundleStatuses().catch(() => {
       // Error handling managed by API layer
     });
-  }
-
-  render() {
-    return <AdminPageDebugBundleProgressContent />;
   }
 }
 

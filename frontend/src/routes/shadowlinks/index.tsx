@@ -42,8 +42,6 @@ export const Route = createFileRoute('/shadowlinks/')({
       );
     } catch (error) {
       if (error instanceof ConnectError) {
-        // The page renders its own error states for API errors; rethrowing
-        // would fail the route into the raw error boundary.
         return;
       }
       throw error;

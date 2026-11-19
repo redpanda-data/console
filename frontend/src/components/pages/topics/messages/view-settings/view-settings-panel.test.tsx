@@ -58,7 +58,6 @@ describe('the ViewSettingsPanel', () => {
 
   test('column count summary reflects visibility', () => {
     renderPanel();
-    // Defaults: timestamp, key, value visible out of 7
     expect(screen.getByText('3 of 7')).toBeInTheDocument();
   });
 

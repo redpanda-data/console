@@ -41,7 +41,6 @@ const renderExpandedTopicsStep = async (topics: FormValues['topics']) => {
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, topicsMode: 'specify', topics }} />);
 
-  // Need to open the collapsible to see the editable filters
   await user.click(screen.getByTestId('topics-toggle-button'));
   return user;
 };
@@ -61,7 +60,6 @@ describe('the TopicsStep', () => {
         expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();
       });
 
-      // Add second filter
       const addButton = screen.getByTestId('add-topic-filter-button');
       await user.click(addButton);
 
@@ -69,7 +67,6 @@ describe('the TopicsStep', () => {
         expect(screen.getByTestId('topic-filter-1')).toBeInTheDocument();
       });
 
-      // Verify both filters exist
       expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('topic-filter-1')).toBeInTheDocument();
     });
@@ -95,18 +92,14 @@ describe('the TopicsStep', () => {
         expect(screen.getByTestId('topic-filter-1')).toBeInTheDocument();
       });
 
-      // Delete the first filter
       const deleteButton = screen.getByTestId('topic-filter-0-delete');
       await user.click(deleteButton);
 
       await waitFor(() => {
-        // The second filter should now be at index 0
         expect(screen.getByTestId('topic-filter-0')).toBeInTheDocument();
-        // The old filter at index 1 should not exist anymore
         expect(screen.queryByTestId('topic-filter-1')).not.toBeInTheDocument();
       });
 
-      // Verify only one filter remains
       expect(screen.getAllByTestId(TOPIC_FILTER_PATTERN)).toHaveLength(1);
     });
   });

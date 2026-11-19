@@ -88,10 +88,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
         companyName: data.companyName || 'unknown',
       });
 
-      // Refresh licenses after successful registration
       api.listLicenses();
 
-      // Show success state
       setIsSuccess(true);
     } catch (error) {
       if (error instanceof ConnectError) {

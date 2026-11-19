@@ -45,8 +45,6 @@ const topicsResponse = (topicNames: string[]) =>
 describe('refreshTopics topic-cache pruning (F2)', () => {
   beforeEach(() => {
     rs.mocked(fetchWithTimeout).mockReset();
-    // Reset the topic-keyed caches so state does not leak between tests (the api store is a
-    // long-lived singleton that the harness does not reset).
     useApiStore.setState({
       topics: null,
       topicConfig: new Map(),

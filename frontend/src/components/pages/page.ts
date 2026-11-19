@@ -11,14 +11,20 @@
 
 import React from 'react';
 
+import { PageInitHelper } from './page-init-helper';
 import {
+  api,
+  pipelinesApi,
+  rpcnSecretManagerApi,
+  transformsApi,
   useApiStore,
   usePipelinesStore,
   useRolesStore,
   useRpcnSecretManagerStore,
   useTransformsStore,
 } from '../../state/backend-api';
-import { type BreadcrumbEntry, type BreadcrumbOptions, setPageHeader } from '../../state/ui-state';
+
+export { PageInitHelper } from './page-init-helper';
 
 //
 // Page Types
@@ -28,20 +34,6 @@ export type NoRouteParams = {};
 
 export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
-export class PageInitHelper {
-  private pageTitle = '';
-  private pageBreadcrumbs: BreadcrumbEntry[] = [];
-
-  set title(title: string) {
-    this.pageTitle = title;
-  }
-  addBreadcrumb(title: string, to: string, heading?: string, options?: BreadcrumbOptions) {
-    this.pageBreadcrumbs.push({ title, linkTo: to, heading, options });
-  }
-  _flush() {
-    setPageHeader(this.pageTitle, this.pageBreadcrumbs);
-  }
-}
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
   private _storeUnsubscribers: Array<() => void> = [];
 
@@ -76,6 +68,12 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
     this._storeUnsubscribers = [];
   }
 
+  // initPage runs in the constructor, before derived instance fields are initialized.
+  // Keep the live API facades available to pages during that lifecycle.
+  protected readonly api = api;
+  protected readonly pipelinesApi = pipelinesApi;
+  protected readonly rpcnSecretManagerApi = rpcnSecretManagerApi;
+  protected readonly transformsApi = transformsApi;
   abstract initPage(p: PageInitHelper): void;
 }
 export type PageComponentType<TRouteParams = NoRouteParams> = new (

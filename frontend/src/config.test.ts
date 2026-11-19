@@ -39,7 +39,6 @@ describe('createAuthInjectingFetch', () => {
     const headers = new Headers(init.headers);
     expect(input).toBe('/api/schema-registry/subjects/x/versions/latest/validate');
     expect(headers.get('Authorization')).toBe('Bearer token-123');
-    // existing init is preserved
     expect(headers.get('Content-Type')).toBe('application/json');
     expectJsonPostBody(init);
   });

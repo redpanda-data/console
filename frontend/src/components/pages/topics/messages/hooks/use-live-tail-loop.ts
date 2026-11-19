@@ -128,7 +128,6 @@ export function useLiveTailLoop({
     };
   }, [active, start, stop, maxRetries]);
 
-  // Tears the running session down and starts over in its place, with a fresh failure budget.
   const restart = useCallback(() => {
     if (!cancelSessionRef.current) {
       return; // inactive: nothing to restart

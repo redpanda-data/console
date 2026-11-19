@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: specs/topics.md
-// seed: tests/shared/seed.e2e.test.ts
-
-import { expect, test } from '../../shared/e2e';
+import { expect, step, test } from '../../shared/e2e';
 
 /**
  * Mock cluster API response for testing default values
@@ -97,7 +92,6 @@ const mockClusterResponse = {
 
 test.describe('create Topic Modal - Default Values', () => {
   test('should display correct default values from cluster configuration', async ({ page }) => {
-    // Mock the /api/cluster endpoint to return our test data
     await page.route('**/api/cluster', async (route) => {
       await route.fulfill({
         status: 200,
@@ -127,7 +121,6 @@ test.describe('create Topic Modal - Default Values', () => {
     });
 
     await step('Verify retention time default value shows 7 days', async () => {
-      // prettyMilliseconds(604800000) with verbose=true, unitCount=2 returns "7 days"
       const retentionTimeInput = page.getByTestId('topic-retention-time');
       await expect(retentionTimeInput).toBeVisible();
       await expect(retentionTimeInput).toHaveAttribute('placeholder', '7 days');
@@ -135,19 +128,16 @@ test.describe('create Topic Modal - Default Values', () => {
     });
 
     await step('Verify retention size default value shows Infinite', async () => {
-      // 18446744073709551615 (max uint64) is treated as infinite
       const retentionSizeInput = page.getByTestId('topic-retention-size');
       await expect(retentionSizeInput).toBeVisible();
       await expect(retentionSizeInput).toHaveAttribute('placeholder', 'Infinite');
       await expect(retentionSizeInput).toHaveValue('');
     });
 
-    // Close the modal
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
 
   test('should display custom default values when cluster returns different config', async ({ page }) => {
-    // Create a modified response with different default values
     const customClusterResponse = {
       clusterInfo: {
         ...mockClusterResponse.clusterInfo,
@@ -236,7 +226,6 @@ test.describe('create Topic Modal - Default Values', () => {
     });
 
     await step('Verify retention time shows 1 day', async () => {
-      // prettyMilliseconds(86400000) with verbose=true returns "1 day"
       const retentionTimeInput = page.getByTestId('topic-retention-time');
       await expect(retentionTimeInput).toBeVisible();
       await expect(retentionTimeInput).toHaveAttribute('placeholder', '1 day');
@@ -244,14 +233,12 @@ test.describe('create Topic Modal - Default Values', () => {
     });
 
     await step('Verify retention size shows 1 GiB', async () => {
-      // prettyBytes(1073741824) returns "1 GiB"
       const retentionSizeInput = page.getByTestId('topic-retention-size');
       await expect(retentionSizeInput).toBeVisible();
       await expect(retentionSizeInput).toHaveAttribute('placeholder', '1 GiB');
       await expect(retentionSizeInput).toHaveValue('');
     });
 
-    // Close the modal
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
 });

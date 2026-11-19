@@ -256,7 +256,6 @@ export const useFenceClusterMutation = () => {
           throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
         if (!sameFenceSettings(settings, saved)) {
-          // Worded to match isStaleRevisionError, like the server's own stale-revision failure.
           throw new ConnectError('the fence revision has changed', Code.FailedPrecondition);
         }
         setSavedFence(saved);

@@ -14,8 +14,6 @@
 import { rs } from '@rstest/core';
 import React from 'react';
 
-// ── Router mocks ────────────────────────────────────────────────────
-
 /** Link stub shared across all router mock variants. */
 function StubLink({ children, to, ...props }: { children: React.ReactNode; to: string }) {
   return React.createElement('a', { href: to, ...props }, children);
@@ -31,8 +29,6 @@ export function mockRouterForListRoute() {
     Link: StubLink,
   };
 }
-
-// ── Connect-query mocks ─────────────────────────────────────────────
 
 /**
  * Standard `@connectrpc/connect-query` mock for list routes that use

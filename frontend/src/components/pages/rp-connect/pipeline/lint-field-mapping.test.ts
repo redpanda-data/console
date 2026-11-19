@@ -17,8 +17,6 @@ import type { EditTarget } from '../utils/yaml';
 
 const hint = (line: number, text: string) => ({ line, column: 1, hint: text }) as LintHint;
 
-// Line numbers (1-based): 1 input:, 2 label, 3 redpanda:, 4 seed_brokers:, 5 list item,
-// 6 topics:, 7 tls:, 8 enabled.
 const YAML = `input:
   label: ""
   redpanda:
@@ -65,7 +63,6 @@ describe('mapLintHintsToFields', () => {
 
   describe('message matching', () => {
     test('a component-line hint falls back to every field the message names', () => {
-      // "line 3" is the `redpanda:` line — no field range contains it, but the message names two fields.
       const message = 'either topics or regexp_topics_include must be specified';
       const { byField, unmapped } = run([hint(3, message)]);
       expect(byField.get('topics')).toEqual([message]);
@@ -80,7 +77,6 @@ describe('mapLintHintsToFields', () => {
     });
 
     test('an explicit "field X is required" anchors even to short field names like id', () => {
-      // Too short for loose mention matching, but "field id …" is the lint convention — exact.
       const message = 'field id is required';
       const { byField, unmapped } = run([hint(3, message)]);
       expect(byField.get('id')).toEqual([message]);
@@ -96,9 +92,7 @@ describe('mapLintHintsToFields', () => {
 
   describe('anchor precedence', () => {
     test('an explicit field reference beats the line anchor', () => {
-      // A missing-field error's line points at the component's mapping, which STARTS on some other
       // field's line — the named field must win (observed with aws_s3's "field bucket is required"
-      // rendering under `path`).
       const message = 'field seed_brokers is required';
       const { byField } = run([hint(6, message)]); // line 6 is `topics:`
       expect(byField.get('seed_brokers')).toEqual([message]);
@@ -106,7 +100,6 @@ describe('mapLintHintsToFields', () => {
     });
 
     test('an explicit field reference beats loose mentions of other fields', () => {
-      // "topics" appears in the prose, but the error is explicitly about regexp_topics_include.
       const message = 'field regexp_topics_include is required when regexp topics are enabled';
       const { byField } = run([hint(3, message)]);
       expect(byField.get('regexp_topics_include')).toEqual([message]);
@@ -119,12 +112,10 @@ describe('mapLintHintsToFields', () => {
       const { byField, unmapped } = run([hint(3, 'component failed to initialise')]);
       expect(byField.size).toBe(0);
       expect(unmapped).toHaveLength(1);
-      // Line 3 is the component's own line — no field to name.
       expect(unmapped[0].fieldLabel).toBeUndefined();
     });
 
     test('an error on a null object anchors to its rendered group section', () => {
-      // e.g. `batching:` hollowed to null — no leaf input exists, but the batching group does.
       const yamlWithNullGroup = 'input:\n  redpanda:\n    topics: []\n    batching:\n';
       const { byField, unmapped } = mapLintHintsToFields({
         yaml: yamlWithNullGroup,
@@ -154,12 +145,10 @@ describe('mapLintHintsToFields', () => {
         target,
         componentName: 'redpanda',
         hints: [hint(8, 'expected bool value')],
-        // tls/enabled not rendered by this form.
         fieldKeys: new Set(['topics']),
       });
       expect(byField.size).toBe(0);
       expect(unmapped).toHaveLength(1);
-      // The banner shows the field name instead of a line number the form view can't see.
       expect(unmapped[0].fieldLabel).toBe('tls.enabled');
     });
   });

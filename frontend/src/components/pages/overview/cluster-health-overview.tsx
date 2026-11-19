@@ -33,7 +33,6 @@ const ClusterHealthOverview = () => {
             <div>
               {titleCase(
                 api.clusterHealth?.unhealthyReasons
-                  // A reason a newer backend adds is not in the map; read it as unknown rather than throw.
                   ?.map((x) =>
                     (
                       HUMAN_READABLE_UNHEALTHY_REASONS[x] ??

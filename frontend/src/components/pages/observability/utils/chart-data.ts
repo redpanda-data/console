@@ -19,17 +19,15 @@ export const CHART_COLORS = [
   'var(--color-chart-5)',
 ] as const;
 
-// Helper to add data point to timestamp map
 function addDataPoint(
   timestampMap: Map<number, { timestamp: number; [key: string]: number }>,
   seriesName: string,
   point: { timestamp?: { seconds: bigint }; value?: number }
-): void {
+) {
   if (!point.timestamp || point.value === undefined) {
     return;
   }
 
-  // Convert seconds to milliseconds for JavaScript Date
   const ts = Number(point.timestamp.seconds) * 1000;
 
   if (!timestampMap.has(ts)) {
@@ -42,7 +40,6 @@ function addDataPoint(
   }
 }
 
-// Helper function to transform time series data into chart format
 export function transformTimeSeriesData(results: ExecuteRangeQueryResponse['results']): Array<{
   timestamp: number;
   [key: string]: number;

@@ -71,7 +71,6 @@ type FilterItemSummaryProps = {
   errorMessage?: string;
 };
 
-// Resume/summary view (non-editable)
 const FilterItemSummary = ({ filterLabel, nameValue, errorMessage }: FilterItemSummaryProps) => (
   <div>
     <Item>
@@ -183,7 +182,6 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   const showMatchAllMessage =
     patternValue === PatternType.LITERAL && filterValue === FilterType.INCLUDE && nameValue === '*';
 
-  // Editable view (full form)
   return (
     <Card data-testid={dataTestId} size="full" variant="elevated">
       <CardContent>

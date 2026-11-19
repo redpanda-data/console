@@ -60,13 +60,11 @@ export type FilterEntry = {
   filterType: FilterType;
   isActive: boolean;
 
-  // Code
   name: string; // name of the filter, shown instead of the code when set
   transpiledCode: string;
   code: string; // js code the user entered
 };
 
-// Factory function to create FilterEntry instances
 export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
   return {
     isNew: false,
@@ -134,7 +132,6 @@ export const DEFAULT_SEARCH_PARAMS = {
 
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
 
-// Settings for an individual topic
 export type TopicDetailsSettings = {
   topicName: string;
 
@@ -170,7 +167,6 @@ export type TopicDetailsSettings = {
   quickSearch: string;
 };
 
-// Factory function to create TopicDetailsSettings instances
 export function createTopicDetailsSettings(
   topicName: string,
   overrides?: Partial<TopicDetailsSettings>
@@ -224,17 +220,13 @@ type UISettings = {
   };
 
   reassignment: {
-    // partition reassignment
-    // Active
     activeReassignments: {
       quickSearch: string;
       pageSize: number;
     };
 
-    // Brokers
     pageSizeBrokers: number;
 
-    // Review
     pageSizeReview: number;
     maxReplicationTraffic: number | null; // bytes per second, or "no change"
   };
@@ -246,7 +238,6 @@ type UISettings = {
     sortId: string;
     sortDesc: boolean;
 
-    // Topic Configuration
     valueDisplay: ValueDisplay;
     propsOrder: 'changedFirst' | 'default' | 'alphabetical';
 
@@ -399,17 +390,13 @@ const defaultUiSettings: UISettings = {
   },
 
   reassignment: {
-    // partition reassignment
-    // Active
     activeReassignments: {
       quickSearch: '',
       pageSize: 5,
     },
 
-    // Brokers
     pageSizeBrokers: 10,
 
-    // Review
     pageSizeReview: 20,
     maxReplicationTraffic: 0 as number | null, // bytes per second, or "no change"
   },
@@ -421,7 +408,6 @@ const defaultUiSettings: UISettings = {
     sortId: '',
     sortDesc: false,
 
-    // Topic Configuration
     valueDisplay: 'friendly' as ValueDisplay,
     propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
 
@@ -552,7 +538,6 @@ const defaultUiSettings: UISettings = {
 };
 
 type UISettingsStore = UISettings & {
-  // Actions
   updateSettings: (settings: Partial<UISettings>) => void;
   clearSettings: () => void;
 };
@@ -563,12 +548,9 @@ function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
 
 type NewTopicSettingsField = 'previewColumnFields' | 'previewTimestamps' | 'dynamicFilters';
 
-// Topic settings as an older version saved them: without the fields added since.
 type StoredTopicDetailsSettings = Omit<TopicDetailsSettings, NewTopicSettingsField> &
   Partial<Pick<TopicDetailsSettings, NewTopicSettingsField>>;
 
-// when loading a previous version, we'll have "undefined" for all the new properties,
-// which is ok for 'number', but not for any other type.
 function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
   ts.previewColumnFields = ts.previewColumnFields ?? [];
   ts.previewTimestamps = ts.previewTimestamps ?? 'default';
@@ -578,7 +560,6 @@ function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
   }
 }
 
-// upgrade by constructing a new tag from the old data
 function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
   return {
     id: tag.id,
@@ -591,20 +572,16 @@ function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
   };
 }
 
-// Upgrade: PreviewTag to PreviewTagV2
 function upgradePreviewTags(ts: TopicDetailsSettings) {
   for (let i = 0; i < ts.previewTags.length; i++) {
     const tag = ts.previewTags[i];
     if (isPreviewTagV1(tag)) {
-      // replace old tag
       ts.previewTags[i] = previewTagV2From(tag);
     }
   }
 }
 
-// Upgrade function for loading old data
 function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
-  // Upgrade: new props in 'TopicDetailsSettings'
   if (loadedSettings.perTopicSettings) {
     for (const ts of loadedSettings.perTopicSettings) {
       fillNewTopicSettingsDefaults(ts);
@@ -618,7 +595,6 @@ function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISetting
   return loadedSettings;
 }
 
-// Parsed and upgraded settings, or null when the stored text holds nothing usable.
 function loadStoredSettings(str: string) {
   try {
     const loadedSettings = JSON.parse(str);
@@ -626,7 +602,6 @@ function loadStoredSettings(str: string) {
       return null;
     }
 
-    // Apply upgrades
     const upgradedSettings = upgradeSettings(loadedSettings);
 
     return {
@@ -655,7 +630,6 @@ function scheduleSave(state: UISettings) {
   }, SAVE_DELAY);
 }
 
-// Immediate save function (for visibility change)
 function saveImmediately(state: UISettings) {
   if (saveTimeoutId) {
     clearTimeout(saveTimeoutId);
@@ -665,7 +639,6 @@ function saveImmediately(state: UISettings) {
   localStorage.setItem(settingsName, json);
 }
 
-// Create the store
 export const useUISettingsStore = create<UISettingsStore>()(
   subscribeWithSelector(
     persist(
@@ -730,9 +703,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
  */
 export function installUISettingsSideEffects(): () => void {
   if (typeof window === 'undefined') {
-    return () => {
-      // no-op
-    };
+    return () => {};
   }
 
   const unsubStore = useUISettingsStore.subscribe((state) => {
@@ -751,7 +722,6 @@ export function installUISettingsSideEffects(): () => void {
   };
   window.addEventListener('visibilitychange', onVisibilityChange);
 
-  // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
   // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
   const onStorage = (e: StorageEvent) => {
     if (e.key !== settingsName || e.newValue === null) {
@@ -762,8 +732,6 @@ export function installUISettingsSideEffects(): () => void {
       if (!newSettings) {
         return;
       }
-      // Applying changes here will of course trigger the auto-save, but that's fine.
-      // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
       useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage

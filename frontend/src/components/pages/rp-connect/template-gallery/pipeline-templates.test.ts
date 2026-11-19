@@ -91,7 +91,7 @@ describe('the PIPELINE_TEMPLATES registry', () => {
     });
 
     test('every slot token in baseYaml maps to a declared slot', () => {
-      const tokenPattern = /\$\{slot\.([A-Za-z0-9_-]+)\}/gu;
+      const tokenPattern = /\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}/gu;
       for (const t of PIPELINE_TEMPLATES) {
         const slotIds = new Set(t.slots.map((s) => s.id));
         for (const match of t.baseYaml.matchAll(tokenPattern)) {

@@ -29,11 +29,11 @@ class RpConnectSecretCreate extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    rpcnSecretManagerApi.refreshSecrets(force);
+    this.rpcnSecretManagerApi.refreshSecrets(force);
   }
 
   render() {
-    if (!rpcnSecretManagerApi.secrets) {
+    if (!this.rpcnSecretManagerApi.secrets) {
       return DefaultSkeleton;
     }
     return <RpConnectSecretCreateContent />;

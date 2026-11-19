@@ -23,7 +23,6 @@ import { renderWithFileRoutes } from 'test-utils';
 
 import { ShadowLinkListPage } from './shadowlink-list-page';
 
-// Mock the data hook so we can drive query state (error / loading / data) directly.
 rs.mock('react-query/api/shadowlink', () => ({
   useListShadowLinksQuery: rs.fn(),
 }));
@@ -41,7 +40,6 @@ rs.mock('components/cluster-fence/cluster-fence-source-panel', () => ({
   ClusterFenceSourcePanel: MockClusterFenceSourcePanel,
 }));
 
-// Mock ui-state (mutated in a useEffect for breadcrumbs/title).
 rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
@@ -49,7 +47,6 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock toast notifications so we can assert on them.
 rs.mock('sonner', () => ({
   toast: {
     success: rs.fn(),
@@ -70,7 +67,6 @@ const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinks
 
 const CREATE_SHADOW_LINK = /create shadow link/iu;
 
-// The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {
   rpc(listShadowLinks, () => ({ shadowLinks: [] }));
 });
@@ -97,11 +93,9 @@ describe('the ShadowLinkListPage', () => {
 
     renderWithFileRoutes(<ShadowLinkListPage />);
 
-    // Dedicated "no permission" card is shown...
     expect(await screen.findByTestId('shadowlink-no-permission-card')).toBeInTheDocument();
     expect(screen.getByText(/don't have permission to view shadow links/iu)).toBeInTheDocument();
 
-    // ...and we do NOT show the generic error card.
     expect(screen.queryByTestId('shadowlink-error-card')).not.toBeInTheDocument();
   });
 
@@ -269,7 +263,6 @@ describe('the tab the ShadowLinkListPage opens on', () => {
 
   test('keeps its tabs while a list that failed loads again', async () => {
     mockFence({ available: true, known: true, phase: 'unfenced' });
-    // A failed query that fetches again starts over with no data and no error.
     mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ isLoading: true, isFetched: true } as never));
     renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
 
@@ -285,7 +278,6 @@ describe('the tab the ShadowLinkListPage opens on', () => {
       transport: routeLoaderTransport,
     });
 
-    // The page has rendered and its effects have run; a memory history records a push at once.
     expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
     expect(router.history.location.pathname).toBe('/topics');
   });

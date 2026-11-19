@@ -38,7 +38,6 @@ export function useQueryStateWithCallback<T, U = null>(
         setValue(value);
       } else if (paramsRef.current.getDefaultValue) {
         const defaultValue = paramsRef.current.getDefaultValue();
-        // The setValue function can accept T or a function that returns T
         setValue(defaultValue as T & {});
       }
     }

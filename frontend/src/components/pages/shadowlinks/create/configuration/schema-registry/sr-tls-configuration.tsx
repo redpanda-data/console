@@ -46,15 +46,12 @@ const CERTIFICATE_LABELS: Record<SrCertificateType, string> = {
   clientKey: 'Client private key',
 };
 
-// The client cert/key pair error lives on the sibling field, so uploads and
-// removals refresh the other side too.
 const CERTIFICATE_PAIR_SIBLING: Partial<Record<SrCertificateType, SrCertificateType>> = {
   clientCert: 'clientKey',
   clientKey: 'clientCert',
 };
 
 // trigger() runs detached from these handlers and rejects only if the resolver
-// itself throws; report that instead of dropping it.
 const reportRevalidationError = (error: unknown) => {
   toast.error('Failed to validate the form', { description: String(error) });
 };
@@ -93,7 +90,6 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
   const [uploadError, setUploadError] = useState<string | null>(null);
   const label = CERTIFICATE_LABELS[certType];
   const hasCert = hasSrCertificate(cert);
-  // PEMs hydrated from the API carry no file name; show a generic label.
   const fileName = hasCert ? cert?.fileName || 'Configured certificate' : undefined;
 
   const handleDrop = useCallback(
@@ -203,7 +199,6 @@ const ExistingKeyRow = () => {
   const handleRemove = () => {
     setValue('schemaRegistry.mtls.existingKeyConfigured', false, { shouldDirty: true });
     setValue('schemaRegistry.mtls.existingKeyFingerprint', '', { shouldDirty: true });
-    // The pair error for a now-keyless cert lands on the clientKey field.
     trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(reportRevalidationError);
   };
 
@@ -266,7 +261,6 @@ const SrClientKeySecretField = () => {
               customText={SR_CLIENT_KEY_SECRET_TEXT}
               onChange={(secretId) => {
                 field.onChange(secretId ? { pemContent: toSecretReference(secretId), fileName: '' } : undefined);
-                // The cert/key pair error lives on the sibling field too.
                 trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(
                   reportRevalidationError
                 );
@@ -340,8 +334,6 @@ export const SrTlsConfiguration = () => {
   const mtlsErrors = errors.schemaRegistry?.mtls;
   const hasMtlsError = Boolean(mtlsErrors?.clientCert || mtlsErrors?.clientKey);
 
-  // Snapshot at mount for initial open state; afterwards the user controls
-  // open/close.
   const [caOpen, setCaOpen] = useState(() => hasSrCertificate(getValues('schemaRegistry.mtls.ca')));
   const [mtlsOpen, setMtlsOpen] = useState(() => {
     const mtls = getValues('schemaRegistry.mtls');
@@ -403,8 +395,6 @@ export const SrTlsConfiguration = () => {
                 description="Authenticate the shadow cluster to the source Schema Registry with a client certificate."
                 label="Use mutual TLS (mTLS)"
                 onOpenChange={setMtlsOpen}
-                // Forced open while a pair-consistency error exists: the error
-                // messages render inside this panel, and a collapsed panel would
                 // otherwise block the wizard with no visible feedback.
                 open={mtlsOpen || hasMtlsError}
                 testId="sr-tls-mtls-disclosure"

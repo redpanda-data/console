@@ -84,11 +84,11 @@ export function hasSubstantiveReason(text: string) {
 
 // Directives are only recognized at the start of a real comment, so text in strings,
 // templates or JSX, and prose that mentions a directive mid-sentence, are not suppressions.
-const TS_DIRECTIVE = /^\s*\*?\s*@ts-(expect-error|ignore|nocheck)(?![\w-])([\s\S]*)$/u;
+const TS_DIRECTIVE = /^\s*\*?\s*@ts-(?<directive>expect-error|ignore|nocheck)(?![\w-])(?<rest>[\s\S]*)$/u;
 const LINT_DIRECTIVE =
-  /^\s*\*?\s*(?:eslint|oxlint)-(disable|disable-line|disable-next-line|enable)(?![\w-])([\s\S]*)$/u;
-const BIOME_DIRECTIVE = /^\s*\*?\s*biome-ignore(-all|-start|-end)?(?![\w-])([\s\S]*)$/u;
-const LINT_JUSTIFICATION = /\s-{2,}\s([\s\S]*)$/u;
+  /^\s*\*?\s*(?:eslint|oxlint)-(?<directive>disable|disable-line|disable-next-line|enable)(?![\w-])(?<rest>[\s\S]*)$/u;
+const BIOME_DIRECTIVE = /^\s*\*?\s*biome-ignore(?<directive>-all|-start|-end)?(?![\w-])(?<rest>[\s\S]*)$/u;
+const LINT_JUSTIFICATION = /\s-{2,}\s(?<reason>[\s\S]*)$/u;
 const LEADING_PUNCTUATION = /^[\s:-]+/u;
 
 export type Suppression = { tool: 'biome' | 'lint' | 'ts'; directive: string; reason: string };

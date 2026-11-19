@@ -71,14 +71,11 @@ describe('the UserAclsCard', () => {
   test('should render ACL table grouped by principal and host', () => {
     renderWithFileRoutes(<UserAclsCard acls={mockAcls} />);
 
-    // Table headers
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Hosts' })).toBeInTheDocument();
 
-    // Two rows, one per ACL group (principal+host)
     expect(screen.getAllByText('User:test-user')).toHaveLength(2);
 
-    // Host values
     expect(screen.getByText('*')).toBeInTheDocument();
     expect(screen.getByText('192.168.1.1')).toBeInTheDocument();
   });

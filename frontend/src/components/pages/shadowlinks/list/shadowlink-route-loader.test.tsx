@@ -15,8 +15,6 @@ import { QueryClient } from '@tanstack/react-query';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { Route } from 'routes/shadowlinks/index';
 
-// A transport whose listShadowLinks RPC always fails with the given code, so we
-// can drive the route loader's error handling.
 const failingTransport = (code: Code, message: string) =>
   createRouterTransport(({ rpc }) => {
     rpc(listShadowLinks, () => {
@@ -33,8 +31,6 @@ const runLoader = (code: Code, message: string) => {
 };
 
 describe('shadowlinks route loader', () => {
-  // The bug: the loader rethrew everything except FailedPrecondition/Unavailable,
-  // so a permission_denied failed the whole route and the page never rendered.
   test('swallows PermissionDenied so the page can render its no-permission state', async () => {
     await expect(
       runLoader(Code.PermissionDenied, 'you are not authorized to call this endpoint')
@@ -47,9 +43,6 @@ describe('shadowlinks route loader', () => {
   });
 
   // Bug UX-1392: on large clusters Redpanda aggregates shadow link status from
-  // every broker, so ListShadowLinks can time out (deadline_exceeded). The
-  // loader rethrew it, failing the whole route with a raw error boundary
-  // instead of letting the page render its error state.
   test('swallows DeadlineExceeded (status aggregation timeout on large clusters)', async () => {
     await expect(
       runLoader(Code.DeadlineExceeded, 'context deadline exceeded while awaiting headers')

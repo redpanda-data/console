@@ -123,7 +123,7 @@ function writeEnabled(ids: VisualDebuggerId[]): void {
 }
 
 function ensureStyles(): void {
-  if (document.getElementById(STYLE_ELEMENT_ID)) {
+  if (document.querySelector(`#${STYLE_ELEMENT_ID}`)) {
     return;
   }
   const el = document.createElement('style');

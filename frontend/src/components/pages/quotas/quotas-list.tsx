@@ -194,8 +194,6 @@ const useQuotasTableSearchState = (rowCount: number) => {
 
   const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
   const pagination: PaginationState = {
-    // Clamp the requested page to what the data actually supports, so a stale or
-    // bookmarked out-of-range `?page=` can't render a false empty state.
     pageIndex: clampPageIndex(search.page ?? 0, rowCount, pageSize),
     pageSize,
   };
@@ -289,9 +287,6 @@ const QuotasList = () => {
   const rows = table.getRowModel().rows;
 
   return (
-    // Single TooltipProvider hoisted to the page root so the per-cell tooltips
-    // (column-header info icons, "no limit configured" em-dashes) share one
-    // provider instead of mounting one per instance.
     <TooltipProvider>
       <PageContent>
         <Table>

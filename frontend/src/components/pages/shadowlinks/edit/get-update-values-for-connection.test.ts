@@ -16,7 +16,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -290,8 +289,6 @@ describe('getUpdateValuesForConnection', () => {
     });
 
     test('does not flag auth change when only the inactive branch was seeded by a tab visit', () => {
-      // Loaded SCRAM-only link, user briefly opened PLAIN tab (seeding plainCredentials),
-      // then went back to SCRAM without editing.
       const original = {
         ...baseFormValues,
         authMethod: AUTH_METHOD.SCRAM,
@@ -399,7 +396,6 @@ describe('getUpdateValuesForConnection', () => {
 
       const result = getUpdateValuesForConnection(updated, original);
 
-      // When bootstrap changes, should use parent path only (covers all client_options)
       expect(result.fieldMaskPaths).toContain('configurations.client_options');
       expect(result.fieldMaskPaths).toHaveLength(1);
     });

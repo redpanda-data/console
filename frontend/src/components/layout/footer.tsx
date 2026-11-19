@@ -44,9 +44,7 @@ export const VersionInfo = () => {
   );
 };
 
-// Bottom placement is CSS: `.footer` has `margin-top: auto` inside #mainLayout's flex column.
 export const AppFooter = () => {
-  // Icon `<title>`s are emptied: the link carries the name, and a native tooltip would stack on the Registry one.
   const gitHub = (link: string, title: string) => (
     <ElementTooltip content={title}>
       <a aria-label={title} href={link} rel="noopener noreferrer" target="_blank">

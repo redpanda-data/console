@@ -36,8 +36,6 @@ describe('isDraft', () => {
 });
 
 describe('untitledPipelineName', () => {
-  // A draft has to be named, but making the user think of one before their work can be parked
-  // defeats the point.
   it('uses the plain name when it is free', () => {
     expect(untitledPipelineName([])).toBe(UNTITLED_PIPELINE_NAME);
     expect(untitledPipelineName(['orders-enrichment'])).toBe(UNTITLED_PIPELINE_NAME);
@@ -46,7 +44,6 @@ describe('untitledPipelineName', () => {
   it('numbers past the names already taken', () => {
     expect(untitledPipelineName([UNTITLED_PIPELINE_NAME])).toBe('Untitled pipeline 2');
     expect(untitledPipelineName([UNTITLED_PIPELINE_NAME, 'Untitled pipeline 2'])).toBe('Untitled pipeline 3');
-    // A gap is fine to fill: the number distinguishes, it doesn't count.
     expect(untitledPipelineName([UNTITLED_PIPELINE_NAME, 'Untitled pipeline 3'])).toBe('Untitled pipeline 2');
   });
 
@@ -89,7 +86,6 @@ describe('timestampToMillis', () => {
 });
 
 describe('startBlockedMessage', () => {
-  // The count matters: "some issues" sends people hunting, "3 issues" tells them when they're done.
   it('counts the issues that stand in the way', () => {
     expect(startBlockedMessage(1)).toMatch(/1 issue to fix/u);
     expect(startBlockedMessage(3)).toMatch(/3 issues to fix/u);

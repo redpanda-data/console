@@ -45,7 +45,6 @@ type ShadowTopicsTableProps = {
 
 const emptyTopics: ShadowTopic[] = [];
 
-// Reusable loading row component
 const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength: number }) => (
   <TableRow>
     <TableCell className="h-16 text-center" colSpan={columnsLength}>
@@ -57,7 +56,6 @@ const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength
   </TableRow>
 );
 
-// Replaces further rows when the next page fails; automatic loading stays off until the user retries.
 const NextPageErrorRow = ({
   columnsLength,
   error,
@@ -81,7 +79,6 @@ const NextPageErrorRow = ({
   </TableRow>
 );
 
-// Extracted component for table body rows
 const VirtualizedRows = ({
   table,
   virtualRows,
@@ -161,13 +158,11 @@ const useVirtualTopicRows = ({
     overscan: 10,
   });
 
-  // Without this, a failing page is requested again on every render that flips isFetchingNextPage.
   const [nextPageError, setNextPageError] = useState<string | null>(null);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
 
-  // Auto-fetch next page when scrolling near bottom
   useEffect(() => {
     const [lastItem] = [...virtualRows].reverse();
 
@@ -175,7 +170,6 @@ const useVirtualTopicRows = ({
       return;
     }
 
-    // When last visible item is near the end, fetch more
     const canFetch = hasNextPage && !isFetchingNextPage && nextPageError === null;
     if (lastItem.index >= rowCount - 1 && canFetch && getNextTopicPage) {
       getNextTopicPage().catch((error: unknown) => {
@@ -189,7 +183,6 @@ const useVirtualTopicRows = ({
     paddingTop: virtualRows.length > 0 ? virtualRows[0].start : 0,
     paddingBottom: virtualRows.length > 0 ? totalSize - (virtualRows.at(-1)?.end ?? 0) : 0,
     nextPageError,
-    // Clearing the error re-arms the effect above, which fetches the page again.
     clearNextPageError: () => setNextPageError(null),
   };
 };
@@ -282,7 +275,6 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
     isFetchingNextPage,
     getNextTopicPage,
   });
-  // A failed page belongs to the previous filter's query, so a new filter starts without it.
   const changeTopicNameFilter = (value: string) => {
     clearNextPageError();
     onTopicNameFilterChange?.(value);

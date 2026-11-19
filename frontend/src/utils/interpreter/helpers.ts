@@ -58,7 +58,6 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
     return; // Success
   }
 
-  // Failed!
   const failureName = name ? `: ${name}` : '';
   throw new Error(`
 Test failed ${failureName}

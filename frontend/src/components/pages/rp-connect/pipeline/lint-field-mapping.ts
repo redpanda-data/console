@@ -89,7 +89,7 @@ const MIN_MENTION_NAME_LENGTH = 3;
 
 // The lint convention for structural errors: "field id is required", "field `host` is required".
 // Dots only BETWEEN segments ("batching.count"), so a sentence-ending period isn't swallowed.
-const FIELD_TOKEN_RE = /\bfield\s+[`'"]?([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/giu;
+const FIELD_TOKEN_RE = /\bfield\s+[`'"]?(?<field>[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/giu;
 
 // Lower-cased names the hint references as "field X".
 function fieldTokens(hintText: string): Set<string> {

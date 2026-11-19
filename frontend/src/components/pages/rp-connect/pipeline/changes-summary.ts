@@ -37,9 +37,7 @@ function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
         byId.set(node.id, node);
       }
     }
-  } catch {
-    // Malformed YAML: the line diff still renders, the summary is empty.
-  }
+  } catch {}
   return byId;
 }
 
@@ -50,8 +48,6 @@ const describeChange = (id: string, node: PipelineFlowNode | undefined, kind: Ch
   label: node?.labelText ?? node?.label ?? '',
 });
 
-// Ids are positional, so presence alone can't tell an insertion from a change. `changedIds` are the edited
-// nodes with no counterpart in the saved config; the reverse pass finds the saved nodes with none in the
 // edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal.
 export function summarizeComponentChanges(
   savedYaml: string,
@@ -111,7 +107,6 @@ const NOT_SET = 'not set';
 /** Egress gateway names by ID, for the gateways the editor could look up. */
 export type EgressGatewayNames = ReadonlyMap<string, string>;
 
-// Untrimmed: trailing whitespace in a name is a real change.
 function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames): string {
   if (key === 'computeUnits') {
     return values.computeUnits === undefined ? NOT_SET : String(values.computeUnits);
@@ -129,7 +124,6 @@ function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatew
   return values[key] || NOT_SET;
 }
 
-// `saved` is the form's default values, re-baselined on every save. Compared by value, not `dirtyFields`.
 export function summarizeSettingsChanges(
   saved: SettingsValues | undefined,
   current: SettingsValues,
@@ -146,7 +140,7 @@ export function summarizeSettingsChanges(
   return changes;
 }
 
-export function changesImpactMessage(state: Pipeline_State | undefined): string {
+export function changesImpactMessage(state: Pipeline_State | undefined) {
   if (state === Pipeline_State.DRAFT) {
     return "These changes aren't saved to the draft yet.";
   }

@@ -16,13 +16,11 @@ import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog
 
 rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
 
-// Import after mock so we get the mocked version
 const getToastError = async () => {
   const { toast } = await import('sonner');
   return toast.error as ReturnType<typeof rs.fn>;
 };
 
-// Renders the hook around a form whose submit is `triggerSubmit`, with the dialog already open.
 function renderOpenDialog(
   triggerSubmit: RefFormSubmittable<unknown>['triggerSubmit'],
   options: { timeout?: number } = {}
@@ -38,7 +36,6 @@ function renderOpenDialog(
   return { result, onSuccess };
 }
 
-// Starts a submit without awaiting it, so the test can act while it is in flight.
 function startSubmit(result: { current: { submit: () => Promise<void> } }) {
   let submitPromise!: Promise<void>;
   act(() => {
@@ -161,15 +158,12 @@ describe('useRefFormDialog', () => {
     const triggerSubmit = rs.fn().mockReturnValue(inflightPromise);
     const { result, onSuccess } = renderOpenDialog(triggerSubmit);
 
-    // Start submit but don't await it yet
     const submitPromise = startSubmit(result);
 
-    // Close while submit is in-flight
     act(() => {
       result.current.close();
     });
 
-    // Now resolve the submit with success
     resolveSubmit({ success: true, data: { id: 1 } });
 
     await act(async () => {
@@ -178,7 +172,6 @@ describe('useRefFormDialog', () => {
 
     // onSuccess should NOT have been called because abort happened
     expect(onSuccess).not.toHaveBeenCalled();
-    // Dialog should remain closed (close() was called)
     expect(result.current.isOpen).toBe(false);
   });
 
@@ -193,7 +186,6 @@ describe('useRefFormDialog', () => {
 
     const submitPromise = startSubmit(result);
 
-    // Advance timers past the timeout
     await act(async () => {
       rs.advanceTimersByTime(6000);
       await submitPromise;
@@ -212,7 +204,6 @@ describe('useRefFormDialog', () => {
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
-    // Dialog is closed (target is null) — submit should be a no-op
     await act(async () => {
       await result.current.submit();
     });

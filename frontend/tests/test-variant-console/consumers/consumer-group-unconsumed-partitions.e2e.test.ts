@@ -43,7 +43,7 @@ function rowByPartition(page: Page, partitionId: number) {
   return page
     .locator('tr')
     .filter({
-      has: page.locator(`td:nth-child(${COL.PARTITION + 1})`).filter({ hasText: new RegExp(`^${partitionId}$`) }),
+      has: page.locator(`td:nth-child(${COL.PARTITION + 1})`).filter({ hasText: new RegExp(`^${partitionId}$`, 'u') }),
     })
     .first();
 }
@@ -111,7 +111,7 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
 
     await step('Ensure the topic accordion is expanded', async () => {
       // With a single topic the accordion auto-expands, but click if collapsed
-      const accordionButton = page.getByRole('button', { name: new RegExp(TOPIC_NAME) });
+      const accordionButton = page.getByRole('button', { name: new RegExp(TOPIC_NAME, 'u') });
       await expect(accordionButton).toBeVisible();
 
       const isExpanded = await accordionButton.getAttribute('aria-expanded');

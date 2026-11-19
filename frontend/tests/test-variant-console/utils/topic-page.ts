@@ -114,7 +114,7 @@ export class TopicPage {
    * Topic details operations
    */
   async verifyTopicDetailsVisible(topicName: string) {
-    await expect(this.page).toHaveURL(new RegExp(`/topics/${topicName}`));
+    await expect(this.page).toHaveURL(new RegExp(`/topics/${topicName}`, 'u'));
     await expect(this.page.getByText(topicName)).toBeVisible();
   }
 
@@ -195,7 +195,7 @@ export class TopicPage {
   }
 
   async verifyOnTopicsListPage() {
-    await expect(this.page).toHaveURL(/\/topics\/?(\?.*)?$/u);
+    await expect(this.page).toHaveURL(/\/topics\/?(?:\?.*)?$/u);
   }
 
   /**

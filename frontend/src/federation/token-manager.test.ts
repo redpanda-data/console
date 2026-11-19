@@ -32,16 +32,12 @@ describe('the TokenManager', () => {
       const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
-      // Start multiple refresh calls concurrently
       const promises = [tokenManager.refresh(), tokenManager.refresh(), tokenManager.refresh()];
 
-      // getAccessToken should only be called once
       expect(mockGetToken).toHaveBeenCalledTimes(1);
 
-      // Resolve the token
       resolveToken!('deduplicated-token');
 
-      // All promises should resolve to the same value
       const results = await Promise.all(promises);
       expect(results).toEqual(['deduplicated-token', 'deduplicated-token', 'deduplicated-token']);
     });
@@ -72,10 +68,8 @@ describe('the TokenManager', () => {
         .mockResolvedValueOnce('retry-token');
       const tokenManager = new TokenManager(mockGetToken);
 
-      // First call fails
       await expect(tokenManager.refresh()).rejects.toThrow('First attempt failed');
 
-      // Second call should work
       const result = await tokenManager.refresh();
       expect(result).toBe('retry-token');
       expect(mockGetToken).toHaveBeenCalledTimes(2);
@@ -111,7 +105,6 @@ describe('the TokenManager', () => {
       const mockGetToken = mock();
       const tokenManager = new TokenManager(mockGetToken);
 
-      // Should not throw
       expect(() => tokenManager.reset()).not.toThrow();
     });
 
@@ -119,7 +112,6 @@ describe('the TokenManager', () => {
       const mockGetToken = mock();
       const tokenManager = new TokenManager(mockGetToken);
 
-      // Should not throw
       expect(() => {
         tokenManager.reset();
         tokenManager.reset();
@@ -166,9 +158,7 @@ describe('the TokenManager', () => {
 
       try {
         await tokenManager.refresh();
-      } catch {
-        // Expected
-      }
+      } catch {}
       expect(tokenManager.isRefreshing).toBe(false);
     });
   });

@@ -88,7 +88,6 @@ const MODE_OPTIONS: {
 
 const EDIT_MODE_PAGE: SchemaEditPageKind = { pageTitle: 'Edit Mode', crumbTitle: 'Edit Mode', segment: 'edit-mode' };
 
-// The global mode, plus the subject's details or the context's mode when the page edits one of those.
 function useEditModeData({ subjectName, contextName }: SchemaEditTarget) {
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {

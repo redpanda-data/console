@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// App-owned guard for a registry contract the registry ships untested.
-// TanStack v9 resets uncontrolled `expanded` when `data` is replaced unless
-// `autoResetExpanded: false` is set (registry 3.4.1).
-
 import { describe, expect, test } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -22,7 +18,7 @@ type Row = { id: string; name: string; detail: string };
 
 const columns = [{ accessorKey: 'name', header: 'Name' }];
 
-const rows = (suffix: string): Row[] => [
+const rows = (suffix: string) => [
   { id: 'a', name: `alpha ${suffix}`, detail: 'alpha detail' },
   { id: 'b', name: `beta ${suffix}`, detail: 'beta detail' },
 ];
@@ -47,9 +43,7 @@ describe('registry DataTable expanded rows', () => {
     expect(screen.getByText('alpha detail')).toBeInTheDocument();
 
     rerender(<Table data={rows('v2')} />);
-    await act(async () => {
-      // TanStack queues the reset as a microtask; act drains it before asserting.
-    });
+    await act(async () => {});
 
     expect(screen.getByText('alpha v2')).toBeInTheDocument();
     expect(screen.getByText('alpha detail')).toBeInTheDocument();

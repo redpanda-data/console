@@ -15,7 +15,7 @@ import { render, screen } from 'test-utils';
 import { ConfigurationShadowing } from './configuration-shadowing';
 import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../../model';
 
-const buildShadowLink = (configurations?: UnifiedShadowLink['configurations']): UnifiedShadowLink => ({
+const buildShadowLink = (configurations?: UnifiedShadowLink['configurations']) => ({
   name: 'test-link',
   id: 'uid-1',
   state: UnifiedShadowLinkState.ACTIVE,

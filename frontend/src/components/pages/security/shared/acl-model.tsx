@@ -514,7 +514,7 @@ export function getIdFromCreateACLRequest(request: CreateACLRequest): string {
 
 // Convert rules to CreateACLRequest array for API calls
 export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string): CreateACLRequest[] {
-  return rules.reduce((acc, r) => {
+  return rules.reduce<CreateACLRequest[]>((acc, r) => {
     const baseRule = {
       resourcePatternType:
         r.selectorType === 'any' ? ACL_ResourcePatternType.LITERAL : getGRPCResourcePatternType(r.selectorType),
@@ -545,7 +545,7 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
       );
     }
     if (r.mode === ModeCustom) {
-      const customResults = Object.entries(r.operations).reduce((operations, [op, opValue]) => {
+      const customResults = Object.entries(r.operations).reduce<CreateACLRequest[]>((operations, [op, opValue]) => {
         if (opValue !== OperationTypeNotSet) {
           operations.push(
             create(CreateACLRequestSchema, {
@@ -559,11 +559,11 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
           );
         }
         return operations;
-      }, [] as CreateACLRequest[]);
+      }, []);
       acc.push(...customResults);
     }
     return acc;
-  }, [] as CreateACLRequest[]);
+  }, []);
 }
 
 // Helper function to convert UPPER_CASE strings to sentence case

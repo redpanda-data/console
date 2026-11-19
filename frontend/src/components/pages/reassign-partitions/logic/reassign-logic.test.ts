@@ -47,7 +47,6 @@ const makePartition = (id: number, replicas: number[], replicaSize: number): Par
     replicaSize,
   }) as Partition;
 
-// Four brokers in two racks. Every replica of `alpha` sits in rack a, `beta` spans both racks.
 const brokers = [makeBroker(0, 'a'), makeBroker(1, 'a'), makeBroker(2, 'b'), makeBroker(3, 'b')];
 const alpha = makeTopic('alpha', 4, 2);
 const beta = makeTopic('beta', 2, 3);
@@ -101,7 +100,6 @@ describe('computeReassignments', () => {
 
     expect(replicaIds(result)).toEqual(EXPECTED_ALL_BROKERS);
     expect(error).not.toHaveBeenCalled();
-    // Two balancing rounds: the second swaps leaders without lowering the skew, which ends the loop.
     expect(debug).toHaveBeenCalledWith('leader skew in cluster', {
       actual: { skew: 5, min: '0 partitions (brokerId 2)', max: '5 partitions (brokerId 0)' },
       planned: { skew: 1, min: '1 partitions (brokerId 0)', max: '2 partitions (brokerId 2)' },
@@ -116,7 +114,6 @@ describe('computeReassignments', () => {
     const result = computeReassignments(apiData, [select(alpha, alphaPartitions)], [brokers[2], brokers[3]]);
 
     expect(replicaIds(result)).toEqual(EXPECTED_RACK_B);
-    // Rack b alone now hosts every replica, so losing it takes each partition offline.
     expect(error).toHaveBeenCalledWith('Issues in topic "alpha" (RF: 2) (4 issues).');
     expect(table).toHaveBeenCalledWith(
       [0, 1, 2, 3].map((partitionId) => ({ partitionId, criticalBrokers: '', criticalRacks: 'b' }))

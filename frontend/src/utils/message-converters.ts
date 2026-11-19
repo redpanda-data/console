@@ -131,7 +131,6 @@ function convertPayload(
       encodingName: PayloadEncodingSchema.values.find((value) => value.number === source.encoding)?.localName,
     });
   }
-  // Preserve an absent encoding for unknown proto values rather than claiming a successful decode.
   return {
     payload: parseNormalizedPayload(normalizedText),
     normalizedPayload: source?.normalizedPayload,

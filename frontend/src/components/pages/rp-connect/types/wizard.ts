@@ -41,13 +41,11 @@ export type UserStepSubmissionData =
   | ServiceAccountSubmissionData
   | ExistingServiceAccountSubmissionData;
 
-// User step-specific submission result
 export type UserStepSubmissionResult = {
   success: boolean;
   data?: UserStepSubmissionData;
 };
 
-// New ref type for user step
 export type UserStepRef = {
   triggerSubmit: () => Promise<UserStepSubmissionResult>;
   isPending: boolean;
@@ -133,7 +131,6 @@ export const AuthenticationMethod = {
 
 export type AuthenticationMethodType = (typeof AuthenticationMethod)[keyof typeof AuthenticationMethod];
 
-// Service account submission data
 export type ServiceAccountSubmissionData = {
   authMethod: 'service-account';
   serviceAccountName: string;

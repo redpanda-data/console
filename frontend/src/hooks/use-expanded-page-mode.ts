@@ -42,17 +42,14 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
   ref: (el: HTMLElement | null) => void;
 } {
   const [expanded, setExpanded] = useState(() => readStoredExpanded(storageKey));
-  // State rather than a ref, so attaching the node re-runs the effect below.
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
-  // Layout effect so the attribute lands in the same frame as the page's own geometry change,
   // and its cleanup is the only unset: it covers unmount, `ref` detaching and `expanded` off.
   useLayoutEffect(() => {
     if (!pageRoot) {
       return clearPageExpanded;
     }
 
-    // display:none collapses the root to 0x0, which fires the observer — the on-screen signal.
     const sync = () => {
       const onScreen = pageRoot.getClientRects().length > 0;
       document.documentElement.toggleAttribute(PAGE_EXPANDED_ATTR, expanded && onScreen);
@@ -72,9 +69,7 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
       const next = !current;
       try {
         localStorage.setItem(storageKey, next ? 'full' : 'boxed');
-      } catch {
-        // ignore storage failures (private mode / quota)
-      }
+      } catch {}
       return next;
     });
   }, [storageKey]);

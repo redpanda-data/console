@@ -41,7 +41,6 @@ export const postgresCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Logical replication slot',
-      // Optional in the form; derive a stable name from the pipeline when blank so redeploys reuse the slot instead of orphaning one.
       required: false,
       placeholder: 'Auto-generated from pipeline name if blank',
       schemaField: 'slot_name',

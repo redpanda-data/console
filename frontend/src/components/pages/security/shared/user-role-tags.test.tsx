@@ -30,7 +30,6 @@ rs.mock('@connectrpc/connect-query', () => ({
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  // Real navigate() returns a promise that settles once the route commits.
   useNavigate: () => rs.fn(() => Promise.resolve()),
 }));
 
@@ -77,7 +76,6 @@ describe('the UserRoleTags', () => {
   });
 
   test('group principal does NOT show roles that contain a User with the same name', () => {
-    // Role has a User member named "engineering" — should NOT match Group:engineering
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'User' }]);
 
     render(<UserRoleTags principalType="Group" userName="engineering" />);
@@ -86,7 +84,6 @@ describe('the UserRoleTags', () => {
   });
 
   test('group principal shows roles that contain a Group member with matching name', () => {
-    // Role has a Group member named "engineering" — SHOULD match
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'Group' }]);
 
     render(<UserRoleTags principalType="Group" userName="engineering" />);

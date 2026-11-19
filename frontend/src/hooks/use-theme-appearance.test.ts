@@ -16,14 +16,12 @@ describe('classifyGround', () => {
   });
 
   it('goes by the ground, not by any name', () => {
-    // A navy `midnight` and a cream `parchment` — neither name says which it is.
     expect(classifyGround([11, 16, 32])).toBe('dark');
     expect(classifyGround([251, 247, 236])).toBe('light');
   });
 
   it('counts a near-white ground as light', () => {
     // What `color-mix(in srgb, #fff 90%, #000)` rasterises to. Read as raw `color(srgb 0.9 …)`
-    // numbers instead, this would have come out dark.
     expect(classifyGround([230, 230, 230])).toBe('light');
   });
 
@@ -32,13 +30,11 @@ describe('classifyGround', () => {
   });
 
   it('weights green over blue, per WCAG relative luminance', () => {
-    // Identical channel value, opposite verdicts: green carries 0.7152 of the luminance, blue 0.0722.
     expect(classifyGround([0, 210, 0])).toBe('light');
     expect(classifyGround([0, 0, 210])).toBe('dark');
   });
 
   it('pins the threshold either side of grey 170', () => {
-    // Where luminance 0.4 falls. Moving it means re-checking editor-theme's copy.
     expect(classifyGround([175, 175, 175])).toBe('light');
     expect(classifyGround([165, 165, 165])).toBe('dark');
   });

@@ -27,7 +27,6 @@ import type { DataColumnKey } from '../../../../../state/ui';
 import { toJson } from '../../../../../utils/json-utils';
 import { base64FromUInt8Array } from '../../../../../utils/utils';
 
-// Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
 function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefined {
@@ -70,7 +69,6 @@ function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<To
 function csvHeaders(firstMessage: TopicMessage): string[] {
   const headers: string[] = [...COLUMN_ORDER];
 
-  // Add other common fields that might not be in COLUMN_ORDER
   if (firstMessage.compression && !headers.includes('compression')) {
     headers.push('compression');
   }
@@ -81,7 +79,6 @@ function csvHeaders(firstMessage: TopicMessage): string[] {
   return headers;
 }
 
-// Commas inside a payload would split the cell, so they become semicolons.
 function csvPayloadCell(payload: Payload | undefined): string {
   if (!payload) {
     return '';
@@ -105,7 +102,6 @@ function csvCell(message: TopicMessage, header: string): string | number | boole
   if (header === 'valueSize') {
     return message.value?.size || '';
   }
-  // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
   const messageValue = (message as Record<string, unknown>)[header];
   return messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : '';
 }
@@ -117,10 +113,8 @@ function convertToCSV(messagesToConvert: TopicMessage[]): string {
 
   const headers = csvHeaders(messagesToConvert[0]);
 
-  // Add the headers
   const csvRows: string[] = [headers.join(',')];
 
-  // Add the data, with fields in the same order as headers
   for (const message of messagesToConvert) {
     csvRows.push(headers.map((header) => csvCell(message, header)).join(','));
   }

@@ -11,7 +11,7 @@
 
 import type { FieldFilterToken, FilterOp, FilterToken } from '../types';
 
-const FIELD_PATTERN = /^(key|value(?:\.[\w.*-]+)?|partition|offset)/u;
+const FIELD_PATTERN = /^(?<field>key|value(?:\.[\w.*-]+)?|partition|offset)/u;
 const INTEGER_VALUE_PATTERN = /^\d+$/u;
 const NEEDS_QUOTING_PATTERN = /["\s]/u;
 

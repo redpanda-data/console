@@ -27,7 +27,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   }
 
   refreshData(_force: boolean) {
-    rpcnSecretManagerApi.refreshSecrets(_force);
+    this.rpcnSecretManagerApi.refreshSecrets(_force);
   }
 
   render() {

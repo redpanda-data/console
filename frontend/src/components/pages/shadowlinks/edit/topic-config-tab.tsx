@@ -207,16 +207,13 @@ export const TopicConfigTab = () => {
    * Sync default properties when excludeDefault toggle changes
    */
   useEffect(() => {
-    // Skip on initial mount or if excludeDefault hasn't changed
     if (prevExcludeDefault.current === excludeDefault) {
       return;
     }
 
-    // Update ref for next comparison
     const previousValue = prevExcludeDefault.current;
     prevExcludeDefault.current = excludeDefault;
 
-    // Skip on initial mount
     if (previousValue === undefined) {
       return;
     }
@@ -232,12 +229,10 @@ export const TopicConfigTab = () => {
    */
   const handlePropertyToggle = (propertyName: string, checked: boolean) => {
     if (checked) {
-      // Add property if not already in the list
       if (!topicProperties.includes(propertyName)) {
         setValue('topicProperties', [...topicProperties, propertyName], { shouldDirty: true });
       }
     } else {
-      // Remove property from the list
       setValue(
         'topicProperties',
         topicProperties.filter((p) => p !== propertyName),
@@ -250,7 +245,6 @@ export const TopicConfigTab = () => {
    * Check if a property is currently selected for replication
    */
   const isPropertySelected = (propertyName: string): boolean => {
-    // Always replicated properties are always "on"
     if (isPropertyAlwaysReplicated(propertyName)) {
       return true;
     }

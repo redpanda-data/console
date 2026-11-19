@@ -16,8 +16,7 @@ import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces
 import { numberToThousandsString } from '../../../../../utils/tsx-utils';
 import { prettyBytes, titleCase } from '../../../../../utils/utils';
 
-// For example `Avro (12 / 1.2 kB)`, where 12 is the schema ID when there is one.
-function describeValue(value: Payload): string {
+function describeValue(value: Payload) {
   const schemaPrefix = value.schemaId > 0 ? `${value.schemaId} / ` : '';
   return `${titleCase(value.encoding)} (${schemaPrefix}${prettyBytes(value.size)})`;
 }

@@ -25,7 +25,6 @@ const yamlOf = (id: string) => {
   return fixture.yaml;
 };
 
-// What each stop-condition fixture is there to show.
 const EXPECTED_END: Record<string, PipelineEndStatus> = {
   'stops-generate-count': 'finite',
   'stops-postgres-snapshot': 'finite',

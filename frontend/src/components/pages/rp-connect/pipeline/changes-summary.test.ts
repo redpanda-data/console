@@ -88,7 +88,7 @@ describe('summarizeComponentChanges', () => {
   it('never reports a section container', () => {
     const changes = summarize(config({ input: 'generate' }), config({ input: 'kafka_franz' }));
 
-    expect(changes.every((c) => !/^(input|output|pipeline)$/u.test(c.id))).toBe(true);
+    expect(changes.every((c) => !/^(?:input|output|pipeline)$/u.test(c.id))).toBe(true);
   });
 
   it('says nothing about a document it cannot parse, rather than throwing', () => {

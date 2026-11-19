@@ -27,13 +27,12 @@ rs.mock('../../../config', () => {
 const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
 
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  // Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic.
   useClusterFenceGuard: () => ({
     reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
   }),
 }));
 
-const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }): ConfigEntryExtended => ({
+const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }) => ({
   name: 'test.option',
   value: '',
   source: '',
@@ -55,15 +54,7 @@ const entries: ConfigEntryExtended[] = [
 ];
 
 function renderEditor(targetTopic = 'my-topic') {
-  return render(
-    <ConfigurationEditor
-      entries={entries}
-      onForceRefresh={() => {
-        // no op - test callback
-      }}
-      targetTopic={targetTopic}
-    />
-  );
+  return render(<ConfigurationEditor entries={entries} onForceRefresh={() => {}} targetTopic={targetTopic} />);
 }
 
 function getSection(name: string) {
@@ -91,8 +82,6 @@ describe('the TopicConfiguration', () => {
     test('renders a sidebar preserving backend categories and collapsing only unmapped ones into Other', () => {
       renderEditor();
 
-      // Sidebar lists each visible category; known backend categories like 'Iceberg' are
-      // preserved, and only genuinely unmapped categories collapse into 'Other'.
       const nav = screen.getByRole('navigation', { name: 'Configuration categories' });
       expect(within(nav).getByText('Retention')).toBeVisible();
       expect(within(nav).getByText('Compaction')).toBeVisible();
@@ -103,12 +92,9 @@ describe('the TopicConfiguration', () => {
     test('renders titled sections that badge only modified rows', () => {
       renderEditor();
 
-      // Each visible category renders as a titled section.
       const retentionSection = getSection('Retention');
       expect(retentionSection).toBeVisible();
 
-      // Only modified rows get a badge; the explicitly-set retention.ms row shows 'Modified',
-      // and the default cleanup.policy row shows no badge.
       expect(within(retentionSection).getByText('Modified')).toBeVisible();
       const compactionSection = getSection('Compaction');
       expect(within(compactionSection).queryByText('Modified')).not.toBeInTheDocument();
@@ -143,9 +129,7 @@ describe('the TopicConfiguration', () => {
               value: '0.5',
             }),
           ]}
-          onForceRefresh={() => {
-            // no op - test callback
-          }}
+          onForceRefresh={() => {}}
           targetTopic="my-topic"
         />
       );

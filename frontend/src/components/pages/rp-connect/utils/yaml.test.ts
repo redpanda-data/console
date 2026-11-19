@@ -30,7 +30,6 @@ import {
 import { describe, expect, test } from 'bun:test';
 import type { ConnectComponentSpec } from '../types/schema';
 
-// The default config a fixture component generates; throws when the fixture or its config is missing.
 function generatedConfig(spec: ConnectComponentSpec | undefined, name: string) {
   if (!spec) {
     throw new Error(`${name} not found`);
@@ -103,7 +102,6 @@ output:
       const { config } = result;
       const yaml = configToYaml(config, spec);
 
-      // Sentinel is converted to comment-only line (no key-value pair)
       expect(yaml).not.toMatch(/^\s*required_field:/mu);
       expect(yaml).toContain('# required_field: Required - string, must be manually set');
     });
@@ -113,9 +111,7 @@ output:
       const { config } = generatedConfig(kafkaSpec, 'kafka output');
       const yaml = configToYaml(config, kafkaSpec);
 
-      // Scalar required fields become comment-only lines
       expect(yaml).toContain('# topic: Required - string, must be manually set');
-      // Required array fields with empty-string default also become comment-only lines
       expect(yaml).toContain('# addresses: Required - string list, must be manually set');
       expect(yaml).not.toMatch(/^\s*addresses:/mu);
     });
@@ -125,17 +121,14 @@ output:
       const { config } = generatedConfig(kafkaSpec, 'kafka output');
       const yaml = configToYaml(config, kafkaSpec);
 
-      // Parent objects like tls should not have inline comments
       const lines = yaml.split('\n');
       const tlsLineIndex = lines.findIndex((line) => line.trim().startsWith('tls:'));
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
-        // For Redpanda components, TLS renders as a parent object — no inline comment on the tls: line.
         expect(tlsLine.trim()).not.toContain('#');
       }
 
-      // Required array fields with empty-string default also become comment-only lines
       expect(yaml).toContain('# addresses: Required - string list, must be manually set');
       expect(yaml).not.toMatch(/^\s*addresses:/mu);
     });
@@ -145,10 +138,8 @@ output:
       const { config, spec } = generatedConfig(redpandaCommonSpec, 'redpanda_common input');
       const yaml = configToYaml(config, spec);
 
-      // redpanda_common uses [componentSpec.type, componentName] path
       expect(yaml).toContain('input:');
       expect(yaml).toContain('redpanda_common:');
-      // Required array field should become comment-only
       expect(yaml).toContain('# topics: Required - string list, must be manually set');
     });
 
@@ -163,11 +154,8 @@ output:
       const { config, spec } = result;
       const yaml = configToYaml(config, spec);
 
-      // topic IS required (no optional ancestor) → commented out
       expect(yaml).toContain('# topic: Required - string, must be manually set');
 
-      // metadata children are NOT required (parent metadata is optional) → with no serialized
-      // defaults they are omitted entirely rather than placeholder-filled or marked required.
       expect(yaml).not.toContain('include_prefixes');
       expect(yaml).not.toContain('include_patterns');
     });
@@ -194,7 +182,6 @@ output:
       expect(mergedYaml).toContain('output:');
       expect(mergedYaml).toContain('kafka:');
 
-      // Required fields become comment-only lines in merged output
       expect(mergedYaml).toContain('# topic: Required - string, must be manually set');
     });
   });
@@ -493,7 +480,6 @@ output:
         expect(result.outputs).toEqual(['resource', 'resource']);
       });
 
-      // A member's own processors can come before its output, as they can on an input.
       test('names each member by its output, past processors listed first', () => {
         const yaml = `
 output:
@@ -1257,7 +1243,6 @@ input:
       const result = patchRedpandaConfig(yaml, 'input', 'redpanda_common', { sasl });
       expect(result).toBeDefined();
       expect(result).toContain('test-topic');
-      // SASL should be under redpanda.sasl, not input.redpanda_common.sasl
       expect(result).toContain('redpanda:');
       expect(result).toContain('SCRAM-SHA-256');
     });
@@ -1373,7 +1358,6 @@ input:
           });
         });
 
-        // Brokers the user names may be a plaintext listener, as localdev's is.
         test('leaves TLS alone on brokers the component names', () => {
           const yaml = 'output:\n  redpanda:\n    seed_brokers: [localhost:9092]\n    topic: orders\n';
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
@@ -1443,7 +1427,6 @@ output:
         expect(node?.missingSasl).toBeUndefined();
       });
 
-      // Connect logs a service account in through the pipeline's own account rather than a SCRAM user.
       test('logs a service account in with the pipeline account', () => {
         const result = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
           authMethod: 'service-account',
@@ -1522,7 +1505,6 @@ output:
   });
 });
 
-// The account a service-account login uses lives outside the YAML, so the save has to know it's needed.
 describe('usesServiceAccountLogin', () => {
   test.each([
     ['a component', 'output:\n  redpanda:\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n'],
@@ -1579,7 +1561,6 @@ output:
 
   test('resolves topics pulled in via a YAML merge anchor', () => {
     // The flow parser resolves `<<:` merge keys, so this extractor must too — otherwise a
-    // component sharing config via an anchor reads as "missing topic" while the diagram shows it.
     const yaml = `shared: &common
   topics:
     - anchored-topic
@@ -1604,7 +1585,6 @@ output:
   });
 
   test('returns undefined topics for structurally invalid YAML with no topic fields', () => {
-    // parseDocument collects errors rather than throwing, so parseError stays false; it just finds no topics.
     const yaml = '{{{';
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
@@ -1669,7 +1649,6 @@ output:
     # topic: this is in the output section
     seed_brokers:
       - localhost:9092`;
-    // Patching input should NOT strip comments in output section
     const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'my-topic' });
     expect(result).toBeDefined();
     expect(result).toContain('# topic: this is in the output section');
@@ -1710,7 +1689,6 @@ output:
         expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({
           log: { message: 'changed' },
         });
-        // Sibling processor is untouched.
         expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
       });
 
@@ -1730,7 +1708,6 @@ output:
       });
     });
 
-    // The canvas shows a wrapped input as the input it reads; its target is the slot either way.
     describe('an input wrapped in read_until', () => {
       const wrapped = `input:
   read_until:
@@ -1833,7 +1810,6 @@ output:
         const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
         expect(next).not.toBeNull();
         expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
-        // The branch's request_map/result_map are untouched.
         const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
         expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
       });
@@ -1897,7 +1873,6 @@ output:
           componentType: 'input',
         });
         const parsed = parseYaml(next as string) as Record<string, unknown>;
-        // A top-level container prunes like `pipeline:` does — no dead `input_resources: []` left behind.
         expect(parsed.input_resources).toBeUndefined();
         expect(parsed.input).toBeDefined();
       });
@@ -1934,7 +1909,6 @@ output:
         };
         const case0 = parsed.pipeline.processors[0].switch[0].processors;
         expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
-        // The other case is untouched.
         expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
       });
 
@@ -2017,7 +1991,6 @@ rate_limit_resources:
         const parsed = parseYaml(result.yaml) as { cache_resources: { label: string }[] };
         expect(parsed.cache_resources).toHaveLength(1);
         expect(parsed.cache_resources[0].label).toBe(result?.label);
-        // The label the caller gets back is exactly the one it can link into a node.
         expect(listResourceLabels(result.yaml, 'cache')).toContain(result.label);
       });
 
@@ -2076,7 +2049,6 @@ rate_limit_resources:
     });
 
     describe('references held in named fields', () => {
-      // Refs held in name-referencing fields (dedupe's `cache:`, a CDC input's `checkpoint_cache:`)
       // must follow a rename too — leaving them behind strands the pipeline at deploy time.
       const fieldRefYaml = `input:
   mongodb_cdc:
@@ -2111,7 +2083,6 @@ cache_resources:
     });
 
     describe('section resources', () => {
-      // `*_resources` items are referenced via `resource:` indirection components; renaming their
       // label must cascade to those references (kind-scoped by section) just like cache/rate_limit.
       const sectionResourceYaml = `input:
   resource: src
@@ -2205,7 +2176,6 @@ output_resources:
 
     test('keeps the component key for a field-less component (drop output)', () => {
       // drop has no config fields; the generated object must still carry `drop: {}` — without it
-      // the insert writes an output with only a label, which renders as an empty placeholder.
       const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
       expect(step?.drop).toEqual({});
     });
@@ -2240,7 +2210,6 @@ output_resources:
       expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
     });
 
-    // The dialog grants the group it shows, so the input has to read as that one.
     test('sets the consumer group an input reads as', () => {
       const next = tryPatchRedpandaYaml(
         'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: old-readers\n',

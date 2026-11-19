@@ -78,7 +78,6 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { usesServiceAccountLogin } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
-// Sonner's default is 4s.
 const SAVE_SUCCESS_TOAST_MS = 6000;
 
 type PipelineForm = UseFormReturn<PipelineFormValues>;
@@ -206,7 +205,6 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
           ...write.userTags,
         },
         serviceAccount: account.serviceAccount ?? current?.serviceAccount,
-        // Asserted so the server refuses the write if the draft was started meanwhile.
         draft: write.draft ? true : undefined,
         // Only the picker sets egress; elsewhere (BYOC) the backend owns the refs, and unset leaves them alone.
         egress: isEgressGatewayPickerEnabled()
@@ -239,7 +237,6 @@ function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServ
   if (isBlankConfig(yamlContent)) {
     return BLANK_CONFIG_MESSAGE;
   }
-  // A draft can wait for its account; a deploy would start a pipeline that can't log in.
   if (!hasServiceAccount && usesServiceAccountLogin(yamlContent)) {
     return MISSING_SERVICE_ACCOUNT_MESSAGE;
   }
@@ -255,7 +252,6 @@ async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlCont
     await flow.assignUntitledName();
   }
   if (!(await flow.form.trigger())) {
-    // Settings live in the header/dialog, so surface why the save was blocked.
     return invalidSettingsMessage(flow.form.formState.errors);
   }
   return deployBlockerMessage(
@@ -346,7 +342,6 @@ function leaveAfterCreate(
     flow.navigate({ to: '/connect-clusters' });
     return;
   }
-  // A draft stays in the editor on its own route so the next save updates it.
   flow.navigate({
     to: attempt.isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
   });
@@ -411,14 +406,12 @@ async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: st
 
 function toastUpdateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean) {
   if (draftWasIgnored) {
-    // No longer a draft, so the editor's next save would deploy too: hand over to the pipeline's page.
     toast.error(DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
   } else {
     toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
   }
 }
 
-// A saved draft stays in the editor; everything else opens the pipeline's page.
 function leaveAfterUpdate(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string, draftWasIgnored: boolean) {
   if ((attempt.isDraftSave && !draftWasIgnored) || attempt.skipNavigation) {
     return;
@@ -483,7 +476,6 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean
 /** Resolves to whether the configuration was persisted; a failed start/stop after the write still counts. */
 async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolean> {
   const run: SaveRunIntent = intent?.run ?? primaryRunIntent(flow.saveContext);
-  // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
   flow.editorStore.getState().pendingEditCommit?.();
   const { yamlContent } = flow.editorStore.getState();
   const blocker = await saveBlockerMessage(flow, run === 'draft', yamlContent);
@@ -495,7 +487,6 @@ async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolea
 }
 
 // A save that navigates unmounts the editor before the debounced write can run, so edits made
-// while the request was in flight are stored here, against the target the editor continues on.
 function keepEditsMadeInFlight({
   targetKey,
   savedYaml,
@@ -541,7 +532,6 @@ function useMarkSaved({
   pipelineId: string | undefined;
   attachedServiceAccount: AttachedServiceAccount | undefined;
 }): MarkSaved {
-  // Add user can attach one while a save is in flight, after the save read it.
   const latestServiceAccount = useRef(attachedServiceAccount);
   useLayoutEffect(
     function syncSavedServiceAccount() {
@@ -553,7 +543,6 @@ function useMarkSaved({
   return useCallback(
     (yamlContent, submittedSettings, savedPipelineId, savedUpdateTime) => {
       editorStore.getState().markSavedBaseline(yamlContent, savedUpdateTime);
-      // The settings stay editable while the request is in flight, so the baseline is what it carried.
       const onScreen = form.getValues();
       form.reset(submittedSettings);
       form.reset(onScreen, { keepDefaultValues: true });
@@ -593,7 +582,6 @@ function useSaveMutations() {
 /** Names an unnamed draft before it is saved. */
 function useUntitledNaming(form: PipelineForm) {
   const fetchPipelineNames = useFetchPipelineNames();
-  // The name lookup runs before any mutation is pending, so the button needs its own busy flag.
   const [isNaming, setIsNaming] = useState(false);
 
   const assignUntitledName = useCallback(async () => {

@@ -32,7 +32,6 @@ const getLicenseAlertContent = (
     return null;
   }
 
-  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
   // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
   // user has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
@@ -46,7 +45,6 @@ const getLicenseAlertContent = (
 
   const msToExpiration = getMillisecondsToExpiration(license);
 
-  // Redpanda
   return api.isRedpanda
     ? bakedInTrial
       ? getBakedTrialAlert(license, msToExpiration, onRegisterModalOpen)
@@ -59,7 +57,6 @@ function getBakedTrialAlert(
   msToExpiration: number,
   onRegisterModalOpen: () => void
 ): { message: ReactElement; status: 'warning' | 'informative' } | null {
-  // Trial is baked-in and has expired
   if (msToExpiration < 0) {
     return {
       message: (
@@ -79,7 +76,6 @@ function getBakedTrialAlert(
     };
   }
 
-  // Trial is baked-in and has > 5 days left
   const WARNING_THRESHOLD_DAYS = 5;
   if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
     return {
@@ -99,7 +95,6 @@ function getBakedTrialAlert(
       status: 'informative',
     };
   }
-  // Trial is baked-in and has < 5 days left
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
     return {
@@ -157,7 +152,6 @@ function getExtendedTrialAlert(
     };
   }
 
-  // Trial is baked-in and has > 5 days left
   const WARNING_THRESHOLD_DAYS = 5;
   if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
     return {
@@ -173,7 +167,6 @@ function getExtendedTrialAlert(
       status: 'informative',
     };
   }
-  // Trial is baked-in and has < 5 days left
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
     return {
@@ -273,12 +266,8 @@ export const OverviewLicenseNotification: FC = () => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
-    api.refreshClusterOverview().catch(() => {
-      // Error handling managed by API layer
-    });
-    api.listLicenses().catch(() => {
-      // Error handling managed by API layer
-    });
+    api.refreshClusterOverview().catch(() => {});
+    api.listLicenses().catch(() => {});
   }, []);
 
   const trialLicenses = licenses.filter((license) => license.type === License_Type.TRIAL);
@@ -287,7 +276,6 @@ export const OverviewLicenseNotification: FC = () => {
     setIsRegisterModalOpen(true);
   });
 
-  // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (
     clusterOverview === null ||
     trialLicenses.length === 0 ||

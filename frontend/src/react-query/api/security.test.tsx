@@ -28,7 +28,7 @@ import { connectQueryWrapper } from 'test-utils';
 import { useUpdateRoleMembershipMutation } from './security';
 
 /** Builds an InfiniteData cache entry with a single page of members. */
-const makeInfiniteData = (principals: string[]): InfiniteData<ListRoleMembersResponse> => ({
+const makeInfiniteData = (principals: string[]) => ({
   pages: [
     create(ListRoleMembersResponseSchema, {
       members: principals.map((p) => create(RoleMembershipSchema, { principal: p })),
@@ -38,7 +38,7 @@ const makeInfiniteData = (principals: string[]): InfiniteData<ListRoleMembersRes
 });
 
 /** Returns the flat list of principals currently in the listRoleMembers cache. */
-const getCachedPrincipals = (queryClient: ReturnType<typeof connectQueryWrapper>['queryClient']): string[] => {
+const getCachedPrincipals = (queryClient: ReturnType<typeof connectQueryWrapper>['queryClient']) => {
   const baseKey = createConnectQueryKey({
     schema: SecurityService.method.listRoleMembers,
     cardinality: 'infinite',
@@ -81,18 +81,13 @@ const renderWithSeededMembers = (transport: ReturnType<typeof createRouterTransp
 };
 
 describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
-  beforeEach(() => {
-    // No shared state between tests
-  });
+  beforeEach(() => {});
 
   test('optimistically adds a member to the list before the API responds', async () => {
-    // Freeze the API call so we can inspect the cache while it is pending
     const { transport, unblock } = blockedUpdateTransport();
 
-    // Seed the cache with one existing member
     const { result, queryClient } = renderWithSeededMembers(transport, ['User:alice']);
 
-    // Trigger the mutation — don't await; the API is frozen
     result.current.mutate({
       roleName: 'test-role',
       add: [create(RoleMembershipSchema, { principal: 'User:bob' })],
@@ -100,7 +95,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       create: false,
     });
 
-    // The optimistic update should appear in the cache before the API resolves
     await waitFor(() => {
       expect(getCachedPrincipals(queryClient)).toContain('User:bob');
     });
@@ -108,7 +102,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
     // Existing member must still be present
     expect(getCachedPrincipals(queryClient)).toContain('User:alice');
 
-    // Unblock the API to avoid test hangs
     unblock();
   });
 
@@ -123,7 +116,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       create: false,
     });
 
-    // alice should be gone from the cache immediately
     await waitFor(() => {
       expect(getCachedPrincipals(queryClient)).not.toContain('User:alice');
     });
@@ -208,7 +200,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
 
     const { result } = renderHook(() => useUpdateRoleMembershipMutation(), { wrapper });
 
-    // Call mutateAsync and swallow the expected error
     await result.current
       .mutateAsync({
         roleName: 'test-role',
@@ -223,7 +214,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       expect(getCachedPrincipals(queryClient)).not.toContain('User:bob');
     });
 
-    // Original data is restored
     expect(getCachedPrincipals(queryClient)).toContain('User:alice');
   });
 });

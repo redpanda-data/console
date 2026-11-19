@@ -36,9 +36,6 @@ import { AUTH_METHOD, type AuthMethod, type FormValues } from '../model';
 
 const SHADOW_LINK_DOCS_URL = docsLinks.selfManaged.shadowingReplicationPermissions;
 
-// Base UI's <Select.Value> can't resolve an item's label until the popup
-// mounts, so an enum-backed controlled value renders as the raw string ("1")
-// on first paint. Passing an `items` map closes the gap eagerly.
 const SCRAM_MECHANISM_ITEMS: Record<string, string> = {
   [String(ScramMechanism.SCRAM_SHA_256)]: 'SCRAM-SHA-256',
   [String(ScramMechanism.SCRAM_SHA_512)]: 'SCRAM-SHA-512',

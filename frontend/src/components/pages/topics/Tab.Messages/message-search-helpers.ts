@@ -13,7 +13,6 @@ import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
 import { wrapFilterFragment } from '../../../../utils/filter-helper';
 
-// A rejection during a search that's being torn down by navigation isn't guaranteed to be a
 // proper Error, so never assume `.message` exists on it.
 export function getSearchErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -61,9 +60,8 @@ export function buildSearchSignature(params: {
   keyDeserializer: number;
   valueDeserializer: number;
   filters: FilterEntry[];
-}): string {
+}) {
   const { startOffset, maxResults, partitionID, startTimestamp, keyDeserializer, valueDeserializer, filters } = params;
-  // Includes filters to detect changes
   const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
   return `${startOffset} ${maxResults} ${partitionID} ${startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 }
@@ -133,7 +131,6 @@ export function computeLoadMoreNeed(params: {
   lastLoadMore: { pageIndex: number; total: number };
 }) {
   const { pageIndex, windowStartPage, pageSize, loadedCount, virtualStartIndex, lastLoadMore } = params;
-  // Compute window-local page position; lastLoadMore uses the global pageIndex to deduplicate across window shifts
   const localPage = Math.max(0, pageIndex - windowStartPage);
   const totalLoadedPages = Math.ceil(loadedCount / pageSize);
   const isOnLastPage = localPage === totalLoadedPages - 1;

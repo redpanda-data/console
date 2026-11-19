@@ -12,7 +12,7 @@
 import type { SchemaRegistryContextResponse } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubject, SchemaVersion } from '../../../state/rest-interfaces';
 
-export const CONTEXT_PREFIX_RE = /^:\.([^:]+):(.+)$/u;
+export const CONTEXT_PREFIX_RE = /^:\.(?<context>[^:]+):(?<subject>.+)$/u;
 
 export type ParsedSubject = {
   context: string;

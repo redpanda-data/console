@@ -1,8 +1,6 @@
 import { ALL_CONTEXT_ID, CONTEXT_PREFIX_RE, DEFAULT_CONTEXT_ID } from './schema-context-utils';
 import type { SchemaRegistrySubject } from '../../../state/rest-interfaces';
 
-// Subjects in the selected context. "All", or a registry without context
-// support, keeps every subject.
 export function subjectsInContext<T extends SchemaRegistrySubject>(
   subjects: T[],
   contextsSupported: boolean,
@@ -18,7 +16,6 @@ export function subjectsInContext<T extends SchemaRegistrySubject>(
   return subjects.filter((s) => s.name.startsWith(prefix));
 }
 
-// Find by regex or string matching
 function subjectsMatchingName<T extends SchemaRegistrySubject>(subjects: T[], searchQuery: string): T[] {
   try {
     const quickSearchRegExp = new RegExp(searchQuery, 'iu');
@@ -29,8 +26,6 @@ function subjectsMatchingName<T extends SchemaRegistrySubject>(subjects: T[], se
   }
 }
 
-// The search box matches a number as a schema ID (the subjects that use that
-// schema) and anything else against subject names.
 export function subjectsMatchingSearch<T extends SchemaRegistrySubject>(
   subjects: T[],
   searchQuery: string,

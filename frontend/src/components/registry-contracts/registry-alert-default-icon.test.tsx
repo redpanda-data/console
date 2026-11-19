@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// App-owned guard for a registry contract: v3 Alert paints its own icon by
-// default, so an icon child paints a second one. Pass `icon` (or
-// `icon={null}`), never an icon child.
-
 import { describe, expect, test } from '@rstest/core';
 import { render } from '@testing-library/react';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';

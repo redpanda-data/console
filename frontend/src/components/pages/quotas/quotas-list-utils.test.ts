@@ -22,7 +22,7 @@ import {
 } from './quotas-list-utils';
 import { describe, expect, test } from 'bun:test';
 
-const value = (valueType: Quota_ValueType, v: number): Quota_Value => ({ valueType, value: v }) as Quota_Value;
+const value = (valueType: Quota_ValueType, v: number) => ({ valueType, value: v }) as Quota_Value;
 
 describe('quotas-list-utils', () => {
   describe('mapEntityTypeToDisplay', () => {
@@ -73,7 +73,6 @@ describe('quotas-list-utils', () => {
 
   describe('clampPageIndex', () => {
     test('keeps an in-range page', () => {
-      // 25 rows / 10 per page => 3 pages (indexes 0..2)
       expect(clampPageIndex(1, 25, 10)).toBe(1);
     });
 
@@ -94,7 +93,6 @@ describe('quotas-list-utils', () => {
     });
 
     test('keeps the last full page exactly at its boundary', () => {
-      // 20 rows / 10 per page => 2 pages (indexes 0..1)
       expect(clampPageIndex(1, 20, 10)).toBe(1);
       expect(clampPageIndex(2, 20, 10)).toBe(1);
     });

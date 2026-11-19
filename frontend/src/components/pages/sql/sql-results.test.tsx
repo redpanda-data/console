@@ -16,11 +16,6 @@ import { render, screen } from 'test-utils';
 import { SqlResults } from './sql-results';
 import type { QueryRunSuccess, SqlRole } from './sql-types';
 
-// react-data-grid virtualizes rows and columns against the grid root's
-// measured size, which happy-dom reports as 0 — culling every column.
-// Give the .rdg root a real viewport so all columns and rows render;
-// other elements keep zero size so 'max-content' column measuring falls
-// back to minWidth instead of exploding past the viewport.
 const GRID_RECT = { width: 1920, height: 600 };
 
 beforeAll(() => {

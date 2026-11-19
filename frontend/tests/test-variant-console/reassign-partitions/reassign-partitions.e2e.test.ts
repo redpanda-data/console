@@ -16,14 +16,12 @@ import { expect, type Page, test } from '../../shared/e2e';
 const SELECT_TOPIC_LABEL = /^Select topic /u;
 const SELECT_PARTITION_LABEL = /^Select partition /u;
 
-// Select the first topic. Its checkbox has an accessible name of "Select topic <name>".
 const selectFirstTopic = async (page: Page) => {
   const firstTopicCheckbox = page.getByRole('checkbox', { name: SELECT_TOPIC_LABEL }).first();
   await firstTopicCheckbox.waitFor({ state: 'visible', timeout: 30_000 });
   await firstTopicCheckbox.click();
 };
 
-// Step 2 renders the broker table.
 const expectBrokerStep = async (page: Page) => {
   await expect(page.getByRole('heading', { name: 'Target Brokers' })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Select all brokers' })).toBeVisible();
@@ -56,7 +54,6 @@ test.describe('reassign partitions', () => {
 
     const nextButton = page.getByRole('button', { name: 'Select Target Brokers' });
 
-    // Nothing selected yet, so the wizard will not advance.
     await expect(nextButton).toBeDisabled();
 
     await selectFirstTopic(page);
@@ -66,7 +63,6 @@ test.describe('reassign partitions', () => {
 
     await expectBrokerStep(page);
 
-    // Back returns to step 1 with the selection intact.
     await page.getByRole('button', { name: 'Select Partitions' }).click();
     await expect(page.getByRole('button', { name: 'Select Target Brokers' })).toBeEnabled();
   });
@@ -78,7 +74,6 @@ test.describe('reassign partitions', () => {
     await expander.waitFor({ state: 'visible', timeout: 30_000 });
     await expander.click();
 
-    // The nested partition table appears, with its own per-partition checkboxes.
     await expect(page.getByRole('checkbox', { name: SELECT_PARTITION_LABEL }).first()).toBeVisible();
   });
 });

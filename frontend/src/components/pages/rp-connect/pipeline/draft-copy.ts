@@ -67,7 +67,7 @@ export function untitledPipelineName(existingNames: Iterable<string>): string {
   return `${UNTITLED_PIPELINE_NAME} ${Date.now()}`;
 }
 
-export const relativeAgeLabel = (at: number, now: number = Date.now()): string => {
+export const relativeAgeLabel = (at: number, now: number = Date.now()) => {
   const elapsed = now - at;
   if (elapsed < 60_000) {
     return 'just now';
@@ -78,7 +78,7 @@ export const relativeAgeLabel = (at: number, now: number = Date.now()): string =
 export const timestampToMillis = (timestamp: Pipeline['updateTime']): number | null =>
   timestamp ? Number(timestamp.seconds) * 1000 + Math.floor(timestamp.nanos / 1_000_000) : null;
 
-export function startBlockedMessage(issueCount: number): string {
+export function startBlockedMessage(issueCount: number) {
   if (issueCount > 0) {
     const issues = issueCount === 1 ? '1 issue' : `${issueCount} issues`;
     return `${issues} to fix before this draft can start — opening the editor.`;
@@ -111,8 +111,7 @@ export function formatTopicList(topics: string[]): string {
   return `${topics.slice(0, -1).join(', ')} and ${topics.at(-1)}`;
 }
 
-export function startDraftConfirmBody(topics: string[], computeUnits: number): string {
-  // No topics: the clause goes rather than reading "through  and uses".
+export function startDraftConfirmBody(topics: string[], computeUnits: number) {
   const through = topics.length > 0 ? ` through ${formatTopicList(topics)}` : '';
   return `Starting checks the configuration, then deploys the pipeline for real. It begins processing data${through} and uses ${computeUnits} compute ${pluralize(computeUnits, 'unit')}.`;
 }

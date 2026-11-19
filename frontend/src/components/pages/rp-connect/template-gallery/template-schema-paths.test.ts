@@ -16,8 +16,6 @@ import { describe, expect, test } from 'bun:test';
 import schemaJson from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 import { findComponentByName, resolveFieldByPath } from '../utils/schema';
 
-// Asserts each slot's schemaField resolves against the committed schema snapshot, so a renamed/removed
-// field fails here instead of silently dropping that slot's schema-driven description/required/default at runtime.
 describe('the PIPELINE_TEMPLATES schemaField paths resolve against the schema snapshot', () => {
   const componentList = schemaJson as unknown as ComponentList;
 

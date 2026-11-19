@@ -7,7 +7,6 @@ import { MAX_TASKS, MIN_TASKS } from './tasks';
 import { config } from '../../../config';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 
-// The compute-units field clamps on blur: clamping per keystroke makes it unclearable.
 const COMPUTE_UNITS_LABEL = /Compute units/u;
 
 rs.mock('../../misc/pipelines-yaml-editor', () => ({ default: () => null }));
@@ -22,7 +21,6 @@ afterEach(() => {
 const renderCreatePage = () => {
   pipelinesApi.pipelines = [] as never;
   rpcnSecretManagerApi.secrets = [] as never;
-  // initPage refreshes secrets, which throws without a client.
   config.rpcnSecretsClient = {
     listSecrets: () => Promise.resolve({ response: { secrets: [], nextPageToken: '' } }),
   } as never;

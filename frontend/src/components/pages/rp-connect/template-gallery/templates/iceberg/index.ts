@@ -41,7 +41,6 @@ export const icebergTemplate: PipelineTemplate = {
       label: 'Catalog warehouse',
       description: 'Leave blank if your catalog serves a default warehouse.',
       placeholder: 'redpanda-catalog',
-      // Optional: many REST catalogs resolve a default warehouse; the stitcher drops the line when blank.
       required: false,
       schemaField: 'catalog.warehouse',
     },
@@ -67,7 +66,6 @@ export const icebergTemplate: PipelineTemplate = {
       kind: 'string',
       label: 'S3 storage bucket',
       // The engine requires exactly one storage backend (aws_s3 / gcp_cloud_storage /
-      // azure_blob_storage) — a one-of the schema can't express, so the schema alone
       // wouldn't flag this as required. The template targets S3; other backends via YAML.
       description: 'Bucket that holds the Iceberg data files. For GCS or Azure storage, edit the YAML afterwards.',
       placeholder: 'my-iceberg-bucket',

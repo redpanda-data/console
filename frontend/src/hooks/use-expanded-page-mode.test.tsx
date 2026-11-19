@@ -8,7 +8,6 @@ const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 
 const isExpanded = () => document.documentElement.hasAttribute(PAGE_EXPANDED_ATTR);
 
-// The hook reads `getClientRects()` for its on-screen check; happy-dom does no layout.
 const createPageRoot = ({ onScreen }: { onScreen: boolean }) => {
   const el = document.createElement('div');
   el.getClientRects = () => (onScreen ? [new DOMRect(0, 0, 800, 600)] : []) as unknown as DOMRectList;
@@ -77,7 +76,6 @@ describe('useExpandedPageMode', () => {
   it('holds the preference but not the attribute while the page root is off screen', () => {
     localStorage.setItem(STORAGE_KEY, 'full');
 
-    // Embedded Cloud UI keeps Console mounted and hidden on host routes.
     const { result } = renderExpandedPage({ onScreen: false });
 
     expect(result.current.expanded).toBe(true);

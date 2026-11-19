@@ -5,7 +5,7 @@ import { act, render, screen } from 'test-utils';
 import KafkaConnectorDetails from './connector-details';
 import { type MessageSearchRequest, useApiStore } from '../../../state/backend-api';
 import { ConnectClusterStore } from '../../../state/connect/state';
-import type { ClusterConnectorInfo, ClusterConnectors, Topic, TopicMessage } from '../../../state/rest-interfaces';
+import type { Topic, TopicMessage } from '../../../state/rest-interfaces';
 
 /** Every log search the page started, in order; each stays open until stopped, like the real stream. */
 const { logSearches } = rs.hoisted(() => ({ logSearches: [] as FakeLogSearch[] }));
@@ -42,7 +42,7 @@ function lastLogFilter() {
   return atob(request.filterInterpreterCode);
 }
 
-const connectorNamed = (name: string): ClusterConnectorInfo => ({
+const connectorNamed = (name: string) => ({
   name,
   class: 'org.example.Sink',
   config: {},
@@ -58,27 +58,16 @@ const connectorNamed = (name: string): ClusterConnectorInfo => ({
 });
 
 /** A cluster store that has already loaded `example` and `other`. */
-class LoadedConnectClusterStore extends ConnectClusterStore {
-  private readonly remoteConnectors = [connectorNamed('example'), connectorNamed('other')];
-
-  constructor() {
-    super('cluster');
-    this.isInitialized = true;
-    // No installed plugins, so no connector has a config form to load.
-    this.additionalClusterInfo = { clusterName: 'cluster', host: '', clusterVersion: '', plugins: [] };
-  }
-
-  override get cluster(): ClusterConnectors | null {
-    return null;
-  }
-
-  override setup() {
-    return Promise.resolve();
-  }
-
-  override getRemoteConnector(connectorName: string) {
-    return this.remoteConnectors.find((c) => c.name === connectorName);
-  }
+function loadedConnectClusterStore() {
+  const store = new ConnectClusterStore('cluster');
+  const remoteConnectors = [connectorNamed('example'), connectorNamed('other')];
+  store.isInitialized = true;
+  // No installed plugins, so no connector has a config form to load.
+  store.additionalClusterInfo = { clusterName: 'cluster', host: '', clusterVersion: '', plugins: [] };
+  rs.spyOn(store, 'cluster', 'get').mockReturnValue(null);
+  rs.spyOn(store, 'setup').mockResolvedValue(undefined);
+  rs.spyOn(store, 'getRemoteConnector').mockImplementation((name) => remoteConnectors.find((c) => c.name === name));
+  return store;
 }
 
 const logsTopic: Topic = {
@@ -95,7 +84,7 @@ const logsTopic: Topic = {
 const initialApiState = useApiStore.getState();
 
 beforeEach(() => {
-  rs.spyOn(ConnectClusterStore, 'getInstance').mockReturnValue(new LoadedConnectClusterStore());
+  rs.spyOn(ConnectClusterStore, 'getInstance').mockReturnValue(loadedConnectClusterStore());
   useApiStore.setState({
     topics: [logsTopic],
     refreshConnectClusters: rs.fn(() => Promise.resolve()),

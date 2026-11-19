@@ -20,7 +20,7 @@ test.describe('topic Details - Navigation and Tabs', () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
 
       // URL changes to topic details
-      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`));
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`, 'u'));
 
       // Topic name appears (first match — name shows in heading and breadcrumb)
       await expect(page.getByText(topicName).first()).toBeVisible();
@@ -117,11 +117,11 @@ test.describe('topic Details - Navigation and Tabs', () => {
       await expect(page.getByText(MESSAGES_TAB_CONTENT).first()).toBeVisible({ timeout: 10_000 });
 
       await topicPage.clickProduceRecordButton();
-      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`, 'u'));
 
       // A queued messages-tab URL update used to bounce straight back to the topic (UX-1514).
       await page.clock.runFor(1000);
-      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`));
+      await expect(page).toHaveURL(new RegExp(`/topics/${topicName}/produce-record`, 'u'));
     });
 
     await topicPage.deleteTopic(topicName);

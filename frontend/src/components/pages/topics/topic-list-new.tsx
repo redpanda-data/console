@@ -69,7 +69,6 @@ const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: s
 
 type SetPageIndex = (pageIndex: number) => unknown;
 
-// Registers the page header and the global refresh handler for the topic list.
 function useTopicListPage(refetchTopics: () => unknown) {
   useLayoutEffect(() => {
     setPageHeader('Topics', [{ title: 'Topics', linkTo: '/topics' }]);

@@ -49,7 +49,6 @@ describe('the ConfigDialog', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
     expect(input).toBeInTheDocument();
-    // Value round-trip only — skip char-by-char user.type.
     fireEvent.input(input, { target: { value: 'my-pipeline' } });
     expect(input).toHaveValue('my-pipeline');
   });

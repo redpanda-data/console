@@ -12,7 +12,6 @@
 import { AUTH_METHOD, FormSchema, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD, TLS_MODE } from './model';
 import { describe, expect, test } from 'bun:test';
 
-// Helper to create valid base form values
 const createValidFormValues = () => ({
   ...initialValues,
   name: 'test-shadow-link',
@@ -311,7 +310,7 @@ describe('the Shadow Link Form Validation', () => {
       },
     });
 
-    const issueMessages = (result: ReturnType<typeof FormSchema.safeParse>): string[] =>
+    const issueMessages = (result: ReturnType<typeof FormSchema.safeParse>) =>
       result.success ? [] : result.error.issues.map((issue) => issue.message);
 
     describe('modes and source URL', () => {
@@ -424,8 +423,6 @@ describe('the Shadow Link Form Validation', () => {
       });
 
       test('requires a new key when replacing the certificate over a kept key', () => {
-        // A freshly uploaded cert (fileName set) cannot pair with the key
-        // stored server-side.
         const result = FormSchema.safeParse(
           createApiModeValues({
             mtls: {
@@ -484,7 +481,6 @@ describe('the Shadow Link Form Validation', () => {
       test('ignores leftover mtls uploads while TLS is off', () => {
         const result = FormSchema.safeParse(
           createApiModeValues({
-            // http to stay consistent with TLS being off (https + no TLS is rejected)
             sourceUrl: 'http://schema-registry.example.com:8081',
             useTls: false,
             mtls: {

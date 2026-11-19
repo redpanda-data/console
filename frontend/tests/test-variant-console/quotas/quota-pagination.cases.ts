@@ -51,7 +51,7 @@ const waitForQuotaRows = (page: Page, batch: QuotaBatch) =>
 
 /** The client IDs of the batch's quotas on the current page. */
 const captureVisibleQuotas = async (page: Page, batch: QuotaBatch) => {
-  const quotaIdPattern = new RegExp(`${batch.prefix}-\\d{3}`);
+  const quotaIdPattern = new RegExp(`${batch.prefix}-\\d{3}`, 'u');
   const rowTexts = await quotaRows(page, batch).allTextContents();
   return rowTexts.flatMap((text) => text.match(quotaIdPattern)?.[0] ?? []);
 };

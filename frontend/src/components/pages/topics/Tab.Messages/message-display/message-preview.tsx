@@ -33,16 +33,12 @@ function isPrimitivePayload(payload: unknown): boolean {
 
 function getValuePreviewText(msg: TopicMessage): ReactNode {
   if (msg.value.encoding === 'binary') {
-    // If the original data was binary, display as hex dump
     return msg.valueBinHexPreview as React.ReactNode;
   }
   if (isPrimitivePayload(msg.value.payload)) {
-    // If we can show the value as a primitive, do so.
     return msg.value.payload as React.ReactNode;
   }
   // Only thing left is 'object'
-  // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-  // Normal display (json, no filters). Reuse the cached JSON string.
   return cullText(msg.valueJson, 300);
 }
 
@@ -60,7 +56,6 @@ function renderValuePreview(
   }
 
   const isObject = !(value.encoding === 'binary' || isPrimitivePayload(value.payload));
-  // Preview tags replace the whole cell for an object payload.
   const tagsPreview = isObject ? renderPreviewTags(value.payload, previewFields, previewDisplayMode) : null;
   if (tagsPreview) {
     return tagsPreview;

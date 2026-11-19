@@ -107,7 +107,6 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
       transpiledCode = await tryTranspile(tsWorkerClient, formattedEditorUri, editorValue);
     }
 
-    // Always call onValueChange, even if transpilation failed
     onValueChange(editorValue, transpiledCode);
   };
 

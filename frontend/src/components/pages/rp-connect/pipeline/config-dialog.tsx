@@ -86,12 +86,8 @@ function TagsField({ readonly }: { readonly?: boolean }) {
           );
         }
 
-        // Seed with one empty row so the add button is always visible
         const editableValue = field.value && field.value.length > 0 ? field.value : [{ key: '', value: '' }];
 
-        // Derive per-item errors from the field values directly.
-        // With a single FormField for the whole array, RHF may not populate
-        // per-item errors, so we compute them to match the Zod schema rules.
         const fieldErrors = editableValue.map((pair: { key: string; value: string }) => {
           const hasKey = pair.key.length > 0;
           const hasValue = pair.value.length > 0;
@@ -219,10 +215,8 @@ export function ConfigDialog({ open, onOpenChange, form, mode }: ConfigDialogPro
   });
 
   const onSaveClick = () => {
-    // Strip empty tag rows before validation
     const tags = form.getValues('tags').filter((t: { key: string; value: string }) => t.key !== '' || t.value !== '');
     form.setValue('tags', tags);
-    // Invalid fields report through FormMessage; this catches a resolver or close handler that throws.
     handleSave().catch((error: unknown) => {
       toast.error('Failed to save pipeline settings', { description: String(error) });
     });

@@ -23,7 +23,7 @@ const spec = (
   type: ConnectComponentType,
   status = ComponentStatus.STABLE,
   config = field('', 'object')
-): ConnectComponentSpec => ({ name, type, status, config }) as ConnectComponentSpec;
+) => ({ name, type, status, config }) as ConnectComponentSpec;
 
 const DEPRECATED = ComponentStatus.DEPRECATED;
 const KAFKA_FRANZ_INPUT = spec('kafka_franz', 'input', DEPRECATED);

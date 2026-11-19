@@ -33,10 +33,8 @@ test.describe('user deletion - error paths', () => {
     const securityPage = new SecurityPage(page);
     const username = `test-delete-error-${crypto.randomUUID()}`;
 
-    // Seed a real user via happy path so there's a row to attempt deleting.
     await seedUserAndOpenList(securityPage, page, username);
 
-    // Now intercept DeleteUser so the attempt fails deterministically.
     await mockConnectError({
       page,
       urlGlob: rpcUrl(USER_SERVICE, 'DeleteUser'),
@@ -49,13 +47,10 @@ test.describe('user deletion - error paths', () => {
     // Structural: must not navigate to list on failed delete.
     await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));
 
-    // Toast copy: formatToastErrorMessageGRPC composes "Failed to delete user: <rawMessage>".
-    // Asserted before the list-reload below — sonner toasts do not survive page navigation.
     await expect(page.getByText('Failed to delete user: user has dependent ACLs').first()).toBeVisible({
       timeout: 10_000,
     });
 
-    // Reload list and confirm the user still appears — deletion truly didn't happen client-side.
     await page.goto('/security/users', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('link', { name: username, exact: true })).toBeVisible({ timeout: 5000 });
   });

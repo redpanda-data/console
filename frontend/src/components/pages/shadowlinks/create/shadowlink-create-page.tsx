@@ -48,7 +48,6 @@ import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowl
 import { getBasePath } from '../../../../utils/env';
 import { allNameFilter, buildClientOptions } from '../edit/shadowlink-edit-utils';
 
-// Stepper definition
 const { Stepper } = defineStepper(
   {
     id: 'shadow-connection',
@@ -60,7 +59,6 @@ const { Stepper } = defineStepper(
   }
 );
 
-// Update page title using uiState pattern
 export const updatePageTitle = () => {
   uiState.pageTitle = 'Create shadow link';
   uiState.pageBreadcrumbs = [
@@ -113,7 +111,6 @@ const buildSecuritySyncOptions = (values: FormValues) =>
 const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }: { roleSyncSupported: boolean }) => {
   const clientOptions = buildClientOptions(values);
 
-  // Build topic metadata sync options
   const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
     autoCreateShadowTopicFilters:
       values.topicsMode === 'all'
@@ -128,7 +125,6 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
     syncedShadowTopicProperties: values.topicProperties || [],
   });
 
-  // Build consumer offset sync options (ignore enabled field)
   const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
     groupFilters:
       values.consumersMode === 'all'
@@ -142,8 +138,6 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
           ),
   });
 
-  // Build role sync options (no interval/paused exposed). Left unset on
-  // clusters without role sync (Redpanda < 26.2.0). The default 'all' mode
   // would otherwise send an include-all filter the cluster can't handle.
   const roleSyncOptions = roleSyncSupported
     ? create(RoleSyncOptionsSchema, {
@@ -162,11 +156,9 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
 
   const securitySyncOptions = buildSecuritySyncOptions(values);
 
-  // Build schema registry sync options (api mode via the redesigned section,
   // topic mode via the legacy switch, otherwise unset)
   const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
-  // Build configurations
   const configurations = create(ShadowLinkConfigurationsSchema, {
     clientOptions,
     topicMetadataSyncOptions,
@@ -176,13 +168,11 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
     schemaRegistrySyncOptions,
   });
 
-  // Build shadow link
   const shadowLink = create(ShadowLinkSchema, {
     name: values.name,
     configurations,
   });
 
-  // Build final request
   return create(CreateShadowLinkRequestSchema, {
     shadowLink,
   });
@@ -191,7 +181,6 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
 export const ShadowLinkCreatePage = () => {
   const navigate = useNavigate();
 
-  // Redirect to correct path in embedded mode
   useEffect(() => {
     if (isEmbedded()) {
       window.location.href = `${getBasePath()}/shadowlinks/create`;
@@ -203,7 +192,6 @@ export const ShadowLinkCreatePage = () => {
   const { mutateAsync: createShadowLink, isPending: isCreating } = useCreateShadowLinkMutation({
     onSuccess: () => {
       toast.success('Shadow link created');
-      // Handled here so a navigation failure is not reported as a failed create.
       navigate({ to: '/shadowlinks' }).catch((error: unknown) => {
         toast.error('Failed to navigate', { description: String(error) });
       });
@@ -220,7 +208,6 @@ export const ShadowLinkCreatePage = () => {
     await createShadowLink(request);
   };
 
-  // Form setup
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: initialValues,

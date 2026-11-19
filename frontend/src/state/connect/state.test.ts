@@ -13,7 +13,7 @@ import { waitFor } from '@testing-library/dom';
 
 import { afterAll, beforeEach, describe, expect, it, mock, spyOn, test } from 'bun:test';
 import { type api, useApiStore } from '../backend-api';
-import type { ConnectorProperty, ConnectorValidationResult } from '../rest-interfaces';
+import type { ConnectorProperty } from '../rest-interfaces';
 import { DataType, PropertyImportance, PropertyWidth } from '../rest-interfaces';
 
 const mockValidateConnectorConfig = spyOn(useApiStore.getState(), 'validateConnectorConfig').mockImplementation(
@@ -33,7 +33,7 @@ function createMockProperty(overrides: {
   custom_default_value?: string;
   value?: string | null;
   required?: boolean;
-}): ConnectorProperty {
+}) {
   return {
     definition: {
       name: overrides.name,
@@ -59,7 +59,7 @@ function createMockProperty(overrides: {
   };
 }
 
-function createMockValidationResult(properties: ConnectorProperty[]): ConnectorValidationResult {
+function createMockValidationResult(properties: ConnectorProperty[]) {
   return {
     name: 'test-connector',
     configs: properties,
@@ -78,13 +78,11 @@ function createMockValidationResult(properties: ConnectorProperty[]): ConnectorV
   };
 }
 
-// Create secrets with various values (simulates PASSWORD fields)
-function secretsStoreWithOneFilledSecret(): InstanceType<typeof SecretsStore> {
+function secretsStoreWithOneFilledSecret() {
   const store = new SecretsStore();
   store.getSecret('source.cluster.sasl.password').value = 'my-password';
 
   store.getSecret('source.cluster.ssl.truststore.certificates');
-  // value remains '' (default)
 
   store.getSecret('source.cluster.ssl.keystore.key').value = '';
   return store;
@@ -97,7 +95,6 @@ describe('the ConnectorPropertiesStore', () => {
 
   describe('custom_default_value handling', () => {
     it('applies custom_default_value for new connectors (appliedConfig = undefined)', async () => {
-      // Arrange: Property with custom_default_value
       const properties = [
         createMockProperty({
           name: 'flush.lsn.source',
@@ -110,7 +107,6 @@ describe('the ConnectorPropertiesStore', () => {
 
       mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
 
-      // Act: Create store with undefined appliedConfig (new connector)
       const store = new ConnectorPropertiesStore(
         'test-cluster',
         'io.example.ConnectorPlugin',
@@ -118,17 +114,14 @@ describe('the ConnectorPropertiesStore', () => {
         undefined // Key: undefined = new connector
       );
 
-      // Wait for async initialization
       await waitFor(() => expect(store.initPending).toBe(false));
 
-      // Assert: custom_default_value should be applied
       const prop = store.propsByName.get('flush.lsn.source');
       expect(prop).toBeDefined();
       expect(prop?.value).toBe('true');
     });
 
     it('preserves user config when editing existing connector (appliedConfig provided)', async () => {
-      // Arrange: Property with custom_default_value, but user has different value
       const properties = [
         createMockProperty({
           name: 'flush.lsn.source',
@@ -141,7 +134,6 @@ describe('the ConnectorPropertiesStore', () => {
 
       mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
 
-      // Act: Create store with appliedConfig (editing existing connector)
       const store = new ConnectorPropertiesStore(
         'test-cluster',
         'io.example.ConnectorPlugin',
@@ -149,17 +141,14 @@ describe('the ConnectorPropertiesStore', () => {
         { 'flush.lsn.source': 'false' } // User's saved configuration
       );
 
-      // Wait for async initialization
       await waitFor(() => expect(store.initPending).toBe(false));
 
-      // Assert: user's value should be preserved, not overwritten by custom_default_value
       const prop = store.propsByName.get('flush.lsn.source');
       expect(prop).toBeDefined();
       expect(prop?.value).toBe(false); // Sanitized to boolean
     });
 
     it('applies custom_default_value only to properties that have it', async () => {
-      // Arrange: Mix of properties with and without custom_default_value
       const properties = [
         createMockProperty({
           name: 'prop.with.custom.default',
@@ -172,34 +161,28 @@ describe('the ConnectorPropertiesStore', () => {
           name: 'prop.without.custom.default',
           type: DataType.String,
           default_value: 'original-default',
-          // No custom_default_value
           value: null,
         }),
         createMockProperty({
           name: 'prop.with.no.defaults',
           type: DataType.String,
           default_value: null,
-          // No custom_default_value
           value: null,
         }),
       ];
 
       mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
 
-      // Act: Create store with undefined appliedConfig (new connector)
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
-      // Wait for async initialization
       await waitFor(() => expect(store.initPending).toBe(false));
 
-      // Assert: Only prop with custom_default_value gets the custom default
       expect(store.propsByName.get('prop.with.custom.default')?.value).toBe('custom-default');
       expect(store.propsByName.get('prop.without.custom.default')?.value).toBe('original-default');
       expect(store.propsByName.get('prop.with.no.defaults')?.value).toBeNull();
     });
 
     it('applies custom_default_value for boolean properties correctly', async () => {
-      // Arrange: Boolean properties with various custom_default_value settings
       const properties = [
         createMockProperty({
           name: 'bool.custom.true',
@@ -219,13 +202,10 @@ describe('the ConnectorPropertiesStore', () => {
 
       mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
 
-      // Act: Create store with undefined appliedConfig (new connector)
       const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', undefined);
 
-      // Wait for async initialization
       await waitFor(() => expect(store.initPending).toBe(false));
 
-      // Assert: custom_default_value strings should be applied
       expect(store.propsByName.get('bool.custom.true')?.value).toBe('true');
       expect(store.propsByName.get('bool.custom.false')?.value).toBe('false');
     });
@@ -233,7 +213,6 @@ describe('the ConnectorPropertiesStore', () => {
 
   describe('the SecretsStore', () => {
     it('filters out secrets with empty values', () => {
-      // Only non-empty secrets should be returned
       const { secrets } = secretsStoreWithOneFilledSecret();
       expect(secrets.size).toBe(1);
       expect(secrets.has('source.cluster.sasl.password')).toBe(true);
@@ -255,11 +234,9 @@ describe('the ConnectorPropertiesStore', () => {
       const store = new SecretsStore();
       const secret = store.getSecret('key');
 
-      // First: set non-empty value
       secret.value = 'some-value';
       expect(store.secrets.size).toBe(1);
 
-      // Then: clear the value
       secret.value = '';
       expect(store.secrets.size).toBe(0);
     });
@@ -279,7 +256,6 @@ describe('the ConnectClusterStore', () => {
     return store;
   };
 
-  // `crud` decides whether secret inputs start read-only behind an Edit button.
   test('opens a new connector for creating, so its secrets are editable at once', () => {
     expect(clusterWithS3Sink().getConnector(S3_SINK, null, undefined)?.crud).toBe('create');
   });

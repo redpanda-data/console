@@ -134,7 +134,6 @@ const useFenceSettingsForm = (opened: FenceSummary, suggestions: PrincipalSugges
     defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
   });
 
-  // Readers can resolve after the dialog opens; pre-add their users until the user edits.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a new set of suggestions reseeds
   useEffect(() => {
     if (!form.getFieldState('settings').isDirty) {
@@ -195,7 +194,6 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
     checks,
     blocked,
   } = useFenceClusterForm();
-  // Fixed once the dialog opens: the name can still be loading, and the word to type mustn't change mid-way.
   const [clusterName] = useState(topology?.clusterName);
   const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;

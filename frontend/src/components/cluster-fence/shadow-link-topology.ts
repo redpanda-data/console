@@ -222,7 +222,6 @@ const resolveOwnLink = (
       source: { kind: 'cloud', clusterId: cluster.id, clusterName: cluster.name, fence: LOADING_FENCE },
     };
   }
-  // Until every candidate is in, no match means "not yet", not "outside Cloud".
   if (candidates.complete && !candidates.failed) {
     return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
       ? { kind: 'unresolved' }
@@ -366,7 +365,6 @@ export const buildShadowLinkTopology = ({
     details,
     { self, clusterNames, candidates }
   );
-  // A reader's shadow cluster shows by id until the cluster list gives its name.
   const namesPending = others.readers.length > 0 && !clusterNamesSettled;
   return {
     clusterName: self.status === 'ready' ? self.value.name : clusterNames.get(clusterId),

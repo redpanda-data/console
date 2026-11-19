@@ -25,7 +25,7 @@ import type React from 'react';
 import { TlsCertificatesConfig } from './tls-certificates-config';
 import type { UnifiedShadowLink } from '../../model';
 
-const getScramMechanismLabel = (mechanism: number | undefined): string => {
+const getScramMechanismLabel = (mechanism: number | undefined) => {
   switch (mechanism) {
     case ScramMechanism.SCRAM_SHA_256:
       return 'SCRAM-SHA-256';
@@ -58,10 +58,8 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
   const scramConfig =
     authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
 
-  // Determine TLS status based on enabled boolean
   const isTlsEnabled = Boolean(tlsSettings?.enabled);
 
-  // Check if TLS certificates are configured (based on oneof tls_settings)
   const hasTLSCerts = Boolean(tlsSettings?.tlsSettings?.case);
 
   // Determine authentication status

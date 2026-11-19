@@ -99,7 +99,6 @@ test.describe('kafka Connect Wizard', () => {
     await page.goto(CREATE_URL);
     await expect(page.getByText('Heartbeat', { exact: true })).toBeVisible({ timeout: 15_000 });
     await page.getByText('Heartbeat', { exact: true }).click();
-    // Properties step shows Next/Back buttons and the heading changes to confirm navigation
     await expect(page.getByRole('button', { name: 'Next' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Back' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('heading', { name: /import data from Heartbeat/iu })).toBeVisible({ timeout: 10_000 });
@@ -114,7 +113,6 @@ test.describe('kafka Connect Connector Lifecycle', () => {
     request = await playwrightRequest.newContext();
     const base = CONNECT_BASE;
 
-    // Delete any existing connector and wait for it to be fully removed
     await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => {});
     await retryAssertion(
       async () => {
@@ -124,7 +122,6 @@ test.describe('kafka Connect Connector Lifecycle', () => {
       { timeout: 10_000, intervals: [1000] }
     );
 
-    // Retry the POST in case Kafka Connect is briefly unavailable
     await retryAssertion(
       async () => {
         const res = await request.post(`${base}/connectors`, {
@@ -154,7 +151,6 @@ test.describe('kafka Connect Connector Lifecycle', () => {
   test('connector detail page loads', async ({ page }) => {
     await page.goto(`/connect-clusters/${CLUSTER}/${CONNECTOR_NAME}`);
     await expect(page.getByText(CONNECTOR_NAME).first()).toBeVisible({ timeout: 10_000 });
-    // Should show Overview / Configuration / Logs tabs
     await expect(page.getByRole('tab', { name: /overview/iu })).toBeVisible();
     await expect(page.getByRole('tab', { name: /configuration/iu })).toBeVisible();
   });
@@ -173,7 +169,6 @@ test.describe('kafka Connect Connector Lifecycle', () => {
     expect(response.ok()).toBe(true);
     expect(response.request().postDataJSON()?.['config']['emit.heartbeats.interval.seconds']).toBe('33');
 
-    // Navigate back and open JSON view to verify the change
     await openConnectorConfiguration(page);
     await page.locator('[data-testid="json_field"]').click();
 

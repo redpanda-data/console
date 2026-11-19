@@ -16,7 +16,6 @@ import { Feature, isSupported } from '../../../../state/supported-features';
  * Checks if user has privilege to delete records
  */
 export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined): boolean {
-  // undefined has the same meaning as 'all'
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
@@ -48,7 +47,7 @@ export function getDeleteErrorText(
 /**
  * Gets the name of a control character by its ASCII code
  */
-export function getControlCharacterName(code: number): string {
+export function getControlCharacterName(code: number) {
   switch (code) {
     case 0:
       return 'NUL';

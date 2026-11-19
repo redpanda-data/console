@@ -14,13 +14,10 @@ import type { EditorTheme } from 'components/redpanda-ui/lib/editor-theme';
 import { type DiffBase, diffColors, diffTheme } from './changes-diff-theme';
 import { describe, expect, it } from 'bun:test';
 
-// Shape, not values: pinning the palette would break on every registry change. What is guarded is
-// the reading order the design needs, which Monaco's own defaults get wrong.
 const RGBA_HEX = /^#[0-9a-f]{8}$/u;
 const alphaOf = (color: string) => Number.parseInt(color.slice(7), 16);
 const hueOf = (color: string) => color.slice(0, 7);
 
-// Any three distinct hues stand in for the resolved tokens.
 const BASE: DiffBase = { removed: '#cd372c', inserted: '#25855a', neutral: '#c3c4c6' };
 const COLORS = diffColors(BASE);
 
@@ -30,7 +27,6 @@ const SIDES = [
 ] as const;
 
 describe('diffColors', () => {
-  // Monaco's colour registry requires it: an opaque fill hides the syntax highlighting.
   it('never paints an opaque fill over the code', () => {
     const all = [...Object.values(COLORS.removed), ...Object.values(COLORS.inserted), COLORS.neutral];
     for (const color of all) {

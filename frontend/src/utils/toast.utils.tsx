@@ -52,7 +52,6 @@ const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
   return initialId ? `${initialId}_${resourceName}` : resourceName;
 };
 
-// Base UI: timeout 0 means sticky, and a `loading` toast never times out.
 const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined): number => {
   if (duration === null) {
     return 0;
@@ -93,7 +92,6 @@ export const updateToast = (id: string, { status, title, description, duration }
   });
 };
 
-// Base UI closes every toast when the id is missing.
 export const closeToast = (id: string) => {
   if (id) {
     toast.close(id);

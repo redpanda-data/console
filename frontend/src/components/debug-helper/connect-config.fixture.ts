@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Pipeline fixtures use the modern `redpanda` input/output component
-// (recommended over the older `kafka_franz` / `kafka` aliases) and follow
-// the Cloud Connect quickstart credentials pattern: `${REDPANDA_BROKERS}`
-// for the broker contextual variable and `${secrets.X}` for SASL/TLS material.
 // See: https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/
 
 export type ConnectConfigFixture = {
@@ -1604,11 +1600,6 @@ rate_limit_resources:
       interval: 1s
 `;
 
-// ── Stop conditions ────────────────────────────────────────────────────────
-// A Cloud pipeline stops itself, and uses no compute, once its input ends. These
-// exercise the stop row on input cards, the canvas end chip and the list's
-// Runs column.
-
 const REDPANDA_CONNECTION = `seed_brokers:
   - \${REDPANDA_BROKERS}
 sasl:
@@ -1618,7 +1609,6 @@ sasl:
 tls:
   enabled: true`;
 
-// A `redpanda` component's Cloud connection fields, indented to sit under it.
 const redpandaConnection = (indent: number) =>
   REDPANDA_CONNECTION.split('\n')
     .map((line) => ' '.repeat(indent) + line)

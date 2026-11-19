@@ -50,9 +50,7 @@ describe('optionGroup', () => {
     render(
       <OptionGroup<'single' | 'wrap'>
         label="Line mode"
-        onChange={() => {
-          // no op - test callback
-        }}
+        onChange={() => {}}
         options={{ Single: 'single', Wrap: 'wrap' }}
         value="single"
       />

@@ -55,7 +55,7 @@ const hexChannel = (value: number) =>
 const RGB_PARTS = /-?[\d.]+/gu;
 
 /** `rgb(24, 24, 24)` → `#181818`; alpha is dropped since the tiers above supply their own. */
-const toHex = (painted: string): string => {
+const toHex = (painted: string) => {
   const parts = (painted.match(RGB_PARTS) ?? []).map(Number);
   if (parts.length < 3) {
     return '#000000';
@@ -63,7 +63,6 @@ const toHex = (painted: string): string => {
   return `#${hexChannel(parts[0])}${hexChannel(parts[1])}${hexChannel(parts[2])}`;
 };
 
-// Monaco can't read CSS vars: paint each token on a probe and read the rgb() back, as redpanda-ui/lib/editor-theme does.
 const resolveDiffBase = (): DiffBase => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
@@ -81,7 +80,6 @@ const resolveDiffBase = (): DiffBase => {
 
 export const DIFF_THEME = 'rpcn-changes-diff';
 
-// Transparent chrome so the panel surface shows through, as the YAML lanes' `redpanda-yaml` theme does.
 export const diffTheme = (editor: EditorTheme, base: DiffBase): EditorTheme => {
   const colors = diffColors(base);
   return {
@@ -103,7 +101,6 @@ export const diffTheme = (editor: EditorTheme, base: DiffBase): EditorTheme => {
   };
 };
 
-// A snapshot, not a binding — run again on every theme flip.
 export const applyDiffTheme = (monaco: Monaco) => {
   monaco.editor.defineTheme(DIFF_THEME, diffTheme(editorTheme({ transparentBackground: true }), resolveDiffBase()));
   monaco.editor.setTheme(DIFF_THEME);

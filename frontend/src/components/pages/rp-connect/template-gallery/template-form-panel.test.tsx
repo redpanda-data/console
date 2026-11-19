@@ -18,7 +18,7 @@ import { mysqlCdcTemplate } from './templates/mysql-cdc';
 const NAME = { __pipelineName: 'p' };
 const BARE_IDENTIFIER = /^[a-zA-Z0-9_$]+$/u;
 
-const listSlot = (overrides: Partial<TemplateSlot> = {}): TemplateSlot =>
+const listSlot = (overrides: Partial<TemplateSlot> = {}) =>
   ({
     id: 'tables',
     kind: 'string',
@@ -49,7 +49,6 @@ describe('buildSchema slot validation', () => {
   });
 
   test('the real mysql-cdc template rejects dotted table names in the form', () => {
-    // The connector's own validation (mysql/validate.go: ^[a-zA-Z0-9_$]+$) rejects dotted names;
     // the form must catch that before deploy.
     const schema = buildSchema(mysqlCdcTemplate.slots);
     const values = { ...NAME, dsn: 'MYSQL_DSN', includedTable: 'mydb.users', targetTopic: 'orders' };

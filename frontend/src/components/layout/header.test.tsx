@@ -93,7 +93,6 @@ describe('the AppPageHeader', () => {
   });
 
   // Regression: the current page's crumb used to be a real link back to its own
-  // bare path, which drops query params (filters, pagination, active tab) when
   // clicked. It must render as non-navigable text instead.
   it('renders every breadcrumb but the last as a link, and the last as plain text', () => {
     mockPageBreadcrumbs.push({ title: 'Topics', linkTo: '/topics' }, { title: 'my-topic', linkTo: '/topics/my-topic' });

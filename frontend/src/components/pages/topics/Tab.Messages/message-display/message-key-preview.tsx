@@ -24,7 +24,6 @@ function isPrimitivePayload(payload: unknown): boolean {
 }
 
 // Only 'object' is left after binary, control-character text, and primitives.
-// Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
 function isObjectKey(key: Payload): boolean {
   return !(key.encoding === 'binary' || key.encoding === 'utf8WithControlChars' || isPrimitivePayload(key.payload));
 }
@@ -40,7 +39,6 @@ function getKeyPreviewText(msg: TopicMessage): ReactNode {
   if (isPrimitivePayload(key.payload)) {
     return cullText(key.payload as string, 44);
   }
-  // Normal display (json, no filters). Reuse the cached JSON string.
   return cullText(msg.keyJson, 44);
 }
 
@@ -57,7 +55,6 @@ function renderKeyPreview(
     return <EmptyBadge mode="empty" />;
   }
 
-  // Preview tags replace the whole cell for an object key.
   const tagsPreview = isObjectKey(key) ? renderPreviewTags(key.payload, previewFields, previewDisplayMode) : null;
   if (tagsPreview) {
     return tagsPreview;

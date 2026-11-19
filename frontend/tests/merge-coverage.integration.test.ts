@@ -78,7 +78,7 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
 
 type CoverageRun = ReturnType<typeof coverageProject>['run'];
 
-function readCoverageSummary(directory: string, report: string): CoverageSummary {
+function readCoverageSummary(directory: string, report: string) {
   return JSON.parse(readFileSync(resolve(directory, `${report}/coverage-summary.json`), 'utf8'));
 }
 

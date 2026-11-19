@@ -87,7 +87,6 @@ const POLLS = never(`Polls for new data ${UNTIL_STOPPED}.`);
 const ROWS = always('Reads every row its query returns, then stops.');
 const RECORDS = always('Reads every record its query returns, then stops.');
 
-// A CDC input that can read a one-off snapshot instead of streaming.
 const snapshotOnly =
   (what: string): EndRule =>
   (c) =>
@@ -98,7 +97,6 @@ const snapshotOnly =
           'Set `snapshot_mode: snapshot_only` to read a snapshot and stop.'
         );
 
-// Connect truncates an int field, so `count: 0.5` is 0 (unlimited).
 const positiveInteger = (value: unknown): number | undefined => {
   const n = typeof value === 'string' ? Number(value) : value;
   return typeof n === 'number' && Number.isFinite(n) && Math.trunc(n) >= 1 ? Math.trunc(n) : undefined;
@@ -135,7 +133,6 @@ function generateEnd(c: Config): InputEndBehavior {
 function finiteGenerateEnd(c: Config, count: number): InputEndBehavior {
   const messages = count === 1 ? '1 message' : `${count} messages`;
   const interval = typeof c.interval === 'string' ? c.interval.trim() : '';
-  // An interval that isn't a duration is a cron expression: nothing is generated before its first tick.
   const cron = interval !== '' && parseGoDuration(interval) === undefined && !isEnvRef(interval);
   const caveats = [
     cron ? `Each run waits for the next \`${interval}\` tick before its first message.` : undefined,
@@ -170,8 +167,6 @@ function httpClientEnd(c: Config): InputEndBehavior {
     : natural('Reads the response stream, then stops when the server closes it.');
 }
 
-// Per Redpanda Connect 4.100: which inputs return end-of-input, and under what config. Components
-// missing here are `unknown`; composites (broker, sequence, resource, read_until) are handled below.
 const END_RULES: Record<string, EndRule> = {
   amqp_0_9: CONSUMES,
   aws_cloudwatch_logs: never(`Tails the log groups ${UNTIL_STOPPED}.`),
@@ -179,7 +174,6 @@ const END_RULES: Record<string, EndRule> = {
     if (envRef(c.snapshot_mode)) {
       return dependsOn('snapshot_mode', c.snapshot_mode);
     }
-    // Any snapshot is refused with tag discovery or several tables, so snapshot_only isn't offered there.
     const multiTable = c.table_discovery_mode === 'tag' || (Array.isArray(c.tables) && c.tables.length > 1);
     const mode = typeof c.snapshot_mode === 'string' ? c.snapshot_mode : 'none';
     if (multiTable && mode !== 'none') {
@@ -205,7 +199,6 @@ const END_RULES: Record<string, EndRule> = {
         )
       : natural('Reads every object in the bucket, then stops.'),
   aws_sqs: CONSUMES,
-  // With `targets_input`, it follows that input instead (see classifySlot).
   azure_blob_storage: always('Reads every blob in the container, then stops.'),
   azure_cosmosdb: RECORDS,
   azure_queue_storage: CONSUMES,
@@ -292,8 +285,7 @@ type ClassifyContext = {
   open: Set<object>;
 };
 
-// "Its input has" / "Both inputs have" / "2 of 3 inputs have": which members `verb` applies to.
-function membersPhrase(n: number, total: number, [one, many]: [string, string]): string {
+function membersPhrase(n: number, total: number, [one, many]: [string, string]) {
   if (total === 1) {
     return `Its input ${one}`;
   }
@@ -304,7 +296,6 @@ function membersPhrase(n: number, total: number, [one, many]: [string, string]):
   return `${n} of ${total} inputs ${n === 1 ? one : many}`;
 }
 
-// The members that never stop, with the negation folded in when it's all of them.
 function neverStopPhrase(n: number, total: number): string {
   if (total === 1) {
     return 'Its input never stops on its own';
@@ -315,7 +306,6 @@ function neverStopPhrase(n: number, total: number): string {
   return `${n} of ${total} inputs never ${n === 1 ? 'stops' : 'stop'} on ${n === 1 ? 'its' : 'their'} own`;
 }
 
-// A broker or sequence hands on its members' batches as they come.
 function aggregate(name: string, slots: unknown[], ctx: ClassifyContext): InputEndBehavior {
   const behaviors = slots.map((m) => classifySlot(m, ctx));
   const result = aggregateEnd(name, behaviors);
@@ -387,12 +377,10 @@ function aggregateEnd(name: string, behaviors: InputEndBehavior[]): InputEndBeha
   return stoppedMembersEnd(name, behaviors, members);
 }
 
-// A wrapper that runs another input ends as that input does; its stop condition isn't the wrapper's own.
 function inherited(inner: InputEndBehavior, reason: string): InputEndBehavior {
   return { ...inner, kind: inner.kind === 'condition' ? 'natural' : inner.kind, reason };
 }
 
-// Whether a batch policy groups messages; one that sets nothing, or a count of 1, doesn't.
 function policyBatches(policy: unknown): boolean {
   const p = asRecord(policy) ?? {};
   if (Number(p.count) === 1) {
@@ -408,7 +396,6 @@ function policyBatches(policy: unknown): boolean {
 }
 
 // Connect sends a last partial batch only on a `period` timer: once the input ends, any other policy
-// waits on it forever. `batched` always batches; a broker skips batching when the policy sets nothing.
 function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
   const p = asRecord(policy) ?? {};
   if (nonEmpty(p.period) || Number(p.count) === 1) {
@@ -417,8 +404,6 @@ function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
   return alwaysBatches || policyBatches(p);
 }
 
-// Whether an input hands on messages in batches: the ordered Kafka readers pass on each partition fetch
-// as one, `generate` per `batch_size`, and any input per its batch policy.
 function deliversBatches(name: string, config: Config): boolean {
   if (name === 'batched' || name === 'redpanda_common' || name === 'redpanda_migrator') {
     return true;
@@ -433,7 +418,6 @@ function deliversBatches(name: string, config: Config): boolean {
   return policyBatches(config.batching);
 }
 
-// Connect refuses a policy with nothing to send a batch on; a broker skips one that sets nothing at all.
 function policyError(policy: unknown, alwaysBatches: boolean, field: string): InputEndBehavior | undefined {
   const p = asRecord(policy) ?? {};
   const triggered =
@@ -461,7 +445,6 @@ const waitsOnLastBatch = (field: string): InputEndBehavior => ({
 
 type WrapperRule = (value: Config, ctx: ClassifyContext) => InputEndBehavior | undefined;
 
-// Inputs that run other inputs end as those do; `undefined` falls through to END_RULES.
 const WRAPPER_RULES: Record<string, WrapperRule> = {
   broker: (value, ctx) => {
     const result = aggregate('broker', Array.isArray(value.inputs) ? value.inputs : [], ctx);
@@ -521,7 +504,6 @@ function resourceHop(
     : { target };
 }
 
-// Follows plain `resource:` references from `label` to the entry they end on, and the labels on the way.
 function followResources(
   label: unknown,
   resources: Map<string, unknown>
@@ -541,7 +523,6 @@ function followResources(
   }
 }
 
-// `resource: <label>` runs an `input_resources` entry; a chain of plain references is followed to its end.
 function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavior {
   const followed = followResources(label, ctx.inputResources);
   if ('failed' in followed) {
@@ -556,10 +537,8 @@ function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavio
   return inherited(resolved, `Runs the input resource ${code(first)}${via}. ${resolved.reason}`);
 }
 
-// Checks Connect can never pass.
 const NEVER_TRUE = new Set(['false', 'null']);
 
-// Why the wrapper itself can't end its input (the start of a sentence), and the change that lets it.
 function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hint: string } {
   if (rereads) {
     return {
@@ -596,7 +575,6 @@ function caveatFor(
   if (inner.kind === 'continuous') {
     return `${shortfall}, it keeps running. Add an idle timeout as a backstop.`;
   }
-  // Its input may never end; with `restart_input`, an idle timeout may never fire either.
   return stop.restartInput
     ? `${shortfall}, it may keep running: \`restart_input\` reads its input again whenever it finishes.`
     : `${shortfall}, it may keep running. Add an idle timeout as a backstop.`;
@@ -607,7 +585,6 @@ type StopEffects = { checkEnds: boolean; idleEnds: boolean; rereads: boolean; ma
 function stopEffects(stop: StopCondition, inner: InputEndBehavior): StopEffects {
   const restarts = Boolean(stop.restartInput);
   const rereads = restarts && (inner.kind === 'natural' || inner.kind === 'condition');
-  // An input that may or may not end may or may not be read again, so its idle timeout can't be relied on.
   const mayReread = restarts && inner.kind === 'unknown';
   return {
     checkEnds: Boolean(stop.check) && !NEVER_TRUE.has(stop.check?.trim() ?? ''),
@@ -617,7 +594,6 @@ function stopEffects(stop: StopCondition, inner: InputEndBehavior): StopEffects 
   };
 }
 
-// Connect's own start-up errors: an unparseable timeout, or nothing to stop on.
 function stopStartupError(stop: StopCondition): InputEndBehavior | undefined {
   if (stop.idleTimeout && classifyIdleTimeout(stop.idleTimeout) === 'invalid') {
     return {
@@ -630,7 +606,6 @@ function stopStartupError(stop: StopCondition): InputEndBehavior | undefined {
   }
 }
 
-// A wrapper that never ends its input leaves it to end, or not, as it would bare.
 function inertStop(
   stop: StopCondition,
   inner: InputEndBehavior,
@@ -647,7 +622,6 @@ function inertStop(
   if (rereads || inner.kind === 'continuous') {
     return continuous(`${why}, so it never stops.`, hint);
   }
-  // An inner stop condition ends the input as running dry would.
   return inner.kind === 'natural' || inner.kind === 'condition'
     ? { ...inner, kind: 'natural', reason: `${why}, so it stops when its input does. ${inner.reason}` }
     : { kind: 'unknown', reason: `${why}. ${inner.reason}` };
@@ -662,7 +636,6 @@ function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBeh
   if (startupError) {
     return startupError;
   }
-  // A broken input inside still fails the pipeline, whatever stops it.
   if (inner.kind === 'invalid') {
     return inner;
   }
@@ -673,7 +646,6 @@ function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBeh
   return actingStop(stop, inner, effects);
 }
 
-// A wrapper that ends its input stops on the parts of its condition that act.
 function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopEffects): InputEndBehavior {
   const working: StopCondition = {
     check: effects.checkEnds ? stop.check : undefined,
@@ -718,7 +690,6 @@ function classifySlot(slot: unknown, ctx: ClassifyContext): InputEndBehavior {
   }
 }
 
-// A `read_until` around `component`, which still hands on batches if the input inside does.
 function classifyReadUntil(
   record: Config,
   component: Config,
@@ -811,9 +782,7 @@ export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined
 export function readPipelineEnd(configYaml: string): PipelineEndSummary | undefined {
   try {
     return summarizePipelineEnd(parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null);
-  } catch {
-    // YAML that doesn't parse has no answer.
-  }
+  } catch {}
 }
 
 /** {@link readPipelineEnd}, with unparseable YAML answered as having no input (`none`). */

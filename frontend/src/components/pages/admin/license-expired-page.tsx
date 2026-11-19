@@ -2,7 +2,6 @@ import { Link } from 'components/redpanda-ui/components/typography';
 
 import devPandaFrontView from '../../../assets/redpanda/DevPandaFrontView.svg';
 import { appGlobal } from '../../../state/app-global';
-import { api } from '../../../state/backend-api';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/license-utils';
 import { PageComponent } from '../page';
 
@@ -35,13 +34,13 @@ export default class LicenseExpiredPage extends PageComponent {
   }
 
   refreshData() {
-    api.listLicenses().catch(() => {
+    this.api.listLicenses().catch(() => {
       // Error handling managed by API layer
     });
   }
 
   render() {
-    const enabledFeaturesText = formatEnabledFeatures(api.enterpriseFeaturesUsed);
+    const enabledFeaturesText = formatEnabledFeatures(this.api.enterpriseFeaturesUsed);
 
     return (
       <div className="flex items-center justify-center p-4">

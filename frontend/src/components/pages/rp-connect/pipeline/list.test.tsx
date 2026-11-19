@@ -159,7 +159,7 @@ const buildTransport = (opts?: {
 const renderList = (opts?: { withDraft?: boolean }) =>
   renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport(opts) });
 
-const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`) });
+const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`, 'u') });
 
 const rowFor = (displayName: string) => {
   const row = screen.getByText(displayName).closest('tr');

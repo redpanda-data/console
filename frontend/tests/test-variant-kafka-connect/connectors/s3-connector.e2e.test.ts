@@ -12,7 +12,6 @@ test.describe('connector', () => {
       timeout: 11_000, // 11s because there is a max timer of 10s in connector create wait operation
     });
 
-    // Kafka Connect writes the connector's startup to the logs topic within seconds of creation.
     const firstLog = page.getByRole('button', { name: 'Expand row' }).first();
     await retryAssertion(
       async () => {

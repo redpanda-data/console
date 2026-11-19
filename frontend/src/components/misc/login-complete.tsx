@@ -11,7 +11,7 @@
 
 import { useParams } from '@tanstack/react-router';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Component } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
@@ -49,40 +49,39 @@ async function fetchLoginCallback(provider: string, query: string): Promise<void
   }
 }
 
-class LoginCompletePage extends Component<{ provider: string }> {
-  componentDidMount() {
+async function completeLogin(provider: string, location: Location) {
+  const errorString = readOAuthError(new URLSearchParams(location.search));
+  if (errorString) {
+    uiState.loginError = errorString;
+    appGlobal.historyReplace(`${getBasePath()}/login`);
+    return;
+  }
+
+  try {
+    await fetchLoginCallback(provider, location.search);
+    window.location.assign(getBasePath() || '/');
+  } catch (err) {
+    uiState.loginError = String(err);
+    appGlobal.historyPush(`${getBasePath()}/login`);
+  }
+}
+
+function LoginCompletePage({ provider }: { provider: string }) {
+  const [initialProvider] = useState(provider);
+  useLayoutEffect(() => {
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-    this.completeLogin(this.props.provider, window.location).catch(console.error);
-  }
+    completeLogin(initialProvider, window.location).catch(console.error);
+  }, [initialProvider]);
 
-  async completeLogin(provider: string, location: Location) {
-    const errorString = readOAuthError(new URLSearchParams(location.search));
-    if (errorString) {
-      uiState.loginError = errorString;
-      appGlobal.historyReplace(`${getBasePath()}/login`);
-      return;
-    }
-
-    try {
-      await fetchLoginCallback(provider, location.search);
-      window.location.assign(getBasePath() || '/');
-    } catch (err) {
-      uiState.loginError = String(err);
-      appGlobal.historyPush(`${getBasePath()}/login`);
-    }
-  }
-
-  render() {
-    return (
-      <div className="flex h-screen place-content-center bg-page">
-        <div className="flex flex-col place-content-center place-items-center">
-          <span className="text-heading-xl text-foreground">Completing login...</span>
-          <br />
-          <Spinner className="size-8" />
-        </div>
+  return (
+    <div className="flex h-screen place-content-center bg-page">
+      <div className="flex flex-col place-content-center place-items-center">
+        <span className="text-heading-xl text-foreground">Completing login...</span>
+        <br />
+        <Spinner className="size-8" />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export default () => {

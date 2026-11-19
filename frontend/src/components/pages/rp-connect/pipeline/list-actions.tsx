@@ -49,7 +49,6 @@ import { useStartDraftConfirm } from './start-draft-dialog';
 
 export type DeleteMutate = ReturnType<typeof useDeletePipelineMutation>['mutate'];
 
-// Async: rows share one mutation, and `mutate` drops the callbacks of a call another replaces.
 export type StartMutate = ReturnType<typeof useStartPipelineMutation>['mutateAsync'];
 
 export type StopMutate = ReturnType<typeof useStopPipelineMutation>['mutateAsync'];
@@ -104,7 +103,6 @@ export const ActionsCell = memo(
       configYaml: pipeline.configYaml,
       computeUnits: pipeline.computeUnits,
     });
-    // The dialog says so when this browser also holds unsaved edits for the draft.
     const hasUnsavedChanges = useRpcnEditorAutosaveStore(
       (s) => isDraftRow && selectAutosaveEntry(s.entries, autosaveTargetKey(pipeline.id)) !== null
     );

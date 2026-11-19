@@ -14,18 +14,13 @@ import { applySchemaToSlots } from './template-schema';
 import { describe, expect, test } from 'bun:test';
 import type { ConnectComponentSpec } from '../types/schema';
 
-// Minimal stand-in for parsed (and optionally enriched) component specs.
-// `applySchemaToSlots` only reads `type`/`name` and each component's `config`
-// field tree, so plain objects cast to the spec type are enough.
 const components = [
   {
     name: 'postgres_cdc',
     type: 'input',
     config: {
       children: [
-        // Has a default → not required by checkRequired.
         { name: 'dsn', type: 'string', kind: 'scalar', description: 'Postgres DSN', defaultValue: 'pg-default' },
-        // No default → required by checkRequired.
         { name: 'snapshot', type: 'string', kind: 'scalar', description: 'Snapshot mode' },
         {
           name: 'multiline',
@@ -155,9 +150,7 @@ describe('applySchemaToSlots', () => {
   describe('required flags and defaults', () => {
     test('derives required from the schema when the slot does not set it', () => {
       const template = buildTemplate([
-        // schema field has no default → required
         slot({ id: 'snapshot', kind: 'string', section: 'source', label: 'Snapshot', schemaField: 'snapshot' }),
-        // schema field has a default → not required
         slot({ id: 'dsn', kind: 'string', section: 'source', label: 'DSN', schemaField: 'dsn' }),
       ]);
 
@@ -168,7 +161,6 @@ describe('applySchemaToSlots', () => {
 
     test('keeps an explicit slot required flag over the schema', () => {
       const template = buildTemplate([
-        // schema would mark this required, but the slot opts out explicitly
         slot({
           id: 'snapshot',
           kind: 'string',
@@ -199,7 +191,6 @@ describe('applySchemaToSlots', () => {
 
       const [result] = applySchemaToSlots(template, components);
       expect(result).not.toHaveProperty('default');
-      // Description and required still get enriched from the schema.
       expect(result.description).toBe('Postgres DSN');
     });
   });

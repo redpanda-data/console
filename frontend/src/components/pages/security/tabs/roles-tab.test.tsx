@@ -38,7 +38,6 @@ rs.mock('@tanstack/react-router', () => {
   return {
     ...actual,
     Link: MockLink,
-    // Real navigate() returns a promise that settles once the route commits.
     useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });

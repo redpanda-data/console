@@ -357,7 +357,7 @@ function messageColumnsFor({ topic, query, settings, dialogs, continuousPaginati
     tsFormat: topicSettings?.previewTimestamps ?? 'default',
     keyDeserializer: query.keyDeserializer,
     valueDeserializer: query.valueDeserializer,
-    hasKeyTags: (topicSettings?.previewTags ?? []).filter((x) => x.isActive && x.searchInMessageKey).length > 0,
+    hasKeyTags: (topicSettings?.previewTags ?? []).some((x) => x.isActive && x.searchInMessageKey),
     previewDisplayMode: settings.previewDisplayMode,
     activePreviewTags: settings.activePreviewTags,
     isCompactTopic: topic.cleanupPolicy.includes('compact'),

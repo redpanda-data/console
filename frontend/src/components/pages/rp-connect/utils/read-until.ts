@@ -19,8 +19,8 @@ import { isStopConditionSet, READ_UNTIL, type StopCondition, YAML_STRINGIFY_OPTI
 // `counter()` counts per call site; the deprecated `count("name")` is shared by name, so it is
 // read and kept but never written.
 
-const COUNTER_LIMIT_RE = /^\s*counter\(\s*\)\s*(>=|>)\s*(\d+)\s*$/u;
-const NAMED_COUNT_LIMIT_RE = /^\s*count\(\s*"([^"\\]*)"\s*\)\s*(>=|>)\s*(\d+)\s*$/u;
+const COUNTER_LIMIT_RE = /^\s*counter\(\s*\)\s*(?<operator>>=|>)\s*(?<limit>\d+)\s*$/u;
+const NAMED_COUNT_LIMIT_RE = /^\s*count\(\s*"(?<counterName>[^"\\]*)"\s*\)\s*(?<operator>>=|>)\s*(?<limit>\d+)\s*$/u;
 
 /** A message limit; `counter` names the legacy `count("…")` it counts with, when it uses one. */
 export type MessageLimit = { limit: number; counter?: string };
@@ -114,7 +114,7 @@ const UNIT_NS: Record<string, number> = {
   h: 3600e9,
 };
 const MAX_DURATION_NS = 2 ** 63 - 1;
-const DURATION_PART_RE = /^(\d*)(?:\.(\d*))?([^\d.]*)/u;
+const DURATION_PART_RE = /^(?<whole>\d*)(?:\.(?<fraction>\d*))?(?<unit>[^\d.]*)/u;
 
 // The leading `<number><unit>` part of `text`: its length and nanoseconds; undefined when there isn't one.
 function durationPart(text: string): { length: number; ns: number } | undefined {
@@ -190,7 +190,7 @@ export const isIdleTimeoutSet = (value: string | undefined): boolean => {
   return kind === 'positive' || kind === 'env' || kind === 'zero';
 };
 
-const DURATION_WORD_RE = /(\d*\.?\d*)(ns|us|µs|μs|ms|s|m|h)/gu;
+const DURATION_WORD_RE = /(?<value>\d*\.?\d*)(?<unit>ns|us|µs|μs|ms|s|m|h)/gu;
 const DURATION_UNIT_WORDS: Record<string, [string, string]> = {
   h: ['hour', 'hours'],
   m: ['minute', 'minutes'],
@@ -309,7 +309,7 @@ export function stopShortLabel(slot: StopSlot, effective: InputEndBehavior): str
 // ── Summaries ──────────────────────────────────────────────────────────────
 
 /** A `code` span in behavior text. */
-export const CODE_SPAN_RE = /`([^`]+)`/gu;
+export const CODE_SPAN_RE = /`(?<code>[^`]+)`/gu;
 const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
 
 export const withCaveat = (text: string, behavior: InputEndBehavior) =>

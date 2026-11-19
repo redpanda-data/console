@@ -46,7 +46,6 @@ import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-so
 import { getShadowLinkStateLabel } from '../model';
 import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
 
-// Extracted component for table body content
 const ShadowLinkTableRows = ({
   isLoading,
   table,
@@ -122,7 +121,6 @@ const useShadowLinksPageTitle = () => {
 
 type ShadowLinksQueryError = ReturnType<typeof useListShadowLinksQuery>['error'];
 
-// Show toast on error (except for feature-disabled or unavailable admin API errors)
 const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
   useEffect(() => {
     if (
@@ -138,7 +136,6 @@ const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
   }, [error]);
 };
 
-// Empty state when no shadowlinks exist
 const ShadowLinkCreateEmptyState = () => {
   const navigate = useNavigate();
 
@@ -162,7 +159,6 @@ type ShadowLinkListFallbackOptions = {
 
 /** The state shown in place of the list, or `null` when there are shadow links to list. */
 const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFallbackOptions) => {
-  // Admin API unavailable
   if (error?.code === Code.Unavailable) {
     return <ShadowLinkUnavailableState />;
   }
@@ -172,7 +168,6 @@ const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFa
   if (isShadowLinkingDisabledError(error)) {
     return <ShadowLinkFeatureDisabledState />;
   }
-  // Error state for other errors
   if (error) {
     return <ShadowLinkErrorState errorMessage={error.message} onRetry={onRetry} />;
   }
@@ -232,10 +227,8 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
 const ShadowLinksOnThisCluster = () => {
   const navigate = useNavigate();
 
-  // React Query hooks
   const { data: shadowLinksData, isLoading, error, refetch } = useListShadowLinksQuery({});
 
-  // Get shadowlinks array from response
   const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
 
   useShadowLinksErrorToast(error);
@@ -342,7 +335,6 @@ const useDefaultTab = (): ShadowLinksTab | undefined => {
 };
 
 const useRequestedTab = (): ShadowLinksTab | undefined => {
-  // Read from the location, not the route match: the page also renders outside its route in tests.
   const searchTab = (useLocation().search as { tab?: unknown }).tab;
   return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
 };

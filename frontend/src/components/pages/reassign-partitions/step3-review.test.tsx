@@ -75,7 +75,6 @@ test('follows the throttle setting without waiting for a re-render', () => {
   renderStepReview();
   const throttleValue = () => screen.getByText('Traffic Throttle').nextElementSibling;
   expect(throttleValue()).toHaveTextContent('disabled');
-  // The write the slider handler makes: a nested assignment would not notify the settings store.
   act(() => {
     uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: 1024 };
   });

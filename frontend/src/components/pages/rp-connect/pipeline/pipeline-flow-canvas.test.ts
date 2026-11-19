@@ -41,7 +41,7 @@ const edgeData = (decorated: Edge[], id: string) => {
 const scope = (...ids: string[]) => new Set(ids);
 
 describe('scopeBounds — body bounds plus the entry marker', () => {
-  const node = (id: string, x: number, y: number, type = 'flowCard'): Node => ({
+  const node = (id: string, x: number, y: number, type = 'flowCard') => ({
     id,
     position: { x, y },
     initialWidth: 200,
@@ -52,8 +52,6 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
   it('keeps everything but the entry marker in the body (the join stays inside)', () => {
-    // Marker (col 0, the entry) fans to two outputs (col 1) and reconverges at a join (col 2). Only
-    // the marker is the entry; the outputs AND the join are body, so the box covers them all.
     const marker = node('marker', 0, 300, 'flowSplit');
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
@@ -85,7 +83,6 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
       maxX: 200,
       maxY: 380,
     });
-    // Only the entry marker is in scope → no body → null.
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure, (n) => n.id === 'marker')).toBeNull();
     expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
   });
@@ -108,7 +105,6 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
     const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
     const { rects } = regionGeometry(body, marker, 6, 6);
     const arm = rects[1];
-    // The arm covers the marker's row AND reaches down to the padded body top, so they connect.
     expect(arm.minY).toBe(marker.minY - 6);
     expect(arm.maxY).toBe(body.minY - 6);
   });
@@ -116,12 +112,9 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
-    // Reference edges never fully dim: even with an unrelated node selected they stay faint
-    // (a visible hint) rather than vanishing like dimmed flow edges.
     expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true });
     expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ faint: true });
 
-    // Selecting (or hovering) either endpoint renders the edge full-strength.
     expect(refData(decorateEdges(edges, { selectedScope: scope('a') }))).toMatchObject({
       faint: false,
       emphasized: true,
@@ -131,7 +124,6 @@ describe('decorateEdges', () => {
       emphasized: true,
     });
 
-    // Selecting the resource itself reveals who uses it.
     expect(refData(decorateEdges(edges, { selectedScope: scope('resource-0') }))).toMatchObject({ emphasized: true });
   });
 
@@ -148,14 +140,12 @@ describe('decorateEdges', () => {
     expect(spine.dimmed).toBe(false);
     expect(fanout.dimmed).toBe(true);
 
-    // No selection → no dimming anywhere.
     const plain = decorateEdges(edges, {});
     expect(edgeData(plain, 'fanout-c').dimmed).toBeUndefined();
   });
 
   it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
     // Selecting container 'a' (subtree includes 'b','c'): the fan edge between its children must
-    // stay lit, not dim as "unrelated".
     const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
     const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
     expect(fanout.emphasized).toBe(true);
@@ -231,10 +221,8 @@ describe('injectNodeData — appearance', () => {
   const base = { collapsedIds: new Set<string>(), toggleCollapse: () => undefined };
 
   it('marks a node new this render as appeared and drops its reposition transition', () => {
-    // Empty previousIds → the node is appearing (e.g. revealed by expanding).
     const injected = injectNodeData(node, { ...base, previousIds: new Set() });
     expect((injected.data as { appeared?: boolean }).appeared).toBe(true);
-    // No transform transition, so it snaps to its spot instead of flying from origin.
     expect((injected.style as { transition?: string }).transition).toBeUndefined();
   });
 

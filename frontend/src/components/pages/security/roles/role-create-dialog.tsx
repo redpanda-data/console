@@ -62,7 +62,6 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     await createRole(create(CreateRoleRequestSchema, { role: { name } }));
     toast.success(`Role "${name}" created`);
     handleClose();
-    // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
       to: '/security/roles/$roleName/details',
       params: { roleName: encodeURIComponent(name) },

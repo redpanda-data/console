@@ -51,7 +51,6 @@ const renderExpandedAclsStep = async (aclFilters: NonNullable<FormValues['aclFil
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, aclsMode: 'specify', aclFilters }} />);
 
-  // Need to open the collapsible to see the editable filters
   await user.click(screen.getByTestId('acls-toggle-button'));
   return user;
 };
@@ -63,7 +62,6 @@ describe('the AclsStep', () => {
 
       const filter0 = await screen.findByTestId('acl-filter-0');
 
-      // Check that the resource type field has "Any" selected (ACL_RESOURCE_ANY = 0)
       const resourceTypeField = within(filter0).getByTestId('acl-filter-0-resource-type');
       const resourceTypeButton = within(resourceTypeField).getByRole('combobox');
       expect(resourceTypeButton).toHaveTextContent('Any');
@@ -74,13 +72,11 @@ describe('the AclsStep', () => {
 
       expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
 
-      // Add second filter
       const addButton = screen.getByTestId('add-acl-filter-button');
       await user.click(addButton);
 
       expect(await screen.findByTestId('acl-filter-1')).toBeInTheDocument();
 
-      // Verify both filters exist
       expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();
     });
@@ -104,17 +100,14 @@ describe('the AclsStep', () => {
       expect(await screen.findByTestId('acl-filter-0')).toBeInTheDocument();
       expect(screen.getByTestId('acl-filter-1')).toBeInTheDocument();
 
-      // Delete the first filter
       const deleteButton = screen.getByTestId('delete-acl-filter-0');
       await user.click(deleteButton);
 
       await waitFor(() => {
-        // The old filter at index 1 should not exist anymore once deletion settles.
         expect(screen.queryByTestId('acl-filter-1')).not.toBeInTheDocument();
       });
       expect(screen.getByTestId('acl-filter-0')).toBeInTheDocument();
 
-      // Verify only one filter remains
       expect(screen.getAllByTestId(ACL_FILTER_PATTERN)).toHaveLength(1);
     });
   });

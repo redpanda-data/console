@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-const CAMEL_CASE_REGEX = /([A-Z])/gu;
+const CAMEL_CASE_REGEX = /(?<capitalLetter>[A-Z])/gu;
 const FIRST_CHAR_REGEX = /^\w/u;
 const WHITESPACE_REGEX = /\s+/u;
 

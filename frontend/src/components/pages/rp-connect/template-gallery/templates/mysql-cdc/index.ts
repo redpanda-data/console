@@ -34,7 +34,6 @@ export const mysqlCdcTemplate: PipelineTemplate = {
       placeholder: 'users, orders',
       required: true,
       list: true,
-      // Mirrors the connector's own validation (mysql/validate.go) so rejects surface in the form.
       entryPattern: {
         regex: /^[a-zA-Z0-9_$]+$/u,
         message: 'Table names must be bare identifiers — no database prefix or dots.',

@@ -176,7 +176,6 @@ const useShadowLinkBreadcrumbs = (name: string) => {
   }, [name]);
 };
 
-// Use unified delete hook (works in both embedded and non-embedded modes)
 const useShadowLinkDelete = (name: string) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -247,7 +246,6 @@ const useShadowLinkFailover = (
     setShowFailoverDialog(true);
     if (guided) {
       setCheckingLag(true);
-      // A failed read ends the check too: the dialog then reports the lag as unreadable or out of date.
       refetchTopics().then(stopCheckingLag, stopCheckingLag);
     }
   };
@@ -276,7 +274,6 @@ type ShadowLinkDetailsFallbackProps = {
   error: UnifiedShadowLinkQuery['error'];
 };
 
-// Loading, load-error, and not-found states
 const ShadowLinkDetailsFallback = ({ name, isLoading, error }: ShadowLinkDetailsFallbackProps) => {
   const navigate = useNavigate();
 
@@ -399,7 +396,6 @@ export const ShadowLinkDetailsPage = () => {
   const { name } = useParams({ from: '/shadowlinks/$name/' });
   useShadowLinkBreadcrumbs(name);
 
-  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
   const {
     data: shadowLink,
     isLoading,

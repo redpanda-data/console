@@ -40,7 +40,6 @@ test.describe('overview', () => {
     await expect(brokerTable).toBeVisible();
     await expect(brokerTable.locator('tbody tr').first()).toBeVisible();
 
-    // Every broker row offers a View button that navigates to the broker detail page.
     await brokerTable.getByRole('button', { name: 'View' }).first().click();
 
     const detailLabels = page.locator(STAT_LABEL);
@@ -55,7 +54,6 @@ test.describe('overview', () => {
     await expect(detailsSection).toBeVisible();
     await expect(detailsSection.getByRole('heading', { name: 'Cluster Details' })).toBeVisible();
 
-    // The three detail blocks, by their uppercase section labels.
     await Promise.all(
       ['Services', 'Storage', 'Security'].map((block) =>
         expect(detailsSection.getByRole('heading', { name: block, exact: true })).toHaveCount(1)

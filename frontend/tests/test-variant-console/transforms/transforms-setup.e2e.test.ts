@@ -20,7 +20,6 @@ test.describe('transforms setup', () => {
     await expect(page.getByText('rpk transform init --language=tinygo')).toBeVisible();
     await expect(page.getByText('transform.yaml').first()).toBeVisible();
 
-    // The hint is a registry Alert, which paints its own icon.
     await expect(page.getByRole('alert').filter({ hasText: 'Hint' })).toBeVisible();
   });
 
@@ -33,7 +32,6 @@ test.describe('transforms setup', () => {
     await expect(goTab).toBeVisible();
     await expect(rustTab).toBeDisabled();
 
-    // Go is the default tab, so its panel is the one on screen.
     await expect(page.getByText('Create and initialize a data transforms project')).toBeVisible();
   });
 });

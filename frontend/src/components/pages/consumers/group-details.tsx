@@ -90,7 +90,7 @@ type GroupDetailsProps = {
 };
 
 class GroupDetails extends PageComponent<GroupDetailsProps> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const group = decodeURIComponent(this.props.groupId);
 
     p.title = this.props.groupId;
@@ -888,7 +888,6 @@ const GroupByTopics = (groupProps: {
 
 const renderMergedID = (id?: string, clientId?: string) => {
   if (clientId && id?.startsWith(clientId)) {
-    // should always be true...
     const suffix = id.substring(clientId.length);
 
     return (

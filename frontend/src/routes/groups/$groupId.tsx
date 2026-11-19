@@ -43,7 +43,6 @@ function GroupDetailsWrapper() {
         search: (prev) => ({
           ...prev,
           ...updates,
-          // Remove undefined/empty values from URL
           q: updates.q === '' ? undefined : (updates.q ?? prev.q),
           withLag: updates.withLag === false ? undefined : (updates.withLag ?? prev.withLag),
         }),

@@ -37,7 +37,6 @@ export default function fetchWithTimeout(
     );
 
     setTimeout(() => {
-      // no need to construct an error when already settled
       if (hasSettled) {
         return;
       }

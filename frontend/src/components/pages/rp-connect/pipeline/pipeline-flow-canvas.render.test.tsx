@@ -21,11 +21,13 @@ import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipe
 const JOIN_NAME_RE = /branches reconverge/iu;
 
 // React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
-class ResizeObserverMock {
-  observe() {}
-  disconnect() {}
-  unobserve() {}
-}
+const ResizeObserverMock = rs.fn(function ResizeObserver() {
+  return {
+    observe: rs.fn(),
+    unobserve: rs.fn(),
+    disconnect: rs.fn(),
+  };
+});
 
 let originalClientWidth: PropertyDescriptor | undefined;
 let originalClientHeight: PropertyDescriptor | undefined;
@@ -108,7 +110,7 @@ function tallSwitchYaml(caseCount: number) {
 
 // Fill pieces render into React Flow's viewport portal, tagged data-region-fill (the border is a
 // single SVG path, excluded here).
-function regionFillPieces(container: HTMLElement): HTMLElement[] {
+function regionFillPieces(container: HTMLElement) {
   const portal = container.querySelector('.react-flow__viewport-portal');
   return portal ? Array.from(portal.querySelectorAll<HTMLElement>('[data-region-fill]')) : [];
 }
@@ -132,6 +134,9 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
 class MeasureOnceResizeObserver {
   private readonly seen = new WeakSet<Element>();
   constructor(private readonly callback: ResizeObserverCallback) {}
+  unobserve = rs.fn();
+  disconnect = rs.fn();
+
   observe(target: Element) {
     if (!this.seen.has(target)) {
       this.seen.add(target);
@@ -140,8 +145,6 @@ class MeasureOnceResizeObserver {
       queueMicrotask(() => this.callback([entry as unknown as ResizeObserverEntry], this as unknown as ResizeObserver));
     }
   }
-  unobserve() {}
-  disconnect() {}
 }
 
 describe('the PipelineFlowCanvas — measured nodes', () => {
@@ -292,7 +295,7 @@ function SetFlowState({
 type AttrBox = { x: number; y: number; w: number; h: number };
 
 // An svg element's numeric geometry attributes (absent ones read as 0).
-function attrBox(el: Element): AttrBox {
+function attrBox(el: Element) {
   return {
     x: Number(el.getAttribute('x')),
     y: Number(el.getAttribute('y')),

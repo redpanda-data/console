@@ -35,7 +35,7 @@ export function getOverrides(): FeatureFlagOverrides {
   }
 }
 
-function writeOverrides(next: FeatureFlagOverrides): void {
+function writeOverrides(next: FeatureFlagOverrides) {
   if (Object.keys(next).length === 0) {
     window.localStorage.removeItem(STORAGE_KEY);
   } else {
@@ -43,7 +43,7 @@ function writeOverrides(next: FeatureFlagOverrides): void {
   }
 }
 
-export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
+export function setOverride(key: FeatureFlagKey, value: boolean | null) {
   const current = getOverrides();
   if (value === null) {
     delete current[key];
@@ -54,7 +54,7 @@ export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
   installFeatureFlagAccessor();
 }
 
-export function clearOverrides(): void {
+export function clearOverrides() {
   writeOverrides({});
   installFeatureFlagAccessor();
 }
@@ -78,10 +78,8 @@ export function getAllFlagKeys(): FeatureFlagKey[] {
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
 let accessorInstalled = false;
 
-// Replaces `config.featureFlags` with a getter/setter so reads always overlay
-// localStorage overrides. Survives `setConfig()` reassigning the property
 // (otherwise overrides get wiped on each App mount / federated host reconfig).
-function installFeatureFlagAccessor(): void {
+function installFeatureFlagAccessor() {
   if (accessorInstalled) {
     return;
   }
@@ -104,23 +102,19 @@ function installFeatureFlagAccessor(): void {
       }
       return merged;
     },
-    set(next: Record<FeatureFlagKey, boolean> | undefined): void {
+    set(next: Record<FeatureFlagKey, boolean> | undefined) {
       baseFlags = { ...(next ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
     },
   });
   accessorInstalled = true;
 }
 
-export function applyOverrides(): void {
+export function applyOverrides() {
   installFeatureFlagAccessor();
 }
 
-// Install at module load so the first `config.featureFlags[key]` read already
-// overlays overrides — well before any React render.
 if (IsDev && typeof window !== 'undefined') {
   try {
     installFeatureFlagAccessor();
-  } catch {
-    // localStorage / defineProperty unavailable.
-  }
+  } catch {}
 }

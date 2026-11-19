@@ -103,12 +103,10 @@ export const useControlplaneGetShadowLinkByNameQuery = (
   error: ConnectError | null;
   refetch: () => Promise<void>;
 } => {
-  // First, list to find ID by name
   const listQuery = useControlplaneListShadowLinksQuery({ enabled: opts?.enabled });
 
   const shadowLinkId = listQuery.data?.shadowLinks?.find((sl) => sl.name === request.name)?.id;
 
-  // Then fetch full details by ID
   const getQuery = useControlplaneGetShadowLinkQuery({ id: shadowLinkId ?? '' }, { enabled: !!shadowLinkId });
 
   return {
@@ -135,11 +133,9 @@ export const useControlplaneUpdateShadowLinkMutation = (
   return useMutation(cpUpdateShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
       await Promise.all(
         listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
       );
-      // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: cpGetShadowLink,
@@ -165,11 +161,9 @@ export const useControlplaneDeleteShadowLinkMutation = (
   return useMutation(cpDeleteShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
       await Promise.all(
         listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
       );
-      // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: cpGetShadowLink,

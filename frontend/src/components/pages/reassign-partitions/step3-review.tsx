@@ -39,7 +39,6 @@ const TABLE_OPTIONS = {
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
   brokersAfter: number[];
-  // numAddedBrokers = number of brokers that are "new" to the partition
   // So only *new* brokers, not counting brokers that have previously (and maybe still are) hosted a replica of the partition
   numAddedBrokers: number;
   numRemovedBrokers: number;
@@ -61,7 +60,6 @@ type StepReviewProps = {
 };
 
 export function StepReview(props: StepReviewProps) {
-  // Subscribed here, not read through `uiSettings`: proxy reads do not notify, so the slider and
   // the summary would only catch up on the next poll.
   const maxReplicationTraffic = useUISettingsStore((state) => state.reassignment.maxReplicationTraffic);
 
@@ -69,10 +67,7 @@ export function StepReview(props: StepReviewProps) {
 }
 
 class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraffic: number | null }> {
-  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
-  // remounts the header's sort menu out from under the pointer.
   private readonly columns: DataTableColumnDef<TopicWithMoves>[] = [
-    // `subComponent` renders no affordance of its own, so the expander is explicit.
     {
       id: 'expander',
       enableSorting: false,
@@ -104,7 +99,6 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
       },
     },
     {
-      // Derived from the plan, so there is nothing to sort on — and table-level `sorting`
       // would otherwise mark it sortable with no header affordance to trigger it.
       enableSorting: false,
       header: 'Brokers After',
@@ -200,7 +194,6 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
           <BandwidthSlider
             onSettingsChange={(x) => {
               // Whole-section assignment: only a top-level set goes through the `uiSettings`
-              // proxy's trap, so a nested write would never notify the store.
               uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: x };
             }}
             settings={{ maxReplicationTraffic: this.props.maxReplicationTraffic }}
@@ -227,7 +220,6 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
         const totalTraffic = p.replicaSize * p.numAddedBrokers;
 
         if (totalTraffic === 0) {
-          // Moving zero replicas or replicas with zero size won't take any time
           return {
             ...p,
             totalTraffic: 0,
@@ -308,9 +300,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
 }
 
 const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => {
-  // Memoized: the page force-updates on every poll, and a fresh `header`/`cell` identity
   // remounts the header's sort menu out from under the pointer. The plan itself only changes
-  // when the wizard recomputes it.
   const columns = useMemo<DataTableColumnDef<Partition>[]>(
     () => [
       {
@@ -355,8 +345,6 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
 };
 
 function potentialTransferBandwidth(p: PartitionWithMoves, maxReplicationTraffic: number): number {
-  // if there are 2 senders and 2 receivers, the bandwidth limit is effectively double
-  // but for (1sender and 2receivers), or (2senders and 1receiver) it won't go any faster.
   const senders = p.brokersBefore.except(p.brokersAfter);
   const receivers = p.brokersAfter.except(p.brokersBefore);
 

@@ -63,7 +63,6 @@ const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string
     const name = addPrincipal === undefined ? '' : toExemptName(addPrincipal);
     const settings = form.getValues('settings');
     if (name && !settings.exemptPrincipals.includes(name)) {
-      // The whole object, not the nested path: the fields render from the `settings` Controller.
       form.setValue(
         'settings',
         { ...settings, exemptPrincipals: [...settings.exemptPrincipals, name] },

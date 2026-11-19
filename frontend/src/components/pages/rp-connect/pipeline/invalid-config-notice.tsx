@@ -15,14 +15,11 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-// `w-auto` overrides the Alert's `w-full`, so the notice stays content-width when floated over the canvas.
 const invalidConfigNoticeVariants = cva('w-auto', {
   variants: {
     variant: {
       default: '',
-      // Floated over the canvas: tighter padding, and a shadow and blur to lift it off the graph.
       floating: 'px-3 py-1.5 text-body shadow-sm backdrop-blur-sm',
-      // Inline in the sidebar outline.
       compact: 'px-2.5 py-2 text-body-sm',
     },
   },

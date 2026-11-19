@@ -39,8 +39,9 @@ import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId }
 import { SingleSelect } from '../../../misc/select';
 
 function getFreeId(tags: PreviewTagV2[]): string {
+  const ids = new Set(tags.map((tag) => tag.id));
   let i = 1;
-  while (tags.any((t) => t.id === String(i))) {
+  while (ids.has(String(i))) {
     i += 1;
   }
   return String(i);
@@ -550,9 +551,9 @@ function wildcardToRegex(pattern: string): RegExp {
   const components = pattern.split('*'); // split by '*' symbol
   const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
   const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
-  return new RegExp(`^${joined}$`);
+  return new RegExp(`^${joined}$`, 'u');
 }
 
 function regexEscape(regexPattern: string): string {
-  return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/gu, '\\$&');
+  return regexPattern.replace(/[/\\^$*+?.()|[\]{}]/gu, '\\$&');
 }

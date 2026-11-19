@@ -19,8 +19,8 @@ const MACRO_LABEL = String.raw`((?:\\.|[^\]\\])*)`;
 const XREF_MACRO = new RegExp(String.raw`(?:xref|link):[^\s[\]]*\[${MACRO_LABEL}\]`, 'gu');
 const URL_MACRO = new RegExp(String.raw`(https?://[^\s[\]]+)\[${MACRO_LABEL}\]`, 'gu');
 // Lazy up to the `](`, so brackets nested in the label (code-spanned DSN examples) stay part of it.
-const MARKDOWN_LINK = /\[([^\n]*?)\]\([^)\n]*\)/gu;
-const INTERNAL_XREF = /<<([^>,\n]+)(?:,\s*([^>\n]+))?>>/gu;
+const MARKDOWN_LINK = /\[(?<label>[^\n]*?)\]\([^)\n]*\)/gu;
+const INTERNAL_XREF = /<<(?<anchor>[^>,\n]+)(?:,\s*(?<label>[^>\n]+))?>>/gu;
 const NEW_WINDOW_FLAG = /\^$/u;
 
 // So "found in xref:…[]." doesn't render as "found in .".
@@ -28,12 +28,12 @@ const EMPTY_XREF_LABEL = 'the documentation';
 
 const ATTRIBUTE_LINE = /^:[a-zA-Z][\w-]*:.*$/gmu;
 // Admonitions keep their label; every other block attribute (`[source,yaml]`) is docs noise.
-const ADMONITION_LINE = /^\[(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]$/gmu;
+const ADMONITION_LINE = /^\[(?<kind>NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]$/gmu;
 const BLOCK_ATTRIBUTE_LINE = /^\[[^\]]*\]$/gmu;
 // `-{4,}` leaves a Markdown `---` alone.
 const BLOCK_DELIMITER = /^(?:={2,}|-{4,}|\*{4,}|_{4,}|\+{4,})$/gmu;
-const BLOCK_TITLE_LINE = /^\.([A-Z][^\n]*)$/gmu;
-const SECTION_TITLE = /^=+\s+(.{1,60})$/gmu;
+const BLOCK_TITLE_LINE = /^\.(?<title>[A-Z][^\n]*)$/gmu;
+const SECTION_TITLE = /^=+\s+(?<title>.{1,60})$/gmu;
 const OVERLONG_SECTION_MARKER = /^=+\s+/gmu;
 const LIST_MARKER = /^\*\s+/gmu;
 const BLANK_LINE_RUN = /\n{3,}/gu;
@@ -46,12 +46,12 @@ const TABLE_CELL_SEPARATOR = /\s*\|\s*/u;
 const DSV_TABLE_ATTRIBUTE = /^\[.*format=dsv.*\]$/u;
 const DSV_CELL_SEPARATOR = /\s*:\s*/u;
 
-const CODE_BLOCK_OR_SPAN = /(```[\s\S]*?```|`[^`\n]*`)/gu;
+const CODE_BLOCK_OR_SPAN = /(?<code>```[\s\S]*?```|`[^`\n]*`)/gu;
 const PLACEHOLDER_OPENER = /<(?!https?:\/\/)(?=[a-zA-Z/])/gu;
 const MARKDOWN_MARKS = /[`*]/gu;
 const MARKDOWN_HEADING = /^#+\s*/gmu;
 const MARKDOWN_LIST_MARKER = /^[-*]\s+/gmu;
-const BACKSLASH_ESCAPE = /\\(.)/gu;
+const BACKSLASH_ESCAPE = /\\(?<escapedCharacter>.)/gu;
 const WHITESPACE_RUN = /\s+/gu;
 const CRLF = /\r\n/gu;
 

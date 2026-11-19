@@ -353,7 +353,6 @@ const UserActions = ({ user }: { user: UserListEntry }) => {
     } catch {
       return; // Error toast shown by mutation's onError
     }
-    // Best-effort: a user that still belongs to a role keeps its role-granted access.
     const failures = (await removeUserFromAllRoles(user.name)).filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
       // biome-ignore lint/suspicious/noConsole: error logging

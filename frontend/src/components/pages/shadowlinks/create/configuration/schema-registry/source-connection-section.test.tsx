@@ -189,7 +189,6 @@ describe('the SourceConnectionSection', () => {
 
     render(<TestWrapper />);
 
-    // useTls defaults to true
     expect(screen.getByTestId('sr-tls-intro')).toBeInTheDocument();
     expect(screen.getByTestId('sr-tls-ca-disclosure')).toBeInTheDocument();
     expect(screen.getByTestId('sr-tls-mtls-disclosure')).toBeInTheDocument();
@@ -234,7 +233,6 @@ describe('the SourceConnectionSection', () => {
       expect(latest.values?.schemaRegistry?.mtls?.clientCert?.pemContent).toBe('-----BEGIN CERTIFICATE-----\nCERT');
     });
 
-    // Removing the key clears it from form state again
     await user.click(screen.getByTestId('remove-sr-clientKey-button'));
     await waitFor(() => {
       expect(latest.values?.schemaRegistry?.mtls?.clientKey).toBeUndefined();

@@ -1,7 +1,6 @@
 import { appURL, type BrowserContext, expect, type Page, type TestArtifacts, test } from './e2e';
 import { QuotaPage } from '../test-variant-console/utils/quota-page';
 
-// Records whether keyboard and drop events are trusted (native) rather than synthetic.
 const installNativeEventProbes = (page: Page) =>
   page.evaluate(() => {
     const target = document.querySelector('#target');

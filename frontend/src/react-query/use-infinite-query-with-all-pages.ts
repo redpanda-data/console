@@ -29,10 +29,8 @@ export function useInfiniteQueryWithAllPages<
   input: SkipToken | MessageInitWithPageParam<MessageInitShape<I>, ParamKey>,
   options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>
 ): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
-  // Use the standard ConnectRPC useInfiniteQuery hook
   const queryResult = useInfiniteQuery(schema, input, options);
 
-  // Auto-fetch all pages when query executes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: fetchNextPage intentionally excluded - its reference changes every render but the function is stable. Including it causes infinite loops.
   useEffect(() => {
     if (
@@ -54,7 +52,6 @@ export function useInfiniteQueryWithAllPages<
     queryResult.data,
   ]);
 
-  // Override loading states to reflect "all pages loaded" rather than "first page loaded"
   return {
     ...queryResult,
     isLoading: queryResult.isLoading || queryResult.hasNextPage,

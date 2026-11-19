@@ -34,7 +34,6 @@ export class LazyMap<K, V> extends Map<K, V> {
     const existing = super.get(key);
     if (existing !== undefined) {
       if (this.maxSize !== undefined) {
-        // Mark as most-recently-used so it survives eviction.
         super.delete(key);
         super.set(key, existing);
       }
@@ -47,7 +46,7 @@ export class LazyMap<K, V> extends Map<K, V> {
     return created;
   }
 
-  private evictOldest(): void {
+  private evictOldest() {
     if (this.maxSize === undefined) {
       return;
     }

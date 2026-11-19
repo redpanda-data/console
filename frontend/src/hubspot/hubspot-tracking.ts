@@ -18,7 +18,6 @@ type Fields = {
   [key: string]: string | number;
 };
 
-// HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';
 export const HUBSPOT_PORTAL_ID = '7733588';
 export const HUBSPOT_TRACKING_COOKIE_TOKEN = 'hubspotutk';
@@ -54,7 +53,6 @@ export const hubspotSubmit = ({
   onSuccess,
   onError,
 }: HubspotSubmitProps) => {
-  // Check if analytics is enabled
   if (!isAnalyticsEnabled()) {
     return;
   }

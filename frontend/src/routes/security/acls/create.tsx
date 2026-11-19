@@ -11,7 +11,6 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-// allow: error-boundary [pure redirect, no data fetching]
 export const Route = createFileRoute('/security/acls/create')({
   staticData: {
     title: 'Create ACL',

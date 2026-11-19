@@ -12,7 +12,6 @@
 import { generateServiceAccountSecretId, sanitizeSecretId } from './secret.utils';
 import { describe, expect, test } from 'bun:test';
 
-// Regex patterns for validation
 const SERVICE_ACCOUNT_PREFIX_REGEX = /^SERVICE_ACCOUNT_/u;
 const SECRET_ID_REGEX = /^[A-Z][A-Z0-9_]*$/u;
 

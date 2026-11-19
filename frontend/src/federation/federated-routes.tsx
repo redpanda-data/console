@@ -129,7 +129,6 @@ function FederatedAppContent() {
 
   return (
     // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
-    // Console's own gutter, released while a page is expanded (globals.css).
     <div
       className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
       id="mainLayout"
@@ -199,7 +198,6 @@ function createHostShellUpdater(layoutEl: HTMLDivElement, hostWrappers: HTMLElem
 }
 
 function observeHostShell(layoutEl: HTMLDivElement, hostWrappers: HTMLElement[], applyFit: () => void) {
-  // Padding changes alter a wrapper's content box even at a fixed outer size.
   const observer = new ResizeObserver(applyFit);
   observer.observe(document.documentElement);
   for (const el of hostWrappers) {

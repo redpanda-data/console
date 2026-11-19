@@ -31,15 +31,11 @@ test.describe('user creation - Connect RPC error handling', () => {
     // Structural: remain on create form (server error must NOT navigate to detail).
     await expect(page).toHaveURL(appURL('/security/users/create'));
 
-    // Form state: username input retained after failed submit.
     await expect(page.getByTestId('create-user-name')).toHaveValue(username);
 
     // Success sentinel must not appear.
     await expect(page.getByTestId('user-created-successfully')).not.toBeVisible();
 
-    // Toast copy: formatToastErrorMessageGRPC prefixes every error with "Failed to {action} {entity}".
-    // The exact rawMessage from a fetch-level abort is browser-dependent ("Failed to fetch",
-    // "TypeError: Failed to fetch", etc.), so we anchor on the deterministic prefix.
     await expect(page.getByText(CREATE_USER_FAILURE_TOAST_PREFIX).first()).toBeVisible({ timeout: 10_000 });
   });
 
@@ -58,11 +54,9 @@ test.describe('user creation - Connect RPC error handling', () => {
     await page.getByTestId('create-user-name').fill(username);
     await page.getByTestId('create-user-submit').click();
 
-    // Structural: no success, still on /create.
     await expect(page).toHaveURL(appURL('/security/users/create'));
     await expect(page.getByTestId('user-created-successfully')).not.toBeVisible();
 
-    // Toast copy: rawMessage from the mock envelope is composed verbatim into the toast title.
     await expect(page.getByText('Failed to create user: user "existing-user" already exists').first()).toBeVisible({
       timeout: 10_000,
     });
@@ -74,7 +68,6 @@ test.describe('user creation - Connect RPC error handling', () => {
 
     await page.getByTestId('create-user-button').click();
 
-    // Structural: dialog opens without navigating away from the list.
     await expect(page.getByTestId('create-user-name')).toBeVisible();
     await expect(page).toHaveURL(appURL('/security/users'));
   });

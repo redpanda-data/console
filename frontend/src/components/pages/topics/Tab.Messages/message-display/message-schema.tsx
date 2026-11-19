@@ -22,7 +22,6 @@ export const MessageSchema = (p: { schemaId: number; topicName?: string }) => {
     return <>ID {p.schemaId} (unknown subject)</>;
   }
 
-  // The same schema ID can name different schemas in different contexts.
   const s = pickSubjectForContext(subjects, topicSchemaContext(topicConfig?.configEntries)) ?? subjects[0];
   return (
     <Link

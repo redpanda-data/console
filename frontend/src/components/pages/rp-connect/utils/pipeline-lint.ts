@@ -29,7 +29,6 @@ import { editTargetPath, READ_UNTIL, readStopCondition, type StopCondition, slot
 
 type NodeRange = { id: string; start: number; end: number; span: number };
 
-// 1-based [start, end] lines of the YAML node at `path`, or undefined when it has no source range.
 function yamlNodeLines(
   doc: Document,
   lineCounter: LineCounter,
@@ -41,21 +40,16 @@ function yamlNodeLines(
     return;
   }
   const start = lineCounter.linePos(range[0]).line;
-  // range[1] is the node's content end (range[2] over-selects into the next line). If
-  // it lands at column 1 (just past the final newline), step back to the node's last line.
   const endPos = lineCounter.linePos(range[1]);
   const end = endPos.col === 1 && endPos.line > start ? endPos.line - 1 : endPos.line;
   return { start, end };
 }
 
-// The rendered case-entry node for a case — the case itself (output switch) or the wrapper's first
-// child (processor switch). An empty case falls back to the (unrendered) wrapper.
 function caseEntryId(node: PipelineFlowNode, nodes: PipelineFlowNode[]): string {
   const entryId = node.kind === 'leaf' ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
   return entryId ?? node.id;
 }
 
-// Each editable node's [startLine, endLine] in the YAML. Lines are 1-based to match LintHint.line.
 export function nodeLineRanges(yaml: string): NodeRange[] {
   const lineCounter = new LineCounter();
   const { doc, nodes } = parseEditableNodes(yaml, lineCounter);
@@ -74,16 +68,11 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
   return ranges;
 }
 
-// The YAML paths whose lines a node owns, each with the id of the node they're attributed to.
 function nodeRangePaths(node: PipelineFlowNode, nodes: PipelineFlowNode[]): [string, (string | number)[]][] {
   const paths: [string, (string | number)[]][] = [];
-  // A switchCase target (processor-switch case wrapper) spans the same lines as its caseEditTarget
-  // and would win the enclosingNodeId tie — the case branch below attributes that range instead.
   if (node.editTarget && node.editTarget.kind !== 'switchCase') {
     paths.push([node.id, editTargetPath(node.editTarget)]);
   }
-  // Attribute a case's range (incl. its `check`) to the rendered case-entry node, so a condition
-  // error selects and outlines the entry card.
   if (node.caseEditTarget) {
     paths.push([caseEntryId(node, nodes), editTargetPath(node.caseEditTarget)]);
   }
@@ -102,19 +91,17 @@ export function mergeLintHints(
   const merged: Record<string, LintHint> = {};
   const seen = new Set<string>();
   addUnseenHints(merged, seen, Object.entries(errorHints), 'error_');
-  // Locally-derived hints the live server lint can't report (YAML syntax, or a swallowed RPC failure).
   addUnseenHints(merged, seen, localHints.entries(), 'local_');
   addUnseenHints(merged, seen, queryHints.entries(), 'lint_hint_');
   return merged;
 }
 
-// Adds each hint whose line, column and text weren't seen yet under `<keyPrefix><key>`.
 function addUnseenHints(
   merged: Record<string, LintHint>,
   seen: Set<string>,
   entries: Iterable<[string | number, LintHint]>,
   keyPrefix: string
-): void {
+) {
   for (const [key, hint] of entries) {
     const signature = `${hint.line}:${hint.column}:${hint.hint}`;
     if (!seen.has(signature)) {
@@ -153,17 +140,14 @@ const lintAt = (lineCounter: LineCounter, node: unknown, hint: string): LintHint
   return create(LintHintSchema, { line: pos.line, column: pos.col, hint, lintType: 'config' });
 };
 
-// The idle timeout's own problem: one Connect rejects at start, or one it accepts but never fires.
 const IDLE_TIMEOUT_PROBLEM: Partial<Record<IdleTimeoutKind, string>> = {
   invalid: 'idle_timeout must be a duration such as 30s, 5m or 1h.',
   zero: 'An idle_timeout of 0 never fires. Use a duration such as 30s.',
   negative: 'A negative idle_timeout is ignored. Use a duration such as 30s.',
 };
 
-// What a resolved `read_until` is missing for Connect to build it.
 function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondition): string[] {
   const missing: string[] = [];
-  // An unparseable timeout fails on its own, so it isn't also reported as missing.
   const idle = classifyIdleTimeout(stop.idleTimeout);
   const idleGiven = idle !== 'unset' && idle !== 'negative';
   if (!(stop.check || idleGiven)) {
@@ -175,15 +159,12 @@ function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondit
   return missing;
 }
 
-// What a `read_until` value is missing for Connect to build it, or sets but never acts on, as hints on its own keys.
-// A null value (`read_until:` with nothing under it) is missing everything.
 function readUntilProblems(
   lineCounter: LineCounter,
   doc: Document,
   keyNode: unknown,
   value: YAMLMap | null
 ): LintHint[] {
-  // Merge keys resolved, as Connect sees the wrapper.
   const resolved = (value?.toJS(doc) ?? {}) as Record<string, unknown>;
   const stop = readStopCondition(resolved);
   const hints = missingWrapperParts(resolved, stop).map((hint) => lintAt(lineCounter, keyNode, hint));
@@ -212,12 +193,10 @@ export function localStopConditionLintHints(configYaml: string): LintHint[] {
   try {
     return readUntilHints(doc, lineCounter);
   } catch {
-    // Resolving a wrapper throws on excessive alias expansion; lint runs during render.
     return [];
   }
 }
 
-// The problems of every `read_until` under `input` or `input_resources`.
 function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
   const hints: LintHint[] = [];
   visit(doc, {
@@ -235,7 +214,6 @@ function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
   return hints;
 }
 
-// Smallest node range containing `line` (most specific enclosing node).
 export function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
   let best: NodeRange | undefined;
   for (const range of ranges) {
@@ -249,9 +227,7 @@ export function enclosingNodeId(line: number, ranges: NodeRange[]): string | und
 function nodeLineRangesOrUndefined(yaml: string): NodeRange[] | undefined {
   try {
     return nodeLineRanges(yaml);
-  } catch {
-    // Unparsable YAML: no node ranges, so no hint can be anchored to a node.
-  }
+  } catch {}
 }
 
 function groupHintsByNode(hints: LintHint[], ranges: NodeRange[]): Map<string, LintHint[]> {

@@ -13,12 +13,8 @@ import { config } from 'config';
 import { z } from 'zod';
 import { create } from 'zustand';
 
-// Crash recovery for the pipeline editor: one localStorage buffer per editor target, cleared on save.
-// Not the drafts feature, which is server-side `STATE_DRAFT`.
-
 export const EDITOR_AUTOSAVE_STORAGE_KEY = 'rpcn-editor-autosave';
 
-// Earlier browser-local drafts prototype; removed on first read.
 const LEGACY_DRAFTS_STORAGE_KEY = 'rpcn-pipeline-drafts';
 
 /** Per cluster, evicted oldest-first. */
@@ -44,7 +40,6 @@ const attachedServiceAccountSchema = z.object({ serviceAccountId: z.string(), se
 /** A service account created in the editor for the pipeline to log in with, not yet saved to it. */
 export type AttachedServiceAccount = z.infer<typeof attachedServiceAccountSchema>;
 
-// Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
 const editorAutosaveEntrySchema = z.object({
   version: z.literal(AUTOSAVE_ENTRY_VERSION),
   /** `create`, or a pipeline id. */
@@ -76,7 +71,6 @@ const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([config
 const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
 
-// Stored entries that still match the schema; throws on unparsable JSON.
 function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
   const parsed: unknown = raw ? JSON.parse(raw) : [];
   if (!Array.isArray(parsed)) {
@@ -88,7 +82,6 @@ function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
   });
 }
 
-// Drops malformed and expired entries, writing the pruned set back.
 function readAll(): EditorAutosaveEntry[] {
   if (typeof window === 'undefined') {
     return [];
@@ -106,7 +99,7 @@ function readAll(): EditorAutosaveEntry[] {
   }
 }
 
-function writeAll(entries: EditorAutosaveEntry[]): boolean {
+function writeAll(entries: EditorAutosaveEntry[]) {
   if (typeof window === 'undefined') {
     return false;
   }
@@ -118,15 +111,13 @@ function writeAll(entries: EditorAutosaveEntry[]): boolean {
   }
 }
 
-function removeAll(): void {
+function removeAll() {
   if (typeof window === 'undefined') {
     return;
   }
   try {
     window.localStorage.removeItem(EDITOR_AUTOSAVE_STORAGE_KEY);
-  } catch {
-    // Storage is unavailable, so there is nothing left to remove.
-  }
+  } catch {}
 }
 
 const newestFirst = (a: EditorAutosaveEntry, b: EditorAutosaveEntry) => b.updatedAt - a.updatedAt;
@@ -160,7 +151,6 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
       clusterId: currentClusterId(),
       updatedAt: Date.now(),
     };
-    // Read through storage so another tab's write isn't clobbered.
     const next = prune(
       [...readAll().filter((e) => !(e.targetKey === entry.targetKey && e.clusterId === entry.clusterId)), entry],
       entry.clusterId
@@ -176,7 +166,6 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
     const clusterId = currentClusterId();
     const next = readAll().filter((e) => !(e.targetKey === targetKey && e.clusterId === clusterId));
     if (!writeAll(next)) {
-      // A buffer that can't be removed would come back and offer to overwrite the save it protected.
       removeAll();
       set({ entries: [] });
       return;

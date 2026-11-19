@@ -37,7 +37,6 @@ describe('filterByName', () => {
 
   test('substring fallback is case-insensitive', () => {
     const result = filterByName(items, '[invalid(', getName);
-    // Invalid regex, falls back to substring — no items contain "[invalid("
     expect(result).toHaveLength(0);
   });
 

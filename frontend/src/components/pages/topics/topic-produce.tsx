@@ -79,9 +79,6 @@ const encodingOptions: EncodingOption[] = [
     label: 'Avro',
     tooltip: 'The given JSON will be serialized using the selected schema',
   },
-  // We hide Protobuf until we can provide a better UX with selecting types rather than having users
-  // specify an index that points to the type within the proto schema.
-  // {value: PayloadEncoding.PROTOBUF, label: 'Protobuf', tooltip: 'The given JSON will be serialized using the selected schema'},
 
   {
     value: PayloadEncoding.BINARY,
@@ -114,8 +111,6 @@ function encodingToLanguage(encoding: PayloadEncoding) {
   }
 }
 
-// Numeric-valued select wrapper bridging the registry Select (string values) with
-// react-hook-form fields that hold numeric enums (partition, compression, encoding, version).
 function NumberSelect({
   value,
   onChange,
@@ -200,7 +195,6 @@ function buildPartitionOptions(count: number | undefined) {
   const partitions: { label: string; value: number }[] = [{ label: 'Auto (Murmur2)', value: -1 }];
 
   if (count === undefined) {
-    // topic not found
     return partitions;
   }
 
@@ -227,7 +221,6 @@ function useSchemaNameOptions() {
   return availableValues.map((schema) => ({ label: schema.name, value: schema.name }));
 }
 
-// Versions of the subject selected for the key or the value, newest first.
 function useSchemaVersionOptions(control: Control<Inputs>, payload: 'key' | 'value') {
   const schemaName = useWatch({ control, name: `${payload}.schemaName` as const });
   const schemaDetail = useApiStoreHook((s) => (schemaName ? s.schemaDetails.get(schemaName) : undefined));
@@ -255,8 +248,6 @@ function buildKafkaHeaders(headers: Inputs['headers']) {
 
 function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array {
   if (encoding === PayloadEncoding.BINARY) {
-    // This will throw an exception if data is not base64.
-    // We want to catch exceptions so that we can show an error.
     window.atob(payloadData);
     return base64ToUInt8Array(payloadData);
   }
@@ -274,7 +265,6 @@ function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
   }
 }
 
-// Determine schemaId from schemaVersion if schema is selected and encoding is Avro or Protobuf
 function applySchemaSelection(options: PublishMessagePayloadOptions, payload: PayloadInputs) {
   if (!(isSchemaEncoding(payload.encoding) && payload.schemaName && payload.schemaVersion)) {
     return;
@@ -288,7 +278,6 @@ function applySchemaSelection(options: PublishMessagePayloadOptions, payload: Pa
   }
 }
 
-// Returns undefined when the payload data cannot be encoded; the error is logged.
 function buildPayloadOptions(payload: PayloadInputs): PublishMessagePayloadOptions | undefined {
   const data = tryEncodeData(payload);
   if (data === undefined) {
@@ -304,7 +293,6 @@ function buildPayloadOptions(payload: PayloadInputs): PublishMessagePayloadOptio
   return options;
 }
 
-// Returns undefined when the key or the value cannot be encoded.
 function buildPublishRequest(topicName: string, data: Inputs): PublishMessageRequest | undefined {
   const req = create(PublishMessageRequestSchema, {
     topic: topicName,
@@ -453,7 +441,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                       field.onChange(newVal);
 
                       if (newVal) {
-                        // Fetch schema details to get available versions
                         api
                           .refreshSchemaDetails(newVal)
                           .then(() => {
@@ -462,9 +449,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                               setValue('key.schemaVersion', detail.latestActiveVersion);
                             }
                           })
-                          .catch(() => {
-                            // Error handling managed by API layer
-                          });
+                          .catch(() => {});
                       }
                     }}
                     value={field.value}
@@ -567,7 +552,6 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
                         field.onChange(newVal);
 
                         if (newVal) {
-                          // Fetch schema details to get available versions
                           api.refreshSchemaDetails(newVal).then(() => {
                             const detail = api.schemaDetails.get(newVal);
                             if (detail?.latestActiveVersion) {

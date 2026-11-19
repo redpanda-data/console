@@ -95,17 +95,8 @@ export const MessagesFooter = ({
 }: MessagesFooterProps) => {
   const pageCount = Math.max(1, Math.ceil(totalLoaded / pageSize));
 
-  // The footer is the natural bottom-of-list marker for infinite scroll (the table itself
-  // doesn't scroll independently — the page does). Scrolling this sentinel into view loads
-  // the next page automatically; the button below stays as an explicit, always-available
   // affordance rather than the only way to load more.
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Read through refs rather than as effect deps: `onLoadMore` is a fresh closure from the
-  // parent every render, and `isLoadingMore` flips constantly while paging. Depending on either
-  // tore the observer down and rebuilt it on every render, and observe() reports the sentinel's
-  // *current* intersection state as soon as it's called — with the window height capped, the
-  // sentinel never leaves the viewport, so that per-render rebuild alone kept re-firing onLoadMore
-  // in an unbounded loop with no user scrolling.
   const onLoadMoreRef = useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
   const isLoadingMoreRef = useRef(isLoadingMore);

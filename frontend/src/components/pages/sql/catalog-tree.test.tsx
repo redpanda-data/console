@@ -23,7 +23,7 @@ rs.mock('react-query/api/sql', () => ({
   useTopicIcebergQuery: rs.fn(),
 }));
 
-const tableRef = (name: string, overrides: Partial<TableRef> = {}): TableRef => ({
+const tableRef = (name: string, overrides: Partial<TableRef> = {}) => ({
   id: `rp.public.${name}`,
   name,
   namespaceName: 'public',
@@ -31,7 +31,7 @@ const tableRef = (name: string, overrides: Partial<TableRef> = {}): TableRef => 
   ...overrides,
 });
 
-const catalog = (overrides: Partial<Catalog> = {}): Catalog => ({
+const catalog = (overrides: Partial<Catalog> = {}) => ({
   name: 'rp',
   displayLabel: 'Redpanda Catalog',
   engine: 'redpanda',
@@ -55,7 +55,6 @@ beforeEach(() => {
   rs.mocked(useTopicIcebergQuery).mockReturnValue({ isIceberg: false } as never);
 });
 
-// Renders a viewer tree with the default catalog and returns its catalog and namespace rows.
 const renderTreeRows = () => {
   render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
   return {
@@ -64,8 +63,6 @@ const renderTreeRows = () => {
   };
 };
 
-// Types arrive lower-cased from the backend; composite columns as "record"
-// with their nested fields parsed server-side.
 const renderExpandedOrdersColumns = async () => {
   rs.mocked(useDescribeTableQuery).mockReturnValue({
     data: {
@@ -139,7 +136,6 @@ describe('the CatalogTree', () => {
     test('a composite column expands into its nested fields', async () => {
       await renderExpandedOrdersColumns();
 
-      // Composite column shows "record" and expands into its nested fields.
       const customerRow = screen.getByRole('button', { name: CUSTOMER_RE });
       expect(customerRow).toBeInTheDocument();
       expect(screen.queryByText('street')).not.toBeInTheDocument();
