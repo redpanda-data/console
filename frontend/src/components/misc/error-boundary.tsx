@@ -193,7 +193,7 @@ function InfoItemDisplay({ data }: { data: InfoItem }) {
   let content: React.ReactNode = data.value;
 
   if (typeof content === 'string') {
-    content = content.replace(/\n\s*/g, '\n').trim();
+    content = content.replace(/\n\s*/gu, '\n').trim();
   }
 
   return (

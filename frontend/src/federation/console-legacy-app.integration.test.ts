@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
+import createConsoleCompatElement from './console-legacy-app';
 import type { ConsoleAppProps } from './types';
 
 const { mockCreateRoot, mockRender, mockUnmount } = rs.hoisted(() => {
@@ -34,8 +35,6 @@ rs.mock('./console-app', () => ({
   default: 'MockConsoleApp',
   ConsoleApp: 'MockConsoleApp',
 }));
-
-import createConsoleCompatElement from './console-legacy-app';
 
 interface LegacyReactElement {
   $$typeof: symbol;

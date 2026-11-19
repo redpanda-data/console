@@ -1,5 +1,7 @@
 import { expect, rs, test } from '@rstest/core';
 
+import setup from './test-variant-console-enterprise/rstest-global-setup';
+
 const { cleanup, authenticate, close, storageState } = rs.hoisted(() => ({
   cleanup: rs.fn(),
   authenticate: rs.fn(),
@@ -11,8 +13,6 @@ rs.mock('./test-variant-console-enterprise/auth.setup', () => ({ authenticate })
 rs.mock('playwright', () => ({
   chromium: { launch: async () => ({ newPage: async () => ({ context: () => ({ storageState }) }), close }) },
 }));
-
-import setup from './test-variant-console-enterprise/rstest-global-setup';
 
 test('enterprise setup preserves authentication and teardown failures', async () => {
   const authenticationError = new Error('Login failed');

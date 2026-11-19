@@ -32,6 +32,8 @@ import {
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import UserCreatePage from './user-create';
+
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
 rs.mock('config', () => ({
@@ -81,7 +83,6 @@ global.ResizeObserver = class ResizeObserver {
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ──────────────────────────────────────────
-import UserCreatePage from './user-create';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

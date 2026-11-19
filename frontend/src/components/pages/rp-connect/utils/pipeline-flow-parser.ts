@@ -649,7 +649,7 @@ function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] |
 }
 
 // A Bloblang check referencing `errored()` — this branch handles failed messages (dead-letter).
-const ERRORED_CHECK_RE = /errored\s*\(/;
+const ERRORED_CHECK_RE = /errored\s*\(/u;
 function isErroredCheck(check: unknown): boolean {
   return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
 }

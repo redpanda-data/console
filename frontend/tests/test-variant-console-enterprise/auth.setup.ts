@@ -4,7 +4,7 @@ import type { Page } from 'playwright';
  * Dismisses the login error modal if present and waits for it to close.
  * The modal can appear from failed API calls during page load.
  */
-async function dismissErrorModalIfPresent(page: Page): Promise<void> {
+async function dismissErrorModalIfPresent(page: Page) {
   const errorModal = page.getByTestId('login-error__ok-button');
   // Check if modal button is visible (give it reasonable time to appear)
   if (await errorModal.isVisible({ timeout: 2000 }).catch(() => false)) {

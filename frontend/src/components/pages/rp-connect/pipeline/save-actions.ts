@@ -71,7 +71,7 @@ export function isInvalidConfigError(error: unknown): boolean {
  * The service refuses a `draft: true` update once the pipeline has been started. Matched on the message as
  * well as the code: a suspended cluster also answers FAILED_PRECONDITION.
  */
-const NOT_A_DRAFT = /not a draft/i;
+const NOT_A_DRAFT = /not a draft/iu;
 
 export const isNoLongerDraftError = (error: unknown): boolean =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && NOT_A_DRAFT.test(error.rawMessage);

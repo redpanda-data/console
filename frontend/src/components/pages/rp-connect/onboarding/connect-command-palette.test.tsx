@@ -6,14 +6,14 @@ import { render, screen, waitFor } from 'test-utils';
 import { ConnectCommandPalette } from './connect-command-palette';
 import type { ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
-const KAFKA_OPTION = /kafka_franz/;
-const KAFKA_OUTPUT_OPTION = /kafka/;
-const PG_STREAM_OPTION = /pg_stream/;
-const POSTGRES_CDC_OPTION = /postgres_cdc/;
-const GENERATE_OPTION = /generate/;
-const HTTP_CLIENT_OPTION = /http_client/;
-const NO_INPUTS_MATCH = /No inputs match/;
-const EXISTS_AS_CACHE = /it exists as a cache/;
+const KAFKA_OPTION = /kafka_franz/u;
+const KAFKA_OUTPUT_OPTION = /kafka/u;
+const PG_STREAM_OPTION = /pg_stream/u;
+const POSTGRES_CDC_OPTION = /postgres_cdc/u;
+const GENERATE_OPTION = /generate/u;
+const HTTP_CLIENT_OPTION = /http_client/u;
+const NO_INPUTS_MATCH = /No inputs match/u;
+const EXISTS_AS_CACHE = /it exists as a cache/u;
 
 const component = (
   name: string,

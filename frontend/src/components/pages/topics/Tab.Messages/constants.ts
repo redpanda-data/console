@@ -52,4 +52,4 @@ export const COLUMN_ORDER: DataColumnKey[] = [
 ];
 
 // Regex for checking printable ASCII characters
-export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;

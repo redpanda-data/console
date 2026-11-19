@@ -65,9 +65,9 @@ describe('the ViewSettingsPanel', () => {
   describe('accessible labels', () => {
     test('each column visibility checkbox has an accessible name from its label', () => {
       renderPanel();
-      expect(screen.getByRole('checkbox', { name: /Timestamp/i })).toBeInTheDocument();
-      expect(screen.getByRole('checkbox', { name: /^Key$/i })).toBeInTheDocument();
-      expect(screen.getByRole('checkbox', { name: /^Value$/i })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /Timestamp/iu })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Key$/iu })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Value$/iu })).toBeInTheDocument();
     });
 
     test.each([

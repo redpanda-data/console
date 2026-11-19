@@ -246,7 +246,7 @@ const SchemaPageButtons = (p: {
         >
           <AlertTitle>
             {persistentValidationError.compatibilityError?.errorType
-              ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
+              ? persistentValidationError.compatibilityError.errorType.replace(/_/gu, ' ')
               : 'Schema Validation Error'}
           </AlertTitle>
           <AlertDescription>

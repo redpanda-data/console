@@ -14,7 +14,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { config as appConfig, isEmbedded } from '../../config';
-import { trackHubspotPage } from '../../hubspot/hubspot.helper';
+import { trackHubspotPage } from '../../hubspot/hubspot-tracking';
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
 

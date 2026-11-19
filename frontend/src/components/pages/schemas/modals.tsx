@@ -174,7 +174,7 @@ function CompatibilityErrorDetails({ compatibilityError }: { compatibilityError?
       <p className="mb-2 font-semibold">Compatibility Error Details:</p>
       <div className="max-h-[400px] overflow-y-auto rounded bg-muted p-6">
         {Boolean(compatibilityError.errorType) && (
-          <p className="mb-2 font-bold text-destructive">Error: {compatibilityError.errorType.replace(/_/g, ' ')}</p>
+          <p className="mb-2 font-bold text-destructive">Error: {compatibilityError.errorType.replace(/_/gu, ' ')}</p>
         )}
         {Boolean(compatibilityError.description) && <p className="leading-relaxed">{compatibilityError.description}</p>}
       </div>

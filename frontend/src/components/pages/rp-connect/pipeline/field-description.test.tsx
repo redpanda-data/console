@@ -28,11 +28,11 @@ const LONG_TOPICS_DESCRIPTION =
 const SHORT_TOPICS_DESCRIPTION =
   'A list of topics to consume from. Multiple comma-separated topics may share one element.';
 
-const SHOW_MORE_RE = /show more/i;
-const ALTERNATIVELY_RE = /Alternatively, it is possible/;
-const TOPICS_LEAD_RE = /A list of topics to consume from/;
-const SHOW_LESS_RE = /show less/i;
-const TOPICS_DOCS_RE = /topics documentation/i;
+const SHOW_MORE_RE = /show more/iu;
+const ALTERNATIVELY_RE = /Alternatively, it is possible/u;
+const TOPICS_LEAD_RE = /A list of topics to consume from/u;
+const SHOW_LESS_RE = /show less/iu;
+const TOPICS_DOCS_RE = /topics documentation/iu;
 const TOPICS_DOCS_URL =
   'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/redpanda/#topics';
 

@@ -13,6 +13,8 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
+import AppPageHeader from './header';
+
 const { getMatchedRoutes, mockPageBreadcrumbs, isDarkModeAvailable } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
   mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
@@ -82,8 +84,6 @@ rs.mock('../redpanda-ui/components/breadcrumb', () => ({
 rs.mock('../redpanda-ui/components/button', () => ({ Button: MockButton }));
 rs.mock('../redpanda-ui/components/separator', () => ({ Separator: MockSeparator }));
 rs.mock('../redpanda-ui/components/sidebar', () => ({ SidebarTrigger: MockSidebarTrigger }));
-
-import AppPageHeader from './header';
 
 describe('the AppPageHeader', () => {
   it('hides the title row when the matched route owns it', () => {

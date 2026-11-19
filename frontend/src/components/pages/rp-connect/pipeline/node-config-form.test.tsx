@@ -14,14 +14,13 @@ import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor, within } from 'test-utils';
 
 import { NodeConfigForm } from './node-config-form';
+import type { ConnectComponentSpec } from '../types/schema';
+import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
 
 // Cluster topics offered by topic-field pickers.
 rs.mock('react-query/api/topic', () => ({
   useListTopicsQuery: () => ({ data: { topics: [{ name: 'orders' }, { name: 'events' }] }, isLoading: false }),
 }));
-
-import type { ConnectComponentSpec } from '../types/schema';
-import { mockKafkaOutput } from '../utils/__fixtures__/component-schemas';
 
 const spec = mockKafkaOutput as unknown as ConnectComponentSpec;
 
@@ -32,17 +31,17 @@ function renderForm(value: Record<string, unknown>, onConfigChange = rs.fn()) {
   return onConfigChange;
 }
 
-const CREATE_NEW_TOPIC_RE = /create new topic/i;
-const TOPIC_FIELD_RE = /^topic/i;
+const CREATE_NEW_TOPIC_RE = /create new topic/iu;
+const TOPIC_FIELD_RE = /^topic/iu;
 const KAFKA_OUTPUT_DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/kafka/';
-const TOPIC_DOCS_RE = /topic documentation/i;
-const BATCHING_COUNT_DOCS_RE = /count documentation/i;
-const NOT_VALID_INTEGER_RE = /Not a valid integer/;
-const NOT_SAVED_UNTIL_FIXED_RE = /won't be saved until fixed/;
-const REFERENCE_SECRET_RE = /reference a secret/i;
-const RESOURCE_NEEDS_LABEL_RE = /A resource needs a label/;
-const EDITED_ON_CANVAS_RE = /edited on the canvas/i;
-const TOPIC_NAME_RE = /topic/i;
+const TOPIC_DOCS_RE = /topic documentation/iu;
+const BATCHING_COUNT_DOCS_RE = /count documentation/iu;
+const NOT_VALID_INTEGER_RE = /Not a valid integer/u;
+const NOT_SAVED_UNTIL_FIXED_RE = /won't be saved until fixed/u;
+const REFERENCE_SECRET_RE = /reference a secret/iu;
+const RESOURCE_NEEDS_LABEL_RE = /A resource needs a label/u;
+const EDITED_ON_CANVAS_RE = /edited on the canvas/iu;
+const TOPIC_NAME_RE = /topic/iu;
 
 // A field's label row: its name, the required marker and type/default hints.
 function fieldLabelRow(name: string): HTMLElement {

@@ -13,7 +13,12 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps, useState } from 'react';
-import { act, screen } from 'test-utils';
+import { useApiStore } from 'state/backend-api';
+import type { GroupDescription } from 'state/rest-interfaces';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+import { act, renderWithFileRoutes, screen } from 'test-utils';
+
+import GroupDetails from './group-details';
 
 const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = rs.hoisted(() => ({
   refreshConsumerGroupMock: rs.fn(),
@@ -56,13 +61,6 @@ rs.mock('config', () => {
     isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
-
-import { useApiStore } from 'state/backend-api';
-import type { GroupDescription } from 'state/rest-interfaces';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes } from 'test-utils';
-
-import GroupDetails from './group-details';
 
 const TOPIC = 'test-topic';
 const GROUP_ID = 'test-group';

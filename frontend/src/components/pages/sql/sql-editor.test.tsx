@@ -20,10 +20,10 @@ rs.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));
 
-const QUERY_1_TAB = /Query 1/;
-const QUERY_2_TAB = /Query 2/;
+const QUERY_1_TAB = /Query 1/u;
+const QUERY_2_TAB = /Query 2/u;
 // Matches the Run button's accessible name including its platform Kbd hint.
-const RUN_BUTTON = /Run (Ctrl|⌘)/;
+const RUN_BUTTON = /Run (Ctrl|⌘)/u;
 
 const renderEditor = (onRun = rs.fn()) => {
   render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);

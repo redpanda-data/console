@@ -13,10 +13,12 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import { CreateTopicDialog } from './create-topic-dialog';
+
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
 const mockMutateAsync = rs.fn();
-const TOPIC_NAME_LABEL = /topic name/i;
+const TOPIC_NAME_LABEL = /topic name/iu;
 
 rs.mock('../../../react-query/api/topic', () => {
   const actual = rs.requireActual<typeof import('../../../react-query/api/topic')>('../../../react-query/api/topic');
@@ -65,8 +67,6 @@ rs.mock('sonner', () => ({
 }));
 
 // ── Component import (after mocks) ────────────────────────────────────────────
-
-import { CreateTopicDialog } from './create-topic-dialog';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -241,7 +241,7 @@ describe('the CreateTopicDialog', () => {
       fireEvent.blur(partitionsInput);
 
       await waitFor(() => {
-        expect(screen.getByText(/must be at least 1/i)).toBeInTheDocument();
+        expect(screen.getByText(/must be at least 1/iu)).toBeInTheDocument();
       });
     });
 
@@ -258,7 +258,7 @@ describe('the CreateTopicDialog', () => {
       fireEvent.blur(replicationFactorInput);
 
       await waitFor(() => {
-        expect(screen.getByText(/replication factor must be an odd number/i)).toBeInTheDocument();
+        expect(screen.getByText(/replication factor must be an odd number/iu)).toBeInTheDocument();
       });
 
       expect(screen.getByTestId('onOk-button')).toBeDisabled();
@@ -398,7 +398,7 @@ describe('the CreateTopicDialog', () => {
       expect(initialRows).toHaveLength(1);
 
       // Add a second row, then a third
-      const addEntryButton = screen.getByRole('button', { name: /add entry/i });
+      const addEntryButton = screen.getByRole('button', { name: /add entry/iu });
       await clickAndExpectPropertyRows(user, addEntryButton, 2);
       await clickAndExpectPropertyRows(user, addEntryButton, 3);
 

@@ -11,6 +11,7 @@
 
 import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
+import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
@@ -19,8 +20,6 @@ import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 rs.mock('react-query/api/shadowlink', () => ({
   useGetShadowMetricsQuery: rs.fn(),
 }));
-
-import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
 const mockShadowLink: UnifiedShadowLink = {
   name: 'test-link',

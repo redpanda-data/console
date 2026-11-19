@@ -29,7 +29,7 @@ test.describe('quotas - Display and Data Verification', () => {
       const row = page.locator('tr').filter({ hasText: quotaClientId });
       await expect(row.locator('td').filter({ hasText: '10 MiB' })).toBeVisible();
       await expect(row.locator('td').filter({ hasText: '5 MiB' })).toBeVisible();
-      await expect(row.locator('td').filter({ hasText: /^100$/ })).toBeVisible();
+      await expect(row.locator('td').filter({ hasText: /^100$/u })).toBeVisible();
     });
 
     await step('Cleanup', async () => {

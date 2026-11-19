@@ -21,7 +21,7 @@ export function subjectsInContext<T extends SchemaRegistrySubject>(
 // Find by regex or string matching
 function subjectsMatchingName<T extends SchemaRegistrySubject>(subjects: T[], searchQuery: string): T[] {
   try {
-    const quickSearchRegExp = new RegExp(searchQuery, 'i');
+    const quickSearchRegExp = new RegExp(searchQuery, 'iu');
     return subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
   } catch {
     const searchLower = searchQuery.toLowerCase();

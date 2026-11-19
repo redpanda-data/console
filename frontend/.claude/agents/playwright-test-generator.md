@@ -31,7 +31,7 @@ application behavior.
 
    ```markdown file=specs/plan.md
    ### 1. Adding New Todos
-   **Seed:** `tests/seed.spec.ts`
+   **Seed:** `tests/shared/seed.e2e.test.ts`
 
    #### 1.1 Add Valid Todo
    **Steps:**
@@ -43,9 +43,9 @@ application behavior.
 
    Following file is generated:
 
-   ```ts file=add-valid-todo.spec.ts
+   ```ts file=add-valid-todo.e2e.test.ts
    // spec: specs/plan.md
-   // seed: tests/seed.spec.ts
+   // seed: tests/shared/seed.e2e.test.ts
 
    test.describe('Adding New Todos', () => {
      test('Add Valid Todo', async { page } => {

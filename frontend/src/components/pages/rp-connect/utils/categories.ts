@@ -44,7 +44,7 @@ const displayNames: Record<string, string> = {
 };
 
 export const getCategoryDisplayName = (category: string): string =>
-  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
+  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/gu, ' ');
 
 export const getAllCategories = (
   components: (ConnectComponentSpec | ExtendedConnectComponentSpec)[],

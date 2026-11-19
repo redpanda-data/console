@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { toast } from 'sonner';
 
+import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 import type { TopicMessage } from '../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../state/ui';
 
@@ -47,8 +48,6 @@ rs.mock('../../config', () => ({
     },
   },
 }));
-
-import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 
 function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {

@@ -13,7 +13,12 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { renderWithFileRoutes } from 'test-utils';
+
+import type { FencePhase } from './cluster-fence-model';
+import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 
 const mutate = rs.fn();
 const mutation = { mutate, reset: rs.fn(), isPending: false, error: null as unknown };
@@ -24,17 +29,11 @@ rs.mock('react-query/api/cluster-fence', () => {
 });
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
-import { useState } from 'react';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-
-import type { FencePhase } from './cluster-fence-model';
-import { UnfenceClusterDialog } from './unfence-cluster-dialog';
-
 const status = (phase: FencePhase, revision: number) =>
   ({ summary: { phase, revision: BigInt(revision) } }) as unknown as ReturnType<typeof useClusterFenceStatusQuery>;
 
 /** Lets a test rerender the open dialog after it changes the mocked status. */
-const harness = { rerender: (): void => undefined };
+const harness = { rerender: () => undefined };
 
 function Harness() {
   const [, setTick] = useState(0);

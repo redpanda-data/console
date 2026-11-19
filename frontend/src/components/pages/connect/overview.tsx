@@ -306,7 +306,7 @@ const TabConnectors = () => {
 
   const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
     try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;
       const classMatch = item.class.match(quickSearchRegExp) !== null;
       if (nameMatch) {

@@ -21,7 +21,7 @@ import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
 
 // Regex for validating secret ID format
-const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/u;
 const SECRET_NAME_MAX_LENGTH = 255;
 
 // Returns the validation message for a secret name, or '' when it is empty or valid.

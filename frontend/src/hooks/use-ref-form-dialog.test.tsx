@@ -39,7 +39,7 @@ function renderOpenDialog(
 }
 
 // Starts a submit without awaiting it, so the test can act while it is in flight.
-function startSubmit(result: { current: { submit: () => Promise<void> } }): Promise<void> {
+function startSubmit(result: { current: { submit: () => Promise<void> } }) {
   let submitPromise!: Promise<void>;
   act(() => {
     submitPromise = result.current.submit();

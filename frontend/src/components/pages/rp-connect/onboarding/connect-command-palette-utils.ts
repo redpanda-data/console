@@ -179,20 +179,20 @@ export function matchRank(component: ConnectComponentSpec, query: string, text: 
   return text.includes(query) ? 3 : -1;
 }
 
-const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/;
+const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/u;
 
 // Humanize + pluralize snake_case labels, joined with "or": ['cache', 'rate_limit'] → 'caches or rate limits'.
 function pluralTypeLabel(labels: string[] | undefined, emptyLabel: string): string {
   if (!labels || labels.length === 0) {
     return emptyLabel;
   }
-  return labels.map((label) => `${label.replace(/_/g, ' ')}s`).join(' or ');
+  return labels.map((label) => `${label.replace(/_/gu, ' ')}s`).join(' or ');
 }
 
 // Humanized labels prefixed with "a"/"an", joined with "or": ['cache', 'input'] → 'a cache or an input'.
 function withArticles(labels: string[]): string {
   const labeled = labels.map((label) => {
-    const humanized = label.replace(/_/g, ' ');
+    const humanized = label.replace(/_/gu, ' ');
     return `${STARTS_WITH_VOWEL_REGEX.test(humanized) ? 'an' : 'a'} ${humanized}`;
   });
   if (labeled.length <= 1) {

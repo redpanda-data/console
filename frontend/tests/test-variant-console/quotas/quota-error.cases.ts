@@ -56,6 +56,6 @@ test.describe('quotas page - Connect error handling', () => {
     // a 403 Empty state with a fixed user-facing message — assert both the status code
     // heading and the human-readable copy that appears in its place.
     await expect(page.getByRole('heading', { name: '403' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/not allowed to view this page/i)).toBeVisible();
+    await expect(page.getByText(/not allowed to view this page/iu)).toBeVisible();
   });
 });

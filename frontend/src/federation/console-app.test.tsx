@@ -13,6 +13,10 @@ import { useQuery } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { ConsoleApp } from './console-app';
+import type { ConsoleAppProps } from './types';
+import { config, setup } from '../config';
+
 // Mock TanStack Router before any imports
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -56,10 +60,6 @@ rs.mock('../routeTree.gen', () => ({
 rs.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: MockNotFoundPage,
 }));
-
-import { ConsoleApp } from './console-app';
-import type { ConsoleAppProps } from './types';
-import { config, setup } from '../config';
 
 let pendingTopic: Promise<string> | undefined;
 let reportBreadcrumbsDuringRender = false;

@@ -72,6 +72,7 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
+import PipelinePage from '.';
 
 const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
 rs.mock('../utils/use-pipeline-mode', () => ({
@@ -329,7 +330,6 @@ rs.mock('sonner', () => {
 });
 
 // Import after all mocks are set up.
-import PipelinePage from '.';
 
 // What a draft-capable backend returns: the console backend drops `create_time` when it predates drafts.
 const DRAFT_ERA_PIPELINE = create(PipelineSchema, {
@@ -465,11 +465,11 @@ const draftPipeline = () =>
 
 // The pipeline name lives in the settings dialog (opened via "Edit settings"), not an inline header field.
 const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
-  await user.click(screen.getByRole('button', { name: /edit settings/i }));
+  await user.click(screen.getByRole('button', { name: /edit settings/iu }));
   const nameInput = await screen.findByPlaceholderText('Enter pipeline name');
   await user.clear(nameInput);
   await user.type(nameInput, name);
-  await user.click(screen.getByRole('button', { name: /save settings/i }));
+  await user.click(screen.getByRole('button', { name: /save settings/iu }));
   // Wait for the dialog to close so its "Save settings" button can't collide with the header's "Save".
   await waitFor(() => expect(screen.queryByPlaceholderText('Enter pipeline name')).not.toBeInTheDocument());
 };
@@ -533,7 +533,7 @@ const invalidConfigError = () =>
 const DEPLOYED_YAML = 'input:\n  stdin: {}\noutput:\n  stdout: {}';
 
 const openChanges = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(await screen.findByRole('tab', { name: /unsaved changes/i }));
+  await user.click(await screen.findByRole('tab', { name: /unsaved changes/iu }));
 };
 
 const seedBuffer = (
@@ -889,7 +889,7 @@ describe('the PipelinePage', () => {
 
       // Both the save-error hint and the response lint hint stay visible.
       await waitFor(() => {
-        expect(screen.getByText(/invalid config/)).toBeInTheDocument();
+        expect(screen.getByText(/invalid config/u)).toBeInTheDocument();
       });
 
       expect(screen.getByText('Line 3, Col 1: response warning')).toBeInTheDocument();
@@ -911,14 +911,14 @@ describe('the PipelinePage', () => {
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid config/)).toBeInTheDocument();
+        expect(screen.getByText(/invalid config/u)).toBeInTheDocument();
       });
 
       // Editing YAML clears the stale error hints (setErrorLintHints({})).
       typeConfig('input:\n  fixed: {}');
 
       await waitFor(() => {
-        expect(screen.queryByText(/invalid config/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/invalid config/u)).not.toBeInTheDocument();
       });
     });
   });
@@ -1040,7 +1040,7 @@ describe('the PipelinePage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
-      expect(await screen.findByText(/at least 3 characters/i)).toBeInTheDocument();
+      expect(await screen.findByText(/at least 3 characters/iu)).toBeInTheDocument();
       expect(createPipelineMock).not.toHaveBeenCalled();
     });
 
@@ -1293,7 +1293,7 @@ describe('the PipelinePage', () => {
       const user = userEvent.setup();
       render(<PipelinePage />, { transport: createTransport() });
 
-      const variablesButton = screen.getByRole('button', { name: /variables/i });
+      const variablesButton = screen.getByRole('button', { name: /variables/iu });
       await user.click(variablesButton);
 
       await waitFor(() => {
@@ -1313,7 +1313,7 @@ describe('the PipelinePage', () => {
         expect(contentChangeListeners.length).toBeGreaterThan(0);
       });
 
-      const secretsButton = screen.getByRole('button', { name: /secrets/i });
+      const secretsButton = screen.getByRole('button', { name: /secrets/iu });
       await user.click(secretsButton);
 
       await waitFor(() => {
@@ -1342,7 +1342,7 @@ describe('the PipelinePage', () => {
 
       // The tips bar leads with the slash tip (rotation starts at index 0).
       await waitFor(() => {
-        expect(screen.getByText(/to insert variables/)).toBeInTheDocument();
+        expect(screen.getByText(/to insert variables/u)).toBeInTheDocument();
       });
     });
 
@@ -1354,7 +1354,7 @@ describe('the PipelinePage', () => {
         expect(screen.getByTestId('yaml-editor')).toBeInTheDocument();
       });
 
-      expect(screen.queryByText(/to insert variables/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/to insert variables/u)).not.toBeInTheDocument();
     });
 
     it('uses the new log explorer when the feature flag is enabled', async () => {
@@ -1739,7 +1739,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await setPipelineNameViaDialog(user, 'my-pipeline');
         await waitFor(() => expect(listPipelinesMock).toHaveBeenCalled());
-        expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/);
+        expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/u);
       });
 
       // A brand-new cluster has no pipeline to lend an answer, and hiding drafts there would hide them
@@ -1910,9 +1910,9 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
         await user.click(screen.getByTestId('save-pipeline'));
 
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/nothing to save yet/i)));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/nothing to save yet/iu)));
         // Names the way out, rather than only refusing.
-        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/add a name or some configuration/i));
+        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/add a name or some configuration/iu));
         expect(createPipelineMock).not.toHaveBeenCalled();
       });
 
@@ -2104,7 +2104,7 @@ describe('pipelinePage saving and recovering work', () => {
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
 
-        await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/may be running/i)));
+        await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/may be running/iu)));
         expect(stopPipelineMock).not.toHaveBeenCalled();
         expect(toast.success).not.toHaveBeenCalled();
       });
@@ -2122,7 +2122,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(screen.getByTestId('save-pipeline'));
 
         await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
-        await expectToastInsteadOfSuccess(toast.warning, expect.stringMatching(/may be running/i));
+        await expectToastInsteadOfSuccess(toast.warning, expect.stringMatching(/may be running/iu));
         // Still routed to the pipeline's page, which is where it can be stopped by hand.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
       });
@@ -2218,7 +2218,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(await screen.findByTestId('save-pipeline'));
 
         // The rejection lands in the issues panel, and nothing was deployed.
-        expect(await screen.findByText(/not a draft/i)).toBeInTheDocument();
+        expect(await screen.findByText(/not a draft/iu)).toBeInTheDocument();
         expect(toast.error).toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
       });
@@ -2244,7 +2244,7 @@ describe('pipelinePage saving and recovering work', () => {
         // otherwise would send the user looking for a teammate who started something.
         await waitFor(() => expect(toast.error).toHaveBeenCalled());
         expect(toast.error).not.toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
-        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/suspended/i));
+        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/suspended/iu));
       });
 
       it('a refused start keeps the saved draft and shows the issues on their lines', async () => {
@@ -2265,7 +2265,7 @@ describe('pipelinePage saving and recovering work', () => {
         await chooseSaveAndStart(user);
 
         await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
-        expect(await screen.findByText(/an explicit output type must be specified/)).toBeInTheDocument();
+        expect(await screen.findByText(/an explicit output type must be specified/u)).toBeInTheDocument();
         // Still in the editor: a refused start is only actionable here.
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
       });
@@ -2284,7 +2284,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         render(<PipelinePage />, { transport: createTransport() });
 
-        expect(await screen.findByRole('tab', { name: /unsaved changes/i })).toBeInTheDocument();
+        expect(await screen.findByRole('tab', { name: /unsaved changes/iu })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
       });
 
@@ -2295,7 +2295,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: createTransport() });
 
         await screen.findByRole('tab', { name: 'Monitor' });
-        expect(screen.queryByRole('tab', { name: /unsaved changes/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
       });
 
       // Nothing is saved on the create page, so every component would be listed as "Added" and the count
@@ -2304,7 +2304,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: createTransport() });
 
         expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
-        expect(screen.queryByRole('tab', { name: /unsaved changes/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
       });
 
       // Nothing to compare until something is edited.
@@ -2316,12 +2316,12 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
         );
-        expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('tab', { name: /unsaved changes/iu })).toHaveAttribute('aria-disabled', 'true');
 
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
 
         await waitFor(() =>
-          expect(screen.getByRole('tab', { name: /unsaved changes/i })).not.toHaveAttribute('aria-disabled', 'true')
+          expect(screen.getByRole('tab', { name: /unsaved changes/iu })).not.toHaveAttribute('aria-disabled', 'true')
         );
       });
 
@@ -2353,7 +2353,7 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(updatePipelineMock).toHaveBeenCalled());
         expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
         expect(screen.queryByTestId('diff-editor')).not.toBeInTheDocument();
-        expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('tab', { name: /unsaved changes/iu })).toHaveAttribute('aria-disabled', 'true');
       });
     });
 
@@ -2365,7 +2365,7 @@ describe('pipelinePage saving and recovering work', () => {
         await replaceLoadedConfig(edited);
 
         // The count rides on the tab, so a change is visible without opening the lane.
-        await waitFor(() => expect(screen.getByRole('tab', { name: /changes/i })).toHaveTextContent('1'));
+        await waitFor(() => expect(screen.getByRole('tab', { name: /changes/iu })).toHaveTextContent('1'));
 
         await openChanges(user);
 
@@ -2387,7 +2387,7 @@ describe('pipelinePage saving and recovering work', () => {
         );
         fireEvent.change(screen.getByLabelText('Pipeline name'), { target: { value: 'Renamed pipeline' } });
 
-        await waitFor(() => expect(screen.getByRole('tab', { name: /unsaved changes/i })).toHaveTextContent('1'));
+        await waitFor(() => expect(screen.getByRole('tab', { name: /unsaved changes/iu })).toHaveTextContent('1'));
         await openChanges(user);
 
         expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
@@ -2408,7 +2408,7 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
         await openChanges(user);
 
-        expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/i);
+        expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/iu);
       });
 
       // A comment-only edit changes no component, and the diff should then take the full width rather
@@ -2460,8 +2460,8 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: `${DEPLOYED_YAML}\n# note` } });
         await openChanges(user);
 
-        expect(await screen.findByText(/the saved configuration/i)).toBeInTheDocument();
-        expect(screen.getByText(/your unsaved edits/i)).toBeInTheDocument();
+        expect(await screen.findByText(/the saved configuration/iu)).toBeInTheDocument();
+        expect(screen.getByText(/your unsaved edits/iu)).toBeInTheDocument();
       });
 
       it('jumps from a changed component to its lines in the YAML lane', async () => {
@@ -2505,8 +2505,8 @@ describe('pipelinePage saving and recovering work', () => {
       await user.click(await screen.findByTestId('delete-draft'));
 
       // Confirmed, not typed: a draft is unfinished work, but nothing is deployed.
-      expect(await screen.findByText(/delete draft\?/i)).toBeInTheDocument();
-      expect(screen.queryByPlaceholderText(/delete/i)).not.toBeInTheDocument();
+      expect(await screen.findByText(/delete draft\?/iu)).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/delete/iu)).not.toBeInTheDocument();
       expect(deletePipelineMock).not.toHaveBeenCalled();
 
       await user.click(screen.getByTestId('confirm-delete-draft'));
@@ -2520,7 +2520,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      await screen.findByRole('button', { name: /edit pipeline/i });
+      await screen.findByRole('button', { name: /edit pipeline/iu });
       expect(screen.queryByTestId('delete-draft')).not.toBeInTheDocument();
     });
 
@@ -2568,7 +2568,7 @@ describe('pipelinePage saving and recovering work', () => {
       await user.click(await screen.findByTestId('delete-draft'));
       // The confirmation says the unsaved edits go too: a trash icon in an editor can read as
       // "throw away my changes".
-      expect(await screen.findByText(/unsaved changes go with it/i)).toBeInTheDocument();
+      expect(await screen.findByText(/unsaved changes go with it/iu)).toBeInTheDocument();
       await user.click(screen.getByTestId('confirm-delete-draft'));
 
       await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
@@ -2662,10 +2662,10 @@ describe('pipelinePage saving and recovering work', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      expect(await screen.findByText(/restarts the pipeline/i)).toBeInTheDocument();
+      expect(await screen.findByText(/restarts the pipeline/iu)).toBeInTheDocument();
       expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /keep editing/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /discard changes/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /keep editing/iu })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /discard changes/iu })).toBeInTheDocument();
     });
 
     // No draft is possible on a deployed pipeline, so leaving on purpose is the only exit that keeps
@@ -2744,7 +2744,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).toHaveTextContent(/Someone else saved this pipeline while you were away/);
+        expect(notice).toHaveTextContent(/Someone else saved this pipeline while you were away/u);
       });
 
       it('does not warn when the pipeline has not moved since', async () => {
@@ -2754,7 +2754,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).toHaveTextContent(/You left this editor without saving/);
+        expect(notice).toHaveTextContent(/You left this editor without saving/u);
       });
 
       it('ignores a browser clock that disagrees with the server', async () => {
@@ -2765,7 +2765,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).not.toHaveTextContent(/Someone else saved this pipeline/);
+        expect(notice).not.toHaveTextContent(/Someone else saved this pipeline/u);
       });
 
       // The baseline is the version that was hydrated. A refetch landing mid-edit (focus, an invalidation)
@@ -2805,7 +2805,7 @@ describe('pipelinePage saving and recovering work', () => {
         render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
-        expect(notice).toHaveTextContent(/You left this editor without saving/);
+        expect(notice).toHaveTextContent(/You left this editor without saving/u);
       });
     });
 
@@ -3127,7 +3127,7 @@ describe('pipelinePage saving and recovering work', () => {
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
       render(<PipelinePage />, { transport: draftTransport() });
 
-      expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/)).toBeInTheDocument();
+      expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/u)).toBeInTheDocument();
     });
 
     it('names the topics and the compute before it commits to starting', async () => {
@@ -3143,9 +3143,9 @@ describe('pipelinePage saving and recovering work', () => {
 
       await user.click(await screen.findByTestId('start-draft'));
 
-      expect(await screen.findByText(/orders and orders-dlq/)).toBeInTheDocument();
-      expect(screen.getByText(/1 compute unit/)).toBeInTheDocument();
-      expect(screen.getByText(/can't go back to being a draft/)).toBeInTheDocument();
+      expect(await screen.findByText(/orders and orders-dlq/u)).toBeInTheDocument();
+      expect(screen.getByText(/1 compute unit/u)).toBeInTheDocument();
+      expect(screen.getByText(/can't go back to being a draft/u)).toBeInTheDocument();
       expect(startPipelineMock).not.toHaveBeenCalled();
     });
 
@@ -3156,7 +3156,7 @@ describe('pipelinePage saving and recovering work', () => {
       render(<PipelinePage />, { transport: draftTransport({ startPipelineMock }) });
 
       await user.click(await screen.findByTestId('start-draft'));
-      await user.click(await screen.findByRole('button', { name: /cancel/i }));
+      await user.click(await screen.findByRole('button', { name: /cancel/iu }));
 
       await waitFor(() => expect(screen.queryByTestId('confirm-start-draft')).not.toBeInTheDocument());
       expect(startPipelineMock).not.toHaveBeenCalled();

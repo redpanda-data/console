@@ -177,22 +177,22 @@ describe('isBlankConfig', () => {
 
 describe('saveSuccessMessage', () => {
   it('spells out that a draft is not running', () => {
-    expect(saveSuccessMessage(creating, 'draft')).toMatch(/isn't running/i);
+    expect(saveSuccessMessage(creating, 'draft')).toMatch(/isn't running/iu);
     expect(saveSuccessMessage(draft, 'draft')).toBe('Draft saved');
   });
 
   it('spells out that a created-and-stopped pipeline is not running', () => {
-    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/i);
-    expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/i);
+    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/iu);
+    expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/iu);
   });
 
   // It was deployed and then stopped, so "yet" would claim it had never run.
   it('does not claim a created-and-stopped pipeline has never run', () => {
-    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/i);
+    expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/iu);
   });
 
   it('mentions the restart only when the pipeline was actually running', () => {
-    expect(saveSuccessMessage(running, 'keep')).toMatch(/restarting/i);
+    expect(saveSuccessMessage(running, 'keep')).toMatch(/restarting/iu);
     expect(saveSuccessMessage(stopped, 'keep')).toBe('Pipeline updated');
   });
 });
@@ -212,27 +212,27 @@ describe('unsavedChangesCopy', () => {
   });
 
   it('says why a running pipeline cannot simply be saved', () => {
-    expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/i);
+    expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/iu);
   });
 
   // The promise belongs to the button that keeps them: Discard clears the buffer.
   it('promises the browser keeps the edits only where leaving keeps them', () => {
     for (const context of [running, stopped, creatingWithoutDrafts]) {
-      expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/i);
+      expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/iu);
     }
-    expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/i);
+    expect(unsavedChangesCopy(creating).body).not.toMatch(/this browser keeps/iu);
   });
 
   // CreatePipeline always deploys, so a create without drafts is a deploy followed by a stop. Only a
   // real draft can promise the configuration never runs.
   it('does not promise that creating without drafts never starts the pipeline', () => {
-    expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/i);
-    expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/i);
-    expect(unsavedChangesCopy(creating).body).toMatch(/does not run/i);
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/iu);
+    expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/iu);
+    expect(unsavedChangesCopy(creating).body).toMatch(/does not run/iu);
   });
 
   // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
   it('does not warn about restarts on a stopped pipeline', () => {
-    expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/i);
+    expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/iu);
   });
 });

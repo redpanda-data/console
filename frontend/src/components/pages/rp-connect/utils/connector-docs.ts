@@ -17,7 +17,7 @@ const DOCS_BASE = docsLinks.cloud.connectComponents;
 // Sections whose docs path is the naive plural (`${section}s`); metrics/tracer don't follow that rule.
 const DOCS_SECTIONS = new Set(['input', 'output', 'processor', 'cache', 'rate_limit']);
 // `cache_resources` → the `cache` section its entries belong to.
-const RESOURCES_KEY_SUFFIX = /_resources$/;
+const RESOURCES_KEY_SUFFIX = /_resources$/u;
 
 /** Docs URL for a connector, or undefined for sections whose upstream path isn't the naive plural. */
 export function getConnectorDocsUrl(section: string, connectorName: string): string | undefined {

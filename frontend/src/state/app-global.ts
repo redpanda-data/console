@@ -17,7 +17,7 @@ import { uiState } from './ui-state';
 type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
 
 // Regex for normalizing paths by removing trailing slashes
-const TRAILING_SLASH_REGEX = /\/+$/;
+const TRAILING_SLASH_REGEX = /\/+$/u;
 
 class AppGlobal {
   private _navigate: NavigateFn | null = null;

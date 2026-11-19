@@ -132,7 +132,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
 
   const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo): boolean => {
     try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;
       const classMatch = item.class.match(quickSearchRegExp) !== null;
       if (nameMatch) {

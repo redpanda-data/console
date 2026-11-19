@@ -1,3 +1,5 @@
+import { spawnSync } from 'bun';
+
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -88,8 +90,6 @@ describe('frontend lint policy', () => {
     ]);
   });
 });
-
-import { spawnSync } from 'bun';
 
 test('enforces the default ten-statement limit and component appearance policy', () => {
   const rejected = lint(`

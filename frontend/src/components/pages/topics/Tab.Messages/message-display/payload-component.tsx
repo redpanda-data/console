@@ -19,7 +19,7 @@ import { KowlJsonView } from '../../../../misc/kowl-json-view';
 import { Button } from '../../../../redpanda-ui/components/button';
 
 // Regex for checking printable ASCII characters
-const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;
 
 type PayloadRenderData =
   | { type: 'null' }

@@ -23,7 +23,7 @@ export type StopMode = (typeof STOP_MODES)[number];
 
 const DEFAULT_LIMIT = '1000';
 export const DEFAULT_IDLE = '30s';
-const POSITIVE_INT_RE = /^\d+$/;
+const POSITIVE_INT_RE = /^\d+$/u;
 
 const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }): boolean =>
   s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);

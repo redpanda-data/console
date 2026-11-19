@@ -17,7 +17,7 @@ export class DebugBundlePage {
    */
   async goto(options?: { skipCleanup?: boolean }) {
     await this.page.goto('/debug-bundle');
-    await expect(this.page.getByRole('heading', { name: /debug bundle/i })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: /debug bundle/iu })).toBeVisible();
 
     // Skip cleanup if we're just checking status
     if (options?.skipCleanup) {
@@ -26,7 +26,7 @@ export class DebugBundlePage {
 
     // Ensure we're on the form page, not a progress page
     // If there's an "in progress" link, navigate through to get back to the form
-    const progressLink = this.page.getByRole('link', { name: /bundle generation in progress|in progress/i });
+    const progressLink = this.page.getByRole('link', { name: /bundle generation in progress|in progress/iu });
     const hasProgressLink = await progressLink.isVisible().catch(() => false);
 
     if (hasProgressLink) {
@@ -34,12 +34,12 @@ export class DebugBundlePage {
     }
 
     // Wait for the form to be visible
-    await expect(this.page.getByRole('button', { name: /generate/i }).first()).toBeVisible();
+    await expect(this.page.getByRole('button', { name: /generate/iu }).first()).toBeVisible();
   }
 
   private async returnToFormFromProgress(progressLink: Locator) {
     await progressLink.click();
-    await this.page.waitForURL(/\/debug-bundle\/progress\//);
+    await this.page.waitForURL(/\/debug-bundle\/progress\//u);
 
     // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
     const doneButton = this.page.getByTestId('debug-bundle-done-button');
@@ -64,15 +64,15 @@ export class DebugBundlePage {
       await this.page.goto(`/debug-bundle/progress/${bundleId}`);
     } else {
       await this.page.goto('/debug-bundle');
-      const progressLink = this.page.getByRole('link', { name: /progress|view progress|in progress/i });
+      const progressLink = this.page.getByRole('link', { name: /progress|view progress|in progress/iu });
       await expect(progressLink).toBeVisible();
       await progressLink.click();
     }
-    await expect(this.page).toHaveURL(/\/debug-bundle\/progress\//);
+    await expect(this.page).toHaveURL(/\/debug-bundle\/progress\//u);
   }
 
   async waitForProgressPage() {
-    await this.page.waitForURL(/\/debug-bundle\/progress\//);
+    await this.page.waitForURL(/\/debug-bundle\/progress\//u);
   }
 
   /**
@@ -88,7 +88,7 @@ export class DebugBundlePage {
     // Verify advanced options are visible
     await expect(
       this.page.getByText(
-        /This is an advanced feature, best used if you have received direction to do so from Redpanda support./i
+        /This is an advanced feature, best used if you have received direction to do so from Redpanda support./iu
       )
     ).toBeVisible();
   }
@@ -104,33 +104,33 @@ export class DebugBundlePage {
    * Form input methods
    */
   async setCpuProfilerSeconds(seconds: number) {
-    const cpuInput = this.page.getByLabel(/cpu profiler/i).or(this.page.locator('input[data-testid*="cpu-profiler"]'));
+    const cpuInput = this.page.getByLabel(/cpu profiler/iu).or(this.page.locator('input[data-testid*="cpu-profiler"]'));
     await cpuInput.fill(String(seconds));
   }
 
   async setControllerLogSizeMB(sizeMB: number) {
     const logSizeInput = this.page
-      .getByLabel(/controller log.*size/i)
+      .getByLabel(/controller log.*size/iu)
       .or(this.page.locator('input[data-testid*="controller-log-size"]'));
     await logSizeInput.fill(String(sizeMB));
   }
 
   async setLogsSizeLimitMB(sizeMB: number) {
     const logsLimitInput = this.page
-      .getByLabel(/logs.*size.*limit/i)
+      .getByLabel(/logs.*size.*limit/iu)
       .or(this.page.locator('input[data-testid*="logs-size-limit"]'));
     await logsLimitInput.fill(String(sizeMB));
   }
 
   async setMetricsIntervalSeconds(seconds: number) {
     const metricsInput = this.page
-      .getByLabel(/metrics.*interval/i)
+      .getByLabel(/metrics.*interval/iu)
       .or(this.page.locator('input[data-testid*="metrics-interval"]'));
     await metricsInput.fill(String(seconds));
   }
 
   async setEnableTLS(enabled: boolean) {
-    const tlsCheckbox = this.page.getByRole('checkbox', { name: /enable tls|tls/i });
+    const tlsCheckbox = this.page.getByRole('checkbox', { name: /enable tls|tls/iu });
     if (enabled) {
       await tlsCheckbox.check();
     } else {
@@ -185,7 +185,7 @@ export class DebugBundlePage {
    * Bundle generation actions
    */
   async generate(options?: { confirmOverwrite?: boolean }) {
-    const generateButton = this.page.getByRole('button', { name: /generate/i }).first();
+    const generateButton = this.page.getByRole('button', { name: /generate/iu }).first();
     await expect(generateButton).toBeVisible();
     await generateButton.click();
 
@@ -219,7 +219,7 @@ export class DebugBundlePage {
     return await step('Generate basic debug bundle', async () => {
       await this.goto();
       await this.generate({ confirmOverwrite: true });
-      await expect(this.page.getByText(/generating/i)).toBeVisible({ timeout: 10_000 });
+      await expect(this.page.getByText(/generating/iu)).toBeVisible({ timeout: 10_000 });
     });
   }
 
@@ -234,7 +234,7 @@ export class DebugBundlePage {
       await this.goto();
       await this.fillAdvancedForm(options);
 
-      const generateButton = this.page.getByRole('button', { name: /generate/i }).first();
+      const generateButton = this.page.getByRole('button', { name: /generate/iu }).first();
       await expect(generateButton).toBeVisible();
       await generateButton.click();
 
@@ -276,14 +276,14 @@ export class DebugBundlePage {
    * Bundle download and deletion
    */
   async downloadBundle(): Promise<Download> {
-    const downloadLink = this.page.getByRole('link', { name: /download/i });
+    const downloadLink = this.page.getByRole('link', { name: /download/iu });
     await expect(downloadLink).toBeVisible({ timeout: 5000 });
 
     const downloadPromise = this.page.waitForEvent('download');
     await downloadLink.click();
 
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/debug-bundle\.zip/);
+    expect(download.suggestedFilename()).toMatch(/debug-bundle\.zip/u);
 
     return download;
   }
@@ -291,19 +291,19 @@ export class DebugBundlePage {
   async deleteBundle() {
     return await step('Delete debug bundle', async () => {
       const deleteButton = this.page
-        .getByRole('button', { name: /delete/i })
+        .getByRole('button', { name: /delete/iu })
         .or(this.page.locator('button[aria-label*="delete"]'));
 
       await expect(deleteButton).toBeVisible();
       await deleteButton.click();
 
       // Confirm deletion if modal appears
-      const confirmButton = this.page.getByRole('button', { name: /confirm|yes|delete/i });
+      const confirmButton = this.page.getByRole('button', { name: /confirm|yes|delete/iu });
       if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await confirmButton.click();
       }
 
-      await expect(this.page.getByText(/deleted|removed/i)).toBeVisible({ timeout: 5000 });
+      await expect(this.page.getByText(/deleted|removed/iu)).toBeVisible({ timeout: 5000 });
     });
   }
 
@@ -313,15 +313,15 @@ export class DebugBundlePage {
   async isBundleGenerationInProgress(): Promise<boolean> {
     await this.goto({ skipCleanup: true });
 
-    const progressLink = this.page.getByRole('link', { name: /progress|in progress/i });
+    const progressLink = this.page.getByRole('link', { name: /progress|in progress/iu });
     return progressLink.isVisible({ timeout: 2000 }).catch(() => false);
   }
 
   async waitForBundleCompletion(timeout = 60_000) {
     await Promise.race([
-      this.page.getByText(/complete|success|ready/i).waitFor({ timeout }),
-      this.page.getByText(/download/i).waitFor({ timeout }),
-      this.page.getByText(/error|failed/i).waitFor({ timeout }),
+      this.page.getByText(/complete|success|ready/iu).waitFor({ timeout }),
+      this.page.getByText(/download/iu).waitFor({ timeout }),
+      this.page.getByText(/error|failed/iu).waitFor({ timeout }),
     ]);
   }
 
@@ -329,7 +329,7 @@ export class DebugBundlePage {
    * Validation methods
    */
   async verifyBrokerStatus() {
-    await this.page.waitForURL(/\/debug-bundle\/progress\//);
+    await this.page.waitForURL(/\/debug-bundle\/progress\//u);
 
     // Verify the overview component is visible
     const overview = this.page.getByTestId('debug-bundle-overview');
@@ -366,13 +366,13 @@ export class DebugBundlePage {
   async verifyAdvancedModeActive() {
     await expect(
       this.page.getByText(
-        /This is an advanced feature, best used if you have received direction to do so from Redpanda support./i
+        /This is an advanced feature, best used if you have received direction to do so from Redpanda support./iu
       )
     ).toBeVisible();
   }
 
   async verifyBasicModeActive() {
-    const generateButton = this.page.getByRole('button', { name: /generate/i }).first();
+    const generateButton = this.page.getByRole('button', { name: /generate/iu }).first();
     await expect(generateButton).toBeVisible();
   }
 

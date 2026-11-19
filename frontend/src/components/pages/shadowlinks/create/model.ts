@@ -140,7 +140,7 @@ const formSchemaShape = z.object({
           .string()
           .trim()
           .min(1, 'at least one server url is required')
-          .regex(/^[a-zA-Z0-9.-]+:\d+$/, 'Must be in format host:port (e.g., localhost:9092)'),
+          .regex(/^[a-zA-Z0-9.-]+:\d+$/u, 'Must be in format host:port (e.g., localhost:9092)'),
       })
     )
     .min(1, 'At least one bootstrap server is required'),
@@ -355,7 +355,7 @@ const refineMtlsConsistency = (
   }
 };
 
-const SR_DURATION_REGEX = /^(\d+)(ns|us|ms|s|m|h)$/;
+const SR_DURATION_REGEX = /^(\d+)(ns|us|ms|s|m|h)$/u;
 const SR_DURATION_UNIT_SECONDS: Record<string, number> = {
   ns: 0.000_000_001,
   us: 0.000_001,
@@ -364,7 +364,7 @@ const SR_DURATION_UNIT_SECONDS: Record<string, number> = {
   m: 60,
   h: 3600,
 };
-const SR_POSITIVE_INT_REGEX = /^[1-9]\d*$/;
+const SR_POSITIVE_INT_REGEX = /^[1-9]\d*$/u;
 // google.protobuf.Duration and int32 upper bounds: past these the request
 // fails at serialization.
 const SR_DURATION_MAX_SECONDS = 315_576_000_000;

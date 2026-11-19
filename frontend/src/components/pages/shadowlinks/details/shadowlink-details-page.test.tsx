@@ -12,6 +12,12 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
+import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { render } from 'test-utils';
+
+import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: false }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -74,13 +80,6 @@ rs.mock('./tasks-table', () => ({ TasksTable: MockTasksTable }));
 rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: MockShadowLinkConfiguration }));
 rs.mock('./failover-tab', () => ({ FailoverTab: MockFailoverTab }));
 rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
-
-import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
-import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { render } from 'test-utils';
-
-import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
 const FENCED_SOURCE: ShadowLinkSource = {
   kind: 'cloud',

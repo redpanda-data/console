@@ -16,7 +16,7 @@ import { describe, expect, it } from 'bun:test';
 
 // Shape, not values: pinning the palette would break on every registry change. What is guarded is
 // the reading order the design needs, which Monaco's own defaults get wrong.
-const RGBA_HEX = /^#[0-9a-f]{8}$/;
+const RGBA_HEX = /^#[0-9a-f]{8}$/u;
 const alphaOf = (color: string) => Number.parseInt(color.slice(7), 16);
 const hueOf = (color: string) => color.slice(0, 7);
 

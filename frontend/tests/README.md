@@ -19,8 +19,7 @@ Node must satisfy `package.json`. CI selects Node from `.nvmrc`.
 | Running Console + backend + brokers/services | Rstest + Playwright + Testcontainers | `bun run e2e-test:variant console` |
 
 Classify before naming: `.test.ts` is the Bun convention, `.test.tsx` covers DOM/React
-integration, `.integration.test.ts` covers non-JSX integration, and `.spec.ts` drives a
-real browser. A test does not become an integration just because its module uses JSX.
+integration, `.integration.test.ts` covers non-JSX integration, `.browser.test.ts` drives a real browser, and `.e2e.test.ts` covers a running-app journey. A test does not become an integration just because its module uses JSX.
 Focused tests and direct legacy runner imports (including subpaths) are lint errors;
 selector helpers such as Ivya and Rstest's transitive internals are not prohibited.
 The focused Console policy check also rejects arbitrary sleeps, hand-written polling,
@@ -67,7 +66,7 @@ Setup uses `tests/shared/global-setup.mjs`, variant JSON/YAML, pinned `test-imag
 and the existing Testcontainers resource/cleanup helpers. Teardown also runs after
 failure. Local single-variant runs allocate free host ports; the all-variant command
 runs variants in parallel with separate port mappings. Console uses eight workers.
-The quota cases are collected by `quotas/quotas.spec.ts` and run sequentially within
+The quota cases are collected by `quotas/quotas.e2e.test.ts` and run sequentially within
 that file so pagination cannot race other quota mutations.
 Other variants retain their worker/retry limits.
 
@@ -78,7 +77,7 @@ the OSS workflow does not repeat those variants in a second matrix.
 
 ```sh
 bun run e2e-test:variant console list --summary
-bun run e2e-test:variant console topics/topic-list.spec.ts
+bun run e2e-test:variant console topics/topic-list.e2e.test.ts
 bun run e2e-test:dev
 ```
 

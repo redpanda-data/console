@@ -11,7 +11,7 @@
 
 import type { Config } from '@tanstack/router-plugin/rspack';
 
-export const TANSTACK_CHUNK_PATTERN = /[\\/]node_modules[\\/]@tanstack[\\/]/;
+export const TANSTACK_CHUNK_PATTERN = /[\\/]node_modules[\\/]@tanstack[\\/]/u;
 
 export const tanstackRouterConfig = {
   target: 'react',

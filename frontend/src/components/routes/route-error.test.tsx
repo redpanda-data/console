@@ -11,13 +11,13 @@
 
 import { render, screen } from '@testing-library/react';
 
+import { RouteError } from './route-error';
+
 const mockRouter = { invalidate: rs.fn() };
 
 rs.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
-
-import { RouteError } from './route-error';
 
 describe('the RouteError', () => {
   test('shows a real Error message', () => {

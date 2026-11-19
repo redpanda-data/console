@@ -300,7 +300,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
 /** The quick-search text as a case-insensitive pattern, or `null` when it is not a valid one. */
 const toQuickSearchRegExp = (quickSearch: string): RegExp | null => {
   try {
-    return new RegExp(quickSearch, 'i');
+    return new RegExp(quickSearch, 'iu');
   } catch {
     return null;
   }

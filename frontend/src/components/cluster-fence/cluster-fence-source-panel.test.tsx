@@ -15,9 +15,13 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
+import { type BrokerProgress, type FencePhase, isBlockingPhase } from './cluster-fence-model';
+import { ClusterFenceSourcePanel } from './cluster-fence-source-panel';
 import type { ShadowLinkTopology } from './shadow-link-topology';
 
 rs.mock('react-query/api/cluster-fence', () => {
@@ -34,12 +38,6 @@ rs.mock('react-query/api/cluster-fence', () => {
 rs.mock('react-query/api/shadowlink', () => ({
   useListShadowLinksQuery: rs.fn(() => ({ data: { shadowLinks: [] } })),
 }));
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-
-import { type BrokerProgress, type FencePhase, isBlockingPhase } from './cluster-fence-model';
-import { ClusterFenceSourcePanel } from './cluster-fence-source-panel';
 
 const mockStatus = (
   phase: FencePhase,
@@ -109,7 +107,7 @@ const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = 
   });
 
 /** Kafka error names the fence returns by default; clusters can configure others. */
-const ERROR_CODE_NAMES = /REQUEST_TIMED_OUT|POLICY_VIOLATION|COORDINATOR_NOT_AVAILABLE/;
+const ERROR_CODE_NAMES = /REQUEST_TIMED_OUT|POLICY_VIOLATION|COORDINATOR_NOT_AVAILABLE/u;
 
 describe('the ClusterFenceSourcePanel', () => {
   beforeEach(() => {

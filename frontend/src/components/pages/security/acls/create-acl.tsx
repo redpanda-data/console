@@ -76,10 +76,10 @@ import {
   type SummaryProps,
 } from '../shared/acl-model';
 
-const UNDERSCORE_REGEX = /_/g;
-const FIRST_CHAR_REGEX = /^\w/;
-const COLON_REGEX = /:/;
-const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/;
+const UNDERSCORE_REGEX = /_/gu;
+const FIRST_CHAR_REGEX = /^\w/u;
+const COLON_REGEX = /:/u;
+const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/u;
 
 // Helper function to convert UPPER_CASE strings to sentence case ex: ALTER => Alter ALTER_CONFIG => Alter config
 export const formatLabel = (text: string): string => {

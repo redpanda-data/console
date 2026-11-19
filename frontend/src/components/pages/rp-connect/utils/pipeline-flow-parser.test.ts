@@ -993,7 +993,7 @@ output:
 });
 
 // Resource definitions render in the lane, inspectable via a path target typed by component.
-function expectResourceDefinitionsInspectable(nodes: PipelineFlowNode[]): void {
+function expectResourceDefinitionsInspectable(nodes: PipelineFlowNode[]) {
   const inputRes = nodes.find((n) => n.id === 'resource-input_resources-0');
   expect(inputRes).toMatchObject({ section: 'resource', label: 'generate', labelText: 'my_input' });
   expect(inputRes?.editTarget).toEqual({ kind: 'path', path: ['input_resources', 0], componentType: 'input' });
@@ -1010,7 +1010,7 @@ function expectResourceDefinitionsInspectable(nodes: PipelineFlowNode[]): void {
 }
 
 // The `resource:` references resolve (not dangling) and link to their definitions.
-function expectIndirectionRefsResolved(nodes: PipelineFlowNode[]): void {
+function expectIndirectionRefsResolved(nodes: PipelineFlowNode[]) {
   const input = nodes.find((n) => n.id === 'input-0');
   expect(input?.resourceRef).toBe('my_input');
   expect(input?.danglingRef).toBeUndefined();

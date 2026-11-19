@@ -147,7 +147,7 @@ const UploadLicensePageContent: FC = () => {
       {success ? (
         <div className="mb-20 flex flex-col items-center gap-4 text-center">
           <TonedIcon className="size-[72px]" icon={CheckCircle2Icon} tone="success" />
-          {/* license.spec.ts asserts on `h1:has-text("License uploaded")`. */}
+          {/* license.e2e.test.ts asserts on `h1:has-text("License uploaded")`. */}
           <h1 className="text-heading-lg">License uploaded</h1>
           <div className="flex flex-col gap-4">
             <div>

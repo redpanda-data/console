@@ -13,15 +13,15 @@ import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { MessagesTable, type MessagesTableProps } from './messages-table';
+import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
+import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
+
 const guard = rs.hoisted(() => ({ fencedRead: false }));
 
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
   useClusterFenceGuard: () => ({ reasonFor: () => undefined, isFencedRead: () => guard.fencedRead }),
 }));
-
-import { MessagesTable, type MessagesTableProps } from './messages-table';
-import { CompressionType, type TopicMessage } from '../../../../../state/rest-interfaces';
-import { DEFAULT_MESSAGE_COLUMNS } from '../../../../../stores/topic-settings-store';
 
 const baseProps: MessagesTableProps = {
   messages: [],

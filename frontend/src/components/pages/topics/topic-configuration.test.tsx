@@ -3,8 +3,9 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import ConfigurationEditor from './topic-configuration';
+import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
-const PRECISE_VALUE_LABEL = /Precise value:/;
+const PRECISE_VALUE_LABEL = /Precise value:/u;
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -31,8 +32,6 @@ rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
     reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
   }),
 }));
-
-import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
 const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }): ConfigEntryExtended => ({
   name: 'test.option',

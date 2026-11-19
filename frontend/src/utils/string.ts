@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-const CAMEL_CASE_REGEX = /([A-Z])/g;
-const FIRST_CHAR_REGEX = /^\w/;
-const WHITESPACE_REGEX = /\s+/;
+const CAMEL_CASE_REGEX = /([A-Z])/gu;
+const FIRST_CHAR_REGEX = /^\w/u;
+const WHITESPACE_REGEX = /\s+/u;
 
 /** `userName` / `api_key` -> `User Name` / `Api Key`. */
 export function formatFieldLabel(key: string): string {
   return key
     .replace(CAMEL_CASE_REGEX, ' $1') // Insert space before capital letters
-    .replace(/_/g, ' ') // Replace underscores with spaces
+    .replace(/_/gu, ' ') // Replace underscores with spaces
     .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase()); // Capitalize first letter
 }
 

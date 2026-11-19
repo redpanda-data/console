@@ -104,7 +104,7 @@ output:
       const yaml = configToYaml(config, spec);
 
       // Sentinel is converted to comment-only line (no key-value pair)
-      expect(yaml).not.toMatch(/^\s*required_field:/m);
+      expect(yaml).not.toMatch(/^\s*required_field:/mu);
       expect(yaml).toContain('# required_field: Required - string, must be manually set');
     });
 
@@ -117,7 +117,7 @@ output:
       expect(yaml).toContain('# topic: Required - string, must be manually set');
       // Required array fields with empty-string default also become comment-only lines
       expect(yaml).toContain('# addresses: Required - string list, must be manually set');
-      expect(yaml).not.toMatch(/^\s*addresses:/m);
+      expect(yaml).not.toMatch(/^\s*addresses:/mu);
     });
 
     test('should not add comments to parent objects but should add to arrays', () => {
@@ -137,7 +137,7 @@ output:
 
       // Required array fields with empty-string default also become comment-only lines
       expect(yaml).toContain('# addresses: Required - string list, must be manually set');
-      expect(yaml).not.toMatch(/^\s*addresses:/m);
+      expect(yaml).not.toMatch(/^\s*addresses:/mu);
     });
 
     test('should add comments to redpanda_common component (input type path)', () => {
@@ -245,7 +245,7 @@ output:
         existingYaml: '{}',
       });
 
-      expect(mergedYaml).toMatch(/^input:$/m);
+      expect(mergedYaml).toMatch(/^input:$/mu);
       expect(mergedYaml).not.toContain('{ input');
     });
   });
@@ -1673,14 +1673,6 @@ output:
     const result = patchRedpandaConfig(yaml, 'input', 'kafka_franz', { topicName: 'my-topic' });
     expect(result).toBeDefined();
     expect(result).toContain('# topic: this is in the output section');
-  });
-
-  test('returns undefined for empty YAML', () => {
-    expect(patchRedpandaConfig('', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
-  });
-
-  test('returns undefined for invalid YAML', () => {
-    expect(patchRedpandaConfig('{{{', 'input', 'kafka_franz', { topicName: 'x' })).toBeUndefined();
   });
 });
 

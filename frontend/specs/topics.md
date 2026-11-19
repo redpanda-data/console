@@ -5,7 +5,7 @@
 E2E tests for the Topics page in Redpanda Console, covering topic management, message operations, and configuration viewing.
 
 **Total Tests:** 40 tests across 6 spec files
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `tests/shared/seed.e2e.test.ts`
 
 ## Routes
 
@@ -15,7 +15,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ## Test Files
 
-### 1. Topic List - Basic Operations (`topic-list.spec.ts`)
+### 1. Topic List - Basic Operations (`topic-list.e2e.test.ts`)
 
 **6 tests** covering list viewing, search, and filtering operations.
 
@@ -63,7 +63,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ---
 
-### 2. Topic Creation (`topic-creation.spec.ts`)
+### 2. Topic Creation (`topic-creation.e2e.test.ts`)
 
 **7 tests** covering topic creation flows and validation.
 
@@ -123,7 +123,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ---
 
-### 3. Topic Details - Navigation and Tabs (`topic-navigation.spec.ts`)
+### 3. Topic Details - Navigation and Tabs (`topic-navigation.e2e.test.ts`)
 
 **5 tests** covering topic details navigation and tab functionality.
 
@@ -168,7 +168,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ---
 
-### 4. Produce Messages (`topic-messages-production.spec.ts`)
+### 4. Produce Messages (`topic-messages-production.e2e.test.ts`)
 
 **7 tests** covering message production operations.
 
@@ -232,7 +232,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ---
 
-### 5. View and Filter Messages (`topic-messages-filtering.spec.ts`)
+### 5. View and Filter Messages (`topic-messages-filtering.e2e.test.ts`)
 
 **8 tests** covering message viewing and filtering operations.
 
@@ -299,7 +299,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 
 ---
 
-### 6. Message Actions and Export (`topic-messages-actions.spec.ts`)
+### 6. Message Actions and Export (`topic-messages-actions.e2e.test.ts`)
 
 **7 tests** covering message actions like copy, export, and viewing metadata.
 

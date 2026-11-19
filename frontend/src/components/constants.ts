@@ -32,16 +32,16 @@ export const CLOUD_MANAGED_TAG_KEYS = {
   SECRET_ID: 'rp_cloud_secret_id',
 } as const;
 
-export const isCloudManagedTagKey = (key: string): boolean =>
+const isCloudManagedTagKey = (key: string) =>
   Object.values(CLOUD_MANAGED_TAG_KEYS).includes(
     key as (typeof CLOUD_MANAGED_TAG_KEYS)[keyof typeof CLOUD_MANAGED_TAG_KEYS]
   );
 
 /** Returns true if the tag key is a system tag that should be hidden from users. */
-export const isSystemTag = (key: string): boolean => key.startsWith('__') || isCloudManagedTagKey(key);
+export const isSystemTag = (key: string) => key.startsWith('__') || isCloudManagedTagKey(key);
 
 /** User-visible tags (system tags filtered out) as `{ key, value }` entries. */
-export const getUserTagEntries = (tags: Record<string, string>): { key: string; value: string }[] =>
+export const getUserTagEntries = (tags: Record<string, string>) =>
   Object.entries(tags)
     .filter(([k]) => !isSystemTag(k))
     .map(([key, value]) => ({ key, value }));

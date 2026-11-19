@@ -19,7 +19,7 @@ const PROBLEMS: PipelineProblem[] = [
   { key: 'p1', message: 'field required', nodeId: 'input-0', nodeLabel: 'kafka_franz', target: { kind: 'input' } },
 ];
 
-const USE_THE_REPLACEMENT = /Use the/;
+const USE_THE_REPLACEMENT = /Use the/u;
 
 const DEPRECATIONS: PipelineProblem[] = [
   {

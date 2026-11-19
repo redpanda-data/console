@@ -80,7 +80,7 @@ const nameFilterFn = (row: DataTableRow<UserListEntry>, columnId: string, filter
     return true;
   }
   try {
-    return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
+    return new RegExp(filterValue, 'iu').test(String(row.getValue(columnId)));
   } catch {
     return String(row.getValue(columnId)).toLowerCase().includes(filterValue.toLowerCase());
   }

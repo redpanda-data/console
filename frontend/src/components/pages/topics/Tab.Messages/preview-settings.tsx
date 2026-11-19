@@ -295,7 +295,7 @@ function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2
   const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
     // We'll never get called for '*' or '**' patterns
     // So we can be sure that the pattern is not just '*'
-    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'i');
+    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'iu');
     return segmentRegex.test(propertyName);
   });
 
@@ -554,5 +554,5 @@ function wildcardToRegex(pattern: string): RegExp {
 }
 
 function regexEscape(regexPattern: string): string {
-  return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+  return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/gu, '\\$&');
 }

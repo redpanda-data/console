@@ -104,7 +104,7 @@ export const canBeLinkSource = (cluster: Pick<Cluster, 'id' | 'state'>): boolean
 export const canReadFence = (cluster: Pick<Cluster, 'state'>): boolean =>
   cluster.state === Cluster_State.READY || cluster.state === Cluster_State.UPGRADING;
 
-const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//;
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//u;
 
 const normalizeEndpoint = (endpoint: string) => endpoint.trim().toLowerCase().replace(SCHEME_PREFIX, '');
 

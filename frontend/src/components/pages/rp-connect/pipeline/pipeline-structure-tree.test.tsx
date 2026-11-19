@@ -15,9 +15,9 @@ import { act, render, screen } from 'test-utils';
 
 import { PipelineStructureTree } from './pipeline-structure-tree';
 
-const HOLDING_NOTICE_RE = /last valid outline/i;
-const FIX_IT_NOTICE_RE = /the current yaml is invalid/i;
-const INVALID_NOTICE_RE = /invalid/i;
+const HOLDING_NOTICE_RE = /last valid outline/iu;
+const FIX_IT_NOTICE_RE = /the current yaml is invalid/iu;
+const INVALID_NOTICE_RE = /invalid/iu;
 
 // A deeply-nested config: switch → case → branch → http, plus a sibling rate_limit.
 const NESTED = `input:

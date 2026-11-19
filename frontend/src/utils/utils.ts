@@ -488,7 +488,7 @@ export function fromDecimalSeparated(str: string): number {
 }
 
 export function toDecimalSeparated(num: number): string {
-  return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return String(num).replace(/\B(?=(\d{3})+(?!\d))/gu, ',');
 }
 
 /**
@@ -704,11 +704,11 @@ export function substringWithEllipsis(input: string, maxLength: number): string 
 // https://github.com/remix-run/history/issues/874
 export function encodeURIComponentPercents(rawStr: string): string {
   const encoded = encodeURIComponent(rawStr);
-  return encoded.replace(/%/g, '﹪');
+  return encoded.replace(/%/gu, '﹪');
 }
 
 export function decodeURIComponentPercents(encodedStr: string): string {
-  const encoded = encodedStr.replace(/﹪/g, '%');
+  const encoded = encodedStr.replace(/﹪/gu, '%');
   return decodeURIComponent(encoded);
 }
 

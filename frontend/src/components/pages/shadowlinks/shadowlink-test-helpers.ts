@@ -55,8 +55,8 @@ export const setSchemaRegistrySyncGateSupported = (isSupported: boolean) => {
 /**
  * Regex patterns for test IDs
  */
-export const BOOTSTRAP_SERVER_INPUT_PATTERN = /bootstrap-server-input-\d+/;
-export const TOPIC_FILTER_NAME_PATTERN = /topic-filter-\d+-name/;
+export const BOOTSTRAP_SERVER_INPUT_PATTERN = /bootstrap-server-input-\d+/u;
+export const TOPIC_FILTER_NAME_PATTERN = /topic-filter-\d+-name/u;
 
 /**
  * Action types for table-driven tests

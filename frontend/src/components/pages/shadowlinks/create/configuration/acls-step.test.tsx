@@ -19,7 +19,7 @@ import { render, screen, waitFor, within } from 'test-utils';
 import { AclsStep } from './acls-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const ACL_FILTER_PATTERN = /^acl-filter-\d+$/;
+const ACL_FILTER_PATTERN = /^acl-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({

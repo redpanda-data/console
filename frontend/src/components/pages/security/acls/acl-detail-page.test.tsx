@@ -15,10 +15,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import AclDetailPage from './acl-detail-page';
 import type { AclDetail } from '../shared/acl-model';
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 const { mockUseGetAclsByPrincipal, mockNavigate } = rs.hoisted(() => ({
   mockUseGetAclsByPrincipal: rs.fn(),
   // Real navigate() returns a promise that settles once the route commits.
@@ -55,10 +51,6 @@ rs.mock('./acl-details', () => ({
   ACLDetails: MockACLDetails,
 }));
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const singleHostAclDetail = (principal: string): AclDetail => ({
   sharedConfig: { principal, host: '*' },
   rules: [],
@@ -73,10 +65,6 @@ const aclDetailResult = (principal: string) => ({
 /** Return value that keeps the component in "loading" state — useful when we
  *  only care about the call arguments, not what gets rendered. */
 const loadingResult = { data: undefined, isLoading: true };
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('the AclDetailPage — principal URL encoding', () => {
   beforeEach(() => {

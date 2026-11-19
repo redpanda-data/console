@@ -889,7 +889,7 @@ function graphRfNode({ gn, x, y }: PlacedGraphNode): Node {
       initialHeight: gn.h,
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
-      data: makeMergeData(gn.id.replace(/-merge$/, '')),
+      data: makeMergeData(gn.id.replace(/-merge$/u, '')),
     };
   }
   const node = gn.node as PipelineFlowNode;

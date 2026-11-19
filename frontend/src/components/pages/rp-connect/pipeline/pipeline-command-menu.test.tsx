@@ -28,9 +28,7 @@ import { PipelineCommandMenu } from './pipeline-command-menu';
 // cmdk calls scrollIntoView on selected items — JSDOM does not implement it
 Element.prototype.scrollIntoView = rs.fn();
 
-// ---------------------------------------------------------------------------
 // Mock editor factory
-// ---------------------------------------------------------------------------
 
 function createMockEditor() {
   return {
@@ -49,9 +47,7 @@ function createMockEditor() {
   } as unknown as editor.IStandaloneCodeEditor;
 }
 
-// ---------------------------------------------------------------------------
 // Transport factory — registers all three RPCs used by PipelineCommandMenu
-// ---------------------------------------------------------------------------
 
 function createTestTransport({
   secretNames = [] as string[],
@@ -83,10 +79,6 @@ function createTestTransport({
     );
   });
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 // Helper: query category group headings (rendered as h5 elements)
 function getHeading(name: string) {
@@ -122,7 +114,7 @@ describe('the PipelineCommandMenu', () => {
 
     await waitFor(() => expect(getHeading('Topics')).toBeInTheDocument());
     expect(queryHeading('Secrets')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create secret/iu })).toBeInTheDocument();
   });
 
   it('secret items appear in the list with correct syntax', async () => {
@@ -258,7 +250,7 @@ describe('the PipelineCommandMenu', () => {
     expect(await screen.findByText('secrets.EXISTING_KEY')).toBeInTheDocument();
 
     // Click the "Create secret" button in the footer
-    await user.click(screen.getByRole('button', { name: /Create secret/i }));
+    await user.click(screen.getByRole('button', { name: /Create secret/iu }));
 
     // openSubDialog calls onOpenChange(false) before opening the sub-dialog
     await waitFor(() => {
@@ -275,9 +267,9 @@ describe('the PipelineCommandMenu', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /create topic/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create secret/iu })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create topic/iu })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create user/iu })).toBeInTheDocument();
       });
     });
 
@@ -289,14 +281,14 @@ describe('the PipelineCommandMenu', () => {
         transport,
       });
 
-      expect(await screen.findByRole('button', { name: /create secret/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /create secret/iu })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Secrets' }));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create topic/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create secret/iu })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create topic/iu })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create user/iu })).not.toBeInTheDocument();
       });
     });
 
@@ -308,14 +300,14 @@ describe('the PipelineCommandMenu', () => {
         transport,
       });
 
-      expect(await screen.findByRole('button', { name: /create topic/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /create topic/iu })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Topics' }));
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /create topic/i })).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create secret/iu })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create topic/iu })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create user/iu })).not.toBeInTheDocument();
       });
     });
 
@@ -327,14 +319,14 @@ describe('the PipelineCommandMenu', () => {
         transport,
       });
 
-      expect(await screen.findByRole('button', { name: /create user/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /create user/iu })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Users' }));
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create topic/i })).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create secret/iu })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create topic/iu })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create user/iu })).toBeInTheDocument();
       });
     });
 
@@ -346,14 +338,14 @@ describe('the PipelineCommandMenu', () => {
         transport,
       });
 
-      expect(await screen.findByRole('button', { name: /create secret/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /create secret/iu })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Variables' }));
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /create secret/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create topic/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /create user/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create secret/iu })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create topic/iu })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create user/iu })).not.toBeInTheDocument();
       });
     });
 

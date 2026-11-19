@@ -59,7 +59,7 @@ import { appGlobal } from './state/app-global';
 import { installUISettingsSideEffects } from './state/ui';
 
 // Regex for normalizing paths by removing trailing slashes
-const TRAILING_SLASH_REGEX = /\/+$/;
+const TRAILING_SLASH_REGEX = /\/+$/u;
 
 // Normalize a path by removing trailing slashes for consistent comparison
 const normalizePath = (path: string) => path.replace(TRAILING_SLASH_REGEX, '') || '/';

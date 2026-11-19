@@ -15,14 +15,11 @@ import { render, screen } from 'test-utils';
 import { InvalidConfigNotice } from './invalid-config-notice';
 
 describe('the InvalidConfigNotice', () => {
-  it('renders its message inside a warning alert', () => {
+  it('announces invalid YAML without covering the canvas toolbars', () => {
     render(<InvalidConfigNotice>Can't visualize the latest YAML.</InvalidConfigNotice>);
-    expect(screen.getByRole('alert')).toHaveTextContent("Can't visualize the latest YAML.");
-  });
 
-  it('stays content-width (w-auto) rather than the Alert default w-full, so the floating canvas banner does not cover the toolbars', () => {
-    render(<InvalidConfigNotice>notice</InvalidConfigNotice>);
     const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent("Can't visualize the latest YAML.");
     expect(alert).toHaveClass('w-auto');
     expect(alert).not.toHaveClass('w-full');
   });

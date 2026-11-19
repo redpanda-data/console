@@ -64,7 +64,7 @@ type GroupSearchParams = {
   tab?: GroupTab;
 };
 
-const DEFAULT_MATCH_ALL_REGEX = /.*/s;
+const DEFAULT_MATCH_ALL_REGEX = /.*/su;
 const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
 
 function getQuickSearchRegex(pattern: string): RegExp {
@@ -74,7 +74,7 @@ function getQuickSearchRegex(pattern: string): RegExp {
   }
   let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
   try {
-    regExp = new RegExp(pattern, 'i');
+    regExp = new RegExp(pattern, 'iu');
   } catch (_e) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Invalid expression');

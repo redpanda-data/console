@@ -8,7 +8,7 @@ import { config } from '../../../config';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 
 // The compute-units field clamps on blur: clamping per keystroke makes it unclearable.
-const COMPUTE_UNITS_LABEL = /Compute units/;
+const COMPUTE_UNITS_LABEL = /Compute units/u;
 
 rs.mock('../../misc/pipelines-yaml-editor', () => ({ default: () => null }));
 

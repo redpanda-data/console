@@ -336,13 +336,13 @@ const mergeByComponentType = (
 
 function convertRequiredFieldSentinels(yamlString: string): string {
   // With inline comment: `key: __REQUIRED_FIELD__ # comment` → `# key: comment`
-  let result = yamlString.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(.+)$/gm, '$1# $2: $3');
+  let result = yamlString.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(.+)$/gmu, '$1# $2: $3');
   // Without comment: `key: __REQUIRED_FIELD__` → `# key: Required`
-  result = result.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gm, '$1# $2: Required');
+  result = result.replace(/^(\s*)([\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*$/gmu, '$1# $2: Required');
   return result;
 }
 
-const keyMatchRegex = /^([^:#\n]+):/;
+const keyMatchRegex = /^([^:#\n]+):/u;
 
 /** The key of an unindented `key:` line, if the line is one. */
 const rootKeyOf = (line: string): string | undefined => {

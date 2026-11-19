@@ -190,15 +190,15 @@ function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) =
 
 // Matches an identifier followed by `=>` or `.` and a partial table name,
 // anchored at the cursor: [, name, gap1, separator, gap2, quote, partial].
-const CATALOG_REF_RE = /([A-Za-z_][\w$]*)(\s*)(=>|\.)(\s*)("?)([\w$]*)$/;
-const COMMENT_OR_STRING_NODE_RE = /Comment|String/;
-const CATALOG_REF_BOUNDARY_RE = /[\w$".]/;
-const COMPLETION_IDENTIFIER_RE = /[\w$]+/;
-const VALID_COMPLETION_RE = /^[\w$]*$/;
-const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/i;
+const CATALOG_REF_RE = /([A-Za-z_][\w$]*)(\s*)(=>|\.)(\s*)("?)([\w$]*)$/u;
+const COMMENT_OR_STRING_NODE_RE = /Comment|String/u;
+const CATALOG_REF_BOUNDARY_RE = /[\w$".]/u;
+const COMPLETION_IDENTIFIER_RE = /[\w$]+/u;
+const VALID_COMPLETION_RE = /^[\w$]*$/u;
+const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/iu;
 // Cursor sits immediately after `FROM `/`JOIN ` and a single trailing space —
 // the moment to auto-open the catalog (`catalog=>`) helper.
-const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/i;
+const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/iu;
 
 function catalogTableCompletionResult(
   catalog: Catalog,
@@ -572,7 +572,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                     variant="ghost"
                   >
                     <Terminal />
-                    <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
+                    <span className="truncate font-mono">{h.sql.replace(/\s+/gu, ' ').slice(0, 60)}</span>
                   </Button>
                 ))}
               </PopoverContent>

@@ -117,8 +117,8 @@ import { Features, useSupportedFeaturesStore } from './supported-features';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './ui-state';
 import { config as appConfig, isEmbedded } from '../config';
-import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
-import { trackHubspotUser } from '../hubspot/hubspot.helper';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap-tracking';
+import { trackHubspotUser } from '../hubspot/hubspot-tracking';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,

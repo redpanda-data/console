@@ -20,8 +20,8 @@ const C = 'no-wall-clock-in-tests';
 const T = 'no-test-timeout-or-unreasoned-skip';
 const S = 'require-suppression-reason';
 const N = 'no-native-title-tooltip';
-const CONSOLE_CODE = /^console\((.+)\)$/;
-const CRASH_OUTPUT = /panic|failed to (load|parse)|error running/i;
+const CONSOLE_CODE = /^console\((.+)\)$/u;
+const CRASH_OUTPUT = /panic|failed to (load|parse)|error running/iu;
 const times = (rule: string, count: number) => Array.from({ length: count }, () => rule);
 
 const suppressions: Fixture[] = [

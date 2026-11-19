@@ -19,15 +19,15 @@ import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb'
 import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-rs.mock('config', () => ({
-  ...rs.requireActual<typeof import('config')>('config'),
-  isEmbedded: rs.fn(),
-}));
-
 import KafkaConnectOverview from './overview';
 import { useApiStore } from '../../../state/backend-api';
 import type { KafkaConnectors } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+
+rs.mock('config', () => ({
+  ...rs.requireActual<typeof import('config')>('config'),
+  isEmbedded: rs.fn(),
+}));
 
 const NEW_LIST_CTA = 'Create a pipeline';
 

@@ -13,7 +13,13 @@ import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import { toast } from 'sonner';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { renderWithFileRoutes } from 'test-utils';
 
 import { ShadowLinkListPage } from './shadowlink-list-page';
 
@@ -51,13 +57,6 @@ rs.mock('sonner', () => ({
   },
 }));
 
-import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { renderWithFileRoutes } from 'test-utils';
-
 const mockedUseListShadowLinksQuery = rs.mocked(useListShadowLinksQuery);
 
 const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinksQuery>>) =>
@@ -69,7 +68,7 @@ const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinks
     ...overrides,
   }) as unknown as ReturnType<typeof useListShadowLinksQuery>;
 
-const CREATE_SHADOW_LINK = /create shadow link/i;
+const CREATE_SHADOW_LINK = /create shadow link/iu;
 
 // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {
@@ -100,7 +99,7 @@ describe('the ShadowLinkListPage', () => {
 
     // Dedicated "no permission" card is shown...
     expect(await screen.findByTestId('shadowlink-no-permission-card')).toBeInTheDocument();
-    expect(screen.getByText(/don't have permission to view shadow links/i)).toBeInTheDocument();
+    expect(screen.getByText(/don't have permission to view shadow links/iu)).toBeInTheDocument();
 
     // ...and we do NOT show the generic error card.
     expect(screen.queryByTestId('shadowlink-error-card')).not.toBeInTheDocument();

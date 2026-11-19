@@ -24,7 +24,10 @@ import {
   executeRangeQuery,
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
+import React from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+import { PipelineThroughputCard } from './pipeline-throughput-card';
 
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
@@ -56,14 +59,6 @@ rs.mock('recharts', () => {
     ResponsiveContainer: ResponsiveContainerStub,
   };
 });
-
-import React from 'react';
-
-import { PipelineThroughputCard } from './pipeline-throughput-card';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const PIPELINE_ID = 'test-pipeline-123';
 
@@ -109,10 +104,6 @@ function buildTransport({
     rpc(executeRangeQuery, executeRangeQueryMock);
   });
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('the PipelineThroughputCard', () => {
   it('shows calm unavailable state with retry when range queries error', async () => {

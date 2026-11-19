@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type SlashPosition = { lineNumber: number; column: number };
 
-export const SLASH_TRIGGER_PATTERN = /\s/;
+export const SLASH_TRIGGER_PATTERN = /\s/u;
 
 /** A `/` triggers at the start of a line or after whitespace. */
 function isSlashTriggerColumn(lineContent: string, slashColumn: number): boolean {

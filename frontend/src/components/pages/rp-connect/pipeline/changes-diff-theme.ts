@@ -52,7 +52,7 @@ const hexChannel = (value: number) =>
   Math.max(0, Math.min(255, Math.round(value)))
     .toString(16)
     .padStart(2, '0');
-const RGB_PARTS = /-?[\d.]+/g;
+const RGB_PARTS = /-?[\d.]+/gu;
 
 /** `rgb(24, 24, 24)` → `#181818`; alpha is dropped since the tiers above supply their own. */
 const toHex = (painted: string): string => {

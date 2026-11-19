@@ -19,6 +19,8 @@ import React from 'react';
 import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import { SecretsStoreListPage } from './secrets-store-list-page';
+
 rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
@@ -38,8 +40,6 @@ rs.mock('config', () => {
 });
 
 Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretsStoreListPage } from './secrets-store-list-page';
 
 const createListSecretsTransport = (listSecretsMock: ReturnType<typeof rs.fn>) =>
   createRouterTransport(({ rpc }) => {
@@ -164,7 +164,7 @@ describe('the SecretsStoreListPage', () => {
     renderWithFileRoutes(<SecretsStoreListPage />, { transport });
 
     await waitFor(() => {
-      expect(screen.getByText(/Error loading secrets:/i)).toBeVisible();
+      expect(screen.getByText(/Error loading secrets:/iu)).toBeVisible();
     });
     // Server returned nextPageToken='stuck' on first call; second call echoed 'stuck' again and the
     // loop bailed out. Anything higher means the guard did not trip.
@@ -286,11 +286,11 @@ describe('the SecretsStoreListPage', () => {
     });
 
     // Click the "Scope" faceted filter button (not the column header one in <thead>)
-    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/i }).find((btn) => !btn.closest('thead'))!;
+    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/iu }).find((btn) => !btn.closest('thead'))!;
     await user.click(scopeFilterButton);
 
     // Select the "MCP Server" option from the filter popover
-    const mcpOption = await screen.findByRole('option', { name: /mcp server/i });
+    const mcpOption = await screen.findByRole('option', { name: /mcp server/iu });
     await user.click(mcpOption);
 
     // Only the MCP-scoped secret should remain visible

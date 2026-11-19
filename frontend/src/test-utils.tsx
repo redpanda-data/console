@@ -17,6 +17,7 @@ import React, {
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
+import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 // This type interface extends the default options for render from RTL, as well
 // as allows the user to specify other things such as initialState, store.
@@ -38,7 +39,6 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
 // (and therefore `config`), which would pin `isEmbedded` live
 // bindings before test files' `rs.mock('config', ...)` hoists can take
 // effect.
-import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 

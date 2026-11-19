@@ -13,8 +13,13 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
+
+import type { FencePhase } from './cluster-fence-model';
+import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
 
 const mutate = rs.fn();
 const mutation = { mutate, reset: rs.fn(), isPending: false, isSuccess: false, error: null as unknown };
@@ -28,12 +33,6 @@ rs.mock('react-query/api/cluster-fence', () => {
   };
 });
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
-
-import type { FencePhase } from './cluster-fence-model';
-import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
 
 const mockStatus = (phase: FencePhase, revision = 4) =>
   rs.mocked(useClusterFenceStatusQuery).mockReturnValue({

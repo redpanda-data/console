@@ -26,7 +26,7 @@ import {
 } from '../rest-interfaces';
 
 // Regex for validating secret strings
-const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;
+const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/u;
 
 export type ConfigPageProps = {
   clusterName: string;

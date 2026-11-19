@@ -33,8 +33,8 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 
 ## Lint policy
 
-- Biome owns general linting and formatting. `bun run lint` / `lint:fix` also run
-  the focused [Console policy checks](lint-rules/README.md); `lint:policy` is read-only.
+- Biome owns general linting and formatting. `bun run lint` / `lint:fix` also run the
+  [Console and Landmines policy checks](lint-rules/README.md). Run `lint:check` for the read-only gate.
 - Pure helpers must not use hook names. Rename them instead of adding a dummy hook.
 - Tests await observable completion or drive a controlled clock, not arbitrary sleeps
   or hand-written polling. Keep real browser timing coverage for native behavior.
@@ -50,7 +50,9 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 
 After changes: `bun run type:check && bun run lint && bun run test`
 
-Classify tests by behavior before choosing filenames. See [test guide](tests/README.md) for full-stack variants, fixtures, coverage and CI.
+Classify tests by behavior before choosing filenames. Use `.browser.test.ts` for native-browser suites and
+`.e2e.test.ts` for running-app variants; neither runs under Bun. See [test guide](tests/README.md) for fixtures,
+coverage and CI.
 
 ## Directory Structure
 

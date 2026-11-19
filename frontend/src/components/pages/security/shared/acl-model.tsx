@@ -11,8 +11,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { toast } from 'sonner';
 
-const UNDERSCORE_REGEX = /_/g;
-const FIRST_CHAR_REGEX = /^\w/;
+const UNDERSCORE_REGEX = /_/gu;
+const FIRST_CHAR_REGEX = /^\w/u;
 
 export type OperationType = 'not-set' | 'allow' | 'deny';
 export const OperationTypeNotSet: OperationType = 'not-set';

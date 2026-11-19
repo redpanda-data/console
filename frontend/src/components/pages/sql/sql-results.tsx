@@ -77,11 +77,11 @@ export type SqlResultsProps = {
 
 const fmtNum = (n: number) => n.toLocaleString('en-US');
 const offStr = (n: number) => `${fmtNum(n)} offset${n === 1 ? '' : 's'}`;
-const CSV_ESCAPE_RE = /[",\n]/;
-const CSV_QUOTE_RE = /"/g;
+const CSV_ESCAPE_RE = /[",\n]/u;
+const CSV_QUOTE_RE = /"/gu;
 // Cells starting with these are interpreted as formulas by Excel/Sheets; prefix
 // with a single quote to neutralize CSV injection.
-const CSV_FORMULA_RE = /^[=+\-@]/;
+const CSV_FORMULA_RE = /^[=+\-@]/u;
 
 // Shared inline-stat layout used across the summary bar.
 const RES_STAT =

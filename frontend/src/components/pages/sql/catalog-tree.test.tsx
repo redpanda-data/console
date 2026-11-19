@@ -40,14 +40,14 @@ const catalog = (overrides: Partial<Catalog> = {}): Catalog => ({
 });
 
 const noTables = { data: undefined, isLoading: false };
-const REDPANDA_CATALOG_RE = /Redpanda Catalog/;
-const ORDERS_RE = /orders/;
-const PUBLIC_RE = /public/;
-const USERS_RE = /users/;
-const CUSTOMER_RE = /customer/;
-const SECRET_RE = /secret/;
-const PAGED_TABLE_RE = /t\d\d/;
-const LOAD_MORE_RE = /Load more · 5 remaining/;
+const REDPANDA_CATALOG_RE = /Redpanda Catalog/u;
+const ORDERS_RE = /orders/u;
+const PUBLIC_RE = /public/u;
+const USERS_RE = /users/u;
+const CUSTOMER_RE = /customer/u;
+const SECRET_RE = /secret/u;
+const PAGED_TABLE_RE = /t\d\d/u;
+const LOAD_MORE_RE = /Load more · 5 remaining/u;
 
 beforeEach(() => {
   rs.mocked(useListTablesQuery).mockReturnValue(noTables as never);

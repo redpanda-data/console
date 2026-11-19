@@ -127,7 +127,7 @@ function Row({
 }) {
   const category = component.categories?.[0];
   // Fall back to the humanized type so same-named components (redis cache vs redis rate-limit) stay distinguishable.
-  const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/g, ' ');
+  const badgeLabel = category ? getCategoryDisplayName(category) : component.type.replace(/_/gu, ' ');
   return (
     <CommandItem
       key={`${component.type}-${component.name}`}
@@ -181,7 +181,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
             {statusBadge(component.status, component.name)}
           </span>
           <span className="text-body-sm text-muted-foreground capitalize">
-            {component.type.replace(/_/g, ' ')}
+            {component.type.replace(/_/gu, ' ')}
             {component.version ? ` · v${component.version}` : ''}
           </span>
         </div>

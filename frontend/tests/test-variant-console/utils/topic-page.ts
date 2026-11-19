@@ -76,14 +76,14 @@ export class TopicPage {
   }
 
   async fillPartitions(partitions: string) {
-    const partitionsInput = this.page.getByPlaceholder(/partitions/i);
+    const partitionsInput = this.page.getByPlaceholder(/partitions/iu);
     if (await partitionsInput.isVisible()) {
       await partitionsInput.fill(partitions);
     }
   }
 
   async fillReplicationFactor(replicationFactor: string) {
-    const replicationInput = this.page.getByPlaceholder(/replication/i);
+    const replicationInput = this.page.getByPlaceholder(/replication/iu);
     if ((await replicationInput.isVisible()) && !(await replicationInput.isDisabled())) {
       await replicationInput.fill(replicationFactor);
     }
@@ -145,13 +145,13 @@ export class TopicPage {
   }
 
   async confirmExport() {
-    const dialog = this.page.getByRole('dialog', { name: /save message/i });
-    const saveButton = dialog.getByRole('button', { name: /save/i });
+    const dialog = this.page.getByRole('dialog', { name: /save message/iu });
+    const saveButton = dialog.getByRole('button', { name: /save/iu });
     await saveButton.click();
   }
 
   async copyMessageValue() {
-    await this.page.getByRole('button', { name: /copy value/i }).click();
+    await this.page.getByRole('button', { name: /copy value/iu }).click();
   }
 
   async verifyClipboardContent(expectedContent: string) {
@@ -195,7 +195,7 @@ export class TopicPage {
   }
 
   async verifyOnTopicsListPage() {
-    await expect(this.page).toHaveURL(/\/topics\/?(\?.*)?$/);
+    await expect(this.page).toHaveURL(/\/topics\/?(\?.*)?$/u);
   }
 
   /**
@@ -227,7 +227,7 @@ export class TopicPage {
   }
 
   async verifyMessageProduced(message: string) {
-    await expect(this.page.getByRole('cell', { name: new RegExp(message, 'i') }).first()).toBeVisible({
+    await expect(this.page.getByRole('cell', { name: new RegExp(message, 'iu') }).first()).toBeVisible({
       timeout: 10_000,
     });
   }

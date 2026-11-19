@@ -26,8 +26,8 @@ const DEFAULT_MAX_RESULTS = 50;
 // Comma-separated `field op value` texts (`key:abc,offset>5`). Commas inside
 // values are escaped so splitting stays unambiguous. JS filters are
 // intentionally NOT persisted in the URL — code doesn't belong in share links.
-const escapeToken = (text: string) => text.replace(/%/g, '%25').replace(/,/g, '%2C');
-const unescapeToken = (text: string) => text.replace(/%2C/g, ',').replace(/%25/g, '%');
+const escapeToken = (text: string) => text.replace(/%/gu, '%25').replace(/,/gu, '%2C');
+const unescapeToken = (text: string) => text.replace(/%2C/gu, ',').replace(/%25/gu, '%');
 
 export const fieldTokensParser = createParser<FieldFilterToken[]>({
   parse: (value) => {

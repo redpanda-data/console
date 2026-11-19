@@ -19,6 +19,7 @@ import type { ComponentProps } from 'react';
 import { useRef } from 'react';
 import { render, screen, waitFor } from 'test-utils';
 
+import { AddTopicStep } from './add-topic-step';
 import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
@@ -60,7 +61,6 @@ rs.mock('./advanced-topic-settings', () => ({
 Element.prototype.scrollIntoView = rs.fn();
 
 // Import component after mocks
-import { AddTopicStep } from './add-topic-step';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -229,7 +229,7 @@ describe('the AddTopicStep', () => {
         expect(result).toEqual(
           expect.objectContaining({
             success: true,
-            message: expect.stringMatching(/Topic ".*" created/),
+            message: expect.stringMatching(/Topic ".*" created/u),
           })
         );
       });
@@ -366,7 +366,7 @@ describe('the AddTopicStep', () => {
 
       // Assert alert about existing topic appears
       await waitFor(() => {
-        expect(screen.getByText(/already exists/)).toBeInTheDocument();
+        expect(screen.getByText(/already exists/u)).toBeInTheDocument();
       });
     });
 

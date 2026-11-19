@@ -12,8 +12,8 @@
 import { parseFilterInput, tokenEditText } from './filter-token';
 import type { FieldFilterToken } from '../types';
 
-const WHITESPACE_PATTERN = /\s/;
-const VALUE_START_PATTERN = /[:=<>]/;
+const WHITESPACE_PATTERN = /\s/u;
+const VALUE_START_PATTERN = /[:=<>]/u;
 
 export type LineWord = { text: string; start: number; end: number };
 

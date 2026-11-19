@@ -3,7 +3,7 @@ import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactor
 
 import type { AddTopicFormData } from '../types/wizard';
 
-const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+const DECIMAL_PLACES_REGEX = /\.\d{4,}/u;
 
 // Default values for topic creation
 export const DEFAULT_RETENTION_TIME_MS = 7;

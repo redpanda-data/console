@@ -15,7 +15,7 @@ import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
-const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/u;
 const SECRET_NAME_MAX_LENGTH = 255;
 
 class RpConnectSecretCreate extends PageComponent {

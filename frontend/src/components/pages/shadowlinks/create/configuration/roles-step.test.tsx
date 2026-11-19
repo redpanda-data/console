@@ -21,7 +21,7 @@ import { RolesStep } from './roles-step';
 import { setShadowLinkGatesSupported } from '../../shadowlink-test-helpers';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const ROLE_FILTER_PATTERN = /^role-filter-\d+$/;
+const ROLE_FILTER_PATTERN = /^role-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({

@@ -17,10 +17,25 @@ import userEvent from '@testing-library/user-event';
 import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
+import { isEmbedded } from '../../../../config';
+import { getBasePath } from '../../../../utils/env';
+import {
+  addACLFilterCreate,
+  addBootstrapServer,
+  addConsumerFilterCreate,
+  addRoleFilterCreate,
+  addTopicFilterCreate,
+  enableTLS,
+  navigateToConfigurationStep,
+  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
+  setShadowLinkGatesSupported,
+} from '../shadowlink-test-helpers';
 
 // Mock the hooks
 rs.mock('react-query/api/shadowlink', () => ({
@@ -60,23 +75,6 @@ rs.mock('sonner', () => ({
     error: rs.fn(),
   },
 }));
-
-import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-
-import { isEmbedded } from '../../../../config';
-import { getBasePath } from '../../../../utils/env';
-import {
-  addACLFilterCreate,
-  addBootstrapServer,
-  addConsumerFilterCreate,
-  addRoleFilterCreate,
-  addTopicFilterCreate,
-  enableTLS,
-  navigateToConfigurationStep,
-  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
-  setShadowLinkGatesSupported,
-} from '../shadowlink-test-helpers';
 
 const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
 const resetSchemaRegistrySyncGate = () => {
@@ -216,7 +214,7 @@ const performCreateAction = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
   action: CreateAction
-): Promise<void> => {
+) => {
   switch (action.type) {
     case 'fillName':
       await fillInputValue(scr.getByPlaceholderText('my-shadow-link'), action.value);

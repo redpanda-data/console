@@ -51,7 +51,7 @@ export type SqlWizardProps = {
 
 const CATALOG_NAME = 'default_redpanda_catalog';
 const STEPS = ['Choose a topic', 'Name the table'] as const;
-const TABLE_NAME_RE = /^[a-z_][a-z0-9_]*$/;
+const TABLE_NAME_RE = /^[a-z_][a-z0-9_]*$/u;
 
 const formSchema = z.object({
   tableName: z
@@ -64,7 +64,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 /** Turn a topic name into a valid default table name (topic names may contain dots or dashes). */
 function suggestTableName(topicName: string): string {
-  const slug = topicName.toLowerCase().replaceAll(/[^a-z0-9_]/g, '_');
+  const slug = topicName.toLowerCase().replaceAll(/[^a-z0-9_]/gu, '_');
   return TABLE_NAME_RE.test(slug) ? slug : `_${slug}`;
 }
 

@@ -185,7 +185,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
 
 const compileQuickSearch = (quickSearch: string): RegExp | null => {
   try {
-    return new RegExp(quickSearch, 'i');
+    return new RegExp(quickSearch, 'iu');
   } catch {
     return null;
   }

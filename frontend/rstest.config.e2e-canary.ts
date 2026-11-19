@@ -6,7 +6,7 @@ import { definePlaywrightOptions } from './tests/shared/playwright-options';
 export default defineConfig({
   extends: definePlaywrightConfig({ ...definePlaywrightOptions(), launchOptions: { headless: true } }),
   testEnvironment: 'node',
-  include: ['tests/shared/e2e-canary.spec.ts', 'tests/runner-cli.spec.ts'],
+  include: ['tests/shared/e2e-canary.browser.test.ts', 'tests/runner-cli.browser.test.ts'],
   passWithNoTests: false,
   pool: { type: 'threads', maxWorkers: 1 },
   reporters: [['md', { preset: 'compact' }]],

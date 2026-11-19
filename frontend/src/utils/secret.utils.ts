@@ -14,7 +14,7 @@ import { ALPHANUMERIC_WITH_HYPHENS } from './regex';
 /**
  * Regex to remove trailing underscores from secret IDs
  */
-const TRAILING_UNDERSCORES_REGEX = /_+$/;
+const TRAILING_UNDERSCORES_REGEX = /_+$/u;
 
 /**
  * Coerces a string to the secret-ID pattern `^[A-Z][A-Z0-9_]*$`: upper-cased, non-alphanumerics
@@ -25,7 +25,7 @@ export function sanitizeSecretId(value: string): string {
   let sanitized = value.toUpperCase().replace(ALPHANUMERIC_WITH_HYPHENS, '_');
 
   // Collapse consecutive underscores into single underscore
-  sanitized = sanitized.replace(/_+/g, '_');
+  sanitized = sanitized.replace(/_+/gu, '_');
 
   // Remove trailing underscores
   sanitized = sanitized.replace(TRAILING_UNDERSCORES_REGEX, '');

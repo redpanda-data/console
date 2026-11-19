@@ -108,7 +108,7 @@ export const TOPIC_PROPERTIES: TopicPropertyConfig[] = [
 /**
  * Get properties grouped by category
  */
-export const getPropertiesByCategory = (): Map<string, TopicPropertyConfig[]> => {
+export const getPropertiesByCategory = () => {
   const categoryMap = new Map<string, TopicPropertyConfig[]>();
 
   for (const property of TOPIC_PROPERTIES) {
@@ -123,13 +123,13 @@ export const getPropertiesByCategory = (): Map<string, TopicPropertyConfig[]> =>
 /**
  * Get default properties that should be pre-selected
  */
-export const getDefaultProperties = (): string[] =>
+export const getDefaultProperties = () =>
   TOPIC_PROPERTIES.filter((p) => p.status.includes('default')).map((p) => p.name);
 
 /**
  * Check if a property can be edited (not 'never' or 'always')
  */
-export const isPropertyEditable = (propertyName: string): boolean => {
+export const isPropertyEditable = (propertyName: string) => {
   const property = TOPIC_PROPERTIES.find((p) => p.name === propertyName);
   if (!property) {
     return false;
@@ -138,17 +138,9 @@ export const isPropertyEditable = (propertyName: string): boolean => {
 };
 
 /**
- * Check if a property should be disabled (status includes 'never')
- */
-export const isPropertyDisabled = (propertyName: string): boolean => {
-  const property = TOPIC_PROPERTIES.find((p) => p.name === propertyName);
-  return property?.status.includes('never') ?? false;
-};
-
-/**
  * Check if a property is always replicated (status includes 'always')
  */
-export const isPropertyAlwaysReplicated = (propertyName: string): boolean => {
+export const isPropertyAlwaysReplicated = (propertyName: string) => {
   const property = TOPIC_PROPERTIES.find((p) => p.name === propertyName);
   return property?.status.includes('always') ?? false;
 };

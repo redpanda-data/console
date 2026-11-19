@@ -174,8 +174,8 @@ const FENCE_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
  * from Admin API v2, 409 from v1) or a new shadow link. The fence's own errors, such as a stale revision,
  * say "Cluster fence" and must not match.
  */
-const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/i;
-const TRAILING_PERIOD = /\.$/;
+const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/iu;
+const TRAILING_PERIOD = /\.$/u;
 
 /**
  * A fence rejection reads as a policy violation, which looks like an outage. Only when

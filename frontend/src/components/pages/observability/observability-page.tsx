@@ -14,12 +14,12 @@ import { useListQueries } from 'react-query/api/observability';
 import { appGlobal } from 'state/app-global';
 import { setPageHeader } from 'state/ui-state';
 
-const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
-
 import { ObservabilityToolbar } from './observability-toolbar';
 import { calculateTimeRange, type TimeRange } from '../../../utils/time-range';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
+
+const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
 
 // Owns the time-range picker. A refresh bumps `refreshKey`, which recomputes the same range ending now.
 const useRefreshableTimeRange = (refetch: () => unknown) => {

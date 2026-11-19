@@ -29,8 +29,29 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import { useEditShadowLink } from 'react-query/api/shadowlink';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+import { renderWithFileRoutes } from 'test-utils';
 
 import { ShadowLinkEditPage } from './shadowlink-edit-page';
+import { buildDefaultFormValues } from '../mappers/dataplane';
+import {
+  type Action,
+  addACLFilter,
+  addBootstrapServer,
+  addConsumerFilter,
+  addTopicFilter,
+  addTopicFilterWithPattern,
+  enableMTLS,
+  enableSchemaRegistrySync,
+  enableTLS,
+  setSchemaRegistrySyncGateSupported,
+  toggleExcludeDefault,
+  updateAdvancedOption,
+  updateMetadataMaxAge,
+  uploadCACertificate,
+  uploadClientCertificates,
+} from '../shadowlink-test-helpers';
 
 // Mock the hooks
 rs.mock('react-query/api/shadowlink', () => ({
@@ -74,29 +95,6 @@ rs.mock('@tanstack/react-router', () => {
     useParams: () => ({ name: SHADOW_LINK_NAME }),
   };
 });
-
-import { useEditShadowLink } from 'react-query/api/shadowlink';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes } from 'test-utils';
-
-import { buildDefaultFormValues } from '../mappers/dataplane';
-import {
-  type Action,
-  addACLFilter,
-  addBootstrapServer,
-  addConsumerFilter,
-  addTopicFilter,
-  addTopicFilterWithPattern,
-  enableMTLS,
-  enableSchemaRegistrySync,
-  enableTLS,
-  setSchemaRegistrySyncGateSupported,
-  toggleExcludeDefault,
-  updateAdvancedOption,
-  updateMetadataMaxAge,
-  uploadCACertificate,
-  uploadClientCertificates,
-} from '../shadowlink-test-helpers';
 
 /**
  * Create a mock shadow link with minimal configuration
@@ -158,7 +156,7 @@ const performAction = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
   action: Action
-): Promise<void> => {
+) => {
   switch (action.type) {
     case 'addBootstrapServer':
       return await addBootstrapServer(user, scr, action.value);

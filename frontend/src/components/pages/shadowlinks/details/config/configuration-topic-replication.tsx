@@ -94,7 +94,7 @@ export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopic
         Topic properties
       </h2>
       {groupPropertiesByCategory(allProperties).map(({ category, properties }) => {
-        const categoryKey = category.toLowerCase().replace(/\s+/g, '-');
+        const categoryKey = category.toLowerCase().replace(/\s+/gu, '-');
 
         return (
           <Card key={categoryKey} size="full" testId={`category-${categoryKey}-card`}>

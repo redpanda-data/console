@@ -43,7 +43,7 @@ function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
   return byId;
 }
 
-const describe = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind): ComponentChange => ({
+const describeChange = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind): ComponentChange => ({
   id,
   kind,
   section: sectionLabel(node?.section),
@@ -63,11 +63,11 @@ export function summarizeComponentChanges(
   const unmatchedEdited = changedIds.filter((id) => edited.has(id));
   const unmatchedSaved = new Set(changedNodeIds(editedYaml, savedYaml).filter((id) => saved.has(id)));
   const editedChanges = unmatchedEdited.map((id) =>
-    describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
+    describeChange(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
   );
   const removedChanges = [...unmatchedSaved]
     .filter((id) => !unmatchedEdited.includes(id))
-    .map((id) => describe(id, saved.get(id), 'removed'));
+    .map((id) => describeChange(id, saved.get(id), 'removed'));
 
   return [...editedChanges, ...removedChanges].sort(compareBySectionThenId);
 }

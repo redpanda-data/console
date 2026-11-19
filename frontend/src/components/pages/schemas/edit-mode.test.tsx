@@ -12,7 +12,17 @@
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
+} from 'react-query/api/schema-registry';
+import { toast } from 'sonner';
+import { api } from 'state/backend-api';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes, screen } from 'test-utils';
+
+import EditSchemaModePage from './edit-mode';
 
 // Real navigate() resolves once the route commits.
 const mockNavigate = rs.fn(() => Promise.resolve());
@@ -82,17 +92,6 @@ rs.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
-
-import {
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-  useSchemaRegistryContextsQuery,
-} from 'react-query/api/schema-registry';
-import { toast } from 'sonner';
-import { api } from 'state/backend-api';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-
-import EditSchemaModePage from './edit-mode';
 
 describe('the EditSchemaModePage', () => {
   beforeEach(() => {

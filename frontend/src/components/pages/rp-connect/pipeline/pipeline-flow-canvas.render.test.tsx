@@ -18,7 +18,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
 // The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
-const JOIN_NAME_RE = /branches reconverge/i;
+const JOIN_NAME_RE = /branches reconverge/iu;
 
 // React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
 class ResizeObserverMock {
@@ -79,16 +79,16 @@ output:
 const NO_OUTPUT_YAML = `input:
   generate:
     mapping: 'root = {}'`;
-const ADD_OUTPUT_RE = /add output/i;
-const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/i;
-const NO_OUTPUT_NOTE_RE = /no output configured/i;
-const STALE_LAYOUT_RE = /showing the last valid layout/i;
+const ADD_OUTPUT_RE = /add output/iu;
+const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/iu;
+const NO_OUTPUT_NOTE_RE = /no output configured/iu;
+const STALE_LAYOUT_RE = /showing the last valid layout/iu;
 
 // An input card's stop row: its visible text, then what it does.
-const STOP_BUTTON_RE = /stop condition for generate$/;
+const STOP_BUTTON_RE = /stop condition for generate$/u;
 
 // The minimap svg's accessible name.
-const OVERVIEW_LABEL_RE = /pipeline overview/i;
+const OVERVIEW_LABEL_RE = /pipeline overview/iu;
 
 // A complete valid pipeline used as the last-good baseline for the resilient-parse test.
 const VALID_PIPELINE_YAML = `input:
@@ -98,7 +98,7 @@ output:
   drop: {}`;
 
 // A pipeline whose single switch fans out to `caseCount` cases.
-function tallSwitchYaml(caseCount: number): string {
+function tallSwitchYaml(caseCount: number) {
   const cases = Array.from(
     { length: caseCount },
     (_, i) => `      - check: this.x == ${i}\n        processors:\n          - mapping: 'root.y = ${i}'`

@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { RoleDetailPageNew } from './role-detail-page-new';
 import { TooltipProvider } from '../../../redpanda-ui/components/tooltip';
 
 const { updateMembershipMock } = rs.hoisted(() => ({
@@ -47,8 +48,6 @@ rs.mock('../../../../react-query/api/user', () => ({
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
   useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
-
-import { RoleDetailPageNew } from './role-detail-page-new';
 
 const renderPage = () =>
   render(

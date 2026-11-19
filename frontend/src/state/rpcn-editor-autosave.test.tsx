@@ -11,10 +11,6 @@
 
 import { beforeEach, describe, expect, it, rs } from '@rstest/core';
 
-// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
-const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
-rs.mock('config', () => ({ config: mockConfig }));
-
 import {
   AUTOSAVE_ENTRY_VERSION,
   autosaveTargetKey,
@@ -29,6 +25,10 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from './rpcn-editor-autosave';
+
+// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
+const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
+rs.mock('config', () => ({ config: mockConfig }));
 
 const buffer = (overrides: Partial<EditorAutosaveInput> = {}): EditorAutosaveInput => ({
   targetKey: CREATE_AUTOSAVE_TARGET,

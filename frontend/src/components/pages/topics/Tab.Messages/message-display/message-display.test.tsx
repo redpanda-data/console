@@ -150,7 +150,7 @@ describe('topic message rendering', () => {
       <ExpandedMessage loadLargeMessage={() => Promise.resolve()} msg={msg} onDownloadRecord={onDownloadRecord} />
     );
 
-    const downloadButton = screen.getByRole('button', { name: /download record/i });
+    const downloadButton = screen.getByRole('button', { name: /download record/iu });
     await user.click(downloadButton);
 
     expect(onDownloadRecord).toHaveBeenCalledTimes(1);

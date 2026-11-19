@@ -32,7 +32,7 @@ rs.mock('state/backend-api', () => {
   };
 });
 
-const TOPIC_LINK_NAME = /^orders-/;
+const TOPIC_LINK_NAME = /^orders-/u;
 
 const topics = (count: number): Topic[] =>
   Array.from({ length: count }, (_, i) => ({

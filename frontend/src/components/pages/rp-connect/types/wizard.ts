@@ -60,7 +60,7 @@ export const addTopicFormSchema = z.object({
   topicName: z
     .string()
     .min(1, { message: 'Topic name is required.' })
-    .regex(/^[a-zA-Z0-9._@-]+$/, {
+    .regex(/^[a-zA-Z0-9._@-]+$/u, {
       message:
         'Must not contain any whitespace. Must be alphanumeric and can contain underscores, periods, and hyphens.',
     }),

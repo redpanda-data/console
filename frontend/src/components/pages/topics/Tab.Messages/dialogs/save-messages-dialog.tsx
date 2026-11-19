@@ -87,7 +87,9 @@ function csvPayloadCell(payload: Payload | undefined): string {
     return '';
   }
   const content = payload.payload || '';
-  return typeof content === 'object' ? JSON.stringify(content).replace(/,/g, ';') : String(content).replace(/,/g, ';');
+  return typeof content === 'object'
+    ? JSON.stringify(content).replace(/,/gu, ';')
+    : String(content).replace(/,/gu, ';');
 }
 
 function csvCell(message: TopicMessage, header: string): string | number | boolean {

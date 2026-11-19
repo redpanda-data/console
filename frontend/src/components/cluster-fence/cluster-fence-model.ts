@@ -330,7 +330,7 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   return warnings;
 };
 
-const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?fence|cluster.?fence/i;
+const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?fence|cluster.?fence/iu;
 
 /**
  * A failed message search that reads like the fence turned the fetch away, not like a bad filter.

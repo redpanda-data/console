@@ -53,7 +53,7 @@ import { buildDefaultFormValues } from '../mappers/dataplane';
  * Regex to strip "configurations." prefix from field mask paths
  * Used when converting dataplane field masks to controlplane format
  */
-const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./;
+const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./u;
 
 /**
  * Wildcard filter meaning "sync everything" for the 'all' mode of a category.
@@ -80,7 +80,7 @@ export type UpdateResult<T> = {
 /**
  * Helper to compare arrays of strings (order-independent)
  */
-export const arraysEqual = (a: string[], b: string[]): boolean => {
+const arraysEqual = (a: string[], b: string[]) => {
   if (a.length !== b.length) {
     return false;
   }

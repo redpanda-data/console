@@ -45,12 +45,12 @@ describe('searchValue', () => {
       0
     );
 
-    expect(value.replace(new RegExp(ZWSP, 'g'), '')).toBe('kafka_franz my_input input');
+    expect(value.replace(new RegExp(ZWSP, 'gu'), '')).toBe('kafka_franz my_input input');
     expect(value).not.toContain('secret-id-0');
   });
 
   test('omits absent optional fields', () => {
-    expect(searchValue(node({ label: 'drop', section: 'output' }), 0).replace(new RegExp(ZWSP, 'g'), '')).toBe(
+    expect(searchValue(node({ label: 'drop', section: 'output' }), 0).replace(new RegExp(ZWSP, 'gu'), '')).toBe(
       'drop output'
     );
   });
@@ -62,10 +62,10 @@ describe('searchValue', () => {
     // Distinct values so cmdk can track each row separately...
     expect(a).not.toBe(b);
     // ...but identical once the invisible suffix is stripped.
-    expect(a.replace(new RegExp(ZWSP, 'g'), '')).toBe(b.replace(new RegExp(ZWSP, 'g'), ''));
+    expect(a.replace(new RegExp(ZWSP, 'gu'), '')).toBe(b.replace(new RegExp(ZWSP, 'gu'), ''));
     // Suffix length is index-derived (index + 1 zero-width spaces).
-    expect(a.match(new RegExp(ZWSP, 'g'))).toHaveLength(1);
-    expect(b.match(new RegExp(ZWSP, 'g'))).toHaveLength(2);
+    expect(a.match(new RegExp(ZWSP, 'gu'))).toHaveLength(1);
+    expect(b.match(new RegExp(ZWSP, 'gu'))).toHaveLength(2);
   });
 });
 

@@ -15,7 +15,7 @@ export function filterByName<T>(items: T[], query: string, getName: (item: T) =>
     return items;
   }
   try {
-    const re = new RegExp(query, 'i'); // nosemgrep: detect-non-literal-regexp -- client-side UI filter, user only affects their own session
+    const re = new RegExp(query, 'iu'); // nosemgrep: detect-non-literal-regexp -- client-side UI filter, user only affects their own session
     return items.filter((item) => re.test(getName(item)));
   } catch {
     const lowerQuery = query.toLowerCase();

@@ -53,7 +53,7 @@ type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
-const DIGITS_ONLY_REGEX = /^\d*$/;
+const DIGITS_ONLY_REGEX = /^\d*$/u;
 
 const { Stepper } = defineStepper(
   { id: 'partitions', title: 'Select partitions' },

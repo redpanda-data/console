@@ -115,7 +115,7 @@ const dependsOn = (field: string, value: string): InputEndBehavior => ({
 const flag = (value: unknown, fallback: boolean): boolean | undefined =>
   value === undefined || value === null ? fallback : yamlFlag(value);
 
-const DELETED_RE = /\bdeleted\(\s*\)/;
+const DELETED_RE = /\bdeleted\(\s*\)/u;
 
 function generateEnd(c: Config): InputEndBehavior {
   if (envRef(c.count)) {

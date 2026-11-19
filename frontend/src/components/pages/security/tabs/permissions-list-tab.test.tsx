@@ -15,6 +15,8 @@ import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
 
+import { PermissionsListTab } from './permissions-list-tab';
+
 /**
  * Tests for the Permissions List tab delete dropdown behavior.
  *
@@ -166,8 +168,6 @@ rs.mock('../hooks/use-principal-permissions', () => ({
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
   useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
 }));
-
-import { PermissionsListTab } from './permissions-list-tab';
 
 describe('the Permissions List - delete dropdown for different principal types', () => {
   beforeEach(() => {

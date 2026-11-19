@@ -24,8 +24,8 @@ const openConfigs = async () => {
   return user;
 };
 
-const FILTER_CONFIGS_RE = /filter configs/i;
-const NEEDS_SECRETS_RE = /needs the secrets/;
+const FILTER_CONFIGS_RE = /filter configs/iu;
+const NEEDS_SECRETS_RE = /needs the secrets/u;
 
 const sectionNames = () => screen.getAllByRole('region').map((s) => s.getAttribute('aria-label'));
 

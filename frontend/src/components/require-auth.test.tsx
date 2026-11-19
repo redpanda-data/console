@@ -65,7 +65,7 @@ describe('the RequireAuth', () => {
     );
 
     expect(screen.getByTestId('trial-expired-content')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/iu })).not.toBeInTheDocument();
   });
 
   test('renders /upload-license under the same conditions', () => {
@@ -92,7 +92,7 @@ describe('the RequireAuth', () => {
     );
 
     expect(screen.queryByTestId('topics-content')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /try again/iu })).toBeInTheDocument();
   });
 
   test('recovers once userDataError is set after mount, instead of staying on the blank placeholder forever', () => {
@@ -108,7 +108,7 @@ describe('the RequireAuth', () => {
     // Neither the gated content nor an error UI has shown up yet - the
     // (fetch never resolves) placeholder is up.
     expect(screen.queryByTestId('topics-content')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/iu })).not.toBeInTheDocument();
 
     // Simulates refreshUserData()'s catch branch: userData stays undefined,
     // only userDataError changes. Before the fix, RequireAuth only
@@ -118,6 +118,6 @@ describe('the RequireAuth', () => {
       useApiStore.setState({ userDataError: LICENSE_EXPIRED_ERROR });
     });
 
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /try again/iu })).toBeInTheDocument();
   });
 });

@@ -66,7 +66,7 @@ export function deprecationNotice(
 /** The warning every surface shows. */
 export function deprecationMessage({ name, replacement }: DeprecationNotice): string {
   return replacement
-    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/g, ' ')} instead.`
+    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/gu, ' ')} instead.`
     : `${name} is deprecated and may be removed in a future release.`;
 }
 

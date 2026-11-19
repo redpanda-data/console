@@ -14,7 +14,9 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
+import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
 import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
+import { isEmbedded } from 'config';
 import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import {
@@ -29,6 +31,18 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
+
+import {
+  useControlplaneDeleteShadowLinkMutation,
+  useControlplaneGetShadowLinkByNameQuery,
+} from './controlplane/shadowlink';
+import {
+  useDeleteShadowLinkUnified,
+  useEditShadowLink,
+  useFailoverShadowLinkMutation,
+  useGetShadowLinkUnified,
+  useListShadowTopicQuery,
+} from './shadowlink';
 
 // Mock config module
 rs.mock('config', () => ({
@@ -61,21 +75,7 @@ rs.mock('components/pages/shadowlinks/mappers/controlplane', () => {
   };
 });
 
-import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
 // Import after mocks are set up
-import { isEmbedded } from 'config';
-
-import {
-  useControlplaneDeleteShadowLinkMutation,
-  useControlplaneGetShadowLinkByNameQuery,
-} from './controlplane/shadowlink';
-import {
-  useDeleteShadowLinkUnified,
-  useEditShadowLink,
-  useFailoverShadowLinkMutation,
-  useGetShadowLinkUnified,
-  useListShadowTopicQuery,
-} from './shadowlink';
 
 const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockUseControlplaneGetShadowLinkByNameQuery = rs.mocked(useControlplaneGetShadowLinkByNameQuery);

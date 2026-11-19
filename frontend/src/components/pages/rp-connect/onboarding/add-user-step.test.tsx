@@ -40,6 +40,7 @@ import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-U
 import { type Ref, useImperativeHandle, useRef } from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
+import { AddUserStep } from './add-user-step';
 import type { UserStepRef } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
@@ -112,7 +113,6 @@ global.ResizeObserver = class ResizeObserver {
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ────────────────────────────────────────────
-import { AddUserStep } from './add-user-step';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -264,8 +264,8 @@ function RefCaptureHarness({ onCapture }: { onCapture: (ref: UserStepRef | null)
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
-const ALREADY_EXISTS = /already exists/;
-const HAS_TOPIC_ACCESS = /has required permissions/i;
+const ALREADY_EXISTS = /already exists/u;
+const HAS_TOPIC_ACCESS = /has required permissions/iu;
 
 /** Asserts the grant checkbox is offered (and ticked), or that the user's existing access shows instead. */
 async function expectTopicGrantOffered(offered: boolean) {

@@ -59,7 +59,7 @@ export const getContextualVariableSyntax = (name: string): string => `\${${name}
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
-export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/gu, '_');
 
 export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
 

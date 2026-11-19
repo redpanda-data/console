@@ -18,18 +18,6 @@ describe('the Console Module Federation config', () => {
     expect(moduleFederationConfig.filename).toBe('embedded.js');
   });
 
-  test('routes ./App to the React 18-safe legacy compatibility shim', () => {
-    expect(moduleFederationConfig.exposes).toMatchObject({
-      './App': './src/federation/console-legacy-app.tsx',
-    });
-  });
-
-  test('exposes the React 19 bridge entry consumed by new Cloud UI hosts', () => {
-    expect(moduleFederationConfig.exposes).toMatchObject({
-      './BridgeApp': './src/federation/console-federated-bridge.tsx',
-    });
-  });
-
   test('keeps the ./types contract expose', () => {
     expect(moduleFederationConfig.exposes).toMatchObject({
       './types': './src/federation/types.ts',

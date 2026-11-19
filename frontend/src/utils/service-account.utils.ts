@@ -21,7 +21,7 @@ export function addServiceAccountTags(
  */
 export function generateServiceAccountName(displayName: string, resourceType: ServiceAccountResourceType): string {
   const clusterType = config.isServerless ? 'serverless' : 'cluster';
-  const sanitizedName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const sanitizedName = displayName.toLowerCase().replace(/[^a-z0-9-]/gu, '-');
   return `${clusterType}-${config.clusterId}-${resourceType}-${sanitizedName}-sa`;
 }
 

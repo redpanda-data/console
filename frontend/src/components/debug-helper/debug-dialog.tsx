@@ -59,7 +59,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 
-import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config.fixture';
 import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
@@ -207,7 +207,7 @@ const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; descriptio
 // A stop-condition fixture lists under Stop conditions; any other under its first tag.
 const groupOf = (f: ConnectConfigFixture): FixtureTag => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
 
-const SECRET_REF_RE = /\$\{secrets\.([A-Za-z0-9_]+)\}/g;
+const SECRET_REF_RE = /\$\{secrets\.([A-Za-z0-9_]+)\}/gu;
 
 type FixtureEntry = {
   fixture: ConnectConfigFixture;

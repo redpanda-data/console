@@ -17,7 +17,7 @@
 export const SASL_MECHANISMS = ['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const;
 export type SaslMechanism = (typeof SASL_MECHANISMS)[number];
 
-export const USERNAME_REGEX = /^[a-zA-Z0-9._@-]+$/;
+export const USERNAME_REGEX = /^[a-zA-Z0-9._@-]+$/u;
 export const USERNAME_ERROR_MESSAGE =
   'Must not contain any whitespace. Must be alphanumeric and can contain underscores, periods, and hyphens.';
 

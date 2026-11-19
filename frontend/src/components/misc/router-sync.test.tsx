@@ -11,6 +11,9 @@
 
 import { render } from '@testing-library/react';
 
+import { RouterSync } from './router-sync';
+import { config, isEmbedded } from '../../config';
+
 const mockNavigate = rs.fn();
 const mockLocation = { pathname: '/topics', searchStr: '' };
 const mockRouter = {};
@@ -29,7 +32,7 @@ rs.mock('../../config', () => ({
   isEmbedded: rs.fn(() => false),
 }));
 
-rs.mock('../../hubspot/hubspot.helper', () => ({
+rs.mock('../../hubspot/hubspot-tracking', () => ({
   trackHubspotPage: rs.fn(),
 }));
 
@@ -46,9 +49,6 @@ rs.mock('../../state/backend-api', () => ({
     errors: [],
   },
 }));
-
-import { RouterSync } from './router-sync';
-import { config, isEmbedded } from '../../config';
 
 describe('the RouterSync', () => {
   beforeEach(() => {

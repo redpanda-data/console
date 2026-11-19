@@ -150,7 +150,7 @@ pipeline:
 output:
   drop: {}`;
 
-const EMPTY_STATE_TEXT = /select a node/i;
+const EMPTY_STATE_TEXT = /select a node/iu;
 
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = rs.fn();

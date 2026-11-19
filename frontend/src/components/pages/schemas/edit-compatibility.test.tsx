@@ -12,7 +12,17 @@
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  useSchemaCompatibilityQuery,
+  useSchemaDetailsQuery,
+  useSchemaModeQuery,
+  useSchemaRegistryContextsQuery,
+} from 'react-query/api/schema-registry';
+import { api } from 'state/backend-api';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes, screen } from 'test-utils';
+
+import EditSchemaCompatibilityPage from './edit-compatibility';
 
 // Real navigate() resolves once the route commits.
 const mockNavigate = rs.fn(() => Promise.resolve());
@@ -77,17 +87,6 @@ rs.mock('state/ui-state', () => ({
     pageBreadcrumbs: [],
   },
 }));
-
-import {
-  useSchemaCompatibilityQuery,
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-  useSchemaRegistryContextsQuery,
-} from 'react-query/api/schema-registry';
-import { api } from 'state/backend-api';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-
-import EditSchemaCompatibilityPage from './edit-compatibility';
 
 describe('the EditSchemaCompatibilityPage', () => {
   beforeEach(() => {

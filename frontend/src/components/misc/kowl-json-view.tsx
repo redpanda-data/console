@@ -66,7 +66,7 @@ export const KowlJsonView = (props: {
     if (!props.escapeLatin1) {
       return raw;
     }
-    return raw.replace(/[\u0080-\u00ff]/g, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
+    return raw.replace(/[\u0080-\u00ff]/gu, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
   }, [props.srcObj, props.escapeLatin1]);
 
   const scheduleLayout = useCallback(() => {

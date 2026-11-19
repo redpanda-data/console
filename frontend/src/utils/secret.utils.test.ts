@@ -13,8 +13,8 @@ import { generateServiceAccountSecretId, sanitizeSecretId } from './secret.utils
 import { describe, expect, test } from 'bun:test';
 
 // Regex patterns for validation
-const SERVICE_ACCOUNT_PREFIX_REGEX = /^SERVICE_ACCOUNT_/;
-const SECRET_ID_REGEX = /^[A-Z][A-Z0-9_]*$/;
+const SERVICE_ACCOUNT_PREFIX_REGEX = /^SERVICE_ACCOUNT_/u;
+const SECRET_ID_REGEX = /^[A-Z][A-Z0-9_]*$/u;
 
 describe('sanitizeSecretId', () => {
   test('should convert to uppercase', () => {

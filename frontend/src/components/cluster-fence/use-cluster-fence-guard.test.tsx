@@ -11,13 +11,12 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-
-rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
-
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 
 import { type FencePhase, isBlockingPhase } from './cluster-fence-model';
 import { useClusterFenceGuard } from './use-cluster-fence-guard';
+
+rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
 
 const POLICY_VIOLATION = 'POLICY_VIOLATION: fetch rejected by the configured cluster policy';
 

@@ -18,7 +18,11 @@ import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
+import { config, isEmbedded } from 'config';
+import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { connectQueryWrapper } from 'test-utils';
+
+import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
 // Mock config module
 rs.mock('config', () => ({
@@ -33,11 +37,6 @@ rs.mock('config', () => ({
 rs.mock('hooks/use-controlplane-transport', () => ({
   useControlplaneTransport: rs.fn(),
 }));
-
-import { config, isEmbedded } from 'config';
-import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-
-import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
 const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockConfig = rs.mocked(config);

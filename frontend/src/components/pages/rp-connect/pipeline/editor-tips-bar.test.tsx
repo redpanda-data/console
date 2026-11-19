@@ -12,10 +12,10 @@
 import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from 'test-utils';
 
+import { EditorTipsBar } from './editor-tips-bar';
+
 const platform = rs.hoisted(() => ({ mac: false }));
 rs.mock('utils/platform', () => ({ isMacOS: () => platform.mac }));
-
-import { EditorTipsBar } from './editor-tips-bar';
 
 function renderVisualTips(mac: boolean) {
   platform.mac = mac;

@@ -25,9 +25,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
-
-const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
-
 import React, { useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -53,6 +50,8 @@ import { KowlDiffEditor } from '../../misc/kowl-editor';
 import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
+
+const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
 // These navigations run detached from effects and mutation callbacks, so report a failure instead of dropping it.
 function reportNavigationError(error: unknown) {

@@ -27,10 +27,6 @@ import { connectQueryWrapper } from 'test-utils';
 
 import { useUpdateRoleMembershipMutation } from './security';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 /** Builds an InfiniteData cache entry with a single page of members. */
 const makeInfiniteData = (principals: string[]): InfiniteData<ListRoleMembersResponse> => ({
   pages: [
@@ -83,10 +79,6 @@ const renderWithSeededMembers = (transport: ReturnType<typeof createRouterTransp
   const { result } = renderHook(() => useUpdateRoleMembershipMutation(), { wrapper });
   return { result, queryClient };
 };
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
   beforeEach(() => {

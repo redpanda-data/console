@@ -25,9 +25,9 @@ import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './license-notification';
 import { OverviewLicenseNotification } from './overview-license-notification';
 
-const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
-const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 28 days/;
-const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/;
+const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/u;
+const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 28 days/u;
+const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/u;
 // Every expiry below is relative to this instant, which each test pins as the system time.
 const NOW = new Date('2026-01-15T12:00:00Z');
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);

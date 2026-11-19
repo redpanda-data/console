@@ -10,7 +10,7 @@ import coverageConfig from './coverage.config.json' with { type: 'json' };
 import { fromHere, sharedAliases, sharedCoverage } from './test.shared';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
-const RAW_QUERY = /raw/;
+const RAW_QUERY = /raw/u;
 
 export default defineConfig({
   name: 'integration',

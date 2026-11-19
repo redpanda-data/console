@@ -19,7 +19,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { ConsumerOffsetStep } from './consumer-offset-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const CONSUMER_FILTER_PATTERN = /^consumer-filter-\d+$/;
+const CONSUMER_FILTER_PATTERN = /^consumer-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({

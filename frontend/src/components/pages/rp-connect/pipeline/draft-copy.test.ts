@@ -55,7 +55,7 @@ describe('untitledPipelineName', () => {
   });
 
   it('always returns a legal display name', () => {
-    const namePattern = /^[A-Za-z0-9-_ /]+$/;
+    const namePattern = /^[A-Za-z0-9-_ /]+$/u;
     const taken = [UNTITLED_PIPELINE_NAME, ...Array.from({ length: 1200 }, (_, i) => `Untitled pipeline ${i + 2}`)];
     const name = untitledPipelineName(taken);
     expect(name).toMatch(namePattern);
@@ -91,12 +91,12 @@ describe('timestampToMillis', () => {
 describe('startBlockedMessage', () => {
   // The count matters: "some issues" sends people hunting, "3 issues" tells them when they're done.
   it('counts the issues that stand in the way', () => {
-    expect(startBlockedMessage(1)).toMatch(/1 issue to fix/);
-    expect(startBlockedMessage(3)).toMatch(/3 issues to fix/);
+    expect(startBlockedMessage(1)).toMatch(/1 issue to fix/u);
+    expect(startBlockedMessage(3)).toMatch(/3 issues to fix/u);
   });
 
   it('still says the start was refused when the count is unknown', () => {
-    expect(startBlockedMessage(0)).toMatch(/isn't valid yet/i);
+    expect(startBlockedMessage(0)).toMatch(/isn't valid yet/iu);
   });
 });
 
@@ -131,17 +131,17 @@ describe('formatTopicList', () => {
 describe('startDraftConfirmBody', () => {
   it('names the topics and the compute the start will use', () => {
     const body = startDraftConfirmBody(['orders', 'orders-dlq'], 2);
-    expect(body).toMatch(/orders and orders-dlq/);
-    expect(body).toMatch(/2 compute units/);
+    expect(body).toMatch(/orders and orders-dlq/u);
+    expect(body).toMatch(/2 compute units/u);
   });
 
   it('keeps the compute singular for one unit', () => {
-    expect(startDraftConfirmBody([], 1)).toMatch(/1 compute unit\./);
+    expect(startDraftConfirmBody([], 1)).toMatch(/1 compute unit\./u);
   });
 
   it('drops the topic clause when the configuration names none', () => {
     const body = startDraftConfirmBody([], 1);
-    expect(body).toMatch(/begins processing data and uses/);
-    expect(body).not.toMatch(/through/);
+    expect(body).toMatch(/begins processing data and uses/u);
+    expect(body).not.toMatch(/through/u);
   });
 });

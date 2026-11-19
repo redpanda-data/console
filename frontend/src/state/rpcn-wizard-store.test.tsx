@@ -10,10 +10,6 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-
-// Enable automatic store reset between tests - must be before imports
-rs.mock('zustand');
-
 import { act, renderHook } from '@testing-library/react';
 
 import {
@@ -23,6 +19,9 @@ import {
   useRpcnWizardStore,
 } from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
+
+// Enable automatic store reset between tests - must be before imports
+rs.mock('zustand');
 
 function renderStoresWithReset() {
   const wizardResult = renderHook(() => useRpcnWizardStore()).result;

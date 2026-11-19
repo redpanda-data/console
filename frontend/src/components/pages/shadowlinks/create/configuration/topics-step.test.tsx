@@ -19,7 +19,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { TopicsStep } from './topics-step';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-const TOPIC_FILTER_PATTERN = /^topic-filter-\d+$/;
+const TOPIC_FILTER_PATTERN = /^topic-filter-\d+$/u;
 
 const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormValues }) => {
   const form = useForm<FormValues>({
