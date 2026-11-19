@@ -639,9 +639,19 @@ const iconClosedEye = (
   </span>
 );
 
-function countMissingActions(actions: TopicAction[]): number {
+// Edit and delete actions are left out so a read-only principal doesn't flag every topic.
+const viewTopicActions: TopicAction[] = [
+  'seeTopic',
+  'viewPartitions',
+  'viewMessages',
+  'useSearchFilter',
+  'viewConsumers',
+  'viewConfig',
+];
+
+function countMissingViewActions(actions: TopicAction[]): number {
   let missing = 0;
-  for (const a of TopicActions) {
+  for (const a of viewTopicActions) {
     if (!actions.includes(a)) {
       missing += 1;
     }
@@ -656,7 +666,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
     return <>{topic.topicName}</>;
   }
 
-  if (countMissingActions(actions) === 0) {
+  if (countMissingViewActions(actions) === 0) {
     return <>{topic.topicName}</>;
   }
 

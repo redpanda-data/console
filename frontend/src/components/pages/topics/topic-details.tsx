@@ -28,11 +28,13 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 
 import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
@@ -92,42 +94,65 @@ function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefine
   }
 }
 
+const deniedTabCopy: Partial<Record<TopicAction, { activity: string; operation: string }>> = {
+  viewMessages: { activity: 'read messages', operation: 'READ' },
+  viewConsumers: { activity: 'view consumers', operation: 'DESCRIBE' },
+  viewPartitions: { activity: 'view partitions', operation: 'DESCRIBE' },
+  viewConfig: { activity: 'view the configuration', operation: 'DESCRIBE_CONFIGS' },
+};
+
+const TopicTabPermissionNotice = ({
+  topicName,
+  requiredPermission,
+}: {
+  topicName: string;
+  requiredPermission: TopicAction;
+}) => {
+  const copy = deniedTabCopy[requiredPermission] ?? { activity: 'view this tab', operation: 'DESCRIBE' };
+  return (
+    <Empty testId="topic-tab-permission-notice">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <LockIcon />
+        </EmptyMedia>
+        <EmptyTitle>Not authorized to {copy.activity}</EmptyTitle>
+        <EmptyDescription>
+          You don&apos;t have the <InlineCode>{copy.operation}</InlineCode> permission on topic{' '}
+          <InlineCode>{topicName}</InlineCode>. Ask an administrator to grant it.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  );
+};
+
+// A tab without permission stays selectable but renders a notice, so its content never starts requests.
 const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
   const mode = React.useContext(TopicTabModeCtx);
   const customTitle = findCustomTitle(topic, disableHooks);
-
-  const hasPermission =
-    !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission);
-  const isDisabled = !!customTitle || !hasPermission;
-
-  const title =
-    customTitle ??
-    (hasPermission ? (
-      titleText
-    ) : (
-      <Popover>
-        <PopoverTrigger
-          render={
-            <div>
-              <LockIcon size={16} /> {titleText}
-            </div>
-          }
-        />
-        <PopoverContent>{`You're missing the required permission '${requiredPermission}' to view this tab`}</PopoverContent>
-      </Popover>
-    ));
+  const hasPermission = hasTopicPermission(topic, requiredPermission);
 
   if (mode === 'trigger') {
     return (
-      <TabsTrigger className="aria-disabled:cursor-not-allowed" disabled={isDisabled} value={id} variant="underline">
-        {title}
+      <TabsTrigger className="aria-disabled:cursor-not-allowed" disabled={!!customTitle} value={id} variant="underline">
+        {customTitle ??
+          (hasPermission ? (
+            titleText
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <LockIcon size={16} /> {titleText}
+            </span>
+          ))}
       </TabsTrigger>
     );
   }
 
   return (
     <TabsContent className="mt-4" tabIndex={-1} value={id}>
-      {children(topic)}
+      {hasPermission ? (
+        children(topic)
+      ) : (
+        <TopicTabPermissionNotice requiredPermission={requiredPermission} topicName={topic.topicName} />
+      )}
     </TabsContent>
   );
 };
@@ -276,12 +301,12 @@ const docuDisableHooks: TabDisableHook[] = [
 function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
   return new Set<TopicTabId>(
     [
-      isTopicTabEnabled(topic, 'viewMessages') && 'messages',
-      isTopicTabEnabled(topic, 'viewConsumers') && 'consumers',
-      isTopicTabEnabled(topic, 'viewPartitions') && 'partitions',
-      isTopicTabEnabled(topic, 'viewConfig') && 'configuration',
-      isTopicTabEnabled(topic, 'seeTopic', aclDisableHooks) && 'topicacl',
-      !isServerless() && isTopicTabEnabled(topic, 'seeTopic', docuDisableHooks) && 'documentation',
+      'messages',
+      'consumers',
+      'partitions',
+      'configuration',
+      !findCustomTitle(topic, aclDisableHooks) && 'topicacl',
+      !(isServerless() || findCustomTitle(topic, docuDisableHooks)) && 'documentation',
     ].filter(Boolean) as TopicTabId[]
   );
 }
@@ -484,14 +509,7 @@ function addBaseFavs(topicConfig: ConfigEntry[]): void {
   }
 }
 
-function isTopicTabEnabled(topic: Topic, requiredPermission: TopicAction, disableHooks?: TabDisableHook[]): boolean {
-  if (disableHooks) {
-    for (const h of disableHooks) {
-      if (h(topic)) {
-        return false;
-      }
-    }
-  }
+function hasTopicPermission(topic: Topic, requiredPermission: TopicAction): boolean {
   return (
     !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission)
   );
