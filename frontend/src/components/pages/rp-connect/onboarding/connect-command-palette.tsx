@@ -624,7 +624,7 @@ export const ConnectCommandPalette = ({
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: keyboard handling augments the inner cmdk listbox.
+    // biome-ignore lint/a11y/noStaticElementInteractions: keyboard handling augments the inner Command listbox.
     <div className="flex min-h-0 flex-1 flex-col" onKeyDown={handleKeyDown}>
       <Command
         className="min-h-0 flex-1"
@@ -652,7 +652,7 @@ export const ConnectCommandPalette = ({
               allGroups={allGroups}
               browseItems={browseItems}
               onCommit={commit}
-              // Clicking a row only previews it; cmdk also drives this via hover/arrow nav through `onValueChange`.
+              // Clicking a row only previews it; Command also drives this via hover/arrow nav through `onValueChange`.
               onPreview={(component) => setActiveValue(`${component.type}:${component.name}`)}
               query={q}
               results={results}

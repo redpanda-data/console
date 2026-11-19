@@ -56,7 +56,7 @@ rs.mock('./advanced-topic-settings', () => ({
   AdvancedTopicSettings: MockAdvancedTopicSettings,
 }));
 
-// 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
+// 4. Polyfill scrollIntoView (not available in Happy DOM, used by the registry Command)
 Element.prototype.scrollIntoView = rs.fn();
 
 // Import component after mocks
@@ -162,7 +162,7 @@ describe('the AddTopicStep', () => {
 
       // The component starts in "Existing" mode when topics exist.
       // Open the combobox, type to filter, then click the matching option.
-      // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+      // (Pressing Enter races Command's highlighted-value bookkeeping in CI under
       // load — clicking the rendered option is deterministic.)
       await selectComboboxOption(user, 'Select a topic', 'my-topic');
 

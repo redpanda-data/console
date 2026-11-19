@@ -258,7 +258,7 @@ describe('the EditSchemaModePage', () => {
 
     afterEach(() => {
       // Unmount the React tree BEFORE mutating the supported-features store.
-      // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
+      // Otherwise the setState notifies still-mounted Base UI Radio / Tooltip
       // subscribers outside any act boundary and emits "update inside a test
       // was not wrapped in act(...)" warnings attributed to the just-finished
       // test. The global afterEach also calls cleanup() but runs after this

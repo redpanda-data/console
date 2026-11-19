@@ -17,7 +17,7 @@ After mutations (create, update, delete), invalidate related queries to ensure t
 // No invalidation after mutation
 const mutation = useMutation(updateCluster, {
   onSuccess: () => {
-    toast.success('Cluster updated');
+    showToast({ status: 'success', title: 'Cluster updated' });
     // UI still shows old data!
   },
 });
@@ -52,7 +52,7 @@ const mutation = useMutation(updateCluster, {
       queryKey: ['getClusters'],
     });
 
-    toast.success('Cluster updated');
+    showToast({ status: 'success', title: 'Cluster updated' });
   },
 });
 ```

@@ -45,7 +45,7 @@ import queryClient from 'query-client';
 
 import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
-import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
+import { Toaster } from './components/redpanda-ui/components/toast';
 import {
   addBearerTokenInterceptor,
   checkExpiredLicenseInterceptor,
@@ -153,7 +153,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
       {/* showToast viewport, above the router so the error boundary and login can toast */}
-      <BaseUiToaster testId="console-toasts" />
+      <Toaster testId="console-toasts" />
       <TransportProvider transport={dataplaneTransport}>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />

@@ -20,6 +20,7 @@ The codebase is actively migrating away from legacy libraries. Using them in new
 | Yup validation | Zod |
 | `any` type | `unknown` or specific types |
 | Jest | Rstest |
+| `sonner` toasts | `showToast` from `utils/toast.utils` (registry toast) |
 
 ## Common Violations
 

@@ -668,7 +668,7 @@ output:
       const user = userEvent.setup();
       renderPanel();
 
-      // The clicked mock button keeps focus, standing in for a toolbar button / Radix trigger.
+      // The clicked mock button keeps focus, standing in for a toolbar button / menu trigger.
       await openNodeInspector(user, 'select-proc0');
 
       // Delete must not stage the node for removal, and `/` must not open the command palette.

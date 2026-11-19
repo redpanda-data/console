@@ -332,7 +332,7 @@ function CommandMenuContent({
   );
 }
 
-// On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
+// On mount, steal focus from Monaco into the Command input, deferred past Monaco's keystroke processing.
 function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutside>) {
   const abortFocusRef = useRef(false);
   return useCallback(

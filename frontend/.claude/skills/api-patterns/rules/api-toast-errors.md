@@ -9,7 +9,7 @@ tags: error-handling, toast, ux, mutations
 
 ## Explanation
 
-Use `formatToastErrorMessage` utility for consistent, user-friendly error messages in mutation `onError` handlers. This provides a standard format that includes the action, entity, and error details.
+Toast through `showToast` from `utils/toast.utils`, Console's façade over the registry toast manager. Never import `sonner`; it has been removed. In mutation `onError` handlers, build the title with `formatToastErrorMessageGRPC` (Connect errors) or `formatToastErrorMessage` (HTTP payloads), so every message names the action, the entity and the error details. Error toasts stay until the user closes them; other statuses close after 5 seconds.
 
 ## Incorrect
 
@@ -17,20 +17,20 @@ Use `formatToastErrorMessage` utility for consistent, user-friendly error messag
 // Generic error message
 const mutation = useMutation(deleteCluster, {
   onError: () => {
-    toast.error('Something went wrong');
+    showToast({ status: 'error', title: 'Something went wrong' });
   },
 });
 
 // Raw error object
 const mutation = useMutation(deleteCluster, {
   onError: (error) => {
-    toast.error(error.message); // May be technical/unhelpful
+    showToast({ status: 'error', title: error.message }); // May be technical/unhelpful
   },
 });
 
 // No error handling
 const mutation = useMutation(deleteCluster, {
-  onSuccess: () => toast.success('Deleted'),
+  onSuccess: () => showToast({ status: 'success', title: 'Deleted' }),
   // Missing onError!
 });
 ```
@@ -38,25 +38,21 @@ const mutation = useMutation(deleteCluster, {
 ## Correct
 
 ```tsx
-import { formatToastErrorMessage } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 const mutation = useMutation(deleteCluster, {
   onSuccess: () => {
-    toast.success('Cluster deleted');
+    showToast({ status: 'success', title: 'Cluster deleted' });
   },
   onError: (error) => {
-    toast.error(formatToastErrorMessage({
-      error: {
-        reason: error.message,
-        internalCode: error.code,
-      },
-      action: 'delete',
-      entity: 'cluster',
-    }));
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({ error, action: 'delete', entity: 'cluster' }),
+    });
   },
 });
 
-// Output: "Failed to delete cluster due to: reason (code: 123)"
+// Title: "Failed to delete cluster: <message> (reason: <reason>)"
 ```
 
 ## Standard Actions
@@ -80,4 +76,4 @@ import * as Sentry from '@sentry/react';
 
 ## Reference
 
-- `src/utils/toast.utils.ts` - Toast utility implementation
+- `src/utils/toast.utils.tsx` - `showToast` / `updateToast` / `closeToast` and the message formatters
