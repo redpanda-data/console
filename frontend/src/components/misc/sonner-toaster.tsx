@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { useTheme } from 'components/redpanda-ui/components/theme-provider';
 import { AlertTriangle, CheckCircle, Info, Loader, XCircle } from 'lucide-react';
 import { Suspense, use } from 'react';
 import { browser, createPortal } from 'react-dom';
@@ -28,9 +27,9 @@ export function SonnerToaster(props: ToasterProps) {
   );
 }
 
-const BrowserToaster = (props: ToasterProps) => {
+// Theme comes from the caller: embedded and federated roots mount this without a ThemeProvider.
+const BrowserToaster = ({ theme = 'system', ...props }: ToasterProps) => {
   use(browser('Toast notifications render into document.body.'));
-  const { theme = 'system' } = useTheme();
 
   if (typeof document === 'undefined') {
     throw new Error('SonnerToaster requires a browser document after browser() resolves.');
@@ -67,7 +66,7 @@ const BrowserToaster = (props: ToasterProps) => {
           </span>
         ),
       }}
-      theme={props.theme ?? theme}
+      theme={theme}
       toastOptions={{
         classNames: {
           toast:
