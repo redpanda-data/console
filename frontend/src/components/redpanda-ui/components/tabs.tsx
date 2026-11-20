@@ -58,11 +58,9 @@ const tabsListVariants = cva(
         // No fill: this variant's chrome is the baseline, so its own ground only slabs over the
         // surface the strip sits on.
         underline: 'relative w-full justify-start rounded-t-xl border-b !border-border py-0 text-current',
-        /**
-         * [upstream] Added `nav`: a section list beside the content it switches, as in a settings
-         * sidebar. No chrome of its own; vertical, its rows stretch to the list's width. Not in the
-         * registry yet; upstream it, then drop this note.
-         */
+        // [upstream] ui-registry#397, unreleased: `nav`. Drop these markers once a release has it.
+        // A section list beside the content it switches, as in a settings sidebar. No chrome of its
+        // own; vertical, its rows stretch to the list's width.
         nav: 'h-auto gap-0.5 text-current data-[orientation=vertical]:items-stretch',
       },
       layout: {
@@ -93,7 +91,8 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
       default: '',
       underline:
         "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-selected after:content-[''] data-[orientation=vertical]:after:top-0 data-[orientation=vertical]:after:-right-px data-[orientation=vertical]:after:bottom-0 data-[orientation=vertical]:after:left-auto data-[orientation=vertical]:after:h-auto data-[orientation=vertical]:after:w-0.5",
-      /** [upstream] `nav`: the active row is filled, with an accent bar at its leading edge. */
+      // [upstream] ui-registry#397.
+      // The active row is filled, with an accent bar at its leading edge.
       nav: "rounded-md bg-selected-wash shadow-none before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-selected before:content-['']",
     },
   },
@@ -209,8 +208,9 @@ const tabsTriggerVariants = cva(
         default: 'px-3 py-1.5 hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground',
         underline:
           'px-4 py-2 text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground focus-visible:ring-inset data-[active]:text-selected',
-        /** [upstream] `nav`: left-aligned rows that tint on hover; the active one takes the selection colour. */
-        nav: 'justify-start rounded-md px-3 py-2 font-normal text-subtle hover:not-data-[active]:bg-accent/60 hover:not-data-[active]:text-foreground data-[active]:font-medium data-[active]:text-selected',
+        // [upstream] ui-registry#397.
+        // Left-aligned rows that tint on hover; the active one takes the selection colour.
+        nav: 'justify-start rounded-md px-3 py-2 font-normal text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-foreground data-[active]:font-medium data-[active]:text-selected',
       },
     },
     defaultVariants: {
